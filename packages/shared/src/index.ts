@@ -21,7 +21,7 @@ export {
   createJsonParseError,
   calculatePosition,
 } from './validation/unified';
-export type { ValidationError, ValidationResult } from './validation/unified';
+export type { ValidationError, ValidationResult, TransformedError } from './validation/unified';
 export {
   type ErrorFormatterConfig,
   DEFAULT_ERROR_CONFIG,

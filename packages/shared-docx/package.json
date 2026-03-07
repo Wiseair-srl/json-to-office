@@ -16,6 +16,11 @@
       "import": "./dist/schemas/*.js",
       "default": "./dist/schemas/*.js"
     },
+    "./validation/unified": {
+      "types": "./dist/validation/unified/index.d.ts",
+      "import": "./dist/validation/unified/index.js",
+      "default": "./dist/validation/unified/index.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "import": "./dist/*.js",

@@ -13,10 +13,6 @@ import {
 } from './error-formatter-config';
 
 export type { TransformedError } from './types';
-export type { ValidationError as TransformedError_Alias };
-
-// Alias for backward compat
-type TransformedError = ValidationError;
 
 function generateEnhancedMessage(
   error: ValueError,

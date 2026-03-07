@@ -4,7 +4,7 @@ import {
   type TextSpaceAfterProps,
 } from '../text-space-after';
 import { createMockTheme } from './helpers';
-import type { ComponentDefinition } from '@json-to-office/shared';
+import type { ComponentDefinition } from '@json-to-office/shared-docx';
 
 // Mock addWarning function for tests
 const mockAddWarning = () => {

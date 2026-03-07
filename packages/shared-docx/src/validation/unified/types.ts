@@ -1,31 +1,26 @@
 /**
- * Unified validation types
- * Single source of truth for all validation-related types
+ * Unified validation types - extends @json-to-office/shared types
  */
 
 import type { ValueError } from '@sinclair/typebox/value';
+import type {
+  ValidationError as SharedValidationError,
+  ValidationResult as SharedValidationResult,
+} from '@json-to-office/shared';
+
+/**
+ * Re-export the shared ValidationError type.
+ * Docx validation code uses this everywhere.
+ */
+export type ValidationError = SharedValidationError;
 
 /**
  * Generic validation result that can be used for any validation scenario
  */
-export interface ValidationResult<T = unknown> {
-  valid: boolean;
-  success?: boolean; // Added for backward compatibility
+export interface ValidationResult<T = unknown> extends SharedValidationResult {
+  success?: boolean;
   data?: T;
   errors?: ValidationError[];
-}
-
-/**
- * Standardized validation error format
- */
-export interface ValidationError {
-  path: string;
-  message: string;
-  code: string;
-  value?: unknown;
-  line?: number;
-  column?: number;
-  suggestion?: string;
 }
 
 /**

@@ -4,11 +4,11 @@
 
 import type { Static, TSchema } from '@sinclair/typebox';
 import type { CustomComponent } from './createComponent';
+import type { ComponentDefinition as BaseComponentDefinition } from '@json-to-office/shared-docx';
 import type {
-  ComponentDefinition as BaseComponentDefinition,
   ReportComponent,
   GenerationWarning,
-} from '@json-to-docx/shared';
+} from '@json-to-office/shared-docx';
 import type { ReportComponentDefinition } from '../types';
 import type { Document } from 'docx';
 

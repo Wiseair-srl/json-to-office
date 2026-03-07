@@ -1,5 +1,5 @@
 import { Type, TSchema, TObject } from '@sinclair/typebox';
-import { latestVersion } from '@json-to-docx/shared';
+import { latestVersion } from '@json-to-office/shared-docx';
 import type { CustomComponent } from './createComponent';
 import {
   ReportPropsSchema,
@@ -9,8 +9,8 @@ import {
   ListPropsSchema,
   ImagePropsSchema,
   TablePropsSchema,
-} from '@json-to-docx/shared';
-import { generateUnifiedDocumentSchema } from '@json-to-docx/shared/schemas/generator';
+} from '@json-to-office/shared-docx';
+import { generateUnifiedDocumentSchema } from '@json-to-office/shared-docx/schemas/generator';
 
 // Schema cache to avoid regenerating identical schemas
 const schemaCache = new Map<string, TSchema>();
@@ -86,7 +86,7 @@ export async function exportPluginSchema(
   const { includeStandardComponents = true, prettyPrint = true } = options;
 
   const { convertToJsonSchema, exportSchemaToFile } = await import(
-    '@json-to-docx/shared/schemas/export'
+    '@json-to-office/shared-docx/schemas/export'
   );
 
   const schema = generatePluginDocumentSchema(

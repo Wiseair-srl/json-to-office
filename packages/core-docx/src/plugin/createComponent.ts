@@ -1,10 +1,8 @@
 import { type TSchema, type Static } from '@sinclair/typebox';
-import { isValidSemver } from '@json-to-docx/shared';
+import { isValidSemver } from '@json-to-office/shared';
+import type { ComponentDefinition } from '@json-to-office/shared-docx';
+import type { AddWarningFunction } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
-import type {
-  ComponentDefinition,
-  AddWarningFunction,
-} from '@json-to-docx/shared';
 
 /**
  * Render function context - parameters passed to render

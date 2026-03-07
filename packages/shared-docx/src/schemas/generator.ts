@@ -31,7 +31,7 @@ import {
   createComponentSchemaObject,
   getStandardComponent,
 } from './component-registry';
-import { latestVersion } from '../utils/semver';
+import { latestVersion } from '@json-to-office/shared';
 
 /**
  * Per-version props schema entry

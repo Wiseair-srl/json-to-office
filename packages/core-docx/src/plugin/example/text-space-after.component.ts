@@ -1,6 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import { createComponent, createVersion } from '../createComponent';
-import type { ComponentDefinition } from '@json-to-office/shared';
+import type { ComponentDefinition } from '@json-to-office/shared-docx';
 
 /**
  * Text space after component configuration schema

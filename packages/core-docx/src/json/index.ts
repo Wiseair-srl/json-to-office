@@ -5,7 +5,7 @@ export * from './normalizer';
 export * from './filesystem';
 
 // Re-export commonly used types from shared for convenience
-export type { ComponentDefinition as JsonComponentDefinition } from '@json-to-office/shared';
+export type { ComponentDefinition as JsonComponentDefinition } from '@json-to-office/shared-docx';
 export type {
   CoreValidationResult as ValidationResult,
   JsonValidationError as ValidationError,

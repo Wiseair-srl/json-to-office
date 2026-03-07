@@ -9,7 +9,7 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { createComponent, createVersion } from '../plugin/createComponent';
-import type { ComponentDefinition } from '@json-to-office/shared';
+import type { ComponentDefinition } from '@json-to-office/shared-docx';
 
 /**
  * Props schema for text-space-after component

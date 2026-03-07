@@ -3,10 +3,8 @@
  */
 
 import type { TSchema, Static } from '@sinclair/typebox';
-import type {
-  ComponentDefinition,
-  AddWarningFunction,
-} from '@json-to-docx/shared';
+import type { ComponentDefinition } from '@json-to-office/shared-docx';
+import type { AddWarningFunction } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
 
 /**

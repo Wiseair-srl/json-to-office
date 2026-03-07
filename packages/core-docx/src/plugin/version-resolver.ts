@@ -1,4 +1,4 @@
-import { latestVersion } from '@json-to-docx/shared';
+import { latestVersion } from '@json-to-office/shared-docx';
 import type { ComponentVersion, ComponentVersionMap } from './createComponent';
 
 /**

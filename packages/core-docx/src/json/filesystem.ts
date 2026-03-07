@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import { join, resolve, isAbsolute } from 'path';
 import { watch, FSWatcher } from 'fs';
-import { ComponentDefinition } from '@json-to-office/shared';
+import { ComponentDefinition } from '@json-to-office/shared-docx';
 import { parseJsonWithLineNumbers } from './parser';
 
 /**

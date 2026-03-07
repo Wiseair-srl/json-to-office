@@ -6,7 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { ComponentDefinition } from '@json-to-office/shared';
+import { ComponentDefinition } from '@json-to-office/shared-docx';
 
 let _dirname: string | null = null;
 

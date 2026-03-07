@@ -8,8 +8,11 @@
 // Core generation API
 export {
   generatePresentation,
-  generatePresentationBuffer,
-  generatePresentationToFile,
+  generateBufferFromJson,
+  generateAndSaveFromJson,
+  generateFromFile,
+  savePresentation,
+  PresentationGenerator,
 } from '@json-to-office/core-pptx';
 
 // Re-export shared-pptx schemas and types

@@ -12,3 +12,6 @@ export interface ValidationResult {
   valid: boolean;
   errors?: ValidationError[];
 }
+
+/** Backward-compat alias used by pptx shared */
+export type TransformedError = ValidationError;

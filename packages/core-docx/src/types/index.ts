@@ -1,7 +1,7 @@
 import { ISectionOptions } from 'docx';
 import type { ThemeName } from '../styles';
 
-// Import types from shared that core needs for its internal use
+// Import types from shared-docx that core needs for its internal use
 import type {
   ComponentDefinition as SharedComponentDefinition,
   ReportComponent,
@@ -33,9 +33,9 @@ import type {
   ListProps as SharedListProps,
   TocProps as SharedTocProps,
   TextBoxProps as SharedTextBoxProps,
-} from '@json-to-docx/shared';
+} from '@json-to-office/shared-docx';
 
-// Import type guards from shared (these are runtime functions core needs)
+// Import type guards from shared-docx (these are runtime functions core needs)
 export {
   isReportComponent,
   isSectionComponent,
@@ -51,7 +51,7 @@ export {
   isHeaderComponent,
   isFooterComponent,
   isHighchartsComponent,
-} from '@json-to-docx/shared';
+} from '@json-to-office/shared-docx';
 
 // Re-export component definitions for internal use (type aliases for clarity)
 export type ComponentDefinition = SharedComponentDefinition;

@@ -6,8 +6,9 @@ import {
   validateCustomComponentProps,
   validateDocument as validateDocumentUnified,
   type ValidationError,
-  type ValidationResult,
+  type ComponentValidationResult,
 } from '@json-to-office/shared-docx/validation/unified';
+import type { ValidationResult } from '@json-to-office/shared';
 
 /**
  * Error thrown when attempting to register a component with a duplicate name
@@ -58,7 +59,7 @@ export class ComponentValidationError extends Error {
 export function validateComponentProps<TPropsSchema extends TSchema>(
   schema: { propsSchema: TPropsSchema },
   props: unknown
-): ValidationResult<TPropsSchema> {
+): ComponentValidationResult<TPropsSchema> {
   return validateCustomComponentProps<TPropsSchema>(schema.propsSchema, props, {
     clean: true,
     applyDefaults: true,
@@ -71,7 +72,7 @@ export function validateComponentProps<TPropsSchema extends TSchema>(
 export function validateDocument(
   document: ReportComponentDefinition,
   customComponents: CustomComponent<any, any, any>[]
-): ValidationResult {
+): ValidationResult & { success: boolean } {
   // First validate the document structure
   const documentResult = validateDocumentUnified(document, {
     clean: true,
@@ -79,7 +80,7 @@ export function validateDocument(
   });
 
   if (!documentResult.valid) {
-    return documentResult;
+    return { ...documentResult, success: false };
   }
 
   // Then validate each custom component if present
@@ -155,11 +156,9 @@ export function getValidatedProps<TPropsSchema extends TSchema>(
   return validation.data!;
 }
 
-// Re-export types from unified validation
-export type {
-  ValidationError,
-  ValidationResult,
-} from '@json-to-office/shared-docx/validation/unified';
+// Re-export types
+export type { ValidationError } from '@json-to-office/shared-docx/validation/unified';
+export type { ComponentValidationResult } from '@json-to-office/shared-docx/validation/unified';
 
 // Export cleanComponentProps as an alias for getValidatedProps for backward compatibility
 export const cleanComponentProps = getValidatedProps;
