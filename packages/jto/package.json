@@ -1,0 +1,53 @@
+{
+  "name": "@json-to-office/jto",
+  "version": "1.0.0",
+  "description": "JSON to Office CLI - Unified document and presentation generation",
+  "type": "module",
+  "bin": {
+    "jto": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./dist/cli.js": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "cli": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@json-to-office/shared": "workspace:*",
+    "@json-to-office/shared-docx": "workspace:*",
+    "@json-to-office/shared-pptx": "workspace:*",
+    "@json-to-office/core-docx": "workspace:*",
+    "@json-to-office/core-pptx": "workspace:*",
+    "chalk": "5.3.0",
+    "commander": "11.1.0",
+    "ora": "8.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.0",
+    "tsup": "8.5.0",
+    "tsx": "4.20.3",
+    "typescript": "5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Paolo Barbato",
+  "license": "MIT"
+}

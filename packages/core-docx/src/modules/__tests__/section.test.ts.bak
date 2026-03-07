@@ -1,0 +1,570 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Paragraph, Table, TableRow } from 'docx';
+import { createMockTheme, TEST_THEME_NAME } from './helpers';
+import type { ModuleDefinition, RenderContext } from '../../types';
+
+// Mock renderModule function for child modules
+vi.mock('../../core/render', async () => {
+  const { Paragraph } = await vi.importActual<typeof import('docx')>('docx');
+  return {
+    renderModule: vi.fn().mockResolvedValue([new Paragraph({})]),
+  };
+});
+
+// Mock createHeading function
+vi.mock('../../core/content', async () => {
+  const { Paragraph } = await vi.importActual<typeof import('docx')>('docx');
+  return {
+    createHeading: vi.fn().mockReturnValue(new Paragraph({})),
+  };
+});
+
+import { renderSectionModule } from '../section';
+import { renderModule } from '../../core/render';
+import { createHeading } from '../../core/content';
+const mockRenderModule = renderModule as any;
+const mockCreateHeading = createHeading as any;
+
+describe('modules/section', () => {
+  const mockContext: RenderContext = {
+    theme: {
+      name: 'test',
+      colors: {},
+      fonts: {},
+      spacing: {},
+    },
+    fullTheme: createMockTheme(),
+    document: {
+      title: 'Test Document',
+      date: new Date(),
+    },
+    section: {
+      currentLayout: 'single',
+      columnCount: 1,
+      pageNumber: 1,
+    },
+    utils: {
+      formatDate: () => '2024-01-01',
+      parseText: () => [{ text: 'test' }],
+      getStyle: () => ({ name: 'test' }),
+    },
+    depth: 0,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default mocks
+    mockRenderModule.mockResolvedValue([new Paragraph({})]);
+    mockCreateHeading.mockReturnValue(new Paragraph({}));
+  });
+
+  describe('renderSectionModule', () => {
+    it('should render empty section module', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {},
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      // Empty sections now include 2 bookmark paragraphs (start and end)
+      expect(result).toHaveLength(2);
+      expect(mockCreateHeading).not.toHaveBeenCalled();
+      expect(mockRenderModule).not.toHaveBeenCalled();
+    });
+
+    it('should render section with title only', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Section Title',
+        },
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(mockCreateHeading).toHaveBeenCalledWith(
+        'Section Title',
+        1,
+        expect.any(Object),
+        TEST_THEME_NAME,
+        expect.objectContaining({
+          spacing: undefined,
+        })
+      );
+      // Title (1) + bookmark start (1) + bookmark end (1) = 3
+      expect(result).toHaveLength(3);
+      expect(result[0]).toBeInstanceOf(Paragraph);
+      expect(mockRenderModule).not.toHaveBeenCalled();
+    });
+
+    it('should render section with title and level', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Subsection Title',
+          level: 2,
+        },
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(mockCreateHeading).toHaveBeenCalledWith(
+        'Subsection Title',
+        2,
+        expect.any(Object),
+        TEST_THEME_NAME,
+        expect.any(Object)
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('should render section with custom spacing', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Spaced Section',
+          spacing: {
+            before: 240,
+            after: 480,
+          },
+        },
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(mockCreateHeading).toHaveBeenCalledWith(
+        'Spaced Section',
+        1,
+        expect.any(Object),
+        TEST_THEME_NAME,
+        expect.objectContaining({
+          spacing: {
+            before: 240,
+            after: 480,
+          },
+        })
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('should render section with child modules', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {},
+        modules: [
+          {
+            type: 'text',
+            config: { content: 'Section content 1' },
+          },
+          {
+            type: 'text',
+            config: { content: 'Section content 2' },
+          },
+        ],
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(mockRenderModule).toHaveBeenCalledTimes(2);
+      expect(result).toHaveLength(2);
+    });
+
+    it('should render section with title and child modules', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Complete Section',
+          level: 1,
+        },
+        modules: [
+          {
+            type: 'text',
+            config: { content: 'Content under section' },
+          },
+        ],
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(mockCreateHeading).toHaveBeenCalledTimes(1);
+      expect(mockRenderModule).toHaveBeenCalledTimes(1);
+      expect(result).toHaveLength(2); // Title + content
+      expect(result[0]).toBeInstanceOf(Paragraph); // Title
+      expect(result[1]).toBeInstanceOf(Paragraph); // Content
+    });
+
+    it('should handle nested sections', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Parent Section',
+          level: 1,
+        },
+        modules: [
+          {
+            type: 'section',
+            config: {
+              title: 'Child Section',
+              level: 2,
+            },
+            modules: [
+              {
+                type: 'text',
+                config: { content: 'Nested content' },
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(mockCreateHeading).toHaveBeenCalledTimes(1); // Only parent title
+      expect(mockRenderModule).toHaveBeenCalledTimes(1); // Child section
+      expect(result).toHaveLength(2);
+    });
+
+    it('should handle mixed module types in section', async () => {
+      mockRenderModule
+        .mockResolvedValueOnce([new Paragraph({})])
+        .mockResolvedValueOnce([
+          new Table({ rows: [new TableRow({ children: [] })] }),
+        ])
+        .mockResolvedValueOnce([new Paragraph({}), new Paragraph({})]);
+
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Mixed Content Section',
+        },
+        modules: [
+          {
+            type: 'text',
+            config: { content: 'Text content' },
+          },
+          {
+            type: 'table',
+            config: {
+              headers: ['Col1', 'Col2'],
+              rows: [['A', 'B']],
+            },
+          },
+          {
+            type: 'list',
+            config: { items: ['Item 1', 'Item 2'] },
+          },
+        ],
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(mockCreateHeading).toHaveBeenCalledTimes(1);
+      expect(mockRenderModule).toHaveBeenCalledTimes(3);
+      expect(result).toHaveLength(5); // 1 title + 1 paragraph + 1 table + 2 paragraphs
+      expect(result[0]).toBeInstanceOf(Paragraph); // Title
+      expect(result[1]).toBeInstanceOf(Paragraph); // Text
+      // Table constructor was called, but we return the mock
+      expect(result[2]).toBeDefined(); // Table
+      expect(result[3]).toBeInstanceOf(Paragraph); // List item 1
+      expect(result[4]).toBeInstanceOf(Paragraph); // List item 2
+    });
+
+    it('should handle different heading levels', async () => {
+      const levels = [1, 2, 3, 4, 5, 6] as const;
+
+      for (const level of levels) {
+        mockCreateHeading.mockClear();
+        mockCreateHeading.mockReturnValue(new Paragraph({}));
+
+        const module: ModuleDefinition = {
+          type: 'section',
+          config: {
+            title: `Level ${level} Heading`,
+            level,
+          },
+        };
+
+        const result = await renderSectionModule(
+          module,
+          createMockTheme(),
+          TEST_THEME_NAME,
+          mockContext
+        );
+
+        expect(mockCreateHeading).toHaveBeenCalledWith(
+          `Level ${level} Heading`,
+          level,
+          expect.any(Object),
+          TEST_THEME_NAME,
+          expect.any(Object)
+        );
+        expect(result).toHaveLength(1);
+      }
+    });
+
+    it('should pass theme to child modules', async () => {
+      const customTheme = createMockTheme({
+        colors: {
+          primary: 'FF0000',
+          secondary: '00FF00',
+          accent: '0000FF',
+          text: '000000',
+          background: 'FFFFFF',
+        },
+      });
+
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Themed Section',
+        },
+        modules: [
+          {
+            type: 'text',
+            config: { content: 'Themed content' },
+          },
+        ],
+      };
+
+      await renderSectionModule(
+        module,
+        customTheme,
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(mockCreateHeading).toHaveBeenCalledWith(
+        'Themed Section',
+        1,
+        customTheme,
+        TEST_THEME_NAME,
+        expect.any(Object)
+      );
+      expect(mockRenderModule).toHaveBeenCalledWith(
+        module.modules![0],
+        customTheme,
+        TEST_THEME_NAME,
+        mockContext
+      );
+    });
+
+    it('should pass context to child modules', async () => {
+      const customContext: RenderContext = {
+        theme: {
+          name: 'custom',
+          colors: {},
+          fonts: {},
+          spacing: {},
+        },
+        fullTheme: createMockTheme(),
+        document: {
+          title: 'Custom Title',
+          date: new Date(),
+        },
+        section: {
+          currentLayout: 'single',
+          columnCount: 1,
+          pageNumber: 1,
+        },
+        utils: {
+          formatDate: () => '2024-01-01',
+          parseText: () => [{ text: 'test' }],
+          getStyle: () => ({ name: 'test' }),
+        },
+        depth: 0,
+        custom: {
+          version: '1.0.0',
+        },
+      };
+
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {},
+        modules: [
+          {
+            type: 'text',
+            config: { content: 'Context test' },
+          },
+        ],
+      };
+
+      await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        customContext
+      );
+
+      // Context should be updated with sectionBookmarkId
+      expect(mockRenderModule).toHaveBeenCalledWith(
+        module.modules![0],
+        expect.any(Object),
+        TEST_THEME_NAME,
+        expect.objectContaining({
+          ...customContext,
+          section: expect.objectContaining({
+            ...customContext.section,
+            sectionBookmarkId: expect.any(String),
+          }),
+        })
+      );
+    });
+
+    it('should handle non-section module type', async () => {
+      const module: ModuleDefinition = {
+        type: 'text',
+        config: { content: 'Not a section' },
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(result).toHaveLength(0);
+      expect(result).toEqual([]);
+      expect(mockCreateHeading).not.toHaveBeenCalled();
+      expect(mockRenderModule).not.toHaveBeenCalled();
+    });
+
+    it('should handle missing config', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+      } as ModuleDefinition;
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      // Sections now include 2 bookmark paragraphs (start and end) even when empty
+      expect(result).toHaveLength(2);
+    });
+
+    it('should handle empty modules array', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Empty Section',
+        },
+        modules: [],
+      };
+
+      const result = await renderSectionModule(
+        module,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        mockContext
+      );
+
+      expect(mockCreateHeading).toHaveBeenCalledTimes(1);
+      expect(mockRenderModule).not.toHaveBeenCalled();
+      // Title (1) + bookmark start (1) + bookmark end (1) = 3 paragraphs
+      expect(result).toHaveLength(3);
+    });
+
+    it('should handle child module rendering errors gracefully', async () => {
+      mockRenderModule.mockRejectedValueOnce(new Error('Child render error'));
+
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Error Section',
+        },
+        modules: [
+          {
+            type: 'text',
+            config: { content: 'Test content' },
+          },
+        ],
+      };
+
+      await expect(
+        renderSectionModule(
+          module,
+          createMockTheme(),
+          TEST_THEME_NAME,
+          mockContext
+        )
+      ).rejects.toThrow('Child render error');
+    });
+
+    it('should handle different theme names', async () => {
+      const module: ModuleDefinition = {
+        type: 'section',
+        config: {
+          title: 'Theme Test Section',
+        },
+      };
+
+      const themeNames = ['modern', 'classic', 'professional', 'custom'];
+
+      for (const themeName of themeNames) {
+        mockCreateHeading.mockClear();
+        mockCreateHeading.mockReturnValue(new Paragraph({}));
+
+        const result = await renderSectionModule(
+          module,
+          createMockTheme(),
+          themeName,
+          mockContext
+        );
+
+        expect(mockCreateHeading).toHaveBeenCalledWith(
+          'Theme Test Section',
+          1,
+          expect.any(Object),
+          themeName,
+          expect.any(Object)
+        );
+        // Title (1) + bookmark start (1) + bookmark end (1) = 3 paragraphs
+        expect(result).toHaveLength(3);
+      }
+    });
+  });
+});

@@ -1,0 +1,216 @@
+{
+  "$schema": "../../../../shared/json-schemas/theme.schema.json",
+  "name": "verizon",
+  "displayName": "Verizon Corporate",
+  "description": "Official Verizon corporate theme with Helvetica typography and brand colors",
+  "version": "2.0.0",
+  "colors": {
+    "primary": "#E31837",
+    "secondary": "#000000",
+    "accent": "#F5F5F5",
+    "text": "#333333",
+    "background": "#FFFFFF",
+    "border": "#000000",
+    "textPrimary": "#333333",
+    "textSecondary": "#666666",
+    "textMuted": "#999999",
+    "borderPrimary": "#000000",
+    "borderSecondary": "#333333",
+    "backgroundPrimary": "#FFFFFF",
+    "backgroundSecondary": "#F5F5F5"
+  },
+  "fonts": {
+    "heading": {
+      "family": "Helvetica",
+      "size": 22
+    },
+    "body": {
+      "family": "Helvetica",
+      "size": 9
+    },
+    "mono": {
+      "family": "Helvetica",
+      "size": 9
+    },
+    "light": {
+      "family": "Helvetica Light",
+      "size": 57
+    }
+  },
+  "page": {
+    "size": "A4",
+    "margins": {
+      "top": 567,
+      "bottom": 567,
+      "left": 723,
+      "right": 723,
+      "header": 720,
+      "footer": 720,
+      "gutter": 0
+    }
+  },
+  "styles": {
+    "normal": {
+      "font": "body",
+      "size": 9,
+      "color": "textPrimary",
+      "alignment": "left",
+      "lineSpacing": {
+        "type": "atLeast",
+        "value": 11
+      },
+      "spacing": {
+        "after": 6
+      }
+    },
+    "title": {
+      "font": "light",
+      "size": 57,
+      "color": "primary",
+      "characterSpacing": {
+        "type": "condensed",
+        "value": 2.5
+      },
+      "alignment": "left",
+      "lineSpacing": {
+        "type": "single"
+      },
+      "spacing": {
+        "after": 12
+      },
+      "priority": 11,
+      "baseStyle": "heading1"
+    },
+    "subtitle": {
+      "font": "heading",
+      "size": 22,
+      "bold": true,
+      "color": "primary",
+      "characterSpacing": {
+        "type": "condensed",
+        "value": 1
+      },
+      "alignment": "left",
+      "lineSpacing": {
+        "type": "single"
+      },
+      "spacing": {
+        "after": 12
+      },
+      "followingStyle": "normal",
+      "priority": 12,
+      "baseStyle": "normal"
+    },
+    "heading1": {
+      "font": "light",
+      "size": 57,
+      "color": "primary",
+      "alignment": "left",
+      "lineSpacing": {
+        "type": "single"
+      },
+      "characterSpacing": {
+        "type": "condensed",
+        "value": 2.5
+      },
+      "spacing": {
+        "after": 42
+      },
+      "priority": 10,
+      "widowControl": true,
+      "keepNext": true,
+      "keepLinesTogether": true,
+      "outlineLevel": 1
+    },
+    "heading2": {
+      "font": "heading",
+      "size": 22,
+      "bold": true,
+      "color": "primary",
+      "alignment": "left",
+      "lineSpacing": {
+        "type": "single"
+      },
+      "characterSpacing": {
+        "type": "condensed",
+        "value": 1
+      },
+      "spacing": {
+        "after": 12
+      },
+      "priority": 10,
+      "baseStyle": "subtitle",
+      "outlineLevel": 2
+    },
+    "heading3": {
+      "font": "heading",
+      "size": 12,
+      "bold": true,
+      "color": "secondary",
+      "alignment": "left",
+      "lineSpacing": {
+        "type": "single"
+      },
+      "spacing": {
+        "after": 16
+      },
+      "priority": 10,
+      "borders": {
+        "top": {
+          "style": "single",
+          "size": 1,
+          "color": "borderPrimary",
+          "space": 4
+        }
+      },
+      "followingStyle": "heading4",
+      "outlineLevel": 3
+    },
+    "heading4": {
+      "font": "heading",
+      "size": 13,
+      "bold": true,
+      "color": "secondary",
+      "alignment": "left",
+      "lineSpacing": {
+        "type": "single"
+      },
+      "spacing": {
+        "before": 16,
+        "after": 4
+      },
+      "priority": 10,
+      "outlineLevel": 4
+    },
+    "heading5": {
+      "font": "heading",
+      "size": 11,
+      "bold": true,
+      "color": "primary",
+      "alignment": "left",
+      "lineSpacing": {
+        "type": "single"
+      },
+      "spacing": {
+        "after": 6
+      },
+      "priority": 10,
+      "outlineLevel": 5
+    },
+    "heading6": {
+      "font": "heading",
+      "size": 10,
+      "bold": true,
+      "color": "secondary",
+      "alignment": "left",
+      "lineSpacing": {
+        "type": "single"
+      },
+      "spacing": {
+        "after": 6
+      },
+      "priority": 10,
+      "outlineLevel": 6
+    }
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "$schema": "../../../../shared/json-schemas/document.schema.json",
+  "name": "report",
+  "props": {
+    "title": "2025 Data Breach Investigations Report",
+    "subtitle": "Small- and Medium-Sized Business Snapshot",
+    "theme": "verizon",
+    "metadata": {
+      "title": "Verizon DBIR Report - JSON Format",
+      "description": "Converted from TypeScript example - demonstrates mixed layout: single-column header + two-column content",
+      "author": "Verizon Business",
+      "company": "Verizon",
+      "date": "2024-05-14",
+      "created": "2024-01-01T00:00:00.000Z",
+      "tags": [
+        "verizon",
+        "dbir",
+        "security",
+        "breach-report"
+      ]
+    }
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "title": "Welcome",
+        "level": 1
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Hello, and welcome to the Verizon Data Breach Investigations Report (DBIR) Small- and Medium-Sized Business (SMB) Snapshot",
+            "level": 3
+          }
+        },
+        {
+          "name": "columns",
+          "props": {
+            "count": 2,
+            "gap": 20
+          },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "The DBIR aims to provide security professionals with an in-depth analysis of data-driven, real-world instances of cybercrime and how cyberattacks play out across organizations of different sizes as well as from different verticals and disparate geographic locations. We hope that by doing so, we can provide you with insight into what particular threats your organization is most likely to face and thereby help prepare you to handle them."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "As in past years, we will examine what our data has to tell us about threat actors and the tools they employ against organizations. This year, we analyzed **22,052 real-world security incidents**, of which **12,195 were confirmed data breaches** (a record high!), with victims spanning **139 countries**."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "This data represents actual, real-world breaches and incidents provided from the case files of the Verizon Threat Research Advisory Center (VTRAC) team, along with the generous support of our global contributors, and from publicly disclosed security incidents."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "We hope you can use this report and the information it contains to increase your awareness of the most common tactics used against organizations at large and your specific industry. It offers strategies to help protect your company and its assets. Read the full report for a more detailed view of the threats you may face today at **verizon.com/dbir**."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "title": "Sezione 2",
+        "level": 1,
+        "pageBreak": true
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Heading di livello 2",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Questo è un paragrafo di testo singolo. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+          }
+        },
+        {
+          "name": "columns",
+          "props": {
+            "count": 2,
+            "gap": 20,
+            "equalWidth": true
+          },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "The DBIR aims to provide security professionals with an in-depth analysis of data-driven, real-world instances of cybercrime and how cyberattacks play out across organizations of different sizes as well as from different verticals and disparate geographic locations. We hope that by doing so, we can provide you with insight into what particular threats your organization is most likely to face and thereby help prepare you to handle them."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "As in past years, we will examine what our data has to tell us about threat actors and the tools they employ against organizations. This year, we analyzed **22,052 real-world security incidents**, of which **12,195 were confirmed data breaches** (a record high!), with victims spanning **139 countries**."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "This data represents actual, real-world breaches and incidents provided from the case files of the Verizon Threat Research Advisory Center (VTRAC) team, along with the generous support of our global contributors, and from publicly disclosed security incidents."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "We hope you can use this report and the information it contains to increase your awareness of the most common tactics used against organizations at large and your specific industry. It offers strategies to help protect your company and its assets. Read the full report for a more detailed view of the threats you may face today at **verizon.com/dbir**."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "Questo è un paragrafo di testo singolo. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+              }
+            },
+            {
+              "name": "heading",
+              "props": {
+                "text": "Heading di livello 3",
+                "level": 3,
+                "columnBreak": true
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "content": "Questo è un paragrafo di testo singolo. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

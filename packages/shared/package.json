@@ -1,0 +1,57 @@
+{
+  "name": "@json-to-office/shared",
+  "version": "1.0.0",
+  "description": "Format-agnostic shared types, schemas and validation utilities",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./schemas/*": {
+      "types": "./dist/schemas/*.d.ts",
+      "import": "./dist/schemas/*.js",
+      "default": "./dist/schemas/*.js"
+    },
+    "./validation/unified": {
+      "types": "./dist/validation/unified/index.d.ts",
+      "import": "./dist/validation/unified/index.js",
+      "default": "./dist/validation/unified/index.js"
+    },
+    "./validation/parsers/*": {
+      "types": "./dist/validation/parsers/*.d.ts",
+      "import": "./dist/validation/parsers/*.js",
+      "default": "./dist/validation/parsers/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "default": "./dist/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "0.34.38",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.0",
+    "tsup": "8.5.0",
+    "typescript": "5.3.3"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "@json-to-office/core-pptx",
+  "version": "1.0.0",
+  "description": "Core PPTX presentation generation engine",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "default": "./dist/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup && tsc --emitDeclarationOnly --declaration",
+    "build:js": "tsup",
+    "build:types": "tsc --emitDeclarationOnly --declaration",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
+  },
+  "dependencies": {
+    "@json-to-office/shared": "workspace:*",
+    "@json-to-office/shared-pptx": "workspace:*",
+    "@sinclair/typebox": "0.34.38",
+    "pptxgenjs": "^3.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.0",
+    "tsup": "8.5.0",
+    "typescript": "5.3.3"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "$schema": "../../../../../output/examples/plugin-demo-schema.json",
+  "name": "report",
+  "props": {
+    "title": "Plugin Demo"
+  },
+  "children": [
+    {
+      "name": "nestedSections",
+      "props": {}
+    },
+    {
+      "name": "section",
+      "props": {
+        "title": "Weather Information"
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Here's the current weather for major cities:"
+          }
+        },
+        {
+          "name": "weather",
+          "props": {
+            "city": "London",
+            "units": "metric",
+            "showDetails": true
+          }
+        },
+        {
+          "name": "weather",
+          "props": {
+            "city": "New York",
+            "units": "imperial",
+            "showDetails": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "title": "Sales Data"
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Recent sales performance:"
+          }
+        },
+        {
+          "name": "dataTable",
+          "props": {
+            "query": "SELECT * FROM sales ORDER BY date DESC",
+            "title": "Q1 Sales Report",
+            "showRowNumbers": true,
+            "maxRows": 10
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "title": "Quick Links"
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Scan these QR codes to access our resources:"
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "title": "More Data Examples"
+      },
+      "children": [
+        {
+          "name": "dataTable",
+          "props": {
+            "query": "SELECT * FROM users WHERE role = \"Admin\"",
+            "title": "System Administrators"
+          }
+        },
+        {
+          "name": "dataTable",
+          "props": {
+            "query": "SELECT * FROM inventory WHERE stock < 50",
+            "title": "Low Stock Items",
+            "showRowNumbers": false
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "$schema": "../../../../shared/json-schemas/document.schema.json",
+  "name": "report",
+  "props": {
+    "title": "Piano Spostamenti Casa Lavoro",
+    "subtitle": "Sede di Milano Olgettina",
+    "theme": "hitachi",
+    "metadata": {
+      "title": "Hitachi Company Report - JSON Format",
+      "description": "Converted from TypeScript example - Hitachi company mobility plan with custom headers and footers",
+      "author": "a2a",
+      "company": "a2a",
+      "date": "2025-07-16",
+      "created": "2024-01-01T00:00:00.000Z",
+      "tags": [
+        "hitachi",
+        "mobility-plan",
+        "corporate",
+        "themed"
+      ]
+    },
+    "footer": [
+      {
+        "name": "table",
+        "props": {
+          "headers": [
+            "",
+            ""
+          ],
+          "rows": [
+            [
+              "**{PAGE}**          **Piano degli Spostamenti Casa Lavoro**",
+              "**©Hitachi, Ltd. 2025. All rights reserved.**"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "title": "Introduzione",
+        "level": 1,
+        "header": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Loghi%20utenti/hitachi.png?updatedAt=1752859326708",
+              "width": 100,
+              "alignment": "right"
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Premessa",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Il **Gruppo A2A** è una realtà consolidata e fortemente radicata nelle città e sul territorio."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Come **Life Company** si prende cura del benessere delle persone, mettendo a disposizione servizi essenziali per rispondere alle esigenze degli stili di vita contemporanei, nel rispetto di una sostenibilità di lungo periodo."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Grazie a un modello di business che la rende unica nel panorama delle utility italiane, crea sinergie industriali tra le filiere dell'energia, dei rifiuti e dell'acqua."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Il **Gruppo A2A** sta contribuendo allo sviluppo della mobilità sostenibile in Italia, realizzando infrastrutture e puntando al miglioramento qualitativo degli spostamenti delle persone; con coerenza, aderisce alle politiche di mobility management aziendale indicate e sostenute dal legislatore e condivide altresì le proprie competenze e know-how con clienti e stakeholder."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Il **Gruppo A2A** affronta il tema della mobilità sostenibile consapevole dell'impatto significativo che gli spostamenti casa-lavoro possono avere sulla vita delle persone del Gruppo A2A e sui territori in cui svolge le proprie attività, considerato l'elevato numero di persone movimentate in alcune aree. Come Life Company, e in relazione alle attività gestite, è consapevole altresì del contributo che può fornire allo sviluppo armonico e sostenibile della mobilità dei territori in cui opera."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Per questo motivo, le iniziative legate alla mobilità sono basate sempre più sull'ascolto delle esigenze delle persone e sviluppate in un'ottica di crescenti integrazione tra i molteplici ambiti aziendali e collaborazione con gli stakeholder del territorio, in coerenza con la direzione che il **Gruppo A2A** si è dato sulle tematiche riguardanti la qualità, l'ambiente e la sicurezza e salute delle persone:"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "italic": true,
+            "alignment": "center",
+            "spacing": {
+              "before": 1200,
+              "after": 240
+            },
+            "lineSpacing": {
+              "type": "multiple",
+              "value": 1.2
+            },
+            "content": "'Miglioriamo la qualità della vita, prendendoci cura delle persone e dell'ambiente.\\nGeneriamo benessere, agendo in sicurezza e ispirando bellezza.'"
+          }
+        }
+      ]
+    }
+  ]
+}

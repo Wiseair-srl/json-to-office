@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/shared-docx" },
+    { "path": "./packages/shared-pptx" },
+    { "path": "./packages/core-docx" },
+    { "path": "./packages/core-pptx" }
+  ]
+}

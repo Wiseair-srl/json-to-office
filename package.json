@@ -1,0 +1,88 @@
+{
+  "name": "json-to-office",
+  "version": "1.0.0",
+  "description": "Generate professional .docx and .pptx files from JSON definitions",
+  "private": true,
+  "scripts": {
+    "\n\n=== PRIMARY COMMANDS ===": "",
+    "dev": "turbo dev --ui tui --output-logs=errors-only",
+    "build": "turbo build --output-logs=errors-only --log-order=grouped",
+    "test": "turbo test --output-logs=errors-only --log-order=grouped",
+    "lint": "turbo lint --output-logs=errors-only --log-order=grouped",
+    "typecheck": "turbo typecheck --output-logs=errors-only --log-order=grouped",
+
+    "\n\n=== BUILD VARIANTS ===": "",
+    "build:force": "turbo build --force --output-logs=errors-only --log-order=grouped",
+
+    "\n\n=== CODE QUALITY ===": "",
+    "format": "turbo format --output-logs=errors-only --log-order=grouped",
+    "format:fix": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "lint:fix": "turbo lint:fix --output-logs=errors-only --log-order=grouped",
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+
+    "\n\n=== TESTING ===": "",
+    "test:watch": "turbo test:watch --output-logs=errors-only",
+    "test:coverage": "turbo test:coverage --output-logs=errors-only --log-order=grouped",
+
+    "\n\n=== CLEANUP ===": "",
+    "clean": "turbo clean --output-logs=errors-only && rm -rf .turbo node_modules/.cache",
+    "clean:dist": "find . -name 'dist' -type d -not -path './node_modules/*' -exec rm -rf {} + 2>/dev/null || true",
+    "clean:all": "pnpm clean && pnpm clean:dist && rm -rf **/node_modules",
+    "clean:cache": "rm -rf .turbo node_modules/.cache",
+
+    "\n\n=== CLI ===": "",
+    "cli": "tsx packages/jto/src/cli.ts",
+    "cli:dev": "tsx packages/jto/src/cli.ts docx dev",
+
+    "\n\n=== VALIDATION ===": "",
+    "generate-schemas": "node scripts/generate-schemas.mjs",
+
+    "\n\n=== GIT HOOKS ===": "",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "docx",
+    "pptx",
+    "document",
+    "presentation",
+    "generator",
+    "typescript",
+    "json"
+  ],
+  "author": "Paolo Barbato",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "20.11.0",
+    "@typescript-eslint/eslint-plugin": "6.21.0",
+    "@typescript-eslint/parser": "6.21.0",
+    "@vitest/coverage-v8": "1.1.0",
+    "eslint": "8.56.0",
+    "husky": "9.1.7",
+    "prettier": "3.2.4",
+    "tsup": "8.5.0",
+    "tsx": "4.20.3",
+    "turbo": "2.5.6",
+    "typescript": "5.3.3",
+    "vitest": "1.6.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "pnpm": {
+    "overrides": {
+      "docx": "9.5.1",
+      "typescript": "5.3.3",
+      "eslint": "8.56.0",
+      "prettier": "3.2.4",
+      "@typescript-eslint/eslint-plugin": "6.21.0",
+      "@typescript-eslint/parser": "6.21.0"
+    }
+  },
+  "dependencies": {
+    "@sinclair/typebox": "0.34.38",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
+  },
+  "type": "module"
+}

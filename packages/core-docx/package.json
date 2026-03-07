@@ -1,0 +1,60 @@
+{
+  "name": "@json-to-office/core-docx",
+  "version": "1.0.0",
+  "description": "Core DOCX document generation engine",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "default": "./dist/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup && tsc --emitDeclarationOnly --declaration",
+    "build:js": "tsup",
+    "build:types": "tsc --emitDeclarationOnly --declaration",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
+  },
+  "dependencies": {
+    "@json-to-office/shared": "workspace:*",
+    "@json-to-office/shared-docx": "workspace:*",
+    "@sinclair/typebox": "0.34.38",
+    "adm-zip": "0.5.16",
+    "date-fns": "3.6.0",
+    "jszip": "3.10.1",
+    "probe-image-size": "7.2.3"
+  },
+  "peerDependencies": {
+    "docx": "9.5.1",
+    "highcharts-export-server": "5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "highcharts-export-server": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/adm-zip": "0.5.7",
+    "@types/jszip": "3.4.1",
+    "@types/node": "20.11.0",
+    "@types/probe-image-size": "7.2.4",
+    "tsup": "8.5.0",
+    "typescript": "5.3.3"
+  }
+}

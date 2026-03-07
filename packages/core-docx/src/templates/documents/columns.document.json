@@ -1,0 +1,215 @@
+{
+  "$schema": "../../../shared/json-schemas/document.schema.json",
+  "name": "report",
+  "props": {
+    "title": "Columns Config Options Demo",
+    "metadata": {
+      "author": "JTD Library"
+    }
+  },
+  "children": [
+    {
+      "name": "heading",
+      "props": {
+        "text": "Columns Configuration Showcase",
+        "level": 1
+      }
+    },
+    {
+      "name": "heading",
+      "props": {
+        "text": "1) Numeric shorthand (3 columns, default 5% gap)",
+        "level": 2
+      }
+    },
+    {
+      "name": "columns",
+      "props": {
+        "columns": 3
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Numeric shorthand creates N equal-width columns. Default 5% gap applied between columns."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Content flows within the section columns automatically."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "You can force a break using a heading with columnBreak: true."
+          }
+        }
+      ]
+    },
+    {
+      "name": "heading",
+      "props": {
+        "text": "2) Top-level gap override (2 columns, 8% gap)",
+        "level": 2
+      }
+    },
+    {
+      "name": "columns",
+      "props": {
+        "columns": 2,
+        "gap": "8%"
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Top-level gap applies to all columns except the last, unless a column overrides it."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Here gap is 8% instead of the 5% default."
+          }
+        }
+      ]
+    },
+    {
+      "name": "heading",
+      "props": {
+        "text": "3) Per-column with auto width (30% + auto)",
+        "level": 2
+      }
+    },
+    {
+      "name": "columns",
+      "props": {
+        "columns": [
+          {
+            "width": "30%"
+          },
+          {
+            "width": "auto"
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Auto width consumes remaining space after fixed widths and gaps."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "This layout uses 30% for the first column and the rest for the second."
+          }
+        }
+      ]
+    },
+    {
+      "name": "heading",
+      "props": {
+        "text": "4) Per-column with per-column gap (40% + 10% gap + auto)",
+        "level": 2
+      }
+    },
+    {
+      "name": "columns",
+      "props": {
+        "columns": [
+          {
+            "width": "40%",
+            "gap": "10%"
+          },
+          {
+            "width": "auto"
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Per-column gap overrides the top-level gap for that column only."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "The second column takes the remaining ~50%."
+          }
+        }
+      ]
+    },
+    {
+      "name": "heading",
+      "props": {
+        "text": "5) Per-column explicit percentages (30% + 5% gap + 65%)",
+        "level": 2
+      }
+    },
+    {
+      "name": "columns",
+      "props": {
+        "columns": [
+          {
+            "width": "30%",
+            "gap": "5%"
+          },
+          {
+            "width": "65%"
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Explicit widths with a gap after the first column."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Total width including gap ≤ 100%."
+          }
+        }
+      ]
+    },
+    {
+      "name": "heading",
+      "props": {
+        "text": "6) All unspecified widths (3 equal columns)",
+        "level": 2
+      }
+    },
+    {
+      "name": "columns",
+      "props": {
+        "columns": [
+          {},
+          {},
+          {}
+        ]
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "When all widths are unspecified, remaining space is divided equally across columns."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "Default 5% gap still applies between columns."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+{
+  "$schema": "../../../../shared/json-schemas/document.schema.json",
+  "name": "report",
+  "props": {
+    "title": "Highcharts JSON Configuration Demo",
+    "subtitle": "Charts Defined Using JSON Format",
+    "theme": "minimal",
+    "metadata": {
+      "author": "JSON to DOCX",
+      "company": "Chart Solutions Inc."
+    }
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "title": "Sales Dashboard"
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "content": "This example demonstrates how to define Highcharts visualizations using JSON configuration."
+          }
+        },
+        {
+          "name": "highcharts",
+          "props": {
+            "chartType": "line",
+            "title": "Monthly Revenue Trend",
+            "xAxis": {
+              "categories": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ]
+            },
+            "yAxis": {
+              "title": {
+                "text": "Revenue ($)"
+              }
+            },
+            "series": [
+              {
+                "name": "2024",
+                "data": [
+                  45000,
+                  52000,
+                  48000,
+                  61000,
+                  58000,
+                  65000
+                ]
+              },
+              {
+                "name": "2023",
+                "data": [
+                  38000,
+                  41000,
+                  43000,
+                  45000,
+                  48000,
+                  51000
+                ]
+              }
+            ],
+            "dimensions": {
+              "width": 600,
+              "height": 400
+            },
+            "showStatistics": true,
+            "useThemeColors": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "title": "Product Distribution",
+        "pageBreak": true
+      },
+      "children": [
+        {
+          "name": "highcharts",
+          "props": {
+            "chartType": "pie",
+            "title": "Product Category Distribution",
+            "series": [
+              {
+                "name": "Sales",
+                "data": [
+                  {
+                    "name": "Electronics",
+                    "y": 35.2
+                  },
+                  {
+                    "name": "Clothing",
+                    "y": 28.5
+                  },
+                  {
+                    "name": "Home & Garden",
+                    "y": 18.3
+                  },
+                  {
+                    "name": "Sports",
+                    "y": 12.8
+                  },
+                  {
+                    "name": "Other",
+                    "y": 5.2
+                  }
+                ]
+              }
+            ],
+            "plotOptions": {
+              "pie": {
+                "dataLabels": {
+                  "enabled": true,
+                  "format": "{point.name}: {point.percentage:.1f}%"
+                }
+              }
+            },
+            "dimensions": {
+              "width": 500,
+              "height": 400
+            },
+            "alignment": "center",
+            "caption": "Product category distribution for Q2 2024"
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "title": "Regional Performance"
+      },
+      "children": [
+        {
+          "name": "highcharts",
+          "props": {
+            "chartType": "column",
+            "title": "Sales by Region",
+            "xAxis": {
+              "categories": [
+                "North",
+                "South",
+                "East",
+                "West"
+              ]
+            },
+            "yAxis": {
+              "title": {
+                "text": "Sales (thousands)"
+              }
+            },
+            "series": [
+              {
+                "name": "Q1",
+                "data": [
+                  120,
+                  98,
+                  145,
+                  112
+                ]
+              },
+              {
+                "name": "Q2",
+                "data": [
+                  135,
+                  105,
+                  158,
+                  125
+                ]
+              }
+            ],
+            "dimensions": {
+              "width": 600,
+              "height": 350
+            },
+            "showStatistics": true,
+            "cache": {
+              "enabled": true,
+              "ttl": 1800
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

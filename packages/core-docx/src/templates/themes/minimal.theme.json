@@ -1,0 +1,194 @@
+{
+  "$schema": "../../../../shared/json-schemas/theme.schema.json",
+  "name": "minimal",
+  "displayName": "Minimal Clean",
+  "description": "A clean, minimalist theme focused on readability and elegant simplicity",
+  "version": "2.0.0",
+  "colors": {
+    "primary": "#000000",
+    "secondary": "#666666",
+    "accent": "#2c3e50",
+    "background": "#ffffff",
+    "text": "#2c2c2c",
+    "border": "#f0f0f0",
+    "textPrimary": "#000000",
+    "textSecondary": "#4a4a4a",
+    "textMuted": "#999999",
+    "borderPrimary": "#e0e0e0",
+    "borderSecondary": "#f5f5f5",
+    "backgroundPrimary": "#ffffff",
+    "backgroundSecondary": "#fafafa"
+  },
+  "fonts": {
+    "heading": {
+      "family": "Arial",
+      "size": 24
+    },
+    "body": {
+      "family": "Arial",
+      "size": 11
+    },
+    "mono": {
+      "family": "SF Mono",
+      "size": 10
+    },
+    "light": {
+      "family": "Arial",
+      "size": 24
+    }
+  },
+  "page": {
+    "size": "A4",
+    "margins": {
+      "top": 1440,
+      "bottom": 1440,
+      "left": 1080,
+      "right": 1080,
+      "header": 720,
+      "footer": 720,
+      "gutter": 0
+    }
+  },
+  "styles": {
+    "normal": {
+      "font": "body",
+      "color": "#000000",
+      "lineSpacing": {
+        "type": "multiple",
+        "value": 1.5
+      },
+      "alignment": "justify",
+      "spacing": {
+        "after": 9
+      }
+    },
+    "heading1": {
+      "font": "light",
+      "size": 24,
+      "bold": false,
+      "color": "#000000",
+      "spacing": {
+        "before": 18,
+        "after": 12
+      },
+      "keepNext": true,
+      "alignment": "left",
+      "characterSpacing": {
+        "type": "expanded",
+        "value": 1.2
+      }
+    },
+    "heading2": {
+      "font": "light",
+      "size": 20,
+      "bold": false,
+      "color": "#000000",
+      "spacing": {
+        "before": 12,
+        "after": 9
+      },
+      "keepNext": true,
+      "alignment": "left",
+      "characterSpacing": {
+        "type": "expanded",
+        "value": 0.8
+      }
+    },
+    "heading3": {
+      "font": "heading",
+      "size": 16,
+      "bold": false,
+      "color": "#2c2c2c",
+      "spacing": {
+        "before": 9,
+        "after": 6
+      },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading4": {
+      "font": "heading",
+      "size": 14,
+      "bold": true,
+      "color": "#4a4a4a",
+      "spacing": {
+        "before": 6,
+        "after": 4
+      },
+      "keepNext": true
+    },
+    "heading5": {
+      "font": "heading",
+      "size": 12,
+      "bold": false,
+      "italic": true,
+      "color": "#666666",
+      "spacing": {
+        "before": 4,
+        "after": 3
+      }
+    },
+    "heading6": {
+      "font": "light",
+      "size": 11,
+      "bold": false,
+      "color": "#999999",
+      "spacing": {
+        "before": 3,
+        "after": 2
+      }
+    },
+    "title": {
+      "font": "light",
+      "bold": false,
+      "color": "#000000",
+      "alignment": "left",
+      "spacing": {
+        "before": 0,
+        "after": 24
+      },
+      "characterSpacing": {
+        "type": "condensed",
+        "value": 20
+      }
+    },
+    "subtitle": {
+      "font": "light",
+      "size": 16,
+      "italic": false,
+      "color": "#666666",
+      "alignment": "left",
+      "spacing": {
+        "before": 0,
+        "after": 18
+      }
+    }
+  },
+  "componentDefaults": {
+    "table": {
+      "borders": false,
+      "striped": false,
+      "headerBackground": "#fafafa",
+      "headerColor": "#000000",
+      "borderColor": "#f0f0f0",
+      "borderWidth": 0.5
+    },
+    "list": {
+      "format": "bullet",
+      "bullet": "•",
+      "indent": 3
+    },
+    "image": {
+      "alignment": "left"
+    },
+    "statistic": {
+      "alignment": "left"
+    },
+    "section": {
+      "pageBreak": false
+    },
+    "heading": {
+      "numbering": false
+    }
+  }
+}
