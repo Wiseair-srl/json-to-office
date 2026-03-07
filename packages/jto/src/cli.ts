@@ -1,9 +1,25 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { DocxFormatAdapter, PptxFormatAdapter, type FormatAdapter } from './format-adapter.js';
+import { createGenerateCommand } from './commands/generate.js';
+import { createValidateCommand } from './commands/validate.js';
+import { createSchemasCommand } from './commands/schemas.js';
+import { createDiscoverCommand } from './commands/discover.js';
+import { createInitCommand } from './commands/init.js';
+import { createDevCommand } from './commands/dev.js';
 
 declare const __PACKAGE_VERSION__: string | undefined;
 const PACKAGE_VERSION =
   typeof __PACKAGE_VERSION__ !== 'undefined' ? __PACKAGE_VERSION__ : 'dev-mode';
+
+function registerFormatCommands(parent: Command, adapter: FormatAdapter): void {
+  parent.addCommand(createGenerateCommand(adapter));
+  parent.addCommand(createValidateCommand(adapter));
+  parent.addCommand(createSchemasCommand(adapter));
+  parent.addCommand(createDiscoverCommand(adapter));
+  parent.addCommand(createInitCommand(adapter));
+  parent.addCommand(createDevCommand(adapter));
+}
 
 const program = new Command();
 
@@ -14,116 +30,11 @@ program
 
 // === DOCX subcommand ===
 const docx = new Command('docx').description('DOCX document commands');
-
-docx
-  .command('generate <input>')
-  .description('Generate a .docx file from JSON')
-  .option('-o, --output <path>', 'Output file path')
-  .option('-t, --theme <path>', 'Theme file path')
-  .action(async (input, options) => {
-    console.log(chalk.blue('Generating DOCX from'), input);
-    // Phase 2: wire up actual generation
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
-
-docx
-  .command('validate <input>')
-  .description('Validate a JSON document or theme')
-  .option('--type <type>', 'Type to validate: document or theme', 'document')
-  .action(async (input, options) => {
-    console.log(chalk.blue('Validating'), input, `(${options.type})`);
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
-
-docx
-  .command('schemas')
-  .description('Generate JSON schemas')
-  .option('-o, --output <dir>', 'Output directory')
-  .action(async (options) => {
-    console.log(chalk.blue('Generating DOCX schemas'));
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
-
-docx
-  .command('dev')
-  .description('Start development server with web UI')
-  .option('-p, --port <port>', 'Port number', '3000')
-  .action(async (options) => {
-    console.log(chalk.blue('Starting DOCX dev server on port'), options.port);
-    console.log(chalk.gray('(not yet implemented — Phase 3)'));
-  });
-
-docx
-  .command('init [name]')
-  .description('Create a new json-to-docx project')
-  .action(async (name) => {
-    console.log(chalk.blue('Initializing DOCX project'), name || '');
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
-
-docx
-  .command('discover')
-  .description('Discover custom plugins')
-  .action(async () => {
-    console.log(chalk.blue('Discovering DOCX plugins'));
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
+registerFormatCommands(docx, new DocxFormatAdapter());
 
 // === PPTX subcommand ===
 const pptx = new Command('pptx').description('PPTX presentation commands');
-
-pptx
-  .command('generate <input>')
-  .description('Generate a .pptx file from JSON')
-  .option('-o, --output <path>', 'Output file path')
-  .option('-t, --theme <path>', 'Theme file path')
-  .action(async (input, options) => {
-    console.log(chalk.blue('Generating PPTX from'), input);
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
-
-pptx
-  .command('validate <input>')
-  .description('Validate a JSON presentation or theme')
-  .option('--type <type>', 'Type to validate: document or theme', 'document')
-  .action(async (input, options) => {
-    console.log(chalk.blue('Validating'), input, `(${options.type})`);
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
-
-pptx
-  .command('schemas')
-  .description('Generate JSON schemas')
-  .option('-o, --output <dir>', 'Output directory')
-  .action(async (options) => {
-    console.log(chalk.blue('Generating PPTX schemas'));
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
-
-pptx
-  .command('dev')
-  .description('Start development server with web UI')
-  .option('-p, --port <port>', 'Port number', '3001')
-  .action(async (options) => {
-    console.log(chalk.blue('Starting PPTX dev server on port'), options.port);
-    console.log(chalk.gray('(not yet implemented — Phase 3)'));
-  });
-
-pptx
-  .command('init [name]')
-  .description('Create a new json-to-pptx project')
-  .action(async (name) => {
-    console.log(chalk.blue('Initializing PPTX project'), name || '');
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
-
-pptx
-  .command('discover')
-  .description('Discover custom plugins')
-  .action(async () => {
-    console.log(chalk.blue('Discovering PPTX plugins'));
-    console.log(chalk.gray('(not yet implemented — Phase 2)'));
-  });
+registerFormatCommands(pptx, new PptxFormatAdapter());
 
 program.addCommand(docx);
 program.addCommand(pptx);
@@ -136,6 +47,8 @@ ${chalk.gray('Examples:')}
   $ jto pptx generate slides.json   ${chalk.dim('# Generate PPTX from JSON')}
   $ jto docx dev                    ${chalk.dim('# Start DOCX dev server')}
   $ jto pptx validate slides.json   ${chalk.dim('# Validate PPTX JSON')}
+  $ jto docx schemas                ${chalk.dim('# Export DOCX JSON schemas')}
+  $ jto pptx discover               ${chalk.dim('# Discover PPTX plugins')}
 `
 );
 
