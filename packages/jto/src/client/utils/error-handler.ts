@@ -217,7 +217,7 @@ class GlobalErrorHandler implements ErrorHandler {
 
   private reportError(_error: ApplicationError): void {
     // In production, send to error monitoring service
-    if (process.env.NODE_ENV === 'production') {
+    if (!import.meta.env.DEV) {
       // Example: Sentry, LogRocket, etc.
       // window.Sentry?.captureException(error);
     }

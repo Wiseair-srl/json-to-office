@@ -15,9 +15,7 @@ import { discoveryRouter } from './routes/discovery.js';
 import { requestIdMiddleware } from './middleware/hono/request-id.js';
 import { apiKeyAuthMiddleware } from './middleware/hono/auth.js';
 import { errorHandler } from './middleware/hono/error-handler.js';
-import { performanceMiddleware } from './middleware/hono/performance.js';
 import { securityMiddleware } from './middleware/hono/security.js';
-import { monitoringMiddleware } from './middleware/hono/monitoring.js';
 import { errorRecoveryMiddleware } from './middleware/hono/error-recovery.js';
 import { requestLoggerMiddleware } from './middleware/hono/request-logger.js';
 
@@ -31,7 +29,6 @@ export function createAPIApp(adapter: FormatAdapter) {
   const honoApp = new Hono<AppEnv>();
 
   // Built-in middleware
-  honoApp.use('*', compress());
   honoApp.use('*', timing());
   honoApp.use('*', honoLogger());
 
@@ -53,9 +50,7 @@ export function createAPIApp(adapter: FormatAdapter) {
   // Custom middleware
   honoApp.use('*', requestIdMiddleware);
   honoApp.use('*', errorRecoveryMiddleware);
-  honoApp.use('*', monitoringMiddleware);
   honoApp.use('*', requestLoggerMiddleware);
-  honoApp.use('*', performanceMiddleware);
   honoApp.use('*', securityMiddleware);
 
   // API key auth (if enabled)

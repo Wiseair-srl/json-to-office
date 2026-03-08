@@ -43,9 +43,6 @@ export const usePluginsStore = create<PluginsState>()(
           newSelectedPlugins.add(plugin.name);
           newMetadata.set(plugin.name, plugin);
 
-          console.log('✅ [plugins-store] Plugin selected:', plugin.name);
-          console.log('   Total selected:', newSelectedPlugins.size);
-
           return {
             selectedPlugins: newSelectedPlugins,
             selectedPluginMetadata: newMetadata,

@@ -16,6 +16,7 @@ class SchemaService {
   private pluginSchemaCache: Map<string, any> = new Map();
   private cacheTimestamp: { [key: string]: number } = {};
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private readonly MAX_PLUGIN_CACHE = 10;
 
   /**
    * Fetch the JSON schema for document validation
@@ -63,6 +64,10 @@ class SchemaService {
 
       // Cache the schema
       if (pluginNames?.length) {
+        if (this.pluginSchemaCache.size >= this.MAX_PLUGIN_CACHE) {
+          const firstKey = this.pluginSchemaCache.keys().next().value;
+          if (firstKey) this.pluginSchemaCache.delete(firstKey);
+        }
         this.pluginSchemaCache.set(cacheKey, result.data);
       } else {
         this.documentSchemaCache = result.data;

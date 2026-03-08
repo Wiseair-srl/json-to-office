@@ -32,7 +32,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
     rateLimiter({
       limit: process.env.NODE_ENV === 'production' ? 10 : 1000,
       window: 15 * 60 * 1000,
-      keyGenerator: (c) => c.req.header('X-Forwarded-For') || 'anonymous',
+      keyGenerator: (c) => c.req.header('X-Real-IP') || c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() || 'anonymous',
     }),
     contentTypeMw,
     tbValidator(LooseDocumentGenerationRequestSchema),
@@ -124,7 +124,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
     rateLimiter({
       limit: process.env.NODE_ENV === 'production' ? 20 : 1000,
       window: 15 * 60 * 1000,
-      keyGenerator: (c) => c.req.header('X-Forwarded-For') || 'anonymous',
+      keyGenerator: (c) => c.req.header('X-Real-IP') || c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() || 'anonymous',
     }),
     async (c) => {
       const requestId = c.get('requestId');

@@ -9,11 +9,6 @@ export interface GenerateDocumentResponse {
   blob: Blob;
 }
 
-const formatMime =
-  FORMAT === 'pptx'
-    ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-    : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
 export const pptxService = {
   async generate(code: string): Promise<Blob> {
     const formData = new FormData();
@@ -24,7 +19,6 @@ export const pptxService = {
       formData,
       {
         responseType: 'blob',
-        headers: { 'Content-Type': formatMime },
       }
     );
 

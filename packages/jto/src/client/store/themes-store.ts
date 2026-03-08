@@ -83,24 +83,9 @@ export const createThemesStore = (
                   (!existingTheme?.valid && validation.valid)) &&
                 validation.valid;
 
-              console.log('ThemeStore: Update theme analysis', {
-                documentName,
-                themeName,
-                hasContentChanged,
-                existingValid: existingTheme?.valid,
-                newValid: validation.valid,
-                shouldEmitEvent,
-                isUpdate,
-                parsedTheme: parsed,
-              });
-
               if (shouldEmitEvent) {
                 // Use setTimeout to ensure state is updated before event is processed
                 setTimeout(() => {
-                  console.log('ThemeStore: Emitting theme change event', {
-                    themeName,
-                    changeType: isUpdate ? 'update' : 'create',
-                  });
                   themeChangeEmitter.emitThemeChange({
                     themeName,
                     timestamp: Date.now(),

@@ -163,6 +163,12 @@ discoveryRouter.get('/plugin/:name', async (c) => {
 });
 
 discoveryRouter.post('/load-plugins', async (c) => {
+  // Require API key for plugin loading regardless of global auth setting
+  const apiKey = c.req.header('X-API-Key') || c.req.header('Authorization');
+  if (!apiKey && process.env.NODE_ENV === 'production') {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
+
   try {
     const registry = PluginRegistry.getInstance();
     const result = await registry.discoverAndLoad();

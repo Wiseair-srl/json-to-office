@@ -70,6 +70,7 @@ export function usePerformanceMonitor(
   const renderStartTime = useRef<number>(performance.now());
 
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     const renderEndTime = performance.now();
     const renderTime = renderEndTime - renderStartTime.current;
 
@@ -78,6 +79,7 @@ export function usePerformanceMonitor(
 
   const logCustomMetric = useCallback(
     (metricName: string, value: number) => {
+      if (!import.meta.env.DEV) return;
       console.log(
         `[Performance] ${componentName} - ${metricName}: ${value.toFixed(2)}ms`
       );
@@ -97,26 +99,22 @@ export function usePerformanceMonitor(
 export function reportWebVitals(metric: any) {
   const { name, value, id } = metric;
 
-  // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log(`[Web Vitals] ${name}:`, value.toFixed(2), 'ms', `(${id})`);
   }
-
-  // You can send metrics to an analytics service here
-  // Example: analytics.track('web-vitals', { name, value, id });
 }
 
 // React Profiler integration
 export function onRenderCallback(
-  id: string, // the "id" prop of the Profiler tree that has just committed
-  phase: 'mount' | 'update', // either "mount" (if the tree just mounted) or "update" (if it re-rendered)
-  actualDuration: number, // time spent rendering the committed update
-  baseDuration: number, // estimated time to render the entire subtree without memoization
-  _startTime: number, // when React began rendering this update
-  _commitTime: number, // when React committed this update
-  _interactions: Set<any> // the Set of interactions belonging to this update
+  id: string,
+  phase: 'mount' | 'update',
+  actualDuration: number,
+  baseDuration: number,
+  _startTime: number,
+  _commitTime: number,
+  _interactions: Set<any>
 ) {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log(`[Profiler] ${id} (${phase})`, {
       actualDuration: actualDuration.toFixed(2),
       baseDuration: baseDuration.toFixed(2),

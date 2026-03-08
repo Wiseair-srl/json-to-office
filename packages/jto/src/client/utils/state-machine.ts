@@ -99,9 +99,6 @@ export class StateMachine<
 
     // Check guard condition
     if (guard && !guard(this.context)) {
-      console.log(
-        `State machine: Guard prevented transition from '${this.currentState}' to '${targetState}'`
-      );
       return false;
     }
 
@@ -127,9 +124,11 @@ export class StateMachine<
         await Promise.resolve(newStateConfig.entry(this.context));
       }
 
-      console.log(
-        `State machine: Transitioned from '${previousState}' to '${this.currentState}' on event '${event}'`
-      );
+      if (import.meta.env.DEV) {
+        console.log(
+          `State machine: ${previousState} → ${this.currentState} [${event}]`
+        );
+      }
 
       // Notify listeners
       this.notifyListeners();

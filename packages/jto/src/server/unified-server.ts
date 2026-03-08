@@ -81,7 +81,7 @@ export class UnifiedServer {
 
   private async setupDevClient() {
     const { existsSync } = await import('fs');
-    const format = this.adapter.name;
+    const format = this.adapter.name.replace(/[^a-zA-Z0-9]/g, '');
 
     const formatPlugin = {
       name: 'jto-format-inject',
@@ -199,7 +199,7 @@ export class UnifiedServer {
     const { extname } = await import('path');
     const mime = await import('mime-types');
 
-    const format = this.adapter.name;
+    const format = this.adapter.name.replace(/[^a-zA-Z0-9]/g, '');
 
     // Serve static assets
     this.app.use('/assets/*', serveStatic({
@@ -248,7 +248,7 @@ export class UnifiedServer {
 
   private async setupProdClient() {
     const { serveStatic } = await import('@hono/node-server/serve-static');
-    const format = this.adapter.name;
+    const format = this.adapter.name.replace(/[^a-zA-Z0-9]/g, '');
 
     this.app.use('/*', async (c, next) => {
       const path = c.req.path;

@@ -46,7 +46,7 @@ const PreviewFrame = React.forwardRef<
     // PDF blob URLs and remote viewers can be blocked by Chromium-based browsers
     // when loaded in a sandboxed iframe. Keep sandbox only for srcDoc-based preview.
     const iframeSandbox = iframeSrcDoc
-      ? 'allow-same-origin allow-scripts allow-popups allow-forms'
+      ? 'allow-scripts allow-popups allow-forms'
       : undefined;
 
     // Show presentation generation loading state
@@ -84,8 +84,10 @@ const PreviewFrame = React.forwardRef<
               </div>
             </div>
           )}
-          {/* Simple iframe taking full space */}
+          {/* Key forces remount when switching between srcDoc (sandboxed) and
+              src (blob URL, no sandbox) to avoid stale sandbox race condition */}
           <iframe
+            key={iframeSrcDoc ? 'srcdoc' : 'src'}
             ref={ref}
             className="w-full h-full border-0"
             style={{
@@ -98,7 +100,8 @@ const PreviewFrame = React.forwardRef<
             srcDoc={iframeSrcDoc}
             onLoad={handleIframeLoad}
             onError={handleIframeError}
-            // Security
+            // Security: sandbox srcDoc to prevent XSS from rendered HTML.
+            // Blob URLs (src) must NOT be sandboxed without allow-same-origin.
             sandbox={iframeSandbox}
             // Accessibility
             title="Document preview"

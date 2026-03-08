@@ -53,30 +53,15 @@ class IframePool {
     const iframe = document.createElement('iframe');
     iframe.className = 'h-full w-full';
     iframe.style.border = 'none';
+    iframe.sandbox.add('allow-scripts', 'allow-popups');
     iframe.setAttribute('data-pooled', 'true');
     return iframe;
   }
 
   private reset(iframe: HTMLIFrameElement): void {
     try {
-      // Clear iframe content safely
-      if (iframe.contentWindow) {
-        iframe.contentWindow.location.replace('about:blank');
-      }
       iframe.src = 'about:blank';
       iframe.srcdoc = '';
-
-      // Clear any event listeners
-      const newIframe = iframe.cloneNode(true) as HTMLIFrameElement;
-      if (iframe.parentNode) {
-        iframe.parentNode.replaceChild(newIframe, iframe);
-      }
-
-      // Update reference in pool
-      const index = this.pool.indexOf(iframe);
-      if (index !== -1) {
-        this.pool[index] = newIframe;
-      }
     } catch (error) {
       console.warn('Error resetting iframe:', error);
     }

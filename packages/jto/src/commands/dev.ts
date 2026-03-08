@@ -11,7 +11,8 @@ interface DevOptions {
 }
 
 export function createDevCommand(adapter: FormatAdapter): Command {
-  return new Command('dev')
+  const dev = new Command('dev');
+  return dev
     .description('Start development server with web UI')
     .option(
       '-p, --port <port>',
@@ -25,9 +26,18 @@ export function createDevCommand(adapter: FormatAdapter): Command {
       try {
         const config = await loadConfig(options.config);
 
-        // Override config with CLI options
-        if (options.port) config.server.port = parseInt(options.port, 10);
-        if (options.host) config.server.host = options.host;
+        // CLI flag > adapter default > config file default
+        const portSource = dev.getOptionValueSource('port');
+        const hostSource = dev.getOptionValueSource('host');
+        if (portSource === 'cli') {
+          config.server.port = parseInt(options.port!, 10);
+        } else if (config.server.port === 3003 && adapter.defaultPort !== 3003) {
+          // Config still has the generic default — use the adapter-specific port
+          config.server.port = adapter.defaultPort;
+        }
+        if (hostSource === 'cli') {
+          config.server.host = options.host!;
+        }
 
         console.log(
           chalk.blue(
@@ -48,9 +58,9 @@ export function createDevCommand(adapter: FormatAdapter): Command {
 
         // Open browser if requested
         if (options.open) {
-          const { exec } = await import('child_process');
+          const { execFile } = await import('child_process');
           const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-          exec(`${cmd} ${url}`);
+          execFile(cmd, [url]);
         }
 
         // Graceful shutdown

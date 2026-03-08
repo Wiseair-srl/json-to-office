@@ -87,13 +87,12 @@ export const createDocumentsStore = (
                   ctime: new Date(),
                   atime: new Date(),
                 };
-                state.documents.push(newDoc);
-                state.documentTypes[name] = docType;
+                return {
+                  documents: [...state.documents, newDoc],
+                  documentTypes: { ...state.documentTypes, [name]: docType },
+                };
               }
-              return {
-                documents: [...state.documents],
-                documentTypes: { ...state.documentTypes },
-              };
+              return state;
             }),
           deleteDocument: (name) =>
             set((state) => {
@@ -112,104 +111,70 @@ export const createDocumentsStore = (
               const docIndex = state.documents.findIndex(
                 (doc) => doc.name === name
               );
-              if (docIndex !== -1) {
-                // if the document exists
-                const doc = state.documents[docIndex];
-                doc.text = text;
-                doc.mtime = new Date();
-                state.documents[docIndex] = { ...doc }; // update the document
-              }
-              return { documents: [...state.documents] };
+              if (docIndex === -1) return state;
+              const documents = state.documents.map((doc, i) =>
+                i === docIndex ? { ...doc, text, mtime: new Date() } : doc
+              );
+              return { documents };
             }),
           renameDocument: (oldName, newName) =>
             set((state) => {
               const docIndex = state.documents.findIndex(
                 (doc) => doc.name === oldName
               );
-              if (docIndex !== -1) {
-                // if the document exists
-                const doc = state.documents[docIndex];
-                doc.name = newName;
-                doc.ctime = new Date();
-                state.documents[docIndex] = { ...doc }; // update the document
-
-                // Update document type mapping
-                const docType = state.documentTypes[oldName];
-                if (docType) {
-                  const newDocumentTypes = { ...state.documentTypes };
-                  delete newDocumentTypes[oldName];
-                  newDocumentTypes[newName] = docType;
-                  return {
-                    documents: [...state.documents],
-                    documentTypes: newDocumentTypes,
-                  };
-                }
+              if (docIndex === -1) return state;
+              const documents = state.documents.map((doc, i) =>
+                i === docIndex ? { ...doc, name: newName, ctime: new Date() } : doc
+              );
+              const docType = state.documentTypes[oldName];
+              if (docType) {
+                const newDocumentTypes = { ...state.documentTypes };
+                delete newDocumentTypes[oldName];
+                newDocumentTypes[newName] = docType;
+                return { documents, documentTypes: newDocumentTypes };
               }
-              return { documents: [...state.documents] };
+              return { documents };
             }),
           openDocument: (name) =>
             set((state) => {
               const docIndex = state.documents.findIndex(
                 (doc) => doc.name === name
               );
-              if (docIndex !== -1) {
-                // if the document exists
-                const doc = state.documents[docIndex];
-                doc.atime = new Date();
-                state.documents[docIndex] = { ...doc }; // update the document
-                state.documents = [...state.documents]; // update the documents
-                // if not already open tab
-                if (!state.openTabs.includes(name)) {
-                  // remove the first tab if the max number of tabs is reached
-                  if (state.openTabs.length >= MAX_OPEN_TABS) {
-                    state.openTabs.shift();
-                  }
-                  state.openTabs.push(name); // add the new tab
-                  state.openTabs = [...state.openTabs]; // update the openTabs
-                }
-                // activate the tab
-                state.activeTab = name;
+              if (docIndex === -1) return state;
+              const documents = state.documents.map((doc, i) =>
+                i === docIndex ? { ...doc, atime: new Date() } : doc
+              );
+              let openTabs = state.openTabs;
+              if (!openTabs.includes(name)) {
+                openTabs = openTabs.length >= MAX_OPEN_TABS
+                  ? [...openTabs.slice(1), name]
+                  : [...openTabs, name];
               }
-              return {
-                documents: state.documents,
-                openTabs: state.openTabs,
-                activeTab: state.activeTab,
-              };
+              return { documents, openTabs, activeTab: name };
             }),
           closeDocument: (name) =>
             set((state) => {
               const index = state.openTabs.indexOf(name);
-              if (index !== -1) {
-                // if the tab is open
-                state.openTabs = state.openTabs.filter((tab) => tab !== name);
-                // check if the active tab is the one being closed
-                if (state.activeTab === name) {
-                  if (state.openTabs.length) {
-                    // if there are still tabs open
-                    if (index === 0) {
-                      // if first tab, set the active tab to the next one
-                      state.activeTab = state.openTabs[index];
-                    } else {
-                      // if not the first tab, set the active tab to the previous one
-                      state.activeTab = state.openTabs[index - 1];
-                    }
-                  } else {
-                    state.activeTab = ``;
-                  }
+              if (index === -1) return state;
+              const openTabs = state.openTabs.filter((tab) => tab !== name);
+              let activeTab = state.activeTab;
+              if (activeTab === name) {
+                if (openTabs.length) {
+                  activeTab = index === 0 ? openTabs[0] : openTabs[index - 1];
+                } else {
+                  activeTab = '';
                 }
               }
-              return {
-                openTabs: state.openTabs,
-                activeTab: state.activeTab,
-              };
+              return { openTabs, activeTab };
             }),
           setActiveTab: (name) => set({ activeTab: name }),
           setBuildError: (name, buildError) =>
             set((state) => {
-              if (state.buildErrors[name] === buildError) return state; // no change
-              if (buildError) state.buildErrors[name] = buildError;
-              else delete state.buildErrors[name];
-              return { buildErrors: { ...state.buildErrors } };
+              if (state.buildErrors[name] === buildError) return state;
+              const buildErrors = { ...state.buildErrors };
+              if (buildError) buildErrors[name] = buildError;
+              else delete buildErrors[name];
+              return { buildErrors };
             }),
           setPendingDiff: (name, original, modified) =>
             set((state) => {

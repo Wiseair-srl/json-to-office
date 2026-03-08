@@ -19,7 +19,7 @@ export const rateLimiter = (options: RateLimitOptions): MiddlewareHandler => {
   return async (c, next) => {
     const key = keyGenerator
       ? keyGenerator(c)
-      : c.req.header('X-Forwarded-For') || 'anonymous';
+      : c.req.header('X-Real-IP') || c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() || 'anonymous';
     const now = Date.now();
 
     // Clean up expired entries
