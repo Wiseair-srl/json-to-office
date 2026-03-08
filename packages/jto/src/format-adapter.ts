@@ -14,6 +14,7 @@ export interface GeneratorOptions {
 
 export interface GeneratorResult {
   generateBuffer: (document: any) => Promise<Buffer>;
+  getStandardComponentsDefinition?: (config: any) => Promise<any>;
   hasPlugins: boolean;
   pluginNames: string[];
 }
@@ -41,6 +42,9 @@ export interface FormatAdapter {
   loadCustomThemes(
     options: GeneratorOptions
   ): Promise<Record<string, any> | undefined>;
+
+  getComponentCacheStats?(): Promise<any>;
+  getComponentCacheAnalytics?(): Promise<any>;
 }
 
 export class DocxFormatAdapter implements FormatAdapter {
@@ -105,6 +109,9 @@ export class DocxFormatAdapter implements FormatAdapter {
         // generateBuffer returns BufferGenerationResult { buffer, warnings }
         return result.buffer;
       },
+      getStandardComponentsDefinition: generator.getStandardComponentsDefinition
+        ? (config: any) => generator.getStandardComponentsDefinition(config)
+        : undefined,
       hasPlugins: true,
       pluginNames,
     };
@@ -201,6 +208,82 @@ export class DocxFormatAdapter implements FormatAdapter {
     }
 
     return Object.keys(customThemes).length > 0 ? customThemes : undefined;
+  }
+
+  async getComponentCacheStats(): Promise<any> {
+    try {
+      const core = await import('@json-to-office/core-docx');
+      const stats = core.getComponentCacheStats?.();
+      if (!stats) return null;
+      // Convert componentStats Map to serializable format matching client's ComponentCacheData
+      const componentStats = Array.from(
+        (stats.componentStats as Map<string, any>).entries()
+      ).map(([, s]: [string, any]) => {
+        const total = s.hits + s.misses;
+        const hitRate = total > 0 ? s.hits / total : 0;
+        return {
+          type: s.name,
+          hits: s.hits,
+          misses: s.misses,
+          avgProcessTime: s.avgProcessTime,
+          avgSize: s.avgSize,
+          entries: s.entries,
+          hitRate,
+          missRate: total > 0 ? s.misses / total : 0,
+          totalRequests: total,
+          memoryUsage: s.entries * s.avgSize,
+          efficiencyScore: Math.round(hitRate * 100),
+        };
+      });
+      return {
+        entries: stats.entries,
+        totalSize: stats.totalSize,
+        hitRate: stats.hitRate,
+        missRate: stats.missRate,
+        totalHits: stats.totalHits,
+        totalMisses: stats.totalMisses,
+        avgResponseTime: stats.avgResponseTime,
+        evictions: stats.evictions,
+        componentStats,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async getComponentCacheAnalytics(): Promise<any> {
+    try {
+      const core = await import('@json-to-office/core-docx');
+      const stats = core.getComponentCacheStats?.();
+      if (!stats) return null;
+      const analytics = new core.ComponentCacheAnalytics();
+      const report = analytics.analyzeCache(stats);
+      // Remap componentMetrics field names for client compatibility
+      return {
+        ...report,
+        componentMetrics: report.componentMetrics.map((m: any) => ({
+          componentType: m.componentName,
+          hitRate: m.hitRate,
+          totalRequests: m.totalRequests,
+          avgHitTime: m.avgHitTime,
+          avgMissTime: m.avgMissTime,
+          efficiencyScore: m.efficiencyScore,
+          memoryUsage: m.memoryUsage,
+          timeSaved: m.timeSaved,
+          costBenefitRatio: m.costBenefitRatio,
+        })),
+        recommendations: report.recommendations.map((r: any) => ({
+          componentType: r.componentName,
+          type: r.type,
+          description: r.description,
+          expectedImprovement: r.expectedImprovement,
+          priority: r.priority,
+          reasoning: r.reasoning,
+        })),
+      };
+    } catch {
+      return null;
+    }
   }
 }
 

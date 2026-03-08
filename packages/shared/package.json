@@ -26,6 +26,11 @@
       "import": "./dist/validation/parsers/*.js",
       "default": "./dist/validation/parsers/*.js"
     },
+    "./cache": {
+      "types": "./dist/cache/index.d.ts",
+      "import": "./dist/cache/index.js",
+      "default": "./dist/cache/index.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "import": "./dist/*.js",

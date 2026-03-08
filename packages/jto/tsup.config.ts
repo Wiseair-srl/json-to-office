@@ -6,6 +6,29 @@ const packageJson = JSON.parse(
   readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
 );
 
+const commonExternal = [
+  '@json-to-office/shared',
+  '@json-to-office/shared-docx',
+  '@json-to-office/shared-pptx',
+  '@json-to-office/core-docx',
+  '@json-to-office/core-pptx',
+  'tsx',
+  'tsx/esm/api',
+  'prompts',
+  'ajv',
+  'ajv-formats',
+  'cosmiconfig',
+  'glob',
+  // Server deps (externalized to reduce bundle size)
+  'hono',
+  '@hono/node-server',
+  '@hono/node-server/serve-static',
+  'vite',
+  'lru-cache',
+  'dotenv',
+  'mime-types',
+];
+
 export default defineConfig([
   // CLI entry with shebang
   {
@@ -22,20 +45,8 @@ export default defineConfig([
     define: {
       __PACKAGE_VERSION__: JSON.stringify(packageJson.version),
     },
-    external: [
-      '@json-to-office/shared',
-      '@json-to-office/shared-docx',
-      '@json-to-office/shared-pptx',
-      '@json-to-office/core-docx',
-      '@json-to-office/core-pptx',
-      'tsx',
-      'tsx/esm/api',
-      'prompts',
-      'ajv',
-      'ajv-formats',
-      'cosmiconfig',
-      'glob',
-    ],
+    external: commonExternal,
+    // Exclude client directory from server build
     esbuildOptions(options) {
       options.platform = 'node';
       options.target = 'node18';
@@ -59,20 +70,7 @@ export default defineConfig([
     define: {
       __PACKAGE_VERSION__: JSON.stringify(packageJson.version),
     },
-    external: [
-      '@json-to-office/shared',
-      '@json-to-office/shared-docx',
-      '@json-to-office/shared-pptx',
-      '@json-to-office/core-docx',
-      '@json-to-office/core-pptx',
-      'tsx',
-      'tsx/esm/api',
-      'prompts',
-      'ajv',
-      'ajv-formats',
-      'cosmiconfig',
-      'glob',
-    ],
+    external: commonExternal,
     esbuildOptions(options) {
       options.platform = 'node';
       options.target = 'node18';

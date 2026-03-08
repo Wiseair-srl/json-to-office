@@ -1,0 +1,51 @@
+{
+  "name": "presentation",
+  "props": {
+    "title": "Training Manual",
+    "author": "Training Department",
+    "subject": "Employee Onboarding"
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        { "name": "text", "props": { "text": "Employee Onboarding", "fontSize": 36, "bold": true, "y": 2, "x": 1, "w": 8 } },
+        { "name": "text", "props": { "text": "Training Manual 2024", "fontSize": 20, "y": 3, "x": 1, "w": 8 } }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        { "name": "text", "props": { "text": "Welcome", "fontSize": 28, "bold": true, "y": 0.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Welcome to the team! This training covers:", "fontSize": 16, "y": 1.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "- Company culture and values", "fontSize": 16, "y": 2.2, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "- Tools and systems overview", "fontSize": 16, "y": 2.9, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "- Key policies and procedures", "fontSize": 16, "y": 3.6, "x": 0.5, "w": 9 } }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        { "name": "text", "props": { "text": "Getting Started", "fontSize": 28, "bold": true, "y": 0.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Step 1: Set up your workstation and accounts", "fontSize": 16, "y": 1.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Step 2: Complete required compliance training", "fontSize": 16, "y": 2.2, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Step 3: Meet your team and manager", "fontSize": 16, "y": 2.9, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Step 4: Review your first-week objectives", "fontSize": 16, "y": 3.6, "x": 0.5, "w": 9 } }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        { "name": "text", "props": { "text": "Resources & Support", "fontSize": 28, "bold": true, "y": 0.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "IT Help Desk: helpdesk@company.com", "fontSize": 16, "y": 1.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "HR Contact: hr@company.com", "fontSize": 16, "y": 2.2, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Internal Wiki: wiki.company.internal", "fontSize": 16, "y": 2.9, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Your buddy/mentor will be assigned on Day 1", "fontSize": 16, "y": 3.6, "x": 0.5, "w": 9 } }
+      ]
+    }
+  ]
+}

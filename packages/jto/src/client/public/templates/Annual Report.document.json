@@ -1,0 +1,49 @@
+{
+  "name": "presentation",
+  "props": {
+    "title": "Annual Report 2024",
+    "author": "GlobalTech Industries",
+    "subject": "Annual Report"
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        { "name": "text", "props": { "text": "Annual Report 2024", "fontSize": 36, "bold": true, "y": 2, "x": 1, "w": 8 } },
+        { "name": "text", "props": { "text": "GlobalTech Industries", "fontSize": 20, "y": 3, "x": 1, "w": 8 } }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        { "name": "text", "props": { "text": "Executive Summary", "fontSize": 28, "bold": true, "y": 0.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Key achievements and milestones for the fiscal year 2024.", "fontSize": 16, "y": 1.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Revenue growth of 15% year-over-year.", "fontSize": 16, "y": 2.2, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Expanded operations to 3 new markets.", "fontSize": 16, "y": 2.9, "x": 0.5, "w": 9 } }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        { "name": "text", "props": { "text": "Financial Highlights", "fontSize": 28, "bold": true, "y": 0.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Total Revenue: $50M", "fontSize": 16, "y": 1.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Net Income: $8.5M", "fontSize": 16, "y": 2.2, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Operating Margin: 17%", "fontSize": 16, "y": 2.9, "x": 0.5, "w": 9 } }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        { "name": "text", "props": { "text": "Looking Ahead", "fontSize": 28, "bold": true, "y": 0.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "Strategic priorities for 2025:", "fontSize": 16, "y": 1.5, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "1. Product innovation and R&D investment", "fontSize": 16, "y": 2.2, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "2. Market expansion in Asia-Pacific", "fontSize": 16, "y": 2.9, "x": 0.5, "w": 9 } },
+        { "name": "text", "props": { "text": "3. Sustainability and ESG initiatives", "fontSize": 16, "y": 3.6, "x": 0.5, "w": 9 } }
+      ]
+    }
+  ]
+}

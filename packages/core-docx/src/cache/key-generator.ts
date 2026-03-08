@@ -5,7 +5,7 @@
 
 import { createHash } from 'crypto';
 import { ComponentDefinition, RenderContext } from '../types';
-import { CacheKeyOptions } from './types';
+import { CacheKeyOptions } from '@json-to-office/shared/cache';
 
 /**
  * Cache key generator with deterministic hashing

@@ -7,6 +7,7 @@ export default defineConfig({
     'src/validation/unified/index.ts',
     'src/utils/semver.ts',
     'src/types/warnings.ts',
+    'src/cache/index.ts',
   ],
   format: ['esm'],
   dts: {
@@ -18,5 +19,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: 'es2022',
-  external: ['@sinclair/typebox', 'ajv', 'ajv-formats'],
+  external: ['@sinclair/typebox', 'ajv', 'ajv-formats', 'events'],
 });

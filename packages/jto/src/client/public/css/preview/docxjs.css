@@ -1,0 +1,11 @@
+body {
+    padding: 0;
+    margin: 0;
+    background: gray;
+}
+
+.docx-wrapper {
+    background: transparent;
+    width: fit-content;
+    margin: 0 auto;
+}

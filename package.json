@@ -32,10 +32,8 @@
 
     "\n\n=== CLI ===": "",
     "cli": "tsx packages/jto/src/cli.ts",
-    "cli:dev": "tsx packages/jto/src/cli.ts docx dev",
-
-    "\n\n=== VALIDATION ===": "",
-    "generate-schemas": "node scripts/generate-schemas.mjs",
+    "cli:dev:docx": "tsx packages/jto/src/cli.ts docx dev",
+    "cli:dev:pptx": "tsx packages/jto/src/cli.ts pptx dev",
 
     "\n\n=== GIT HOOKS ===": "",
     "prepare": "husky"
