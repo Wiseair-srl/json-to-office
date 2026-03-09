@@ -7,6 +7,7 @@ import { PluginRegistry } from '../services/plugin-registry.js';
 import { PluginConfigService } from '../config/plugin-config.js';
 import { SchemaGenerator } from '../services/schema-generator.js';
 import { loadPlugins } from './shared.js';
+import { createTable, shortPath, formatTiming, formatError, EXIT_CODES } from './ui.js';
 
 interface JsonSchemaOptions {
   outputDir?: string;
@@ -40,6 +41,7 @@ export function createSchemasCommand(adapter: FormatAdapter): Command {
     )
     .action(async (options: JsonSchemaOptions) => {
       const spinner = ora('Initializing...').start();
+      const startTime = performance.now();
 
       try {
         const configService = PluginConfigService.getInstance();
@@ -68,26 +70,23 @@ export function createSchemasCommand(adapter: FormatAdapter): Command {
           generateOptions
         );
 
-        spinner.succeed('Schema generation completed!');
+        spinner.succeed(`Schema generation completed! ${formatTiming(startTime)}`);
+
+        const rows: string[][] = [];
+        if (results.document) {
+          rows.push(['Document', shortPath(results.document)]);
+        }
+        if (results.theme) {
+          rows.push(['Theme', shortPath(results.theme)]);
+        }
+        if (results.components) {
+          for (const componentPath of results.components) {
+            rows.push(['Component', shortPath(componentPath)]);
+          }
+        }
 
         console.log(`\n${chalk.bold('Generated Schemas:')}\n`);
-
-        if (results.document) {
-          console.log(chalk.cyan('  Document Schema:'));
-          console.log(chalk.dim(`    ${results.document}`));
-        }
-
-        if (results.theme) {
-          console.log(chalk.cyan('  Theme Schema:'));
-          console.log(chalk.dim(`    ${results.theme}`));
-        }
-
-        if (results.components && results.components.length > 0) {
-          console.log(chalk.cyan('  Component Schemas:'));
-          results.components.forEach((componentPath) => {
-            console.log(chalk.dim(`    ${componentPath}`));
-          });
-        }
+        console.log(createTable(['Type', 'Path'], rows));
 
         const registry = PluginRegistry.getInstance();
         const loadedPlugins = registry.getPlugins();
@@ -104,13 +103,12 @@ export function createSchemasCommand(adapter: FormatAdapter): Command {
 
         console.log('\n' + chalk.green('Schemas are ready for use!'));
 
-        PluginRegistry.cleanup();
-        process.exit(0);
+        PluginRegistry.getInstance().clear();
       } catch (error: any) {
         spinner.fail('Schema generation failed');
-        console.error(chalk.red('\nError:'), error.message);
-        PluginRegistry.cleanup();
-        process.exit(1);
+        formatError(error);
+        PluginRegistry.getInstance().clear();
+        process.exit(EXIT_CODES.FAIL);
       }
     })
     .addHelpText(

@@ -186,10 +186,10 @@ export function renderTocComponent(
         Object.prototype.hasOwnProperty.call(theme.styles, styleId);
       const styleDisplayName = isCustomStyle
         ? styleId
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/[-_]+/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/[-_]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
         : styleId; // If it's not a custom style key, assume it's already a display name
 
       stylesWithLevels.push(
@@ -262,10 +262,10 @@ export function renderTocComponent(
     // Boolean: true = "\t" (tab, default), false = " " (space)
     ...(componentProps.numberSeparator !== undefined
       ? {
-          entryAndPageNumberSeparator: componentProps.numberSeparator
-            ? '\t'
-            : ' ',
-        }
+        entryAndPageNumberSeparator: componentProps.numberSeparator
+          ? '\t'
+          : ' ',
+      }
       : { entryAndPageNumberSeparator: '\t' }), // default to tab
   };
 

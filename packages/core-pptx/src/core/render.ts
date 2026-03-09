@@ -7,6 +7,7 @@ import PptxGenJS from 'pptxgenjs';
 import type { ProcessedPresentation } from '../types';
 import { renderComponent } from '../components';
 import { resolveComponentGridPosition } from './grid';
+import { toHex } from '../utils/color';
 
 export function renderPresentation(
   processed: ProcessedPresentation
@@ -45,7 +46,7 @@ export function renderPresentation(
     // Apply slide background
     if (slideData.background) {
       if (slideData.background.color) {
-        slide.background = { color: slideData.background.color };
+        slide.background = { color: toHex(slideData.background.color) };
       } else if (slideData.background.image) {
         if (slideData.background.image.path) {
           slide.background = { path: slideData.background.image.path };

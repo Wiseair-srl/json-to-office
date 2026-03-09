@@ -6,7 +6,7 @@ import { FORMAT } from '../lib/env';
 export type SettingsState = Settings;
 
 export type SettingsActions = {
-  setSettings: (settings: Settings) => void;
+  setSettings: (settings: Partial<Settings>) => void;
 };
 
 export type SettingsStore = SettingsState & SettingsActions;

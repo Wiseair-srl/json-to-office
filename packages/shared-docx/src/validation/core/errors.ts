@@ -285,12 +285,12 @@ export function getValidationContext(path: string): string {
 
   // Identify props context
   if (pathParts.includes('props')) {
-    return `props section`;
+    return 'props section';
   }
 
   // Identify theme context
   if (pathParts.includes('theme')) {
-    return `theme configuration`;
+    return 'theme configuration';
   }
 
   return pathParts.join(' > ');

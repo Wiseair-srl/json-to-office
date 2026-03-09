@@ -83,14 +83,14 @@ function getAlignment(
   alignment: string
 ): (typeof AlignmentType)[keyof typeof AlignmentType] {
   switch (alignment) {
-    case 'center':
-      return AlignmentType.CENTER;
-    case 'right':
-      return AlignmentType.RIGHT;
-    case 'justify':
-      return AlignmentType.JUSTIFIED;
-    default:
-      return AlignmentType.LEFT;
+  case 'center':
+    return AlignmentType.CENTER;
+  case 'right':
+    return AlignmentType.RIGHT;
+  case 'justify':
+    return AlignmentType.JUSTIFIED;
+  default:
+    return AlignmentType.LEFT;
   }
 }
 

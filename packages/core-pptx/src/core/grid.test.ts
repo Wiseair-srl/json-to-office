@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { resolveGridPosition, resolveComponentGridPosition, DEFAULT_GRID_CONFIG } from './grid';
+import { resolveGridPosition, resolveComponentGridPosition } from './grid';
 
 describe('resolveGridPosition', () => {
   const slideW = 10;

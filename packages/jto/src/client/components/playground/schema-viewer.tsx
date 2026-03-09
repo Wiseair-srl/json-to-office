@@ -1,11 +1,8 @@
 import React, { useState, memo } from 'react';
-import { ChevronDown, ChevronRight, Copy, Check, FileJson } from 'lucide-react';
-import { Button } from '../ui/button';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
-import { copySchemaToClipboard } from '../../lib/clipboard';
 import { cn } from '../../lib/utils';
 
 interface SchemaViewerProps {
@@ -13,7 +10,6 @@ interface SchemaViewerProps {
   loading?: boolean;
   error?: string;
   className?: string;
-  onCopy?: () => void;
 }
 
 /**
@@ -31,7 +27,7 @@ const JsonNode = memo(
     depth?: number;
     isLast?: boolean;
   }) => {
-    const [isExpanded, setIsExpanded] = useState(depth < 2); // Auto-expand first 2 levels
+    const [isExpanded, setIsExpanded] = useState(depth < 2);
     const isObject = value !== null && typeof value === 'object';
     const isArray = Array.isArray(value);
 
@@ -46,7 +42,6 @@ const JsonNode = memo(
       if (typeof value === 'number')
         return <span className="text-green-500">{value}</span>;
       if (typeof value === 'string') {
-        // Special handling for certain string patterns
         if (value.startsWith('http')) {
           return <span className="text-purple-500">"{value}"</span>;
         }
@@ -111,23 +106,23 @@ const JsonNode = memo(
           <div className="ml-4">
             {isArray
               ? value.map((item: any, index: number) => (
-                  <JsonNode
-                    key={index}
-                    keyName={String(index)}
-                    value={item}
-                    depth={depth + 1}
-                    isLast={index === value.length - 1}
-                  />
-                ))
+                <JsonNode
+                  key={index}
+                  keyName={String(index)}
+                  value={item}
+                  depth={depth + 1}
+                  isLast={index === value.length - 1}
+                />
+              ))
               : Object.entries(value).map(([key, val], index, arr) => (
-                  <JsonNode
-                    key={key}
-                    keyName={key}
-                    value={val}
-                    depth={depth + 1}
-                    isLast={index === arr.length - 1}
-                  />
-                ))}
+                <JsonNode
+                  key={key}
+                  keyName={key}
+                  value={val}
+                  depth={depth + 1}
+                  isLast={index === arr.length - 1}
+                />
+              ))}
             <div className="ml-4">
               <span className="text-muted-foreground">
                 {isArray ? ']' : '}'}
@@ -144,46 +139,10 @@ const JsonNode = memo(
 JsonNode.displayName = 'JsonNode';
 
 /**
- * Schema viewer component with syntax highlighting and copy functionality
+ * Schema viewer component with collapsible JSON tree
  */
 export const SchemaViewer = memo(
-  ({
-    schema,
-    loading = false,
-    error,
-    className,
-    onCopy,
-  }: SchemaViewerProps) => {
-    const [copied, setCopied] = useState(false);
-    const [copyError, setCopyError] = useState<string | null>(null);
-
-    const handleCopy = async () => {
-      setCopyError(null);
-      try {
-        const success = await copySchemaToClipboard(schema);
-        if (success) {
-          setCopied(true);
-          onCopy?.();
-          setTimeout(() => setCopied(false), 2000);
-        } else {
-          setCopyError('Failed to copy schema to clipboard');
-        }
-      } catch (error) {
-        console.error('Copy failed:', error);
-        setCopyError('An error occurred while copying');
-      }
-    };
-
-    // Extract metadata from schema
-    const metadata = schema
-      ? {
-          title: schema.title,
-          description: schema.description,
-          version: schema.$id || schema.version,
-          schemaVersion: schema.$schema,
-        }
-      : null;
-
+  ({ schema, loading = false, error, className }: SchemaViewerProps) => {
     if (loading) {
       return (
         <div className={cn('space-y-4', className)}>
@@ -211,79 +170,11 @@ export const SchemaViewer = memo(
     }
 
     return (
-      <div className={cn('space-y-4', className)}>
-        {/* Metadata Section */}
-        {metadata && (metadata.title || metadata.description) && (
-          <div className="space-y-2">
-            {metadata.title && (
-              <div className="flex items-center gap-2">
-                <FileJson className="h-5 w-5 text-muted-foreground" />
-                <h3 className="text-lg font-semibold">{metadata.title}</h3>
-                {metadata.version && (
-                  <Badge variant="outline" className="text-xs">
-                    {metadata.version}
-                  </Badge>
-                )}
-              </div>
-            )}
-            {metadata.description && (
-              <p className="text-sm text-muted-foreground">
-                {metadata.description}
-              </p>
-            )}
-            {metadata.schemaVersion && (
-              <p className="text-xs text-muted-foreground">
-                Schema: {metadata.schemaVersion}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Copy Button */}
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopy}
-            disabled={copied}
-          >
-            {copied ? (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Schema
-              </>
-            )}
-          </Button>
+      <ScrollArea className={cn('h-full w-full rounded-md border bg-muted/10 p-4', className)}>
+        <div className="font-mono text-xs">
+          <JsonNode value={schema} />
         </div>
-
-        {/* Copy Error Alert */}
-        {copyError && (
-          <Alert variant="destructive">
-            <AlertDescription>{copyError}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Schema Tree View */}
-        <ScrollArea className="h-[500px] w-full rounded-md border bg-muted/10 p-4">
-          <div className="font-mono text-xs">
-            <JsonNode value={schema} />
-          </div>
-        </ScrollArea>
-
-        {/* Info Footer */}
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>• Click on arrows to expand/collapse sections</p>
-          <p>
-            • This is a read-only view of the JSON schema used for validation
-          </p>
-          <p>• Use the Copy button to copy the full schema to your clipboard</p>
-        </div>
-      </div>
+      </ScrollArea>
     );
   }
 );

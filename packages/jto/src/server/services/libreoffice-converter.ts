@@ -3,7 +3,6 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { config } from '../config/index.js';
-import { logger } from '../utils/logger.js';
 
 const DEFAULT_CONVERSION_TIMEOUT_MS = 30000;
 const BINARY_PROBE_TIMEOUT_MS = 5000;

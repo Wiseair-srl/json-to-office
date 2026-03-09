@@ -32,26 +32,26 @@ export async function loadJsonDefinition(
       const fsError = error as Error & { code?: string };
 
       switch (fsError.code) {
-        case 'ENOENT':
-          throw new JsonFileError(
-            `File not found: ${filePath}`,
-            'FILE_NOT_FOUND'
-          );
-        case 'EACCES':
-          throw new JsonFileError(
-            `Permission denied: ${filePath}`,
-            'PERMISSION_DENIED'
-          );
-        case 'EISDIR':
-          throw new JsonFileError(
-            `Path is a directory: ${filePath}`,
-            'IS_DIRECTORY'
-          );
-        default:
-          throw new JsonFileError(
-            `File system error: ${fsError.message}`,
-            'FS_ERROR'
-          );
+      case 'ENOENT':
+        throw new JsonFileError(
+          `File not found: ${filePath}`,
+          'FILE_NOT_FOUND'
+        );
+      case 'EACCES':
+        throw new JsonFileError(
+          `Permission denied: ${filePath}`,
+          'PERMISSION_DENIED'
+        );
+      case 'EISDIR':
+        throw new JsonFileError(
+          `Path is a directory: ${filePath}`,
+          'IS_DIRECTORY'
+        );
+      default:
+        throw new JsonFileError(
+          `File system error: ${fsError.message}`,
+          'FS_ERROR'
+        );
       }
     }
 
@@ -89,9 +89,9 @@ export async function loadJsonDefinitionSafe(filePath: string): Promise<{
         error instanceof JsonFileError
           ? error
           : new JsonFileError(
-              error instanceof Error ? error.message : String(error),
-              'UNKNOWN_ERROR'
-            ),
+            error instanceof Error ? error.message : String(error),
+            'UNKNOWN_ERROR'
+          ),
     };
   }
 }
@@ -177,27 +177,27 @@ export async function checkJsonFile(filePath: string): Promise<{
       const fsError = error as Error & { code?: string };
 
       switch (fsError.code) {
-        case 'ENOENT':
-          return {
-            exists: false,
-            readable: false,
-            isDirectory: false,
-            error: 'File not found',
-          };
-        case 'EACCES':
-          return {
-            exists: true,
-            readable: false,
-            isDirectory: false,
-            error: 'Permission denied',
-          };
-        default:
-          return {
-            exists: false,
-            readable: false,
-            isDirectory: false,
-            error: fsError.message,
-          };
+      case 'ENOENT':
+        return {
+          exists: false,
+          readable: false,
+          isDirectory: false,
+          error: 'File not found',
+        };
+      case 'EACCES':
+        return {
+          exists: true,
+          readable: false,
+          isDirectory: false,
+          error: 'Permission denied',
+        };
+      default:
+        return {
+          exists: false,
+          readable: false,
+          isDirectory: false,
+          error: fsError.message,
+        };
       }
     }
 
@@ -228,26 +228,26 @@ export async function findJsonFiles(directoryPath: string): Promise<string[]> {
       const fsError = error as Error & { code?: string };
 
       switch (fsError.code) {
-        case 'ENOENT':
-          throw new JsonFileError(
-            `Directory not found: ${directoryPath}`,
-            'DIRECTORY_NOT_FOUND'
-          );
-        case 'ENOTDIR':
-          throw new JsonFileError(
-            `Path is not a directory: ${directoryPath}`,
-            'NOT_DIRECTORY'
-          );
-        case 'EACCES':
-          throw new JsonFileError(
-            `Permission denied: ${directoryPath}`,
-            'PERMISSION_DENIED'
-          );
-        default:
-          throw new JsonFileError(
-            `Directory error: ${fsError.message}`,
-            'DIRECTORY_ERROR'
-          );
+      case 'ENOENT':
+        throw new JsonFileError(
+          `Directory not found: ${directoryPath}`,
+          'DIRECTORY_NOT_FOUND'
+        );
+      case 'ENOTDIR':
+        throw new JsonFileError(
+          `Path is not a directory: ${directoryPath}`,
+          'NOT_DIRECTORY'
+        );
+      case 'EACCES':
+        throw new JsonFileError(
+          `Permission denied: ${directoryPath}`,
+          'PERMISSION_DENIED'
+        );
+      default:
+        throw new JsonFileError(
+          `Directory error: ${fsError.message}`,
+          'DIRECTORY_ERROR'
+        );
       }
     }
 
@@ -300,21 +300,21 @@ export async function saveJsonDefinition(
       const fsError = error as Error & { code?: string };
 
       switch (fsError.code) {
-        case 'EACCES':
-          throw new JsonFileError(
-            `Permission denied: ${filePath}`,
-            'PERMISSION_DENIED'
-          );
-        case 'ENOSPC':
-          throw new JsonFileError(
-            `No space left on device: ${filePath}`,
-            'NO_SPACE'
-          );
-        default:
-          throw new JsonFileError(
-            `Write error: ${fsError.message}`,
-            'WRITE_ERROR'
-          );
+      case 'EACCES':
+        throw new JsonFileError(
+          `Permission denied: ${filePath}`,
+          'PERMISSION_DENIED'
+        );
+      case 'ENOSPC':
+        throw new JsonFileError(
+          `No space left on device: ${filePath}`,
+          'NO_SPACE'
+        );
+      default:
+        throw new JsonFileError(
+          `Write error: ${fsError.message}`,
+          'WRITE_ERROR'
+        );
       }
     }
 

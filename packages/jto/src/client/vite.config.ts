@@ -37,7 +37,7 @@ export default defineConfig({
           if (id.includes('zustand')) return 'state-vendor';
           if (id.includes('docx-preview')) return 'docx-preview';
         },
-        chunkFileNames: () => `assets/[name]-[hash].js`,
+        chunkFileNames: () => 'assets/[name]-[hash].js',
       },
     },
     chunkSizeWarningLimit: 500,

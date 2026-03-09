@@ -28,6 +28,7 @@ import {
 } from '../ui/select';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useThemesStore } from '../../store/themes-store-provider';
+import { useChatStore } from '../../store/chat-store-provider';
 import type { Mode } from '../../lib/types';
 import type { DocumentMetadata, ThemeMetadata } from '../../hooks/useDiscovery';
 import {
@@ -103,6 +104,8 @@ function DocumentFormDialogContent({
     closeDocument,
   } = useDocumentsStore((state) => state);
   const { updateTheme } = useThemesStore((state) => state);
+  const renameThreadsForDocument = useChatStore((s) => s.renameThreadsForDocument);
+  const deleteThreadsForDocument = useChatStore((s) => s.deleteThreadsForDocument);
 
   // Prepare discovered items for the form
   const discoveredItems: DiscoveredItem[] = useMemo(() => {
@@ -275,53 +278,53 @@ function DocumentFormDialogContent({
             JSON.stringify(
               FORMAT === 'docx'
                 ? {
-                    name: 'report',
-                    props: {
-                      title:
+                  name: 'report',
+                  props: {
+                    title:
                         docItem?.title || finalName.replace(/\.(json|js)$/i, ''),
-                      theme: docItem?.theme || 'default',
-                    },
-                    children: [
-                      {
-                        name: 'section',
-                        props: {},
-                        children: [
-                          {
-                            name: 'paragraph',
-                            props: {
-                              text: 'Start writing your document content here...',
-                            },
-                          },
-                        ],
-                      },
-                    ],
-                  }
-                : {
-                    name: 'presentation',
-                    props: {
-                      title:
-                        docItem?.title || finalName.replace(/\.(json|js)$/i, ''),
-                      theme: docItem?.theme || 'default',
-                    },
-                    children: [
-                      {
-                        name: 'slide',
-                        props: {},
-                        children: [
-                          {
-                            name: 'text',
-                            props: {
-                              text: 'Start writing your presentation content here...',
-                              fontSize: 24,
-                              y: 2,
-                              x: 1,
-                              w: 8,
-                            },
-                          },
-                        ],
-                      },
-                    ],
+                    theme: docItem?.theme || 'default',
                   },
+                  children: [
+                    {
+                      name: 'section',
+                      props: {},
+                      children: [
+                        {
+                          name: 'paragraph',
+                          props: {
+                            text: 'Start writing your document content here...',
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                }
+                : {
+                  name: 'presentation',
+                  props: {
+                    title:
+                        docItem?.title || finalName.replace(/\.(json|js)$/i, ''),
+                    theme: docItem?.theme || 'default',
+                  },
+                  children: [
+                    {
+                      name: 'slide',
+                      props: {},
+                      children: [
+                        {
+                          name: 'text',
+                          props: {
+                            text: 'Start writing your presentation content here...',
+                            fontSize: 24,
+                            y: 2,
+                            x: 1,
+                            w: 8,
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
               null,
               2
             );
@@ -347,11 +350,13 @@ function DocumentFormDialogContent({
         const isOpen = openTabs.includes(oldName);
         if (isOpen) closeDocument(oldName);
         renameDocument(oldName, newName);
+        renameThreadsForDocument(oldName, newName);
         if (isOpen) openDocument(newName);
       } else if (mode === 'delete') {
         const oldName = selectedName as string;
         closeDocument(oldName);
         deleteDocument(oldName);
+        deleteThreadsForDocument(oldName);
       }
       postSubmit();
     } finally {

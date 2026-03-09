@@ -67,8 +67,6 @@ export function DocumentGenerationLoader({
         {stages.map((stage, index) => {
           const isActive = index === currentStageIndex;
           const isCompleted = index < currentStageIndex;
-          const progress = isCompleted ? 100 : isActive ? 60 : 0;
-
           return (
             <div key={stage} className="space-y-2">
               <div className="flex justify-between text-xs">
@@ -94,10 +92,10 @@ export function DocumentGenerationLoader({
                     isCompleted
                       ? 'bg-green-500'
                       : isActive
-                        ? 'bg-primary'
+                        ? 'bg-primary animate-pulse'
                         : 'bg-transparent'
                   )}
-                  style={{ width: `${progress}%` }}
+                  style={{ width: isCompleted ? '100%' : isActive ? '100%' : '0%' }}
                 />
               </div>
             </div>
@@ -119,23 +117,23 @@ export function PreviewLoading({
 }: PreviewLoadingProps) {
   const getLibraryInfo = (library?: string) => {
     switch (library) {
-      case 'LibreOffice':
-        return {
-          name: 'LibreOffice',
-          description: 'Converting PPTX to PDF locally...',
-        };
-      case 'Office':
-        return {
-          name: 'Microsoft Office',
-          description: 'Uploading file and loading Office viewer...',
-        };
-      case 'Docs':
-        return {
-          name: 'Google Docs',
-          description: 'Uploading file and loading Docs viewer...',
-        };
-      default:
-        return { name: 'Default', description: 'Processing document...' };
+    case 'LibreOffice':
+      return {
+        name: 'LibreOffice',
+        description: 'Converting PPTX to PDF locally...',
+      };
+    case 'Office':
+      return {
+        name: 'Microsoft Office',
+        description: 'Uploading file and loading Office viewer...',
+      };
+    case 'Docs':
+      return {
+        name: 'Google Docs',
+        description: 'Uploading file and loading Docs viewer...',
+      };
+    default:
+      return { name: 'Default', description: 'Processing document...' };
     }
   };
 

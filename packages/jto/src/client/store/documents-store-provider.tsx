@@ -38,7 +38,7 @@ export const useDocumentsStore = <T,>(
 
   if (!documentsStoreContext) {
     throw new Error(
-      `useDocumentsStore must be used within DocumentsStoreProvider`
+      'useDocumentsStore must be used within DocumentsStoreProvider'
     );
   }
 

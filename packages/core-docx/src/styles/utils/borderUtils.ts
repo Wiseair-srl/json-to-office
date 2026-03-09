@@ -28,16 +28,16 @@ export function mapBorderStyle(
   s?: string
 ): (typeof BorderStyle)[keyof typeof BorderStyle] {
   switch (s) {
-    case 'dashed':
-      return BorderStyle.DASHED;
-    case 'dotted':
-      return BorderStyle.DOTTED;
-    case 'double':
-      return BorderStyle.DOUBLE;
-    case 'none':
-      return BorderStyle.NONE;
-    default:
-      return BorderStyle.SINGLE;
+  case 'dashed':
+    return BorderStyle.DASHED;
+  case 'dotted':
+    return BorderStyle.DOTTED;
+  case 'double':
+    return BorderStyle.DOUBLE;
+  case 'none':
+    return BorderStyle.NONE;
+  default:
+    return BorderStyle.SINGLE;
   }
 }
 

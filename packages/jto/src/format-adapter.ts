@@ -6,6 +6,7 @@ export type FormatName = 'docx' | 'pptx';
 export interface GeneratorOptions {
   theme?: string | any;
   themePath?: string;
+  customThemes?: Record<string, any>;
   validation?: {
     strict?: boolean;
     allowUnknownFields?: boolean;
@@ -125,7 +126,7 @@ export class DocxFormatAdapter implements FormatAdapter {
     return { valid: true };
   }
 
-  generateSchema(options?: any): any {
+  generateSchema(_options?: any): any {
     // Delegate to shared-docx
     return null;
   }
@@ -186,6 +187,11 @@ export class DocxFormatAdapter implements FormatAdapter {
   ): Promise<Record<string, any> | undefined> {
     const core = await import('@json-to-office/core-docx');
     const customThemes: Record<string, any> = {};
+
+    // Include themes passed directly from the client (playground UI)
+    if (options.customThemes) {
+      Object.assign(customThemes, options.customThemes);
+    }
 
     if (typeof options.theme === 'object' && options.theme !== null) {
       customThemes.custom = options.theme;
@@ -393,6 +399,11 @@ export class PptxFormatAdapter implements FormatAdapter {
   ): Promise<Record<string, any> | undefined> {
     const customThemes: Record<string, any> = {};
 
+    // Include themes passed directly from the client (playground UI)
+    if (options.customThemes) {
+      Object.assign(customThemes, options.customThemes);
+    }
+
     if (typeof options.theme === 'object' && options.theme !== null) {
       customThemes.custom = options.theme;
     }
@@ -423,11 +434,11 @@ export class PptxFormatAdapter implements FormatAdapter {
 
 export function createAdapter(format: FormatName): FormatAdapter {
   switch (format) {
-    case 'docx':
-      return new DocxFormatAdapter();
-    case 'pptx':
-      return new PptxFormatAdapter();
-    default:
-      throw new Error(`Unknown format: ${format}`);
+  case 'docx':
+    return new DocxFormatAdapter();
+  case 'pptx':
+    return new PptxFormatAdapter();
+  default:
+    throw new Error(`Unknown format: ${format}`);
   }
 }

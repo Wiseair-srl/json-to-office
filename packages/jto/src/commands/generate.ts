@@ -3,12 +3,14 @@ import { readFileSync, writeFileSync } from 'fs';
 import { resolve, basename } from 'path';
 import ora from 'ora';
 import chalk from 'chalk';
+import boxen from 'boxen';
 import type { FormatAdapter } from '../format-adapter.js';
 import { PluginRegistry } from '../services/plugin-registry.js';
-import { PluginResolver } from '../services/plugin-resolver.js';
+
 import { GeneratorFactory } from '../services/generator-factory.js';
 import { PluginConfigService } from '../config/plugin-config.js';
 import { loadPlugins } from './shared.js';
+import { shortPath, formatTiming, formatError, EXIT_CODES } from './ui.js';
 
 interface GenerateOptions {
   output?: string;
@@ -18,6 +20,7 @@ interface GenerateOptions {
   theme?: string;
   themePath?: string;
   strict?: boolean;
+  dryRun?: boolean;
 }
 
 export function createGenerateCommand(adapter: FormatAdapter): Command {
@@ -34,8 +37,10 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
     .option('--theme <name-or-path>', 'Theme name or path to theme file')
     .option('--theme-path <path>', 'Path to theme file (alternative to --theme)')
     .option('--strict', 'Enable strict validation')
+    .option('--dry-run', 'Preview without writing files')
     .action(async (input: string, options: GenerateOptions) => {
       const spinner = ora('Initializing...').start();
+      const startTime = performance.now();
 
       try {
         const configService = PluginConfigService.getInstance();
@@ -43,15 +48,15 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
 
         const mergedConfig = config
           ? configService.mergeWithOptions({
-              theme: options.theme,
-              themePath: options.themePath,
-              validation: { strict: options.strict },
-            })
+            theme: options.theme,
+            themePath: options.themePath,
+            validation: { strict: options.strict },
+          })
           : {
-              theme: options.theme,
-              themePath: options.themePath,
-              validation: { strict: options.strict },
-            };
+            theme: options.theme,
+            themePath: options.themePath,
+            validation: { strict: options.strict },
+          };
 
         await loadPlugins(options, config, configService, spinner);
 
@@ -62,6 +67,41 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
 
         const factory = new GeneratorFactory(adapter);
 
+        const outputPath = options.output
+          ? resolve(process.cwd(), options.output)
+          : resolve(process.cwd(), basename(input, '.json') + adapter.extension);
+
+        const pluginInfo = factory.getPluginInfo();
+
+        if (options.dryRun) {
+          spinner.succeed(`Dry run complete ${formatTiming(startTime)}`);
+
+          const lines = [
+            `${chalk.cyan('Input:')}      ${input}`,
+            `${chalk.cyan('Output:')}     ${shortPath(outputPath)}`,
+            `${chalk.cyan('Format:')}     ${adapter.name}`,
+            `${chalk.cyan('Theme:')}      ${mergedConfig.theme || 'default'}`,
+            `${chalk.cyan('Strict:')}     ${mergedConfig.validation?.strict ? 'yes' : 'no'}`,
+          ];
+          if (pluginInfo.hasPlugins) {
+            lines.push(`${chalk.cyan('Plugins:')}    ${pluginInfo.count} loaded (${pluginInfo.names.join(', ')})`);
+          }
+          lines.push(`${chalk.cyan('Validation:')} ${chalk.green('passed')}`);
+
+          console.log(
+            boxen(lines.join('\n'), {
+              padding: 1,
+              borderColor: 'yellow',
+              borderStyle: 'round',
+              title: 'Dry Run',
+              titleAlignment: 'center',
+            })
+          );
+
+          PluginRegistry.getInstance().clear();
+          return;
+        }
+
         spinner.text = `Generating ${adapter.label}...`;
         const buffer = await factory.generate(documentDefinition, {
           theme: mergedConfig.theme,
@@ -69,60 +109,39 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
           validation: mergedConfig.validation,
         });
 
-        const outputPath = options.output
-          ? resolve(process.cwd(), options.output)
-          : resolve(process.cwd(), basename(input, '.json') + adapter.extension);
-
         spinner.text = 'Writing output file...';
         writeFileSync(outputPath, Buffer.from(buffer));
 
-        spinner.succeed(`${adapter.label.charAt(0).toUpperCase() + adapter.label.slice(1)} generated successfully!`);
+        spinner.succeed(
+          `${adapter.label.charAt(0).toUpperCase() + adapter.label.slice(1)} generated successfully! ${formatTiming(startTime)}`
+        );
 
-        console.log(`\n${chalk.bold(`Output: ${adapter.label}`)}\n`);
-        console.log(chalk.cyan('  Input:'), input);
-        console.log(chalk.cyan('  Output:'), outputPath);
-        console.log(chalk.cyan('  Format:'), adapter.name);
-
-        const pluginInfo = factory.getPluginInfo();
+        const lines = [
+          `${chalk.cyan('Input:')}   ${input}`,
+          `${chalk.cyan('Output:')}  ${shortPath(outputPath)}`,
+          `${chalk.cyan('Format:')}  ${adapter.name}`,
+        ];
         if (pluginInfo.hasPlugins) {
-          console.log(
-            chalk.cyan('  Plugins:'),
-            `${pluginInfo.count} loaded (${pluginInfo.names.join(', ')})`
-          );
+          lines.push(`${chalk.cyan('Plugins:')} ${pluginInfo.count} loaded (${pluginInfo.names.join(', ')})`);
         }
+
+        console.log(
+          boxen(lines.join('\n'), {
+            padding: 1,
+            borderColor: 'green',
+            borderStyle: 'round',
+            title: adapter.label.charAt(0).toUpperCase() + adapter.label.slice(1),
+            titleAlignment: 'center',
+          })
+        );
 
         PluginRegistry.getInstance().clear();
       } catch (error: any) {
         spinner.fail(`${adapter.label.charAt(0).toUpperCase() + adapter.label.slice(1)} generation failed`);
-
-        if (error.code === 'ENOENT') {
-          console.error(chalk.red(`File not found: ${input}`));
-        } else if (error instanceof SyntaxError) {
-          console.error(chalk.red('Invalid JSON in input file'));
-          console.error(chalk.dim(error.message));
-        } else {
-          console.error(chalk.red(error.message));
-          if (error.validationErrors) {
-            console.error(chalk.yellow('\nValidation errors:'));
-            error.validationErrors.forEach((err: any) => {
-              console.error(
-                chalk.red(`  - ${err.path || 'root'}: ${err.message}`)
-              );
-              if (err.suggestions) {
-                err.suggestions.forEach((suggestion: string) => {
-                  console.error(chalk.dim(`    -> ${suggestion}`));
-                });
-              }
-            });
-          }
-          if (error.stack && !error.validationErrors) {
-            console.error(chalk.dim('\nStack trace:'));
-            console.error(chalk.dim(error.stack));
-          }
-        }
+        formatError(error);
 
         PluginRegistry.getInstance().clear();
-        process.exit(1);
+        process.exit(EXIT_CODES.FAIL);
       }
     })
     .addHelpText(
@@ -134,6 +153,7 @@ ${chalk.gray('Examples:')}
   $ jto ${adapter.name} generate doc.json --plugins weather,data    ${chalk.dim('# Use plugins by name')}
   $ jto ${adapter.name} generate doc.json --theme minimal           ${chalk.dim('# Use built-in theme')}
   $ jto ${adapter.name} generate doc.json --theme-path ./theme.json ${chalk.dim('# Use custom theme')}
+  $ jto ${adapter.name} generate doc.json --dry-run                 ${chalk.dim('# Preview without writing')}
 `
     );
 }

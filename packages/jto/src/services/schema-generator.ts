@@ -91,10 +91,6 @@ export class SchemaGenerator {
       const { generateUnifiedDocumentSchema } = await import(
         '@json-to-office/shared-docx'
       );
-      const { convertDocxToJsonSchema, exportDocxSchemaToFile } = await import(
-        '@json-to-office/shared-docx'
-      );
-
       const schema = generateUnifiedDocumentSchema({
         includeStandardComponents: true,
         includeTheme: false,
@@ -141,17 +137,17 @@ export class SchemaGenerator {
           name: m.name,
           versions: m.versionedProps
             ? m.versionedProps.map((vp) => ({
-                version: vp.version,
-                propsSchema: vp.propsSchema,
-                hasChildren: vp.hasChildren,
-              }))
+              version: vp.version,
+              propsSchema: vp.propsSchema,
+              hasChildren: vp.hasChildren,
+            }))
             : [
-                {
-                  version: '1.0.0',
-                  propsSchema: m.propsSchema,
-                  hasChildren: m.hasChildren,
-                },
-              ],
+              {
+                version: '1.0.0',
+                propsSchema: m.propsSchema,
+                hasChildren: m.hasChildren,
+              },
+            ],
         })),
       });
 

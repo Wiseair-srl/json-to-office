@@ -9,10 +9,19 @@ import {
   Trash2Icon,
   Code2,
   AlertTriangle,
+  MessageSquare,
 } from 'lucide-react';
 import { Spinner } from '../ui/spinner';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import {
@@ -28,8 +37,7 @@ import { useToast } from '../ui/use-toast';
 import { usePresentationGenerator } from '../../hooks/usePresentationGenerator';
 import { buildWarningsDocumentJson } from '../../lib/warnings-document-builder';
 import type { GenerationWarning } from '../../store/output-store';
-import { FORMAT, FORMAT_EXT, FORMAT_LABEL } from '../../lib/env';
-import { API_ENDPOINTS } from '../../config/api';
+import { FORMAT, FORMAT_EXT } from '../../lib/env';
 import type { RenderingLibrary } from '../../lib/types';
 
 const RENDERING_LIBRARIES: RenderingLibrary[] =
@@ -61,6 +69,8 @@ function PreviewHeader({
   warnings,
   renderingLibrary,
   setRenderingLibrary,
+  onToggleChat,
+  chatOpen,
 }: {
   name: string;
   blob?: Blob;
@@ -77,6 +87,8 @@ function PreviewHeader({
   warnings?: GenerationWarning[] | null;
   renderingLibrary?: RenderingLibrary;
   setRenderingLibrary?: (lib: RenderingLibrary) => void;
+  onToggleChat?: () => void;
+  chatOpen?: boolean;
 }) {
   const usesManualRenderByDefault =
     renderingLibrary !== 'docxjs';
@@ -84,6 +96,7 @@ function PreviewHeader({
   const [isDownloadingWarnings, setIsDownloadingWarnings] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isCopyingStandardComponents, setIsCopyingStandardComponents] =
     useState(false);
   const { toast } = useToast();
@@ -299,9 +312,9 @@ function PreviewHeader({
 
   return (
     <>
-      <div className="bg-sidebar flex flex-row flex-nowrap items-center justify-between gap-x-3 p-2">
-        <div className="flex items-center gap-2">
-          <p className="text-muted-foreground text-sm font-medium truncate max-w-[40vw]">
+      <div className="bg-sidebar flex flex-row flex-nowrap items-center justify-between gap-x-3 px-3 py-1.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="text-foreground text-sm font-semibold tracking-tight truncate max-w-[40vw]">
             {name}
           </p>
           <Tooltip>
@@ -311,7 +324,7 @@ function PreviewHeader({
                 aria-label="Preview disclaimer"
                 className="cursor-help inline-flex items-center justify-center h-6 w-6 rounded hover:bg-muted/60"
               >
-                <InfoIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <InfoIcon className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </TooltipTrigger>
             <TooltipContent className="max-w-sm">
@@ -322,44 +335,21 @@ function PreviewHeader({
             </TooltipContent>
           </Tooltip>
         </div>
-        <div className="flex flex-row gap-x-2 flex-shrink-0">
-          {FORMAT === 'docx' && (
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 cursor-help">
-                    <Label className="text-xs text-muted-foreground">
-                      Auto-reload
-                    </Label>
-                    <Switch
-                      checked={autoReload}
-                      onCheckedChange={onToggleAutoReload}
-                      disabled={usesManualRenderByDefault}
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    {usesManualRenderByDefault
-                      ? 'Auto-reload is not available for Office, Docs, and LibreOffice renderers'
-                      : `${autoReload ? 'Disable' : 'Enable'} automatic preview reload on content changes`}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          )}
+        <div className="flex flex-row items-center gap-x-1 flex-shrink-0">
+          {/* ── Render group ── */}
           {(!autoReload || usesManualRenderByDefault) && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
-                  size="icon"
-                  className="bg-sidebar text-sidebar-foreground"
+                  variant="default"
+                  size="sm"
+                  className="gap-1.5 h-7 px-2.5"
                   onClick={onManualRender}
                   aria-label="Render preview"
-                  disabled={!blob || isGenerating || isRendering}
+                  disabled={isGenerating || isRendering}
                 >
-                  {isRendering ? <Spinner size="sm" /> : <PlayIcon />}
+                  {isRendering ? <Spinner size="sm" /> : <PlayIcon className="h-3.5 w-3.5" />}
+                  <span className="text-xs font-medium hidden sm:inline">Run</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -369,17 +359,40 @@ function PreviewHeader({
               </TooltipContent>
             </Tooltip>
           )}
+          {FORMAT === 'docx' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 cursor-help ml-2 mr-1">
+                  <Label className="text-xs text-muted-foreground hidden sm:inline">
+                    Auto
+                  </Label>
+                  <Switch
+                    checked={autoReload}
+                    onCheckedChange={onToggleAutoReload}
+                    disabled={usesManualRenderByDefault}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {usesManualRenderByDefault
+                    ? 'Auto-reload is not available for Office, Docs, and LibreOffice renderers'
+                    : `${autoReload ? 'Disable' : 'Enable'} automatic preview reload on content changes`}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           {displayReloadButton && autoReload && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  className="bg-sidebar text-sidebar-foreground"
+                  className="h-7 w-7"
                   onClick={handleReload}
                   disabled={isReloading || isGenerating || isRendering}
                 >
-                  {isReloading ? <Spinner size="sm" /> : <RefreshCwIcon />}
+                  {isReloading ? <Spinner size="sm" /> : <RefreshCwIcon className="h-3.5 w-3.5" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -388,16 +401,20 @@ function PreviewHeader({
             </Tooltip>
           )}
 
+          {/* ── Divider ── */}
+          <div className="w-px h-4 bg-border/60 mx-1" />
+
+          {/* ── Inspect group ── */}
           {onShowSchemas && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  className="bg-sidebar text-sidebar-foreground"
+                  className="h-7 w-7"
                   onClick={onShowSchemas}
                 >
-                  <FileJson />
+                  <FileJson className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -410,12 +427,12 @@ function PreviewHeader({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  className="bg-sidebar text-sidebar-foreground"
+                  className="h-7 w-7"
                   onClick={onShowCacheMetrics}
                 >
-                  <BarChart3Icon />
+                  <BarChart3Icon className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -427,13 +444,13 @@ function PreviewHeader({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="bg-sidebar text-sidebar-foreground"
-                onClick={handleClearCache}
+                className="h-7 w-7"
+                onClick={() => setShowClearConfirm(true)}
                 disabled={isClearingCache}
               >
-                {isClearingCache ? <Spinner size="sm" /> : <Trash2Icon />}
+                {isClearingCache ? <Spinner size="sm" /> : <Trash2Icon className="h-3.5 w-3.5" />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -446,16 +463,16 @@ function PreviewHeader({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="bg-sidebar text-sidebar-foreground"
+                className="h-7 w-7"
                 disabled={!documentText || isCopyingStandardComponents}
                 onClick={handleCopyStandardComponents}
               >
                 {isCopyingStandardComponents ? (
                   <Spinner size="sm" />
                 ) : (
-                  <Code2 />
+                  <Code2 className="h-3.5 w-3.5" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -464,16 +481,21 @@ function PreviewHeader({
             </TooltipContent>
           </Tooltip>
 
+          {/* ── Divider ── */}
+          <div className="w-px h-4 bg-border/60 mx-1" />
+
+          {/* ── Output group ── */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                size="icon"
-                className="bg-sidebar text-sidebar-foreground"
+                size="sm"
+                className="gap-1.5 h-7 px-2.5"
                 disabled={!blob || isDownloading || isGenerating}
                 onClick={handleDownload}
               >
-                {isDownloading ? <Spinner size="sm" /> : <SaveIcon />}
+                {isDownloading ? <Spinner size="sm" /> : <SaveIcon className="h-3.5 w-3.5" />}
+                <span className="text-xs font-medium hidden sm:inline">Download</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -488,14 +510,14 @@ function PreviewHeader({
                 <Button
                   variant="outline"
                   size="icon"
-                  className="bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900"
+                  className="h-7 w-7 bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900"
                   disabled={isDownloadingWarnings || isGenerating}
                   onClick={handleDownloadWarnings}
                 >
                   {isDownloadingWarnings ? (
                     <Spinner size="sm" />
                   ) : (
-                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTriangle className="h-3.5 w-3.5" />
                   )}
                 </Button>
               </TooltipTrigger>
@@ -509,8 +531,8 @@ function PreviewHeader({
             <Select value={renderingLibrary} onValueChange={setRenderingLibrary}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <SelectTrigger className="w-[168px]">
-                    <SelectValue placeholder="Select a library" />
+                  <SelectTrigger className="w-[140px] h-7 text-xs">
+                    <SelectValue placeholder="Renderer" />
                   </SelectTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -534,8 +556,58 @@ function PreviewHeader({
               </SelectContent>
             </Select>
           )}
+
+          {/* ── Divider ── */}
+          {onToggleChat && <div className="w-px h-4 bg-border/60 mx-1" />}
+
+          {/* ── Chat toggle ── */}
+          {onToggleChat && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={chatOpen ? 'default' : 'ghost'}
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={onToggleChat}
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{chatOpen ? 'Close' : 'Open'} AI Chat (Cmd+L)</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
+
+      {/* Clear cache confirmation */}
+      <Dialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Clear all caches?</DialogTitle>
+            <DialogDescription>
+              This will clear document and component caches. Next generation will be uncached.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setShowClearConfirm(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={isClearingCache}
+              onClick={async () => {
+                await handleClearCache();
+                setShowClearConfirm(false);
+              }}
+            >
+              {isClearingCache ? <Spinner size="sm" /> : 'Clear'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

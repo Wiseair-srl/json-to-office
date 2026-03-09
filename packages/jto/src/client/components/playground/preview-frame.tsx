@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DocumentGenerationLoader, PreviewLoading } from '../ui/loading-states';
+import { Spinner } from '../ui/spinner';
 import { FORMAT_LABEL } from '../../lib/env';
 
 const PreviewFrame = React.forwardRef<
@@ -49,8 +50,10 @@ const PreviewFrame = React.forwardRef<
       ? 'allow-scripts allow-popups allow-forms'
       : undefined;
 
-    // Show presentation generation loading state
-    if (isGenerating) {
+    const hasContent = Boolean(iframeSrc || iframeSrcDoc);
+
+    // Full-screen loaders only when no existing content
+    if (isGenerating && !hasContent) {
       return (
         <div className="grow">
           <DocumentGenerationLoader
@@ -61,8 +64,7 @@ const PreviewFrame = React.forwardRef<
       );
     }
 
-    // Show preview rendering loading state
-    if (isLoading) {
+    if (isLoading && !hasContent) {
       return (
         <div className="grow">
           <PreviewLoading renderingLibrary="LibreOffice" />
@@ -70,7 +72,7 @@ const PreviewFrame = React.forwardRef<
       );
     }
 
-    if (iframeSrc || iframeSrcDoc) {
+    if (hasContent) {
       return (
         <div className="h-full w-full relative bg-white">
           {/* Loading overlay */}
@@ -80,6 +82,17 @@ const PreviewFrame = React.forwardRef<
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2"></div>
                 <p className="text-sm text-muted-foreground">
                   Loading preview...
+                </p>
+              </div>
+            </div>
+          )}
+          {/* Generating/Rendering overlay on top of existing content */}
+          {(isGenerating || isLoading) && (
+            <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center z-20 transition-opacity duration-200">
+              <div className="flex flex-col items-center gap-2">
+                <Spinner size="lg" />
+                <p className="text-sm text-muted-foreground">
+                  {isGenerating ? 'Generating...' : 'Rendering...'}
                 </p>
               </div>
             </div>

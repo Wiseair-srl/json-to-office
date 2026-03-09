@@ -40,7 +40,7 @@ function EditorTabItem({ name }: { name: string }) {
       <XIcon
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon' }),
-          `text-sidebar-accent-foreground size-6`
+          'text-sidebar-accent-foreground size-6'
         )}
         onPointerDown={(e) => {
           closeDocument(name);
@@ -55,7 +55,7 @@ const EditorTabItemMemoized = React.memo(EditorTabItem);
 
 function EditorTabsList({ openTabs }: { openTabs: string[] }) {
   return (
-    <TabsList className="bg-sidebar text-sidebar-foreground h-13 w-full justify-start gap-x-1 rounded-none">
+    <TabsList className="bg-sidebar text-sidebar-foreground h-10 w-full justify-start gap-x-0.5 rounded-none border-b">
       {openTabs.map((docName) => (
         <EditorTabItemMemoized key={docName} name={docName} />
       ))}

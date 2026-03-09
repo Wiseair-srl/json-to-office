@@ -4,8 +4,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "resolveJsonModule": true,
-    "composite": false,
-    "incremental": false
+    "composite": true,
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src/**/*.ts", "src/**/*.json"],
   "exclude": [

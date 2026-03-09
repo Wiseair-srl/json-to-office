@@ -7,11 +7,11 @@ import type { PptxThemeConfig } from '../types';
 export const DEFAULT_PPTX_THEME: PptxThemeConfig = {
   name: 'default',
   colors: {
-    primary: '4472C4',
-    secondary: 'ED7D31',
-    accent: '70AD47',
-    background: 'FFFFFF',
-    text: '333333',
+    primary: '#4472C4',
+    secondary: '#ED7D31',
+    accent: '#70AD47',
+    background: '#FFFFFF',
+    text: '#333333',
   },
   fonts: {
     heading: 'Arial',
@@ -19,7 +19,7 @@ export const DEFAULT_PPTX_THEME: PptxThemeConfig = {
   },
   defaults: {
     fontSize: 18,
-    fontColor: '333333',
+    fontColor: '#333333',
   },
 };
 
@@ -28,11 +28,11 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
   dark: {
     name: 'dark',
     colors: {
-      primary: '5B9BD5',
-      secondary: 'FF6F61',
-      accent: '6BCB77',
-      background: '2D2D2D',
-      text: 'FFFFFF',
+      primary: '#5B9BD5',
+      secondary: '#FF6F61',
+      accent: '#6BCB77',
+      background: '#2D2D2D',
+      text: '#FFFFFF',
     },
     fonts: {
       heading: 'Arial',
@@ -40,17 +40,17 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
     },
     defaults: {
       fontSize: 18,
-      fontColor: 'FFFFFF',
+      fontColor: '#FFFFFF',
     },
   },
   minimal: {
     name: 'minimal',
     colors: {
-      primary: '000000',
-      secondary: '666666',
-      accent: '999999',
-      background: 'FFFFFF',
-      text: '000000',
+      primary: '#000000',
+      secondary: '#666666',
+      accent: '#999999',
+      background: '#FFFFFF',
+      text: '#000000',
     },
     fonts: {
       heading: 'Helvetica',
@@ -58,7 +58,7 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
     },
     defaults: {
       fontSize: 18,
-      fontColor: '000000',
+      fontColor: '#000000',
     },
   },
 };

@@ -50,131 +50,131 @@ const SidebarProvider = React.forwardRef<
     defaultOpen?: boolean;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
-  }
->(
-  (
-    {
-      defaultOpen = true,
-      open: openProp,
-      onOpenChange: setOpenProp,
-      className,
-      style,
-      children,
-      ...props
-    },
-    ref
-  ) => {
-    const isMobile = useIsMobile();
-    const [openMobile, setOpenMobile] = React.useState(false);
+      }
+      >(
+      (
+        {
+          defaultOpen = true,
+          open: openProp,
+          onOpenChange: setOpenProp,
+          className,
+          style,
+          children,
+          ...props
+        },
+        ref
+      ) => {
+        const isMobile = useIsMobile();
+        const [openMobile, setOpenMobile] = React.useState(false);
 
-    // This is the internal state of the sidebar.
-    // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = React.useState(defaultOpen);
-    const open = openProp ?? _open;
-    const setOpen = React.useCallback(
-      (value: boolean | ((value: boolean) => boolean)) => {
-        const openState = typeof value === 'function' ? value(open) : value;
-        if (setOpenProp) {
-          setOpenProp(openState);
-        } else {
-          _setOpen(openState);
-        }
+        // This is the internal state of the sidebar.
+        // We use openProp and setOpenProp for control from outside the component.
+        const [_open, _setOpen] = React.useState(defaultOpen);
+        const open = openProp ?? _open;
+        const setOpen = React.useCallback(
+          (value: boolean | ((value: boolean) => boolean)) => {
+            const openState = typeof value === 'function' ? value(open) : value;
+            if (setOpenProp) {
+              setOpenProp(openState);
+            } else {
+              _setOpen(openState);
+            }
 
-        // This sets the cookie to keep the sidebar state.
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
-      },
-      [setOpenProp, open]
-    );
+            // This sets the cookie to keep the sidebar state.
+            document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+          },
+          [setOpenProp, open]
+        );
 
-    // Helper to toggle the sidebar.
-    const toggleSidebar = React.useCallback(() => {
-      return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open);
-    }, [isMobile, setOpen, setOpenMobile]);
+        // Helper to toggle the sidebar.
+        const toggleSidebar = React.useCallback(() => {
+          return isMobile
+            ? setOpenMobile((open) => !open)
+            : setOpen((open) => !open);
+        }, [isMobile, setOpen, setOpenMobile]);
 
-    // Adds a keyboard shortcut to toggle the sidebar.
-    React.useEffect(() => {
-      const isEditableTarget = (el: EventTarget | null) => {
-        const node = el as HTMLElement | null;
-        if (!node) return false;
-        const tag = node.tagName?.toLowerCase();
-        if (
-          tag === 'input' ||
+        // Adds a keyboard shortcut to toggle the sidebar.
+        React.useEffect(() => {
+          const isEditableTarget = (el: EventTarget | null) => {
+            const node = el as HTMLElement | null;
+            if (!node) return false;
+            const tag = node.tagName?.toLowerCase();
+            if (
+              tag === 'input' ||
           tag === 'textarea' ||
           tag === 'select' ||
           (node as HTMLElement).isContentEditable
-        ) {
-          return true;
-        }
-        // If the target is inside Monaco editor, treat as editable
-        return !!(node.closest && node.closest('.monaco-editor'));
-      };
+            ) {
+              return true;
+            }
+            // If the target is inside Monaco editor, treat as editable
+            return !!(node.closest && node.closest('.monaco-editor'));
+          };
 
-      const handleKeyDown = (event: KeyboardEvent) => {
-        const isMeta = event.metaKey || event.ctrlKey;
-        const key = event.key.toLowerCase();
+          const handleKeyDown = (event: KeyboardEvent) => {
+            const isMeta = event.metaKey || event.ctrlKey;
+            const key = event.key.toLowerCase();
 
-        // Default shortcut (Cmd/Ctrl+B)
-        if (isMeta && key === SIDEBAR_KEYBOARD_SHORTCUT) {
-          event.preventDefault();
-          toggleSidebar();
-          return;
-        }
+            // Default shortcut (Cmd/Ctrl+B)
+            if (isMeta && key === SIDEBAR_KEYBOARD_SHORTCUT) {
+              event.preventDefault();
+              toggleSidebar();
+              return;
+            }
 
-        // Additional shortcut: Cmd/Ctrl+S to toggle, but only when not editing text/Monaco
-        if (isMeta && key === 's' && !isEditableTarget(event.target)) {
-          event.preventDefault();
-          toggleSidebar();
-        }
-      };
+            // Additional shortcut: Cmd/Ctrl+S to toggle, but only when not editing text/Monaco
+            if (isMeta && key === 's' && !isEditableTarget(event.target)) {
+              event.preventDefault();
+              toggleSidebar();
+            }
+          };
 
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [toggleSidebar]);
+          window.addEventListener('keydown', handleKeyDown);
+          return () => window.removeEventListener('keydown', handleKeyDown);
+        }, [toggleSidebar]);
 
-    // We add a state so that we can do data-state="expanded" or "collapsed".
-    // This makes it easier to style the sidebar with Tailwind classes.
-    const state = open ? 'expanded' : 'collapsed';
+        // We add a state so that we can do data-state="expanded" or "collapsed".
+        // This makes it easier to style the sidebar with Tailwind classes.
+        const state = open ? 'expanded' : 'collapsed';
 
-    const contextValue = React.useMemo<SidebarContextType>(
-      () => ({
-        state,
-        open,
-        setOpen,
-        isMobile,
-        openMobile,
-        setOpenMobile,
-        toggleSidebar,
-      }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
-    );
+        const contextValue = React.useMemo<SidebarContextType>(
+          () => ({
+            state,
+            open,
+            setOpen,
+            isMobile,
+            openMobile,
+            setOpenMobile,
+            toggleSidebar,
+          }),
+          [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+        );
 
-    return (
-      <SidebarContext.Provider value={contextValue}>
-        <TooltipProvider delayDuration={0}>
-          <div
-            style={
+        return (
+          <SidebarContext.Provider value={contextValue}>
+            <TooltipProvider delayDuration={0}>
+              <div
+                style={
               {
                 '--sidebar-width': SIDEBAR_WIDTH,
                 '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
                 ...style,
               } as React.CSSProperties
-            }
-            className={cn(
-              'group/sidebar-wrapper has-[[data-variant=inset]]:bg-sidebar flex min-h-svh w-full',
-              className
-            )}
-            ref={ref}
-            {...props}
-          >
-            {children}
-          </div>
-        </TooltipProvider>
-      </SidebarContext.Provider>
-    );
-  }
-);
+                }
+                className={cn(
+                  'group/sidebar-wrapper has-[[data-variant=inset]]:bg-sidebar flex min-h-svh w-full',
+                  className
+                )}
+                ref={ref}
+                {...props}
+              >
+                {children}
+              </div>
+            </TooltipProvider>
+          </SidebarContext.Provider>
+        );
+      }
+      );
 SidebarProvider.displayName = 'SidebarProvider';
 
 const Sidebar = React.forwardRef<

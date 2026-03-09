@@ -26,19 +26,19 @@ export function renderComponent(
   const p = props as any;
 
   switch (name) {
-    case 'text':
-      renderTextComponent(slide, p, theme);
-      break;
-    case 'image':
-      renderImageComponent(slide, p, theme);
-      break;
-    case 'shape':
-      renderShapeComponent(slide, p, theme, pptx);
-      break;
-    case 'table':
-      renderTableComponent(slide, p, theme);
-      break;
-    default:
-      console.warn(`Unknown PPTX component type: ${name}`);
+  case 'text':
+    renderTextComponent(slide, p, theme);
+    break;
+  case 'image':
+    renderImageComponent(slide, p, theme);
+    break;
+  case 'shape':
+    renderShapeComponent(slide, p, theme, pptx);
+    break;
+  case 'table':
+    renderTableComponent(slide, p, theme);
+    break;
+  default:
+    console.warn(`Unknown PPTX component type: ${name}`);
   }
 }

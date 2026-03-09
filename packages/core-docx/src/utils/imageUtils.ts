@@ -134,19 +134,19 @@ export function detectImageTypeFromExtension(
 ): 'jpg' | 'png' | 'gif' | 'bmp' | 'svg' | undefined {
   const extension = path.toLowerCase().split('.').pop()?.split('?')[0]; // Handle query params in URLs
   switch (extension) {
-    case 'jpg':
-    case 'jpeg':
-      return 'jpg';
-    case 'png':
-      return 'png';
-    case 'gif':
-      return 'gif';
-    case 'bmp':
-      return 'bmp';
-    case 'svg':
-      return 'svg';
-    default:
-      return undefined;
+  case 'jpg':
+  case 'jpeg':
+    return 'jpg';
+  case 'png':
+    return 'png';
+  case 'gif':
+    return 'gif';
+  case 'bmp':
+    return 'bmp';
+  case 'svg':
+    return 'svg';
+  default:
+    return undefined;
   }
 }
 

@@ -1,13 +1,7 @@
-import { Static, TSchema } from '@sinclair/typebox';
+import { TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 import { Context, Env, ValidationTargets, MiddlewareHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-
-interface ValidationError {
-  path?: string;
-  message: string;
-  value?: unknown;
-}
 
 export function tbValidator<
   T extends TSchema,

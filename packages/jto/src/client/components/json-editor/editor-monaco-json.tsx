@@ -4,6 +4,7 @@ import Editor, { Monaco, DiffEditor } from '@monaco-editor/react';
 import debounce from 'lodash.debounce';
 import type { editor } from 'monaco-editor';
 import { useDocumentsStore } from '../../store/documents-store-provider';
+import { useOutputStore } from '../../store/output-store-provider';
 import { Button } from '../ui/button';
 import { type JsonEditorError } from '../../lib/json-types';
 import { configureMonacoInstance } from '../../lib/monaco-config';
@@ -33,6 +34,7 @@ function EditorMonacoJson({
   const monacoRef = useRef<Monaco | null>(null);
   const { resolvedTheme } = useTheme();
   const saveDocument = useDocumentsStore((state) => state.saveDocument);
+  const bumpEditSequence = useOutputStore((state) => state.bumpEditSequence);
   const closeDocument = useDocumentsStore((state) => state.closeDocument);
   const pendingDiff = useDocumentsStore((state) => state.pendingDiffs[name]);
   const clearPendingDiff = useDocumentsStore((state) => state.clearPendingDiff);
@@ -226,7 +228,7 @@ function EditorMonacoJson({
                 size="sm"
                 onClick={() => {
                   saveDocument(name, pendingDiff.modified);
-                  clearPendingDiff(name);
+                  clearPendingDiff(name, true);
                 }}
               >
                 Apply Changes
@@ -263,6 +265,7 @@ function EditorMonacoJson({
           onValidate={handleEditorValidation}
           onChange={(value) => {
             if (value) {
+              bumpEditSequence();
               debouncedSaveDocumentRef.current(name, value);
             }
           }}

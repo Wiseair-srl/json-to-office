@@ -144,9 +144,9 @@ export function applyLayout(
       // Build content components depending on whether this is an explicit columns group
       const contentComponents = isSingleColumnsGroup
         ? processLayoutComponents(
-            (group.components[0] as unknown as { children?: ComponentDefinition[] })
-              .children || []
-          )
+          (group.components[0] as unknown as { children?: ComponentDefinition[] })
+            .children || []
+        )
         : processLayoutComponents(group.components);
 
       layoutSections.push({
@@ -360,17 +360,17 @@ export function getColumnSettings(
   layout: 'single' | 'multi-column'
 ): ColumnSettings {
   switch (layout) {
-    case 'multi-column':
-      // Default multi-column layout: 2 equal-width columns
-      // Note: Specific column components will override this with their own settings via createColumnSettingsFromConfig
-      return {
-        count: 2,
-        equalWidth: true,
-        space: 720, // 0.5 inch in twips
-      };
-    case 'single':
-    default:
-      return { count: 1 };
+  case 'multi-column':
+    // Default multi-column layout: 2 equal-width columns
+    // Note: Specific column components will override this with their own settings via createColumnSettingsFromConfig
+    return {
+      count: 2,
+      equalWidth: true,
+      space: 720, // 0.5 inch in twips
+    };
+  case 'single':
+  default:
+    return { count: 1 };
   }
 }
 
@@ -401,28 +401,28 @@ export function createSectionProperties(
   // Apply section-level page overrides if present
   const pageSetup = pageOverride
     ? {
-        size: {
-          ...basePageSetup.size,
-          ...(pageOverride.size && typeof pageOverride.size === 'object'
-            ? pageOverride.size
-            : pageOverride.size
-              ? (() => {
-                  // Convert string size to dimensions
-                  const sizes = {
-                    A4: { width: 11906, height: 16838 },
-                    A3: { width: 16838, height: 23811 },
-                    LETTER: { width: 12240, height: 15840 },
-                    LEGAL: { width: 12240, height: 20160 },
-                  };
-                  return sizes[pageOverride.size as keyof typeof sizes];
-                })()
-              : {}),
-        },
-        margin: {
-          ...basePageSetup.margin,
-          ...(pageOverride.margins || {}),
-        },
-      }
+      size: {
+        ...basePageSetup.size,
+        ...(pageOverride.size && typeof pageOverride.size === 'object'
+          ? pageOverride.size
+          : pageOverride.size
+            ? (() => {
+              // Convert string size to dimensions
+              const sizes = {
+                A4: { width: 11906, height: 16838 },
+                A3: { width: 16838, height: 23811 },
+                LETTER: { width: 12240, height: 15840 },
+                LEGAL: { width: 12240, height: 20160 },
+              };
+              return sizes[pageOverride.size as keyof typeof sizes];
+            })()
+            : {}),
+      },
+      margin: {
+        ...basePageSetup.margin,
+        ...(pageOverride.margins || {}),
+      },
+    }
     : basePageSetup;
 
   const properties: WordSectionProperties = {

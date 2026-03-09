@@ -39,7 +39,7 @@ export function cleanNodeOptions(debug = false): string | undefined {
   };
 
   const dq = countUnescaped(original, '"');
-  const sq = countUnescaped(original, "'");
+  const sq = countUnescaped(original, '\'');
   if (dq % 2 === 1 || sq % 2 === 1) {
     console.warn('[WARN] Detected malformed NODE_OPTIONS. Removing.');
     return undefined;
@@ -54,7 +54,7 @@ export function cleanNodeOptions(debug = false): string | undefined {
     const ch = original[i];
     if (escape) { current += ch; escape = false; continue; }
     if (ch === '\\') { current += ch; escape = true; continue; }
-    if (ch === "'" && !inDouble) { inSingle = !inSingle; current += ch; continue; }
+    if (ch === '\'' && !inDouble) { inSingle = !inSingle; current += ch; continue; }
     if (ch === '"' && !inSingle) { inDouble = !inDouble; current += ch; continue; }
     if (!inSingle && !inDouble && /\s/.test(ch)) {
       if (current) { tokens.push(current); current = ''; }
@@ -120,7 +120,7 @@ export const IDE_DEBUGGER_VARS = [
 
 export function removeDebuggerVars(
   vars: readonly string[] = IDE_DEBUGGER_VARS,
-  debug = false
+  _debug = false
 ): void {
   vars.forEach((varName) => { delete process.env[varName]; });
 }

@@ -239,8 +239,8 @@ export function createRenderContext(
       colors: theme.colors || {},
       fonts: theme.fonts
         ? Object.fromEntries(
-            Object.entries(theme.fonts).map(([key, font]) => [key, font.family])
-          )
+          Object.entries(theme.fonts).map(([key, font]) => [key, font.family])
+        )
         : {},
       spacing: { small: 120, medium: 240, large: 360, section: 480 },
     },

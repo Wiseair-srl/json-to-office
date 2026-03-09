@@ -5,6 +5,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { HexColorSchema } from '../font';
 
 // ============================================================================
 // Common Types
@@ -107,12 +108,7 @@ export const BorderSchema = Type.Object(
       ])
     ),
     width: Type.Optional(Type.Number({ minimum: 0 })),
-    color: Type.Optional(
-      Type.String({
-        description:
-          'Hex color code with # prefix (e.g., "#000000") or theme color name',
-      })
-    ),
+    color: Type.Optional(HexColorSchema),
   },
   { description: 'Border configuration' }
 );

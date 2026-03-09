@@ -4,7 +4,7 @@ import {
   PaletteIcon,
   Plus,
   Sparkles,
-  MapPin,
+  Search,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
@@ -399,181 +399,181 @@ function DocumentSidebarComponent({
           {discoveryData &&
             (discoveryData.documents.length > 0 ||
               discoveryData.themes.length > 0) && (
-              <SidebarGroup className="mt-6 border-t pt-4">
-                <SidebarGroupLabel
-                  className={cn(
-                    'flex items-center mb-2',
-                    isCollapsed ? 'justify-center' : 'gap-2'
-                  )}
-                >
-                  {isCollapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <MapPin className="size-3" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <span className="text-xs">
+            <SidebarGroup className="mt-6 border-t pt-4">
+              <SidebarGroupLabel
+                className={cn(
+                  'flex items-center mb-2',
+                  isCollapsed ? 'justify-center' : 'gap-2'
+                )}
+              >
+                {isCollapsed ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Search className="size-3" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <span className="text-xs">
                           Expand sidebar to show discovered resources
-                        </span>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <>
-                      <MapPin className="size-3" />
-                      <span>Discovered Resources</span>
-                    </>
-                  )}
-                </SidebarGroupLabel>
-
-                {!isCollapsed && (
+                      </span>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
                   <>
-                    {/* Discovered Documents */}
-                    {Object.entries(groupedDiscoveredDocuments).map(
-                      ([location, docs]) => {
-                        if (docs.length === 0) return null;
-                        const groupId = `${location}-docs`;
-                        const isExpanded = expandedGroups.has(groupId);
-
-                        return (
-                          <Collapsible key={groupId} open={isExpanded}>
-                            <CollapsibleTrigger
-                              className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                              onClick={() => toggleGroup(groupId)}
-                            >
-                              <ChevronDown
-                                className={cn(
-                                  'size-3 transition-transform',
-                                  !isExpanded && '-rotate-90'
-                                )}
-                              />
-                              <FilePlusIcon className="size-3" />
-                              {location === 'current'
-                                ? 'Current Directory'
-                                : 'Project'}{' '}
-                              Documents ({docs.length})
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="pl-6 space-y-0.5">
-                                {docs.map((doc, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="text-xs py-0.5 text-muted-foreground"
-                                  >
-                                    <div className="font-medium">
-                                      {doc.name}
-                                    </div>
-                                    {doc.title && (
-                                      <div className="text-[10px] opacity-70">
-                                        {doc.title}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        );
-                      }
-                    )}
-
-                    {/* Discovered Themes */}
-                    {Object.entries(groupedDiscoveredThemes).map(
-                      ([location, themes]) => {
-                        if (themes.length === 0) return null;
-                        const groupId = `${location}-themes`;
-                        const isExpanded = expandedGroups.has(groupId);
-
-                        return (
-                          <Collapsible key={groupId} open={isExpanded}>
-                            <CollapsibleTrigger
-                              className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                              onClick={() => toggleGroup(groupId)}
-                            >
-                              <ChevronDown
-                                className={cn(
-                                  'size-3 transition-transform',
-                                  !isExpanded && '-rotate-90'
-                                )}
-                              />
-                              <PaletteIcon className="size-3" />
-                              {location === 'current'
-                                ? 'Current Directory'
-                                : 'Project'}{' '}
-                              Themes ({themes.length})
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="pl-6 space-y-0.5">
-                                {themes.map((theme, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="text-xs py-0.5 text-muted-foreground"
-                                  >
-                                    <div className="font-medium">
-                                      {theme.name}
-                                    </div>
-                                    {theme.description && (
-                                      <div className="text-[10px] opacity-70">
-                                        {theme.description}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        );
-                      }
-                    )}
-
-                    {/* Discovered Plugins */}
-                    {discoveryData && discoveryData.plugins.length > 0 && (
-                      <Collapsible open={expandedGroups.has('plugins')}>
-                        <CollapsibleTrigger
-                          className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                          onClick={() => toggleGroup('plugins')}
-                        >
-                          <ChevronDown
-                            className={cn(
-                              'size-3 transition-transform',
-                              !expandedGroups.has('plugins') && '-rotate-90'
-                            )}
-                          />
-                          <Sparkles className="size-3 text-amber-600 dark:text-amber-400" />
-                          Plugins ({discoveryData.plugins.length})
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="pl-6 space-y-0.5">
-                            {discoveryData.plugins.map((p, idx) => (
-                              <div
-                                key={idx}
-                                className="text-xs py-0.5 text-muted-foreground"
-                              >
-                                <div className="font-medium">{p.name}</div>
-                                {p.description && (
-                                  <div className="text-[10px] opacity-70">
-                                    {p.description}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                            <div className="flex items-center justify-end pr-3 pt-1">
-                              <Button
-                                className="h-6 px-2 text-xs"
-                                variant="ghost"
-                                title="Open plugin manager"
-                                onClick={() => setPluginSelectorOpen(true)}
-                              >
-                                Manage plugins
-                              </Button>
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    )}
+                    <Search className="size-3" />
+                    <span>Discovered Resources</span>
                   </>
                 )}
-              </SidebarGroup>
-            )}
+              </SidebarGroupLabel>
+
+              {!isCollapsed && (
+                <>
+                  {/* Discovered Documents */}
+                  {Object.entries(groupedDiscoveredDocuments).map(
+                    ([location, docs]) => {
+                      if (docs.length === 0) return null;
+                      const groupId = `${location}-docs`;
+                      const isExpanded = expandedGroups.has(groupId);
+
+                      return (
+                        <Collapsible key={groupId} open={isExpanded}>
+                          <CollapsibleTrigger
+                            className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+                            onClick={() => toggleGroup(groupId)}
+                          >
+                            <ChevronDown
+                              className={cn(
+                                'size-3 transition-transform',
+                                !isExpanded && '-rotate-90'
+                              )}
+                            />
+                            <FilePlusIcon className="size-3" />
+                            {location === 'current'
+                              ? 'Current Directory'
+                              : 'Project'}{' '}
+                              Documents ({docs.length})
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="pl-6 space-y-0.5">
+                              {docs.map((doc, idx) => (
+                                <div
+                                  key={idx}
+                                  className="text-xs py-0.5 text-muted-foreground"
+                                >
+                                  <div className="font-medium">
+                                    {doc.name}
+                                  </div>
+                                  {doc.title && (
+                                    <div className="text-[10px] opacity-70">
+                                      {doc.title}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      );
+                    }
+                  )}
+
+                  {/* Discovered Themes */}
+                  {Object.entries(groupedDiscoveredThemes).map(
+                    ([location, themes]) => {
+                      if (themes.length === 0) return null;
+                      const groupId = `${location}-themes`;
+                      const isExpanded = expandedGroups.has(groupId);
+
+                      return (
+                        <Collapsible key={groupId} open={isExpanded}>
+                          <CollapsibleTrigger
+                            className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+                            onClick={() => toggleGroup(groupId)}
+                          >
+                            <ChevronDown
+                              className={cn(
+                                'size-3 transition-transform',
+                                !isExpanded && '-rotate-90'
+                              )}
+                            />
+                            <PaletteIcon className="size-3" />
+                            {location === 'current'
+                              ? 'Current Directory'
+                              : 'Project'}{' '}
+                              Themes ({themes.length})
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="pl-6 space-y-0.5">
+                              {themes.map((theme, idx) => (
+                                <div
+                                  key={idx}
+                                  className="text-xs py-0.5 text-muted-foreground"
+                                >
+                                  <div className="font-medium">
+                                    {theme.name}
+                                  </div>
+                                  {theme.description && (
+                                    <div className="text-[10px] opacity-70">
+                                      {theme.description}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      );
+                    }
+                  )}
+
+                  {/* Discovered Plugins */}
+                  {discoveryData && discoveryData.plugins.length > 0 && (
+                    <Collapsible open={expandedGroups.has('plugins')}>
+                      <CollapsibleTrigger
+                        className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+                        onClick={() => toggleGroup('plugins')}
+                      >
+                        <ChevronDown
+                          className={cn(
+                            'size-3 transition-transform',
+                            !expandedGroups.has('plugins') && '-rotate-90'
+                          )}
+                        />
+                        <Sparkles className="size-3 text-amber-600 dark:text-amber-400" />
+                          Plugins ({discoveryData.plugins.length})
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="pl-6 space-y-0.5">
+                          {discoveryData.plugins.map((p, idx) => (
+                            <div
+                              key={idx}
+                              className="text-xs py-0.5 text-muted-foreground"
+                            >
+                              <div className="font-medium">{p.name}</div>
+                              {p.description && (
+                                <div className="text-[10px] opacity-70">
+                                  {p.description}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          <div className="flex items-center justify-end pr-3 pt-1">
+                            <Button
+                              className="h-6 px-2 text-xs"
+                              variant="ghost"
+                              title="Open plugin manager"
+                              onClick={() => setPluginSelectorOpen(true)}
+                            >
+                                Manage plugins
+                            </Button>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+                </>
+              )}
+            </SidebarGroup>
+          )}
         </SidebarContent>
         <SidebarFooter>
           <div
@@ -600,7 +600,6 @@ function DocumentSidebarComponent({
       <SchemaDialog
         open={schemaDialogOpen}
         onOpenChange={setSchemaDialogOpen}
-        activeDocumentType={activeDocumentType}
         defaultTab={activeDocumentType === 'theme' ? 'theme' : 'document'}
       />
     </>

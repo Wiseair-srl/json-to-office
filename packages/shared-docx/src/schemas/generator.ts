@@ -127,8 +127,8 @@ export function generateUnifiedDocumentSchema(
               id: Type.Optional(Type.String()),
               version: versionLiteralDesc
                 ? Type.Literal(entry.version, {
-                    description: versionLiteralDesc,
-                  })
+                  description: versionLiteralDesc,
+                })
                 : Type.Literal(entry.version),
               props: entry.propsSchema,
             };

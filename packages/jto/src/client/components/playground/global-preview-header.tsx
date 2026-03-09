@@ -4,6 +4,7 @@ import { useSettingsStore } from '../../store/settings-store-provider';
 import { PreviewHeaderMemoized } from './preview-header';
 import { SchemaDialog } from './schema-dialog';
 import { useDocumentsStore } from '../../store/documents-store-provider';
+import { useChatStore } from '../../store/chat-store-provider';
 
 export function GlobalPreviewHeader() {
   // Select fields individually to avoid creating new objects every render
@@ -12,6 +13,7 @@ export function GlobalPreviewHeader() {
   const isGenerating = useOutputStore((s) => s.isGenerating);
   const text = useOutputStore((s) => s.text);
   const warnings = useOutputStore((s) => s.warnings);
+  const isRendering = useOutputStore((s) => s.isRendering);
 
   const autoReload = useSettingsStore((s) => s.autoReload);
   const renderingLibrary = useSettingsStore((s) => s.renderingLibrary);
@@ -26,6 +28,9 @@ export function GlobalPreviewHeader() {
     activeTab && documentTypes[activeTab] === 'application/json+theme'
       ? 'theme'
       : 'document';
+
+  const chatOpen = useChatStore((s) => s.chatOpen);
+  const toggleChat = useChatStore((s) => s.toggleChat);
 
   const [schemaOpen, setSchemaOpen] = React.useState(false);
 
@@ -63,18 +68,19 @@ export function GlobalPreviewHeader() {
         onToggleAutoReload={onToggleAutoReload}
         onManualRender={onManualRender}
         isGenerating={isGenerating}
-        isRendering={false}
+        isRendering={Boolean(isRendering)}
         onShowCacheMetrics={onShowCacheMetrics}
         onShowSchemas={() => setSchemaOpen(true)}
         documentText={text}
         warnings={warnings}
         renderingLibrary={renderingLibrary}
         setRenderingLibrary={(lib) => setSettings({ renderingLibrary: lib } as any)}
+        onToggleChat={toggleChat}
+        chatOpen={chatOpen}
       />
       <SchemaDialog
         open={schemaOpen}
         onOpenChange={setSchemaOpen}
-        activeDocumentType={activeDocumentType}
         defaultTab={activeDocumentType === 'theme' ? 'theme' : 'document'}
       />
     </div>

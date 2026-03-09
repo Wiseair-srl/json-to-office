@@ -72,7 +72,7 @@ export function getDocumentFormSchema(
         if (!trimmed) {
           errors.push({
             path: 'name',
-            message: "Name can't be empty",
+            message: 'Name can\'t be empty',
           });
         } else {
           // Update the data with trimmed value

@@ -4,7 +4,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { FontDefinitionSchema, TextFormattingPropertiesSchema } from './font';
+import { FontDefinitionSchema, TextFormattingPropertiesSchema, HexColorSchema } from './font';
 import { IndentSchema } from './components/common';
 
 // ============================================================================
@@ -125,7 +125,7 @@ const BorderDefinitionSchema = Type.Object(
       minimum: 0,
       description: 'Width in eighths of a point (docx sz)',
     }),
-    color: Type.String({ description: 'Hex color or theme color key' }),
+    color: HexColorSchema,
     space: Type.Optional(
       Type.Number({
         minimum: 0,
@@ -398,20 +398,20 @@ export const ThemeConfigSchema = Type.Object(
     version: Type.String(),
     colors: Type.Object(
       {
-        primary: Type.String(),
-        secondary: Type.String(),
-        accent: Type.String(),
-        text: Type.String(),
-        background: Type.String(),
-        border: Type.String(),
+        primary: HexColorSchema,
+        secondary: HexColorSchema,
+        accent: HexColorSchema,
+        text: HexColorSchema,
+        background: HexColorSchema,
+        border: HexColorSchema,
         // Additional semantic color names
-        textPrimary: Type.String(),
-        textSecondary: Type.String(),
-        textMuted: Type.String(),
-        borderPrimary: Type.String(),
-        borderSecondary: Type.String(),
-        backgroundPrimary: Type.String(),
-        backgroundSecondary: Type.String(),
+        textPrimary: HexColorSchema,
+        textSecondary: HexColorSchema,
+        textMuted: HexColorSchema,
+        borderPrimary: HexColorSchema,
+        borderSecondary: HexColorSchema,
+        backgroundPrimary: HexColorSchema,
+        backgroundSecondary: HexColorSchema,
       },
       { additionalProperties: false }
     ),

@@ -141,8 +141,7 @@ export function convertToJsonSchema(
           const definitionName = schemaValue.$id;
 
           if (path !== `definitions.${definitionName}`) {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { $id: _, ...schemaWithoutId } = schemaValue;
+            const { $id: _id, ...schemaWithoutId } = schemaValue; // eslint-disable-line @typescript-eslint/no-unused-vars
             extractedDefinitions[definitionName] = schemaWithoutId;
             obj[key] = { $ref: `#/definitions/${definitionName}` };
             extractRecursiveSchemas(

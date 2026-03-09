@@ -250,7 +250,7 @@ function EditorMonacoTheme({
                 size="sm"
                 onClick={() => {
                   saveDocument(document.name, pendingDiff.modified);
-                  clearPendingDiff(document.name);
+                  clearPendingDiff(document.name, true);
                 }}
               >
                 Apply Changes

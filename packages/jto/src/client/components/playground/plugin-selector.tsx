@@ -94,27 +94,27 @@ export function PluginSelector({
 
   const getLocationLabel = (location: string) => {
     switch (location) {
-      case 'current':
-        return 'Current Directory';
-      case 'downstream':
-        return 'Project';
-      case 'upstream':
-        return 'Parent Directories';
-      default:
-        return location;
+    case 'current':
+      return 'Current Directory';
+    case 'downstream':
+      return 'Project';
+    case 'upstream':
+      return 'Parent Directories';
+    default:
+      return location;
     }
   };
 
   const getLocationIcon = (location: string) => {
     switch (location) {
-      case 'current':
-        return <MapPin className="size-3" />;
-      case 'downstream':
-        return <Package className="size-3" />;
-      case 'upstream':
-        return <FileText className="size-3" />;
-      default:
-        return null;
+    case 'current':
+      return <MapPin className="size-3" />;
+    case 'downstream':
+      return <Package className="size-3" />;
+    case 'upstream':
+      return <FileText className="size-3" />;
+    default:
+      return null;
     }
   };
 
@@ -416,13 +416,6 @@ export function PluginSelector({
                   schema={selectedPlugin.schema?.jsonSchema || null}
                   loading={false}
                   className="h-[500px]"
-                  onCopy={() => {
-                    toast({
-                      title: 'Schema copied!',
-                      description:
-                        'The JSON schema has been copied to your clipboard.',
-                    });
-                  }}
                 />
               </TabsContent>
 
@@ -430,9 +423,9 @@ export function PluginSelector({
               <TabsContent value="examples" className="flex-1 overflow-hidden">
                 {selectedPlugin.examples &&
                 selectedPlugin.examples.length > 0 ? (
-                  <>
-                    {/* Examples List View */}
-                    {exampleView === 'list' &&
+                    <>
+                      {/* Examples List View */}
+                      {exampleView === 'list' &&
                       selectedPlugin.examples.length > 1 && (
                         <ScrollArea className="h-[500px]">
                           <div className="space-y-3">
@@ -473,8 +466,8 @@ export function PluginSelector({
                         </ScrollArea>
                       )}
 
-                    {/* Example Detail View */}
-                    {(exampleView === 'detail' ||
+                      {/* Example Detail View */}
+                      {(exampleView === 'detail' ||
                       selectedPlugin.examples.length === 1) &&
                       selectedPlugin.examples[selectedExample] && (
                         <>
@@ -567,28 +560,28 @@ export function PluginSelector({
                         </>
                       )}
 
-                    <div className="mt-4 p-3 bg-muted rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <FileText className="size-4 text-muted-foreground mt-0.5" />
-                        <div className="text-xs text-muted-foreground">
-                          <p className="font-medium mb-1">How to use:</p>
-                          <ol className="list-decimal list-inside space-y-1">
-                            <li>Copy the example configuration</li>
-                            <li>
+                      <div className="mt-4 p-3 bg-muted rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <FileText className="size-4 text-muted-foreground mt-0.5" />
+                          <div className="text-xs text-muted-foreground">
+                            <p className="font-medium mb-1">How to use:</p>
+                            <ol className="list-decimal list-inside space-y-1">
+                              <li>Copy the example configuration</li>
+                              <li>
                               Paste it into your document's children array
-                            </li>
-                            <li>Adjust the configuration values as needed</li>
-                          </ol>
+                              </li>
+                              <li>Adjust the configuration values as needed</li>
+                            </ol>
+                          </div>
                         </div>
                       </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-12">
+                      <Eye className="size-12 mx-auto mb-3 opacity-20" />
+                      <p>No examples available for this plugin</p>
                     </div>
-                  </>
-                ) : (
-                  <div className="text-center text-muted-foreground py-12">
-                    <Eye className="size-12 mx-auto mb-3 opacity-20" />
-                    <p>No examples available for this plugin</p>
-                  </div>
-                )}
+                  )}
               </TabsContent>
             </Tabs>
           </div>

@@ -3,6 +3,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { HexColorSchema } from '../font';
 
 // Define Cell type - can be plain text or a component definition
 const CellContentSchema = Type.Recursive((This) =>
@@ -133,12 +134,8 @@ const PaddingSchema = Type.Union([
 
 // Cell defaults configuration
 const CellDefaultsSchema = Type.Object({
-  color: Type.Optional(
-    Type.String({ description: 'Text color (hex without #)' })
-  ),
-  backgroundColor: Type.Optional(
-    Type.String({ description: 'Cell background color (hex without #)' })
-  ),
+  color: Type.Optional(HexColorSchema),
+  backgroundColor: Type.Optional(HexColorSchema),
   horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
   verticalAlignment: Type.Optional(VerticalAlignmentSchema),
   font: Type.Optional(FontConfigSchema),
@@ -152,12 +149,8 @@ const CellDefaultsSchema = Type.Object({
 
 // Header schema - includes all CellDefaults properties plus content
 const HeaderSchema = Type.Object({
-  color: Type.Optional(
-    Type.String({ description: 'Text color (hex without #)' })
-  ),
-  backgroundColor: Type.Optional(
-    Type.String({ description: 'Cell background color (hex without #)' })
-  ),
+  color: Type.Optional(HexColorSchema),
+  backgroundColor: Type.Optional(HexColorSchema),
   horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
   verticalAlignment: Type.Optional(VerticalAlignmentSchema),
   font: Type.Optional(FontConfigSchema),
@@ -172,12 +165,8 @@ const HeaderSchema = Type.Object({
 
 // Cell schema - includes all CellDefaults properties plus content
 const CellSchema = Type.Object({
-  color: Type.Optional(
-    Type.String({ description: 'Text color (hex without #)' })
-  ),
-  backgroundColor: Type.Optional(
-    Type.String({ description: 'Cell background color (hex without #)' })
-  ),
+  color: Type.Optional(HexColorSchema),
+  backgroundColor: Type.Optional(HexColorSchema),
   horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
   verticalAlignment: Type.Optional(VerticalAlignmentSchema),
   font: Type.Optional(FontConfigSchema),

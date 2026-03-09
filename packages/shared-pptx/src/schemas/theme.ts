@@ -48,51 +48,38 @@ export type GridMargin = Static<typeof GridMarginSchema>;
 export type GridGutter = Static<typeof GridGutterSchema>;
 export type GridConfig = Static<typeof GridConfigSchema>;
 
+const HexColorSchema = Type.String({ pattern: '^#?[0-9A-Fa-f]{6}$', description: 'Hex color (e.g. #FF0000)' });
+
 export const ThemeConfigSchema = Type.Object(
   {
-    name: Type.Optional(Type.String({ description: 'Theme name' })),
-    colors: Type.Optional(
-      Type.Object(
-        {
-          primary: Type.Optional(Type.String()),
-          secondary: Type.Optional(Type.String()),
-          accent: Type.Optional(Type.String()),
-          background: Type.Optional(Type.String()),
-          text: Type.Optional(Type.String()),
-        },
-        { additionalProperties: true }
-      )
+    name: Type.String({ description: 'Theme name' }),
+    colors: Type.Object(
+      {
+        primary: HexColorSchema,
+        secondary: HexColorSchema,
+        accent: HexColorSchema,
+        background: HexColorSchema,
+        text: HexColorSchema,
+      },
+      { additionalProperties: false, description: 'Theme color palette' }
     ),
-    fonts: Type.Optional(
-      Type.Object(
-        {
-          heading: Type.Optional(Type.String()),
-          body: Type.Optional(Type.String()),
-        },
-        { additionalProperties: true }
-      )
+    fonts: Type.Object(
+      {
+        heading: Type.String({ description: 'Heading font family' }),
+        body: Type.String({ description: 'Body font family' }),
+      },
+      { additionalProperties: false, description: 'Font families' }
     ),
-    defaults: Type.Optional(
-      Type.Object(
-        {
-          fontSize: Type.Optional(Type.Number()),
-          fontColor: Type.Optional(Type.String()),
-        },
-        { additionalProperties: true }
-      )
-    ),
-    slide: Type.Optional(
-      Type.Object(
-        {
-          width: Type.Optional(Type.Number()),
-          height: Type.Optional(Type.Number()),
-        },
-        { additionalProperties: true }
-      )
+    defaults: Type.Object(
+      {
+        fontSize: Type.Number({ description: 'Default font size in points' }),
+        fontColor: HexColorSchema,
+      },
+      { additionalProperties: false, description: 'Default text styling' }
     ),
     grid: Type.Optional(GridConfigSchema),
   },
-  { additionalProperties: true, description: 'Presentation theme configuration' }
+  { additionalProperties: false, description: 'Presentation theme configuration' }
 );
 
 export type ThemeConfigJson = Static<typeof ThemeConfigSchema>;

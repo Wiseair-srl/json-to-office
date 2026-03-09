@@ -38,7 +38,7 @@ export const useSettingsStore = <T,>(
 
   if (!settingsStoreContext) {
     throw new Error(
-      `useSettingsStore must be used within SettingsStoreProvider`
+      'useSettingsStore must be used within SettingsStoreProvider'
     );
   }
 

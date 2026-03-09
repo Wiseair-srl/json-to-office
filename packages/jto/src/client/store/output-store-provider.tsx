@@ -33,7 +33,7 @@ export const useOutputStore = <T,>(selector: (store: OutputStore) => T): T => {
   const outputStoreContext = useContext(OutputStoreContext);
 
   if (!outputStoreContext) {
-    throw new Error(`useOutputStore must be used within OutputStoreProvider`);
+    throw new Error('useOutputStore must be used within OutputStoreProvider');
   }
 
   return useStore(outputStoreContext, selector);

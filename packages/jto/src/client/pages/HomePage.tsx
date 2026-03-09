@@ -5,6 +5,7 @@ import { DocumentsStoreProvider } from '../store/documents-store-provider';
 import { OutputStoreProvider } from '../store/output-store-provider';
 import { SettingsStoreProvider } from '../store/settings-store-provider';
 import { ThemesStoreProvider } from '../store/themes-store-provider';
+import { ChatStoreProvider } from '../store/chat-store-provider';
 import { useDiscovery, useLoadPlugins } from '../hooks/useDiscovery';
 import { usePluginsStore } from '../store/plugins-store';
 
@@ -72,13 +73,15 @@ export function HomePage() {
       <OutputStoreProvider>
         <ThemesStoreProvider>
           <DocumentsStoreProvider>
-            <SidebarProvider>
-              <section className="flex h-screen w-full flex-col">
-                <div className="grow overflow-hidden">
-                  <DevEnv discoveryData={discoveryData} />
-                </div>
-              </section>
-            </SidebarProvider>
+            <ChatStoreProvider>
+              <SidebarProvider>
+                <section className="flex h-screen w-full flex-col">
+                  <div className="grow overflow-hidden">
+                    <DevEnv discoveryData={discoveryData} />
+                  </div>
+                </section>
+              </SidebarProvider>
+            </ChatStoreProvider>
           </DocumentsStoreProvider>
         </ThemesStoreProvider>
       </OutputStoreProvider>

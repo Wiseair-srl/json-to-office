@@ -43,24 +43,24 @@ export class ThemeLoader {
         let message: string;
 
         switch (fsError.code) {
-          case 'ENOENT':
-            message = 'File not found';
-            break;
-          case 'EACCES':
-            message = 'Permission denied';
-            break;
-          case 'EISDIR':
-            message = 'Path is a directory, not a file';
-            break;
-          case 'EMFILE':
-          case 'ENFILE':
-            message = 'Too many open files';
-            break;
-          case 'ENOTDIR':
-            message = 'Directory in path does not exist';
-            break;
-          default:
-            message = `File system error: ${fsError.message}`;
+        case 'ENOENT':
+          message = 'File not found';
+          break;
+        case 'EACCES':
+          message = 'Permission denied';
+          break;
+        case 'EISDIR':
+          message = 'Path is a directory, not a file';
+          break;
+        case 'EMFILE':
+        case 'ENFILE':
+          message = 'Too many open files';
+          break;
+        case 'ENOTDIR':
+          message = 'Directory in path does not exist';
+          break;
+        default:
+          message = `File system error: ${fsError.message}`;
         }
 
         throw new ThemeFileError(

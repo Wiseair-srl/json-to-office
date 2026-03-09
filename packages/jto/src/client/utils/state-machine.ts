@@ -135,7 +135,7 @@ export class StateMachine<
 
       return true;
     } catch (error) {
-      console.error(`State machine: Error during transition:`, error);
+      console.error('State machine: Error during transition:', error);
       return false;
     } finally {
       this.transitionInProgress = false;

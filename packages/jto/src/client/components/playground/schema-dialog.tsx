@@ -1,25 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FileJson, FileCode } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { SchemaViewer } from './schema-viewer';
 import { schemaService, SchemaType } from '../../lib/schema-service';
+import { copySchemaToClipboard } from '../../lib/clipboard';
 import { useToast } from '../ui/use-toast';
 import { usePluginsStore } from '../../store/plugins-store';
-import { Badge } from '../ui/badge';
 
 interface SchemaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultTab?: SchemaType;
-  activeDocumentType?: 'document' | 'theme';
 }
 
 /**
@@ -29,7 +28,6 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
   open,
   onOpenChange,
   defaultTab = 'document',
-  activeDocumentType,
 }) => {
   const [activeTab, setActiveTab] = useState<SchemaType>(defaultTab);
   const [documentSchema, setDocumentSchema] = useState<any>(null);
@@ -38,6 +36,7 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
   const [loadingTheme, setLoadingTheme] = useState(false);
   const [errorDocument, setErrorDocument] = useState<string | null>(null);
   const [errorTheme, setErrorTheme] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
   const selectedPlugins = usePluginsStore((state) => state.selectedPlugins);
   const selectedPluginNames = Array.from(selectedPlugins);
@@ -55,7 +54,6 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
     setErrorDocument(null);
 
     try {
-      // Include selected plugins in schema generation
       const schema =
         await schemaService.fetchDocumentSchema(selectedPluginNames);
       setDocumentSchema(schema);
@@ -77,7 +75,7 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
 
   // Load theme schema
   const loadThemeSchema = useCallback(async () => {
-    if (themeSchema) return; // Already loaded
+    if (themeSchema) return;
 
     setLoadingTheme(true);
     setErrorTheme(null);
@@ -105,7 +103,6 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
   // Reset schema when dialog closes to force refresh on next open
   useEffect(() => {
     if (!open) {
-      // Clear document schema to force reload on next open
       setDocumentSchema(null);
       setErrorDocument(null);
     }
@@ -115,16 +112,13 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
   useEffect(() => {
     if (!open) return;
 
-    // Check if plugins have actually changed
     const pluginsChanged =
       selectedPluginNames.length !== previousPlugins.length ||
       selectedPluginNames.some((name, i) => name !== previousPlugins[i]);
 
     if (activeTab === 'document') {
-      // Load document schema if not loaded or plugins changed
       if (!documentSchema || pluginsChanged) {
         if (pluginsChanged) {
-          // Clear cache only when plugins actually change
           schemaService.clearPluginSchemaCache();
           setPreviousPlugins([...selectedPluginNames]);
         }
@@ -133,7 +127,6 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
         }
       }
     } else if (activeTab === 'theme') {
-      // Load theme schema if not loaded
       if (!themeSchema && !loadingTheme) {
         loadThemeSchema();
       }
@@ -151,43 +144,32 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
     loadThemeSchema,
   ]);
 
-  // Show plugin badge in document tab
   const pluginCount = selectedPluginNames.length;
 
-  // Handle copy success
-  const handleCopySuccess = () => {
-    toast({
-      title: 'Schema copied',
-      description: 'The JSON schema has been copied to your clipboard',
-    });
+  const activeSchema = activeTab === 'document' ? documentSchema : themeSchema;
+
+  const handleCopy = async () => {
+    if (!activeSchema) return;
+    try {
+      const success = await copySchemaToClipboard(activeSchema);
+      if (success) {
+        setCopied(true);
+        toast({
+          title: 'Schema copied',
+          description: 'The JSON schema has been copied to your clipboard',
+        });
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (error) {
+      console.error('Copy failed:', error);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileJson className="h-5 w-5" />
-            JSON Schema Viewer
-          </DialogTitle>
-          <DialogDescription>
-            View and copy the JSON schemas used for validating documents and
-            themes.
-            {activeDocumentType && (
-              <span className="block mt-1 text-primary">
-                Currently editing:{' '}
-                {activeDocumentType === 'theme' ? 'Theme' : 'Document'}
-              </span>
-            )}
-            {pluginCount > 0 && (
-              <span className="block mt-1">
-                <Badge variant="secondary" className="text-xs">
-                  {pluginCount} plugin{pluginCount !== 1 ? 's' : ''} included in
-                  schema
-                </Badge>
-              </span>
-            )}
-          </DialogDescription>
+          <DialogTitle>Schema Viewer</DialogTitle>
         </DialogHeader>
 
         <Tabs
@@ -195,27 +177,34 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
           onValueChange={(value) => setActiveTab(value as SchemaType)}
           className="flex-1 overflow-hidden flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="document" className="flex items-center gap-2">
-              <FileCode className="h-4 w-4" />
-              Document Schema
-              {pluginCount > 0 && (
-                <Badge variant="secondary" className="ml-1 text-xs px-1 py-0">
-                  +{pluginCount}
-                </Badge>
-              )}
-              {activeDocumentType === 'document' && (
-                <span className="ml-1 text-xs text-primary">●</span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="theme" className="flex items-center gap-2">
-              <FileCode className="h-4 w-4" />
-              Theme Schema
-              {activeDocumentType === 'theme' && (
-                <span className="ml-1 text-xs text-primary">●</span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center gap-2">
+            <TabsList>
+              <TabsTrigger value="document" className="flex items-center gap-1">
+                Document
+                {pluginCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-xs px-1 py-0">
+                    +{pluginCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="theme">Theme</TabsTrigger>
+            </TabsList>
+            <div className="ml-auto">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCopy}
+                disabled={copied || !activeSchema}
+                aria-label="Copy schema"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
 
           <div className="flex-1 overflow-auto mt-4">
             <TabsContent value="document" className="h-full">
@@ -223,7 +212,6 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
                 schema={documentSchema}
                 loading={loadingDocument}
                 error={errorDocument || undefined}
-                onCopy={handleCopySuccess}
               />
             </TabsContent>
 
@@ -232,17 +220,10 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
                 schema={themeSchema}
                 loading={loadingTheme}
                 error={errorTheme || undefined}
-                onCopy={handleCopySuccess}
               />
             </TabsContent>
           </div>
         </Tabs>
-
-        <div className="flex justify-end pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );

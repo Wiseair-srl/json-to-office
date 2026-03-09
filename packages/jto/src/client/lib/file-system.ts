@@ -16,8 +16,8 @@ export function loadTextFile(filePath: string): TextFile {
   return {
     name: path.basename(filePath),
     type: (mime.lookup(filePath) || 'text/plain').replace(
-      `video/mp2t`,
-      `application/typescript`
+      'video/mp2t',
+      'application/typescript'
     ),
     text: fileContent,
     atime: stats.atime,

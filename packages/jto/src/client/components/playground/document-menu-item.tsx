@@ -32,7 +32,7 @@ const isMac: boolean =
 
 function DocumentMenuItem({
   document,
-  indicator,
+  indicator: _indicator,
   compact = false,
 }: {
   document: TextFile;
@@ -213,42 +213,20 @@ function DocumentMenuItem({
         <FileTextIcon className="size-4 text-blue-600 dark:text-blue-400" />
       )}
       {!compact && (
-        <>
-          <span
-            className={cn(
-              'truncate flex-1',
-              isTheme &&
-                !isEditing &&
-                !isPreviewing &&
-                !isThemeUsedInPreview &&
-                'text-purple-700 dark:text-purple-300',
-              (isEditing || isPreviewing || isThemeUsedInPreview) &&
-                'font-semibold'
-            )}
-          >
-            {document.name}
-          </span>
-          <div className="flex gap-1">
-            {isEditing && (
-              <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">
-                Editing
-              </span>
-            )}
-            {(isPreviewing || isThemeUsedInPreview) && (
-              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
-                Previewing
-              </span>
-            )}
-            {indicator === 'in-use' &&
+        <span
+          className={cn(
+            'truncate flex-1',
+            isTheme &&
               !isEditing &&
               !isPreviewing &&
-              !isThemeUsedInPreview && (
-                <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">
-                  In Use
-                </span>
-              )}
-          </div>
-        </>
+              !isThemeUsedInPreview &&
+              'text-purple-700 dark:text-purple-300',
+            (isEditing || isPreviewing || isThemeUsedInPreview) &&
+              'font-medium'
+          )}
+        >
+          {document.name}
+        </span>
       )}
     </SidebarMenuButton>
   );

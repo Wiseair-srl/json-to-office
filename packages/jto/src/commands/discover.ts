@@ -9,6 +9,7 @@ import {
 import { PluginDisplay } from '../services/plugin-display.js';
 import { PluginRegistry } from '../services/plugin-registry.js';
 import type { FormatAdapter } from '../format-adapter.js';
+import { createTable, dimPath, formatError, EXIT_CODES } from './ui.js';
 
 export function createDiscoverCommand(adapter: FormatAdapter): Command {
   return new Command('discover')
@@ -39,7 +40,7 @@ export function createDiscoverCommand(adapter: FormatAdapter): Command {
             `Invalid type: ${discoverType}. Must be one of: ${validTypes.join(', ')}`
           )
         );
-        process.exit(1);
+        process.exit(EXIT_CODES.FAIL);
       }
 
       const scopeDescription = options.scope
@@ -122,15 +123,15 @@ export function createDiscoverCommand(adapter: FormatAdapter): Command {
           if (discoverType === 'all') {
             if (plugins.length > 0) {
               console.log(chalk.bold('\nPlugins:'));
-              displayPluginsConsole(plugins, options.grouped);
+              displayAsTable(plugins, 'plugin', options.grouped);
             }
             if (documents.length > 0) {
               console.log(chalk.bold('\nDocuments:'));
-              displayDocumentsConsole(documents, options.grouped);
+              displayAsTable(documents, 'document', options.grouped);
             }
             if (themes.length > 0) {
               console.log(chalk.bold('\nThemes:'));
-              displayThemesConsole(themes, options.grouped);
+              displayAsTable(themes, 'theme', options.grouped);
             }
           } else if (discoverType === 'plugin') {
             const display = new PluginDisplay({
@@ -145,19 +146,18 @@ export function createDiscoverCommand(adapter: FormatAdapter): Command {
               await display.show(plugins);
             }
           } else if (discoverType === 'document') {
-            displayDocumentsConsole(documents, options.grouped);
+            displayAsTable(documents, 'document', options.grouped);
           } else if (discoverType === 'theme') {
-            displayThemesConsole(themes, options.grouped);
+            displayAsTable(themes, 'theme', options.grouped);
           }
         }
 
-        PluginRegistry.cleanup();
-        process.exit(totalCount > 0 ? 0 : 1);
+        PluginRegistry.getInstance().clear();
       } catch (error: any) {
         if (spinner) spinner.fail('Discovery failed');
-        console.error(chalk.red('\nError:'), error.message);
-        PluginRegistry.cleanup();
-        process.exit(1);
+        formatError(error);
+        PluginRegistry.getInstance().clear();
+        process.exit(EXIT_CODES.FAIL);
       }
     })
     .addHelpText(
@@ -172,74 +172,27 @@ ${chalk.gray('Examples:')}
     );
 }
 
-function displayPluginsConsole(plugins: any[], grouped: boolean) {
+function displayAsTable(items: any[], type: string, grouped: boolean) {
   if (grouped) {
-    const groups = groupByLocation(plugins);
-    for (const [location, items] of Object.entries(groups)) {
-      if (items.length > 0) {
-        console.log(chalk.gray(`  ${location}:`));
-        items.forEach((plugin: any) => {
-          console.log(
-            `    * ${chalk.cyan(plugin.name)} - ${chalk.gray(plugin.filePath)}`
-          );
-        });
+    const groups = groupByLocation(items);
+    for (const [location, groupItems] of Object.entries(groups)) {
+      if (groupItems.length > 0) {
+        console.log(chalk.gray(`\n  ${location}:`));
+        const rows = groupItems.map((item: any) => [
+          item.name || item.title || '',
+          type,
+          dimPath(item.filePath || item.path || ''),
+        ]);
+        console.log(createTable(['Name', 'Type', 'Path'], rows));
       }
     }
   } else {
-    plugins.forEach((plugin: any) => {
-      console.log(
-        `  * ${chalk.cyan(plugin.name)} - ${chalk.gray(plugin.filePath)}`
-      );
-    });
-  }
-}
-
-function displayDocumentsConsole(
-  documents: DocumentMetadata[],
-  grouped: boolean
-) {
-  if (grouped) {
-    const groups = groupByLocation(documents);
-    for (const [location, items] of Object.entries(groups)) {
-      if (items.length > 0) {
-        console.log(chalk.gray(`  ${location}:`));
-        items.forEach((doc) => {
-          const title = doc.title ? ` (${doc.title})` : '';
-          console.log(
-            `    * ${chalk.yellow(doc.name)}${title} - ${chalk.gray(doc.path)}`
-          );
-        });
-      }
-    }
-  } else {
-    documents.forEach((doc) => {
-      const title = doc.title ? ` (${doc.title})` : '';
-      console.log(
-        `  * ${chalk.yellow(doc.name)}${title} - ${chalk.gray(doc.path)}`
-      );
-    });
-  }
-}
-
-function displayThemesConsole(themes: ThemeMetadata[], grouped: boolean) {
-  if (grouped) {
-    const groups = groupByLocation(themes);
-    for (const [location, items] of Object.entries(groups)) {
-      if (items.length > 0) {
-        console.log(chalk.gray(`  ${location}:`));
-        items.forEach((theme) => {
-          console.log(
-            `    * ${chalk.magenta(theme.name)} - ${chalk.gray(theme.path)}`
-          );
-        });
-      }
-    }
-  } else {
-    themes.forEach((theme) => {
-      console.log(
-        `  * ${chalk.magenta(theme.name)} - ${chalk.gray(theme.path)}`
-      );
-    });
+    const rows = items.map((item: any) => [
+      item.name || item.title || '',
+      type,
+      dimPath(item.filePath || item.path || ''),
+    ]);
+    console.log(createTable(['Name', 'Type', 'Path'], rows));
   }
 }
 

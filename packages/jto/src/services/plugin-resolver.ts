@@ -107,10 +107,10 @@ export class PluginResolver {
     if (this.discoveredPlugins.size > 0) {
       const suggestions = this.findSimilarNames(input);
       if (suggestions.length > 0) {
-        message += `\n\nDid you mean one of these?`;
+        message += '\n\nDid you mean one of these?';
         suggestions.forEach((name) => { message += `\n  - ${name}`; });
       } else {
-        message += `\n\nAvailable plugins:`;
+        message += '\n\nAvailable plugins:';
         Array.from(this.discoveredPlugins.keys())
           .slice(0, 5)
           .forEach((name) => { message += `\n  - ${name}`; });
@@ -120,7 +120,7 @@ export class PluginResolver {
       }
     }
 
-    message += `\n\nUse 'jto <format> discover' to list all available plugins.`;
+    message += '\n\nUse \'jto <format> discover\' to list all available plugins.';
 
     return new Error(message);
   }

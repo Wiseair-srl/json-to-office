@@ -62,10 +62,10 @@ export function getSelectionContext(
   // Try to determine the JSON path
   const jsonPath = isValidJson
     ? getJsonPathAtPosition(
-        fullDocumentText,
-        selection.startLineNumber,
-        selection.startColumn
-      )
+      fullDocumentText,
+      selection.startLineNumber,
+      selection.startColumn
+    )
     : undefined;
 
   // Extract property key if we're selecting a property value

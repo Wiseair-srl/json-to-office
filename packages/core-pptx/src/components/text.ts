@@ -4,6 +4,7 @@
 
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig } from '../types';
+import { toHex } from '../utils/color';
 
 interface TextComponentProps {
   text: string;
@@ -64,7 +65,7 @@ export function renderTextComponent(
   // Font
   opts.fontSize = props.fontSize ?? theme.defaults.fontSize;
   opts.fontFace = props.fontFace ?? theme.fonts.body;
-  opts.color = props.color ?? theme.defaults.fontColor;
+  opts.color = toHex(props.color ?? theme.defaults.fontColor);
 
   // Formatting
   if (props.bold) opts.bold = true;
@@ -102,7 +103,7 @@ export function renderTextComponent(
   if (props.shadow) {
     opts.shadow = {
       type: props.shadow.type ?? 'outer',
-      color: props.shadow.color ?? '000000',
+      color: toHex(props.shadow.color ?? '000000'),
       blur: props.shadow.blur ?? 3,
       offset: props.shadow.offset ?? 3,
       angle: props.shadow.angle ?? 45,
@@ -112,7 +113,7 @@ export function renderTextComponent(
 
   // Fill
   if (props.fill) {
-    opts.fill = { color: props.fill.color };
+    opts.fill = { color: toHex(props.fill.color) };
     if (props.fill.transparency !== undefined) {
       (opts.fill as Record<string, unknown>).transparency = props.fill.transparency;
     }

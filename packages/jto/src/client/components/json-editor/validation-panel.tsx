@@ -122,16 +122,16 @@ interface ErrorItemProps {
 function ErrorItem({ error, onClick }: ErrorItemProps) {
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
-      case 'error':
-        return (
-          <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
-        );
-      case 'warning':
-        return (
-          <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-        );
-      default:
-        return <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />;
+    case 'error':
+      return (
+        <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
+      );
+    case 'warning':
+      return (
+        <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+      );
+    default:
+      return <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />;
     }
   };
 

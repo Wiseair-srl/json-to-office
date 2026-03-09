@@ -75,7 +75,7 @@ export function resolveComponentGridPosition(
 
   const resolved = resolveGridPosition(gridPos, gridConfig, slideWidth, slideHeight);
 
-  const { grid: _, ...restProps } = component.props;
+  const { grid: _grid, ...restProps } = component.props; // eslint-disable-line no-unused-vars, @typescript-eslint/no-unused-vars
   const newProps = { ...restProps };
 
   // Grid sets x/y/w/h, but explicit values on the element override individually

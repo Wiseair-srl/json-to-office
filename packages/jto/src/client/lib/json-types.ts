@@ -30,7 +30,6 @@ import {
   type PptxImageProps,
   type ShapeProps,
   type PptxTableProps,
-  parseJsonComponent as parsePptxJsonComponent,
 } from '@json-to-office/shared-pptx';
 
 // Re-export the right ComponentDefinitionSchema based on format
@@ -40,8 +39,8 @@ export const ComponentDefinitionSchema =
     : PptxComponentDefinitionSchema;
 
 // Re-export the right parseJsonComponent based on format
-export const parseJsonComponent =
-  FORMAT === 'docx' ? parseDocxJsonComponent : parsePptxJsonComponent;
+// Note: shared-pptx doesn't have parseJsonComponent yet, so we use docx's for now
+export const parseJsonComponent = parseDocxJsonComponent;
 
 // Re-export all types (consumers pick what they need)
 export type {

@@ -20,7 +20,7 @@ export class DuplicateComponentError extends Error {
   constructor(componentName: string) {
     super(
       `Cannot register component "${componentName}": a component with this name is already registered. ` +
-        `Component names must be unique within a document generator.`
+        'Component names must be unique within a document generator.'
     );
     this.name = 'DuplicateComponentError';
     this.componentName = componentName;

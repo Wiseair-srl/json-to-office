@@ -79,12 +79,12 @@ export const DEFAULT_ERROR_CONFIG: Required<ErrorFormatterConfig> =
  * Error message templates
  */
 export const ERROR_TEMPLATES = {
-  UNION_NO_MATCH: "Value doesn't match any of the expected formats",
+  UNION_NO_MATCH: 'Value doesn\'t match any of the expected formats',
   TYPE_MISMATCH: 'Expected {expected} but got {actual}',
-  MISSING_REQUIRED: "Missing required field '{field}'",
-  UNKNOWN_PROPERTY: "Unknown property '{property}'",
+  MISSING_REQUIRED: 'Missing required field \'{field}\'',
+  UNKNOWN_PROPERTY: 'Unknown property \'{property}\'',
   INVALID_FORMAT: 'Invalid {type} format',
-  PATTERN_MISMATCH: "Value doesn't match the required pattern",
+  PATTERN_MISMATCH: 'Value doesn\'t match the required pattern',
 } as const;
 
 /**

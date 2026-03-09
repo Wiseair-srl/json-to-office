@@ -6,6 +6,16 @@
 import { Type } from '@sinclair/typebox';
 
 // ----------------------------------------------------------------------------
+// Shared Color Schema
+// ----------------------------------------------------------------------------
+
+/** Hex color with # prefix (e.g. "#000000") or a theme color name (e.g. "primary") */
+export const HexColorSchema = Type.String({
+  pattern: '^(#[0-9A-Fa-f]{6}|[a-zA-Z][a-zA-Z0-9]*)$',
+  description: 'Hex color with # prefix (e.g. "#000000") or theme color name',
+});
+
+// ----------------------------------------------------------------------------
 // Shared Text Formatting Properties
 // ----------------------------------------------------------------------------
 
@@ -16,7 +26,7 @@ import { Type } from '@sinclair/typebox';
 export const TextFormattingPropertiesSchema = Type.Object(
   {
     size: Type.Optional(Type.Number({ minimum: 8, maximum: 72 })),
-    color: Type.Optional(Type.String()),
+    color: Type.Optional(HexColorSchema),
     bold: Type.Optional(Type.Boolean()),
     italic: Type.Optional(Type.Boolean()),
     underline: Type.Optional(Type.Boolean()),

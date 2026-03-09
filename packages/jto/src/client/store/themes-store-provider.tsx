@@ -18,7 +18,7 @@ export interface ThemesStoreProviderProps {
 }
 
 export const ThemesStoreProvider = ({ children }: ThemesStoreProviderProps) => {
-  const storeRef = useRef<ThemesStoreApi>();
+  const storeRef = useRef<ThemesStoreApi>(undefined);
   if (!storeRef.current) {
     storeRef.current = createThemesStore(initThemesStore());
   }
@@ -34,7 +34,7 @@ export const useThemesStore = <T,>(selector: (store: ThemesStore) => T): T => {
   const themesStoreContext = useContext(ThemesStoreContext);
 
   if (!themesStoreContext) {
-    throw new Error(`useThemesStore must be used within ThemesStoreProvider`);
+    throw new Error('useThemesStore must be used within ThemesStoreProvider');
   }
 
   return useStore(themesStoreContext, selector);

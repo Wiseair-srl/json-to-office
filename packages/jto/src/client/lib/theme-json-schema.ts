@@ -61,7 +61,6 @@ export const themeJsonSchema = {
       },
       additionalProperties: false,
     },
-  },
     grid: {
       type: 'object',
       description: 'Grid layout configuration',

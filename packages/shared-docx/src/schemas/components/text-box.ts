@@ -12,6 +12,7 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { FloatingPropertiesSchema } from './common';
+import { HexColorSchema } from '../font';
 
 export const TextBoxPropsSchema = Type.Object(
   {
@@ -84,7 +85,7 @@ export const TextBoxPropsSchema = Type.Object(
                       ])
                     ),
                     width: Type.Optional(Type.Number({ minimum: 0 })),
-                    color: Type.Optional(Type.String()),
+                    color: Type.Optional(HexColorSchema),
                   })
                 ),
                 right: Type.Optional(
@@ -99,7 +100,7 @@ export const TextBoxPropsSchema = Type.Object(
                       ])
                     ),
                     width: Type.Optional(Type.Number({ minimum: 0 })),
-                    color: Type.Optional(Type.String()),
+                    color: Type.Optional(HexColorSchema),
                   })
                 ),
                 bottom: Type.Optional(
@@ -114,7 +115,7 @@ export const TextBoxPropsSchema = Type.Object(
                       ])
                     ),
                     width: Type.Optional(Type.Number({ minimum: 0 })),
-                    color: Type.Optional(Type.String()),
+                    color: Type.Optional(HexColorSchema),
                   })
                 ),
                 left: Type.Optional(
@@ -129,7 +130,7 @@ export const TextBoxPropsSchema = Type.Object(
                       ])
                     ),
                     width: Type.Optional(Type.Number({ minimum: 0 })),
-                    color: Type.Optional(Type.String()),
+                    color: Type.Optional(HexColorSchema),
                   })
                 ),
               },

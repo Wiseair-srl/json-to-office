@@ -1,16 +1,16 @@
-import { useEffect, useCallback, useRef, useMemo, memo } from 'react';
+import { useEffect, useCallback, useRef, useMemo, memo, useContext } from 'react';
 import { EditorTabsContentMemoized } from './editor-tabs-content';
 import { Tabs } from '../ui/tabs';
-import { useDocumentsStore } from '../../store/documents-store-provider';
-import { useOutputStore } from '../../store/output-store-provider';
+import { useDocumentsStore, DocumentsStoreContext } from '../../store/documents-store-provider';
+import { useOutputStore, OutputStoreContext } from '../../store/output-store-provider';
 import { useSettingsStore } from '../../store/settings-store-provider';
+import { useEditorRefsStore } from '../../store/editor-refs-store';
 import { useThemesStore } from '../../store/themes-store-provider';
 import { usePresentationGenerator } from '../../hooks/usePresentationGenerator';
 import { retry, RetryStrategies } from '../../utils/retry';
 import { themeChangeEmitter } from '../../utils/theme-change-emitter';
 import { useShallow } from 'zustand/react/shallow';
 
-// Build queue to serialize presentation generation requests
 interface BuildRequest {
   id: string;
   docName: string;
@@ -19,56 +19,15 @@ interface BuildRequest {
   timestamp: number;
 }
 
-class BuildQueue {
-  private queue: BuildRequest[] = [];
-  private processing = false;
-  private currentRequest: BuildRequest | null = null;
-
-  add(request: BuildRequest): void {
-    // Remove any existing requests for the same document
-    this.queue = this.queue.filter((r) => r.docName !== request.docName);
-    this.queue.push(request);
-    this.process();
-  }
-
-  async process(): Promise<void> {
-    if (this.processing || this.queue.length === 0) return;
-
-    this.processing = true;
-    this.currentRequest = this.queue.shift()!;
-  }
-
-  complete(): void {
-    this.currentRequest = null;
-    this.processing = false;
-    this.process();
-  }
-
-  getCurrentRequest(): BuildRequest | null {
-    return this.currentRequest;
-  }
-
-  cancelAll(): void {
-    this.queue = [];
-    this.currentRequest = null;
-    this.processing = false;
-  }
-
-  cancelByDocument(docName: string): void {
-    this.queue = this.queue.filter((r) => r.docName !== docName);
-    if (this.currentRequest?.docName === docName) {
-      this.currentRequest = null;
-      this.processing = false;
-      this.process();
-    }
-  }
-}
-
 function EditorComponent() {
   const setOutput = useOutputStore((state) => state.setOutput);
+  const outputStore = useContext(OutputStoreContext)!;
+  const documentsStore = useContext(DocumentsStoreContext)!;
   const saveDocumentDebounceWait = useSettingsStore(
     (state) => state.saveDocumentDebounceWait
   );
+  const autoReload = useSettingsStore((state) => state.autoReload);
+  const renderingLibrary = useSettingsStore((state) => state.renderingLibrary);
   const {
     openTabs,
     activeTab,
@@ -98,7 +57,6 @@ function EditorComponent() {
   const { generatePresentation, cancelGeneration } = usePresentationGenerator();
 
   // Refs to track ongoing operations and prevent race conditions
-  const buildQueueRef = useRef<BuildQueue>(new BuildQueue());
   const buildAbortControllersRef = useRef<Map<string, AbortController>>(
     new Map()
   );
@@ -204,6 +162,7 @@ function EditorComponent() {
 
         if (signal.aborted || lastBuildRequestIdRef.current !== id) {
           console.log('Theme build cancelled for:', doc.name);
+          setOutput({ isGenerating: false, generationProgress: undefined });
           return;
         }
 
@@ -227,7 +186,9 @@ function EditorComponent() {
             blob: result.blob as Blob,
             globalError: undefined,
             isGenerating: false,
+            isPreviewStale: false,
             generationProgress: undefined,
+            lastBuiltSequence: outputStore.getState().editSequence,
             cacheStatus: (result as any).cacheStatus as
               | 'HIT'
               | 'MISS'
@@ -241,6 +202,7 @@ function EditorComponent() {
       } catch (error) {
         if (signal.aborted || lastBuildRequestIdRef.current !== id) {
           console.log('Theme build cancelled with error for:', doc.name);
+          setOutput({ isGenerating: false, generationProgress: undefined });
           return;
         }
 
@@ -258,7 +220,7 @@ function EditorComponent() {
         buildAbortControllersRef.current.delete(doc.name);
       }
     },
-    [generatePresentation, setOutput, setBuildError]
+    [generatePresentation, setOutput, setBuildError, outputStore]
   );
 
   // Prepare valid custom themes with deep comparison
@@ -343,14 +305,7 @@ function EditorComponent() {
         timestamp: Date.now(),
       };
 
-      // Add to queue
-      buildQueueRef.current.add(buildRequest);
-
-      // Process if this is the current request
-      const currentRequest = buildQueueRef.current.getCurrentRequest();
-      if (currentRequest?.id === requestId) {
-        await processBuildRequest(currentRequest, version);
-      }
+      await processBuildRequest(buildRequest, version);
     },
     [generatePresentation, setOutput, getDocumentVersion]
   );
@@ -363,7 +318,7 @@ function EditorComponent() {
       // Check if this is still the latest request
       if (lastBuildRequestIdRef.current !== id) {
         console.log('Skipping outdated build request for:', doc.name);
-        buildQueueRef.current.complete();
+        setOutput({ isGenerating: false, generationProgress: undefined });
         return;
       }
 
@@ -458,6 +413,7 @@ function EditorComponent() {
 
         if (signal.aborted || lastBuildRequestIdRef.current !== id) {
           console.log('Build cancelled for:', doc.name);
+          setOutput({ isGenerating: false, generationProgress: undefined });
           return;
         }
 
@@ -482,7 +438,9 @@ function EditorComponent() {
             blob: result.blob as Blob,
             globalError: undefined,
             isGenerating: false,
+            isPreviewStale: false,
             generationProgress: undefined,
+            lastBuiltSequence: outputStore.getState().editSequence,
             cacheStatus: (result as any).cacheStatus as
               | 'HIT'
               | 'MISS'
@@ -496,6 +454,7 @@ function EditorComponent() {
       } catch (error) {
         if (signal.aborted || lastBuildRequestIdRef.current !== id) {
           console.log('Build cancelled with error for:', doc.name);
+          setOutput({ isGenerating: false, generationProgress: undefined });
           return;
         }
 
@@ -511,21 +470,19 @@ function EditorComponent() {
         setBuildError(doc.name, errorMessage);
       } finally {
         buildAbortControllersRef.current.delete(doc.name);
-        buildQueueRef.current.complete();
       }
     },
-    [generatePresentation, getFreshThemeData, setOutput, setBuildError]
+    [generatePresentation, getFreshThemeData, setOutput, setBuildError, outputStore]
   );
 
   // Track the last viewed document for theme updates
   const lastViewedDocumentRef = useRef<string | null>(null);
 
+
   // re-build on active tab change or any document change
   useEffect(() => {
     console.log('Editor: Document rebuild effect triggered', {
       activeTab,
-      customThemesContentHash: customThemesContentHash.substring(0, 50) + '...',
-      customThemesCount: Object.keys(customThemes).length,
     });
 
     const activeFile = documents.find((doc) => doc.name === activeTab);
@@ -544,88 +501,44 @@ function EditorComponent() {
     }
 
     if (activeFile && docType === 'application/json+report') {
-      // Use adaptive debounce based on document size
-      const docSize = activeFile.text.length;
-      const debounceTime = docSize > 10000 ? 300 : docSize > 5000 ? 200 : 100;
-
-      // Cancel any builds for other documents
-      buildAbortControllersRef.current.forEach((controller, docName) => {
-        if (docName !== activeTab) {
-          controller.abort();
-          buildAbortControllersRef.current.delete(docName);
+      // Skip auto-build when auto-generation is disabled;
+      // also don't clobber an in-progress build (e.g. triggered by Run button)
+      if (!autoReload || renderingLibrary !== 'docxjs') {
+        if (!outputStore.getState().isGenerating) {
+          setOutput({ isPreviewStale: true });
         }
-      });
+      } else {
+        // Use adaptive debounce based on document size
+        const docSize = activeFile.text.length;
+        const debounceTime = docSize > 10000 ? 300 : docSize > 5000 ? 200 : 100;
 
-      // Debounce the build to avoid rapid rebuilds
-      const timeout = setTimeout(() => {
-        console.log('Editor: Triggering document build after debounce', {
-          docName: activeFile.name,
-          debounceTime,
-          customThemesCount: Object.keys(customThemes).length,
-          customThemesContentHash:
-            customThemesContentHash.substring(0, 50) + '...',
-        });
-        buildTimeoutsRef.current.delete(activeTab);
-
-        // Force new version when themes change to ensure rebuild
-        getDocumentVersion(activeFile.name);
-        buildDocument(activeFile);
-      }, debounceTime);
-
-      buildTimeoutsRef.current.set(activeTab, timeout);
-    } else if (activeFile && docType === 'application/json+theme') {
-      // Clear only error and generation status, preserve last document info
-      setOutput({
-        globalError: undefined,
-        blob: undefined,
-        isGenerating: false,
-      });
-      // Cancel any ongoing generation
-      cancelGeneration();
-
-      // If themes changed and we have a last viewed document, rebuild it
-      if (lastViewedDocumentRef.current && customThemesContentHash) {
-        const lastDoc = documents.find(
-          (d) => d.name === lastViewedDocumentRef.current
-        );
-        if (
-          lastDoc &&
-          documentTypes[lastDoc.name] === 'application/json+report'
-        ) {
-          console.log(
-            'Editor: Theme changed while viewing theme tab, rebuilding last document',
-            {
-              lastDocName: lastDoc.name,
-              activeThemeTab: activeTab,
-            }
-          );
-
-          // Clear any existing rebuild timeout for the last document
-          const existingLastDocTimeout = buildTimeoutsRef.current.get(
-            lastDoc.name
-          );
-          if (existingLastDocTimeout) {
-            clearTimeout(existingLastDocTimeout);
-            buildTimeoutsRef.current.delete(lastDoc.name);
+        // Cancel any builds for other documents
+        buildAbortControllersRef.current.forEach((controller, docName) => {
+          if (docName !== activeTab) {
+            controller.abort();
+            buildAbortControllersRef.current.delete(docName);
           }
+        });
 
-          // Debounce the rebuild
-          const timeout = setTimeout(() => {
-            console.log(
-              'Editor: Rebuilding last viewed document after theme change',
-              {
-                docName: lastDoc.name,
-                fromThemeTab: activeTab,
-              }
-            );
-            buildTimeoutsRef.current.delete(lastDoc.name);
-            getDocumentVersion(lastDoc.name);
-            buildDocument(lastDoc);
-          }, 500); // Use longer delay for theme changes
+        // Debounce the build to avoid rapid rebuilds
+        const timeout = setTimeout(() => {
+          console.log('Editor: Triggering document build after debounce', {
+            docName: activeFile.name,
+            debounceTime,
+          });
+          buildTimeoutsRef.current.delete(activeTab);
 
-          buildTimeoutsRef.current.set(lastDoc.name, timeout);
-        }
+          // Force new version when themes change to ensure rebuild
+          getDocumentVersion(activeFile.name);
+          buildDocument(activeFile);
+        }, debounceTime);
+
+        buildTimeoutsRef.current.set(activeTab, timeout);
       }
+    } else if (activeFile && docType === 'application/json+theme') {
+      // Theme tab active — no document preview to build.
+      // Don't clear blob: preserve the last document preview in the background.
+      cancelGeneration();
     }
 
     // Cleanup function to cancel pending operations
@@ -643,7 +556,8 @@ function EditorComponent() {
     documentTypes,
     buildDocument,
     cancelGeneration,
-    customThemesContentHash,
+    autoReload,
+    renderingLibrary,
   ]);
 
   // Track which documents use which themes
@@ -654,19 +568,14 @@ function EditorComponent() {
       if (documentTypes[doc.name] === 'application/json+report') {
         try {
           const parsed = JSON.parse(doc.text);
-          if (parsed.children && Array.isArray(parsed.children)) {
-            for (const component of parsed.children) {
-              if (component.name === 'report' && component.props?.theme) {
-                const themeName = component.props.theme;
-                // Check if this theme exists in customThemes
-                const themeExists = Object.values(customThemes).some(
-                  (t) => t.name === themeName && t.valid
-                );
-                if (themeExists) {
-                  deps.set(doc.name, themeName);
-                  break;
-                }
-              }
+          // Theme ref is at root props, not inside children
+          const themeName = parsed.props?.theme;
+          if (typeof themeName === 'string') {
+            const themeExists = Object.values(customThemes).some(
+              (t) => t.name === themeName && t.valid
+            );
+            if (themeExists) {
+              deps.set(doc.name, themeName);
             }
           }
         } catch {
@@ -737,9 +646,18 @@ function EditorComponent() {
       );
 
       if (!activeDocument) {
-        console.log(
-          'Editor: Changed theme is not used by active document, skipping rebuild'
-        );
+        // Active tab is a theme or unrelated doc — mark stale if a dependent doc exists
+        if (documentsUsingTheme.length > 0) {
+          setOutput({ isPreviewStale: true });
+        }
+        return;
+      }
+
+      // Skip auto-build when auto-generation is disabled
+      if (!autoReload || renderingLibrary !== 'docxjs') {
+        if (!outputStore.getState().isGenerating) {
+          setOutput({ isPreviewStale: true });
+        }
         return;
       }
 
@@ -815,10 +733,87 @@ function EditorComponent() {
     getTheme,
     buildDocumentWithThemes,
     validCustomThemes,
+    autoReload,
+    renderingLibrary,
+    setOutput,
   ]);
 
-  // Remove backup mechanism - we'll rely on the theme change events only
-  // This prevents multiple rebuilds for the same theme change
+  // Flush debounces and immediately build — triggered by Run button via custom event
+  // Debounced at 150ms to coalesce rapid clicks
+  const flushBuildTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Stable refs so the event handler never goes stale and doesn't need
+  // reactive deps that would cause cleanup to cancel the pending timeout
+  const buildDocumentRef = useRef(buildDocument);
+  useEffect(() => { buildDocumentRef.current = buildDocument; });
+  const getDocumentVersionRef = useRef(getDocumentVersion);
+  useEffect(() => { getDocumentVersionRef.current = getDocumentVersion; });
+
+  useEffect(() => {
+    const handler = () => {
+      // Mark generating early so the rebuild effect (triggered by saveDocument
+      // below) doesn't clobber this build with isPreviewStale
+      setOutput({ isGenerating: true });
+
+      // 1. Flush Monaco debounce: read live text, save to store immediately
+      const editorRef = useEditorRefsStore.getState().getActiveEditor();
+      if (editorRef) {
+        const liveText = editorRef.editor.getValue();
+        // Save imperatively via store to avoid reactive deps on `documents`
+        documentsStore.getState().saveDocument(editorRef.documentName, liveText);
+      }
+
+      // 2. Cancel any pending build timeout for active doc
+      const currentTab = documentsStore.getState().activeTab;
+      const timeout = buildTimeoutsRef.current.get(currentTab);
+      if (timeout) {
+        clearTimeout(timeout);
+        buildTimeoutsRef.current.delete(currentTab);
+      }
+
+      // 3. Debounce the actual build to coalesce rapid Run clicks
+      if (flushBuildTimerRef.current) {
+        clearTimeout(flushBuildTimerRef.current);
+      }
+      flushBuildTimerRef.current = setTimeout(() => {
+        flushBuildTimerRef.current = null;
+        const { documents: docs, activeTab: tab, documentTypes: dtypes } = documentsStore.getState();
+
+        // Determine target: if active tab is a theme, build the last-viewed document instead
+        let targetName = tab;
+        const tabType = dtypes[tab] || 'application/json+report';
+        if (tabType === 'application/json+theme') {
+          if (lastViewedDocumentRef.current) {
+            targetName = lastViewedDocumentRef.current;
+          } else {
+            // No document was viewed yet — nothing to build
+            setOutput({ isGenerating: false });
+            return;
+          }
+        }
+
+        const freshDoc = docs.find((d) => d.name === targetName);
+        if (freshDoc) {
+          // If the document tab has an open editor, use its live text
+          const ref = useEditorRefsStore.getState().getEditor(targetName);
+          const doc = ref
+            ? { ...freshDoc, text: ref.editor.getValue() }
+            : freshDoc;
+          getDocumentVersionRef.current(doc.name);
+          buildDocumentRef.current(doc);
+        } else {
+          setOutput({ isGenerating: false });
+        }
+      }, 150);
+    };
+
+    window.addEventListener('preview:flushAndBuild', handler);
+    return () => {
+      window.removeEventListener('preview:flushAndBuild', handler);
+      if (flushBuildTimerRef.current) {
+        clearTimeout(flushBuildTimerRef.current);
+      }
+    };
+  }, [setOutput, documentsStore]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -835,9 +830,6 @@ function EditorComponent() {
 
       // Cancel any ongoing generation
       cancelGeneration();
-
-      // Clear the build queue
-      buildQueueRef.current.cancelAll();
     };
   }, [cancelGeneration]);
 

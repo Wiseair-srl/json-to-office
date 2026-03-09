@@ -9,7 +9,6 @@ import {
   ErrorFormatterConfig,
   createErrorConfig,
   formatErrorMessage,
-  ERROR_EMOJIS,
 } from './error-formatter-config';
 
 export type { TransformedError } from './types';
@@ -263,7 +262,7 @@ export function calculatePosition(
 
 function getSuggestion(
   error: ValueError,
-  config: Required<ErrorFormatterConfig>
+  _config: Required<ErrorFormatterConfig>
 ): string | undefined {
   const { type, path } = error;
   const typeStr = String(type);

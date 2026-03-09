@@ -41,10 +41,10 @@ class Logger {
     if (!this.shouldLog(level)) return;
     const formatted = this.formatMessage(level, message, context);
     switch (level) {
-      case 'error': console.error(formatted); break;
-      case 'warn': console.warn(formatted); break;
-      case 'info': console.info(formatted); break;
-      case 'debug': console.debug(formatted); break;
+    case 'error': console.error(formatted); break;
+    case 'warn': console.warn(formatted); break;
+    case 'info': console.info(formatted); break;
+    case 'debug': console.debug(formatted); break;
     }
   }
 

@@ -166,7 +166,7 @@ export const RetryStrategies = {
   // Combine multiple strategies
   combine:
     (...strategies: ((error: Error) => boolean)[]) =>
-    (error: Error) => {
-      return strategies.some((strategy) => strategy(error));
-    },
+      (error: Error) => {
+        return strategies.some((strategy) => strategy(error));
+      },
 };

@@ -4,9 +4,14 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "composite": false,
-    "incremental": false
+    "incremental": false,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/client/*"]
+    }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "dist"],
   "references": [
     { "path": "../shared" },

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { API_ENDPOINTS } from '../config/api';
 import { FORMAT } from '../lib/env';
 
@@ -28,7 +26,6 @@ interface ComponentStatistics {
   hitRate?: number;
   totalRequests?: number;
   memoryUsage?: number;
-  efficiencyScore?: number;
 }
 
 interface ComponentCacheData {
@@ -42,23 +39,6 @@ interface ComponentCacheData {
   componentStats: ComponentStatistics[];
 }
 
-interface CacheAnalyticsReport {
-  healthScore: number;
-  overallEfficiency: number;
-  componentMetrics: Array<{
-    componentType: string;
-    hitRate: number;
-    totalRequests: number;
-    efficiencyScore: number;
-  }>;
-  recommendations: Array<{
-    description: string;
-    expectedImprovement: number;
-    priority: number;
-    reasoning: string;
-  }>;
-}
-
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
   const k = 1024;
@@ -67,15 +47,8 @@ function formatBytes(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-function formatTime(ms: number): string {
-  if (ms < 1) return `${(ms * 1000).toFixed(0)}μs`;
-  if (ms < 1000) return `${ms.toFixed(1)}ms`;
-  return `${(ms / 1000).toFixed(2)}s`;
-}
-
 export function CacheMetrics() {
   const [stats, setStats] = useState<CacheStats | null>(null);
-  const [analytics, setAnalytics] = useState<CacheAnalyticsReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,20 +66,6 @@ export function CacheMetrics() {
         if (!controller.signal.aborted) {
           setStats(data.data);
           setError(null);
-        }
-
-        // Fetch analytics report (may not be available)
-        try {
-          const analyticsResponse = await fetch(
-            API_ENDPOINTS.cacheStats.replace('/cache-stats', '/cache-analytics'),
-            { signal: controller.signal },
-          );
-          if (analyticsResponse.ok) {
-            const analyticsData = await analyticsResponse.json();
-            if (!controller.signal.aborted) setAnalytics(analyticsData.data);
-          }
-        } catch {
-          // Analytics endpoint may not exist
         }
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -180,98 +139,34 @@ export function CacheMetrics() {
 
       <Progress value={hitRatePct} className="h-2" aria-label="Cache hit rate" />
 
-      {/* Module-level analytics (docx only) */}
+      {/* Module-level breakdown (docx only) */}
       {FORMAT === 'docx' && stats.components && (
-        <ComponentBreakdown data={stats.components} analytics={analytics} />
-      )}
-
-      {/* Recommendations */}
-      {analytics && analytics.recommendations.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium">Recommendations</h4>
-          {analytics.recommendations.map((rec, i) => (
-            <Alert key={i} className="py-2">
-              <div className="flex items-start gap-2">
-                {rec.priority >= 4 ? (
-                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                ) : (
-                  <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <AlertTitle className="text-sm flex items-center justify-between gap-2">
-                    <span>{rec.description}</span>
-                    <Badge
-                      variant={rec.priority >= 4 ? 'destructive' : 'secondary'}
-                      className="shrink-0"
-                    >
-                      P{rec.priority}
-                    </Badge>
-                  </AlertTitle>
-                  <AlertDescription className="text-xs mt-1">
-                    {rec.reasoning} — Expected improvement: {rec.expectedImprovement}%
-                  </AlertDescription>
-                </div>
-              </div>
-            </Alert>
-          ))}
-        </div>
-      )}
-
-      {analytics && analytics.recommendations.length === 0 && (
-        <Alert className="py-2">
-          <CheckCircle className="h-4 w-4 text-green-500" />
-          <AlertTitle className="text-sm">Cache optimized</AlertTitle>
-          <AlertDescription className="text-xs">
-            No recommendations — cache is performing well.
-          </AlertDescription>
-        </Alert>
+        <ComponentBreakdown data={stats.components} />
       )}
     </div>
   );
 }
 
-function ComponentBreakdown({
-  data,
-  analytics,
-}: {
-  data: ComponentCacheData;
-  analytics: CacheAnalyticsReport | null;
-}) {
+function ComponentBreakdown({ data }: { data: ComponentCacheData }) {
   if (data.componentStats.length === 0) return null;
 
   return (
     <div className="space-y-2">
-      <h4 className="text-sm font-medium flex items-center justify-between">
-        Module Breakdown
-        {analytics && (
-          <span className="text-xs text-muted-foreground font-normal">
-            Health {analytics.healthScore}/100 · Efficiency {analytics.overallEfficiency}%
-          </span>
-        )}
-      </h4>
-      <div className="space-y-1.5">
+      <h4 className="text-sm font-medium">Module Breakdown</h4>
+      <div className="space-y-1">
         {data.componentStats.map((stat) => {
           const hitRate = (stat.hitRate || 0) * 100;
           const requests = stat.totalRequests || stat.hits + stat.misses;
           const memory = stat.memoryUsage || stat.entries * stat.avgSize || 0;
 
           return (
-            <div key={stat.type} className="border rounded px-3 py-2 text-sm">
+            <div key={stat.type} className="px-3 py-1.5 text-sm">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-medium">{stat.type}</span>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{hitRate.toFixed(0)}% hit</span>
                   <span>{requests} req</span>
-                  <span>{formatTime(stat.avgProcessTime)}</span>
                   <span>{formatBytes(memory)}</span>
-                  {stat.efficiencyScore != null && (
-                    <Badge
-                      variant={stat.efficiencyScore > 70 ? 'default' : 'secondary'}
-                      className="text-[10px] px-1 py-0"
-                    >
-                      {stat.efficiencyScore}%
-                    </Badge>
-                  )}
                 </div>
               </div>
               <Progress value={hitRate} className="h-1.5" />

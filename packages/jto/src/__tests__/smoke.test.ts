@@ -160,8 +160,9 @@ describe('docx validate', () => {
 
 describe('pptx validate', () => {
   it('accepts valid presentation', () => {
-    const out = run(['pptx', 'validate', pptxFixture]);
-    expect(out).toContain('OK');
+    const out = run(['pptx', 'validate', pptxFixture, '--format', 'json']);
+    const result = JSON.parse(out);
+    expect(result[0].valid).toBe(true);
   });
 
   it('reports invalid document', () => {

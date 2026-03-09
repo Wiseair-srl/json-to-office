@@ -592,27 +592,27 @@ export async function createImage(
     const imageRun =
       imageType === 'svg'
         ? new ImageRun({
-            type: 'svg',
-            data: imageBuffer,
-            fallback: {
-              type: 'png',
-              data: imageBuffer, // Use the same buffer as fallback for now
-            },
-            transformation: {
-              width: dimensions.width,
-              height: dimensions.height,
-            },
-            ...(floating && { floating }),
-          })
+          type: 'svg',
+          data: imageBuffer,
+          fallback: {
+            type: 'png',
+            data: imageBuffer, // Use the same buffer as fallback for now
+          },
+          transformation: {
+            width: dimensions.width,
+            height: dimensions.height,
+          },
+          ...(floating && { floating }),
+        })
         : new ImageRun({
-            type: imageType,
-            data: imageBuffer,
-            transformation: {
-              width: dimensions.width,
-              height: dimensions.height,
-            },
-            ...(floating && { floating }),
-          });
+          type: imageType,
+          data: imageBuffer,
+          transformation: {
+            width: dimensions.width,
+            height: dimensions.height,
+          },
+          ...(floating && { floating }),
+        });
 
     // Convert spacing from points to twips
     const spacing: any = {};
@@ -1104,10 +1104,10 @@ export async function createTable(
     const outerBorder =
       position && tableOuterBorder
         ? getTableOuterBorder(
-            position,
-            tableOuterBorder.borderColor,
-            tableOuterBorder.borderSize
-          )
+          position,
+          tableOuterBorder.borderColor,
+          tableOuterBorder.borderSize
+        )
         : {};
 
     // Merge border colors per side (priority: cell > column > table outer border > table cellDefaults > table borderColor > default)
@@ -1187,14 +1187,14 @@ export async function createTable(
     const outerBorder =
       position && tableOuterBorder
         ? getTableOuterBorder(
-            {
-              isHeader: true,
-              isFirstCol: position.isFirstCol,
-              isLastCol: position.isLastCol,
-            },
-            tableOuterBorder.borderColor,
-            tableOuterBorder.borderSize
-          )
+          {
+            isHeader: true,
+            isFirstCol: position.isFirstCol,
+            isLastCol: position.isLastCol,
+          },
+          tableOuterBorder.borderColor,
+          tableOuterBorder.borderSize
+        )
         : {};
 
     // Merge border colors per side (priority: header > columnCellDefaults > table outer border > headerCellDefaults > cellDefaults > table borderColor > default)
@@ -1378,24 +1378,24 @@ export async function createTable(
     // Map cell position to which hideBorders config applies
     // Outer borders use top/right/bottom/left, inner borders use insideHorizontal/insideVertical
     switch (side) {
-      case 'top':
-        return position.isFirstRow
-          ? hiddenBorders.top
-          : hiddenBorders.insideHorizontal;
-      case 'bottom':
-        return position.isLastRow
-          ? hiddenBorders.bottom
-          : hiddenBorders.insideHorizontal;
-      case 'left':
-        return position.isFirstCol
-          ? hiddenBorders.left
-          : hiddenBorders.insideVertical;
-      case 'right':
-        return position.isLastCol
-          ? hiddenBorders.right
-          : hiddenBorders.insideVertical;
-      default:
-        return false;
+    case 'top':
+      return position.isFirstRow
+        ? hiddenBorders.top
+        : hiddenBorders.insideHorizontal;
+    case 'bottom':
+      return position.isLastRow
+        ? hiddenBorders.bottom
+        : hiddenBorders.insideHorizontal;
+    case 'left':
+      return position.isFirstCol
+        ? hiddenBorders.left
+        : hiddenBorders.insideVertical;
+    case 'right':
+      return position.isLastCol
+        ? hiddenBorders.right
+        : hiddenBorders.insideVertical;
+    default:
+      return false;
     }
   };
 
@@ -1904,14 +1904,14 @@ function getAlignment(
   alignment: string
 ): (typeof AlignmentType)[keyof typeof AlignmentType] {
   switch (alignment) {
-    case 'center':
-      return AlignmentType.CENTER;
-    case 'right':
-      return AlignmentType.RIGHT;
-    case 'justify':
-      return AlignmentType.JUSTIFIED;
-    default:
-      return AlignmentType.LEFT;
+  case 'center':
+    return AlignmentType.CENTER;
+  case 'right':
+    return AlignmentType.RIGHT;
+  case 'justify':
+    return AlignmentType.JUSTIFIED;
+  default:
+    return AlignmentType.LEFT;
   }
 }
 
@@ -1928,14 +1928,14 @@ function getVerticalAlignment(
   if (!alignment) return undefined;
 
   switch (alignment) {
-    case 'top':
-      return VerticalAlign.TOP;
-    case 'middle':
-      return VerticalAlign.CENTER;
-    case 'bottom':
-      return VerticalAlign.BOTTOM;
-    default:
-      return undefined;
+  case 'top':
+    return VerticalAlign.TOP;
+  case 'middle':
+    return VerticalAlign.CENTER;
+  case 'bottom':
+    return VerticalAlign.BOTTOM;
+  default:
+    return undefined;
   }
 }
 
@@ -2268,11 +2268,11 @@ export async function createHeaderFooterTable(
                 },
                 borders: noBorders
                   ? {
-                      top: { style: BorderStyle.NONE, size: 0 },
-                      bottom: { style: BorderStyle.NONE, size: 0 },
-                      left: { style: BorderStyle.NONE, size: 0 },
-                      right: { style: BorderStyle.NONE, size: 0 },
-                    }
+                    top: { style: BorderStyle.NONE, size: 0 },
+                    bottom: { style: BorderStyle.NONE, size: 0 },
+                    left: { style: BorderStyle.NONE, size: 0 },
+                    right: { style: BorderStyle.NONE, size: 0 },
+                  }
                   : undefined,
               });
             })
@@ -2287,13 +2287,13 @@ export async function createHeaderFooterTable(
     rows: tableRows,
     borders: noBorders
       ? {
-          top: { style: BorderStyle.NONE, size: 0 },
-          bottom: { style: BorderStyle.NONE, size: 0 },
-          left: { style: BorderStyle.NONE, size: 0 },
-          right: { style: BorderStyle.NONE, size: 0 },
-          insideHorizontal: { style: BorderStyle.NONE, size: 0 },
-          insideVertical: { style: BorderStyle.NONE, size: 0 },
-        }
+        top: { style: BorderStyle.NONE, size: 0 },
+        bottom: { style: BorderStyle.NONE, size: 0 },
+        left: { style: BorderStyle.NONE, size: 0 },
+        right: { style: BorderStyle.NONE, size: 0 },
+        insideHorizontal: { style: BorderStyle.NONE, size: 0 },
+        insideVertical: { style: BorderStyle.NONE, size: 0 },
+      }
       : undefined,
   });
 }

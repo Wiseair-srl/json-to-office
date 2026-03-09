@@ -4,7 +4,9 @@ import { resolve, join } from 'path';
 import { execSync } from 'child_process';
 import ora from 'ora';
 import chalk from 'chalk';
+import boxen from 'boxen';
 import type { FormatAdapter } from '../format-adapter.js';
+import { EXIT_CODES } from './ui.js';
 
 interface InitOptions {
   template?: string;
@@ -21,6 +23,7 @@ export function createInitCommand(adapter: FormatAdapter): Command {
       try {
         if (!name) {
           try {
+            // @ts-expect-error -- prompts lacks type declarations
             const prompts = (await import('prompts')).default;
             const response = await prompts({
               type: 'text',
@@ -35,7 +38,7 @@ export function createInitCommand(adapter: FormatAdapter): Command {
 
           if (!name) {
             console.log(chalk.red('Project name is required'));
-            process.exit(1);
+            process.exit(EXIT_CODES.FAIL);
           }
         }
 
@@ -43,7 +46,7 @@ export function createInitCommand(adapter: FormatAdapter): Command {
 
         if (existsSync(projectPath)) {
           console.error(chalk.red(`Directory ${name} already exists`));
-          process.exit(1);
+          process.exit(EXIT_CODES.FAIL);
         }
 
         mkdirSync(projectPath, { recursive: true });
@@ -77,50 +80,50 @@ export function createInitCommand(adapter: FormatAdapter): Command {
         const exampleDocument =
           adapter.name === 'docx'
             ? {
-                name: 'report',
-                props: {
-                  title: 'Welcome to JSON-to-Office',
-                  subtitle: `Your ${adapter.label} generation project`,
-                  theme: 'minimal',
+              name: 'report',
+              props: {
+                title: 'Welcome to JSON-to-Office',
+                subtitle: `Your ${adapter.label} generation project`,
+                theme: 'minimal',
+              },
+              children: [
+                {
+                  name: 'heading',
+                  props: { text: 'Welcome', level: 1 },
                 },
-                children: [
-                  {
-                    name: 'heading',
-                    props: { text: 'Welcome', level: 1 },
+                {
+                  name: 'paragraph',
+                  props: {
+                    text: 'Edit example.json to customize your document.',
                   },
-                  {
-                    name: 'paragraph',
-                    props: {
-                      text: 'Edit example.json to customize your document.',
-                    },
-                  },
-                ],
-              }
+                },
+              ],
+            }
             : {
-                name: 'presentation',
-                props: {
-                  title: 'Welcome to JSON-to-Office',
-                },
-                children: [
-                  {
-                    name: 'slide',
-                    props: {},
-                    children: [
-                      {
-                        name: 'text',
-                        props: {
-                          text: 'Welcome to JSON-to-Office',
-                          x: 1,
-                          y: 1,
-                          w: 8,
-                          h: 2,
-                          fontSize: 36,
-                        },
+              name: 'presentation',
+              props: {
+                title: 'Welcome to JSON-to-Office',
+              },
+              children: [
+                {
+                  name: 'slide',
+                  props: {},
+                  children: [
+                    {
+                      name: 'text',
+                      props: {
+                        text: 'Welcome to JSON-to-Office',
+                        x: 1,
+                        y: 1,
+                        w: 8,
+                        h: 2,
+                        fontSize: 36,
                       },
-                    ],
-                  },
-                ],
-              };
+                    },
+                  ],
+                },
+              ],
+            };
 
         writeFileSync(
           join(projectPath, 'example.json'),
@@ -151,20 +154,29 @@ export function createInitCommand(adapter: FormatAdapter): Command {
           }
         }
 
-        console.log(chalk.bold('\nProject created successfully!\n'));
-        console.log('Next steps:');
-        console.log(chalk.cyan(`  cd ${name}`));
-        if (options.skipInstall) {
-          console.log(chalk.cyan('  npm install'));
-        }
+        const nextSteps = [
+          `cd ${name}`,
+          ...(options.skipInstall ? ['npm install'] : []),
+          `jto ${adapter.name} generate example.json`,
+        ];
+
         console.log(
-          chalk.cyan(
-            `  jto ${adapter.name} generate example.json`
+          boxen(
+            chalk.bold(`${name}\n\n`) +
+            chalk.gray('Next steps:\n') +
+            nextSteps.map((s) => chalk.cyan(`  $ ${s}`)).join('\n'),
+            {
+              padding: 1,
+              borderColor: 'green',
+              borderStyle: 'round',
+              title: 'Project created',
+              titleAlignment: 'center',
+            }
           )
         );
       } catch (error: any) {
         console.error(chalk.red('Failed to create project:'), error.message);
-        process.exit(1);
+        process.exit(EXIT_CODES.FAIL);
       }
     });
 }

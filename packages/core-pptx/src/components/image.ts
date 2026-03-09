@@ -4,6 +4,7 @@
 
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig } from '../types';
+import { toHex } from '../utils/color';
 
 interface ImageComponentProps {
   path?: string;
@@ -65,7 +66,7 @@ export function renderImageComponent(
   if (props.shadow) {
     opts.shadow = {
       type: props.shadow.type ?? 'outer',
-      color: props.shadow.color ?? '000000',
+      color: toHex(props.shadow.color ?? '000000'),
       blur: props.shadow.blur ?? 3,
       offset: props.shadow.offset ?? 3,
       angle: props.shadow.angle ?? 45,

@@ -26,11 +26,12 @@ function Spinner({
   return (
     <div
       className={cn(
-        'animate-spin rounded-full border-2 border-solid border-current border-r-transparent',
+        'animate-spin rounded-full border-2 border-solid',
         sizeClasses[size],
         variantClasses[variant],
         className
       )}
+      style={{ borderRightColor: 'transparent' }}
       {...props}
     />
   );

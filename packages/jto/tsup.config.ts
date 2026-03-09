@@ -19,6 +19,9 @@ const commonExternal = [
   'ajv-formats',
   'cosmiconfig',
   'glob',
+  // AI deps (server-only)
+  'ai',
+  'ai-sdk-provider-claude-code',
   // Server deps (externalized to reduce bundle size)
   'hono',
   '@hono/node-server',

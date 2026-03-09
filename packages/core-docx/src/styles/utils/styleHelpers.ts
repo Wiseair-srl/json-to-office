@@ -227,29 +227,29 @@ export function convertLineSpacing(
   let lineRule: 'auto' | 'exact' | 'atLeast' | undefined;
 
   switch (type) {
-    case 'single':
-      line = SINGLE_LINE_SPACING_TWIPS;
-      lineRule = 'auto';
-      break;
-    case 'double':
-      line = DOUBLE_LINE_SPACING_TWIPS;
-      lineRule = 'auto';
-      break;
-    case 'atLeast':
-      line = value !== undefined ? value * TWIPS_PER_POINT : undefined;
-      lineRule = 'atLeast';
-      break;
-    case 'exactly':
-      line = value !== undefined ? value * TWIPS_PER_POINT : undefined;
-      lineRule = 'exact';
-      break;
-    case 'multiple':
-      line =
+  case 'single':
+    line = SINGLE_LINE_SPACING_TWIPS;
+    lineRule = 'auto';
+    break;
+  case 'double':
+    line = DOUBLE_LINE_SPACING_TWIPS;
+    lineRule = 'auto';
+    break;
+  case 'atLeast':
+    line = value !== undefined ? value * TWIPS_PER_POINT : undefined;
+    lineRule = 'atLeast';
+    break;
+  case 'exactly':
+    line = value !== undefined ? value * TWIPS_PER_POINT : undefined;
+    lineRule = 'exact';
+    break;
+  case 'multiple':
+    line =
         value !== undefined ? value * SINGLE_LINE_SPACING_TWIPS : undefined;
-      lineRule = 'auto';
-      break;
-    default:
-      return undefined;
+    lineRule = 'auto';
+    break;
+  default:
+    return undefined;
   }
 
   return { line, lineRule };

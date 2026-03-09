@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { compress } from 'hono/compress';
+
 import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
 import { logger as honoLogger } from 'hono/logger';
@@ -11,6 +11,7 @@ import type { FormatAdapter } from '../format-adapter.js';
 import { healthRouter } from './routes/health.js';
 import { createFormatRouter } from './routes/format.js';
 import { discoveryRouter } from './routes/discovery.js';
+import { createAiRouter } from './routes/ai.js';
 
 import { requestIdMiddleware } from './middleware/hono/request-id.js';
 import { apiKeyAuthMiddleware } from './middleware/hono/auth.js';
@@ -71,6 +72,9 @@ export function createAPIApp(adapter: FormatAdapter) {
 
   // Discovery routes
   honoApp.route('/api/discovery', discoveryRouter);
+
+  // AI chat routes
+  honoApp.route('/api/ai', createAiRouter());
 
   // Root endpoint
   honoApp.get('/', async (c) => {

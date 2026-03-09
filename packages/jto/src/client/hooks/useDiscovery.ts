@@ -172,7 +172,7 @@ export function useDiscoveredDocuments(): {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-} {
+  } {
   const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -226,7 +226,7 @@ export function useDiscoveredThemes(): {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-} {
+  } {
   const [themes, setThemes] = useState<ThemeMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -278,7 +278,7 @@ export function useLoadPlugins(): {
   loading: boolean;
   error: string | null;
   loadedCount: number;
-} {
+  } {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadedCount, setLoadedCount] = useState(0);

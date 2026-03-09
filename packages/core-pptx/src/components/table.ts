@@ -4,6 +4,7 @@
 
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig } from '../types';
+import { toHex } from '../utils/color';
 
 interface TableCell {
   text: string;
@@ -52,8 +53,8 @@ export function renderTableComponent(
         return { text: cell };
       }
       const cellOpts: Record<string, unknown> = {};
-      if (cell.color) cellOpts.color = cell.color;
-      if (cell.fill) cellOpts.fill = { color: cell.fill };
+      if (cell.color) cellOpts.color = toHex(cell.color);
+      if (cell.fill) cellOpts.fill = { color: toHex(cell.fill) };
       if (cell.fontSize) cellOpts.fontSize = cell.fontSize;
       if (cell.fontFace) cellOpts.fontFace = cell.fontFace;
       if (cell.bold) cellOpts.bold = true;
@@ -85,17 +86,17 @@ export function renderTableComponent(
     opts.border = {
       type: props.border.type ?? 'solid',
       pt: props.border.pt ?? 1,
-      color: props.border.color ?? '000000',
+      color: toHex(props.border.color ?? '000000'),
     };
   }
 
   // Fill
-  if (props.fill) opts.fill = { color: props.fill };
+  if (props.fill) opts.fill = { color: toHex(props.fill) };
 
   // Font defaults
   opts.fontSize = props.fontSize ?? theme.defaults.fontSize;
   opts.fontFace = props.fontFace ?? theme.fonts.body;
-  if (props.color) opts.color = props.color;
+  if (props.color) opts.color = toHex(props.color);
 
   // Alignment
   if (props.align) opts.align = props.align;

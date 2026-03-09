@@ -12,7 +12,8 @@ export type DocumentsState = {
   activeTab: string;
   buildErrors: { [key: string]: string };
   documentTypes: { [key: string]: DocumentType };
-  pendingDiffs: { [key: string]: { original: string; modified: string } };
+  pendingDiffs: { [key: string]: { original: string; modified: string; applyId?: string } };
+  acceptedApplyIds: string[];
 };
 
 export type DocumentsActions = {
@@ -24,8 +25,8 @@ export type DocumentsActions = {
   closeDocument: (name: string) => void;
   setActiveTab: (name: string) => void;
   setBuildError: (name: string, buildError?: string) => void;
-  setPendingDiff: (name: string, original: string, modified: string) => void;
-  clearPendingDiff: (name: string) => void;
+  setPendingDiff: (name: string, original: string, modified: string, applyId?: string) => void;
+  clearPendingDiff: (name: string, accepted?: boolean) => void;
 };
 
 export type DocumentsStore = DocumentsState & DocumentsActions;
@@ -34,10 +35,11 @@ export const initDocumentsStore = (): DocumentsState => {
   return {
     documents: [],
     openTabs: [],
-    activeTab: ``,
+    activeTab: '',
     buildErrors: {},
     documentTypes: {},
     pendingDiffs: {},
+    acceptedApplyIds: [],
   };
 };
 
@@ -112,6 +114,8 @@ export const createDocumentsStore = (
                 (doc) => doc.name === name
               );
               if (docIndex === -1) return state;
+              // Skip update if text is unchanged to avoid spurious re-renders
+              if (state.documents[docIndex].text === text) return state;
               const documents = state.documents.map((doc, i) =>
                 i === docIndex ? { ...doc, text, mtime: new Date() } : doc
               );
@@ -176,21 +180,27 @@ export const createDocumentsStore = (
               else delete buildErrors[name];
               return { buildErrors };
             }),
-          setPendingDiff: (name, original, modified) =>
+          setPendingDiff: (name, original, modified, applyId) =>
             set((state) => {
               return {
                 pendingDiffs: {
                   ...state.pendingDiffs,
-                  [name]: { original, modified },
+                  [name]: { original, modified, applyId },
                 },
               };
             }),
-          clearPendingDiff: (name) =>
+          clearPendingDiff: (name, accepted) =>
             set((state) => {
-              if (!state.pendingDiffs[name]) return state;
+              const diff = state.pendingDiffs[name];
+              if (!diff) return state;
               const next = { ...state.pendingDiffs };
               delete next[name];
-              return { pendingDiffs: next };
+              const ids = state.acceptedApplyIds || [];
+              const acceptedApplyIds =
+                accepted && diff.applyId
+                  ? [...ids, diff.applyId]
+                  : ids;
+              return { pendingDiffs: next, acceptedApplyIds };
             }),
         }),
         {

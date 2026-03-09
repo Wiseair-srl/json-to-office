@@ -351,7 +351,7 @@ export class ComponentCacheAnalytics {
           description: `Increase cache capacity for ${metric.componentName} components`,
           expectedImprovement: 25,
           priority: 5,
-          reasoning: `Hit rate is declining over time, suggesting cache capacity may be insufficient.`,
+          reasoning: 'Hit rate is declining over time, suggesting cache capacity may be insufficient.',
         });
       }
     });
@@ -437,10 +437,6 @@ export class ComponentCacheAnalytics {
       (sum, m) => sum + m.totalRequests * m.avgMissTime,
       0
     );
-    // Calculate total memory used for resource impact calculations
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const totalMemoryUsed = metrics.reduce((sum, m) => sum + m.memoryUsage, 0);
-
     // Estimate CPU reduction based on cache hits avoiding processing
     const cpuReduction =
       totalProcessingTime > 0
@@ -459,8 +455,8 @@ export class ComponentCacheAnalytics {
     const memoryOptimization =
       totalDataProcessed > 0
         ? Math.round(
-            ((totalDataProcessed - uniqueEntries) / totalDataProcessed) * 100
-          )
+          ((totalDataProcessed - uniqueEntries) / totalDataProcessed) * 100
+        )
         : 0;
 
     return {

@@ -20,25 +20,6 @@ export interface DocumentGenerationResult {
   warnings: GenerationWarning[];
 }
 
-interface DocumentGenerationResponse {
-  success: boolean;
-  data: {
-    document: string; // base64-encoded
-    filename: string;
-    fileId: string | null;
-    contentType: string;
-  };
-  cache: {
-    status: 'HIT' | 'MISS';
-    hitRate: string;
-  };
-  warnings: GenerationWarning[];
-  meta: {
-    timestamp: string;
-    requestId: string;
-  };
-}
-
 export function usePresentationGenerator() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -105,11 +86,12 @@ export function usePresentationGenerator() {
         });
 
         // Parse JSON response
-        const responseData: DocumentGenerationResponse = await response.json();
+        const responseData = await response.json();
 
         if (!response.ok || !responseData.success) {
           const errorMessage =
-            (responseData as unknown as { error?: string }).error ||
+            responseData.error ||
+            responseData.message ||
             `API request failed with status: ${response.status}`;
           throw new Error(errorMessage);
         }

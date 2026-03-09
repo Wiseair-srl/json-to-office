@@ -5,9 +5,9 @@ import { compress } from 'hono/compress';
 import { createAPIApp } from './app.js';
 import type { Config } from '../config/schema.js';
 import type { FormatAdapter } from '../format-adapter.js';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { logger as serverLogger } from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -106,13 +106,13 @@ export class UnifiedServer {
       const envClientPath = process.env.JTO_CLIENT_PATH;
       if (existsSync(envClientPath) && existsSync(resolve(envClientPath, 'index.html'))) {
         clientPath = envClientPath;
-        console.log('[Dev Server] Using client from JTO_CLIENT_PATH:', clientPath);
+        serverLogger.debug('[Dev Server] Using client from JTO_CLIENT_PATH', { path: clientPath });
       }
     } else if (isBundled) {
       const bundledClientPath = resolve(__dirname, 'client');
       if (existsSync(bundledClientPath) && existsSync(resolve(bundledClientPath, 'index.html'))) {
         clientPath = bundledClientPath;
-        console.log('[Dev Server] Using bundled client at:', clientPath);
+        serverLogger.debug('[Dev Server] Using bundled client at', { path: clientPath });
       }
     } else {
       const possiblePaths = [
@@ -123,7 +123,7 @@ export class UnifiedServer {
       for (const p of possiblePaths) {
         if (existsSync(p)) {
           if (p.includes('/src/client')) {
-            console.log('[Dev Server] Using Vite dev server for:', p);
+            serverLogger.debug('[Dev Server] Using Vite dev server for', { path: p });
             try {
               const { createServer: createViteServer } = await import('vite');
               this.viteServer = await createViteServer({
@@ -135,12 +135,12 @@ export class UnifiedServer {
                 },
               });
             } catch (err) {
-              console.warn('[Dev Server] Vite not available for dev mode');
+              serverLogger.warn('[Dev Server] Vite not available for dev mode');
             }
             break;
           } else if (existsSync(resolve(p, 'index.html'))) {
             clientPath = p;
-            console.log('[Dev Server] Using pre-built client at:', clientPath);
+            serverLogger.debug('[Dev Server] Using pre-built client at', { path: clientPath });
             break;
           }
         }
@@ -164,7 +164,7 @@ export class UnifiedServer {
           },
         });
       } catch {
-        console.warn('[Dev Server] Vite not available');
+        serverLogger.warn('[Dev Server] Vite not available');
       }
     }
 

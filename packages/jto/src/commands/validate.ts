@@ -5,6 +5,7 @@ import { resolve, relative } from 'path';
 import { existsSync } from 'fs';
 import type { FormatAdapter } from '../format-adapter.js';
 import { JsonValidator } from '../services/json-validator.js';
+import { createTable, formatTiming, formatError, EXIT_CODES } from './ui.js';
 
 interface ValidateCommandOptions {
   type?: 'document' | 'theme' | 'auto';
@@ -24,7 +25,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
     )
     .option(
       '-t, --type <type>',
-      "Validation type: 'document', 'theme', or 'auto'",
+      'Validation type: \'document\', \'theme\', or \'auto\'',
       'auto'
     )
     .option('-s, --schema <path>', 'Path to custom JSON schema file')
@@ -32,7 +33,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
     .option('-q, --quiet', 'Only output errors, no success messages')
     .option(
       '-f, --format <format>',
-      "Error output format: 'pretty' or 'json'",
+      'Error output format: \'pretty\' or \'json\'',
       'pretty'
     )
     .option(
@@ -46,6 +47,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
 
         const showSpinner = !options.quiet && !isJsonFormat;
         const spinner = showSpinner ? ora('Validating...').start() : null;
+        const startTime = performance.now();
 
         try {
           if (options.schema && !existsSync(resolve(options.schema))) {
@@ -61,7 +63,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
 
           if (results.length === 0) {
             if (spinner) spinner.warn('No JSON files found to validate');
-            process.exit(0);
+            process.exit(EXIT_CODES.OK);
           }
 
           const totalFiles = results.length;
@@ -74,28 +76,20 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
             if (spinner) {
               if (invalidFiles > 0) {
                 spinner.fail(
-                  `Validation completed: ${invalidFiles}/${totalFiles} file(s) failed`
+                  `Validation completed: ${invalidFiles}/${totalFiles} file(s) failed ${formatTiming(startTime)}`
                 );
               } else {
-                spinner.succeed(`All ${totalFiles} file(s) are valid!`);
+                spinner.succeed(`All ${totalFiles} file(s) are valid! ${formatTiming(startTime)}`);
               }
             }
 
             if (!options.quiet || invalidFiles > 0) {
               console.log('');
 
+              // Show per-file error details for failed files
               for (const result of results) {
-                const relativePath = relative(process.cwd(), result.file);
-
-                if (result.valid) {
-                  if (!options.quiet) {
-                    const typeInfo = result.type ? ` [${result.type}]` : '';
-                    console.log(
-                      chalk.green('OK'),
-                      chalk.dim(relativePath) + chalk.cyan(typeInfo)
-                    );
-                  }
-                } else {
+                if (!result.valid) {
+                  const relativePath = relative(process.cwd(), result.file);
                   console.log(chalk.red('FAIL'), chalk.bold(relativePath));
 
                   if (result.errors && result.errors.length > 0) {
@@ -122,17 +116,17 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
             }
 
             if (totalFiles > 1 && !options.quiet) {
-              console.log(chalk.gray('-'.repeat(50)));
-              console.log(chalk.bold('Summary:'));
-              console.log(`  Total files: ${totalFiles}`);
-              console.log(`  ${chalk.green('Valid')}: ${validFiles}`);
-              if (invalidFiles > 0) {
-                console.log(`  ${chalk.red('Invalid')}: ${invalidFiles}`);
-              }
+              const rows = results.map((r) => {
+                const relativePath = relative(process.cwd(), r.file);
+                const status = r.valid ? chalk.green('OK') : chalk.red('FAIL');
+                const errorCount = r.valid ? '-' : chalk.red(String(r.errors?.length || 0));
+                return [relativePath, status, errorCount];
+              });
+              console.log(createTable(['File', 'Status', 'Errors'], rows));
             }
           }
 
-          process.exit(invalidFiles > 0 ? 1 : 0);
+          process.exit(invalidFiles > 0 ? EXIT_CODES.FAIL : EXIT_CODES.OK);
         } catch (error: any) {
           if (spinner) spinner.fail('Validation failed');
 
@@ -141,10 +135,10 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
               JSON.stringify({ error: true, message: error.message }, null, 2)
             );
           } else {
-            console.error(chalk.red('\nError:'), error.message);
+            formatError(error);
           }
 
-          process.exit(1);
+          process.exit(EXIT_CODES.FAIL);
         }
       }
     )
