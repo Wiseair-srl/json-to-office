@@ -6,7 +6,13 @@ import { SchemaDialog } from './schema-dialog';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useChatStore } from '../../store/chat-store-provider';
 
-export function GlobalPreviewHeader() {
+export function GlobalPreviewHeader({
+  previewOpen,
+  onTogglePreview,
+}: {
+  previewOpen?: boolean;
+  onTogglePreview?: () => void;
+}) {
   // Select fields individually to avoid creating new objects every render
   const name = useOutputStore((s) => s.name || '');
   const blob = useOutputStore((s) => s.blob);
@@ -77,6 +83,8 @@ export function GlobalPreviewHeader() {
         setRenderingLibrary={(lib) => setSettings({ renderingLibrary: lib } as any)}
         onToggleChat={toggleChat}
         chatOpen={chatOpen}
+        onTogglePreview={onTogglePreview}
+        previewOpen={previewOpen}
       />
       <SchemaDialog
         open={schemaOpen}

@@ -22,6 +22,7 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarMenu,
+  SidebarSeparator,
 } from '../ui/sidebar';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useThemesStore } from '../../store/themes-store-provider';
@@ -43,22 +44,27 @@ import { ButtonModeToggle } from '../mode-toggle';
 import { SchemaDialog } from './schema-dialog';
 import { useTheme } from '../theme-provider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { useToast } from '../ui/use-toast';
 
 interface DocumentSidebarProps {
   discoveryData: DiscoveryResult | null;
   onToggleSidebar?: () => void;
   isCollapsed?: boolean;
+  isAnimating?: boolean;
 }
 
 function DocumentSidebarComponent({
   discoveryData,
   onToggleSidebar,
   isCollapsed = false,
+  isAnimating = false,
 }: DocumentSidebarProps) {
-  const { documents, documentTypes } = useDocumentsStore(
+  const { documents, documentTypes, createDocument, openDocument } = useDocumentsStore(
     useShallow((state) => ({
       documents: state.documents,
       documentTypes: state.documentTypes,
+      createDocument: state.createDocument,
+      openDocument: state.openDocument,
     }))
   );
   const updateTheme = useThemesStore((state) => state.updateTheme);
@@ -69,6 +75,7 @@ function DocumentSidebarComponent({
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(['current-docs', 'current-themes'])
   );
+  const { toast } = useToast();
 
   // Separate documents and themes
   const reportDocuments = documents.filter(
@@ -192,17 +199,48 @@ function DocumentSidebarComponent({
       ? 'https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877'
       : 'https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276';
 
+  // Quick-add a discovered resource as an active document
+  const handleQuickAdd = useCallback(
+    async (name: string, isTheme: boolean) => {
+      // Check if already exists
+      if (documents.some((d) => d.name === name)) {
+        openDocument(name);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `/api/discovery/${isTheme ? 'themes' : 'documents'}/${encodeURIComponent(name)}/content`
+        );
+        if (!res.ok) throw new Error(res.statusText);
+        const content = await res.text();
+        const parsed = JSON.parse(content);
+        createDocument(name, JSON.stringify(parsed, null, 2));
+        openDocument(name);
+        toast({ title: `Added ${isTheme ? 'theme' : 'document'}: ${name}` });
+      } catch {
+        toast({
+          title: 'Failed to load',
+          description: `Could not load ${name}`,
+          variant: 'destructive',
+        });
+      }
+    },
+    [documents, createDocument, openDocument, toast]
+  );
+
   return (
     // In-panel sidebar; includes global tools previously in header
     <>
       <Sidebar
         collapsible="none"
-        style={{ ['--sidebar-width' as any]: '16rem' }}
+        style={{ ['--sidebar-width' as any]: isCollapsed ? '2.5rem' : '16rem' }}
       >
         <SidebarHeader>
           <div
             className={cn(
-              'flex items-center',
+              'flex items-center transition-opacity duration-[120ms] ease-in-out',
+              isAnimating ? 'opacity-0' : 'opacity-100',
               isCollapsed ? 'justify-center' : 'justify-between'
             )}
           >
@@ -238,7 +276,12 @@ function DocumentSidebarComponent({
             )}
           </div>
         </SidebarHeader>
-        <SidebarContent className="h-full">
+        <SidebarContent
+          className={cn(
+            'h-full transition-opacity duration-[120ms] ease-in-out',
+            isAnimating ? 'opacity-0' : 'opacity-100'
+          )}
+        >
           {/* Active Documents Section */}
           <SidebarGroup>
             <SidebarGroupLabel
@@ -271,7 +314,11 @@ function DocumentSidebarComponent({
                         !discoveryData || discoveryData.documents.length === 0
                       }
                     >
-                      <Plus className="size-4" />
+                      {isCollapsed ? (
+                        <FilePlusIcon className="size-4" />
+                      ) : (
+                        <Plus className="size-4" />
+                      )}
                     </Button>
                   </div>
                 </DialogTrigger>
@@ -285,27 +332,64 @@ function DocumentSidebarComponent({
                 </DialogContent>
               </Dialog>
             </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {reportDocuments.length > 0 ? (
-                  reportDocuments.map((doc, index) => (
-                    <DocumentMenuItemMemoized
-                      key={`doc-${index}`}
-                      document={doc}
-                      compact={isCollapsed}
-                    />
-                  ))
-                ) : (
-                  <div className="px-3 py-2 text-xs text-muted-foreground">
-                    No active documents. Click + to create one.
-                  </div>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
+            {isCollapsed ? (
+              /* Collapsed: show icon badges for each doc */
+              <SidebarGroupContent>
+                <div className="flex flex-col items-center gap-0.5 px-0.5">
+                  {reportDocuments.map((doc) => {
+                    const isActive = activeTab === doc.name;
+                    return (
+                      <Tooltip key={doc.name}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => openDocument(doc.name)}
+                            className={cn(
+                              'relative w-7 h-7 rounded flex items-center justify-center text-[10px] font-bold transition-colors',
+                              isActive
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                            )}
+                          >
+                            {isActive && (
+                              <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-green-500 dark:bg-green-400" />
+                            )}
+                            {doc.name.charAt(0).toUpperCase()}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <span className="text-xs">{doc.name}</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </SidebarGroupContent>
+            ) : (
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {reportDocuments.length > 0 ? (
+                    reportDocuments.map((doc, index) => (
+                      <DocumentMenuItemMemoized
+                        key={`doc-${index}`}
+                        document={doc}
+                        compact={isCollapsed}
+                      />
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                      No active documents. Click + to create one.
+                    </div>
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            )}
           </SidebarGroup>
 
+          {/* Separator between documents and themes */}
+          <SidebarSeparator />
+
           {/* Active Themes Section */}
-          <SidebarGroup className="mt-4">
+          <SidebarGroup>
             <SidebarGroupLabel
               className={cn(
                 'flex items-center',
@@ -339,7 +423,11 @@ function DocumentSidebarComponent({
                         size="icon"
                         title="New Theme"
                       >
-                        <Plus className="size-4" />
+                        {isCollapsed ? (
+                          <PaletteIcon className="size-4" />
+                        ) : (
+                          <Plus className="size-4" />
+                        )}
                       </Button>
                     </div>
                   </DialogTrigger>
@@ -355,42 +443,88 @@ function DocumentSidebarComponent({
                 </Dialog>
               )}
             </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {themeDocuments.length > 0 ? (
-                  themeDocuments.map((doc, index) => {
-                    // Get the actual theme name from the parsed content
+            {isCollapsed ? (
+              /* Collapsed: show icon badges for each theme */
+              <SidebarGroupContent>
+                <div className="flex flex-col items-center gap-0.5 px-0.5">
+                  {themeDocuments.map((doc) => {
+                    const isActive = activeTab === doc.name;
                     let themeName: string | null = null;
                     try {
                       const parsed = JSON.parse(doc.text);
                       themeName = getThemeName(parsed);
-                    } catch {
-                      // If parsing fails, theme is not valid
-                    }
+                    } catch {}
+                    const isInUse = themeName ? themesInUse.has(themeName) : false;
 
-                    // Check if this theme name is in use
-                    const isInUse = themeName
-                      ? themesInUse.has(themeName)
-                      : false;
                     return (
-                      <DocumentMenuItemMemoized
-                        key={`theme-${index}`}
-                        document={doc}
-                        compact={isCollapsed}
-                        indicator={isInUse ? 'in-use' : undefined}
-                      />
+                      <Tooltip key={doc.name}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => openDocument(doc.name)}
+                            className={cn(
+                              'relative w-7 h-7 rounded flex items-center justify-center text-[10px] font-bold transition-colors',
+                              isActive
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                                : isInUse
+                                  ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'
+                                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                            )}
+                          >
+                            {isActive && (
+                              <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-purple-500 dark:bg-purple-400" />
+                            )}
+                            <PaletteIcon className="size-3" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <div className="text-xs">
+                            {doc.name}
+                            {isInUse && <div className="opacity-70">In use</div>}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                     );
-                  })
-                ) : (
-                  <div className="px-3 py-2 text-xs text-muted-foreground">
-                    No active themes.{' '}
-                    {discoveryData && discoveryData.themes.length > 0
-                      ? 'Click + to add one.'
-                      : 'No themes discovered in project.'}
-                  </div>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
+                  })}
+                </div>
+              </SidebarGroupContent>
+            ) : (
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {themeDocuments.length > 0 ? (
+                    themeDocuments.map((doc, index) => {
+                      // Get the actual theme name from the parsed content
+                      let themeName: string | null = null;
+                      try {
+                        const parsed = JSON.parse(doc.text);
+                        themeName = getThemeName(parsed);
+                      } catch {
+                        // If parsing fails, theme is not valid
+                      }
+
+                      // Check if this theme name is in use
+                      const isInUse = themeName
+                        ? themesInUse.has(themeName)
+                        : false;
+                      return (
+                        <DocumentMenuItemMemoized
+                          key={`theme-${index}`}
+                          document={doc}
+                          compact={isCollapsed}
+                          indicator={isInUse ? 'in-use' : undefined}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                      No active themes.{' '}
+                      {discoveryData && discoveryData.themes.length > 0
+                        ? 'Click + to add one.'
+                        : 'No themes discovered in project.'}
+                    </div>
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            )}
           </SidebarGroup>
 
           {/* Plugins moved under Discovered Resources */}
@@ -399,7 +533,7 @@ function DocumentSidebarComponent({
           {discoveryData &&
             (discoveryData.documents.length > 0 ||
               discoveryData.themes.length > 0) && (
-            <SidebarGroup className="mt-6 border-t pt-4">
+            <SidebarGroup className="mt-2 border-t pt-4">
               <SidebarGroupLabel
                 className={cn(
                   'flex items-center mb-2',
@@ -453,22 +587,31 @@ function DocumentSidebarComponent({
                               Documents ({docs.length})
                           </CollapsibleTrigger>
                           <CollapsibleContent>
-                            <div className="pl-6 space-y-0.5">
-                              {docs.map((doc, idx) => (
-                                <div
-                                  key={idx}
-                                  className="text-xs py-0.5 text-muted-foreground"
-                                >
-                                  <div className="font-medium">
-                                    {doc.name}
-                                  </div>
-                                  {doc.title && (
-                                    <div className="text-[10px] opacity-70">
-                                      {doc.title}
+                            <div className="pl-4 space-y-0.5">
+                              {docs.map((doc, idx) => {
+                                const alreadyAdded = documents.some((d) => d.name === doc.name);
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => handleQuickAdd(doc.name, false)}
+                                    className={cn(
+                                      'w-full text-left py-1 px-2 rounded text-sm transition-colors',
+                                      'border-l-2 border-blue-400/60 dark:border-blue-500/40',
+                                      'hover:bg-accent hover:text-accent-foreground',
+                                      alreadyAdded && 'opacity-50'
+                                    )}
+                                  >
+                                    <div className="font-medium truncate">
+                                      {doc.name}
                                     </div>
-                                  )}
-                                </div>
-                              ))}
+                                    {doc.title && (
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {doc.title}
+                                      </div>
+                                    )}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </CollapsibleContent>
                         </Collapsible>
@@ -502,22 +645,31 @@ function DocumentSidebarComponent({
                               Themes ({themes.length})
                           </CollapsibleTrigger>
                           <CollapsibleContent>
-                            <div className="pl-6 space-y-0.5">
-                              {themes.map((theme, idx) => (
-                                <div
-                                  key={idx}
-                                  className="text-xs py-0.5 text-muted-foreground"
-                                >
-                                  <div className="font-medium">
-                                    {theme.name}
-                                  </div>
-                                  {theme.description && (
-                                    <div className="text-[10px] opacity-70">
-                                      {theme.description}
+                            <div className="pl-4 space-y-0.5">
+                              {themes.map((theme, idx) => {
+                                const alreadyAdded = documents.some((d) => d.name === theme.name);
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => handleQuickAdd(theme.name, true)}
+                                    className={cn(
+                                      'w-full text-left py-1 px-2 rounded text-sm transition-colors',
+                                      'border-l-2 border-purple-400/60 dark:border-purple-500/40',
+                                      'hover:bg-accent hover:text-accent-foreground',
+                                      alreadyAdded && 'opacity-50'
+                                    )}
+                                  >
+                                    <div className="font-medium truncate">
+                                      {theme.name}
                                     </div>
-                                  )}
-                                </div>
-                              ))}
+                                    {theme.description && (
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {theme.description}
+                                      </div>
+                                    )}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </CollapsibleContent>
                         </Collapsible>
@@ -542,15 +694,15 @@ function DocumentSidebarComponent({
                           Plugins ({discoveryData.plugins.length})
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <div className="pl-6 space-y-0.5">
+                        <div className="pl-4 space-y-0.5">
                           {discoveryData.plugins.map((p, idx) => (
                             <div
                               key={idx}
-                              className="text-xs py-0.5 text-muted-foreground"
+                              className="py-1 px-2 text-sm text-muted-foreground border-l-2 border-amber-400/60 dark:border-amber-500/40"
                             >
                               <div className="font-medium">{p.name}</div>
                               {p.description && (
-                                <div className="text-[10px] opacity-70">
+                                <div className="text-xs opacity-70 truncate">
                                   {p.description}
                                 </div>
                               )}
@@ -578,7 +730,8 @@ function DocumentSidebarComponent({
         <SidebarFooter>
           <div
             className={cn(
-              'flex w-full items-center',
+              'flex w-full items-center transition-opacity duration-[120ms] ease-in-out',
+              isAnimating ? 'opacity-0' : 'opacity-100',
               isCollapsed ? 'justify-center' : 'justify-end pr-2'
             )}
           >

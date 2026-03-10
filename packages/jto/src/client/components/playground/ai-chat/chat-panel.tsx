@@ -11,6 +11,7 @@ import { ChatContextChip } from './chat-context-chip';
 import { ChatApplyButton } from './chat-apply-button';
 import { ChatThreadList } from './chat-thread-list';
 import { ScrollArea } from '../../ui/scroll-area';
+import { KbdShortcut } from '../../ui/kbd';
 import { defaultThreadTitle } from '../../../store/chat-store';
 
 export function ChatPanel() {
@@ -223,9 +224,7 @@ export function ChatPanel() {
                 Generate, edit, and refine your JSON document definitions with AI.
               </p>
               <div className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2.5 py-1.5">
-                <kbd className="px-1.5 py-0.5 rounded bg-background border text-[10px] font-mono font-medium">
-                  Cmd+K
-                </kbd>
+                <KbdShortcut shortcut="mod+k" />
                 <span className="text-xs text-muted-foreground">
                   to send a selection
                 </span>

@@ -10,6 +10,9 @@ import {
   Code2,
   AlertTriangle,
   MessageSquare,
+  Eye,
+  EyeOff,
+  MoreHorizontal,
 } from 'lucide-react';
 import { Spinner } from '../ui/spinner';
 import { Button } from '../ui/button';
@@ -22,6 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import {
@@ -32,6 +42,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { download } from '../../lib/download';
+import { KbdShortcut } from '../ui/kbd';
 import { apiClient } from '../../api/client';
 import { useToast } from '../ui/use-toast';
 import { usePresentationGenerator } from '../../hooks/usePresentationGenerator';
@@ -71,6 +82,8 @@ function PreviewHeader({
   setRenderingLibrary,
   onToggleChat,
   chatOpen,
+  onTogglePreview,
+  previewOpen,
 }: {
   name: string;
   blob?: Blob;
@@ -89,6 +102,8 @@ function PreviewHeader({
   setRenderingLibrary?: (lib: RenderingLibrary) => void;
   onToggleChat?: () => void;
   chatOpen?: boolean;
+  onTogglePreview?: () => void;
+  previewOpen?: boolean;
 }) {
   const usesManualRenderByDefault =
     renderingLibrary !== 'docxjs';
@@ -312,9 +327,9 @@ function PreviewHeader({
 
   return (
     <>
-      <div className="bg-sidebar flex flex-row flex-nowrap items-center justify-between gap-x-3 px-3 py-1.5">
-        <div className="flex items-center gap-2 min-w-0">
-          <p className="text-foreground text-sm font-semibold tracking-tight truncate max-w-[40vw]">
+      <div className="bg-sidebar flex flex-row flex-nowrap items-center justify-between gap-x-2 px-3 py-1.5">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <p className="text-foreground text-sm font-semibold tracking-tight truncate flex-1 min-w-0">
             {name}
           </p>
           <Tooltip>
@@ -322,7 +337,7 @@ function PreviewHeader({
               <button
                 type="button"
                 aria-label="Preview disclaimer"
-                className="cursor-help inline-flex items-center justify-center h-6 w-6 rounded hover:bg-muted/60"
+                className="cursor-help inline-flex items-center justify-center h-6 w-6 rounded hover:bg-muted/60 shrink-0"
               >
                 <InfoIcon className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
@@ -335,7 +350,7 @@ function PreviewHeader({
             </TooltipContent>
           </Tooltip>
         </div>
-        <div className="flex flex-row items-center gap-x-1 flex-shrink-0">
+        <div className="flex flex-row items-center gap-x-1 shrink-0">
           {/* ── Render group ── */}
           {(!autoReload || usesManualRenderByDefault) && (
             <Tooltip>
@@ -404,86 +419,6 @@ function PreviewHeader({
           {/* ── Divider ── */}
           <div className="w-px h-4 bg-border/60 mx-1" />
 
-          {/* ── Inspect group ── */}
-          {onShowSchemas && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={onShowSchemas}
-                >
-                  <FileJson className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View JSON Schemas</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          {onShowCacheMetrics && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={onShowCacheMetrics}
-                >
-                  <BarChart3Icon className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View cache metrics</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setShowClearConfirm(true)}
-                disabled={isClearingCache}
-              >
-                {isClearingCache ? <Spinner size="sm" /> : <Trash2Icon className="h-3.5 w-3.5" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                {isClearingCache ? 'Clearing cache...' : 'Clear all caches'}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                disabled={!documentText || isCopyingStandardComponents}
-                onClick={handleCopyStandardComponents}
-              >
-                {isCopyingStandardComponents ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <Code2 className="h-3.5 w-3.5" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Copy standard components JSON</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* ── Divider ── */}
-          <div className="w-px h-4 bg-border/60 mx-1" />
-
           {/* ── Output group ── */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -531,7 +466,7 @@ function PreviewHeader({
             <Select value={renderingLibrary} onValueChange={setRenderingLibrary}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <SelectTrigger className="w-[140px] h-7 text-xs">
+                  <SelectTrigger className="w-[140px] h-7 text-xs hidden lg:flex">
                     <SelectValue placeholder="Renderer" />
                   </SelectTrigger>
                 </TooltipTrigger>
@@ -558,7 +493,88 @@ function PreviewHeader({
           )}
 
           {/* ── Divider ── */}
-          {onToggleChat && <div className="w-px h-4 bg-border/60 mx-1" />}
+          <div className="w-px h-4 bg-border/60 mx-1" />
+
+          {/* ── Secondary actions overflow menu ── */}
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>More actions</p>
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="end" className="w-52">
+              {onShowSchemas && (
+                <DropdownMenuItem onClick={onShowSchemas}>
+                  <FileJson className="h-4 w-4 mr-2" />
+                  View JSON Schemas
+                </DropdownMenuItem>
+              )}
+              {onShowCacheMetrics && (
+                <DropdownMenuItem onClick={onShowCacheMetrics}>
+                  <BarChart3Icon className="h-4 w-4 mr-2" />
+                  View cache metrics
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={handleCopyStandardComponents}
+                disabled={!documentText || isCopyingStandardComponents}
+              >
+                <Code2 className="h-4 w-4 mr-2" />
+                {isCopyingStandardComponents ? 'Copying...' : 'Copy standard components'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setShowClearConfirm(true)}
+                disabled={isClearingCache}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2Icon className="h-4 w-4 mr-2" />
+                {isClearingCache ? 'Clearing...' : 'Clear all caches'}
+              </DropdownMenuItem>
+              {/* Renderer select for small screens */}
+              {renderingLibrary && setRenderingLibrary && (
+                <>
+                  <DropdownMenuSeparator className="lg:hidden" />
+                  {RENDERING_LIBRARIES.map((library) => (
+                    <DropdownMenuItem
+                      key={library}
+                      className="lg:hidden"
+                      onClick={() => setRenderingLibrary(library)}
+                    >
+                      <span className="mr-2">{renderingLibrary === library ? '●' : '○'}</span>
+                      {tooltips[library][0]} {library}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* ── Preview toggle ── */}
+          {onTogglePreview && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={previewOpen ? 'default' : 'ghost'}
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={onTogglePreview}
+                >
+                  {previewOpen ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span className="flex items-center gap-1.5">{previewOpen ? 'Hide' : 'Show'} Preview <KbdShortcut shortcut="mod+shift+p" /></span>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           {/* ── Chat toggle ── */}
           {onToggleChat && (
@@ -574,7 +590,7 @@ function PreviewHeader({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{chatOpen ? 'Close' : 'Open'} AI Chat (Cmd+L)</p>
+                <span className="flex items-center gap-1.5">{chatOpen ? 'Close' : 'Open'} AI Chat <KbdShortcut shortcut="mod+shift+j" /></span>
               </TooltipContent>
             </Tooltip>
           )}
