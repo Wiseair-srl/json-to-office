@@ -61,17 +61,17 @@ export function deepValidateDocument(data: any): ValidationError[] {
       message: 'Missing required field "name"',
       code: 'required_property',
     });
-  } else if (data.name !== 'report') {
+  } else if (data.name !== 'docx') {
     allErrors.push({
       path: '/name',
-      message: `Invalid name "${data.name}". Expected "report"`,
+      message: `Invalid name "${data.name}". Expected "docx"`,
       code: 'invalid_value',
     });
   }
 
-  // Validate props section if present and name is report
-  if (data.name === 'report' && data.props) {
-    const propsErrors = validateComponentProps('report', data.props, '/props');
+  // Validate props section if present and name is docx
+  if (data.name === 'docx' && data.props) {
+    const propsErrors = validateComponentProps('docx', data.props, '/props');
     allErrors.push(...propsErrors);
   }
 

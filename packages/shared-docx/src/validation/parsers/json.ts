@@ -79,14 +79,14 @@ export class JsonDocumentParser {
       typeof parsedObject !== 'object' ||
       parsedObject === null ||
       !('name' in parsedObject) ||
-      (parsedObject as any).name !== 'report'
+      (parsedObject as any).name !== 'docx'
     ) {
       throw new JsonValidationError(
-        'Invalid document structure: Document must be a report component with name="report"',
+        'Invalid document structure: Document must be a docx component with name="docx"',
         [
           {
             path: 'name',
-            message: 'Document must be a report component with name="report"',
+            message: 'Document must be a docx component with name="docx"',
             code: 'INVALID_STRUCTURE',
           },
         ]

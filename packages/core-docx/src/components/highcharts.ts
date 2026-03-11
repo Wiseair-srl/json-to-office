@@ -1,6 +1,6 @@
 /**
  * Highcharts Component
- * Standard component for generating charts using Highcharts Export Server at localhost:7801
+ * Standard component for generating charts using Highcharts Export Server
  */
 
 import { Paragraph, Table } from 'docx';
@@ -24,8 +24,14 @@ export interface ChartGenerationResult {
   height: number;
 }
 
+const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
+
+function getExportServerUrl(propsUrl?: string): string {
+  return propsUrl || process.env.HIGHCHARTS_SERVER_URL || DEFAULT_EXPORT_SERVER_URL;
+}
+
 /**
- * Generate chart using local Highcharts Export Server at localhost:7801
+ * Generate chart using Highcharts Export Server
  */
 async function generateChart(
   config: HighchartsProps
@@ -38,52 +44,45 @@ async function generateChart(
     );
   }
 
-  try {
-    // Build request body with optional scale
-    const requestBody: Record<string, unknown> = {
-      infile: config.options,
-      type: 'png',
-      b64: true,
-      scale: config.scale,
-    };
+  const serverUrl = getExportServerUrl(config.serverUrl);
 
-    // Call the export server at localhost:7801 using native fetch
-    const response = await fetch('http://localhost:7801/export', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+  const requestBody: Record<string, unknown> = {
+    infile: config.options,
+    type: 'png',
+    b64: true,
+    scale: config.scale,
+  };
 
-    if (!response.ok) {
-      throw new Error(
-        `Highcharts export server returned ${response.status}: ${response.statusText}`
-      );
-    }
-
-    // Get the base64 string from response
-    const base64Data = await response.text();
-
-    // Format as data URI for PNG
-    const base64DataUri = `data:image/png;base64,${base64Data}`;
-
-    // Extract width and height from options
-    const width = config.options.chart.width;
-    const height = config.options.chart.height;
-
-    return {
-      base64DataUri,
-      width,
-      height,
-    };
-  } catch (error) {
-    // Fallback to placeholder if export server is not available
+  const response = await fetch(`${serverUrl}/export`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  }).catch((error) => {
     throw new Error(
-      'Highcharts export server not available at localhost:7801, using placeholder image.\n' +
-        `Error: ${error instanceof Error ? error.message : String(error)}`
+      `Highcharts Export Server is not running at ${serverUrl}. ` +
+        'Start it with: npx highcharts-export-server --enableServer true\n' +
+        `Cause: ${error instanceof Error ? error.message : String(error)}`
+    );
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Highcharts export server returned ${response.status}: ${response.statusText}`
     );
   }
+
+  const base64Data = await response.text();
+  const base64DataUri = `data:image/png;base64,${base64Data}`;
+  const width = config.options.chart.width;
+  const height = config.options.chart.height;
+
+  return {
+    base64DataUri,
+    width,
+    height,
+  };
 }
 
 /**
@@ -98,37 +97,28 @@ export async function renderHighchartsComponent(
 
   const config = component.props as HighchartsProps;
 
-  try {
-    // Generate the chart
-    const chartResult = await generateChart(config);
+  // Generate the chart
+  const chartResult = await generateChart(config);
 
-    // If either config.width or config.height is provided, use config dimensions only
-    // Otherwise fall back to chart dimensions
-    const hasConfigDimensions =
-      config.width !== undefined || config.height !== undefined;
-    const renderWidth = hasConfigDimensions ? config.width : chartResult.width;
-    const renderHeight = hasConfigDimensions
-      ? config.height
-      : chartResult.height;
+  // If either config.width or config.height is provided, use config dimensions only
+  // Otherwise fall back to chart dimensions
+  const hasConfigDimensions =
+    config.width !== undefined || config.height !== undefined;
+  const renderWidth = hasConfigDimensions ? config.width : chartResult.width;
+  const renderHeight = hasConfigDimensions
+    ? config.height
+    : chartResult.height;
 
-    // Add chart image using the image component with base64 data URI
-    const imageParagraphs = await createImage(
-      chartResult.base64DataUri,
-      theme,
-      {
-        width: renderWidth,
-        height: renderHeight,
-        alignment: 'center',
-      }
-    );
+  // Add chart image using the image component with base64 data URI
+  const imageParagraphs = await createImage(
+    chartResult.base64DataUri,
+    theme,
+    {
+      width: renderWidth,
+      height: renderHeight,
+      alignment: 'center',
+    }
+  );
 
-    return imageParagraphs;
-  } catch (error) {
-    // Return empty array on error (error is already logged in generateChart)
-    console.error(
-      'Error rendering chart:',
-      error instanceof Error ? error.message : String(error)
-    );
-    return [];
-  }
+  return imageParagraphs;
 }

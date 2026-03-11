@@ -9,6 +9,7 @@ export * from './text';
 export * from './image';
 export * from './shape';
 export * from './table';
+export * from './highcharts';
 
 export {
   PptxComponentDefinitionSchema,

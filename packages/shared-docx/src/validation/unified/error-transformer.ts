@@ -79,16 +79,16 @@ function generateUnionErrorMessage(error: ValueError): string {
     if (value && typeof value === 'object') {
       if ('name' in value) {
         const name = value.name;
-        if (name === 'report') {
+        if (name === 'docx') {
           return 'Document structure appears valid but contains invalid component configurations. Check each component for errors.';
         }
-        return `Unknown document name '${name}'. Expected 'report'.`;
+        return `Unknown document name '${name}'. Expected 'docx'.`;
       }
 
       // Missing name field
       const valueAny = value as Record<string, unknown>;
       if ('children' in value && Array.isArray(valueAny.children)) {
-        return 'Document is missing required \'name\' field. Add "name": "report" at the root level.';
+        return 'Document is missing required \'name\' field. Add "name": "docx" at the root level.';
       }
 
       // Check if it might be a theme
@@ -96,7 +96,7 @@ function generateUnionErrorMessage(error: ValueError): string {
         return 'This appears to be a theme configuration. Use --type theme or ensure proper document structure.';
       }
     }
-    return 'Invalid document structure. Expected a document with name="report" or a theme configuration.';
+    return 'Invalid document structure. Expected a document with name="docx" or a theme configuration.';
   }
 
   // Component-level union error
@@ -352,7 +352,7 @@ function getSuggestion(
     if (path === 'root' || path === '/') {
       if (value && typeof value === 'object') {
         if (!('name' in value)) {
-          const msg = 'Add a "name" field with value "report" for documents';
+          const msg = 'Add a "name" field with value "docx" for documents';
           return config.includeEmojis ? `${ERROR_EMOJIS.FIX} ${msg}` : msg;
         }
         if ('props' in value && typeof value.props === 'object') {
@@ -360,7 +360,7 @@ function getSuggestion(
           return `Review the props section for unsupported fields. Allowed fields: ${knownFields.join(', ')}`;
         }
       }
-      return 'Ensure the document has proper structure: { "name": "report", "props": {...}, "children": [...] }';
+      return 'Ensure the document has proper structure: { "name": "docx", "props": {...}, "children": [...] }';
     }
     if (path?.includes('/children/')) {
       return 'Check that the component has a valid "name" and all required fields for that component type';
@@ -436,7 +436,7 @@ function getSuggestion(
 
   // Path-based suggestions
   if (path?.includes('name') || path?.includes('type')) {
-    return 'Use a valid component name: report, section, columns, heading, paragraph, image, statistic, table, header, footer, list, toc, text-box, or highcharts';
+    return 'Use a valid component name: docx, section, columns, heading, paragraph, image, statistic, table, header, footer, list, toc, text-box, or highcharts';
   }
 
   return undefined;

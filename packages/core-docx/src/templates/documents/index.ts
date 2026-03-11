@@ -33,7 +33,7 @@ export function loadJsonExample(name: string): ComponentDefinition {
     getDirname(),
     'templates',
     'documents',
-    `${name}.document.json`
+    `${name}.docx.json`
   );
 
   try {
@@ -57,8 +57,8 @@ export function getAvailableJsonExamples(): string[] {
   try {
     const files = fs.readdirSync(examplesDir);
     return files
-      .filter((file) => file.endsWith('.document.json'))
-      .map((file) => path.basename(file, '.document.json'))
+      .filter((file) => file.endsWith('.docx.json'))
+      .map((file) => path.basename(file, '.docx.json'))
       .sort();
   } catch (error) {
     console.warn('Could not read JSON examples directory:', error);

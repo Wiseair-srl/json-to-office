@@ -21,7 +21,7 @@ describe('core/generator', () => {
   describe('generateDocument', () => {
     it('should generate a document with minimal config', async () => {
       const minimalComponent: ComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {
           theme: 'minimal',
         },
@@ -43,7 +43,7 @@ describe('core/generator', () => {
 
     it('should handle document with theme', async () => {
       const componentWithTheme: ComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {
           theme: 'verizon',
         },
@@ -64,7 +64,7 @@ describe('core/generator', () => {
 
     it('should handle document with custom components', async () => {
       const componentWithTable: ComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {},
         children: [
           {
@@ -96,13 +96,13 @@ describe('core/generator', () => {
       } as any;
 
       await expect(generateDocument(invalidComponent)).rejects.toThrow(
-        'Top-level component must be a report component'
+        'Top-level component must be a docx component'
       );
     });
 
     it('should handle JSON report definition', async () => {
       const jsonDefinition: ReportComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         $schema: 'https://example.com/schema',
         props: {
           title: 'JSON Document',
@@ -151,7 +151,7 @@ describe('core/generator', () => {
   describe('generateDocumentFromJson', () => {
     it('should generate document from JSON definition', async () => {
       const jsonDef: ReportComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {
           title: 'Test Document',
           theme: 'minimal',
@@ -179,7 +179,7 @@ describe('core/generator', () => {
 
     it('should handle JSON with metadata', async () => {
       const jsonWithMetadata: ReportComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {
           title: 'Document with Metadata',
           theme: 'minimal',

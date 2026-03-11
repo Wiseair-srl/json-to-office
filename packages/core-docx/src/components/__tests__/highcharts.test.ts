@@ -333,9 +333,8 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       expect(result).toHaveLength(1);
     });
 
-    it('should handle chart export error gracefully', async () => {
-      // Mock fetch to fail
-      mockFetch.mockRejectedValueOnce(new Error('Export server not available'));
+    it('throws when export server unavailable', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
 
       const component = {
         name: 'highcharts' as const,
@@ -351,15 +350,76 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      // The component catches errors and returns empty array
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      await expect(
+        renderHighchartsComponent(component, createMockTheme(), TEST_THEME_NAME)
+      ).rejects.toThrow(/not running.*enableServer/s);
+    });
+
+    it('should use custom serverUrl prop', async () => {
+      const component = {
+        name: 'highcharts' as const,
+        props: {
+          options: {
+            chart: { width: 600, height: 400 },
+            series: [{ data: [1, 2, 3] }],
+          },
+          serverUrl: 'http://custom-server:9999',
+        },
+      };
+
+      await renderHighchartsComponent(component, createMockTheme(), TEST_THEME_NAME);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://custom-server:9999/export',
+        expect.any(Object)
+      );
+    });
+
+    it('should use HIGHCHARTS_SERVER_URL env var', async () => {
+      process.env.HIGHCHARTS_SERVER_URL = 'http://env-server:8080';
+
+      const component = {
+        name: 'highcharts' as const,
+        props: {
+          options: {
+            chart: { width: 600, height: 400 },
+            series: [{ data: [1, 2, 3] }],
+          },
+        },
+      };
+
+      await renderHighchartsComponent(component, createMockTheme(), TEST_THEME_NAME);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://env-server:8080/export',
+        expect.any(Object)
       );
 
-      // Error is caught and logged, returns empty array
-      expect(result).toHaveLength(0);
+      delete process.env.HIGHCHARTS_SERVER_URL;
+    });
+
+    it('should prioritize serverUrl prop over env var', async () => {
+      process.env.HIGHCHARTS_SERVER_URL = 'http://env-server:8080';
+
+      const component = {
+        name: 'highcharts' as const,
+        props: {
+          options: {
+            chart: { width: 600, height: 400 },
+            series: [{ data: [1, 2, 3] }],
+          },
+          serverUrl: 'http://prop-server:7777',
+        },
+      };
+
+      await renderHighchartsComponent(component, createMockTheme(), TEST_THEME_NAME);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://prop-server:7777/export',
+        expect.any(Object)
+      );
+
+      delete process.env.HIGHCHARTS_SERVER_URL;
     });
   });
 });

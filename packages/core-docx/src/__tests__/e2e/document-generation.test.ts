@@ -10,7 +10,7 @@ describe('E2E: Document Generation', () => {
   describe('Complete Document Generation', () => {
     it('should generate a complete business report', async () => {
       const reportComponent: ComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {
           theme: 'minimal',
           metadata: {
@@ -78,7 +78,7 @@ describe('E2E: Document Generation', () => {
 
     it('should generate document with multiple sections', async () => {
       const multiSectionComponent: ComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {
           theme: 'minimal',
         },
@@ -153,7 +153,7 @@ describe('E2E: Document Generation', () => {
 
     it('should generate document with lists', async () => {
       const listComponent: ComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {},
         children: [
           {
@@ -192,7 +192,7 @@ describe('E2E: Document Generation', () => {
 
     it('should generate document with columns', async () => {
       const columnsComponent: ComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {},
         children: [
           {
@@ -238,7 +238,7 @@ describe('E2E: Document Generation', () => {
 
     it('should generate document with JSON definition', async () => {
       const jsonDefinition: ReportComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {
           title: 'JSON Document',
           theme: 'minimal',
@@ -279,7 +279,7 @@ describe('E2E: Document Generation', () => {
 
       for (const theme of themes) {
         const themedComponent: ComponentDefinition = {
-          name: 'report',
+          name: 'docx',
           props: {
             theme,
           },
@@ -334,7 +334,7 @@ describe('E2E: Document Generation', () => {
       }
 
       const largeComponent: ComponentDefinition = {
-        name: 'report',
+        name: 'docx',
         props: {},
         children: components,
       };

@@ -142,7 +142,7 @@ describe('InferComponentDefinition type helper', () => {
 
     // Use the components with the generator
     const result = await generator.generate({
-      name: 'report',
+      name: 'docx',
       props: {},
       children: components,
     });
@@ -214,7 +214,7 @@ describe('InferComponentDefinition type helper', () => {
 
     // Create a full document using the inferred types
     const document: DocType = {
-      name: 'report',
+      name: 'docx',
       props: {
         metadata: { title: 'Weather Report' },
       },
@@ -230,7 +230,7 @@ describe('InferComponentDefinition type helper', () => {
     ];
 
     const documentWithSeparateComponents: DocType = {
-      name: 'report',
+      name: 'docx',
       props: {},
       children: separateComponents,
     };
@@ -366,7 +366,7 @@ describe('createComponent with TComponentDefinition type parameter', () => {
 
     // Generate a document
     const result = await fullGenerator.generate({
-      name: 'report',
+      name: 'docx',
       props: {},
       children: [
         {
@@ -464,7 +464,7 @@ describe('createComponent with TComponentDefinition type parameter', () => {
     }).addComponent(simpleComponent);
 
     const result = await generator.generate({
-      name: 'report',
+      name: 'docx',
       props: {},
       children: [{ name: 'simple', props: { text: 'Hello' } }],
     });
@@ -531,7 +531,7 @@ describe('createComponent with TComponentDefinition type parameter', () => {
 
     // Step 5: Use both custom components in a document
     const result = await finalGenerator.generate({
-      name: 'report',
+      name: 'docx',
       props: {},
       children: [
         {

@@ -23,6 +23,8 @@ export const HighchartsPropsSchema = Type.Object({
   ]),
   // Optional scale factor for export
   scale: Type.Optional(Type.Number()),
+  // Optional Highcharts Export Server URL override
+  serverUrl: Type.Optional(Type.String({ description: 'Highcharts Export Server URL (default: http://localhost:7801)' })),
   // Optional width for rendering (overrides chart width)
   width: Type.Optional(
     Type.Union(

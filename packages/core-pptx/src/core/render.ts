@@ -9,9 +9,9 @@ import { renderComponent } from '../components';
 import { resolveComponentGridPosition } from './grid';
 import { toHex } from '../utils/color';
 
-export function renderPresentation(
+export async function renderPresentation(
   processed: ProcessedPresentation
-): PptxGenJS {
+): Promise<PptxGenJS> {
   const pptx = new PptxGenJS();
 
   // Set presentation metadata
@@ -69,7 +69,7 @@ export function renderPresentation(
         processed.slideWidth,
         processed.slideHeight
       );
-      renderComponent(slide, resolved, processed.theme, pptx);
+      await renderComponent(slide, resolved, processed.theme, pptx);
     }
 
     // Add speaker notes

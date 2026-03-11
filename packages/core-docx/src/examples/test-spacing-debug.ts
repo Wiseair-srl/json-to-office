@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Test document with different spacing values
 const testDocument = {
-  type: 'report',
+  type: 'docx',
   config: {
     title: 'Spacing Debug Test',
     subtitle: 'Testing spacing interpretation',

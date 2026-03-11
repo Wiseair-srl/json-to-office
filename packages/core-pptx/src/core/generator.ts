@@ -25,7 +25,7 @@ export function isPresentationComponentDefinition(
 ): definition is PresentationComponentDefinition {
   if (typeof definition !== 'object' || definition === null) return false;
   const def = definition as Record<string, unknown>;
-  return def.name === 'presentation' && 'props' in def;
+  return def.name === 'pptx' && 'props' in def;
 }
 
 /**
@@ -35,12 +35,12 @@ export async function generatePresentation(
   document: PresentationComponentDefinition,
   options?: GenerationOptions
 ): Promise<PptxGenJS> {
-  if (!document || document.name !== 'presentation') {
-    throw new Error('Top-level component must be a presentation component');
+  if (!document || document.name !== 'pptx') {
+    throw new Error('Top-level component must be a pptx component');
   }
 
   const processed = processPresentation(document, options);
-  return renderPresentation(processed);
+  return await renderPresentation(processed);
 }
 
 /**

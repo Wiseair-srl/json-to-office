@@ -217,14 +217,14 @@ export function generateUnifiedDocumentSchema(
   // Only support the new unified structure - no legacy support
 
   // Get report component props from registry
-  const reportComponent = getStandardComponent('report');
+  const reportComponent = getStandardComponent('docx');
   if (!reportComponent) {
-    throw new Error('Report component not found in registry');
+    throw new Error('Docx root component not found in registry');
   }
 
   return Type.Object(
     {
-      name: Type.Literal('report'),
+      name: Type.Literal('docx'),
       id: Type.Optional(Type.String()),
       $schema: Type.Optional(Type.String({ format: 'uri' })),
       props: reportComponent.propsSchema,

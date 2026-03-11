@@ -26,6 +26,7 @@ import { TextPropsSchema } from './components/text';
 import { PptxImagePropsSchema } from './components/image';
 import { ShapePropsSchema } from './components/shape';
 import { PptxTablePropsSchema } from './components/table';
+import { PptxHighchartsPropsSchema } from './components/highcharts';
 
 /**
  * SINGLE SOURCE OF TRUTH for all standard PPTX components
@@ -35,7 +36,7 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
   // Container Components (can contain children)
   // ========================================================================
   {
-    name: 'presentation',
+    name: 'pptx',
     propsSchema: PresentationPropsSchema,
     hasChildren: true,
     category: 'container',
@@ -88,6 +89,14 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
     category: 'content',
     description:
       'Table element - displays tabular data with rows and columns.',
+  },
+  {
+    name: 'highcharts',
+    propsSchema: PptxHighchartsPropsSchema,
+    hasChildren: false,
+    category: 'content',
+    description:
+      'Highcharts element - renders charts via Highcharts Export Server.',
   },
 ] as const;
 

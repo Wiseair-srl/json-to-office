@@ -14,6 +14,7 @@ export {
   ShapePropsSchema,
   ShapeTypeSchema,
   PptxTablePropsSchema,
+  PptxHighchartsPropsSchema,
   PptxStandardComponentDefinitionSchema,
   PptxComponentDefinitionSchema,
 } from './schemas/components';
@@ -31,6 +32,7 @@ export type {
   ShapeType,
   ShapeProps,
   PptxTableProps,
+  PptxHighchartsProps,
   PptxComponentDefinition,
 } from './schemas/components';
 

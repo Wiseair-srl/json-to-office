@@ -1,6 +1,6 @@
 {
   "$schema": "../../../shared/json-schemas/document.schema.json",
-  "name": "report",
+  "name": "docx",
   "props": {
     "title": "Columns Config Options Demo",
     "metadata": {

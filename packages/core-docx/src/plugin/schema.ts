@@ -187,8 +187,8 @@ export function mergeSchemas(
   }
 
   const defaultStandardSchemas: Record<string, TSchema> = {
-    report: Type.Object({
-      name: Type.Literal('report'),
+    docx: Type.Object({
+      name: Type.Literal('docx'),
       id: Type.Optional(Type.String()),
       props: ReportPropsSchema,
       children: Type.Optional(Type.Array(Type.Any())),

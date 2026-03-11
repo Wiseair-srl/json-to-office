@@ -148,7 +148,7 @@ describe('getStandardComponentsDefinition', () => {
     // Define a document using custom components - no type annotation needed!
     // TypeScript infers the correct type from the generator
     const documentWithCustomComponents = {
-      name: 'report' as const,
+      name: 'docx' as const,
       props: {
         metadata: { title: 'Custom Component Test' },
         theme: 'minimal',
@@ -189,7 +189,7 @@ describe('getStandardComponentsDefinition', () => {
 
     // Verify the result
     expect(standardDefinition).toBeDefined();
-    expect(standardDefinition.name).toBe('report');
+    expect(standardDefinition.name).toBe('docx');
     expect(standardDefinition.props?.metadata?.title).toBe(
       'Custom Component Test'
     );
@@ -223,7 +223,7 @@ describe('getStandardComponentsDefinition', () => {
 
     // Use explicit typing to avoid inference issues with standard-only components
     const standardDefinition = await generator.getStandardComponentsDefinition({
-      name: 'report',
+      name: 'docx',
       props: {
         metadata: {
           title: 'Standard Components Only',
@@ -258,7 +258,7 @@ describe('getStandardComponentsDefinition', () => {
     // doesn't fully support this because ExtendedComponentDefinition isn't applied
     // recursively in section.children. We use 'as any' for the nested children.
     const standardDefinition = await generator.getStandardComponentsDefinition({
-      name: 'report',
+      name: 'docx',
       props: {
         metadata: { title: 'Nested Custom Components' },
       },
@@ -320,7 +320,7 @@ describe('getStandardComponentsDefinition', () => {
     }).addComponent(greetingComponent);
 
     const invalidDocument = {
-      name: 'report' as const,
+      name: 'docx' as const,
       props: {
         metadata: { title: 'Invalid Config' },
       },
@@ -346,7 +346,7 @@ describe('getStandardComponentsDefinition', () => {
     }).addComponent(greetingComponent);
 
     const document = {
-      name: 'report' as const,
+      name: 'docx' as const,
       props: {
         metadata: { title: 'Normalization Test' },
       },
@@ -366,7 +366,7 @@ describe('getStandardComponentsDefinition', () => {
       await generator.getStandardComponentsDefinition(document);
 
     // The normalized document should have proper structure
-    expect(standardDefinition).toHaveProperty('name', 'report');
+    expect(standardDefinition).toHaveProperty('name', 'docx');
     expect(standardDefinition).toHaveProperty('props');
     expect(standardDefinition).toHaveProperty('children');
 
@@ -383,7 +383,7 @@ describe('getStandardComponentsDefinition', () => {
     }).addComponent(greetingComponent);
 
     const document = {
-      name: 'report' as const,
+      name: 'docx' as const,
       props: {
         metadata: { title: 'Consistency Test' },
       },

@@ -154,9 +154,9 @@ export function normalizeDocument(
   document: ComponentDefinition | ReportComponentDefinition
 ): [ReportComponentDefinition] {
   // Validate it's a report component
-  if (document.name !== 'report') {
+  if (document.name !== 'docx') {
     throw new Error(
-      'Top-level document must be a report component with name="report"'
+      'Top-level document must be a docx component with name="docx"'
     );
   }
 
@@ -174,7 +174,7 @@ export function validateComponentStructure(component: any): {
   const errors: string[] = [];
 
   // Components that can have children
-  const containerComponents = ['report', 'section', 'columns', 'text-box'];
+  const containerComponents = ['docx', 'section', 'columns', 'text-box'];
 
   // Check if content components have children (they shouldn't)
   if (

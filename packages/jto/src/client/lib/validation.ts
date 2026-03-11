@@ -25,11 +25,11 @@ export function getDocumentFormSchema(
     properties['name'] = Type.String({
       minLength: 1,
       maxLength: 120,
-      // Allow dots so filenames like *.document.json and *.theme.json are valid
+      // Allow dots so filenames like *.docx.json, *.pptx.json and *.theme.json are valid
       // Still restrict to a safe subset (alphanumerics, space, hyphen, underscore, dot)
       pattern: '^[a-zA-Z0-9-_. ]+$',
       description:
-        'Document name (e.g., my-report.document.json or my-theme.theme.json)',
+        'Document name (e.g., my-report.docx.json or my-theme.theme.json)',
     });
     required.push('name');
   }

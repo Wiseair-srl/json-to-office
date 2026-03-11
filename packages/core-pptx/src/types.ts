@@ -11,7 +11,7 @@ export interface PptxComponentInput {
 }
 
 export interface PresentationComponentDefinition {
-  name: 'presentation';
+  name: 'pptx';
   $schema?: string;
   id?: string;
   props: {
@@ -111,7 +111,7 @@ export function isPresentationComponent(
   return (
     typeof component === 'object' &&
     component !== null &&
-    (component as any).name === 'presentation'
+    (component as any).name === 'pptx'
   );
 }
 

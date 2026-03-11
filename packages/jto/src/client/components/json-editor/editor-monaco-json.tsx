@@ -257,7 +257,7 @@ function EditorMonacoJson({
           defaultLanguage="json"
           theme={`vs-${resolvedTheme}`}
           defaultPath={
-            name.includes('theme') ? `${name}.json` : `document-${name}.json`
+            name.endsWith('.json') ? name : `${name}.json`
           }
           value={value ?? defaultValue}
           beforeMount={handleEditorWillMount}

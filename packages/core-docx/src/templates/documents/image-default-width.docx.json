@@ -1,6 +1,6 @@
 {
   "$schema": "../../../shared/json-schemas/document.schema.json",
-  "name": "report",
+  "name": "docx",
   "props": {
     "title": "Image Default Width Example",
     "metadata": {

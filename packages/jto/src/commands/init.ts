@@ -80,7 +80,7 @@ export function createInitCommand(adapter: FormatAdapter): Command {
         const exampleDocument =
           adapter.name === 'docx'
             ? {
-              name: 'report',
+              name: 'docx',
               props: {
                 title: 'Welcome to JSON-to-Office',
                 subtitle: `Your ${adapter.label} generation project`,
@@ -100,7 +100,7 @@ export function createInitCommand(adapter: FormatAdapter): Command {
               ],
             }
             : {
-              name: 'presentation',
+              name: 'pptx',
               props: {
                 title: 'Welcome to JSON-to-Office',
               },

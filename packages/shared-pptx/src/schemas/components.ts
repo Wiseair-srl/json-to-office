@@ -15,6 +15,7 @@ export * from './components/text';
 export * from './components/image';
 export * from './components/shape';
 export * from './components/table';
+export * from './components/highcharts';
 
 // ============================================================================
 // Component Definitions with Discriminated Union

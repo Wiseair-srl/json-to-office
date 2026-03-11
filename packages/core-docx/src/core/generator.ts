@@ -46,7 +46,7 @@ export function isReportComponentDefinition(
   const def = definition as Record<string, unknown>;
 
   // Must be a report component (optionally with $schema for JSON validation)
-  return def.name === 'report' && 'props' in def;
+  return def.name === 'docx' && 'props' in def;
 }
 
 /**
@@ -57,8 +57,8 @@ export async function generateDocument(
   document: ReportComponentDefinition
 ): Promise<Document> {
   // Validate that the document is a report component
-  if (!document || document.name !== 'report') {
-    throw new Error('Top-level component must be a report component');
+  if (!document || document.name !== 'docx') {
+    throw new Error('Top-level component must be a docx component');
   }
 
   // Handle JSON definitions (report components with $schema)
@@ -90,7 +90,7 @@ export async function generateFromConfig(
   components: ComponentDefinition[]
 ): Promise<Document> {
   const reportComponent: ReportComponentDefinition = {
-    name: 'report',
+    name: 'docx',
     props,
     children: components,
   };
@@ -191,7 +191,7 @@ export async function generateDocumentFromJson(
     // Parse and validate - parseJsonComponent returns ComponentDefinition
     const parsed = parseJsonComponent(jsonConfig) as ComponentDefinition;
     if (!isReportComponent(parsed)) {
-      throw new Error('Parsed JSON must be a report component');
+      throw new Error('Parsed JSON must be a docx component');
     }
     componentToConvert = parsed as ReportComponentDefinition;
   } else {

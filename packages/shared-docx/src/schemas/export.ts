@@ -213,7 +213,7 @@ export function createComponentSchema(
   };
 
   // Add children array for container types
-  if (['report', 'section', 'columns', 'text-box'].includes(name)) {
+  if (['docx', 'section', 'columns', 'text-box'].includes(name)) {
     (componentStructure.properties as Record<string, unknown>).children = {
       type: 'array',
       description: 'Children within this container',

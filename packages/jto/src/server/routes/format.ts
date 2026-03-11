@@ -89,7 +89,9 @@ export function createFormatRouter(adapter: FormatAdapter) {
           }
         }
         if (error instanceof HTTPException) throw error;
-        throw new HTTPException(500, { message: `Internal server error during ${adapter.label} generation` });
+        throw new HTTPException(500, {
+          message: `Internal server error during ${adapter.label} generation`,
+        });
       }
     }
   );

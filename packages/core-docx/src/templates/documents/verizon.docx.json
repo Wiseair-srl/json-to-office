@@ -1,6 +1,6 @@
 {
   "$schema": "../../../../shared/json-schemas/document.schema.json",
-  "name": "report",
+  "name": "docx",
   "props": {
     "title": "2025 Data Breach Investigations Report",
     "subtitle": "Small- and Medium-Sized Business Snapshot",

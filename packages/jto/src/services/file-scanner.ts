@@ -8,7 +8,7 @@ export interface ScanOptions {
   additionalIgnore?: string[];
 }
 
-export type DiscoveryType = 'plugin' | 'document' | 'theme';
+export type DiscoveryType = 'plugin' | 'docx-document' | 'pptx-document' | 'theme';
 
 export interface FilePattern {
   type: DiscoveryType;
@@ -34,20 +34,36 @@ export class FileSystemScanner {
         'src/components/**/*.component.ts',
       ],
     },
-    document: {
-      type: 'document',
-      pattern: '*.document.json',
+    'docx-document': {
+      type: 'docx-document',
+      pattern: '*.docx.json',
       monorepoPatterns: [
-        'packages/*/src/**/*.document.json',
-        'packages/**/src/**/*.document.json',
-        'apps/*/src/**/*.document.json',
-        'apps/**/src/**/*.document.json',
-        'libs/*/src/**/*.document.json',
-        'libs/**/src/**/*.document.json',
-        'documents/**/*.document.json',
-        'src/documents/**/*.document.json',
-        'templates/**/*.document.json',
-        'src/templates/**/*.document.json',
+        'packages/*/src/**/*.docx.json',
+        'packages/**/src/**/*.docx.json',
+        'apps/*/src/**/*.docx.json',
+        'apps/**/src/**/*.docx.json',
+        'libs/*/src/**/*.docx.json',
+        'libs/**/src/**/*.docx.json',
+        'documents/**/*.docx.json',
+        'src/documents/**/*.docx.json',
+        'templates/**/*.docx.json',
+        'src/templates/**/*.docx.json',
+      ],
+    },
+    'pptx-document': {
+      type: 'pptx-document',
+      pattern: '*.pptx.json',
+      monorepoPatterns: [
+        'packages/*/src/**/*.pptx.json',
+        'packages/**/src/**/*.pptx.json',
+        'apps/*/src/**/*.pptx.json',
+        'apps/**/src/**/*.pptx.json',
+        'libs/*/src/**/*.pptx.json',
+        'libs/**/src/**/*.pptx.json',
+        'documents/**/*.pptx.json',
+        'src/documents/**/*.pptx.json',
+        'templates/**/*.pptx.json',
+        'src/templates/**/*.pptx.json',
       ],
     },
     theme: {
@@ -178,16 +194,4 @@ export class FileSystemScanner {
     return Array.from(uniquePaths);
   }
 
-  async scanAll(
-    basePath: string,
-    options: ScanOptions = {}
-  ): Promise<{ plugins: string[]; documents: string[]; themes: string[] }> {
-    const [plugins, documents, themes] = await Promise.all([
-      this.scan(basePath, 'plugin', options),
-      this.scan(basePath, 'document', options),
-      this.scan(basePath, 'theme', options),
-    ]);
-
-    return { plugins, documents, themes };
-  }
 }

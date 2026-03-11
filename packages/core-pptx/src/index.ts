@@ -37,5 +37,6 @@ export {
   renderImageComponent,
   renderShapeComponent,
   renderTableComponent,
+  renderHighchartsComponent,
   renderComponent,
 } from './components';

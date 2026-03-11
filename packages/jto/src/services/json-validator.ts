@@ -257,8 +257,8 @@ export class JsonValidator {
 
   private detectType(jsonData: any): 'document' | 'theme' | null {
     if (
-      jsonData.name === 'report' ||
-      jsonData.name === 'presentation' ||
+      jsonData.name === 'docx' ||
+      jsonData.name === 'pptx' ||
       (jsonData.children && Array.isArray(jsonData.children)) ||
       (jsonData.slides && Array.isArray(jsonData.slides)) ||
       (jsonData.props && jsonData.props.metadata?.title)

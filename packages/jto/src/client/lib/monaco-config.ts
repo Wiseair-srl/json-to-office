@@ -103,11 +103,7 @@ export function configureMonacoInstance(monaco: Monaco): void {
   registerJsonCompletionProvider(monaco);
 
   // Generate schemas for both report and theme files
-  // Use consistent patterns: *.document.json and document-*.json for documents, *.theme.json for themes
-  const reportSchema = createReportSchemaConfig([
-    '*.document.json',
-    'document-*.json',
-  ]);
+  const reportSchema = createReportSchemaConfig();
   const themeSchema = createThemeSchemaConfig(['*.theme.json']);
 
   // Strip non-standard discriminator keyword from static schemas too
@@ -347,7 +343,7 @@ export async function updateMonacoWithPlugins(
     // Create the Monaco schema configuration with the SAME URI as the base schema
     const reportSchema: MonacoSchemaConfig = {
       uri: 'https://json-to-office.dev/schema/report/v1.0.0', // Use consistent URI
-      fileMatch: ['*.document.json', 'document-*.json'],
+      fileMatch: ['*.docx.json', '*.pptx.json'],
       schema: documentSchema,
     };
 

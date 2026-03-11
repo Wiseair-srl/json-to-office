@@ -47,7 +47,7 @@ export interface StandardComponentDefinition {
   description: string;
   /** Special flags for this component */
   special?: {
-    /** Has $schema field (only 'report') */
+    /** Has $schema field (only 'docx') */
     hasSchemaField?: boolean;
   };
 }
@@ -68,14 +68,14 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
   // Container Components (can contain children)
   // ========================================================================
   {
-    name: 'report',
+    name: 'docx',
     propsSchema: ReportPropsSchema,
     hasChildren: true,
     category: 'container',
     description:
-      'Main report container - defines the overall document structure. Required as the first component.',
+      'Main document container - defines the overall document structure. Required as the root component.',
     special: {
-      hasSchemaField: true, // Only report has $schema field
+      hasSchemaField: true, // Only docx root has $schema field
     },
   },
   {

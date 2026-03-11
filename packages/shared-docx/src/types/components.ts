@@ -34,7 +34,7 @@ import type { TextBoxPropsSchema } from '../schemas/components/text-box';
  * Report component with literal name discriminator
  */
 export interface ReportComponent {
-  name: 'report';
+  name: 'docx';
   id?: string;
   /** When false, this component is filtered out and not rendered. Defaults to true */
   enabled?: boolean;
@@ -240,7 +240,7 @@ export const STANDARD_COMPONENTS = [
   'image',
   'list',
   'paragraph',
-  'report',
+  'docx',
   'section',
   'statistic',
   'table',
@@ -301,7 +301,7 @@ export type ComponentDefinition =
 export function isReportComponent(
   component: ComponentDefinition
 ): component is ReportComponent {
-  return component.name === 'report';
+  return component.name === 'docx';
 }
 
 export function isSectionComponent(

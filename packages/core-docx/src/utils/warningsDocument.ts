@@ -82,7 +82,7 @@ export function generateWarningsDocument(
   }
 
   return {
-    name: 'report',
+    name: 'docx',
     props: {
       metadata: {
         title: 'Generation Warnings',

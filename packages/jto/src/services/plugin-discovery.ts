@@ -107,10 +107,13 @@ export class PluginDiscoveryService {
     }
   }
 
-  async discoverDocuments(): Promise<DocumentMetadata[]> {
+  async discoverDocuments(format?: 'docx' | 'pptx'): Promise<DocumentMetadata[]> {
     const startPath = this.searchPath;
 
-    const allDocumentPaths = await this.searchDownstream(startPath, 'document');
+    const discoveryType: DiscoveryType = format === 'pptx' ? 'pptx-document' : 'docx-document';
+    const ext = format === 'pptx' ? '.pptx.json' : '.docx.json';
+
+    const allDocumentPaths = await this.searchDownstream(startPath, discoveryType);
     const uniquePaths = this.scanner.deduplicatePaths(allDocumentPaths);
 
     const metadata: DocumentMetadata[] = [];
@@ -121,7 +124,7 @@ export class PluginDiscoveryService {
         const location = this.getFileLocation(docPath, startPath);
 
         metadata.push({
-          name: path.basename(docPath, '.document.json'),
+          name: path.basename(docPath, ext),
           path: docPath,
           location,
           type: json.name || 'document',
@@ -174,8 +177,8 @@ export class PluginDiscoveryService {
     return metadata;
   }
 
-  async getDocumentContent(name: string): Promise<string> {
-    const documents = await this.discoverDocuments();
+  async getDocumentContent(name: string, format?: 'docx' | 'pptx'): Promise<string> {
+    const documents = await this.discoverDocuments(format);
     const document = documents.find((doc) => doc.name === name);
     if (!document) throw new Error(`Document '${name}' not found`);
     return await fs.readFile(document.path, 'utf-8');

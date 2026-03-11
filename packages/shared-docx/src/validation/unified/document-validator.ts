@@ -34,7 +34,7 @@ export function validateDocument(
   // Add document-specific metadata
   const documentResult: DocumentValidationResult = {
     ...result,
-    documentType: 'report',
+    documentType: 'docx',
     errors: finalErrors, // Use the comprehensive errors
   };
 
@@ -71,7 +71,7 @@ export function validateJsonDocument(
   // Add document-specific metadata
   const documentResult: DocumentValidationResult = {
     ...result,
-    documentType: 'report',
+    documentType: 'docx',
     errors: finalErrors, // Use the comprehensive errors
   };
 

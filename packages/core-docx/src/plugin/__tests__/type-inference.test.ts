@@ -80,7 +80,7 @@ describe('Type inference for custom components', () => {
 
     // This should compile without errors
     generator.generate({
-      name: 'report',
+      name: 'docx',
       props: {},
       children: [
         {
@@ -102,7 +102,7 @@ describe('Type inference for custom components', () => {
 
     // Standard components should still work
     generator.generate({
-      name: 'report',
+      name: 'docx',
       props: {},
       children: [
         {
@@ -208,7 +208,7 @@ describe('Multi-version type inference', () => {
 
     // v1 with explicit version
     generator.generate({
-      name: 'report',
+      name: 'docx',
       props: {},
       children: [
         {
@@ -221,7 +221,7 @@ describe('Multi-version type inference', () => {
 
     // v2 with explicit version
     generator.generate({
-      name: 'report',
+      name: 'docx',
       props: {},
       children: [
         {
@@ -234,7 +234,7 @@ describe('Multi-version type inference', () => {
 
     // No version — fallback resolves to latest (v2) at runtime
     generator.generate({
-      name: 'report',
+      name: 'docx',
       props: {},
       children: [
         {

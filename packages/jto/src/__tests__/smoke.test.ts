@@ -37,7 +37,7 @@ function runMayFail(args: string[]): { stdout: string; status: number } {
 // ── Fixtures ──────────────────────────────────────────────────────────────
 
 const VALID_DOCX_JSON = {
-  name: 'report',
+  name: 'docx',
   props: {},
   children: [
     { name: 'heading', props: { text: 'Smoke Test', level: 1 } },
@@ -46,7 +46,7 @@ const VALID_DOCX_JSON = {
 };
 
 const VALID_PPTX_JSON = {
-  name: 'presentation',
+  name: 'pptx',
   props: { title: 'Smoke Test' },
   children: [
     {

@@ -130,7 +130,7 @@ function DocumentSidebarComponent({
         if (parsed.children && Array.isArray(parsed.children)) {
           parsed.children.forEach(
             (component: { name?: string; props?: { theme?: string } }) => {
-              if (component.name === 'report' && component.props?.theme) {
+              if (component.name === 'docx' && component.props?.theme) {
                 themes.add(component.props.theme);
               }
             }

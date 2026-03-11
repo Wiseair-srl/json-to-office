@@ -54,7 +54,7 @@ function generateDocxDocumentSchema(): any {
   const enhancedSchema: any = {
     ...schema,
     default: {
-      name: 'report',
+      name: 'docx',
       props: { title: 'New Document' },
       children: [],
     },
@@ -65,7 +65,7 @@ function generateDocxDocumentSchema(): any {
         description:
           'Array of document components. Type "name" to see available component types.',
         markdownDescription:
-          'Array of document components. Available types:\n- `report` - Main container\n- `section` - Section container\n- `heading` - Heading element\n- `paragraph` - Paragraph element\n- `image` - Image element\n- `table` - Data table\n- `list` - List element\n- `columns` - Column layout\n- `statistic` - Statistic element\n- `highcharts` - Highcharts chart\n- `toc` - Table of contents\n- `header` - Page header\n- `footer` - Page footer',
+          'Array of document components. Available types:\n- `docx` - Main container\n- `section` - Section container\n- `heading` - Heading element\n- `paragraph` - Paragraph element\n- `image` - Image element\n- `table` - Data table\n- `list` - List element\n- `columns` - Column layout\n- `statistic` - Statistic element\n- `highcharts` - Highcharts chart\n- `toc` - Table of contents\n- `header` - Page header\n- `footer` - Page footer',
       },
     },
     definitions: {
@@ -89,7 +89,7 @@ function generatePptxDocumentSchema(): any {
   const enhancedSchema: any = {
     ...schema,
     default: {
-      name: 'presentation',
+      name: 'pptx',
       props: { title: 'New Presentation' },
       children: [],
     },
@@ -100,7 +100,7 @@ function generatePptxDocumentSchema(): any {
         description:
           'Array of slide components. Type "name" to see available component types.',
         markdownDescription:
-          'Array of presentation components. Available types:\n- `presentation` - Main container\n- `slide` - Slide container\n- `text` - Text element\n- `image` - Image element\n- `shape` - Shape element\n- `table` - Data table',
+          'Array of presentation components. Available types:\n- `pptx` - Main container\n- `slide` - Slide container\n- `text` - Text element\n- `image` - Image element\n- `shape` - Shape element\n- `table` - Data table\n- `highcharts` - Highcharts chart',
       },
     },
     definitions: {
@@ -177,7 +177,7 @@ function generateDocxComponentSchemas(): Record<string, any> {
     string,
     { schema: any; name: string; description: string }
   > = {
-    report: {
+    docx: {
       schema: ReportPropsSchema,
       name: 'ReportProps',
       description: 'Main document container configuration',
@@ -217,7 +217,7 @@ function generatePptxComponentSchemas(): Record<string, any> {
     string,
     { schema: any; name: string; description: string }
   > = {
-    presentation: {
+    pptx: {
       schema: PresentationPropsSchema,
       name: 'PresentationProps',
       description: 'Main presentation container configuration',
@@ -288,8 +288,8 @@ export function generateComponentSchemas(): Record<string, any> {
  */
 export function createReportSchemaConfig(
   filePatterns: string[] = FORMAT === 'docx'
-    ? ['*.document.json', 'document-*.json']
-    : ['*.presentation.json', 'presentation-*.json']
+    ? ['*.docx.json']
+    : ['*.pptx.json']
 ): MonacoSchemaConfig {
   return {
     uri: 'https://json-to-office.dev/schema/report/v1.0.0',
@@ -351,7 +351,7 @@ function enhanceSchemaDescriptions(schema: any): void {
 function getComponentDescription(type: string): string {
   const descriptions: Record<string, string> = {
     // docx
-    report: 'Main document container - defines the overall document structure.',
+    docx: 'Main document container - defines the overall document structure.',
     section: 'Section container - groups content within a document section.',
     heading: 'Heading element - displays headings with level and formatting.',
     paragraph: 'Paragraph element - displays text with formatting.',
@@ -364,7 +364,7 @@ function getComponentDescription(type: string): string {
     footer: 'Page footer - content displayed at the bottom of each page.',
     'text-box': 'Text box element - a positioned box with text content.',
     // pptx
-    presentation:
+    pptx:
       'Main presentation container - defines the overall presentation structure.',
     slide:
       'Slide container - groups content elements within a single slide.',

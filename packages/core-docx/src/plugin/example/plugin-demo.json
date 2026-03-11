@@ -1,6 +1,6 @@
 {
   "$schema": "../../../../../output/examples/plugin-demo-schema.json",
-  "name": "report",
+  "name": "docx",
   "props": {
     "title": "Plugin Demo"
   },

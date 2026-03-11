@@ -22,7 +22,9 @@ import { Input } from '../ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
@@ -156,6 +158,16 @@ function DocumentFormDialogContent({
 
   const schema = schemaResult.schema;
 
+  // Build a map from path -> item for quick lookups (paths are unique)
+  const itemsByPath = useMemo(() => {
+    const map = new Map<string, DiscoveredItem>();
+    discoveredItems.forEach((item) => map.set(item.path, item));
+    return map;
+  }, [discoveredItems]);
+
+  const defaultTemplatePath =
+    discoveredItems.length > 0 ? discoveredItems[0].path : undefined;
+
   const form = useForm<DocumentFormData>({
     resolver: createTypeBoxResolver(schemaResult.validate),
     defaultValues: getDocumentFormDefaultValues(
@@ -165,8 +177,10 @@ function DocumentFormDialogContent({
     ),
   });
 
-  // Watch for template selection changes
-  const selectedTemplate = form.watch('template');
+  // Track selected path separately from the form's template field (which stores the name)
+  const [selectedPath, setSelectedPath] = useState<string | undefined>(
+    defaultTemplatePath
+  );
 
   // Set initial name when form first loads with a default template
   useEffect(() => {
@@ -175,18 +189,16 @@ function DocumentFormDialogContent({
       discoveredItems.length > 0 &&
       !form.getValues('name')
     ) {
-      // Set the name to match the default template
       const defaultTemplate = discoveredItems[0].name;
       form.setValue('name', defaultTemplate);
     }
   }, [mode, discoveredItems, form]);
 
-  // Load content when template is selected
+  // Load content when selected path changes
   useEffect(() => {
-    if (selectedTemplate && mode === 'create') {
-      const item = discoveredItems.find((i) => i.name === selectedTemplate);
+    if (selectedPath && mode === 'create') {
+      const item = itemsByPath.get(selectedPath);
       if (item) {
-        // Fetch the actual file content from the server
         fetch(
           `/api/discovery/${isTheme ? 'themes' : 'documents'}/${encodeURIComponent(item.name)}/content`
         )
@@ -197,7 +209,6 @@ function DocumentFormDialogContent({
             return res.text();
           })
           .then((content) => {
-            // Validate that it's valid JSON
             try {
               const parsed = JSON.parse(content);
               setSelectedItemContent(JSON.stringify(parsed, null, 2));
@@ -208,18 +219,18 @@ function DocumentFormDialogContent({
           })
           .catch((error) => {
             console.error('Failed to fetch content:', error);
-            // Fallback to default content
             setSelectedItemContent(null);
           });
       }
     }
-  }, [selectedTemplate, mode, discoveredItems, isTheme]);
+  }, [selectedPath, mode, itemsByPath, isTheme]);
 
   // reset form
   useEffect(() => {
     if (shouldReset) {
       form.reset();
       setSelectedItemContent(null);
+      setSelectedPath(defaultTemplatePath);
     }
   }, [form, shouldReset]);
 
@@ -230,7 +241,9 @@ function DocumentFormDialogContent({
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       if (mode === 'create') {
-        const selectedItem = discoveredItems.find((i) => i.name === template);
+        const selectedItem = selectedPath
+          ? itemsByPath.get(selectedPath)
+          : discoveredItems.find((i) => i.name === template);
         let content: string;
         let finalName = name as string;
 
@@ -278,7 +291,7 @@ function DocumentFormDialogContent({
             JSON.stringify(
               FORMAT === 'docx'
                 ? {
-                  name: 'report',
+                  name: 'docx',
                   props: {
                     title:
                         docItem?.title || finalName.replace(/\.(json|js)$/i, ''),
@@ -300,7 +313,7 @@ function DocumentFormDialogContent({
                   ],
                 }
                 : {
-                  name: 'presentation',
+                  name: 'pptx',
                   props: {
                     title:
                         docItem?.title || finalName.replace(/\.(json|js)$/i, ''),
@@ -328,12 +341,13 @@ function DocumentFormDialogContent({
               null,
               2
             );
-          // Ensure document files have .document.json extension
+          // Ensure document files have format-specific extension
+          const docExt = FORMAT === 'docx' ? '.docx.json' : '.pptx.json';
           if (
-            !finalName.endsWith('.document.json') &&
+            !finalName.endsWith(docExt) &&
             !finalName.endsWith('.json')
           ) {
-            finalName += '.document.json';
+            finalName += docExt;
           }
         }
 
@@ -401,13 +415,15 @@ function DocumentFormDialogContent({
                     {isTheme ? 'Base Theme' : 'Base Document'}
                   </FormLabel>
                   <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // Always update the name field when template selection changes
-                      // Simply use the template name as the suggested name
-                      form.setValue('name', value);
+                    onValueChange={(path) => {
+                      const item = itemsByPath.get(path);
+                      if (item) {
+                        field.onChange(item.name);
+                        form.setValue('name', item.name);
+                        setSelectedPath(path);
+                      }
                     }}
-                    defaultValue={field.value as string}
+                    defaultValue={defaultTemplatePath}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -421,14 +437,13 @@ function DocumentFormDialogContent({
                         if (items.length === 0) return null;
 
                         return (
-                          <div key={location}>
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                          <SelectGroup key={location}>
+                            <SelectLabel>
                               {location === 'current'
                                 ? '📁 Current Directory'
                                 : '📦 Project'}
-                            </div>
-                            {items.map((item, index) => {
-                              // Create a clean text representation for the select item
+                            </SelectLabel>
+                            {items.map((item) => {
                               let displayName = item.name;
                               if (item.title) {
                                 displayName = `${item.name} - ${item.title}`;
@@ -442,15 +457,15 @@ function DocumentFormDialogContent({
 
                               return (
                                 <SelectItem
-                                  value={item.name}
-                                  key={`${location}-${index}`}
+                                  value={item.path}
+                                  key={item.path}
                                   className="pl-6"
                                 >
                                   {displayName}
                                 </SelectItem>
                               );
                             })}
-                          </div>
+                          </SelectGroup>
                         );
                       })}
                       {discoveredItems.length === 0 && (
