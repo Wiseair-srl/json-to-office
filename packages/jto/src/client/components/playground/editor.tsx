@@ -560,32 +560,28 @@ function EditorComponent() {
     renderingLibrary,
   ]);
 
-  // Track which documents use which themes
+  // Track which documents use which themes (only parse the active doc to avoid O(n) JSON.parse)
   const documentThemeDependencies = useMemo(() => {
     const deps = new Map<string, string>();
-
-    documents.forEach((doc) => {
-      if (documentTypes[doc.name] === 'application/json+report') {
-        try {
-          const parsed = JSON.parse(doc.text);
-          // Theme ref is at root props, not inside children
-          const themeName = parsed.props?.theme;
-          if (typeof themeName === 'string') {
-            const themeExists = Object.values(customThemes).some(
-              (t) => t.name === themeName && t.valid
-            );
-            if (themeExists) {
-              deps.set(doc.name, themeName);
-            }
+    const activeDoc = documents.find((d) => d.name === activeTab);
+    if (activeDoc && documentTypes[activeDoc.name] === 'application/json+report') {
+      try {
+        const parsed = JSON.parse(activeDoc.text);
+        const themeName = parsed.props?.theme;
+        if (typeof themeName === 'string') {
+          const themeExists = Object.values(customThemes).some(
+            (t) => t.name === themeName && t.valid
+          );
+          if (themeExists) {
+            deps.set(activeDoc.name, themeName);
           }
-        } catch {
-          // Ignore parse errors
         }
+      } catch {
+        // Ignore parse errors
       }
-    });
-
+    }
     return deps;
-  }, [documents, documentTypes, customThemes]);
+  }, [activeTab, documents, documentTypes, customThemes]);
 
   // Listen for theme change events and force immediate rebuild
   useEffect(() => {

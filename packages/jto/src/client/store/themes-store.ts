@@ -1,8 +1,9 @@
-import { persist, devtools } from 'zustand/middleware';
+import { persist, devtools, createJSONStorage } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { ThemeConfigJson } from '@json-to-office/shared-pptx';
 import { validateThemeJson, getThemeName } from '../lib/theme-validation';
 import { themeChangeEmitter } from '../utils/theme-change-emitter';
+import { idbStorage } from '../lib/idb-storage';
 
 export type CustomTheme = {
   name: string;
@@ -171,7 +172,8 @@ export const createThemesStore = (
         }),
         {
           name: 'themes-storage',
-          version: 3, // Increment to clear old DOCX-style theme data
+          version: 4, // v4: migrate from localStorage to IndexedDB
+          storage: createJSONStorage(() => idbStorage),
           // Only persist the themes data, not the functions
           partialize: (state) => ({ customThemes: state.customThemes }),
           // Handle date deserialization when loading from storage

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
+import { useEffect, useRef, useCallback, useState, useMemo, memo } from 'react';
 import { Send, X, Loader2, Square } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -232,11 +232,6 @@ export function ChatPanel() {
             </div>
           )}
           {messages.map((msg, i) => {
-            const text = msg.parts
-              ?.filter((p: any) => p.type === 'text')
-              .map((p: any) => p.text)
-              .join('') || '';
-
             // For assistant messages, find the preceding user message's context
             let msgContext: ReturnType<typeof getMessageContext> | undefined;
             if (msg.role === 'assistant') {
@@ -248,25 +243,15 @@ export function ChatPanel() {
               }
             }
 
+            const isMsgStreaming = isStreaming && i === messages.length - 1 && msg.role === 'assistant';
+
             return (
-              <div
+              <ChatMessage
                 key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`rounded-lg px-3 py-2 max-w-[90%] overflow-hidden min-w-0 ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted/60 border border-border/40'
-                  }`}
-                >
-                  {msg.role === 'user' ? (
-                    <div className="whitespace-pre-wrap text-sm break-words">{text}</div>
-                  ) : (
-                    <AssistantMessage text={text} context={msgContext} />
-                  )}
-                </div>
-              </div>
+                msg={msg}
+                isStreaming={isMsgStreaming}
+                context={msgContext}
+              />
             );
           })}
           {/* Loading indicator: covers both submitted (waiting) and streaming states */}
@@ -361,8 +346,51 @@ export function ChatPanel() {
   );
 }
 
-/** Fix #2 + #5 + #6: Markdown rendering with styled JSON blocks */
-function AssistantMessage({ text, context }: { text: string; context?: any[] }) {
+/** Fix 1: Memoized wrapper — completed messages skip re-render during streaming */
+const ChatMessage = memo(function ChatMessage({
+  msg,
+  isStreaming,
+  context,
+}: {
+  msg: any;
+  isStreaming: boolean;
+  context?: any[];
+}) {
+  const text = msg.parts
+    ?.filter((p: any) => p.type === 'text')
+    .map((p: any) => p.text)
+    .join('') || '';
+
+  return (
+    <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`rounded-lg px-3 py-2 max-w-[90%] overflow-hidden min-w-0 ${
+          msg.role === 'user'
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-muted/60 border border-border/40'
+        }`}
+      >
+        {msg.role === 'user' ? (
+          <div className="whitespace-pre-wrap text-sm break-words">{text}</div>
+        ) : (
+          <AssistantMessage text={text} isStreaming={isStreaming} context={context} />
+        )}
+      </div>
+    </div>
+  );
+}, (prev, next) => prev.msg.id === next.msg.id && prev.isStreaming === next.isStreaming);
+
+/** Fix 2: Skip Markdown parsing during streaming — render plain text instead */
+function AssistantMessage({ text, isStreaming, context }: { text: string; isStreaming: boolean; context?: any[] }) {
+  // During streaming, skip expensive Markdown + remarkGfm parsing
+  if (isStreaming) {
+    return (
+      <div className="text-sm prose prose-sm dark:prose-invert break-words [&_pre]:overflow-x-auto [&_p]:my-1">
+        <pre className="whitespace-pre-wrap font-sans text-sm m-0 p-0 bg-transparent border-none">{text}</pre>
+      </div>
+    );
+  }
+
   return (
     <div className="text-sm prose prose-sm dark:prose-invert break-words [&_pre]:overflow-x-auto [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:my-2 [&_h2]:my-1.5 [&_h3]:my-1">
       <Markdown

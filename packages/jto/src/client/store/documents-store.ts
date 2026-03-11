@@ -1,6 +1,7 @@
-import { persist, devtools } from 'zustand/middleware';
+import { persist, devtools, createJSONStorage } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { TextFile } from '../lib/types';
+import { idbStorage } from '../lib/idb-storage';
 
 const MAX_OPEN_TABS = 3;
 
@@ -204,8 +205,27 @@ export const createDocumentsStore = (
             }),
         }),
         {
-          name: 'documents-storage', // name of the item in the storage (must be unique)
-          // (optional) by default, 'localStorage' is used as storage
+          name: 'documents-storage',
+          version: 1,
+          storage: createJSONStorage(() => idbStorage),
+          partialize: (state) => ({
+            documents: state.documents,
+            openTabs: state.openTabs,
+            activeTab: state.activeTab,
+            documentTypes: state.documentTypes,
+            // buildErrors + pendingDiffs + acceptedApplyIds excluded — transient UI state
+          }),
+          onRehydrateStorage: () => (state) => {
+            if (state?.documents) {
+              for (const doc of state.documents) {
+                for (const key of ['mtime', 'ctime', 'atime'] as const) {
+                  if (doc[key] && typeof doc[key] === 'string') {
+                    (doc as Record<string, unknown>)[key] = new Date(doc[key] as unknown as string);
+                  }
+                }
+              }
+            }
+          },
         }
       )
     )

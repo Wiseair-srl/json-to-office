@@ -60,18 +60,18 @@ export function KbdShortcut({
 
   const labels: string[] = parts.map((p) => {
     switch (p) {
-      case 'mod':
-        return IS_MAC ? '⌘' : 'Ctrl';
-      case 'shift':
-        return IS_MAC ? '⇧' : 'Shift';
-      case 'alt':
-        return IS_MAC ? '⌥' : 'Alt';
-      case 'ctrl':
-        return IS_MAC ? '⌃' : 'Ctrl';
-      case 'enter':
-        return '↵';
-      default:
-        return p.toUpperCase();
+    case 'mod':
+      return IS_MAC ? '⌘' : 'Ctrl';
+    case 'shift':
+      return IS_MAC ? '⇧' : 'Shift';
+    case 'alt':
+      return IS_MAC ? '⌥' : 'Alt';
+    case 'ctrl':
+      return IS_MAC ? '⌃' : 'Ctrl';
+    case 'enter':
+      return '↵';
+    default:
+      return p.toUpperCase();
     }
   });
 
