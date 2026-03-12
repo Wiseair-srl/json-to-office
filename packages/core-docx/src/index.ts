@@ -97,9 +97,8 @@ export {
 export {
   themes,
   minimalTheme,
-  verizonTheme,
-  a2aTheme,
-  hitachiTheme,
+  corporateTheme,
+  modernTheme,
 } from './styles/index';
 export type { ThemeName } from './styles/index';
 

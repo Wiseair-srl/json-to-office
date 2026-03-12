@@ -8,7 +8,7 @@ export interface ScanOptions {
   additionalIgnore?: string[];
 }
 
-export type DiscoveryType = 'plugin' | 'docx-document' | 'pptx-document' | 'theme';
+export type DiscoveryType = 'plugin' | 'docx-document' | 'pptx-document' | 'pptx-theme' | 'docx-theme';
 
 export interface FilePattern {
   type: DiscoveryType;
@@ -66,20 +66,36 @@ export class FileSystemScanner {
         'src/templates/**/*.pptx.json',
       ],
     },
-    theme: {
-      type: 'theme',
-      pattern: '*.theme.json',
+    'pptx-theme': {
+      type: 'pptx-theme',
+      pattern: '*.pptx.theme.json',
       monorepoPatterns: [
-        'packages/*/src/**/*.theme.json',
-        'packages/**/src/**/*.theme.json',
-        'apps/*/src/**/*.theme.json',
-        'apps/**/src/**/*.theme.json',
-        'libs/*/src/**/*.theme.json',
-        'libs/**/src/**/*.theme.json',
-        'themes/**/*.theme.json',
-        'src/themes/**/*.theme.json',
-        'templates/**/*.theme.json',
-        'src/templates/**/*.theme.json',
+        'packages/*/src/**/*.pptx.theme.json',
+        'packages/**/src/**/*.pptx.theme.json',
+        'apps/*/src/**/*.pptx.theme.json',
+        'apps/**/src/**/*.pptx.theme.json',
+        'libs/*/src/**/*.pptx.theme.json',
+        'libs/**/src/**/*.pptx.theme.json',
+        'themes/**/*.pptx.theme.json',
+        'src/themes/**/*.pptx.theme.json',
+        'templates/**/*.pptx.theme.json',
+        'src/templates/**/*.pptx.theme.json',
+      ],
+    },
+    'docx-theme': {
+      type: 'docx-theme',
+      pattern: '*.docx.theme.json',
+      monorepoPatterns: [
+        'packages/*/src/**/*.docx.theme.json',
+        'packages/**/src/**/*.docx.theme.json',
+        'apps/*/src/**/*.docx.theme.json',
+        'apps/**/src/**/*.docx.theme.json',
+        'libs/*/src/**/*.docx.theme.json',
+        'libs/**/src/**/*.docx.theme.json',
+        'themes/**/*.docx.theme.json',
+        'src/themes/**/*.docx.theme.json',
+        'templates/**/*.docx.theme.json',
+        'src/templates/**/*.docx.theme.json',
       ],
     },
   };

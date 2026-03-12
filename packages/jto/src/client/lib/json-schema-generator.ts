@@ -302,7 +302,7 @@ export function createReportSchemaConfig(
  * Creates Monaco editor schema configuration for theme definitions
  */
 export function createThemeSchemaConfig(
-  filePatterns: string[] = ['*.theme.json']
+  filePatterns: string[] = [`*.${FORMAT}.theme.json`]
 ): MonacoSchemaConfig {
   return {
     uri: 'https://json-to-office.dev/schemas/theme/v1.0.0',
@@ -317,7 +317,7 @@ export function createThemeSchemaConfig(
 export function generateMonacoSchemaConfigs(): MonacoSchemaConfig[] {
   return [
     createReportSchemaConfig(),
-    createThemeSchemaConfig(['*.theme.json']),
+    createThemeSchemaConfig(),
   ];
 }
 

@@ -68,8 +68,10 @@ export function createDiscoverCommand(adapter: FormatAdapter): Command {
         let themes: ThemeMetadata[] = [];
         let totalCount = 0;
 
+        const format = adapter.name as 'docx' | 'pptx';
+
         if (discoverType === 'all') {
-          const results = await discovery.discoverAll();
+          const results = await discovery.discoverAll(format);
           plugins = results.plugins;
           documents = results.documents;
           themes = results.themes;
@@ -78,10 +80,10 @@ export function createDiscoverCommand(adapter: FormatAdapter): Command {
           plugins = await discovery.discoverPlugins();
           totalCount = plugins.length;
         } else if (discoverType === 'document') {
-          documents = await discovery.discoverDocuments();
+          documents = await discovery.discoverDocuments(format);
           totalCount = documents.length;
         } else if (discoverType === 'theme') {
-          themes = await discovery.discoverThemes();
+          themes = await discovery.discoverThemes(format);
           totalCount = themes.length;
         }
 

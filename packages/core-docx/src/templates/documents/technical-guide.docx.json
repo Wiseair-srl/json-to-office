@@ -1,0 +1,194 @@
+{
+  "name": "docx",
+  "props": {
+    "title": "Platform Integration Guide",
+    "theme": "minimal"
+  },
+  "children": [
+    {
+      "name": "header",
+      "props": {
+        "children": [
+          { "type": "text", "text": "Platform Integration Guide", "alignment": "left" },
+          { "type": "pageNumber", "alignment": "right" }
+        ]
+      }
+    },
+    {
+      "name": "footer",
+      "props": {
+        "children": [
+          { "type": "text", "text": "Confidential — TechCorp Inc.", "alignment": "center" }
+        ]
+      }
+    },
+    { "name": "toc", "props": { "minLevel": 1, "maxLevel": 2 } },
+    {
+      "name": "section",
+      "props": { "level": 1, "pageBreak": true },
+      "children": [
+        { "name": "heading", "props": { "text": "Introduction", "level": 1 } },
+        { "name": "paragraph", "props": { "text": "This guide covers the integration of external systems with the Platform API. It is intended for developers and system architects building custom integrations." } },
+        { "name": "heading", "props": { "text": "Prerequisites", "level": 2 } },
+        {
+          "name": "list",
+          "props": {
+            "format": "bullet",
+            "items": [
+              "API key with admin scope (Settings > API Keys)",
+              "Node.js 18+ or Python 3.10+",
+              "Network access to api.platform.io on port 443",
+              "Familiarity with REST APIs and OAuth 2.0"
+            ]
+          }
+        },
+        { "name": "heading", "props": { "text": "Architecture Overview", "level": 2 } },
+        { "name": "paragraph", "props": { "text": "The platform exposes a RESTful API organized around resources. All endpoints accept and return JSON. Authentication uses OAuth 2.0 bearer tokens with configurable scopes." } },
+        {
+          "name": "image",
+          "props": {
+            "path": "https://placehold.co/800x400/f1f5f9/475569?text=Architecture+Diagram",
+            "width": "100%",
+            "caption": "Figure 1: High-level architecture showing API gateway, services, and data flow"
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": { "level": 1, "pageBreak": true },
+      "children": [
+        { "name": "heading", "props": { "text": "Authentication", "level": 1 } },
+        { "name": "paragraph", "props": { "text": "All API requests require a valid bearer token. Tokens are obtained via the OAuth 2.0 client credentials flow." } },
+        { "name": "heading", "props": { "text": "Token Exchange", "level": 2 } },
+        { "name": "paragraph", "props": { "text": "POST /oauth/token with your client_id and client_secret to receive an access token. Tokens expire after 3600 seconds. Include the token in subsequent requests via the Authorization header: Bearer <token>.", "font": "mono" } },
+        { "name": "heading", "props": { "text": "Available Scopes", "level": 2 } },
+        {
+          "name": "table",
+          "props": {
+            "headers": ["Scope", "Access Level", "Use Case"],
+            "rows": [
+              ["read:data", "Read-only", "Dashboards, reporting"],
+              ["write:data", "Read/Write", "Data sync, imports"],
+              ["admin:users", "User management", "Provisioning, SCIM"],
+              ["admin:config", "Configuration", "Settings, webhooks"]
+            ],
+            "striped": true,
+            "borders": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": { "level": 1, "pageBreak": true },
+      "children": [
+        { "name": "heading", "props": { "text": "API Reference", "level": 1 } },
+        { "name": "heading", "props": { "text": "Resources", "level": 2 } },
+        {
+          "name": "columns",
+          "props": { "count": 2, "gap": 0.5 },
+          "children": [
+            {
+              "name": "list",
+              "props": {
+                "format": "bullet",
+                "items": [
+                  "/users — User management",
+                  "/teams — Team operations",
+                  "/projects — Project CRUD",
+                  "/webhooks — Event subscriptions"
+                ]
+              }
+            },
+            {
+              "name": "list",
+              "props": {
+                "format": "bullet",
+                "items": [
+                  "/events — Activity log",
+                  "/files — File storage",
+                  "/search — Full-text search",
+                  "/analytics — Usage metrics"
+                ]
+              }
+            }
+          ]
+        },
+        { "name": "heading", "props": { "text": "Rate Limits", "level": 2 } },
+        { "name": "paragraph", "props": { "text": "API requests are rate-limited per token. Exceeding the limit returns HTTP 429. Use the Retry-After header to determine when to retry." } },
+        {
+          "name": "table",
+          "props": {
+            "headers": ["Plan", "Requests/min", "Burst", "Concurrent"],
+            "rows": [
+              ["Free", "60", "10", "5"],
+              ["Pro", "600", "100", "25"],
+              ["Enterprise", "6,000", "1,000", "100"]
+            ],
+            "borders": true,
+            "headerBackground": "#1F2937",
+            "headerColor": "#FFFFFF"
+          }
+        },
+        { "name": "heading", "props": { "text": "Error Handling", "level": 2 } },
+        { "name": "paragraph", "props": { "text": "The API uses standard HTTP status codes. All error responses include a JSON body with code, message, and request_id fields. Common errors:" } },
+        {
+          "name": "list",
+          "props": {
+            "format": "bullet",
+            "items": [
+              "400 Bad Request — Invalid parameters or malformed JSON",
+              "401 Unauthorized — Missing or expired token",
+              "403 Forbidden — Insufficient scope for the requested operation",
+              "404 Not Found — Resource does not exist",
+              "429 Too Many Requests — Rate limit exceeded",
+              "500 Internal Server Error — Unexpected server failure (include request_id in support tickets)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": { "level": 1, "pageBreak": true },
+      "children": [
+        { "name": "heading", "props": { "text": "Webhooks", "level": 1 } },
+        { "name": "paragraph", "props": { "text": "Webhooks deliver real-time event notifications to your endpoint via HTTP POST. Configure webhooks in the dashboard or via the /webhooks API. All payloads are signed with HMAC-SHA256." } },
+        { "name": "heading", "props": { "text": "Supported Events", "level": 2 } },
+        {
+          "name": "columns",
+          "props": { "count": 2 },
+          "children": [
+            {
+              "name": "table",
+              "props": {
+                "headers": ["Event", "Trigger"],
+                "rows": [
+                  ["user.created", "New user signup"],
+                  ["user.updated", "Profile change"],
+                  ["project.created", "New project"],
+                  ["project.archived", "Project archived"]
+                ],
+                "borders": true
+              }
+            },
+            {
+              "name": "table",
+              "props": {
+                "headers": ["Event", "Trigger"],
+                "rows": [
+                  ["file.uploaded", "New file"],
+                  ["file.deleted", "File removed"],
+                  ["team.member_added", "User joins team"],
+                  ["billing.invoice", "Invoice generated"]
+                ],
+                "borders": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

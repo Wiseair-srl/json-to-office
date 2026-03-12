@@ -1,0 +1,189 @@
+{
+  "name": "docx",
+  "props": {
+    "title": "Cloud Migration Proposal",
+    "theme": "modern"
+  },
+  "children": [
+    {
+      "name": "header",
+      "props": {
+        "children": [
+          { "type": "text", "text": "Proposal — Confidential", "alignment": "right" }
+        ]
+      }
+    },
+    {
+      "name": "footer",
+      "props": {
+        "children": [
+          { "type": "text", "text": "Apex Consulting", "alignment": "left" },
+          { "type": "pageNumber", "alignment": "right" }
+        ]
+      }
+    },
+    {
+      "name": "section",
+      "props": { "level": 1 },
+      "children": [
+        { "name": "heading", "props": { "text": "Cloud Migration Proposal", "level": 1 } },
+        { "name": "heading", "props": { "text": "Prepared for Meridian Financial Group", "level": 2 } },
+        { "name": "paragraph", "props": { "text": "Prepared by Apex Consulting — March 2025" } },
+        { "name": "paragraph", "props": { "text": "This proposal outlines a phased approach to migrate Meridian Financial Group's on-premise infrastructure to a cloud-native architecture. The migration will reduce operational costs by 40%, improve system reliability to 99.99% uptime, and enable rapid scaling for future growth." } }
+      ]
+    },
+    {
+      "name": "section",
+      "props": { "level": 1, "pageBreak": true },
+      "children": [
+        { "name": "heading", "props": { "text": "Current State Assessment", "level": 1 } },
+        { "name": "paragraph", "props": { "text": "Meridian's current infrastructure presents several challenges that limit business agility and increase operational risk:" } },
+        {
+          "name": "columns",
+          "props": { "count": 2, "gap": 0.5 },
+          "children": [
+            {
+              "name": "statistic",
+              "props": { "value": "87%", "label": "Server Utilization", "description": "Critical capacity" }
+            },
+            {
+              "name": "statistic",
+              "props": { "value": "23 hrs", "label": "Monthly Downtime", "description": "Below SLA target" }
+            }
+          ]
+        },
+        { "name": "heading", "props": { "text": "Infrastructure Inventory", "level": 2 } },
+        {
+          "name": "table",
+          "props": {
+            "headers": ["Component", "Current", "Age", "Risk Level"],
+            "rows": [
+              ["Application Servers", "12 physical", "5-7 years", "High"],
+              ["Database Cluster", "3-node Oracle RAC", "6 years", "Critical"],
+              ["Storage", "NetApp SAN, 48TB", "4 years", "Medium"],
+              ["Network", "Cisco catalyst stack", "8 years", "High"],
+              ["Disaster Recovery", "Tape backup, 24hr RPO", "N/A", "Critical"]
+            ],
+            "striped": true,
+            "borders": true
+          }
+        },
+        { "name": "heading", "props": { "text": "Key Pain Points", "level": 2 } },
+        {
+          "name": "list",
+          "props": {
+            "format": "ordered",
+            "items": [
+              "Hardware refresh cycle requires $2.1M capital investment every 4 years",
+              "Scaling requires 6-8 week lead time for hardware procurement",
+              "Disaster recovery tested annually — last test revealed 4-hour data gap",
+              "Security patching backlog of 47 critical vulnerabilities across end-of-life systems",
+              "Development teams blocked by shared staging environment contention"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": { "level": 1, "pageBreak": true },
+      "children": [
+        { "name": "heading", "props": { "text": "Proposed Solution", "level": 1 } },
+        { "name": "paragraph", "props": { "text": "We propose a three-phase migration to AWS, leveraging managed services to minimize operational burden while maximizing reliability and cost efficiency." } },
+        { "name": "heading", "props": { "text": "Phase 1: Foundation (Weeks 1-8)", "level": 2 } },
+        { "name": "paragraph", "props": { "text": "Establish cloud landing zone with networking, identity, security baselines, and CI/CD pipelines. Migrate non-critical workloads (dev/staging environments, internal tools) using lift-and-shift." } },
+        { "name": "heading", "props": { "text": "Phase 2: Core Migration (Weeks 9-20)", "level": 2 } },
+        { "name": "paragraph", "props": { "text": "Migrate production databases to Aurora PostgreSQL with zero-downtime cutover. Re-platform application servers to ECS Fargate containers. Implement auto-scaling and multi-AZ redundancy." } },
+        { "name": "heading", "props": { "text": "Phase 3: Optimization (Weeks 21-26)", "level": 2 } },
+        { "name": "paragraph", "props": { "text": "Right-size instances based on production metrics. Enable reserved capacity purchasing for predictable workloads. Implement cloud-native monitoring, alerting, and automated remediation." } }
+      ]
+    },
+    {
+      "name": "section",
+      "props": { "level": 1, "pageBreak": true },
+      "children": [
+        { "name": "heading", "props": { "text": "Investment & ROI", "level": 1 } },
+        {
+          "name": "columns",
+          "props": { "count": 3 },
+          "children": [
+            { "name": "statistic", "props": { "value": "$680K", "label": "Migration Cost", "description": "One-time investment" } },
+            { "name": "statistic", "props": { "value": "$1.2M/yr", "label": "Annual Savings", "description": "vs. current spend" } },
+            { "name": "statistic", "props": { "value": "7 months", "label": "Payback Period", "description": "Full ROI" } }
+          ]
+        },
+        { "name": "heading", "props": { "text": "Cost Breakdown", "level": 2 } },
+        {
+          "name": "table",
+          "props": {
+            "headers": ["Phase", "Duration", "Cost", "Description"],
+            "rows": [
+              ["Foundation", "8 weeks", "$180K", "Landing zone, security, CI/CD, dev migration"],
+              ["Core Migration", "12 weeks", "$380K", "Database, application, and storage migration"],
+              ["Optimization", "6 weeks", "$120K", "Right-sizing, monitoring, knowledge transfer"]
+            ],
+            "borders": true,
+            "striped": true
+          }
+        },
+        { "name": "heading", "props": { "text": "Annual Cost Comparison", "level": 2 } },
+        {
+          "name": "columns",
+          "props": { "count": 2, "gap": 0.5 },
+          "children": [
+            {
+              "name": "table",
+              "props": {
+                "headers": ["Current (On-Premise)", "Annual Cost"],
+                "rows": [
+                  ["Hardware depreciation", "$525K"],
+                  ["Data center lease", "$240K"],
+                  ["Ops staff (3 FTE)", "$420K"],
+                  ["Licensing (Oracle, VMware)", "$310K"],
+                  ["Total", "$1,495K"]
+                ],
+                "borders": true
+              }
+            },
+            {
+              "name": "table",
+              "props": {
+                "headers": ["Proposed (Cloud)", "Annual Cost"],
+                "rows": [
+                  ["AWS compute & storage", "$165K"],
+                  ["Managed services", "$48K"],
+                  ["Ops staff (1 FTE)", "$140K"],
+                  ["Licensing (open source)", "$0"],
+                  ["Total", "$353K"]
+                ],
+                "borders": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": { "level": 1, "pageBreak": true },
+      "children": [
+        { "name": "heading", "props": { "text": "Next Steps", "level": 1 } },
+        { "name": "paragraph", "props": { "text": "We recommend scheduling a 2-week discovery sprint to validate assumptions, finalize the migration plan, and establish the project governance framework." } },
+        {
+          "name": "list",
+          "props": {
+            "format": "ordered",
+            "items": [
+              "Sign statement of work and NDA",
+              "Complete infrastructure audit and dependency mapping (Week 1-2)",
+              "Finalize migration runbook with rollback procedures (Week 2)",
+              "Establish joint project team and communication cadence",
+              "Begin Phase 1 execution"
+            ]
+          }
+        },
+        { "name": "paragraph", "props": { "text": "For questions, contact: solutions@apexconsulting.io" } }
+      ]
+    }
+  ]
+}

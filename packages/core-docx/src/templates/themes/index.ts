@@ -10,10 +10,9 @@ import type { ThemeConfigJson } from '@json-to-office/shared-docx';
 import { ensureThemeDefaults } from '../../themes/defaults';
 
 // Import theme JSON files directly
-import a2aThemeJson from './a2a.theme.json';
-import hitachiThemeJson from './hitachi.theme.json';
-import minimalThemeJson from './minimal.theme.json';
-import verizonThemeJson from './verizon.theme.json';
+import minimalThemeJson from './minimal.docx.theme.json';
+import corporateThemeJson from './corporate.docx.theme.json';
+import modernThemeJson from './modern.docx.theme.json';
 
 /**
  * Registry of available themes loaded from JSON files
@@ -27,10 +26,9 @@ function loadThemesFromJson(): Record<string, ThemeConfigJson> {
 
   // Build themes from imported JSON files
   const themes: Record<string, ThemeConfigJson> = {
-    a2a: ensureThemeDefaults(a2aThemeJson as ThemeConfigJson),
-    hitachi: ensureThemeDefaults(hitachiThemeJson as ThemeConfigJson),
     minimal: ensureThemeDefaults(minimalThemeJson as ThemeConfigJson),
-    verizon: ensureThemeDefaults(verizonThemeJson as ThemeConfigJson),
+    corporate: ensureThemeDefaults(corporateThemeJson as ThemeConfigJson),
+    modern: ensureThemeDefaults(modernThemeJson as ThemeConfigJson),
   };
 
   // Also try to load from file system for runtime additions (if available)
@@ -42,13 +40,13 @@ function loadThemesFromJson(): Record<string, ThemeConfigJson> {
     if (fs.existsSync(themesDir)) {
       const themeFiles = fs
         .readdirSync(themesDir)
-        .filter((file) => file.endsWith('.theme.json'))
-        .map((file) => path.basename(file, '.theme.json'));
+        .filter((file) => file.endsWith('.docx.theme.json'))
+        .map((file) => path.basename(file, '.docx.theme.json'));
 
       for (const themeName of themeFiles) {
         if (!themes[themeName]) {
           try {
-            const filePath = path.join(themesDir, `${themeName}.theme.json`);
+            const filePath = path.join(themesDir, `${themeName}.docx.theme.json`);
             const content = fs.readFileSync(filePath, 'utf8');
             const parsedTheme = JSON.parse(content);
             themes[themeName] = ensureThemeDefaults(parsedTheme);
@@ -136,7 +134,6 @@ export const getThemeNames = (): string[] => {
 };
 
 // Export individual theme configs for direct access
-export const verizonTheme = themes['verizon'];
-export const a2aTheme = themes['a2a'];
-export const hitachiTheme = themes['hitachi'];
 export const minimalTheme = themes['minimal'];
+export const corporateTheme = themes['corporate'];
+export const modernTheme = themes['modern'];

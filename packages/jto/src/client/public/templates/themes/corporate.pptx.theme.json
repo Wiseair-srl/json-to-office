@@ -1,0 +1,24 @@
+{
+  "name": "corporate",
+  "colors": {
+    "primary": "#1a365d",
+    "secondary": "#2D3748",
+    "accent": "#3182CE",
+    "background": "#F7FAFC",
+    "text": "#1A202C"
+  },
+  "fonts": {
+    "heading": "Arial",
+    "body": "Arial"
+  },
+  "defaults": {
+    "fontSize": 14,
+    "fontColor": "#1A202C"
+  },
+  "grid": {
+    "columns": 12,
+    "rows": 6,
+    "margin": { "top": 0.75, "right": 0.6, "bottom": 0.5, "left": 0.6 },
+    "gutter": { "column": 0.2, "row": 0.15 }
+  }
+}

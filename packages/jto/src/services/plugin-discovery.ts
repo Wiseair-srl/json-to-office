@@ -145,10 +145,13 @@ export class PluginDiscoveryService {
     return metadata;
   }
 
-  async discoverThemes(): Promise<ThemeMetadata[]> {
+  async discoverThemes(format: 'docx' | 'pptx'): Promise<ThemeMetadata[]> {
     const startPath = this.searchPath;
 
-    const allThemePaths = await this.searchDownstream(startPath, 'theme');
+    const discoveryType: DiscoveryType = format === 'pptx' ? 'pptx-theme' : 'docx-theme';
+    const ext = format === 'pptx' ? '.pptx.theme.json' : '.docx.theme.json';
+
+    const allThemePaths = await this.searchDownstream(startPath, discoveryType);
     const uniquePaths = this.scanner.deduplicatePaths(allThemePaths);
 
     const metadata: ThemeMetadata[] = [];
@@ -159,7 +162,7 @@ export class PluginDiscoveryService {
         const location = this.getFileLocation(themePath, startPath);
 
         metadata.push({
-          name: path.basename(themePath, '.theme.json'),
+          name: path.basename(themePath, ext),
           path: themePath,
           location,
           description: json.description || json.metadata?.description,
@@ -184,22 +187,22 @@ export class PluginDiscoveryService {
     return await fs.readFile(document.path, 'utf-8');
   }
 
-  async getThemeContent(name: string): Promise<string> {
-    const themes = await this.discoverThemes();
+  async getThemeContent(name: string, format: 'docx' | 'pptx'): Promise<string> {
+    const themes = await this.discoverThemes(format);
     const theme = themes.find((t) => t.name === name);
     if (!theme) throw new Error(`Theme '${name}' not found`);
     return await fs.readFile(theme.path, 'utf-8');
   }
 
-  async discoverAll(): Promise<{
+  async discoverAll(format: 'docx' | 'pptx'): Promise<{
     plugins: PluginMetadata[];
     documents: DocumentMetadata[];
     themes: ThemeMetadata[];
   }> {
     const [plugins, documents, themes] = await Promise.all([
       this.discoverPlugins(),
-      this.discoverDocuments(),
-      this.discoverThemes(),
+      this.discoverDocuments(format),
+      this.discoverThemes(format),
     ]);
     return { plugins, documents, themes };
   }

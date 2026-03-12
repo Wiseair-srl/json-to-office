@@ -51,7 +51,7 @@ function EditorMonacoTheme({
     monacoRef.current = monaco;
 
     // Configure JSON defaults with theme schema
-    const schemaConfig = createThemeSchemaConfig(['*.theme.json']);
+    const schemaConfig = createThemeSchemaConfig();
     monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
       schemas: [schemaConfig],

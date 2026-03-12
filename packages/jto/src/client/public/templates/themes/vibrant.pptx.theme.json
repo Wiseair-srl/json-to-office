@@ -1,0 +1,18 @@
+{
+  "name": "vibrant",
+  "colors": {
+    "primary": "#7C3AED",
+    "secondary": "#2563EB",
+    "accent": "#059669",
+    "background": "#0F172A",
+    "text": "#F8FAFC"
+  },
+  "fonts": {
+    "heading": "Helvetica",
+    "body": "Helvetica"
+  },
+  "defaults": {
+    "fontSize": 16,
+    "fontColor": "#F8FAFC"
+  }
+}

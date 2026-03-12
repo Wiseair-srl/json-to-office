@@ -104,7 +104,7 @@ export function configureMonacoInstance(monaco: Monaco): void {
 
   // Generate schemas for both report and theme files
   const reportSchema = createReportSchemaConfig();
-  const themeSchema = createThemeSchemaConfig(['*.theme.json']);
+  const themeSchema = createThemeSchemaConfig();
 
   // Strip non-standard discriminator keyword from static schemas too
   stripDiscriminator(reportSchema.schema);
@@ -348,7 +348,7 @@ export async function updateMonacoWithPlugins(
     };
 
     // Keep the theme schema as is
-    const themeSchema = createThemeSchemaConfig(['*.theme.json']);
+    const themeSchema = createThemeSchemaConfig();
 
     // Re-register custom document formatting provider to ensure it's available
     monaco.languages.registerDocumentFormattingEditProvider('json', {

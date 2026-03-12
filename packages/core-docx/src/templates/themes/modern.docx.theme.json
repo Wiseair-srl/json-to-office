@@ -1,0 +1,115 @@
+{
+  "name": "modern",
+  "displayName": "Modern Clean",
+  "description": "A contemporary theme with vibrant accents and generous whitespace",
+  "version": "2.0.0",
+  "colors": {
+    "primary": "#6D28D9",
+    "secondary": "#1E293B",
+    "accent": "#0891B2",
+    "text": "#0F172A",
+    "background": "#FFFFFF",
+    "border": "#E2E8F0",
+    "textPrimary": "#0F172A",
+    "textSecondary": "#475569",
+    "textMuted": "#94A3B8",
+    "borderPrimary": "#CBD5E1",
+    "borderSecondary": "#E2E8F0",
+    "backgroundPrimary": "#FFFFFF",
+    "backgroundSecondary": "#F8FAFC"
+  },
+  "fonts": {
+    "heading": { "family": "Helvetica", "size": 28 },
+    "body": { "family": "Helvetica", "size": 11 },
+    "mono": { "family": "SF Mono", "size": 10 },
+    "light": { "family": "Helvetica", "size": 28 }
+  },
+  "page": {
+    "size": "A4",
+    "margins": {
+      "top": 1440,
+      "bottom": 1440,
+      "left": 1080,
+      "right": 1080,
+      "header": 720,
+      "footer": 720,
+      "gutter": 0
+    }
+  },
+  "styles": {
+    "normal": {
+      "font": "body",
+      "color": "#0F172A",
+      "lineSpacing": { "type": "multiple", "value": 1.5 },
+      "alignment": "left",
+      "spacing": { "after": 10 }
+    },
+    "heading1": {
+      "font": "heading",
+      "size": 28,
+      "bold": true,
+      "color": "primary",
+      "spacing": { "before": 24, "after": 14 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading2": {
+      "font": "heading",
+      "size": 20,
+      "bold": true,
+      "color": "secondary",
+      "spacing": { "before": 18, "after": 10 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading3": {
+      "font": "body",
+      "size": 14,
+      "bold": true,
+      "color": "accent",
+      "spacing": { "before": 12, "after": 6 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "title": {
+      "font": "heading",
+      "size": 36,
+      "bold": true,
+      "color": "primary",
+      "alignment": "left",
+      "spacing": { "before": 0, "after": 12 }
+    },
+    "subtitle": {
+      "font": "light",
+      "size": 18,
+      "italic": false,
+      "color": "textSecondary",
+      "alignment": "left",
+      "spacing": { "before": 0, "after": 24 }
+    }
+  },
+  "componentDefaults": {
+    "table": {
+      "borders": true,
+      "striped": false,
+      "headerBackground": "#6D28D9",
+      "headerColor": "#FFFFFF",
+      "borderColor": "#E2E8F0",
+      "borderWidth": 0.5
+    },
+    "list": {
+      "format": "bullet",
+      "bullet": "\u2013",
+      "indent": 3
+    },
+    "image": {
+      "alignment": "center"
+    },
+    "statistic": {
+      "alignment": "center"
+    },
+    "section": {
+      "pageBreak": false
+    }
+  }
+}

@@ -77,7 +77,7 @@ discoveryRouter.get('/all', async (c) => {
     const [plugins, documents, themes] = await Promise.all([
       discovery.discoverPlugins(),
       discovery.discoverDocuments(format),
-      discovery.discoverThemes(),
+      discovery.discoverThemes(format),
     ]);
     const results = { plugins, documents, themes };
     return c.json({
@@ -139,12 +139,13 @@ discoveryRouter.get('/documents', async (c) => {
 
 discoveryRouter.get('/themes', async (c) => {
   try {
+    const format = Container.getAdapter().name as 'docx' | 'pptx';
     const discovery = new PluginDiscoveryService({
       maxDepth: 10,
       includeNodeModules: false,
       verbose: false,
     });
-    const themes = await discovery.discoverThemes();
+    const themes = await discovery.discoverThemes(format);
     return c.json({ success: true, data: themes, count: themes.length });
   } catch (error: any) {
     logger.error('Theme discovery failed', { error: error.message });
@@ -205,12 +206,13 @@ discoveryRouter.get('/documents/:name/content', async (c) => {
 discoveryRouter.get('/themes/:name/content', async (c) => {
   try {
     const name = c.req.param('name');
+    const format = Container.getAdapter().name as 'docx' | 'pptx';
     const discovery = new PluginDiscoveryService({
       maxDepth: 10,
       includeNodeModules: false,
       verbose: false,
     });
-    const content = await discovery.getThemeContent(name);
+    const content = await discovery.getThemeContent(name, format);
     return c.text(content);
   } catch (error: any) {
     const status = error.message.includes('not found') ? 404 : 500;

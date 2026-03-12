@@ -1,0 +1,18 @@
+{
+  "name": "minimal",
+  "colors": {
+    "primary": "#1F2937",
+    "secondary": "#6B7280",
+    "accent": "#3B82F6",
+    "background": "#FFFFFF",
+    "text": "#1F2937"
+  },
+  "fonts": {
+    "heading": "Inter",
+    "body": "Inter"
+  },
+  "defaults": {
+    "fontSize": 16,
+    "fontColor": "#1F2937"
+  }
+}

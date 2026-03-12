@@ -44,10 +44,9 @@ export {
 
 // Theme configurations
 export {
-  verizonTheme,
   minimalTheme,
-  a2aTheme,
-  hitachiTheme,
+  corporateTheme,
+  modernTheme,
 } from '../templates/themes';
 
 // JSON Theme System (Phase 1 - Foundation complete)

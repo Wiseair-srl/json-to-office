@@ -70,14 +70,12 @@ export function getAvailableJsonExamples(): string[] {
  * Example descriptions for documentation
  */
 export const EXAMPLE_DESCRIPTIONS: Record<string, string> = {
-  a2a: 'A2A company mobility plan document with custom headers and footers',
-  'highcharts-demo':
-    'Demonstrates Highcharts integration with various chart types (line, column, pie, area, scatter)',
-  hitachi: 'Hitachi company mobility plan with custom headers and footers',
-  verizon:
-    'Real-world example based on Verizon DBIR report with mixed single/two-column layouts',
-  columns:
-    'Columns config options demo (numeric shorthand, top-level gap, auto widths, per-column gaps)',
+  'quarterly-report':
+    'Full quarterly report with TOC, sections, tables, statistics, columns, and lists',
+  'technical-guide':
+    'API integration guide with headers/footers, code-style text, tables, images, and multi-column layouts',
+  proposal:
+    'Cloud migration proposal with headers/footers, statistics, side-by-side cost comparison tables, and ordered lists',
 };
 
 /**
@@ -124,8 +122,9 @@ export const getExampleNames = (): string[] => {
 };
 
 // Use loadJsonExample() directly or access via the examples proxy
-export const placeholderTestExample = () => loadJsonExample('placeholder-test');
-export const comprehensiveExample = () => loadJsonExample('comprehensive');
+export const quarterlyReportExample = () => loadJsonExample('quarterly-report');
+export const technicalGuideExample = () => loadJsonExample('technical-guide');
+export const proposalExample = () => loadJsonExample('proposal');
 
 /**
  * Print usage information
