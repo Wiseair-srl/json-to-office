@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport, type UIMessage } from 'ai';
+import { DefaultChatTransport, type UIMessage, type FileUIPart } from 'ai';
 import { useChatStore } from '../store/chat-store-provider';
 import { useDocumentsStore } from '../store/documents-store-provider';
 import { FORMAT } from '../lib/env';
@@ -127,21 +127,20 @@ export function useChatSession() {
   });
 
   const wrappedSendMessage = useCallback(
-    (input: string) => {
+    (input: string, files?: FileUIPart[]) => {
       // Capture context at send time into the queue
       pendingContextsRef.current.push([...contextAttachments]);
       clearContext();
-      chat.sendMessage(
-        { text: input },
-        {
-          body: {
-            format: FORMAT,
-            context: contextAttachments,
-            activeDocument: getActiveDocument(),
-            documentType: (activeTabRef.current && documentTypesRef.current[activeTabRef.current]) || 'application/json+report',
-          },
-        }
-      );
+      const message: { text: string; files?: FileUIPart[] } = { text: input };
+      if (files?.length) message.files = files;
+      chat.sendMessage(message, {
+        body: {
+          format: FORMAT,
+          context: contextAttachments,
+          activeDocument: getActiveDocument(),
+          documentType: (activeTabRef.current && documentTypesRef.current[activeTabRef.current]) || 'application/json+report',
+        },
+      });
     },
     [chat.sendMessage, contextAttachments, getActiveDocument, clearContext]
   );
@@ -150,6 +149,7 @@ export function useChatSession() {
     messages: chat.messages,
     sendMessage: wrappedSendMessage,
     status: chat.status,
+    error: chat.error,
     setMessages: chat.setMessages,
     stop: chat.stop,
     getMessageContext,

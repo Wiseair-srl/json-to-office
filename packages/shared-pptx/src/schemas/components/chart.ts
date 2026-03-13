@@ -80,6 +80,7 @@ export const PptxChartPropsSchema = Type.Object(
     catAxisHidden: Type.Optional(Type.Boolean({ description: 'Hide category axis' })),
     catAxisLabelRotate: Type.Optional(Type.Number({ description: 'Category axis label rotation (degrees)' })),
     catAxisLabelFontSize: Type.Optional(Type.Number({ description: 'Category axis label font size' })),
+    catAxisLabelColor: Type.Optional(Type.String({ description: 'Category axis label color (hex or semantic)' })),
 
     // Value axis
     valAxisTitle: Type.Optional(Type.String({ description: 'Value axis title' })),
@@ -88,6 +89,7 @@ export const PptxChartPropsSchema = Type.Object(
     valAxisMaxVal: Type.Optional(Type.Number({ description: 'Value axis maximum' })),
     valAxisLabelFormatCode: Type.Optional(Type.String({ description: 'Value axis label format (e.g. "$0.00", "#%")' })),
     valAxisMajorUnit: Type.Optional(Type.Number({ description: 'Value axis major unit / tick interval' })),
+    valAxisLabelColor: Type.Optional(Type.String({ description: 'Value axis label color (hex or semantic)' })),
 
     // Bar-specific
     barDir: Type.Optional(

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState, useMemo, memo } from 'react';
-import { Send, X, Loader2, Square } from 'lucide-react';
+import { Send, X, Loader2, Square, Paperclip } from 'lucide-react';
+import type { FileUIPart } from 'ai';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Button } from '../../ui/button';
@@ -13,6 +14,35 @@ import { ChatThreadList } from './chat-thread-list';
 import { ScrollArea } from '../../ui/scroll-area';
 import { KbdShortcut } from '../../ui/kbd';
 import { defaultThreadTitle } from '../../../store/chat-store';
+
+const ALLOWED_TYPES = new Set([
+  'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+  'application/pdf',
+  'text/plain', 'text/markdown', 'text/csv', 'text/html',
+]);
+const ACCEPT_STRING = Array.from(ALLOWED_TYPES).join(',');
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB (Claude supports up to 20MB)
+const MAX_ATTACHMENTS = 10;
+
+function fileToUIPart(file: File): Promise<FileUIPart> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      resolve({ type: 'file', mediaType: file.type, filename: file.name, url: reader.result as string });
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function filterValidFiles(files: FileList | File[]): File[] {
+  return Array.from(files).filter(
+    (f) => ALLOWED_TYPES.has(f.type) && f.size <= MAX_FILE_SIZE,
+  );
+}
+
+function isImageType(mediaType: string): boolean {
+  return mediaType.startsWith('image/');
+}
 
 export function ChatPanel() {
   const contextAttachments = useChatStore((s) => s.contextAttachments);
@@ -33,12 +63,63 @@ export function ChatPanel() {
   const activeTab = useDocumentsStore((s) => s.activeTab);
   const documents = useDocumentsStore((s) => s.documents);
 
-  const { messages, sendMessage, status, setMessages, stop, getMessageContext } = useChatSessionContext();
+  const { messages, sendMessage, status, error, setMessages, stop, getMessageContext } = useChatSessionContext();
 
   const [input, setInput] = useState('');
+  const [attachments, setAttachments] = useState<FileUIPart[]>([]);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addAttachments = useCallback(async (files: File[]) => {
+    const valid = filterValidFiles(files);
+    if (valid.length === 0) return;
+    const parts = await Promise.all(valid.map(fileToUIPart));
+    setAttachments((prev) => {
+      const combined = [...prev, ...parts];
+      if (combined.length > MAX_ATTACHMENTS) {
+        return combined.slice(0, MAX_ATTACHMENTS);
+      }
+      return combined;
+    });
+  }, []);
+
+  const removeAttachment = useCallback((index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const files = e.clipboardData?.files;
+      if (files && files.length > 0) {
+        const images = filterValidFiles(files);
+        if (images.length > 0) {
+          e.preventDefault();
+          addAttachments(images);
+        }
+      }
+    },
+    [addAttachments],
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) addAttachments(Array.from(files));
+    },
+    [addAttachments],
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => setDragOver(false), []);
 
   // Derive active thread and threads for current doc
   const activeThreadId = activeTab ? activeThreadIdMap[activeTab] : undefined;
@@ -111,11 +192,12 @@ export function ChatPanel() {
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!input.trim() || isLoading) return;
-      sendMessage(input);
+      if ((!input.trim() && attachments.length === 0) || isLoading) return;
+      sendMessage(input, attachments.length > 0 ? attachments : undefined);
       setInput('');
+      setAttachments([]);
     },
-    [input, isLoading, sendMessage]
+    [input, attachments, isLoading, sendMessage]
   );
 
   const handleKeyDown = useCallback(
@@ -265,12 +347,24 @@ export function ChatPanel() {
               </div>
             </div>
           )}
+          {error && !isLoading && (
+            <div className="flex justify-start">
+              <div className="rounded-lg px-3 py-2 bg-destructive/10 border border-destructive/30 text-destructive text-sm max-w-[90%]">
+                {error.message || 'Something went wrong'}
+              </div>
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
       </ScrollArea>
 
-      {/* Context chips + input */}
-      <div className="border-t border-border/60 p-2.5 space-y-2 bg-surface-chat">
+      {/* Context chips + image previews + input */}
+      <div
+        className={`border-t border-border/60 p-2.5 space-y-2 bg-surface-chat transition-colors ${dragOver ? 'ring-2 ring-primary/40 bg-primary/5' : ''}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
         {contextAttachments.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {contextAttachments.map((ctx, i) => (
@@ -282,7 +376,55 @@ export function ChatPanel() {
             ))}
           </div>
         )}
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {attachments.map((f, i) => (
+              <div key={i} className="relative group">
+                {isImageType(f.mediaType) ? (
+                  <img
+                    src={f.url}
+                    alt={f.filename || 'attachment'}
+                    className="h-14 w-14 rounded-md object-cover border border-border/60"
+                  />
+                ) : (
+                  <div className="h-14 px-2.5 flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/60 max-w-[140px]">
+                    <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="text-xs truncate text-muted-foreground">{f.filename || 'file'}</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(i)}
+                  className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="flex items-end gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPT_STRING}
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files) addAttachments(Array.from(e.target.files));
+              e.target.value = '';
+            }}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0 h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground"
+            onClick={() => fileInputRef.current?.click()}
+            title="Attach file"
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
           <textarea
             ref={inputRef}
             value={input}
@@ -293,6 +435,7 @@ export function ChatPanel() {
               el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
             }}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={
               contextAttachments.length > 0
                 ? 'Describe how to edit the selection...'
@@ -316,7 +459,7 @@ export function ChatPanel() {
             <Button
               type="submit"
               size="icon"
-              disabled={!input.trim()}
+              disabled={!input.trim() && attachments.length === 0}
               className="shrink-0 h-9 w-9 rounded-lg"
             >
               <Send className="h-4 w-4" />
@@ -360,6 +503,7 @@ const ChatMessage = memo(function ChatMessage({
     ?.filter((p: any) => p.type === 'text')
     .map((p: any) => p.text)
     .join('') || '';
+  const fileParts = msg.parts?.filter((p: any) => p.type === 'file') || [];
 
   return (
     <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -371,7 +515,28 @@ const ChatMessage = memo(function ChatMessage({
         }`}
       >
         {msg.role === 'user' ? (
-          <div className="whitespace-pre-wrap text-sm break-words">{text}</div>
+          <div>
+            {fileParts.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-1.5">
+                {fileParts.map((f: any, i: number) =>
+                  isImageType(f.mediaType) ? (
+                    <img
+                      key={i}
+                      src={f.url}
+                      alt={f.filename || 'image'}
+                      className="h-20 max-w-[160px] rounded object-cover"
+                    />
+                  ) : (
+                    <div key={i} className="flex items-center gap-1.5 rounded bg-primary-foreground/20 px-2 py-1">
+                      <Paperclip className="h-3 w-3 shrink-0" />
+                      <span className="text-xs truncate max-w-[120px]">{f.filename || 'file'}</span>
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
+            {text && <div className="whitespace-pre-wrap text-sm break-words">{text}</div>}
+          </div>
         ) : (
           <AssistantMessage text={text} isStreaming={isStreaming} context={context} />
         )}

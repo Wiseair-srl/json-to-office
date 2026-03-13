@@ -40,6 +40,7 @@ interface ChartComponentProps {
   catAxisHidden?: boolean;
   catAxisLabelRotate?: number;
   catAxisLabelFontSize?: number;
+  catAxisLabelColor?: string;
 
   valAxisTitle?: string;
   valAxisHidden?: boolean;
@@ -47,6 +48,7 @@ interface ChartComponentProps {
   valAxisMaxVal?: number;
   valAxisLabelFormatCode?: string;
   valAxisMajorUnit?: number;
+  valAxisLabelColor?: string;
 
   barDir?: string;
   barGrouping?: string;
@@ -123,6 +125,13 @@ export function renderChartComponent(
   const colorSources = props.chartColors ?? DEFAULT_THEME_COLORS;
   opts.chartColors = colorSources.map((c) => resolveColor(c, theme));
 
+  // Auto-default chart text colors from theme to prevent dark-on-dark / light-on-light
+  const themeTextColor = resolveColor('text', theme);
+  opts.titleColor = props.titleColor ? resolveColor(props.titleColor, theme) : themeTextColor;
+  opts.legendColor = props.legendColor ? resolveColor(props.legendColor, theme) : themeTextColor;
+  opts.catAxisLabelColor = props.catAxisLabelColor ? resolveColor(props.catAxisLabelColor, theme) : themeTextColor;
+  opts.valAxisLabelColor = props.valAxisLabelColor ? resolveColor(props.valAxisLabelColor, theme) : themeTextColor;
+
   // Display toggles
   if (props.showLegend !== undefined) opts.showLegend = props.showLegend;
   if (props.showTitle !== undefined) opts.showTitle = props.showTitle;
@@ -134,14 +143,12 @@ export function renderChartComponent(
   // Title
   if (props.title !== undefined) opts.title = props.title;
   if (props.titleFontSize !== undefined) opts.titleFontSize = props.titleFontSize;
-  if (props.titleColor !== undefined) opts.titleColor = resolveColor(props.titleColor, theme);
   if (props.titleFontFace !== undefined) opts.titleFontFace = props.titleFontFace;
 
   // Legend
   if (props.legendPos !== undefined) opts.legendPos = props.legendPos;
   if (props.legendFontSize !== undefined) opts.legendFontSize = props.legendFontSize;
   if (props.legendFontFace !== undefined) opts.legendFontFace = props.legendFontFace;
-  if (props.legendColor !== undefined) opts.legendColor = resolveColor(props.legendColor, theme);
 
   // Category axis
   if (props.catAxisTitle !== undefined) {
@@ -181,7 +188,7 @@ export function renderChartComponent(
   if (props.radarStyle !== undefined) opts.radarStyle = props.radarStyle;
 
   // Data labels
-  if (props.dataLabelColor !== undefined) opts.dataLabelColor = resolveColor(props.dataLabelColor, theme);
+  opts.dataLabelColor = props.dataLabelColor ? resolveColor(props.dataLabelColor, theme) : themeTextColor;
   if (props.dataLabelFontSize !== undefined) opts.dataLabelFontSize = props.dataLabelFontSize;
   if (props.dataLabelFontFace !== undefined) opts.dataLabelFontFace = props.dataLabelFontFace;
   if (props.dataLabelFontBold !== undefined) opts.dataLabelFontBold = props.dataLabelFontBold;

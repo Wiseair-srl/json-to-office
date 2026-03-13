@@ -100,7 +100,7 @@
                   ["Developer Experience", { "text": "★★★★☆", "color": "accent6" }]
                 ],
                 "grid": { "column": 0, "row": 2, "columnSpan": 6, "rowSpan": 3 },
-                "fontSize": 11, "border": { "type": "solid", "pt": 0.5, "color": "E2E8F0" }
+                "fontSize": 11, "color": "text", "border": { "type": "solid", "pt": 0.5, "color": "text2" }
               }
             }
           ],
@@ -134,7 +134,8 @@
                 "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 },
                 "colW": [2, 4, 2.5],
                 "fontSize": 12,
-                "border": { "type": "solid", "pt": 0.5, "color": "E2E8F0" }
+                "color": "text",
+                "border": { "type": "solid", "pt": 0.5, "color": "text2" }
               }
             }
           ]

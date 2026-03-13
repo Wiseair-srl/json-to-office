@@ -40,7 +40,7 @@
               ["CDN", { "text": "Healthy", "color": "accent5" }, "3ms"],
               ["Search", { "text": "Degraded", "color": "accent4" }, "230ms"]
             ],
-            "fontSize": 10, "border": { "type": "solid", "pt": 0.5, "color": "E5E7EB" },
+            "fontSize": 10, "color": "text", "border": { "type": "solid", "pt": 0.5, "color": "text2" },
             "grid": { "column": 6, "row": 2, "columnSpan": 6, "rowSpan": 4 }
           }
         }
