@@ -9,12 +9,14 @@ import { renderImageComponent } from './image';
 import { renderShapeComponent } from './shape';
 import { renderTableComponent } from './table';
 import { renderHighchartsComponent } from './highcharts';
+import { renderChartComponent } from './chart';
 
 export { renderTextComponent } from './text';
 export { renderImageComponent } from './image';
 export { renderShapeComponent } from './shape';
 export { renderTableComponent } from './table';
 export { renderHighchartsComponent } from './highcharts';
+export { renderChartComponent } from './chart';
 
 export async function renderComponent(
   slide: PptxGenJS.Slide,
@@ -42,6 +44,9 @@ export async function renderComponent(
     break;
   case 'highcharts':
     await renderHighchartsComponent(slide, p, theme);
+    break;
+  case 'chart':
+    renderChartComponent(slide, p, theme, pptx);
     break;
   default:
     console.warn(`Unknown PPTX component type: ${name}`);

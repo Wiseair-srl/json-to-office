@@ -28,6 +28,7 @@ import { PptxImagePropsSchema } from './components/image';
 import { ShapePropsSchema } from './components/shape';
 import { PptxTablePropsSchema } from './components/table';
 import { PptxHighchartsPropsSchema } from './components/highcharts';
+import { PptxChartPropsSchema } from './components/chart';
 
 /**
  * SINGLE SOURCE OF TRUTH for all standard PPTX components
@@ -99,6 +100,14 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
     category: 'content',
     description:
       'Highcharts element - renders charts via Highcharts Export Server.',
+  },
+  {
+    name: 'chart',
+    propsSchema: PptxChartPropsSchema,
+    hasChildren: false,
+    category: 'content',
+    description:
+      'Native PowerPoint chart - editable, scalable, no external server needed.',
   },
 ] as const;
 
