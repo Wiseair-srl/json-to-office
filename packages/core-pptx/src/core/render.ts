@@ -106,14 +106,17 @@ export async function renderPresentation(
           if (resolved.props.y == null && phDef.y != null) resolved.props.y = phDef.y;
           if (resolved.props.w == null && phDef.w != null) resolved.props.w = phDef.w;
           if (resolved.props.h == null && phDef.h != null) resolved.props.h = phDef.h;
-          // Inherit placeholder text defaults
+          // Inherit placeholder explicit props
           if (resolved.props.fontSize == null && phDef.fontSize) resolved.props.fontSize = phDef.fontSize;
           if (resolved.props.fontFace == null && phDef.fontFace) resolved.props.fontFace = phDef.fontFace;
           if (resolved.props.color == null && phDef.color) resolved.props.color = phDef.color;
-          // Inherit placeholder alignment
+          if (resolved.props.bold == null && phDef.bold != null) resolved.props.bold = phDef.bold;
+          if (resolved.props.italic == null && phDef.italic != null) resolved.props.italic = phDef.italic;
           if (resolved.props.align == null && phDef.align) resolved.props.align = phDef.align;
           if (resolved.props.valign == null && phDef.valign) resolved.props.valign = phDef.valign;
           if (resolved.props.margin == null && phDef.margin !== undefined) resolved.props.margin = phDef.margin;
+          // Propagate placeholder style name so component renderers get heading font auto-selection
+          if (resolved.props.style == null && phDef.style) resolved.props.style = phDef.style;
           await renderComponent(slide, resolved, processed.theme, pptx);
         }
       }

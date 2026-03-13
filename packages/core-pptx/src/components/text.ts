@@ -3,7 +3,7 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig } from '../types';
+import type { PptxThemeConfig, StyleName } from '../types';
 import { resolveColor } from '../utils/color';
 
 interface TextComponentProps {
@@ -38,6 +38,7 @@ interface TextComponentProps {
   lineSpacing?: number;
   paraSpaceBefore?: number;
   paraSpaceAfter?: number;
+  style?: StyleName;
 }
 
 export function renderTextComponent(
@@ -45,6 +46,10 @@ export function renderTextComponent(
   props: TextComponentProps,
   theme: PptxThemeConfig
 ): void {
+  // Resolve named style as defaults
+  const style = props.style ? theme.styles?.[props.style] : undefined;
+  const isHeadingStyle = props.style && /^(title|heading)/.test(props.style);
+
   const opts: Record<string, unknown> = {};
 
   // Position
@@ -62,14 +67,16 @@ export function renderTextComponent(
     opts.isTextBox = true;
   }
 
-  // Font
-  opts.fontSize = props.fontSize ?? theme.defaults.fontSize;
-  opts.fontFace = props.fontFace ?? theme.fonts.body;
-  opts.color = resolveColor(props.color ?? theme.defaults.fontColor, theme);
+  // Font — cascade: component props → style → theme defaults
+  opts.fontSize = props.fontSize ?? style?.fontSize ?? theme.defaults.fontSize;
+  opts.fontFace = props.fontFace ?? style?.fontFace ?? (isHeadingStyle ? theme.fonts.heading : theme.fonts.body);
+  opts.color = resolveColor(props.color ?? style?.fontColor ?? theme.defaults.fontColor, theme);
 
   // Formatting
-  if (props.bold) opts.bold = true;
-  if (props.italic) opts.italic = true;
+  const bold = props.bold ?? style?.bold;
+  const italic = props.italic ?? style?.italic;
+  if (bold != null) opts.bold = bold;
+  if (italic != null) opts.italic = italic;
   if (props.strike) opts.strike = true;
 
   if (props.underline !== undefined) {
@@ -81,7 +88,8 @@ export function renderTextComponent(
   }
 
   // Alignment
-  if (props.align) opts.align = props.align;
+  const align = props.align ?? style?.align;
+  if (align) opts.align = align;
   if (props.valign) opts.valign = props.valign;
 
   // Bullet
@@ -135,9 +143,11 @@ export function renderTextComponent(
   }
 
   // Line spacing
-  if (props.lineSpacing !== undefined) opts.lineSpacing = props.lineSpacing;
+  const lineSpacing = props.lineSpacing ?? style?.lineSpacing;
+  if (lineSpacing !== undefined) opts.lineSpacing = lineSpacing;
   if (props.paraSpaceBefore !== undefined) opts.paraSpaceBefore = props.paraSpaceBefore;
-  if (props.paraSpaceAfter !== undefined) opts.paraSpaceAfter = props.paraSpaceAfter;
+  const paraSpaceAfter = props.paraSpaceAfter ?? style?.paraSpaceAfter;
+  if (paraSpaceAfter !== undefined) opts.paraSpaceAfter = paraSpaceAfter;
 
   // Break line handling
   if (props.breakLine) opts.breakLine = true;

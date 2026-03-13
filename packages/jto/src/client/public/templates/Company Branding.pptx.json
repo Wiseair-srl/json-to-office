@@ -14,8 +14,8 @@
           { "text": { "text": "ACME CORP — CONFIDENTIAL", "grid": { "column": 0, "row": 5, "columnSpan": 6 }, "y": 6.85, "h": 0.5, "fontSize": 9, "color": "background2", "italic": true } }
         ],
         "placeholders": [
-          { "name": "title", "type": "title", "grid": { "column": 1, "row": 1, "columnSpan": 10, "rowSpan": 2 }, "fontSize": 44, "fontFace": "Arial", "color": "background", "align": "center", "valign": "middle" },
-          { "name": "subtitle", "type": "body", "grid": { "column": 2, "row": 3, "columnSpan": 8 }, "fontSize": 20, "color": "accent", "align": "center" }
+          { "name": "title", "type": "title", "style": "title", "grid": { "column": 1, "row": 1, "columnSpan": 10, "rowSpan": 2 }, "color": "background", "valign": "middle" },
+          { "name": "subtitle", "type": "body", "style": "subtitle", "grid": { "column": 2, "row": 3, "columnSpan": 8 }, "color": "accent" }
         ]
       },
       {
@@ -28,8 +28,8 @@
         ],
         "slideNumber": { "x": 9, "y": 6.85, "w": 0.5, "h": 0.5, "color": "text2", "fontSize": 8 },
         "placeholders": [
-          { "name": "heading", "type": "title", "grid": { "column": 0, "row": 1, "columnSpan": 12 }, "fontSize": 28, "fontFace": "Arial", "color": "primary" },
-          { "name": "body", "type": "body", "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 }, "fontSize": 14 }
+          { "name": "heading", "type": "title", "style": "heading1", "grid": { "column": 0, "row": 1, "columnSpan": 12 } },
+          { "name": "body", "type": "body", "style": "body", "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 } }
         ]
       },
       {
@@ -41,9 +41,9 @@
         ],
         "slideNumber": { "x": 9, "y": 6.85, "w": 0.5, "h": 0.5, "color": "text2", "fontSize": 8 },
         "placeholders": [
-          { "name": "heading", "type": "title", "grid": { "column": 0, "row": 1, "columnSpan": 12 }, "fontSize": 28, "color": "primary" },
-          { "name": "left", "type": "body", "grid": { "column": 0, "row": 2, "columnSpan": 6, "rowSpan": 3 }, "fontSize": 14 },
-          { "name": "right", "type": "body", "grid": { "column": 6, "row": 2, "columnSpan": 6, "rowSpan": 3 }, "fontSize": 14 }
+          { "name": "heading", "type": "title", "style": "heading1", "grid": { "column": 0, "row": 1, "columnSpan": 12 } },
+          { "name": "left", "type": "body", "style": "body", "grid": { "column": 0, "row": 2, "columnSpan": 6, "rowSpan": 3 } },
+          { "name": "right", "type": "body", "style": "body", "grid": { "column": 6, "row": 2, "columnSpan": 6, "rowSpan": 3 } }
         ]
       }
     ]
@@ -55,7 +55,7 @@
         "master": "TITLE_MASTER",
         "placeholders": {
           "title": [
-            { "name": "text", "props": { "text": "Acme Corp", "bold": true } }
+            { "name": "text", "props": { "text": "Acme Corp" } }
           ],
           "subtitle": [
             { "name": "text", "props": { "text": "Building the future, one innovation at a time" } }
@@ -105,7 +105,7 @@
             }
           ],
           "right": [
-            { "name": "text", "props": { "text": "Key Differentiators", "fontSize": 18, "bold": true, "color": "primary", "grid": { "column": 6, "row": 2, "columnSpan": 6 } } },
+            { "name": "text", "props": { "text": "Key Differentiators", "style": "heading3", "color": "primary", "grid": { "column": 6, "row": 2, "columnSpan": 6 } } },
             { "name": "text", "props": { "text": "End-to-end platform — no integration tax", "fontSize": 13, "color": "text2", "bullet": true, "grid": { "column": 6, "row": 3, "columnSpan": 6 } } },
             { "name": "text", "props": { "text": "99.99% uptime SLA across all tiers", "fontSize": 13, "color": "text2", "bullet": true, "grid": { "column": 6, "row": 4, "columnSpan": 6 } } }
           ]

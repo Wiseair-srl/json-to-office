@@ -10,7 +10,7 @@
       "name": "slide",
       "props": { "background": { "color": "background" } },
       "children": [
-        { "name": "text", "props": { "text": "Operations Dashboard", "fontSize": 24, "bold": true, "color": "text", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
+        { "name": "text", "props": { "text": "Operations Dashboard", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
         { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "accent" }, "rectRadius": 0.1, "text": "Revenue\n$4.2M", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 0, "row": 1, "columnSpan": 3 } } },
         { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "primary" }, "rectRadius": 0.1, "text": "Users\n12,847", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 3, "row": 1, "columnSpan": 3 } } },
         { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "accent5" }, "rectRadius": 0.1, "text": "Uptime\n99.97%", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 6, "row": 1, "columnSpan": 3 } } },
@@ -50,7 +50,7 @@
       "name": "slide",
       "props": { "background": { "color": "background" } },
       "children": [
-        { "name": "text", "props": { "text": "Performance Breakdown", "fontSize": 24, "bold": true, "color": "text", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
+        { "name": "text", "props": { "text": "Performance Breakdown", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
         {
           "name": "highcharts",
           "props": {

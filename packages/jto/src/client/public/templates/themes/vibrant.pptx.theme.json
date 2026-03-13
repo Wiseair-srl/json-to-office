@@ -19,5 +19,14 @@
   "defaults": {
     "fontSize": 16,
     "fontColor": "#F8FAFC"
+  },
+  "styles": {
+    "title": { "fontSize": 44, "bold": true, "fontColor": "text", "align": "center" },
+    "subtitle": { "fontSize": 18, "italic": true, "fontColor": "text2", "align": "center" },
+    "heading1": { "fontSize": 32, "bold": true, "fontColor": "text" },
+    "heading2": { "fontSize": 24, "bold": true, "fontColor": "primary" },
+    "heading3": { "fontSize": 18, "bold": true, "fontColor": "text" },
+    "body": { "fontSize": 14 },
+    "caption": { "fontSize": 10, "italic": true, "fontColor": "text2" }
   }
 }

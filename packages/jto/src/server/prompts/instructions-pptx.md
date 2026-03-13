@@ -47,7 +47,8 @@ Each master has:
 - `name` — key used in `slide.props.placeholders` to fill this region
 - `type` — `title`, `body`, `pic`, `chart`, `tbl`, `media`
 - Position via `grid` (preferred) or `x`/`y`/`w`/`h`
-- Styling: `fontSize`, `fontFace`, `color`, `align`, `valign`
+- Styling: `fontSize`, `fontFace`, `color`, `align`, `valign`, `bold`, `italic`
+- `style` — optional named style (see Named Styles below); applies as defaults to all components in this placeholder
 
 ## Recommended Master Set
 
@@ -136,8 +137,8 @@ Only use hex (e.g. `"FFFFFF"`) for absolute white/black when needed.
           { "rect": { "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": "secondary" } }
         ],
         "placeholders": [
-          { "name": "title", "type": "title", "grid": { "column": 1, "row": 1, "columnSpan": 10, "rowSpan": 2 }, "fontSize": 44, "color": "FFFFFF", "align": "center", "valign": "middle" },
-          { "name": "subtitle", "type": "body", "grid": { "column": 2, "row": 3, "columnSpan": 8 }, "fontSize": 20, "color": "accent", "align": "center" }
+          { "name": "title", "type": "title", "style": "title", "grid": { "column": 1, "row": 1, "columnSpan": 10, "rowSpan": 2 }, "fontSize": 44, "color": "FFFFFF", "valign": "middle" },
+          { "name": "subtitle", "type": "body", "style": "subtitle", "grid": { "column": 2, "row": 3, "columnSpan": 8 }, "color": "accent" }
         ]
       },
       {
@@ -149,8 +150,8 @@ Only use hex (e.g. `"FFFFFF"`) for absolute white/black when needed.
         ],
         "slideNumber": { "x": 9, "y": 6.85, "w": 0.5, "h": 0.5, "color": "text2", "fontSize": 8 },
         "placeholders": [
-          { "name": "heading", "type": "title", "grid": { "column": 0, "row": 0, "columnSpan": 12 }, "fontSize": 28, "color": "primary" },
-          { "name": "body", "type": "body", "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 4 }, "fontSize": 14 }
+          { "name": "heading", "type": "title", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } },
+          { "name": "body", "type": "body", "style": "body", "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 4 } }
         ]
       }
     ]
@@ -180,6 +181,49 @@ Only use hex (e.g. `"FFFFFF"`) for absolute white/black when needed.
       }
     }
   ]
+}
+```
+
+## Named Styles
+
+Themes define a `styles` map with predefined text style presets. Use `"style"` on text/shape components to apply formatting without repeating props.
+
+**Available style names:** `title`, `subtitle`, `heading1`, `heading2`, `heading3`, `body`, `caption`
+
+**Usage on components:**
+```json
+{ "name": "text", "props": { "text": "My Title", "style": "title" } }
+{ "name": "shape", "props": { "type": "roundRect", "text": "KPI", "style": "caption", "fill": { "color": "background2" } } }
+```
+
+**Usage on placeholders:**
+```json
+{ "name": "heading", "type": "title", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } }
+```
+
+**Resolution cascade (most specific wins):**
+`component props → component style → placeholder props → placeholder style → theme defaults`
+
+Explicit props always override style values. Example: `"style": "heading1", "fontSize": 32` → uses 32pt, not the style's fontSize.
+
+**Built-in defaults (all themes):**
+
+| Style    | fontSize | bold | italic | fontColor | align  |
+|----------|----------|------|--------|-----------|--------|
+| title    | 36       | yes  |        | text      | center |
+| subtitle | 20       |      | yes    | text2     | center |
+| heading1 | 28       | yes  |        | primary   |        |
+| heading2 | 22       | yes  |        | primary   |        |
+| heading3 | 18       | yes  |        | text      |        |
+| body     | 14       |      |        |           |        |
+| caption  | 10       |      | yes    | text2     |        |
+
+Heading styles (`title`, `heading1-3`) auto-use `theme.fonts.heading`; others use `theme.fonts.body`.
+
+Themes can override styles in the `styles` key:
+```json
+"styles": {
+  "title": { "fontSize": 40, "bold": true, "fontColor": "accent", "align": "left" }
 }
 ```
 

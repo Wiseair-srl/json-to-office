@@ -10,7 +10,7 @@
       "name": "slide",
       "props": { "background": { "color": "background" } },
       "children": [
-        { "name": "text", "props": { "text": "Quarterly Revenue", "fontSize": 24, "bold": true, "color": "text", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
+        { "name": "text", "props": { "text": "Quarterly Revenue", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
         {
           "name": "chart",
           "props": {
@@ -55,7 +55,7 @@
       "name": "slide",
       "props": { "background": { "color": "background" } },
       "children": [
-        { "name": "text", "props": { "text": "Growth Trends", "fontSize": 24, "bold": true, "color": "text", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
+        { "name": "text", "props": { "text": "Growth Trends", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
         {
           "name": "chart",
           "props": {
@@ -84,7 +84,7 @@
       "name": "slide",
       "props": { "background": { "color": "background" } },
       "children": [
-        { "name": "text", "props": { "text": "Market Analysis", "fontSize": 24, "bold": true, "color": "text", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
+        { "name": "text", "props": { "text": "Market Analysis", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
         {
           "name": "chart",
           "props": {
@@ -125,7 +125,7 @@
       "name": "slide",
       "props": { "background": { "color": "background" } },
       "children": [
-        { "name": "text", "props": { "text": "Detailed Metrics", "fontSize": 24, "bold": true, "color": "text", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
+        { "name": "text", "props": { "text": "Detailed Metrics", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
         {
           "name": "chart",
           "props": {

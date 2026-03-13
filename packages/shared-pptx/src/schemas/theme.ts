@@ -66,6 +66,37 @@ export const ColorValueSchema = Type.Union([
   ...SEMANTIC_COLOR_ALIASES.map(n => Type.Literal(n)),
 ], { description: 'Hex color or semantic theme color name' });
 
+// ── Named text styles ──────────────────────────────────────────────
+
+export const STYLE_NAMES = [
+  'title', 'subtitle',
+  'heading1', 'heading2', 'heading3',
+  'body', 'caption',
+] as const;
+
+export const StyleNameSchema = Type.Union(
+  STYLE_NAMES.map(n => Type.Literal(n)),
+  { description: 'Predefined style name' }
+);
+
+export const TextStyleSchema = Type.Object({
+  fontSize: Type.Optional(Type.Number()),
+  fontFace: Type.Optional(Type.String()),
+  fontColor: Type.Optional(ColorValueSchema),
+  bold: Type.Optional(Type.Boolean()),
+  italic: Type.Optional(Type.Boolean()),
+  align: Type.Optional(Type.Union([
+    Type.Literal('left'), Type.Literal('center'), Type.Literal('right'), Type.Literal('justify'),
+  ])),
+  lineSpacing: Type.Optional(Type.Number()),
+  paraSpaceAfter: Type.Optional(Type.Number()),
+}, { additionalProperties: false, description: 'Text style preset' });
+
+export type StyleName = (typeof STYLE_NAMES)[number];
+export type TextStyle = Static<typeof TextStyleSchema>;
+
+// ── Theme config ───────────────────────────────────────────────────
+
 export const ThemeConfigSchema = Type.Object(
   {
     name: Type.String({ description: 'Theme name' }),
@@ -99,6 +130,12 @@ export const ThemeConfigSchema = Type.Object(
       { additionalProperties: false, description: 'Default text styling' }
     ),
     grid: Type.Optional(GridConfigSchema),
+    styles: Type.Optional(Type.Partial(
+      Type.Object(Object.fromEntries(
+        STYLE_NAMES.map(n => [n, TextStyleSchema])
+      ) as Record<string, typeof TextStyleSchema>),
+      { additionalProperties: false, description: 'Named text style presets' }
+    )),
   },
   { additionalProperties: false, description: 'Presentation theme configuration' }
 );

@@ -91,6 +91,19 @@ export interface GridPosition {
   rowSpan?: number;
 }
 
+export interface TextStyle {
+  fontSize?: number;
+  fontFace?: string;
+  fontColor?: string;
+  bold?: boolean;
+  italic?: boolean;
+  align?: string;
+  lineSpacing?: number;
+  paraSpaceAfter?: number;
+}
+
+export type StyleName = 'title' | 'subtitle' | 'heading1' | 'heading2' | 'heading3' | 'body' | 'caption';
+
 export interface PptxThemeConfig {
   name: string;
   colors: {
@@ -114,6 +127,7 @@ export interface PptxThemeConfig {
     fontColor: string;
   };
   grid?: GridConfig;
+  styles?: Partial<Record<StyleName, TextStyle>>;
 }
 
 export interface PlaceholderDefinition {
@@ -124,6 +138,8 @@ export interface PlaceholderDefinition {
   fontSize?: number; fontFace?: string; color?: string;
   align?: string; valign?: string;
   margin?: number | number[];
+  bold?: boolean; italic?: boolean;
+  style?: StyleName;
   text?: string;
 }
 

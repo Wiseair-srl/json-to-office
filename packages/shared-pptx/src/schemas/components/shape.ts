@@ -4,6 +4,7 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { PptxAlignmentSchema, VerticalAlignmentSchema, ShadowSchema, GridPositionSchema } from './common';
+import { StyleNameSchema } from '../theme';
 
 export const ShapeTypeSchema = Type.Union(
   [
@@ -98,6 +99,7 @@ export const ShapePropsSchema = Type.Object(
       })
     ),
     grid: Type.Optional(GridPositionSchema),
+    style: Type.Optional(StyleNameSchema),
   },
   {
     description: 'Shape component props',

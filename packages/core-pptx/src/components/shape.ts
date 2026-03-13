@@ -3,7 +3,7 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig } from '../types';
+import type { PptxThemeConfig, StyleName } from '../types';
 import { resolveColor } from '../utils/color';
 
 interface ShapeComponentProps {
@@ -32,6 +32,7 @@ interface ShapeComponentProps {
     opacity?: number;
   };
   rectRadius?: number;
+  style?: StyleName;
 }
 
 const SHAPE_TYPE_MAP: Record<string, string> = {
@@ -67,6 +68,10 @@ export function renderShapeComponent(
     return;
   }
 
+  // Resolve named style
+  const style = props.style ? theme.styles?.[props.style] : undefined;
+  const isHeadingStyle = props.style && /^(title|heading)/.test(props.style);
+
   // If shape has text, use addText with shape option
   if (props.text) {
     const opts: Record<string, unknown> = {
@@ -92,12 +97,15 @@ export function renderShapeComponent(
       if (props.line.dashType) (opts.line as Record<string, unknown>).dashType = props.line.dashType;
     }
 
-    opts.fontSize = props.fontSize ?? theme.defaults.fontSize;
-    opts.fontFace = props.fontFace ?? theme.fonts.body;
-    opts.color = resolveColor(props.fontColor ?? theme.defaults.fontColor, theme);
-    if (props.bold) opts.bold = true;
-    if (props.italic) opts.italic = true;
-    if (props.align) opts.align = props.align;
+    opts.fontSize = props.fontSize ?? style?.fontSize ?? theme.defaults.fontSize;
+    opts.fontFace = props.fontFace ?? style?.fontFace ?? (isHeadingStyle ? theme.fonts.heading : theme.fonts.body);
+    opts.color = resolveColor(props.fontColor ?? style?.fontColor ?? theme.defaults.fontColor, theme);
+    const bold = props.bold ?? style?.bold;
+    const italic = props.italic ?? style?.italic;
+    if (bold != null) opts.bold = bold;
+    if (italic != null) opts.italic = italic;
+    const align = props.align ?? style?.align;
+    if (align) opts.align = align;
     if (props.valign) opts.valign = props.valign;
     if (props.rotate !== undefined) opts.rotate = props.rotate;
     if (props.rectRadius !== undefined) opts.rectRadius = props.rectRadius;

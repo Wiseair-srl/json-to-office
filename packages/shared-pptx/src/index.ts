@@ -66,8 +66,8 @@ export {
 } from './schemas/export';
 
 // Theme
-export { ThemeConfigSchema, ColorValueSchema, SEMANTIC_COLOR_NAMES, SEMANTIC_COLOR_ALIASES, isValidThemeConfig } from './schemas/theme';
-export type { ThemeConfigJson } from './schemas/theme';
+export { ThemeConfigSchema, ColorValueSchema, SEMANTIC_COLOR_NAMES, SEMANTIC_COLOR_ALIASES, STYLE_NAMES, StyleNameSchema, TextStyleSchema, isValidThemeConfig } from './schemas/theme';
+export type { ThemeConfigJson, StyleName, TextStyle } from './schemas/theme';
 
 // Schema Generator
 export { generateUnifiedDocumentSchema } from './schemas/generator';

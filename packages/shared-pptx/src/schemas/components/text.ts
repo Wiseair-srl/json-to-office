@@ -4,6 +4,7 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { PptxAlignmentSchema, VerticalAlignmentSchema, ShadowSchema, GridPositionSchema } from './common';
+import { StyleNameSchema } from '../theme';
 
 export const TextPropsSchema = Type.Object(
   {
@@ -118,6 +119,7 @@ export const TextPropsSchema = Type.Object(
     paraSpaceBefore: Type.Optional(Type.Number({ description: 'Space before paragraph in points' })),
     paraSpaceAfter: Type.Optional(Type.Number({ description: 'Space after paragraph in points' })),
     grid: Type.Optional(GridPositionSchema),
+    style: Type.Optional(StyleNameSchema),
   },
   {
     description: 'Text component props',

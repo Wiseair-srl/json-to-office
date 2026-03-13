@@ -4,7 +4,7 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { SlideBackgroundSchema, GridPositionSchema, PptxAlignmentSchema, VerticalAlignmentSchema } from './common';
-import { ColorValueSchema, GridConfigSchema } from '../theme';
+import { ColorValueSchema, GridConfigSchema, StyleNameSchema } from '../theme';
 
 // Position helpers (number in inches)
 const Inches = Type.Number({ description: 'Position/size in inches' });
@@ -73,6 +73,9 @@ export const PlaceholderDefinitionSchema = Type.Object({
   align: Type.Optional(PptxAlignmentSchema),
   valign: Type.Optional(VerticalAlignmentSchema),
   margin: Type.Optional(Type.Union([Type.Number(), Type.Array(Type.Number(), { minItems: 4, maxItems: 4 })])),
+  bold: Type.Optional(Type.Boolean({ description: 'Default bold for components in this placeholder' })),
+  italic: Type.Optional(Type.Boolean({ description: 'Default italic for components in this placeholder' })),
+  style: Type.Optional(StyleNameSchema),
   text: Type.Optional(Type.String({ description: 'Default placeholder text (shown until user adds content)' })),
 }, { additionalProperties: false, description: 'Placeholder on a master slide' });
 

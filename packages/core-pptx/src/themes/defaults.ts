@@ -2,7 +2,17 @@
  * PPTX Theme Defaults
  */
 
-import type { PptxThemeConfig } from '../types';
+import type { PptxThemeConfig, TextStyle, StyleName } from '../types';
+
+const DEFAULT_STYLES: Partial<Record<StyleName, TextStyle>> = {
+  title:    { fontSize: 36, bold: true, fontColor: 'text', align: 'center' },
+  subtitle: { fontSize: 20, italic: true, fontColor: 'text2', align: 'center' },
+  heading1: { fontSize: 28, bold: true, fontColor: 'primary' },
+  heading2: { fontSize: 22, bold: true, fontColor: 'primary' },
+  heading3: { fontSize: 18, bold: true, fontColor: 'text' },
+  body:     { fontSize: 14 },
+  caption:  { fontSize: 10, italic: true, fontColor: 'text2' },
+};
 
 export const DEFAULT_PPTX_THEME: PptxThemeConfig = {
   name: 'default',
@@ -26,6 +36,7 @@ export const DEFAULT_PPTX_THEME: PptxThemeConfig = {
     fontSize: 18,
     fontColor: '#333333',
   },
+  styles: DEFAULT_STYLES,
 };
 
 const PPTX_THEMES: Record<string, PptxThemeConfig> = {
@@ -52,6 +63,7 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
       fontSize: 18,
       fontColor: '#FFFFFF',
     },
+    styles: DEFAULT_STYLES,
   },
   minimal: {
     name: 'minimal',
@@ -75,6 +87,7 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
       fontSize: 18,
       fontColor: '#000000',
     },
+    styles: DEFAULT_STYLES,
   },
 };
 
