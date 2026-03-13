@@ -5,7 +5,6 @@ import MonacoEditor, { Monaco, DiffEditor } from '@monaco-editor/react';
 import type { editor as MonacoEditorType } from 'monaco-editor';
 import type { TextFile } from '../../lib/types';
 import { validateThemeJson } from '../../lib/theme-validation';
-import { createThemeSchemaConfig } from '../../lib/json-schema-generator';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { Button } from '../ui/button';
 import { useEditorRefsStore } from '../../store/editor-refs-store';
@@ -50,12 +49,10 @@ function EditorMonacoTheme({
     console.log('Monaco theme editor will mount');
     monacoRef.current = monaco;
 
-    // Configure JSON defaults with theme schema
-    const schemaConfig = createThemeSchemaConfig();
-    monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-      validate: true,
-      schemas: [schemaConfig],
-    });
+    // Ensure global schemas (report + theme) are configured.
+    // Don't call setDiagnosticsOptions here — it would clobber the global
+    // config. The theme schema is already registered by configureMonacoInstance
+    // and matched via defaultPath → fileMatch.
 
     setIsReady(true);
   }, []);
@@ -277,6 +274,7 @@ function EditorMonacoTheme({
         <MonacoEditor
           height="100%"
           language="json"
+          defaultPath={document.name}
           value={document.text}
           theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs'}
           onChange={handleChange}

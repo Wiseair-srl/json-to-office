@@ -32,6 +32,11 @@ export function createAiRouter() {
         schema: schemaStr,
       });
 
+      // Append PPTX-specific addendum for non-theme PPTX interactions
+      if (format === 'pptx' && !isTheme) {
+        systemPrompt += '\n\n' + loadPrompt('instructions-pptx.md');
+      }
+
       // Append edit instructions when a selection context is provided
       if (context && context.length > 0) {
         const ctx = context[0];
@@ -55,7 +60,10 @@ export function createAiRouter() {
         if (docText !== activeDocument.text) {
           logger.warn('Truncated activeDocument.text in AI system prompt', { originalLength: activeDocument.text.length });
         }
-        const editDocInstructions = loadPrompt('instructions-edit-document.md', {
+        const editDocFile = format === 'pptx' && !isTheme
+          ? 'instructions-edit-document-pptx.md'
+          : 'instructions-edit-document.md';
+        const editDocInstructions = loadPrompt(editDocFile, {
           contentLabel,
           contentLabelLower: contentLabel.toLowerCase(),
           documentName: activeDocument.name || 'untitled',
@@ -64,7 +72,10 @@ export function createAiRouter() {
         systemPrompt += '\n\n' + editDocInstructions;
       } else if (!activeDocument?.text && (!context || context.length === 0)) {
         // Truly from-scratch generation — no document open
-        const generateInstructions = loadPrompt('instructions-generate.md', {
+        const generateFile = format === 'pptx' && !isTheme
+          ? 'instructions-generate-pptx.md'
+          : 'instructions-generate.md';
+        const generateInstructions = loadPrompt(generateFile, {
           contentType: isTheme ? 'theme' : 'document',
         });
         systemPrompt += '\n\n' + generateInstructions;

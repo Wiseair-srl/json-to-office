@@ -3,18 +3,18 @@
   "props": {
     "title": "Operations Dashboard",
     "author": "Analytics Team",
-    "theme": "grid"
+    "theme": "corporate"
   },
   "children": [
     {
       "name": "slide",
-      "props": { "background": { "color": "F9FAFB" } },
+      "props": { "background": { "color": "background" } },
       "children": [
-        { "name": "text", "props": { "text": "Operations Dashboard", "fontSize": 24, "bold": true, "color": "1F2937", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
-        { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "1a56db" }, "rectRadius": 0.1, "text": "Revenue\n$4.2M", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 0, "row": 1, "columnSpan": 3 } } },
-        { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "7e3af2" }, "rectRadius": 0.1, "text": "Users\n12,847", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 3, "row": 1, "columnSpan": 3 } } },
-        { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "0e9f6e" }, "rectRadius": 0.1, "text": "Uptime\n99.97%", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 6, "row": 1, "columnSpan": 3 } } },
-        { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "E02424" }, "rectRadius": 0.1, "text": "Incidents\n3 Open", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 9, "row": 1, "columnSpan": 3 } } },
+        { "name": "text", "props": { "text": "Operations Dashboard", "fontSize": 24, "bold": true, "color": "text", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
+        { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "accent" }, "rectRadius": 0.1, "text": "Revenue\n$4.2M", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 0, "row": 1, "columnSpan": 3 } } },
+        { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "primary" }, "rectRadius": 0.1, "text": "Users\n12,847", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 3, "row": 1, "columnSpan": 3 } } },
+        { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "accent5" }, "rectRadius": 0.1, "text": "Uptime\n99.97%", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 6, "row": 1, "columnSpan": 3 } } },
+        { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "accent4" }, "rectRadius": 0.1, "text": "Incidents\n3 Open", "fontSize": 14, "fontColor": "FFFFFF", "bold": true, "align": "center", "valign": "middle", "grid": { "column": 9, "row": 1, "columnSpan": 3 } } },
         {
           "name": "highcharts",
           "props": {
@@ -23,7 +23,7 @@
               "title": { "text": "Daily Active Users (30d)" },
               "xAxis": { "categories": ["W1", "W2", "W3", "W4"], "title": { "text": null } },
               "yAxis": { "title": { "text": null } },
-              "series": [{ "name": "DAU", "data": [9800, 10200, 11400, 12847], "color": "#7e3af2" }],
+              "series": [{ "name": "DAU", "data": [9800, 10200, 11400, 12847], "color": "#1a365d" }],
               "plotOptions": { "area": { "fillOpacity": 0.15 } }
             },
             "grid": { "column": 0, "row": 2, "columnSpan": 6, "rowSpan": 4 }
@@ -33,12 +33,12 @@
           "name": "table",
           "props": {
             "rows": [
-              [{ "text": "Service", "bold": true, "fill": "1F2937", "color": "FFFFFF" }, { "text": "Status", "bold": true, "fill": "1F2937", "color": "FFFFFF" }, { "text": "Latency", "bold": true, "fill": "1F2937", "color": "FFFFFF" }],
-              ["API Gateway", { "text": "Healthy", "color": "0e9f6e" }, "12ms"],
-              ["Auth Service", { "text": "Healthy", "color": "0e9f6e" }, "8ms"],
-              ["Database", { "text": "Warning", "color": "D97706" }, "45ms"],
-              ["CDN", { "text": "Healthy", "color": "0e9f6e" }, "3ms"],
-              ["Search", { "text": "Degraded", "color": "E02424" }, "230ms"]
+              [{ "text": "Service", "bold": true, "fill": "primary", "color": "FFFFFF" }, { "text": "Status", "bold": true, "fill": "primary", "color": "FFFFFF" }, { "text": "Latency", "bold": true, "fill": "primary", "color": "FFFFFF" }],
+              ["API Gateway", { "text": "Healthy", "color": "accent5" }, "12ms"],
+              ["Auth Service", { "text": "Healthy", "color": "accent5" }, "8ms"],
+              ["Database", { "text": "Warning", "color": "accent6" }, "45ms"],
+              ["CDN", { "text": "Healthy", "color": "accent5" }, "3ms"],
+              ["Search", { "text": "Degraded", "color": "accent4" }, "230ms"]
             ],
             "fontSize": 10, "border": { "type": "solid", "pt": 0.5, "color": "E5E7EB" },
             "grid": { "column": 6, "row": 2, "columnSpan": 6, "rowSpan": 4 }
@@ -48,9 +48,9 @@
     },
     {
       "name": "slide",
-      "props": { "background": { "color": "F9FAFB" } },
+      "props": { "background": { "color": "background" } },
       "children": [
-        { "name": "text", "props": { "text": "Performance Breakdown", "fontSize": 24, "bold": true, "color": "1F2937", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
+        { "name": "text", "props": { "text": "Performance Breakdown", "fontSize": 24, "bold": true, "color": "text", "grid": { "column": 0, "row": 0, "columnSpan": 12 } } },
         {
           "name": "highcharts",
           "props": {
@@ -58,10 +58,10 @@
               "chart": { "type": "pie", "width": 400, "height": 300 },
               "title": { "text": "Traffic Sources" },
               "series": [{ "name": "Traffic", "data": [
-                { "name": "Organic", "y": 42, "color": "#1a56db" },
-                { "name": "Direct", "y": 28, "color": "#7e3af2" },
-                { "name": "Referral", "y": 18, "color": "#0e9f6e" },
-                { "name": "Social", "y": 12, "color": "#D97706" }
+                { "name": "Organic", "y": 42, "color": "#3182CE" },
+                { "name": "Direct", "y": 28, "color": "#1a365d" },
+                { "name": "Referral", "y": 18, "color": "#38A169" },
+                { "name": "Social", "y": 12, "color": "#D69E2E" }
               ]}]
             },
             "grid": { "column": 0, "row": 1, "columnSpan": 6, "rowSpan": 5 }
@@ -76,9 +76,9 @@
               "xAxis": { "categories": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] },
               "yAxis": { "title": { "text": "ms" } },
               "series": [
-                { "name": "p50", "data": [12, 11, 13, 10, 14, 9, 11], "color": "#0e9f6e" },
-                { "name": "p95", "data": [45, 42, 55, 38, 52, 35, 40], "color": "#D97706" },
-                { "name": "p99", "data": [120, 95, 180, 88, 150, 78, 105], "color": "#E02424" }
+                { "name": "p50", "data": [12, 11, 13, 10, 14, 9, 11], "color": "#38A169" },
+                { "name": "p95", "data": [45, 42, 55, 38, 52, 35, 40], "color": "#D69E2E" },
+                { "name": "p99", "data": [120, 95, 180, 88, 150, 78, 105], "color": "#E53E3E" }
               ]
             },
             "grid": { "column": 6, "row": 1, "columnSpan": 6, "rowSpan": 5 }

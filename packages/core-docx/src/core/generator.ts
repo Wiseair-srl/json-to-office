@@ -12,7 +12,6 @@ import {
   isReportComponent,
 } from '../types';
 import { getThemeWithFallback, ThemeConfig } from '../styles';
-import { ensureThemeDefaults } from '../themes/defaults';
 import { processDocument } from './structure';
 import { applyLayout } from './layout';
 import { renderDocument } from './render';
@@ -66,9 +65,8 @@ export async function generateDocument(
     return await generateDocumentFromJson(document);
   }
 
-  // Get theme configuration with safer fallback
-  const themeValue = document.props.theme || 'minimal';
-  const themeName = typeof themeValue === 'string' ? themeValue : 'minimal';
+  // Get theme configuration (theme is always a string name)
+  const themeName = document.props.theme || 'minimal';
   const theme = getThemeWithFallback(themeName);
 
   // Pipeline: Structure -> Layout -> Render (with caching)
@@ -106,44 +104,14 @@ async function generateDocumentWithCustomThemes(
   document: ReportComponentDefinition,
   customThemes?: { [key: string]: ThemeConfig }
 ): Promise<Document> {
-  // Get theme configuration with custom theme support
-  const themeValue = document.props.theme || 'minimal';
-  const themeName =
-    typeof themeValue === 'string'
-      ? themeValue
-      : ((themeValue as any)?.name as string) || 'custom';
+  // Get theme configuration with custom theme support (theme is always a string name)
+  const themeName = document.props.theme || 'minimal';
   let theme: ThemeConfig;
 
-  // Debug logging for theme resolution
-  console.log('[Theme Resolution] Looking for theme:', themeName);
-  console.log(
-    '[Theme Resolution] Available custom themes:',
-    customThemes ? Object.keys(customThemes) : 'none'
-  );
-
-  // Log custom theme structure if present
-  if (customThemes && customThemes[themeName]) {
-    console.log('[Theme Resolution] Custom theme structure:', {
-      name: (customThemes[themeName] as any).name,
-      hasFonts: !!(customThemes[themeName] as any).fonts,
-      hasStyles: !!(customThemes[themeName] as any).styles,
-      bodyFont: (customThemes[themeName] as any).fonts?.body,
-      normalFont: (customThemes[themeName] as any).styles?.normal?.font,
-    });
-  }
-
-  // If an embedded theme object is provided in the JSON, use it directly
-  if (typeof themeValue === 'object' && themeValue !== null) {
-    theme = ensureThemeDefaults(themeValue as any);
-  }
-  // Otherwise, check custom themes first with case-insensitive matching
-  else if (customThemes) {
+  // Check custom themes first with case-insensitive matching, then fall back to built-in
+  if (customThemes) {
     // Try exact match first
     if (customThemes[themeName]) {
-      console.log(
-        '[Theme Resolution] Using custom theme (exact match):',
-        themeName
-      );
       theme = customThemes[themeName];
     } else {
       // Try case-insensitive match
@@ -152,18 +120,12 @@ async function generateDocumentWithCustomThemes(
         (key) => key.toLowerCase() === themeNameLower
       );
       if (matchingThemeKey) {
-        console.log(
-          '[Theme Resolution] Using custom theme (case-insensitive match):',
-          matchingThemeKey
-        );
         theme = customThemes[matchingThemeKey];
       } else {
-        console.log('[Theme Resolution] Using built-in theme:', themeName);
         theme = getThemeWithFallback(themeName);
       }
     }
   } else {
-    console.log('[Theme Resolution] Using built-in theme:', themeName);
     theme = getThemeWithFallback(themeName);
   }
 

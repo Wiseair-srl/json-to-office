@@ -5,7 +5,12 @@
     "secondary": "#2563EB",
     "accent": "#059669",
     "background": "#0F172A",
-    "text": "#F8FAFC"
+    "text": "#F8FAFC",
+    "text2": "#94A3B8",
+    "background2": "#1E293B",
+    "accent4": "#F59E0B",
+    "accent5": "#EC4899",
+    "accent6": "#06B6D4"
   },
   "fonts": {
     "heading": "Helvetica",

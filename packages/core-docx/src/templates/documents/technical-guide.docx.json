@@ -1,28 +1,26 @@
 {
   "name": "docx",
   "props": {
-    "title": "Platform Integration Guide",
+    "metadata": { "title": "Platform Integration Guide" },
     "theme": "minimal"
   },
   "children": [
     {
       "name": "header",
       "props": {
-        "children": [
-          { "type": "text", "text": "Platform Integration Guide", "alignment": "left" },
-          { "type": "pageNumber", "alignment": "right" }
-        ]
+        "text": "Platform Integration Guide",
+        "alignment": "left",
+        "showPageNumbers": true
       }
     },
     {
       "name": "footer",
       "props": {
-        "children": [
-          { "type": "text", "text": "Confidential — TechCorp Inc.", "alignment": "center" }
-        ]
+        "text": "Confidential — TechCorp Inc.",
+        "alignment": "center"
       }
     },
-    { "name": "toc", "props": { "minLevel": 1, "maxLevel": 2 } },
+    { "name": "toc", "props": { "depth": { "from": 1, "to": 2 } } },
     {
       "name": "section",
       "props": { "level": 1, "pageBreak": true },
@@ -61,20 +59,16 @@
         { "name": "heading", "props": { "text": "Authentication", "level": 1 } },
         { "name": "paragraph", "props": { "text": "All API requests require a valid bearer token. Tokens are obtained via the OAuth 2.0 client credentials flow." } },
         { "name": "heading", "props": { "text": "Token Exchange", "level": 2 } },
-        { "name": "paragraph", "props": { "text": "POST /oauth/token with your client_id and client_secret to receive an access token. Tokens expire after 3600 seconds. Include the token in subsequent requests via the Authorization header: Bearer <token>.", "font": "mono" } },
+        { "name": "paragraph", "props": { "text": "POST /oauth/token with your client_id and client_secret to receive an access token. Tokens expire after 3600 seconds. Include the token in subsequent requests via the Authorization header: Bearer <token>.", "font": { "family": "Courier New" } } },
         { "name": "heading", "props": { "text": "Available Scopes", "level": 2 } },
         {
           "name": "table",
           "props": {
-            "headers": ["Scope", "Access Level", "Use Case"],
-            "rows": [
-              ["read:data", "Read-only", "Dashboards, reporting"],
-              ["write:data", "Read/Write", "Data sync, imports"],
-              ["admin:users", "User management", "Provisioning, SCIM"],
-              ["admin:config", "Configuration", "Settings, webhooks"]
-            ],
-            "striped": true,
-            "borders": true
+            "columns": [
+              { "header": { "content": "Scope" }, "cells": [{ "content": "read:data" }, { "content": "write:data" }, { "content": "admin:users" }, { "content": "admin:config" }] },
+              { "header": { "content": "Access Level" }, "cells": [{ "content": "Read-only" }, { "content": "Read/Write" }, { "content": "User management" }, { "content": "Configuration" }] },
+              { "header": { "content": "Use Case" }, "cells": [{ "content": "Dashboards, reporting" }, { "content": "Data sync, imports" }, { "content": "Provisioning, SCIM" }, { "content": "Settings, webhooks" }] }
+            ]
           }
         }
       ]
@@ -87,7 +81,7 @@
         { "name": "heading", "props": { "text": "Resources", "level": 2 } },
         {
           "name": "columns",
-          "props": { "count": 2, "gap": 0.5 },
+          "props": { "columns": 2, "gap": 0.5 },
           "children": [
             {
               "name": "list",
@@ -120,15 +114,13 @@
         {
           "name": "table",
           "props": {
-            "headers": ["Plan", "Requests/min", "Burst", "Concurrent"],
-            "rows": [
-              ["Free", "60", "10", "5"],
-              ["Pro", "600", "100", "25"],
-              ["Enterprise", "6,000", "1,000", "100"]
+            "columns": [
+              { "header": { "content": "Plan" }, "cells": [{ "content": "Free" }, { "content": "Pro" }, { "content": "Enterprise" }] },
+              { "header": { "content": "Requests/min" }, "cells": [{ "content": "60" }, { "content": "600" }, { "content": "6,000" }] },
+              { "header": { "content": "Burst" }, "cells": [{ "content": "10" }, { "content": "100" }, { "content": "1,000" }] },
+              { "header": { "content": "Concurrent" }, "cells": [{ "content": "5" }, { "content": "25" }, { "content": "100" }] }
             ],
-            "borders": true,
-            "headerBackground": "#1F2937",
-            "headerColor": "#FFFFFF"
+            "headerCellDefaults": { "backgroundColor": "#1F2937", "color": "#FFFFFF" }
           }
         },
         { "name": "heading", "props": { "text": "Error Handling", "level": 2 } },
@@ -158,32 +150,24 @@
         { "name": "heading", "props": { "text": "Supported Events", "level": 2 } },
         {
           "name": "columns",
-          "props": { "count": 2 },
+          "props": { "columns": 2 },
           "children": [
             {
               "name": "table",
               "props": {
-                "headers": ["Event", "Trigger"],
-                "rows": [
-                  ["user.created", "New user signup"],
-                  ["user.updated", "Profile change"],
-                  ["project.created", "New project"],
-                  ["project.archived", "Project archived"]
-                ],
-                "borders": true
+                "columns": [
+                  { "header": { "content": "Event" }, "cells": [{ "content": "user.created" }, { "content": "user.updated" }, { "content": "project.created" }, { "content": "project.archived" }] },
+                  { "header": { "content": "Trigger" }, "cells": [{ "content": "New user signup" }, { "content": "Profile change" }, { "content": "New project" }, { "content": "Project archived" }] }
+                ]
               }
             },
             {
               "name": "table",
               "props": {
-                "headers": ["Event", "Trigger"],
-                "rows": [
-                  ["file.uploaded", "New file"],
-                  ["file.deleted", "File removed"],
-                  ["team.member_added", "User joins team"],
-                  ["billing.invoice", "Invoice generated"]
-                ],
-                "borders": true
+                "columns": [
+                  { "header": { "content": "Event" }, "cells": [{ "content": "file.uploaded" }, { "content": "file.deleted" }, { "content": "team.member_added" }, { "content": "billing.invoice" }] },
+                  { "header": { "content": "Trigger" }, "cells": [{ "content": "New file" }, { "content": "File removed" }, { "content": "User joins team" }, { "content": "Invoice generated" }] }
+                ]
               }
             }
           ]

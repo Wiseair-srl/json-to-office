@@ -23,6 +23,7 @@ export interface PresentationComponentDefinition {
     slideWidth?: number;
     slideHeight?: number;
     rtlMode?: boolean;
+    masters?: MasterSlideDefinition[];
   };
   children?: PptxComponentInput[];
 }
@@ -42,6 +43,8 @@ export interface SlideComponentDefinition {
     notes?: string;
     layout?: string;
     hidden?: boolean;
+    master?: string;
+    placeholders?: Record<string, PptxComponentInput[]>;
   };
   children?: PptxComponentInput[];
 }
@@ -58,6 +61,7 @@ export interface ProcessedPresentation {
   slideHeight: number;
   rtlMode: boolean;
   slides: ProcessedSlide[];
+  masters?: MasterSlideDefinition[];
 }
 
 export interface ProcessedSlide {
@@ -69,6 +73,8 @@ export interface ProcessedSlide {
   notes?: string;
   layout?: string;
   hidden?: boolean;
+  master?: string;
+  placeholders?: Record<string, PptxComponentInput[]>;
 }
 
 export interface GridConfig {
@@ -93,6 +99,11 @@ export interface PptxThemeConfig {
     accent: string;
     background: string;
     text: string;
+    text2?: string;
+    background2?: string;
+    accent4?: string;
+    accent5?: string;
+    accent6?: string;
   };
   fonts: {
     heading: string;
@@ -102,6 +113,33 @@ export interface PptxThemeConfig {
     fontSize: number;
     fontColor: string;
   };
+  grid?: GridConfig;
+}
+
+export interface PlaceholderDefinition {
+  name: string;
+  type: 'title' | 'body' | 'pic' | 'chart' | 'tbl' | 'media';
+  x?: number; y?: number; w?: number; h?: number;
+  grid?: GridPosition;
+  fontSize?: number; fontFace?: string; color?: string;
+  align?: string; valign?: string;
+  margin?: number | number[];
+  text?: string;
+}
+
+export type MasterImageObject = { image: { path?: string; data?: string; x?: number; y?: number; w?: number; h?: number; grid?: GridPosition } };
+export type MasterTextObject = { text: { text: string; x?: number; y?: number; w?: number; h?: number; grid?: GridPosition; fontSize?: number; fontFace?: string; color?: string; bold?: boolean; italic?: boolean; align?: string } };
+export type MasterRectObject = { rect: { x?: number; y?: number; w?: number; h?: number; grid?: GridPosition; fill?: string; line?: { color?: string; width?: number } } };
+export type MasterLineObject = { line: { x?: number; y?: number; w?: number; h?: number; grid?: GridPosition; line?: { color?: string; width?: number } } };
+export type MasterObject = MasterImageObject | MasterTextObject | MasterRectObject | MasterLineObject;
+
+export interface MasterSlideDefinition {
+  name: string;
+  background?: { color?: string; image?: { path?: string; base64?: string } };
+  margin?: number | [number, number, number, number];
+  slideNumber?: { x: number; y: number; w?: number; h?: number; color?: string; fontSize?: number };
+  objects?: MasterObject[];
+  placeholders?: PlaceholderDefinition[];
   grid?: GridConfig;
 }
 

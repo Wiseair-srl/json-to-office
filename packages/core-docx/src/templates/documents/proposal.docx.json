@@ -1,25 +1,23 @@
 {
   "name": "docx",
   "props": {
-    "title": "Cloud Migration Proposal",
+    "metadata": { "title": "Cloud Migration Proposal" },
     "theme": "modern"
   },
   "children": [
     {
       "name": "header",
       "props": {
-        "children": [
-          { "type": "text", "text": "Proposal — Confidential", "alignment": "right" }
-        ]
+        "text": "Proposal — Confidential",
+        "alignment": "right"
       }
     },
     {
       "name": "footer",
       "props": {
-        "children": [
-          { "type": "text", "text": "Apex Consulting", "alignment": "left" },
-          { "type": "pageNumber", "alignment": "right" }
-        ]
+        "text": "Apex Consulting",
+        "alignment": "left",
+        "showPageNumbers": true
       }
     },
     {
@@ -40,15 +38,15 @@
         { "name": "paragraph", "props": { "text": "Meridian's current infrastructure presents several challenges that limit business agility and increase operational risk:" } },
         {
           "name": "columns",
-          "props": { "count": 2, "gap": 0.5 },
+          "props": { "columns": 2, "gap": 0.5 },
           "children": [
             {
               "name": "statistic",
-              "props": { "value": "87%", "label": "Server Utilization", "description": "Critical capacity" }
+              "props": { "number": "87%", "description": "Server Utilization", "trendValue": "Critical capacity" }
             },
             {
               "name": "statistic",
-              "props": { "value": "23 hrs", "label": "Monthly Downtime", "description": "Below SLA target" }
+              "props": { "number": "23 hrs", "description": "Monthly Downtime", "trendValue": "Below SLA target" }
             }
           ]
         },
@@ -56,23 +54,19 @@
         {
           "name": "table",
           "props": {
-            "headers": ["Component", "Current", "Age", "Risk Level"],
-            "rows": [
-              ["Application Servers", "12 physical", "5-7 years", "High"],
-              ["Database Cluster", "3-node Oracle RAC", "6 years", "Critical"],
-              ["Storage", "NetApp SAN, 48TB", "4 years", "Medium"],
-              ["Network", "Cisco catalyst stack", "8 years", "High"],
-              ["Disaster Recovery", "Tape backup, 24hr RPO", "N/A", "Critical"]
-            ],
-            "striped": true,
-            "borders": true
+            "columns": [
+              { "header": { "content": "Component" }, "cells": [{ "content": "Application Servers" }, { "content": "Database Cluster" }, { "content": "Storage" }, { "content": "Network" }, { "content": "Disaster Recovery" }] },
+              { "header": { "content": "Current" }, "cells": [{ "content": "12 physical" }, { "content": "3-node Oracle RAC" }, { "content": "NetApp SAN, 48TB" }, { "content": "Cisco catalyst stack" }, { "content": "Tape backup, 24hr RPO" }] },
+              { "header": { "content": "Age" }, "cells": [{ "content": "5-7 years" }, { "content": "6 years" }, { "content": "4 years" }, { "content": "8 years" }, { "content": "N/A" }] },
+              { "header": { "content": "Risk Level" }, "cells": [{ "content": "High" }, { "content": "Critical" }, { "content": "Medium" }, { "content": "High" }, { "content": "Critical" }] }
+            ]
           }
         },
         { "name": "heading", "props": { "text": "Key Pain Points", "level": 2 } },
         {
           "name": "list",
           "props": {
-            "format": "ordered",
+            "format": "decimal",
             "items": [
               "Hardware refresh cycle requires $2.1M capital investment every 4 years",
               "Scaling requires 6-8 week lead time for hardware procurement",
@@ -105,58 +99,46 @@
         { "name": "heading", "props": { "text": "Investment & ROI", "level": 1 } },
         {
           "name": "columns",
-          "props": { "count": 3 },
+          "props": { "columns": 3 },
           "children": [
-            { "name": "statistic", "props": { "value": "$680K", "label": "Migration Cost", "description": "One-time investment" } },
-            { "name": "statistic", "props": { "value": "$1.2M/yr", "label": "Annual Savings", "description": "vs. current spend" } },
-            { "name": "statistic", "props": { "value": "7 months", "label": "Payback Period", "description": "Full ROI" } }
+            { "name": "statistic", "props": { "number": "$680K", "description": "Migration Cost", "trendValue": "One-time investment" } },
+            { "name": "statistic", "props": { "number": "$1.2M/yr", "description": "Annual Savings", "trendValue": "vs. current spend" } },
+            { "name": "statistic", "props": { "number": "7 months", "description": "Payback Period", "trendValue": "Full ROI" } }
           ]
         },
         { "name": "heading", "props": { "text": "Cost Breakdown", "level": 2 } },
         {
           "name": "table",
           "props": {
-            "headers": ["Phase", "Duration", "Cost", "Description"],
-            "rows": [
-              ["Foundation", "8 weeks", "$180K", "Landing zone, security, CI/CD, dev migration"],
-              ["Core Migration", "12 weeks", "$380K", "Database, application, and storage migration"],
-              ["Optimization", "6 weeks", "$120K", "Right-sizing, monitoring, knowledge transfer"]
-            ],
-            "borders": true,
-            "striped": true
+            "columns": [
+              { "header": { "content": "Phase" }, "cells": [{ "content": "Foundation" }, { "content": "Core Migration" }, { "content": "Optimization" }] },
+              { "header": { "content": "Duration" }, "cells": [{ "content": "8 weeks" }, { "content": "12 weeks" }, { "content": "6 weeks" }] },
+              { "header": { "content": "Cost" }, "cells": [{ "content": "$180K" }, { "content": "$380K" }, { "content": "$120K" }] },
+              { "header": { "content": "Description" }, "cells": [{ "content": "Landing zone, security, CI/CD, dev migration" }, { "content": "Database, application, and storage migration" }, { "content": "Right-sizing, monitoring, knowledge transfer" }] }
+            ]
           }
         },
         { "name": "heading", "props": { "text": "Annual Cost Comparison", "level": 2 } },
         {
           "name": "columns",
-          "props": { "count": 2, "gap": 0.5 },
+          "props": { "columns": 2, "gap": 0.5 },
           "children": [
             {
               "name": "table",
               "props": {
-                "headers": ["Current (On-Premise)", "Annual Cost"],
-                "rows": [
-                  ["Hardware depreciation", "$525K"],
-                  ["Data center lease", "$240K"],
-                  ["Ops staff (3 FTE)", "$420K"],
-                  ["Licensing (Oracle, VMware)", "$310K"],
-                  ["Total", "$1,495K"]
-                ],
-                "borders": true
+                "columns": [
+                  { "header": { "content": "Current (On-Premise)" }, "cells": [{ "content": "Hardware depreciation" }, { "content": "Data center lease" }, { "content": "Ops staff (3 FTE)" }, { "content": "Licensing (Oracle, VMware)" }, { "content": "Total" }] },
+                  { "header": { "content": "Annual Cost" }, "cells": [{ "content": "$525K" }, { "content": "$240K" }, { "content": "$420K" }, { "content": "$310K" }, { "content": "$1,495K" }] }
+                ]
               }
             },
             {
               "name": "table",
               "props": {
-                "headers": ["Proposed (Cloud)", "Annual Cost"],
-                "rows": [
-                  ["AWS compute & storage", "$165K"],
-                  ["Managed services", "$48K"],
-                  ["Ops staff (1 FTE)", "$140K"],
-                  ["Licensing (open source)", "$0"],
-                  ["Total", "$353K"]
-                ],
-                "borders": true
+                "columns": [
+                  { "header": { "content": "Proposed (Cloud)" }, "cells": [{ "content": "AWS compute & storage" }, { "content": "Managed services" }, { "content": "Ops staff (1 FTE)" }, { "content": "Licensing (open source)" }, { "content": "Total" }] },
+                  { "header": { "content": "Annual Cost" }, "cells": [{ "content": "$165K" }, { "content": "$48K" }, { "content": "$140K" }, { "content": "$0" }, { "content": "$353K" }] }
+                ]
               }
             }
           ]
@@ -172,7 +154,7 @@
         {
           "name": "list",
           "props": {
-            "format": "ordered",
+            "format": "decimal",
             "items": [
               "Sign statement of work and NDA",
               "Complete infrastructure audit and dependency mapping (Week 1-2)",

@@ -14,6 +14,7 @@ export interface PptxStandardComponentDefinition {
   name: string;
   propsSchema: TSchema;
   hasChildren: boolean;
+  hasPlaceholders?: boolean;
   category: 'container' | 'content' | 'layout';
   description: string;
   special?: {
@@ -50,6 +51,7 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
     name: 'slide',
     propsSchema: SlidePropsSchema,
     hasChildren: true,
+    hasPlaceholders: true,
     category: 'container',
     description:
       'Slide container - groups content elements on a single slide.',
@@ -160,6 +162,23 @@ export function createPptxComponentSchemaObject(
 
   if (component.hasChildren && recursiveRef) {
     schema.children = Type.Optional(Type.Array(recursiveRef));
+  }
+
+  if (component.hasPlaceholders && recursiveRef) {
+    const baseProperties = (component.propsSchema as any).properties ?? {};
+    schema.props = Type.Object(
+      {
+        ...baseProperties,
+        placeholders: Type.Optional(
+          Type.Record(
+            Type.String(),
+            Type.Array(recursiveRef),
+            { description: 'Content for named placeholders: { "title": [...components] }' }
+          )
+        ),
+      },
+      { additionalProperties: false, description: (component.propsSchema as any).description }
+    );
   }
 
   return Type.Object(schema, { additionalProperties: false });

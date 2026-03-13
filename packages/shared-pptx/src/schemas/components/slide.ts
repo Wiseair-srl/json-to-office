@@ -20,6 +20,11 @@ export const SlidePropsSchema = Type.Object(
     hidden: Type.Optional(
       Type.Boolean({ description: 'Hide this slide from presentation' })
     ),
+    master: Type.Optional(
+      Type.String({ description: 'Master slide name to use as template' })
+    ),
+    // Note: `placeholders` is added dynamically by the component registry
+    // with the recursive component ref, to avoid circular imports.
   },
   {
     description: 'Slide container props',

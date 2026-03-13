@@ -3,6 +3,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { MasterSlideDefinitionSchema } from './master';
 
 export const PresentationPropsSchema = Type.Object(
   {
@@ -38,6 +39,11 @@ export const PresentationPropsSchema = Type.Object(
     ),
     rtlMode: Type.Optional(
       Type.Boolean({ description: 'Right-to-left text direction' })
+    ),
+    masters: Type.Optional(
+      Type.Array(MasterSlideDefinitionSchema, {
+        description: 'Master slide definitions (reusable slide templates)',
+      })
     ),
   },
   {

@@ -3,6 +3,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { ColorValueSchema } from '../theme';
 
 // ============================================================================
 // PPTX-Specific Common Types
@@ -55,11 +56,7 @@ export const PositionSchema = Type.Object(
 
 export const SlideBackgroundSchema = Type.Object(
   {
-    color: Type.Optional(
-      Type.String({
-        description: 'Background color as hex (e.g., "FF0000") or named color',
-      })
-    ),
+    color: Type.Optional(ColorValueSchema),
     image: Type.Optional(
       Type.Object(
         {
@@ -122,7 +119,7 @@ export const ShadowSchema = Type.Object(
         description: 'Shadow type',
       })
     ),
-    color: Type.Optional(Type.String({ description: 'Shadow color (hex)' })),
+    color: Type.Optional(ColorValueSchema),
     blur: Type.Optional(Type.Number({ description: 'Shadow blur radius in points' })),
     offset: Type.Optional(Type.Number({ description: 'Shadow offset in points' })),
     angle: Type.Optional(Type.Number({ description: 'Shadow angle in degrees' })),

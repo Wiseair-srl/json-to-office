@@ -9,19 +9,11 @@ export const createReportPropsSchema = (_moduleRef?: TSchema) =>
   Type.Object(
     {
       theme: Type.Optional(
-        Type.Union([
-          Type.String({
-            description: 'Theme name',
-            examples: ['corporate', 'professional', 'minimal'],
-          }),
-          Type.Object(
-            {},
-            {
-              description: 'Inline theme configuration',
-              additionalProperties: true,
-            }
-          ),
-        ])
+        Type.String({
+          description: 'Theme name to apply (default: "minimal")',
+          examples: ['corporate', 'professional', 'minimal'],
+          default: 'minimal',
+        })
       ),
       metadata: Type.Optional(
         Type.Object(

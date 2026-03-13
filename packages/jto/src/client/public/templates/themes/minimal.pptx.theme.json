@@ -5,7 +5,12 @@
     "secondary": "#6B7280",
     "accent": "#3B82F6",
     "background": "#FFFFFF",
-    "text": "#1F2937"
+    "text": "#1F2937",
+    "text2": "#9CA3AF",
+    "background2": "#F3F4F6",
+    "accent4": "#EF4444",
+    "accent5": "#10B981",
+    "accent6": "#F59E0B"
   },
   "fonts": {
     "heading": "Inter",

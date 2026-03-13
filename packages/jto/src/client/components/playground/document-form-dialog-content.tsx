@@ -276,12 +276,15 @@ function DocumentFormDialogContent({
               null,
               2
             );
-          // Ensure theme files have .theme.json extension
-          if (
-            !finalName.endsWith('.theme.json') &&
-            !finalName.endsWith('.json')
-          ) {
-            finalName += '.theme.json';
+          // Ensure theme files have format-specific .theme.json extension
+          const themeExt = `.${FORMAT}.theme.json`;
+          if (!finalName.endsWith(themeExt)) {
+            // Strip partial extensions before appending the correct one
+            finalName = finalName
+              .replace(/\.(pptx|docx)\.theme\.json$/i, '')
+              .replace(/\.theme\.json$/i, '')
+              .replace(/\.json$/i, '');
+            finalName += themeExt;
           }
         } else {
           // Use discovered document content or create default

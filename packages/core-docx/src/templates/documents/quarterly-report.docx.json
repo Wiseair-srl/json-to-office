@@ -1,13 +1,13 @@
 {
   "name": "docx",
   "props": {
-    "title": "Q4 2024 Quarterly Report",
+    "metadata": { "title": "Q4 2024 Quarterly Report" },
     "theme": "corporate"
   },
   "children": [
     {
       "name": "toc",
-      "props": { "minLevel": 1, "maxLevel": 3 }
+      "props": { "depth": { "from": 1, "to": 3 } }
     },
     {
       "name": "section",
@@ -17,11 +17,11 @@
         { "name": "paragraph", "props": { "text": "This report summarizes operational and financial performance for Q4 2024. The quarter marked significant growth across all business lines, with total revenue exceeding targets by 12%." } },
         {
           "name": "columns",
-          "props": { "count": 3, "gap": 0.4 },
+          "props": { "columns": 3, "gap": 0.4 },
           "children": [
-            { "name": "statistic", "props": { "value": "$48.2M", "label": "Revenue", "description": "+18% YoY" } },
-            { "name": "statistic", "props": { "value": "1,247", "label": "New Customers", "description": "+32% vs Q3" } },
-            { "name": "statistic", "props": { "value": "94.3%", "label": "Retention Rate", "description": "Industry best" } }
+            { "name": "statistic", "props": { "number": "$48.2M", "description": "Revenue", "trendValue": "+18% YoY" } },
+            { "name": "statistic", "props": { "number": "1,247", "description": "New Customers", "trendValue": "+32% vs Q3" } },
+            { "name": "statistic", "props": { "number": "94.3%", "description": "Retention Rate", "trendValue": "Industry best" } }
           ]
         }
       ]
@@ -36,15 +36,13 @@
         {
           "name": "table",
           "props": {
-            "headers": ["Segment", "Q4 Revenue", "Q3 Revenue", "Change", "% of Total"],
-            "rows": [
-              ["Enterprise", "$28.5M", "$24.1M", "+18.3%", "59%"],
-              ["Mid-Market", "$12.8M", "$11.2M", "+14.3%", "27%"],
-              ["SMB", "$4.6M", "$4.0M", "+15.0%", "10%"],
-              ["Services", "$2.3M", "$1.8M", "+27.8%", "4%"]
-            ],
-            "striped": true,
-            "borders": true
+            "columns": [
+              { "header": { "content": "Segment" }, "cells": [{ "content": "Enterprise" }, { "content": "Mid-Market" }, { "content": "SMB" }, { "content": "Services" }] },
+              { "header": { "content": "Q4 Revenue" }, "cells": [{ "content": "$28.5M" }, { "content": "$12.8M" }, { "content": "$4.6M" }, { "content": "$2.3M" }] },
+              { "header": { "content": "Q3 Revenue" }, "cells": [{ "content": "$24.1M" }, { "content": "$11.2M" }, { "content": "$4.0M" }, { "content": "$1.8M" }] },
+              { "header": { "content": "Change" }, "cells": [{ "content": "+18.3%" }, { "content": "+14.3%" }, { "content": "+15.0%" }, { "content": "+27.8%" }] },
+              { "header": { "content": "% of Total" }, "cells": [{ "content": "59%" }, { "content": "27%" }, { "content": "10%" }, { "content": "4%" }] }
+            ]
           }
         },
         { "name": "heading", "props": { "text": "Cost Structure", "level": 2 } },
@@ -72,7 +70,7 @@
         {
           "name": "list",
           "props": {
-            "format": "ordered",
+            "format": "decimal",
             "items": [
               "Real-time collaboration engine (v2.0) — 3x faster sync, offline support",
               "Advanced analytics dashboard — custom reports, scheduled exports",
@@ -85,19 +83,15 @@
         { "name": "heading", "props": { "text": "Infrastructure Metrics", "level": 2 } },
         {
           "name": "columns",
-          "props": { "count": 2 },
+          "props": { "columns": 2 },
           "children": [
             {
               "name": "table",
               "props": {
-                "headers": ["Metric", "Value"],
-                "rows": [
-                  ["Uptime", "99.97%"],
-                  ["Avg Response Time", "42ms"],
-                  ["Deploys/Week", "18"],
-                  ["Incidents (P1/P2)", "2"]
-                ],
-                "borders": true
+                "columns": [
+                  { "header": { "content": "Metric" }, "cells": [{ "content": "Uptime" }, { "content": "Avg Response Time" }, { "content": "Deploys/Week" }, { "content": "Incidents (P1/P2)" }] },
+                  { "header": { "content": "Value" }, "cells": [{ "content": "99.97%" }, { "content": "42ms" }, { "content": "18" }, { "content": "2" }] }
+                ]
               }
             },
             { "name": "paragraph", "props": { "text": "Infrastructure costs decreased 15% through migration to spot instances and improved auto-scaling policies. The platform handled a peak of 2.4M concurrent connections during the November product launch event without degradation." } }

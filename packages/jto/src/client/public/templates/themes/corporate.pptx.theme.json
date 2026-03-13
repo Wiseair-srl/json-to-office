@@ -5,7 +5,12 @@
     "secondary": "#2D3748",
     "accent": "#3182CE",
     "background": "#F7FAFC",
-    "text": "#1A202C"
+    "text": "#1A202C",
+    "text2": "#4A5568",
+    "background2": "#EDF2F7",
+    "accent4": "#E53E3E",
+    "accent5": "#38A169",
+    "accent6": "#D69E2E"
   },
   "fonts": {
     "heading": "Arial",

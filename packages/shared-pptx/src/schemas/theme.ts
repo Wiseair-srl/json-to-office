@@ -50,6 +50,22 @@ export type GridConfig = Static<typeof GridConfigSchema>;
 
 const HexColorSchema = Type.String({ pattern: '^#?[0-9A-Fa-f]{6}$', description: 'Hex color (e.g. #FF0000)' });
 
+export const SEMANTIC_COLOR_NAMES = [
+  'primary', 'secondary', 'accent', 'background', 'text',
+  'text2', 'background2', 'accent4', 'accent5', 'accent6',
+] as const;
+
+/** PowerPoint XML aliases that resolve to canonical semantic names at runtime */
+export const SEMANTIC_COLOR_ALIASES = [
+  'accent1', 'accent2', 'accent3', 'tx1', 'tx2', 'bg1', 'bg2',
+] as const;
+
+export const ColorValueSchema = Type.Union([
+  HexColorSchema,
+  ...SEMANTIC_COLOR_NAMES.map(n => Type.Literal(n)),
+  ...SEMANTIC_COLOR_ALIASES.map(n => Type.Literal(n)),
+], { description: 'Hex color or semantic theme color name' });
+
 export const ThemeConfigSchema = Type.Object(
   {
     name: Type.String({ description: 'Theme name' }),
@@ -60,8 +76,13 @@ export const ThemeConfigSchema = Type.Object(
         accent: HexColorSchema,
         background: HexColorSchema,
         text: HexColorSchema,
+        text2: Type.Optional(HexColorSchema),
+        background2: Type.Optional(HexColorSchema),
+        accent4: Type.Optional(HexColorSchema),
+        accent5: Type.Optional(HexColorSchema),
+        accent6: Type.Optional(HexColorSchema),
       },
-      { additionalProperties: false, description: 'Theme color palette' }
+      { additionalProperties: false, description: 'Theme color palette (10-slot scheme)' }
     ),
     fonts: Type.Object(
       {

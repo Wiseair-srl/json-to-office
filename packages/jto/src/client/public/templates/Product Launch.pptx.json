@@ -9,13 +9,13 @@
   "children": [
     {
       "name": "slide",
-      "props": { "background": { "color": "0F172A" }, "transition": { "type": "zoom", "speed": "medium" } },
+      "props": { "background": { "color": "background" }, "transition": { "type": "zoom", "speed": "medium" } },
       "children": [
-        { "name": "shape", "props": { "type": "ellipse", "x": 7.5, "y": -0.5, "w": 4, "h": 4, "fill": { "color": "7C3AED", "transparency": 50 } } },
-        { "name": "shape", "props": { "type": "ellipse", "x": -1, "y": 4, "w": 5, "h": 5, "fill": { "color": "2563EB", "transparency": 60 } } },
-        { "name": "text", "props": { "text": "Introducing", "fontSize": 16, "color": "94A3B8", "x": 1, "y": 1.5, "w": 8 } },
-        { "name": "text", "props": { "text": "Nova Platform", "fontSize": 48, "bold": true, "color": "FFFFFF", "x": 1, "y": 2.2, "w": 8 } },
-        { "name": "text", "props": { "text": "The next generation of enterprise collaboration", "fontSize": 18, "color": "CBD5E1", "x": 1, "y": 4, "w": 8 } }
+        { "name": "shape", "props": { "type": "ellipse", "x": 7.5, "y": -0.5, "w": 4, "h": 4, "fill": { "color": "primary", "transparency": 50 } } },
+        { "name": "shape", "props": { "type": "ellipse", "x": -1, "y": 4, "w": 5, "h": 5, "fill": { "color": "secondary", "transparency": 60 } } },
+        { "name": "text", "props": { "text": "Introducing", "fontSize": 16, "color": "text2", "x": 1, "y": 1.5, "w": 8 } },
+        { "name": "text", "props": { "text": "Nova Platform", "fontSize": 48, "bold": true, "color": "text", "x": 1, "y": 2.2, "w": 8 } },
+        { "name": "text", "props": { "text": "The next generation of enterprise collaboration", "fontSize": 18, "color": "text2", "x": 1, "y": 4, "w": 8 } }
       ]
     },
     {
@@ -23,12 +23,12 @@
       "props": { "notes": "Walk through each pain point — these came directly from customer interviews." },
       "children": [
         { "name": "text", "props": { "text": "The Problem", "fontSize": 32, "bold": true, "color": "0F172A", "x": 0.5, "y": 0.3, "w": 9 } },
-        { "name": "text", "props": { "text": "Teams lose 4.5 hours per week switching between disconnected tools", "fontSize": 16, "color": "475569", "x": 0.5, "y": 1.2, "w": 9, "lineSpacing": 24 } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 0.5, "y": 2.2, "w": 2.8, "h": 2.5, "fill": { "color": "FEF2F2" }, "rectRadius": 0.15, "text": "73%\nof teams use 5+\ndisconnected tools", "fontSize": 13, "fontColor": "991B1B", "align": "center", "valign": "middle" } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 3.6, "y": 2.2, "w": 2.8, "h": 2.5, "fill": { "color": "FFF7ED" }, "rectRadius": 0.15, "text": "4.5 hrs/week\nlost to context\nswitching", "fontSize": 13, "fontColor": "9A3412", "align": "center", "valign": "middle" } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 6.7, "y": 2.2, "w": 2.8, "h": 2.5, "fill": { "color": "FFFBEB" }, "rectRadius": 0.15, "text": "$12K/yr\nper employee in\nlost productivity", "fontSize": 13, "fontColor": "92400E", "align": "center", "valign": "middle" } },
+        { "name": "text", "props": { "text": "Teams lose 4.5 hours per week switching between disconnected tools", "fontSize": 16, "color": "secondary", "x": 0.5, "y": 1.2, "w": 9, "lineSpacing": 24 } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 0.5, "y": 2.2, "w": 2.8, "h": 2.5, "fill": { "color": "FEF2F2" }, "rectRadius": 0.15, "text": "73%\nof teams use 5+\ndisconnected tools", "fontSize": 13, "fontColor": "accent4", "align": "center", "valign": "middle" } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 3.6, "y": 2.2, "w": 2.8, "h": 2.5, "fill": { "color": "FFF7ED" }, "rectRadius": 0.15, "text": "4.5 hrs/week\nlost to context\nswitching", "fontSize": 13, "fontColor": "accent4", "align": "center", "valign": "middle" } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 6.7, "y": 2.2, "w": 2.8, "h": 2.5, "fill": { "color": "FFFBEB" }, "rectRadius": 0.15, "text": "$12K/yr\nper employee in\nlost productivity", "fontSize": 13, "fontColor": "accent4", "align": "center", "valign": "middle" } },
         { "name": "shape", "props": { "type": "line", "x": 0.5, "y": 5.2, "w": 9, "h": 0, "line": { "color": "E2E8F0", "width": 0.5 } } },
-        { "name": "text", "props": { "text": "Source: Forrester Research 2024, internal customer surveys (n=2,400)", "fontSize": 10, "italic": true, "color": "94A3B8", "x": 0.5, "y": 5.5, "w": 9 } }
+        { "name": "text", "props": { "text": "Source: Forrester Research 2024, internal customer surveys (n=2,400)", "fontSize": 10, "italic": true, "color": "text2", "x": 0.5, "y": 5.5, "w": 9 } }
       ]
     },
     {
@@ -40,7 +40,7 @@
           "name": "table",
           "props": {
             "rows": [
-              [{ "text": "Feature", "bold": true, "fill": "7C3AED", "color": "FFFFFF" }, { "text": "Description", "bold": true, "fill": "7C3AED", "color": "FFFFFF" }, { "text": "Impact", "bold": true, "fill": "7C3AED", "color": "FFFFFF" }],
+              [{ "text": "Feature", "bold": true, "fill": "primary", "color": "FFFFFF" }, { "text": "Description", "bold": true, "fill": "primary", "color": "FFFFFF" }, { "text": "Impact", "bold": true, "fill": "primary", "color": "FFFFFF" }],
               ["Unified Workspace", "Single pane of glass for all tools", "60% fewer app switches"],
               ["AI Assistant", "Context-aware suggestions and automation", "3x faster workflows"],
               ["Real-time Sync", "Sub-second cross-device synchronization", "Zero data conflicts"],
@@ -60,13 +60,13 @@
       "props": {},
       "children": [
         { "name": "text", "props": { "text": "Rollout Timeline", "fontSize": 32, "bold": true, "color": "0F172A", "x": 0.5, "y": 0.3, "w": 9 } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 0.3, "y": 1.5, "w": 2.2, "h": 1.8, "fill": { "color": "EDE9FE" }, "rectRadius": 0.1, "text": "Q1 2025\nBeta Launch\n100 users", "fontSize": 12, "fontColor": "5B21B6", "align": "center", "valign": "middle" } },
-        { "name": "shape", "props": { "type": "chevron", "x": 2.5, "y": 2, "w": 0.5, "h": 0.8, "fill": { "color": "7C3AED" } } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 3, "y": 1.5, "w": 2.2, "h": 1.8, "fill": { "color": "DBEAFE" }, "rectRadius": 0.1, "text": "Q2 2025\nGA Release\n1,000 users", "fontSize": 12, "fontColor": "1E40AF", "align": "center", "valign": "middle" } },
-        { "name": "shape", "props": { "type": "chevron", "x": 5.2, "y": 2, "w": 0.5, "h": 0.8, "fill": { "color": "2563EB" } } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 5.7, "y": 1.5, "w": 2.2, "h": 1.8, "fill": { "color": "D1FAE5" }, "rectRadius": 0.1, "text": "Q3 2025\nEnterprise\n10,000 users", "fontSize": 12, "fontColor": "065F46", "align": "center", "valign": "middle" } },
-        { "name": "shape", "props": { "type": "chevron", "x": 7.9, "y": 2, "w": 0.5, "h": 0.8, "fill": { "color": "059669" } } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 8.4, "y": 1.5, "w": 2.2, "h": 1.8, "fill": { "color": "FEF3C7" }, "rectRadius": 0.1, "text": "Q4 2025\nFull Scale\n50,000+ users", "fontSize": 12, "fontColor": "92400E", "align": "center", "valign": "middle" } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 0.3, "y": 1.5, "w": 2.2, "h": 1.8, "fill": { "color": "EDE9FE" }, "rectRadius": 0.1, "text": "Q1 2025\nBeta Launch\n100 users", "fontSize": 12, "fontColor": "primary", "align": "center", "valign": "middle" } },
+        { "name": "shape", "props": { "type": "chevron", "x": 2.5, "y": 2, "w": 0.5, "h": 0.8, "fill": { "color": "primary" } } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 3, "y": 1.5, "w": 2.2, "h": 1.8, "fill": { "color": "DBEAFE" }, "rectRadius": 0.1, "text": "Q2 2025\nGA Release\n1,000 users", "fontSize": 12, "fontColor": "secondary", "align": "center", "valign": "middle" } },
+        { "name": "shape", "props": { "type": "chevron", "x": 5.2, "y": 2, "w": 0.5, "h": 0.8, "fill": { "color": "secondary" } } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 5.7, "y": 1.5, "w": 2.2, "h": 1.8, "fill": { "color": "D1FAE5" }, "rectRadius": 0.1, "text": "Q3 2025\nEnterprise\n10,000 users", "fontSize": 12, "fontColor": "accent", "align": "center", "valign": "middle" } },
+        { "name": "shape", "props": { "type": "chevron", "x": 7.9, "y": 2, "w": 0.5, "h": 0.8, "fill": { "color": "accent" } } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 8.4, "y": 1.5, "w": 2.2, "h": 1.8, "fill": { "color": "FEF3C7" }, "rectRadius": 0.1, "text": "Q4 2025\nFull Scale\n50,000+ users", "fontSize": 12, "fontColor": "accent4", "align": "center", "valign": "middle" } },
         {
           "name": "highcharts",
           "props": {

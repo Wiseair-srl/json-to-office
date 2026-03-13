@@ -8,8 +8,10 @@ import type {
   PresentationComponentDefinition,
   ProcessedPresentation,
   ProcessedSlide,
+  MasterSlideDefinition,
 } from '../types';
 import { isSlideComponent } from '../types';
+import { resolveGridPosition, mergeGridConfigs } from './grid';
 import { getPptxTheme } from '../themes';
 import type { GenerationOptions } from './generator';
 
@@ -21,6 +23,31 @@ export function processPresentation(
 
   const themeName = props.theme ?? 'default';
   const theme = options?.customThemes?.[themeName] ?? getPptxTheme(themeName);
+  const slideWidth = props.slideWidth ?? 10;
+  const slideHeight = props.slideHeight ?? 7.5;
+
+  // Process master slide definitions
+  let masters: MasterSlideDefinition[] | undefined;
+  if (props.masters && props.masters.length > 0) {
+    masters = props.masters.map((m: MasterSlideDefinition) => {
+      if (!m.placeholders) return m;
+      // Resolve grid positions on placeholders using master's grid (merged with theme)
+      const effectiveGrid = mergeGridConfigs(theme.grid, m.grid);
+      const resolvedPhs = m.placeholders.map(ph => {
+        if (!ph.grid) return ph;
+        const abs = resolveGridPosition(ph.grid, effectiveGrid, slideWidth, slideHeight);
+        return {
+          ...ph,
+          x: ph.x ?? abs.x,
+          y: ph.y ?? abs.y,
+          w: ph.w ?? abs.w,
+          h: ph.h ?? abs.h,
+          grid: undefined,
+        };
+      });
+      return { ...m, placeholders: resolvedPhs };
+    });
+  }
 
   const slides: ProcessedSlide[] = [];
 
@@ -39,6 +66,8 @@ export function processPresentation(
         notes: child.props.notes,
         layout: child.props.layout,
         hidden: child.props.hidden,
+        master: child.props.master,
+        placeholders: child.props.placeholders as Record<string, any> | undefined,
       });
     }
   }
@@ -51,9 +80,10 @@ export function processPresentation(
       company: props.company,
     },
     theme,
-    slideWidth: props.slideWidth ?? 10,
-    slideHeight: props.slideHeight ?? 7.5,
+    slideWidth,
+    slideHeight,
     rtlMode: props.rtlMode ?? false,
     slides,
+    masters,
   };
 }

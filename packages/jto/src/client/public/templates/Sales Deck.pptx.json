@@ -9,26 +9,26 @@
   "children": [
     {
       "name": "slide",
-      "props": { "background": { "color": "1a365d" }, "transition": { "type": "fade" } },
+      "props": { "background": { "color": "primary" }, "transition": { "type": "fade" } },
       "children": [
         { "name": "text", "props": { "text": "Q4 Sales Review", "fontSize": 40, "bold": true, "color": "FFFFFF", "align": "center", "valign": "middle", "x": 1, "y": 2, "w": 8, "h": 1.5 } },
-        { "name": "text", "props": { "text": "Closing the year strong", "fontSize": 20, "color": "A0C4FF", "align": "center", "x": 1, "y": 3.8, "w": 8 } },
-        { "name": "shape", "props": { "type": "line", "x": 3, "y": 3.5, "w": 4, "h": 0, "line": { "color": "A0C4FF", "width": 1 } } }
+        { "name": "text", "props": { "text": "Closing the year strong", "fontSize": 20, "color": "accent", "align": "center", "x": 1, "y": 3.8, "w": 8 } },
+        { "name": "shape", "props": { "type": "line", "x": 3, "y": 3.5, "w": 4, "h": 0, "line": { "color": "accent", "width": 1 } } }
       ]
     },
     {
       "name": "slide",
       "props": { "notes": "Emphasize the 24% growth — largest in company history." },
       "children": [
-        { "name": "text", "props": { "text": "Key Metrics", "fontSize": 28, "bold": true, "color": "1a365d", "x": 0.5, "y": 0.3, "w": 9 } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 0.5, "y": 1.2, "w": 2.8, "h": 1.6, "fill": { "color": "EBF5FF" }, "rectRadius": 0.15, "text": "$12.4M\nRevenue", "fontSize": 18, "bold": true, "fontColor": "1a365d", "align": "center", "valign": "middle" } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 3.6, "y": 1.2, "w": 2.8, "h": 1.6, "fill": { "color": "F0FFF4" }, "rectRadius": 0.15, "text": "+24%\nGrowth", "fontSize": 18, "bold": true, "fontColor": "276749", "align": "center", "valign": "middle" } },
-        { "name": "shape", "props": { "type": "roundRect", "x": 6.7, "y": 1.2, "w": 2.8, "h": 1.6, "fill": { "color": "FFF5F5" }, "rectRadius": 0.15, "text": "847\nDeals Closed", "fontSize": 18, "bold": true, "fontColor": "9B2C2C", "align": "center", "valign": "middle" } },
+        { "name": "text", "props": { "text": "Key Metrics", "fontSize": 28, "bold": true, "color": "primary", "x": 0.5, "y": 0.3, "w": 9 } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 0.5, "y": 1.2, "w": 2.8, "h": 1.6, "fill": { "color": "background2" }, "rectRadius": 0.15, "text": "$12.4M\nRevenue", "fontSize": 18, "bold": true, "fontColor": "primary", "align": "center", "valign": "middle" } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 3.6, "y": 1.2, "w": 2.8, "h": 1.6, "fill": { "color": "F0FFF4" }, "rectRadius": 0.15, "text": "+24%\nGrowth", "fontSize": 18, "bold": true, "fontColor": "accent5", "align": "center", "valign": "middle" } },
+        { "name": "shape", "props": { "type": "roundRect", "x": 6.7, "y": 1.2, "w": 2.8, "h": 1.6, "fill": { "color": "FFF5F5" }, "rectRadius": 0.15, "text": "847\nDeals Closed", "fontSize": 18, "bold": true, "fontColor": "accent4", "align": "center", "valign": "middle" } },
         {
           "name": "table",
           "props": {
             "rows": [
-              [{ "text": "Region", "bold": true, "fill": "1a365d", "color": "FFFFFF" }, { "text": "Revenue", "bold": true, "fill": "1a365d", "color": "FFFFFF" }, { "text": "YoY Growth", "bold": true, "fill": "1a365d", "color": "FFFFFF" }, { "text": "Deals", "bold": true, "fill": "1a365d", "color": "FFFFFF" }],
+              [{ "text": "Region", "bold": true, "fill": "primary", "color": "FFFFFF" }, { "text": "Revenue", "bold": true, "fill": "primary", "color": "FFFFFF" }, { "text": "YoY Growth", "bold": true, "fill": "primary", "color": "FFFFFF" }, { "text": "Deals", "bold": true, "fill": "primary", "color": "FFFFFF" }],
               ["North America", "$5.2M", "+18%", "342"],
               ["Europe", "$3.8M", "+31%", "285"],
               ["Asia-Pacific", "$2.1M", "+42%", "148"],
@@ -44,7 +44,7 @@
       "name": "slide",
       "props": {},
       "children": [
-        { "name": "text", "props": { "text": "Top Products by Revenue", "fontSize": 28, "bold": true, "color": "1a365d", "x": 0.5, "y": 0.3, "w": 9 } },
+        { "name": "text", "props": { "text": "Top Products by Revenue", "fontSize": 28, "bold": true, "color": "primary", "x": 0.5, "y": 0.3, "w": 9 } },
         {
           "name": "highcharts",
           "props": {
@@ -66,13 +66,13 @@
     },
     {
       "name": "slide",
-      "props": { "background": { "color": "1a365d" } },
+      "props": { "background": { "color": "primary" } },
       "children": [
         { "name": "text", "props": { "text": "2025 Targets", "fontSize": 32, "bold": true, "color": "FFFFFF", "align": "center", "x": 1, "y": 0.5, "w": 8 } },
-        { "name": "text", "props": { "text": "$16M revenue target (+29%)", "fontSize": 20, "color": "A0C4FF", "bullet": true, "x": 2, "y": 2, "w": 6 } },
-        { "name": "text", "props": { "text": "Expand APAC team to 25 reps", "fontSize": 20, "color": "A0C4FF", "bullet": true, "x": 2, "y": 2.8, "w": 6 } },
-        { "name": "text", "props": { "text": "Launch partner channel program", "fontSize": 20, "color": "A0C4FF", "bullet": true, "x": 2, "y": 3.6, "w": 6 } },
-        { "name": "text", "props": { "text": "Reduce sales cycle from 47 to 35 days", "fontSize": 20, "color": "A0C4FF", "bullet": true, "x": 2, "y": 4.4, "w": 6 } }
+        { "name": "text", "props": { "text": "$16M revenue target (+29%)", "fontSize": 20, "color": "accent", "bullet": true, "x": 2, "y": 2, "w": 6 } },
+        { "name": "text", "props": { "text": "Expand APAC team to 25 reps", "fontSize": 20, "color": "accent", "bullet": true, "x": 2, "y": 2.8, "w": 6 } },
+        { "name": "text", "props": { "text": "Launch partner channel program", "fontSize": 20, "color": "accent", "bullet": true, "x": 2, "y": 3.6, "w": 6 } },
+        { "name": "text", "props": { "text": "Reduce sales cycle from 47 to 35 days", "fontSize": 20, "color": "accent", "bullet": true, "x": 2, "y": 4.4, "w": 6 } }
       ]
     }
   ]

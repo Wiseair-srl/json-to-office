@@ -29,6 +29,50 @@ function resolveGutter(gutter: GridConfig['gutter']) {
   return gutter;
 }
 
+/**
+ * Merge a master-level grid override on top of the theme grid.
+ * Master fields take precedence; nested margin/gutter objects are shallow-merged.
+ * Both sides are normalized to object form before merging so that a shorthand
+ * base (e.g. margin: 0.5) combined with a partial override (e.g. { top: 1.1 })
+ * doesn't lose the other sides.
+ */
+export function mergeGridConfigs(
+  base: GridConfig | undefined,
+  override: GridConfig | undefined
+): GridConfig | undefined {
+  if (!override) return base;
+  if (!base) return override;
+
+  const merged: GridConfig = {
+    columns: override.columns ?? base.columns,
+    rows: override.rows ?? base.rows,
+  };
+
+  // Merge margin — normalize both to object form first
+  if (override.margin !== undefined) {
+    if (typeof override.margin === 'number') {
+      merged.margin = override.margin;
+    } else {
+      merged.margin = { ...resolveMargin(base.margin), ...override.margin };
+    }
+  } else {
+    merged.margin = base.margin;
+  }
+
+  // Merge gutter — same normalization
+  if (override.gutter !== undefined) {
+    if (typeof override.gutter === 'number') {
+      merged.gutter = override.gutter;
+    } else {
+      merged.gutter = { ...resolveGutter(base.gutter), ...override.gutter };
+    }
+  } else {
+    merged.gutter = base.gutter;
+  }
+
+  return merged;
+}
+
 export function resolveGridPosition(
   gridPos: GridPosition,
   gridConfig: GridConfig | undefined,
