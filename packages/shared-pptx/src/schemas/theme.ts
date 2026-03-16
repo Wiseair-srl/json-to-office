@@ -130,7 +130,6 @@ export const ThemeConfigSchema = Type.Object(
       },
       { additionalProperties: false, description: 'Default text styling' }
     ),
-    grid: Type.Optional(GridConfigSchema),
     styles: Type.Optional(Type.Partial(
       Type.Object(Object.fromEntries(
         STYLE_NAMES.map(n => [n, TextStyleSchema])

@@ -31,8 +31,8 @@ export function processPresentation(
   if (props.masters && props.masters.length > 0) {
     masters = props.masters.map((m: MasterSlideDefinition) => {
       if (!m.placeholders) return m;
-      // Resolve grid positions on placeholders using master's grid (merged with theme)
-      const effectiveGrid = mergeGridConfigs(theme.grid, m.grid);
+      // Resolve grid positions on placeholders using master's grid (merged with presentation)
+      const effectiveGrid = mergeGridConfigs(props.grid, m.grid);
       const resolvedPhs = m.placeholders.map(ph => {
         if (!ph.grid) return ph;
         const abs = resolveGridPosition(ph.grid, effectiveGrid, slideWidth, slideHeight);
@@ -80,6 +80,7 @@ export function processPresentation(
       company: props.company,
     },
     theme,
+    grid: props.grid,
     slideWidth,
     slideHeight,
     rtlMode: props.rtlMode ?? false,

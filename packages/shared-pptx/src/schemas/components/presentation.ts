@@ -4,6 +4,7 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { MasterSlideDefinitionSchema } from './master';
+import { GridConfigSchema } from '../theme';
 
 export const PresentationPropsSchema = Type.Object(
   {
@@ -40,6 +41,7 @@ export const PresentationPropsSchema = Type.Object(
     rtlMode: Type.Optional(
       Type.Boolean({ description: 'Right-to-left text direction' })
     ),
+    grid: Type.Optional(GridConfigSchema),
     masters: Type.Optional(
       Type.Array(MasterSlideDefinitionSchema, {
         description: 'Master slide definitions (reusable slide templates)',

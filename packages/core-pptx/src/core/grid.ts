@@ -30,7 +30,7 @@ function resolveGutter(gutter: GridConfig['gutter']) {
 }
 
 /**
- * Merge a master-level grid override on top of the theme grid.
+ * Merge a master-level grid override on top of the presentation grid.
  * Master fields take precedence; nested margin/gutter objects are shallow-merged.
  * Both sides are normalized to object form before merging so that a shorthand
  * base (e.g. margin: 0.5) combined with a partial override (e.g. { top: 1.1 })

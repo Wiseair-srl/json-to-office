@@ -4,6 +4,7 @@ Produce a full PPTX JSON wrapped in a ```json code block:
 
 - Define 2–3 master slides (TITLE_MASTER, CONTENT_MASTER, and optionally TWO_COLUMN_MASTER)
 - Masters should include header bars, footer bars, and branding text as `objects`
+- The presentation MUST include a `"grid"` prop on `pptx.props` (e.g. `"grid": { "columns": 12, "rows": 6, "margin": 0.5, "gutter": 0.2 }`)
 - Masters with header/footer bars MUST set `"grid": { "margin": { "top": <header-height + 0.2> } }` so row 0 starts below the header
 - Generate 5–8 slides that reference these masters and fill their placeholders
 - Mix component types: text, shapes, tables where appropriate

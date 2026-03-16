@@ -20,7 +20,7 @@ Each master has:
 - `objects[]` — fixed decorations (rects, text, lines) that appear on every slide using this master
 - `placeholders[]` — named content regions that slides fill with components
 - `slideNumber` — optional, position and style of auto slide numbers
-- `grid` — optional grid override, merged with the theme grid. Use this to shift the content area below header bars. Example: `"grid": { "margin": { "top": 1.1 } }` pushes row 0 below a 0.9" header.
+- `grid` — optional grid override, merged with the presentation grid. Use this to shift the content area below header bars. Example: `"grid": { "margin": { "top": 1.1 } }` pushes row 0 below a 0.9" header.
 
 ### Object types in `objects[]`
 
@@ -52,6 +52,18 @@ Each master has:
 
 ## Grid Positioning (preferred)
 
+Grid is a **presentation-level** prop (on `pptx.props`), not a theme-level setting:
+
+```json
+{
+  "name": "pptx",
+  "props": {
+    "theme": "corporate",
+    "grid": { "columns": 12, "rows": 6, "margin": { "top": 0.75, "right": 0.6, "bottom": 0.5, "left": 0.6 }, "gutter": { "column": 0.2, "row": 0.15 } }
+  }
+}
+```
+
 Use the 12-column × 6-row grid instead of absolute x/y/w/h:
 
 ```json
@@ -59,7 +71,7 @@ Use the 12-column × 6-row grid instead of absolute x/y/w/h:
 ```
 
 - Columns: 0–11, Rows: 0–5
-- Grid respects theme margins (default 0.5") and gutters (default 0.2")
+- Grid respects presentation-level margins (default 0.5") and gutters (default 0.2")
 - Use `columnSpan`/`rowSpan` to size elements
 - Explicit `x`/`y`/`w`/`h` override grid when both are present
 

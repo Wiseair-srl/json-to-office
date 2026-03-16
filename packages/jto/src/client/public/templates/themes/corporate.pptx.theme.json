@@ -20,12 +20,6 @@
     "fontSize": 14,
     "fontColor": "#1A202C"
   },
-  "grid": {
-    "columns": 12,
-    "rows": 6,
-    "margin": { "top": 0.75, "right": 0.6, "bottom": 0.5, "left": 0.6 },
-    "gutter": { "column": 0.2, "row": 0.15 }
-  },
   "styles": {
     "title": { "fontSize": 44, "bold": true, "fontColor": "text", "align": "center" },
     "subtitle": { "fontSize": 20, "italic": true, "fontColor": "text2", "align": "center" },

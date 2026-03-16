@@ -23,6 +23,7 @@ export interface PresentationComponentDefinition {
     slideWidth?: number;
     slideHeight?: number;
     rtlMode?: boolean;
+    grid?: GridConfig;
     masters?: MasterSlideDefinition[];
   };
   children?: PptxComponentInput[];
@@ -57,6 +58,7 @@ export interface ProcessedPresentation {
     company?: string;
   };
   theme: PptxThemeConfig;
+  grid?: GridConfig;
   slideWidth: number;
   slideHeight: number;
   rtlMode: boolean;
@@ -127,7 +129,6 @@ export interface PptxThemeConfig {
     fontSize: number;
     fontColor: string;
   };
-  grid?: GridConfig;
   styles?: Partial<Record<StyleName, TextStyle>>;
 }
 

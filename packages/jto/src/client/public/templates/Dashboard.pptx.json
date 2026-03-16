@@ -3,7 +3,8 @@
   "props": {
     "title": "Operations Dashboard",
     "author": "Analytics Team",
-    "theme": "corporate"
+    "theme": "corporate",
+    "grid": { "columns": 12, "rows": 6, "margin": { "top": 0.75, "right": 0.6, "bottom": 0.5, "left": 0.6 }, "gutter": { "column": 0.2, "row": 0.15 } }
   },
   "children": [
     {

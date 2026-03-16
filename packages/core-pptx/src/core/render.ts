@@ -45,7 +45,7 @@ export async function renderPresentation(
   if (processed.masters) {
     for (const masterDef of processed.masters) {
       const masterProps = buildSlideMasterProps(
-        masterDef, processed.theme, processed.theme.grid,
+        masterDef, processed.theme, processed.grid,
         processed.slideWidth, processed.slideHeight
       );
       pptx.defineSlideMaster(masterProps as any);
@@ -76,9 +76,9 @@ export async function renderPresentation(
       slide.hidden = true;
     }
 
-    // Determine effective grid for this slide (master grid merged with theme grid)
+    // Determine effective grid for this slide (master grid merged with presentation grid)
     const masterDef = slideData.master ? masterMap.get(slideData.master) : undefined;
-    const effectiveGrid = mergeGridConfigs(processed.theme.grid, masterDef?.grid);
+    const effectiveGrid = mergeGridConfigs(processed.grid, masterDef?.grid);
 
     // Render components (resolve grid positions first)
     for (const component of slideData.components) {
