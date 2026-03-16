@@ -361,7 +361,7 @@ function PreviewHeader({
                   className="gap-1.5 h-7 px-2.5"
                   onClick={onManualRender}
                   aria-label="Render preview"
-                  disabled={isGenerating || isRendering}
+                  disabled={isGenerating || isRendering || previewOpen === false}
                 >
                   {isRendering ? <Spinner size="sm" /> : <PlayIcon className="h-3.5 w-3.5" />}
                   <span className="text-xs font-medium hidden sm:inline">Run</span>
@@ -369,7 +369,7 @@ function PreviewHeader({
               </TooltipTrigger>
               <TooltipContent>
                 <p>
-                  {isRendering ? 'Rendering preview...' : 'Render preview'}
+                  {previewOpen === false ? 'Open preview to run' : isRendering ? 'Rendering preview...' : 'Render preview'}
                 </p>
               </TooltipContent>
             </Tooltip>
