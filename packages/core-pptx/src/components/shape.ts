@@ -4,6 +4,7 @@
 
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig, StyleName } from '../types';
+import type { TextSegment } from '@json-to-office/shared-pptx';
 import { resolveColor } from '../utils/color';
 
 interface ShapeComponentProps {
@@ -14,10 +15,11 @@ interface ShapeComponentProps {
   h?: number | string;
   fill?: { color: string; transparency?: number };
   line?: { color?: string; width?: number; dashType?: string };
-  text?: string;
+  text?: string | TextSegment[];
   fontSize?: number;
   fontFace?: string;
   fontColor?: string;
+  charSpacing?: number;
   bold?: boolean;
   italic?: boolean;
   align?: string;
@@ -73,7 +75,7 @@ export function renderShapeComponent(
   const isHeadingStyle = props.style && /^(title|heading)/.test(props.style);
 
   // If shape has text, use addText with shape option
-  if (props.text) {
+  if (props.text && (!Array.isArray(props.text) || props.text.length > 0)) {
     const opts: Record<string, unknown> = {
       shape: shapeType,
     };
@@ -104,6 +106,8 @@ export function renderShapeComponent(
     const italic = props.italic ?? style?.italic;
     if (bold != null) opts.bold = bold;
     if (italic != null) opts.italic = italic;
+    const charSpacing = props.charSpacing ?? style?.charSpacing;
+    if (charSpacing !== undefined) opts.charSpacing = charSpacing;
     const align = props.align ?? style?.align;
     if (align) opts.align = align;
     if (props.valign) opts.valign = props.valign;
@@ -121,7 +125,24 @@ export function renderShapeComponent(
       };
     }
 
-    slide.addText(props.text, opts as any);
+    if (Array.isArray(props.text)) {
+      const textSegments = props.text.map(seg => {
+        const segOpts: Record<string, unknown> = {};
+        if (seg.fontSize != null) segOpts.fontSize = seg.fontSize;
+        if (seg.fontFace != null) segOpts.fontFace = seg.fontFace;
+        if (seg.color != null) segOpts.color = resolveColor(seg.color, theme);
+        if (seg.bold != null) segOpts.bold = seg.bold;
+        if (seg.italic != null) segOpts.italic = seg.italic;
+        if (seg.breakLine != null) segOpts.breakLine = seg.breakLine;
+        if (seg.charSpacing != null) segOpts.charSpacing = seg.charSpacing;
+        if (seg.spaceBefore != null) segOpts.paraSpaceBefore = seg.spaceBefore;
+        if (seg.spaceAfter != null) segOpts.paraSpaceAfter = seg.spaceAfter;
+        return { text: seg.text, options: segOpts };
+      });
+      slide.addText(textSegments, opts as any);
+    } else {
+      slide.addText(props.text, opts as any);
+    }
   } else {
     // Pure shape without text
     const opts: Record<string, unknown> = {};

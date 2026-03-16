@@ -30,6 +30,7 @@ export const MasterObjectSchema = Type.Union([
       bold: Type.Optional(Type.Boolean()),
       italic: Type.Optional(Type.Boolean()),
       align: Type.Optional(PptxAlignmentSchema),
+      charSpacing: Type.Optional(Type.Number()),
     }, { additionalProperties: false }),
   }, { additionalProperties: false }),
   Type.Object({
@@ -76,6 +77,7 @@ export const PlaceholderDefinitionSchema = Type.Object({
   bold: Type.Optional(Type.Boolean({ description: 'Default bold for components in this placeholder' })),
   italic: Type.Optional(Type.Boolean({ description: 'Default italic for components in this placeholder' })),
   style: Type.Optional(StyleNameSchema),
+  charSpacing: Type.Optional(Type.Number({ description: 'Default character spacing in points' })),
   text: Type.Optional(Type.String({ description: 'Default placeholder text (shown until user adds content)' })),
 }, { additionalProperties: false, description: 'Placeholder on a master slide' });
 

@@ -4,6 +4,7 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
+import JSZip from 'jszip';
 import { writeFileSync } from 'fs';
 import type { PresentationComponentDefinition, PptxThemeConfig } from '../types';
 import { isPresentationComponent } from '../types';
@@ -64,7 +65,7 @@ export async function generateBufferFromJson(
 
   const pptx = await generatePresentation(component, options);
   const data = await pptx.write({ outputType: 'nodebuffer' });
-  return data as Buffer;
+  return await neutralizeTableStyle(data as Buffer);
 }
 
 /**
@@ -92,6 +93,27 @@ export async function generateFromFile(
 }
 
 /**
+ * Replace the default table style (Medium Style 2 - Accent 1, which applies allCaps
+ * to headers) with "No Style, No Grid" so table text renders as authored.
+ */
+const MEDIUM_STYLE_2_ACCENT_1 = '{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}';
+const NO_STYLE_NO_GRID = '{2D5ABB26-0587-4C30-8999-92F81FD0307C}';
+
+async function neutralizeTableStyle(buffer: Buffer): Promise<Buffer> {
+  const zip = await JSZip.loadAsync(buffer);
+  let changed = false;
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (entry.dir || !path.endsWith('.xml')) continue;
+    const xml = await entry.async('string');
+    if (xml.includes(MEDIUM_STYLE_2_ACCENT_1)) {
+      zip.file(path, xml.replaceAll(MEDIUM_STYLE_2_ACCENT_1, NO_STYLE_NO_GRID));
+      changed = true;
+    }
+  }
+  return changed ? await zip.generateAsync({ type: 'nodebuffer' }) as Buffer : buffer;
+}
+
+/**
  * Save a PptxGenJS instance to file
  */
 export async function savePresentation(
@@ -99,7 +121,8 @@ export async function savePresentation(
   outputPath: string
 ): Promise<void> {
   const data = await pptx.write({ outputType: 'nodebuffer' });
-  writeFileSync(outputPath, data as Buffer);
+  const buffer = await neutralizeTableStyle(data as Buffer);
+  writeFileSync(outputPath, buffer);
 }
 
 /**

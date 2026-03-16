@@ -27,6 +27,24 @@ export const ShapeTypeSchema = Type.Union(
   { description: 'Shape type' }
 );
 
+export const TextSegmentSchema = Type.Object(
+  {
+    text: Type.String(),
+    fontSize: Type.Optional(Type.Number({ minimum: 1 })),
+    fontFace: Type.Optional(Type.String()),
+    color: Type.Optional(Type.String({ description: 'Segment color (hex without # or semantic name)' })),
+    bold: Type.Optional(Type.Boolean()),
+    italic: Type.Optional(Type.Boolean()),
+    breakLine: Type.Optional(Type.Boolean({ description: 'Insert line break after this segment' })),
+    spaceBefore: Type.Optional(Type.Number({ minimum: 0, description: 'Space before paragraph in points' })),
+    spaceAfter: Type.Optional(Type.Number({ minimum: 0, description: 'Space after paragraph in points' })),
+    charSpacing: Type.Optional(Type.Number({ description: 'Character spacing in points' })),
+  },
+  { additionalProperties: false }
+);
+
+export type TextSegment = Static<typeof TextSegmentSchema>;
+
 export const ShapePropsSchema = Type.Object(
   {
     type: ShapeTypeSchema,
@@ -82,10 +100,14 @@ export const ShapePropsSchema = Type.Object(
         { additionalProperties: false }
       )
     ),
-    text: Type.Optional(Type.String({ description: 'Text content inside the shape' })),
+    text: Type.Optional(Type.Union([
+      Type.String({ description: 'Plain text' }),
+      Type.Array(TextSegmentSchema, { description: 'Rich text segments with per-segment formatting' }),
+    ], { description: 'Text content inside the shape' })),
     fontSize: Type.Optional(Type.Number({ minimum: 1, description: 'Font size for shape text' })),
     fontFace: Type.Optional(Type.String({ description: 'Font family for shape text' })),
     fontColor: Type.Optional(Type.String({ description: 'Font color for shape text (hex without #)' })),
+    charSpacing: Type.Optional(Type.Number({ description: 'Character spacing in points for shape text' })),
     bold: Type.Optional(Type.Boolean({ description: 'Bold shape text' })),
     italic: Type.Optional(Type.Boolean({ description: 'Italic shape text' })),
     align: Type.Optional(PptxAlignmentSchema),

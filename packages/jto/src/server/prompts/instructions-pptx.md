@@ -227,12 +227,136 @@ Themes can override styles in the `styles` key:
 }
 ```
 
+## Common Layout Pitfalls
+
+### Text overflow
+PPTX does not auto-shrink text. If text is too long for its container it will clip or overflow.
+- Keep heading text short (≤ 6 words) or reduce `fontSize` for longer headings
+- Always give headings full width (`columnSpan: 12`) unless the layout genuinely needs a narrower column
+- For long text, prefer a smaller `fontSize` over truncation
+
+### Slide number placement
+Never position `slideNumber` where it overlaps content. Safe defaults:
+- Bottom-right corner: `{ "x": 9.2, "y": 7.0, "w": 0.5, "h": 0.3, "fontSize": 8 }`
+- Ensure the heading placeholder's grid row does **not** share space with the slide number
+
+### Element overlap
+Multiple text or shape components in the same region will render on top of each other. Prevent this:
+- Give each element its own grid row, or use explicit `y` offsets so they stack vertically
+- When placing a label below a title (e.g. name + role), put the title in row N and the label in row N+1, or use different `y` values with enough gap (≥ 0.35")
+- Never place two text components at the same `x`/`y` unless one is intentionally a background layer
+
+### Circles vs stretched ellipses
+An `ellipse` shape renders as a circle **only** when `w === h`. If `w ≠ h` it stretches.
+- For avatar circles, badges, or step indicators: always set equal `w` and `h` (e.g. `"w": 0.6, "h": 0.6`)
+- When using grid positioning for ellipses, ensure the grid cell is square. If not, use explicit `w`/`h` to force a 1:1 ratio — explicit dimensions override grid sizing.
+
+### Text inside small shapes
+When placing text inside a shape (initials, numbers, icons):
+- Keep text on a single line — never use `\n` in initials or short labels (use `"PB"` not `"P\nB"`)
+- Set `"align": "center"` and `"valign": "middle"` for proper centering
+- Ensure fontSize is small enough to fit the shape (rule of thumb: fontSize ≤ shape width in inches × 40)
+
+## Table Best Practices
+
+### Row heights & margins
+Always specify `rowH` for consistent, compact rows (recommended 0.4–0.55"). Always specify `margin` for cell padding (recommended `[3, 6, 3, 6]`). Without these, rows expand unpredictably.
+
+### Rounded corners
+Use `borderRadius` (e.g. `0.15`) for polished rounded-corner tables. This renders a `roundRect` shape behind the table. When using `borderRadius`, set outer borders to `"none"` and keep internal borders only. **`borderRadius` requires explicit numeric `x`/`y` (inches, not `%` or grid-only)** — if the table is grid-positioned without explicit `x`/`y`, rounded corners are silently skipped.
+
+### Unicode symbols
+PowerPoint may render ✓✔✗✘ as color emoji. The renderer auto-appends a text variation selector to force text rendering. For best results, use `fontFace: "Arial"` on cells with Unicode symbols (✓, —, •) since Arial has reliable glyph coverage.
+
+### Example: polished comparison table
+```json
+{
+  "name": "table",
+  "props": {
+    "rows": [
+      [
+        { "text": "Feature", "bold": true, "fill": "primary", "color": "FFFFFF" },
+        { "text": "Basic", "bold": true, "fill": "primary", "color": "FFFFFF", "align": "center" },
+        { "text": "Pro", "bold": true, "fill": "primary", "color": "FFFFFF", "align": "center" }
+      ],
+      [
+        { "text": "Storage" },
+        { "text": "5 GB", "align": "center" },
+        { "text": "100 GB", "align": "center" }
+      ],
+      [
+        { "text": "Support" },
+        { "text": "—", "align": "center", "fontFace": "Arial" },
+        { "text": "✓", "align": "center", "fontFace": "Arial", "color": "22C55E" }
+      ]
+    ],
+    "rowH": 0.45,
+    "margin": [3, 6, 3, 6],
+    "borderRadius": 0.15,
+    "border": { "type": "solid", "pt": 0.5, "color": "E2E8F0" },
+    "fontSize": 12,
+    "grid": { "column": 1, "row": 2, "columnSpan": 10, "rowSpan": 3 }
+  }
+}
+```
+
+## PPTX Rendering Limitations & Workarounds
+
+### Character spacing (`charSpacing`)
+Use `charSpacing` (number, in points) on text and shape components to control letter-spacing/tracking.
+- Wordmarks/logos: `"charSpacing": 3` to `6`
+- Uppercase labels/section identifiers: `"charSpacing": 1` to `3`
+- Normal body text: omit (0 default)
+
+### Font weight
+pptxgenjs only supports `bold: true/false`, not CSS font-weight values (300/400/500/600/700). To achieve light/thin text, use font family variants in `fontFace`:
+- `"Inter Light"`, `"Inter Thin"`, `"Helvetica Neue Light"`, `"Montserrat Light"`
+- Use light font variants for elegant/refined designs rather than relying on bold alone.
+
+### Text opacity
+PPTX text doesn't support opacity. To achieve semi-transparent text effects, pre-compute muted hex colors:
+- White at ~50% on dark bg → `"808080"`
+- White at ~35% on dark bg → `"595959"`
+- For secondary/tertiary text on dark backgrounds, use muted hex colors rather than expecting opacity support.
+
+### Decorative elements
+SVGs are not supported. For decorative elements:
+- Use `ellipse` shapes for dot patterns
+- Use `rect` shapes for dividers/bars
+- Use pre-rendered PNG images (base64) for complex decorations
+
+### Multi-element cards / Rich text in shapes
+For metric cards with per-segment formatting (large number, small label, colored indicator), use **rich text segments** in a single shape instead of overlaying multiple elements:
+```json
+{
+  "name": "shape",
+  "props": {
+    "type": "roundRect",
+    "fill": { "color": "background2" },
+    "align": "center",
+    "valign": "middle",
+    "text": [
+      { "text": "124K", "fontSize": 36, "bold": true, "color": "primary" },
+      { "text": "Active Users", "fontSize": 12, "color": "text2", "breakLine": true },
+      { "text": "▲ 34% YoY", "fontSize": 11, "color": "22C55E", "breakLine": true }
+    ],
+    "grid": { "column": 0, "row": 2, "columnSpan": 4, "rowSpan": 2 }
+  }
+}
+```
+Each segment can have its own `fontSize`, `fontFace`, `color`, `bold`, `italic`, `breakLine`, `spaceBefore`, and `spaceAfter`. Use `breakLine: true` to start a new line after the segment. Shape-level font props (`fontSize`, `fontColor`, `bold`) apply as defaults when segments omit them.
+
+For truly complex layouts needing independent positioning, fall back to overlaying separate components:
+- Use a `roundRect` shape as the card background (no text)
+- Overlay positioned `text` components on top with explicit x/y/w/h
+- All components share the same grid area but use absolute offsets within
+
 ## Available Components
 
 Use these inside `placeholders` or `children`:
-- **text** — headings, paragraphs, bullets. Props: `text`, `fontSize`, `bold`, `italic`, `color`, `align`, `bullet`, `lineSpacing`
-- **shape** — rectangles, circles, arrows, etc. Props: `type` (rect, roundRect, ellipse, triangle, etc.), `fill`, `text`, `fontSize`, `fontColor`
-- **table** — data grids. Props: `rows` (2D array of strings or cell objects), `colW`, `border`, `fontSize`
+- **text** — headings, paragraphs, bullets. Props: `text`, `fontSize`, `bold`, `italic`, `color`, `align`, `bullet`, `lineSpacing`, `charSpacing`
+- **shape** — rectangles, circles, arrows, etc. Props: `type` (rect, roundRect, ellipse, triangle, etc.), `fill`, `text` (string or `[{ text, fontSize?, color?, bold?, italic?, breakLine? }]` for rich text), `fontSize`, `fontColor`, `charSpacing`
+- **table** — data grids. Props: `rows` (2D array of strings or cell objects), `colW`, `rowH`, `border`, `fontSize`, `margin`, `borderRadius`
 - **image** — pictures. Props: `path` or `base64`, `sizing` ({ type: "cover"|"contain" })
 - **chart** — **DEFAULT for all charts.** Native PowerPoint chart — editable, no external server. Always use this unless the user explicitly asks for Highcharts. Title, legend, and axis label colors auto-default to the theme's `text` color for proper contrast on any background. Props: `type` (area, bar, bar3D, bubble, doughnut, line, pie, radar, scatter), `data` (array of `{ name?, labels?, values?, sizes? }`), `showLegend`, `showTitle`, `title`, `titleColor`, `chartColors` (hex or semantic), `legendPos`, `legendColor`, axis options (`catAxisTitle`, `valAxisTitle`, `valAxisMinVal`, `valAxisMaxVal`, `valAxisLabelFormatCode`, `catAxisLabelColor`, `valAxisLabelColor`), bar options (`barDir`, `barGrouping`, `barGapWidthPct`), line options (`lineSmooth`, `lineDataSymbol`, `lineSize`), pie/doughnut (`firstSliceAng`, `holeSize`), radar (`radarStyle`), data labels (`dataLabelColor`, `dataLabelFontSize`, `dataLabelPosition`)
 - **highcharts** — **ONLY use when the user explicitly requests Highcharts.** Renders charts via Highcharts as images (not editable in PowerPoint). Props: `chartOptions` (Highcharts options object), `width`, `height`

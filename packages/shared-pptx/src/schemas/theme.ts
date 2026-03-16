@@ -89,6 +89,7 @@ export const TextStyleSchema = Type.Object({
     Type.Literal('left'), Type.Literal('center'), Type.Literal('right'), Type.Literal('justify'),
   ])),
   lineSpacing: Type.Optional(Type.Number()),
+  charSpacing: Type.Optional(Type.Number()),
   paraSpaceAfter: Type.Optional(Type.Number()),
 }, { additionalProperties: false, description: 'Text style preset' });
 

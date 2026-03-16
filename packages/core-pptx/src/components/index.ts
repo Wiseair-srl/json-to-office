@@ -40,7 +40,7 @@ export async function renderComponent(
     renderShapeComponent(slide, p, theme, pptx);
     break;
   case 'table':
-    renderTableComponent(slide, p, theme);
+    renderTableComponent(slide, p, theme, pptx);
     break;
   case 'highcharts':
     await renderHighchartsComponent(slide, p, theme);

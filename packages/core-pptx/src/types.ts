@@ -99,6 +99,7 @@ export interface TextStyle {
   italic?: boolean;
   align?: string;
   lineSpacing?: number;
+  charSpacing?: number;
   paraSpaceAfter?: number;
 }
 
@@ -140,11 +141,12 @@ export interface PlaceholderDefinition {
   margin?: number | number[];
   bold?: boolean; italic?: boolean;
   style?: StyleName;
+  charSpacing?: number;
   text?: string;
 }
 
 export type MasterImageObject = { image: { path?: string; data?: string; x?: number; y?: number; w?: number; h?: number; grid?: GridPosition } };
-export type MasterTextObject = { text: { text: string; x?: number; y?: number; w?: number; h?: number; grid?: GridPosition; fontSize?: number; fontFace?: string; color?: string; bold?: boolean; italic?: boolean; align?: string } };
+export type MasterTextObject = { text: { text: string; x?: number; y?: number; w?: number; h?: number; grid?: GridPosition; fontSize?: number; fontFace?: string; color?: string; bold?: boolean; italic?: boolean; align?: string; charSpacing?: number } };
 export type MasterRectObject = { rect: { x?: number; y?: number; w?: number; h?: number; grid?: GridPosition; fill?: string; line?: { color?: string; width?: number } } };
 export type MasterLineObject = { line: { x?: number; y?: number; w?: number; h?: number; grid?: GridPosition; line?: { color?: string; width?: number } } };
 export type MasterObject = MasterImageObject | MasterTextObject | MasterRectObject | MasterLineObject;

@@ -35,6 +35,7 @@
     "@json-to-office/shared": "workspace:*",
     "@json-to-office/shared-pptx": "workspace:*",
     "@sinclair/typebox": "0.34.38",
+    "jszip": "3.10.1",
     "pptxgenjs": "^3.12.0"
   },
   "devDependencies": {

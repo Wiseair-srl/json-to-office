@@ -77,6 +77,7 @@ export function buildSlideMasterProps(
         if (txt.color) opts.color = resolveColor(txt.color, theme);
         if (txt.bold) opts.bold = true;
         if (txt.italic) opts.italic = true;
+        if (txt.charSpacing !== undefined) opts.charSpacing = txt.charSpacing;
         if (txt.align) opts.align = txt.align;
         objects.push({ text: { text: txt.text, options: opts } });
       } else if ('rect' in obj) {
@@ -134,6 +135,7 @@ export function buildSlideMasterProps(
       if (ph.color) opts.color = resolveColor(ph.color, theme);
       if (ph.align) opts.align = ph.align;
       if (ph.valign) opts.valign = ph.valign;
+      if (ph.charSpacing !== undefined) opts.charSpacing = ph.charSpacing;
       if (ph.margin !== undefined) opts.margin = ph.margin;
 
       objects.push({ placeholder: { options: opts, text: ph.text ?? '' } });

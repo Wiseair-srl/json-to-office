@@ -108,6 +108,9 @@ export const PptxTablePropsSchema = Type.Object(
         Type.Array(Type.Number(), { minItems: 4, maxItems: 4 }),
       ])
     ),
+    borderRadius: Type.Optional(
+      Type.Number({ minimum: 0, description: 'Rounded corner radius in inches. Renders a roundRect shape behind the table.' })
+    ),
     grid: Type.Optional(GridPositionSchema),
   },
   {

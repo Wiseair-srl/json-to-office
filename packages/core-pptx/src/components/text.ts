@@ -36,6 +36,7 @@ interface TextComponentProps {
   fill?: { color: string; transparency?: number };
   hyperlink?: { url?: string; slide?: number; tooltip?: string };
   lineSpacing?: number;
+  charSpacing?: number;
   paraSpaceBefore?: number;
   paraSpaceAfter?: number;
   style?: StyleName;
@@ -145,6 +146,8 @@ export function renderTextComponent(
   // Line spacing
   const lineSpacing = props.lineSpacing ?? style?.lineSpacing;
   if (lineSpacing !== undefined) opts.lineSpacing = lineSpacing;
+  const charSpacing = props.charSpacing ?? style?.charSpacing;
+  if (charSpacing !== undefined) opts.charSpacing = charSpacing;
   if (props.paraSpaceBefore !== undefined) opts.paraSpaceBefore = props.paraSpaceBefore;
   const paraSpaceAfter = props.paraSpaceAfter ?? style?.paraSpaceAfter;
   if (paraSpaceAfter !== undefined) opts.paraSpaceAfter = paraSpaceAfter;

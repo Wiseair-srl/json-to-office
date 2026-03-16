@@ -116,6 +116,7 @@ export const TextPropsSchema = Type.Object(
       )
     ),
     lineSpacing: Type.Optional(Type.Number({ description: 'Line spacing in points' })),
+    charSpacing: Type.Optional(Type.Number({ description: 'Character spacing in points (positive = wider, negative = tighter)' })),
     paraSpaceBefore: Type.Optional(Type.Number({ description: 'Space before paragraph in points' })),
     paraSpaceAfter: Type.Optional(Type.Number({ description: 'Space after paragraph in points' })),
     grid: Type.Optional(GridPositionSchema),

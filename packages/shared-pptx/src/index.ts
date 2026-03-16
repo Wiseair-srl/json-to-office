@@ -31,6 +31,7 @@ export type {
   PptxImageProps,
   ShapeType,
   ShapeProps,
+  TextSegment,
   PptxTableProps,
   PptxHighchartsProps,
   PptxComponentDefinition,

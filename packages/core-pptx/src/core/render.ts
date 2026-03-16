@@ -115,6 +115,7 @@ export async function renderPresentation(
           if (resolved.props.align == null && phDef.align) resolved.props.align = phDef.align;
           if (resolved.props.valign == null && phDef.valign) resolved.props.valign = phDef.valign;
           if (resolved.props.margin == null && phDef.margin !== undefined) resolved.props.margin = phDef.margin;
+          if (resolved.props.charSpacing == null && phDef.charSpacing !== undefined) resolved.props.charSpacing = phDef.charSpacing;
           // Propagate placeholder style name so component renderers get heading font auto-selection
           if (resolved.props.style == null && phDef.style) resolved.props.style = phDef.style;
           await renderComponent(slide, resolved, processed.theme, pptx);

@@ -123,6 +123,9 @@ importers:
       '@sinclair/typebox':
         specifier: 0.34.38
         version: 0.34.38
+      jszip:
+        specifier: 3.10.1
+        version: 3.10.1
       pptxgenjs:
         specifier: ^3.12.0
         version: 3.12.0
