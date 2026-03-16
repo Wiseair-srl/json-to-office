@@ -45,8 +45,8 @@ const getLabels = (isTheme?: boolean) => ({
   create: {
     title: isTheme ? 'New Theme' : 'New Document',
     description: isTheme
-      ? 'Create a new theme based on discovered themes in your project.'
-      : 'Create a new document based on discovered documents in your project.',
+      ? 'Create a new theme from scratch or based on discovered themes.'
+      : 'Create a new document from scratch or based on discovered documents.',
     button: 'Create',
     buttonVariant: 'default',
   },
@@ -73,6 +73,8 @@ interface DiscoveredItem {
   description?: string;
   theme?: string;
 }
+
+const EMPTY_TEMPLATE_VALUE = '__empty__';
 
 function DocumentFormDialogContent({
   mode,
@@ -165,16 +167,11 @@ function DocumentFormDialogContent({
     return map;
   }, [discoveredItems]);
 
-  const defaultTemplatePath =
-    discoveredItems.length > 0 ? discoveredItems[0].path : undefined;
+  const defaultTemplatePath = EMPTY_TEMPLATE_VALUE;
 
   const form = useForm<DocumentFormData>({
     resolver: createTypeBoxResolver(schemaResult.validate),
-    defaultValues: getDocumentFormDefaultValues(
-      mode,
-      discoveredItems.length > 0 ? discoveredItems[0].name : undefined,
-      selectedName
-    ),
+    defaultValues: getDocumentFormDefaultValues(mode, undefined, selectedName),
   });
 
   // Track selected path separately from the form's template field (which stores the name)
@@ -182,21 +179,9 @@ function DocumentFormDialogContent({
     defaultTemplatePath
   );
 
-  // Set initial name when form first loads with a default template
-  useEffect(() => {
-    if (
-      mode === 'create' &&
-      discoveredItems.length > 0 &&
-      !form.getValues('name')
-    ) {
-      const defaultTemplate = discoveredItems[0].name;
-      form.setValue('name', defaultTemplate);
-    }
-  }, [mode, discoveredItems, form]);
-
   // Load content when selected path changes
   useEffect(() => {
-    if (selectedPath && mode === 'create') {
+    if (selectedPath && selectedPath !== EMPTY_TEMPLATE_VALUE && mode === 'create') {
       const item = itemsByPath.get(selectedPath);
       if (item) {
         fetch(
@@ -248,15 +233,30 @@ function DocumentFormDialogContent({
         let finalName = name as string;
 
         if (isTheme) {
-          // Use discovered theme content or create default
-          content =
-            selectedItemContent ||
-            JSON.stringify(
-              {
-                name: finalName
-                  .replace(/\.(json|theme)$/i, '')
-                  .toLowerCase()
-                  .replace(/\s+/g, '-'),
+          // Use discovered theme content or create format-specific default
+          const themeName = finalName
+            .replace(/\.(json|theme)$/i, '')
+            .toLowerCase()
+            .replace(/\s+/g, '-');
+          const defaultTheme =
+            FORMAT === 'docx'
+              ? {
+                name: themeName,
+                colors: {
+                  primary: '#2563EB',
+                  secondary: '#64748B',
+                  accent: '#F8FAFC',
+                  background: '#FFFFFF',
+                  text: '#334155',
+                },
+                fonts: {
+                  heading: { family: 'Calibri', size: 28 },
+                  body: { family: 'Calibri', size: 11 },
+                },
+                page: { size: 'A4' },
+              }
+              : {
+                name: themeName,
                 colors: {
                   primary: '#2563EB',
                   secondary: '#64748B',
@@ -272,10 +272,9 @@ function DocumentFormDialogContent({
                   fontSize: 18,
                   fontColor: '#334155',
                 },
-              },
-              null,
-              2
-            );
+              };
+          content =
+            selectedItemContent || JSON.stringify(defaultTheme, null, 2);
           // Ensure theme files have format-specific .theme.json extension
           const themeExt = `.${FORMAT}.theme.json`;
           if (!finalName.endsWith(themeExt)) {
@@ -296,9 +295,11 @@ function DocumentFormDialogContent({
                 ? {
                   name: 'docx',
                   props: {
-                    title:
-                        docItem?.title || finalName.replace(/\.(json|js)$/i, ''),
                     theme: docItem?.theme || 'default',
+                    metadata: {
+                      title:
+                          docItem?.title || finalName.replace(/\.(json|js)$/i, ''),
+                    },
                   },
                   children: [
                     {
@@ -408,7 +409,7 @@ function DocumentFormDialogContent({
               )}
             />
           )}
-          {schema.properties && 'template' in schema.properties && (
+          {mode === 'create' && (
             <FormField
               control={form.control}
               name="template"
@@ -419,11 +420,18 @@ function DocumentFormDialogContent({
                   </FormLabel>
                   <Select
                     onValueChange={(path) => {
-                      const item = itemsByPath.get(path);
-                      if (item) {
-                        field.onChange(item.name);
-                        form.setValue('name', item.name);
-                        setSelectedPath(path);
+                      if (path === EMPTY_TEMPLATE_VALUE) {
+                        field.onChange(undefined);
+                        form.setValue('name', '');
+                        setSelectedPath(EMPTY_TEMPLATE_VALUE);
+                        setSelectedItemContent(null);
+                      } else {
+                        const item = itemsByPath.get(path);
+                        if (item) {
+                          field.onChange(item.name);
+                          form.setValue('name', item.name);
+                          setSelectedPath(path);
+                        }
                       }
                     }}
                     defaultValue={defaultTemplatePath}
@@ -436,6 +444,9 @@ function DocumentFormDialogContent({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="max-h-[300px]">
+                      <SelectItem value={EMPTY_TEMPLATE_VALUE}>
+                        Empty {isTheme ? 'theme' : 'document'}
+                      </SelectItem>
                       {Object.entries(groupedItems).map(([location, items]) => {
                         if (items.length === 0) return null;
 
@@ -471,17 +482,11 @@ function DocumentFormDialogContent({
                           </SelectGroup>
                         );
                       })}
-                      {discoveredItems.length === 0 && (
-                        <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                          No {isTheme ? 'themes' : 'documents'} discovered in
-                          project
-                        </div>
-                      )}
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Select a discovered {isTheme ? 'theme' : 'document'} to use
-                    as a starting point
+                    Start empty or select a discovered{' '}
+                    {isTheme ? 'theme' : 'document'} as a starting point
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -493,10 +498,7 @@ function DocumentFormDialogContent({
           <Button
             type="submit"
             variant={labels[mode].buttonVariant as 'default' | 'destructive'}
-            disabled={
-              isSubmitting ||
-              (mode === 'create' && discoveredItems.length === 0)
-            }
+            disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>

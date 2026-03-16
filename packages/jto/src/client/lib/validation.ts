@@ -34,11 +34,10 @@ export function getDocumentFormSchema(
     required.push('name');
   }
 
-  if (mode === 'create' && templates?.length) {
-    properties['template'] = Type.String({
+  if (mode === 'create') {
+    properties['template'] = Type.Optional(Type.String({
       description: 'Template selection',
-    });
-    required.push('template');
+    }));
   }
 
   // Create the base schema
