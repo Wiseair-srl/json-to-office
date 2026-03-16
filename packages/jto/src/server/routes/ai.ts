@@ -138,59 +138,78 @@ export function createAiRouter() {
       const schemaStr = await getSchemaString(format, isTheme ? 'theme' : 'document');
       const contentLabel = isTheme ? 'Theme' : 'Document';
 
-      // Build system prompt
+      // === Prompt assembly: base → format → format+design → mode ===
+
+      // Layer 1: Base
       let systemPrompt = loadPrompt(isTheme ? 'system-theme.md' : 'system.md', {
         format,
         schema: schemaStr,
       });
 
-      // Append PPTX-specific addendum for non-theme PPTX interactions
-      if (format === 'pptx' && !isTheme) {
-        systemPrompt += '\n\n' + loadPrompt('instructions-pptx.md');
-      }
-
-      // Append edit instructions when a selection context is provided
-      if (context && context.length > 0) {
-        const ctx = context[0];
-        if (ctx.selectedText) {
-          const selectedText = truncate(ctx.selectedText, MAX_DOC_CHARS);
-          if (selectedText !== ctx.selectedText) {
-            logger.warn('Truncated selectedText in AI context', { originalLength: ctx.selectedText.length });
-          }
-          const editInstructions = loadPrompt('instructions-edit.md', {
-            documentName: ctx.documentName || 'unknown',
-            jsonPath: ctx.jsonPath || '',
-            selectedText,
-          });
-          systemPrompt += '\n\n' + editInstructions;
+      // Layer 2: Format-specific core (always loaded)
+      if (!isTheme) {
+        if (format === 'pptx') {
+          systemPrompt += '\n\n' + loadPrompt('pptx-core.md');
+        } else if (format === 'docx') {
+          systemPrompt += '\n\n' + loadPrompt('instructions-docx.md');
         }
       }
 
-      // When no selection context but an active document exists, include it so AI can integrate changes
-      if (activeDocument?.text && (!context || context.length === 0)) {
+      // Determine mode: selection-edit, edit-document, or generate
+      const hasSelection = context && context.length > 0 && context[0]?.selectedText;
+      const hasActiveDoc = !hasSelection && activeDocument?.text;
+      const isGenerate = !hasSelection && !hasActiveDoc;
+
+      // Layer 3: Format+design (generate and edit-document only, not selection-edit)
+      if (!isTheme && format === 'pptx' && !hasSelection) {
+        systemPrompt += '\n\n' + loadPrompt('pptx-design.md');
+      }
+
+      // Layer 4: Mode-specific instructions
+      if (hasSelection) {
+        const ctx = context[0];
+        const selectedText = truncate(ctx.selectedText, MAX_DOC_CHARS);
+        if (selectedText !== ctx.selectedText) {
+          logger.warn('Truncated selectedText in AI context', { originalLength: ctx.selectedText.length });
+        }
+        // Use pptx-aware selection editing for pptx, generic for others
+        const editFile = format === 'pptx' && !isTheme
+          ? 'instructions-edit-pptx.md'
+          : 'instructions-edit.md';
+        systemPrompt += '\n\n' + loadPrompt(editFile, {
+          documentName: ctx.documentName || 'unknown',
+          jsonPath: ctx.jsonPath || '',
+          selectedText,
+        });
+      } else if (hasActiveDoc) {
         const docText = truncate(activeDocument.text, MAX_DOC_CHARS);
         if (docText !== activeDocument.text) {
           logger.warn('Truncated activeDocument.text in AI system prompt', { originalLength: activeDocument.text.length });
         }
-        const editDocFile = format === 'pptx' && !isTheme
-          ? 'instructions-edit-document-pptx.md'
-          : 'instructions-edit-document.md';
-        const editDocInstructions = loadPrompt(editDocFile, {
+        const editDocFiles: Record<string, string> = {
+          pptx: 'instructions-edit-document-pptx.md',
+          docx: 'instructions-edit-document-docx.md',
+        };
+        const editDocFile = isTheme
+          ? 'instructions-edit-document.md'
+          : editDocFiles[format] ?? 'instructions-edit-document.md';
+        systemPrompt += '\n\n' + loadPrompt(editDocFile, {
           contentLabel,
           contentLabelLower: contentLabel.toLowerCase(),
           documentName: activeDocument.name || 'untitled',
           documentText: docText,
         });
-        systemPrompt += '\n\n' + editDocInstructions;
-      } else if (!activeDocument?.text && (!context || context.length === 0)) {
-        // Truly from-scratch generation — no document open
-        const generateFile = format === 'pptx' && !isTheme
-          ? 'instructions-generate-pptx.md'
-          : 'instructions-generate.md';
-        const generateInstructions = loadPrompt(generateFile, {
+      } else if (isGenerate) {
+        const generateFiles: Record<string, string> = {
+          pptx: 'instructions-generate-pptx.md',
+          docx: 'instructions-generate-docx.md',
+        };
+        const generateFile = isTheme
+          ? 'instructions-generate.md'
+          : generateFiles[format] ?? 'instructions-generate.md';
+        systemPrompt += '\n\n' + loadPrompt(generateFile, {
           contentType: isTheme ? 'theme' : 'document',
         });
-        systemPrompt += '\n\n' + generateInstructions;
       }
 
       // If context is provided (selection from editor), prepend as a user message

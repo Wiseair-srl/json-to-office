@@ -78,6 +78,7 @@ export const PlaceholderDefinitionSchema = Type.Object({
   italic: Type.Optional(Type.Boolean({ description: 'Default italic for components in this placeholder' })),
   style: Type.Optional(StyleNameSchema),
   charSpacing: Type.Optional(Type.Number({ description: 'Default character spacing in points' })),
+  lineSpacing: Type.Optional(Type.Number({ description: 'Default line spacing in points' })),
   text: Type.Optional(Type.String({ description: 'Default placeholder text (shown until user adds content)' })),
 }, { additionalProperties: false, description: 'Placeholder on a master slide' });
 

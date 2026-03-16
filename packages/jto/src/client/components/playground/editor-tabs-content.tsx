@@ -30,10 +30,11 @@ function TabContent({
     [updateTheme, saveDocumentDebounceWait]
   );
 
-  // Clean up debounced function on unmount
+  // Flush pending theme updates on unmount so the themes store is always
+  // up-to-date when the user switches away from a theme tab.
   React.useEffect(() => {
     return () => {
-      debouncedUpdateTheme.cancel();
+      debouncedUpdateTheme.flush();
     };
   }, [debouncedUpdateTheme]);
 

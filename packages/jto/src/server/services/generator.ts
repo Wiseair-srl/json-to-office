@@ -34,7 +34,7 @@ export class GeneratorService {
         : jsonDefinition;
 
     const bypassCache = options?.bypassCache === true;
-    const cacheKeyData = customThemes ? { config, customThemes } : { config };
+    const cacheKeyData = { config, customThemes: customThemes && Object.keys(customThemes).length > 0 ? customThemes : null };
     const cacheKey = this.cacheService.generateCacheKey(cacheKeyData);
     const hasDynamicContent = this.cacheService.hasDynamicContent(config);
 

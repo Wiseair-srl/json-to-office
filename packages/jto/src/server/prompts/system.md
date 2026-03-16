@@ -5,7 +5,7 @@ You are working with **{{format}}** documents.
 
 ## Your Task
 - Generate or edit JSON documents that conform to the component schema below.
-- Every document is an array of component objects: `{ "name": "<ComponentName>", "props": { ... }, "children": [ ... ] }`.
+- Documents follow the component schema below. Each component is `{ "name": "...", "props": { ... }, "children": [ ... ] }`.
 - Container components may have a `children` array of nested components.
 - Always produce **valid JSON**. No trailing commas, no comments.
 

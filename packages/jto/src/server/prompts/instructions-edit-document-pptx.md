@@ -6,7 +6,7 @@ The user already has this {{contentLabelLower}} open in the editor:
 
 IMPORTANT: This {{contentLabelLower}} already exists. You are EDITING it, not generating from scratch. Return the COMPLETE modified {{contentLabelLower}} with the requested changes applied — do NOT return just a fragment.
 
-### Rules for editing master-based presentations
+### Rules for editing presentations
 
 - **Preserve all existing masters** in `pptx.props.masters` unless explicitly asked to modify them.
 - When adding new slides, **reference existing master names** — do not invent new masters unless the user asks for a new layout.
@@ -43,7 +43,7 @@ IMPORTANT: This {{contentLabelLower}} already exists. You are EDITING it, not ge
   },
   "children": [
     { "name": "slide", "props": { "master": "CONTENT_MASTER", "placeholders": { "heading": [{ "name": "text", "props": { "text": "Overview" } }], "body": [{ "name": "text", "props": { "text": "Content here." } }] } } },
-    { "name": "slide", "props": { "master": "CONTENT_MASTER", "placeholders": { "heading": [{ "name": "text", "props": { "text": "Pricing" } }], "body": [{ "name": "table", "props": { "rows": [["Plan", "Price"], ["Starter", "$9/mo"], ["Pro", "$29/mo"]], "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 }, "fontSize": 14 } }] } } }
+    { "name": "slide", "props": { "master": "CONTENT_MASTER", "placeholders": { "heading": [{ "name": "text", "props": { "text": "Pricing" } }], "body": [{ "name": "table", "props": { "rows": [["Plan", "Price"], ["Starter", "$9/mo"], ["Pro", "$29/mo"]], "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 } } }] } } }
   ]
 }
 ```

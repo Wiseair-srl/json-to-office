@@ -65,9 +65,7 @@ export function usePresentationGenerator() {
           options: options || {},
         };
 
-        if (customThemes && Object.keys(customThemes).length > 0) {
-          requestBody.customThemes = customThemes;
-        }
+        requestBody.customThemes = customThemes ?? {};
 
         onProgress?.('rendering', `Generating ${FORMAT.toUpperCase()} content...`);
         const headers: HeadersInit = {

@@ -5,7 +5,7 @@ import { useDocumentsStore, DocumentsStoreContext } from '../../store/documents-
 import { useOutputStore, OutputStoreContext } from '../../store/output-store-provider';
 import { useSettingsStore } from '../../store/settings-store-provider';
 import { useEditorRefsStore } from '../../store/editor-refs-store';
-import { useThemesStore } from '../../store/themes-store-provider';
+import { useThemesStore, ThemesStoreContext } from '../../store/themes-store-provider';
 import { usePresentationGenerator } from '../../hooks/usePresentationGenerator';
 import { retry, RetryStrategies } from '../../utils/retry';
 import { themeChangeEmitter } from '../../utils/theme-change-emitter';
@@ -23,6 +23,7 @@ function EditorComponent() {
   const setOutput = useOutputStore((state) => state.setOutput);
   const outputStore = useContext(OutputStoreContext)!;
   const documentsStore = useContext(DocumentsStoreContext)!;
+  const themesStore = useContext(ThemesStoreContext)!;
   const saveDocumentDebounceWait = useSettingsStore(
     (state) => state.saveDocumentDebounceWait
   );
@@ -111,7 +112,7 @@ function EditorComponent() {
       };
 
       // Process immediately (bypass queue for theme changes)
-      await processBuildRequestWithThemes(buildRequest, version, themesData);
+      await processBuildRequestWithThemesRef.current(buildRequest, version, themesData);
     },
     [generatePresentation, setOutput, getDocumentVersion]
   );
@@ -157,7 +158,8 @@ function EditorComponent() {
           doc.name,
           doc.text,
           themesData,
-          onProgress
+          onProgress,
+          { bypassCache: true }
         );
 
         if (signal.aborted || lastBuildRequestIdRef.current !== id) {
@@ -222,6 +224,8 @@ function EditorComponent() {
     },
     [generatePresentation, setOutput, setBuildError, outputStore]
   );
+  const processBuildRequestWithThemesRef = useRef(processBuildRequestWithThemes);
+  useEffect(() => { processBuildRequestWithThemesRef.current = processBuildRequestWithThemes; });
 
   // Prepare valid custom themes with deep comparison
   const customThemesContentHash = useMemo(() => {
@@ -261,19 +265,18 @@ function EditorComponent() {
   // Helper function to get fresh theme data (bypasses memo)
   const getFreshThemeData = useCallback(() => {
     const freshThemes: { [key: string]: any } = {};
-    const allThemeNames = getAllThemeNames();
-    allThemeNames.forEach((name) => {
-      const themeData = getTheme(name);
-      if (themeData) {
-        freshThemes[name] = themeData;
+    const { customThemes } = themesStore.getState();
+    Object.values(customThemes).forEach((theme) => {
+      if (theme.valid && theme.parsed) {
+        freshThemes[theme.name] = theme.parsed;
       }
     });
     return freshThemes;
-  }, [getAllThemeNames, getTheme]);
+  }, [themesStore]);
 
   // Helper function to build a document with proper cancellation and retry
   const buildDocument = useCallback(
-    async (doc: any, signal?: AbortSignal) => {
+    async (doc: any, signal?: AbortSignal, options?: { bypassCache?: boolean }) => {
       if (!doc || !generatePresentation) {
         return;
       }
@@ -305,14 +308,14 @@ function EditorComponent() {
         timestamp: Date.now(),
       };
 
-      await processBuildRequest(buildRequest, version);
+      await processBuildRequestRef.current(buildRequest, version, options);
     },
     [generatePresentation, setOutput, getDocumentVersion]
   );
 
   // Process a build request from the queue
   const processBuildRequest = useCallback(
-    async (request: BuildRequest, version: number) => {
+    async (request: BuildRequest, version: number, options?: { bypassCache?: boolean }) => {
       const { doc, signal, id } = request;
 
       // Check if this is still the latest request
@@ -371,7 +374,8 @@ function EditorComponent() {
               doc.name,
               doc.text,
               freshThemeData,
-              onProgress
+              onProgress,
+              options
             );
           },
           {
@@ -474,6 +478,8 @@ function EditorComponent() {
     },
     [generatePresentation, getFreshThemeData, setOutput, setBuildError, outputStore]
   );
+  const processBuildRequestRef = useRef(processBuildRequest);
+  useEffect(() => { processBuildRequestRef.current = processBuildRequest; });
 
   // Track the last viewed document for theme updates
   const lastViewedDocumentRef = useRef<string | null>(null);
@@ -751,11 +757,29 @@ function EditorComponent() {
       setOutput({ isGenerating: true });
 
       // 1. Flush Monaco debounce: read live text, save to store immediately
+      let themeDirty = false;
       const editorRef = useEditorRefsStore.getState().getActiveEditor();
       if (editorRef) {
         const liveText = editorRef.editor.getValue();
         // Save imperatively via store to avoid reactive deps on `documents`
         documentsStore.getState().saveDocument(editorRef.documentName, liveText);
+      }
+
+      // Flush all open theme editors whose live text differs from the
+      // themes store so the build always uses up-to-date theme data.
+      const { documents: allDocs, documentTypes: allDtypes } = documentsStore.getState();
+      for (const doc of allDocs) {
+        if (allDtypes[doc.name] === 'application/json+theme') {
+          const ref = useEditorRefsStore.getState().getEditor(doc.name);
+          if (ref) {
+            const liveText = ref.editor.getValue();
+            const existing = themesStore.getState().customThemes[doc.name];
+            if (!existing || existing.content !== liveText) {
+              themesStore.getState().updateTheme(doc.name, liveText);
+              themeDirty = true;
+            }
+          }
+        }
       }
 
       // 2. Cancel any pending build timeout for active doc
@@ -795,7 +819,8 @@ function EditorComponent() {
             ? { ...freshDoc, text: ref.editor.getValue() }
             : freshDoc;
           getDocumentVersionRef.current(doc.name);
-          buildDocumentRef.current(doc);
+          // Bypass cache only when a theme was updated during this flush
+          buildDocumentRef.current(doc, undefined, themeDirty ? { bypassCache: true } : undefined);
         } else {
           setOutput({ isGenerating: false });
         }
@@ -809,7 +834,7 @@ function EditorComponent() {
         clearTimeout(flushBuildTimerRef.current);
       }
     };
-  }, [setOutput, documentsStore]);
+  }, [setOutput, documentsStore, themesStore]);
 
   // Cleanup on unmount
   useEffect(() => {

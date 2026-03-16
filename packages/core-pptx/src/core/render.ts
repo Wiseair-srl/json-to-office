@@ -97,27 +97,32 @@ export async function renderPresentation(
         const phDef = masterDef.placeholders?.find(p => p.name === phName);
         if (!phDef) { console.warn(`Unknown placeholder: ${phName}`); continue; }
         for (const component of components) {
-          const resolved = resolveComponentGridPosition(
+          const gridResolved = resolveComponentGridPosition(
             component, effectiveGrid,
             processed.slideWidth, processed.slideHeight
           );
+          // Shallow-copy scalar props so we never mutate the original input document
+          // (only scalar assignments below — deep copy not needed)
+          const props = { ...gridResolved.props };
           // Inherit placeholder bounds as position defaults
-          if (resolved.props.x == null && phDef.x != null) resolved.props.x = phDef.x;
-          if (resolved.props.y == null && phDef.y != null) resolved.props.y = phDef.y;
-          if (resolved.props.w == null && phDef.w != null) resolved.props.w = phDef.w;
-          if (resolved.props.h == null && phDef.h != null) resolved.props.h = phDef.h;
+          if (props.x == null && phDef.x != null) props.x = phDef.x;
+          if (props.y == null && phDef.y != null) props.y = phDef.y;
+          if (props.w == null && phDef.w != null) props.w = phDef.w;
+          if (props.h == null && phDef.h != null) props.h = phDef.h;
           // Inherit placeholder explicit props
-          if (resolved.props.fontSize == null && phDef.fontSize) resolved.props.fontSize = phDef.fontSize;
-          if (resolved.props.fontFace == null && phDef.fontFace) resolved.props.fontFace = phDef.fontFace;
-          if (resolved.props.color == null && phDef.color) resolved.props.color = phDef.color;
-          if (resolved.props.bold == null && phDef.bold != null) resolved.props.bold = phDef.bold;
-          if (resolved.props.italic == null && phDef.italic != null) resolved.props.italic = phDef.italic;
-          if (resolved.props.align == null && phDef.align) resolved.props.align = phDef.align;
-          if (resolved.props.valign == null && phDef.valign) resolved.props.valign = phDef.valign;
-          if (resolved.props.margin == null && phDef.margin !== undefined) resolved.props.margin = phDef.margin;
-          if (resolved.props.charSpacing == null && phDef.charSpacing !== undefined) resolved.props.charSpacing = phDef.charSpacing;
+          if (props.fontSize == null && phDef.fontSize) props.fontSize = phDef.fontSize;
+          if (props.fontFace == null && phDef.fontFace) props.fontFace = phDef.fontFace;
+          if (props.color == null && phDef.color) props.color = phDef.color;
+          if (props.bold == null && phDef.bold != null) props.bold = phDef.bold;
+          if (props.italic == null && phDef.italic != null) props.italic = phDef.italic;
+          if (props.align == null && phDef.align) props.align = phDef.align;
+          if (props.valign == null && phDef.valign) props.valign = phDef.valign;
+          if (props.margin == null && phDef.margin !== undefined) props.margin = phDef.margin;
+          if (props.charSpacing == null && phDef.charSpacing !== undefined) props.charSpacing = phDef.charSpacing;
+          if (props.lineSpacing == null && phDef.lineSpacing !== undefined) props.lineSpacing = phDef.lineSpacing;
           // Propagate placeholder style name so component renderers get heading font auto-selection
-          if (resolved.props.style == null && phDef.style) resolved.props.style = phDef.style;
+          if (props.style == null && phDef.style) props.style = phDef.style;
+          const resolved = { ...gridResolved, props };
           await renderComponent(slide, resolved, processed.theme, pptx);
         }
       }

@@ -142,6 +142,7 @@ export interface PlaceholderDefinition {
   bold?: boolean; italic?: boolean;
   style?: StyleName;
   charSpacing?: number;
+  lineSpacing?: number;
   text?: string;
 }
 
