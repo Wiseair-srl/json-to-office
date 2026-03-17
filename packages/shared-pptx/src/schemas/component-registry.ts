@@ -181,8 +181,8 @@ export function createPptxComponentSchemaObject(
         placeholders: Type.Optional(
           Type.Record(
             Type.String(),
-            Type.Array(recursiveRef),
-            { description: 'Content for named placeholders: { "title": [...components] }' }
+            recursiveRef,
+            { description: 'Content for named placeholders: { "title": { "name": "text", ... } }' }
           )
         ),
       },

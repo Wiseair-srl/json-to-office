@@ -106,7 +106,17 @@ export function useChatSession() {
           try {
             formatted = JSON.stringify(JSON.parse(raw), null, 2);
           } catch {
-            formatted = raw;
+            // If last block doesn't parse, try concatenating all blocks
+            if (jsonBlocks.length > 1) {
+              const combined = jsonBlocks.map(m => m[1]).join('\n');
+              try {
+                formatted = JSON.stringify(JSON.parse(combined), null, 2);
+              } catch {
+                formatted = raw;
+              }
+            } else {
+              formatted = raw;
+            }
           }
           const tab = activeTabRef.current;
           if (tab) {

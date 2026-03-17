@@ -25,7 +25,7 @@ IMPORTANT: This {{contentLabelLower}} already exists. You are EDITING it, not ge
     ]
   },
   "children": [
-    { "name": "slide", "props": { "master": "CONTENT_MASTER", "placeholders": { "heading": [{ "name": "text", "props": { "text": "Overview" } }], "body": [{ "name": "text", "props": { "text": "Content here." } }] } } }
+    { "name": "slide", "props": { "master": "CONTENT_MASTER", "placeholders": { "heading": { "name": "text", "props": { "text": "Overview" } }, "body": { "name": "text", "props": { "text": "Content here." } } } } }
   ]
 }
 ```
@@ -42,8 +42,8 @@ IMPORTANT: This {{contentLabelLower}} already exists. You are EDITING it, not ge
     ]
   },
   "children": [
-    { "name": "slide", "props": { "master": "CONTENT_MASTER", "placeholders": { "heading": [{ "name": "text", "props": { "text": "Overview" } }], "body": [{ "name": "text", "props": { "text": "Content here." } }] } } },
-    { "name": "slide", "props": { "master": "CONTENT_MASTER", "placeholders": { "heading": [{ "name": "text", "props": { "text": "Pricing" } }], "body": [{ "name": "table", "props": { "rows": [["Plan", "Price"], ["Starter", "$9/mo"], ["Pro", "$29/mo"]], "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 } } }] } } }
+    { "name": "slide", "props": { "master": "CONTENT_MASTER", "placeholders": { "heading": { "name": "text", "props": { "text": "Overview" } }, "body": { "name": "text", "props": { "text": "Content here." } } } } },
+    { "name": "slide", "props": { "master": "CONTENT_MASTER", "placeholders": { "heading": { "name": "text", "props": { "text": "Pricing" } }, "body": { "name": "table", "props": { "rows": [["Plan", "Price"], ["Starter", "$9/mo"], ["Pro", "$29/mo"]], "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 } } } } } }
   ]
 }
 ```

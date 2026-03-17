@@ -77,7 +77,7 @@ Use the 12-column × 6-row grid instead of absolute x/y/w/h:
 
 ## Filling Placeholders (Slide Level)
 
-Slides reference a master and fill its placeholders with component arrays:
+Slides reference a master and fill each placeholder with a single component:
 
 ```json
 {
@@ -85,19 +85,14 @@ Slides reference a master and fill its placeholders with component arrays:
   "props": {
     "master": "CONTENT_MASTER",
     "placeholders": {
-      "heading": [
-        { "name": "text", "props": { "text": "Slide Title" } }
-      ],
-      "body": [
-        { "name": "text", "props": { "text": "Key insight here." } },
-        { "name": "shape", "props": { "type": "roundRect", "fill": { "color": "background2" }, "text": "100+\nCustomers", "fontSize": 16, "bold": true, "fontColor": "primary", "align": "center", "valign": "middle", "grid": { "column": 0, "row": 3, "columnSpan": 4 } } }
-      ]
+      "heading": { "name": "text", "props": { "text": "Slide Title" } },
+      "body": { "name": "text", "props": { "text": "Key insight here." } }
     }
   }
 }
 ```
 
-Components inside placeholders use grid positions relative to the slide (not the placeholder).
+Each placeholder maps to exactly one component (not an array). The component inherits the placeholder's position and styling.
 
 ### Placeholder inheritance
 

@@ -10,7 +10,7 @@ import { logger } from '../utils/logger.js';
 const MAX_DOC_CHARS = 100_000; // ~25k tokens
 
 function sanitizeFilename(name: string): string {
-  return name.replace(/[\[\]\n\r]/g, '_');
+  return name.replace(/[[\]\n\r]/g, '_');
 }
 
 /**

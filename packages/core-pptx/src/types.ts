@@ -45,7 +45,7 @@ export interface SlideComponentDefinition {
     layout?: string;
     hidden?: boolean;
     master?: string;
-    placeholders?: Record<string, PptxComponentInput[]>;
+    placeholders?: Record<string, PptxComponentInput>;
   };
   children?: PptxComponentInput[];
 }
@@ -76,7 +76,7 @@ export interface ProcessedSlide {
   layout?: string;
   hidden?: boolean;
   master?: string;
-  placeholders?: Record<string, PptxComponentInput[]>;
+  placeholders?: Record<string, PptxComponentInput>;
 }
 
 export interface GridConfig {

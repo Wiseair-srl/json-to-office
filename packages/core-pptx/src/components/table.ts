@@ -85,10 +85,10 @@ export function renderTableComponent(
   // Pre-compute inner border for per-cell border assignment
   const innerBorder = props.border
     ? {
-        type: props.border.type ?? 'solid',
-        pt: props.border.pt ?? 1,
-        color: resolveColor(props.border.color ?? '000000', theme),
-      }
+      type: props.border.type ?? 'solid',
+      pt: props.border.pt ?? 1,
+      color: resolveColor(props.border.color ?? '000000', theme),
+    }
     : undefined;
 
   // Helper: build per-cell border array when borderRadius is active

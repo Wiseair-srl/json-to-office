@@ -65,8 +65,8 @@ Only use this for truly unique, unrepeatable slides. Prefer masters for any layo
       "props": {
         "master": "TITLE_MASTER",
         "placeholders": {
-          "title": [{ "name": "text", "props": { "text": "Q1 2026 Update" } }],
-          "subtitle": [{ "name": "text", "props": { "text": "Engineering Division" } }]
+          "title": { "name": "text", "props": { "text": "Q1 2026 Update" } },
+          "subtitle": { "name": "text", "props": { "text": "Engineering Division" } }
         }
       }
     },
@@ -75,11 +75,8 @@ Only use this for truly unique, unrepeatable slides. Prefer masters for any layo
       "props": {
         "master": "CONTENT_MASTER",
         "placeholders": {
-          "heading": [{ "name": "text", "props": { "text": "Highlights" } }],
-          "body": [
-            { "name": "text", "props": { "text": "Shipped 3 major features ahead of schedule." } },
-            { "name": "table", "props": { "rows": [["Feature", "Status"], ["Search v2", "Shipped"], ["Auth rewrite", "In Progress"]], "grid": { "column": 0, "row": 3, "columnSpan": 12, "rowSpan": 2 }, "fontSize": 12, "border": { "type": "solid", "pt": 0.5, "color": "E2E8F0" } } }
-          ]
+          "heading": { "name": "text", "props": { "text": "Highlights" } },
+          "body": { "name": "table", "props": { "rows": [["Feature", "Status"], ["Search v2", "Shipped"], ["Auth rewrite", "In Progress"]], "grid": { "column": 0, "row": 3, "columnSpan": 12, "rowSpan": 2 }, "fontSize": 12, "border": { "type": "solid", "pt": 0.5, "color": "E2E8F0" } } }
         }
       }
     }

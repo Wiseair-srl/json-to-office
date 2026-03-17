@@ -27,3 +27,4 @@ You are working with **{{format}}** documents.
 3. Keep the JSON well-formatted with 2-space indentation.
 4. Use only component names that exist in the schema above.
 5. Respect required properties and valid enum values from the schema.
+6. **Never split JSON across multiple code blocks.** Always output the entire JSON in a single ```json block, even if it's large. Do not add narrative text mid-JSON or break it into parts.
