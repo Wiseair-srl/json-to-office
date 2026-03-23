@@ -11,40 +11,40 @@
         "name": "TITLE_MASTER",
         "background": { "color": "primary" },
         "objects": [
-          { "rect": { "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": "secondary" } },
-          { "text": { "text": "ACME CORP — CONFIDENTIAL", "grid": { "column": 0, "row": 5, "columnSpan": 6 }, "y": 6.85, "h": 0.5, "fontSize": 9, "color": "background2", "italic": true } }
+          { "name": "shape", "props": { "type": "rect", "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": { "color": "secondary" } } },
+          { "name": "text", "props": { "text": "ACME CORP — CONFIDENTIAL", "grid": { "column": 0, "row": 5, "columnSpan": 6 }, "y": 6.85, "h": 0.5, "fontSize": 9, "color": "background2", "italic": true } }
         ],
         "placeholders": [
-          { "name": "title", "type": "title", "style": "title", "grid": { "column": 1, "row": 1, "columnSpan": 10, "rowSpan": 2 }, "color": "background", "valign": "middle" },
-          { "name": "subtitle", "type": "body", "style": "subtitle", "grid": { "column": 2, "row": 3, "columnSpan": 8 }, "color": "accent" }
+          { "name": "title", "grid": { "column": 1, "row": 1, "columnSpan": 10, "rowSpan": 2 }, "defaults": { "name": "text", "props": { "style": "title", "color": "background", "valign": "middle" } } },
+          { "name": "subtitle", "grid": { "column": 2, "row": 3, "columnSpan": 8 }, "defaults": { "name": "text", "props": { "style": "subtitle", "color": "accent" } } }
         ]
       },
       {
         "name": "CONTENT_MASTER",
         "objects": [
-          { "rect": { "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": "primary" } },
-          { "text": { "text": "ACME CORP", "grid": { "column": 0, "row": 0, "columnSpan": 5 }, "y": 0.15, "h": 0.6, "fontSize": 14, "bold": true, "color": "background" } },
-          { "rect": { "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": "background2" } },
-          { "text": { "text": "Confidential", "grid": { "column": 0, "row": 5, "columnSpan": 4 }, "y": 6.85, "h": 0.5, "fontSize": 8, "color": "text2", "italic": true } }
+          { "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } },
+          { "name": "text", "props": { "text": "ACME CORP", "grid": { "column": 0, "row": 0, "columnSpan": 5 }, "y": 0.15, "h": 0.6, "fontSize": 14, "bold": true, "color": "background" } },
+          { "name": "shape", "props": { "type": "rect", "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": { "color": "background2" } } },
+          { "name": "text", "props": { "text": "Confidential", "grid": { "column": 0, "row": 5, "columnSpan": 4 }, "y": 6.85, "h": 0.5, "fontSize": 8, "color": "text2", "italic": true } }
         ],
         "slideNumber": { "x": 9, "y": 6.85, "w": 0.5, "h": 0.5, "color": "text2", "fontSize": 8 },
         "placeholders": [
-          { "name": "heading", "type": "title", "style": "heading1", "grid": { "column": 0, "row": 1, "columnSpan": 12 } },
-          { "name": "body", "type": "body", "style": "body", "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 } }
+          { "name": "heading", "grid": { "column": 0, "row": 1, "columnSpan": 12 }, "defaults": { "name": "text", "props": { "style": "heading1" } } },
+          { "name": "body", "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 }, "defaults": { "name": "text", "props": { "style": "body" } } }
         ]
       },
       {
         "name": "TWO_COLUMN_MASTER",
         "objects": [
-          { "rect": { "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": "primary" } },
-          { "text": { "text": "ACME CORP", "grid": { "column": 0, "row": 0, "columnSpan": 5 }, "y": 0.15, "h": 0.6, "fontSize": 14, "bold": true, "color": "background" } },
-          { "rect": { "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": "background2" } }
+          { "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } },
+          { "name": "text", "props": { "text": "ACME CORP", "grid": { "column": 0, "row": 0, "columnSpan": 5 }, "y": 0.15, "h": 0.6, "fontSize": 14, "bold": true, "color": "background" } },
+          { "name": "shape", "props": { "type": "rect", "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": { "color": "background2" } } }
         ],
         "slideNumber": { "x": 9, "y": 6.85, "w": 0.5, "h": 0.5, "color": "text2", "fontSize": 8 },
         "placeholders": [
-          { "name": "heading", "type": "title", "style": "heading1", "grid": { "column": 0, "row": 1, "columnSpan": 12 } },
-          { "name": "left", "type": "body", "style": "body", "grid": { "column": 0, "row": 2, "columnSpan": 6, "rowSpan": 3 } },
-          { "name": "right", "type": "body", "style": "body", "grid": { "column": 6, "row": 2, "columnSpan": 6, "rowSpan": 3 } }
+          { "name": "heading", "grid": { "column": 0, "row": 1, "columnSpan": 12 }, "defaults": { "name": "text", "props": { "style": "heading1" } } },
+          { "name": "left", "grid": { "column": 0, "row": 2, "columnSpan": 6, "rowSpan": 3 }, "defaults": { "name": "text", "props": { "style": "body" } } },
+          { "name": "right", "grid": { "column": 6, "row": 2, "columnSpan": 6, "rowSpan": 3 }, "defaults": { "name": "text", "props": { "style": "body" } } }
         ]
       }
     ]

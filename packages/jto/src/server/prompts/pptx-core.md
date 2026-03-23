@@ -17,38 +17,40 @@ pptx.children[].props.placeholders → slide fills master's named regions
 Each master has:
 - `name` — unique identifier (SCREAMING_SNAKE_CASE)
 - `background` — optional, color or image
-- `objects[]` — fixed decorations (rects, text, lines) that appear on every slide using this master
+- `objects[]` — fixed components (shapes, text, images) that appear on every slide using this master. Uses the same `{ name, props }` format as slide children
 - `placeholders[]` — named content regions that slides fill with components
 - `slideNumber` — optional, position and style of auto slide numbers
 - `grid` — optional grid override, merged with the presentation grid. Use this to shift the content area below header bars. Example: `"grid": { "margin": { "top": 1.1 } }` pushes row 0 below a 0.9" header.
 
-### Object types in `objects[]`
+### Fixed objects in `objects[]`
 
-**Important:** Fixed decorations (header bars, footer bars) must use absolute `x`/`y`/`w`/`h`, not grid — because the master's `grid` override shifts grid positions, and decorations shouldn't shift themselves.
+Master objects use the **same `{ name, props }` component format** as slide children. Any content component (shape, text, image, table, chart) can be used as a master object.
+
+**Important:** Fixed decorations (header bars, footer bars) should use absolute `x`/`y`/`w`/`h`, not grid — because the master's `grid` override shifts grid positions, and decorations shouldn't shift themselves.
 
 ```json
-{ "rect": { "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": "primary" } }
-{ "text": { "text": "COMPANY", "x": 0.6, "y": 0.15, "w": 4, "h": 0.6, "fontSize": 14, "bold": true, "color": "FFFFFF" } }
-{ "line": { "x": 0.5, "y": 2, "w": 9, "h": 0, "line": { "color": "accent", "width": 1 } } }
-{ "image": { "path": "logo.png", "x": 8.5, "y": 0.15, "w": 1, "h": 0.6 } }
+{ "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } }
+{ "name": "shape", "props": { "type": "roundRect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" }, "rectRadius": 0.15 } }
+{ "name": "text", "props": { "text": "COMPANY", "x": 0.6, "y": 0.15, "w": 4, "h": 0.6, "fontSize": 14, "bold": true, "color": "FFFFFF" } }
+{ "name": "shape", "props": { "type": "line", "x": 0.5, "y": 2, "w": 9, "h": 0, "line": { "color": "accent", "width": 1 } } }
+{ "name": "image", "props": { "path": "logo.png", "x": 8.5, "y": 0.15, "w": 1, "h": 0.6 } }
 ```
+
+Master objects support all component props including `rectRadius`, `shadow`, `rotate`, `fill.transparency`, `line.dashType`, rich text segments, etc.
 
 ### Placeholder definition
 
 ```json
 {
   "name": "body",
-  "type": "body",
   "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 },
-  "fontSize": 14
+  "defaults": { "name": "text", "props": { "style": "body", "fontSize": 14 } }
 }
 ```
 
 - `name` — key used in `slide.props.placeholders` to fill this region
-- `type` — `title`, `body`, `pic`, `chart`, `tbl`, `media`
 - Position via `grid` (preferred) or `x`/`y`/`w`/`h`
-- Styling: `fontSize`, `fontFace`, `color`, `align`, `valign`, `bold`, `italic`, `lineSpacing`
-- `style` — optional named style (see Named Styles below); applies as defaults to all components in this placeholder
+- `defaults` — optional component stub (`{ name, props }`) whose props are inherited by the component placed in this placeholder. Supports any component type — text defaults for text placeholders, chart defaults for chart placeholders, etc.
 
 ## Grid Positioning (preferred)
 
@@ -92,27 +94,27 @@ Slides reference a master and fill each placeholder with a single component:
 }
 ```
 
-Each placeholder maps to exactly one component (not an array). The component inherits the placeholder's position and styling.
+Each placeholder maps to exactly one component (not an array). The component inherits the placeholder's position and `defaults` props.
 
 ### Placeholder inheritance
 
-Components inside placeholders automatically inherit these props from the placeholder definition — **do NOT re-specify a prop if the placeholder already defines it:**
+Placeholders provide default props via `defaults`. The component placed in the placeholder inherits these — **do NOT re-specify a prop if `defaults` already defines it.**
 
-`fontSize`, `fontFace`, `color`, `bold`, `italic`, `align`, `valign`, `margin`, `charSpacing`, `lineSpacing`, `style`, plus position (`x`/`y`/`w`/`h` or `grid`).
+Resolution order (most specific wins): `component props → defaults props → position from placeholder`
 
-Resolution order: `component props → component style → placeholder props → placeholder style → theme defaults`
+This is a simple spread: `{ ...position, ...defaults.props, ...component.props }`.
 
-**Good** — placeholder defines `fontSize: 14`, component omits it:
+**Good** — defaults defines `fontSize: 14` and `style: "body"`, component omits them:
 ```json
 { "name": "text", "props": { "text": "Key insight here." } }
 ```
 
-**Bad** — redundantly re-specifying what the placeholder already provides:
+**Bad** — redundantly re-specifying what defaults already provides:
 ```json
-{ "name": "text", "props": { "text": "Key insight here.", "fontSize": 14, "grid": { "column": 0, "row": 2, "columnSpan": 12 } } }
+{ "name": "text", "props": { "text": "Key insight here.", "fontSize": 14, "style": "body" } }
 ```
 
-Only override a placeholder prop when you genuinely need a different value for that specific component.
+Only override a defaults prop when you genuinely need a different value for that specific component.
 
 ## Semantic Colors
 
@@ -136,13 +138,13 @@ Themes define a `styles` map with predefined text style presets. Use `"style"` o
 { "name": "shape", "props": { "type": "roundRect", "text": "KPI", "style": "caption", "fill": { "color": "background2" } } }
 ```
 
-**Usage on placeholders:**
+**Usage on placeholder defaults:**
 ```json
-{ "name": "heading", "type": "title", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } }
+{ "name": "heading", "grid": { "column": 0, "row": 0, "columnSpan": 12 }, "defaults": { "name": "text", "props": { "style": "heading1" } } }
 ```
 
 **Resolution cascade (most specific wins):**
-`component props → component style → placeholder props → placeholder style → theme defaults`
+`component props → component style → defaults props → defaults style → theme defaults`
 
 Explicit props always override style values. Example: `"style": "heading1", "fontSize": 32` → uses 32pt, not the style's fontSize.
 
@@ -169,7 +171,7 @@ Themes can override styles in the `styles` key:
 
 ## Available Components
 
-Use these inside `placeholders` or `children`:
+Use these inside `placeholders`, `children`, or master `objects`:
 - **text** — headings, paragraphs, bullets. Props: `text`, `fontSize`, `bold`, `italic`, `color`, `align`, `bullet`, `lineSpacing`, `charSpacing`
 - **shape** — rectangles, circles, arrows, etc. Props: `type` (rect, roundRect, ellipse, triangle, etc.), `fill`, `text` (string or `[{ text, fontSize?, color?, bold?, italic?, breakLine? }]` for rich text), `fontSize`, `fontColor`, `charSpacing`
 - **table** — data grids. Props: `rows` (2D array of strings or cell objects), `colW`, `rowH`, `border`, `fontSize`, `margin`, `borderRadius`

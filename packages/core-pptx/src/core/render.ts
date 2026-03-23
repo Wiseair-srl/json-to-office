@@ -44,10 +44,7 @@ export async function renderPresentation(
   const masterMap = new Map(processed.masters?.map(m => [m.name, m]) ?? []);
   if (processed.masters) {
     for (const masterDef of processed.masters) {
-      const masterProps = buildSlideMasterProps(
-        masterDef, processed.theme, processed.grid,
-        processed.slideWidth, processed.slideHeight
-      );
+      const masterProps = buildSlideMasterProps(masterDef, processed.theme);
       pptx.defineSlideMaster(masterProps as any);
     }
   }
@@ -78,9 +75,19 @@ export async function renderPresentation(
 
     // Determine effective grid for this slide (master grid merged with presentation grid)
     const masterDef = slideData.master ? masterMap.get(slideData.master) : undefined;
+    if (slideData.master && !masterDef) {
+      console.warn(`Unknown master "${slideData.master}". Available: ${[...masterMap.keys()].join(', ')}`);
+    }
     const effectiveGrid = mergeGridConfigs(processed.grid, masterDef?.grid);
 
-    // Render components (resolve grid positions first)
+    // Render master fixed objects (grid already resolved in structure.ts)
+    if (masterDef?.objects) {
+      for (const obj of masterDef.objects) {
+        await renderComponent(slide, obj, processed.theme, pptx);
+      }
+    }
+
+    // Render slide components (resolve grid positions first)
     for (const component of slideData.components) {
       const resolved = resolveComponentGridPosition(
         component,
@@ -93,35 +100,29 @@ export async function renderPresentation(
 
     // Render placeholder content
     if (slideData.placeholders && masterDef) {
+      const phMap = new Map(masterDef.placeholders?.map(p => [p.name, p]) ?? []);
+
       for (const [phName, component] of Object.entries(slideData.placeholders)) {
-        const phDef = masterDef.placeholders?.find(p => p.name === phName);
-        if (!phDef) { console.warn(`Unknown placeholder: ${phName}`); continue; }
+        const phDef = phMap.get(phName);
+        if (!phDef) {
+          console.warn(`Unknown placeholder "${phName}" in master "${slideData.master}". Available: ${[...phMap.keys()].join(', ')}`);
+          continue;
+        }
+
         const gridResolved = resolveComponentGridPosition(
           component, effectiveGrid,
           processed.slideWidth, processed.slideHeight
         );
-        // Shallow-copy scalar props so we never mutate the original input document
-        const props = { ...gridResolved.props };
-        // Inherit placeholder bounds as position defaults
-        if (props.x == null && phDef.x != null) props.x = phDef.x;
-        if (props.y == null && phDef.y != null) props.y = phDef.y;
-        if (props.w == null && phDef.w != null) props.w = phDef.w;
-        if (props.h == null && phDef.h != null) props.h = phDef.h;
-        // Inherit placeholder explicit props
-        if (props.fontSize == null && phDef.fontSize) props.fontSize = phDef.fontSize;
-        if (props.fontFace == null && phDef.fontFace) props.fontFace = phDef.fontFace;
-        if (props.color == null && phDef.color) props.color = phDef.color;
-        if (props.bold == null && phDef.bold != null) props.bold = phDef.bold;
-        if (props.italic == null && phDef.italic != null) props.italic = phDef.italic;
-        if (props.align == null && phDef.align) props.align = phDef.align;
-        if (props.valign == null && phDef.valign) props.valign = phDef.valign;
-        if (props.margin == null && phDef.margin !== undefined) props.margin = phDef.margin;
-        if (props.charSpacing == null && phDef.charSpacing !== undefined) props.charSpacing = phDef.charSpacing;
-        if (props.lineSpacing == null && phDef.lineSpacing !== undefined) props.lineSpacing = phDef.lineSpacing;
-        // Propagate placeholder style name so component renderers get heading font auto-selection
-        if (props.style == null && phDef.style) props.style = phDef.style;
-        const resolved = { ...gridResolved, props };
-        await renderComponent(slide, resolved, processed.theme, pptx);
+
+        // Position from placeholder, then defaults props, then component props (most specific wins)
+        const posDefaults: Record<string, any> = {};
+        if (phDef.x != null) posDefaults.x = phDef.x;
+        if (phDef.y != null) posDefaults.y = phDef.y;
+        if (phDef.w != null) posDefaults.w = phDef.w;
+        if (phDef.h != null) posDefaults.h = phDef.h;
+
+        const props = { ...posDefaults, ...(phDef.defaults?.props ?? {}), ...gridResolved.props };
+        await renderComponent(slide, { ...gridResolved, props }, processed.theme, pptx);
       }
     }
 

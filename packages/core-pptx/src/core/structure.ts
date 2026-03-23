@@ -11,7 +11,7 @@ import type {
   MasterSlideDefinition,
 } from '../types';
 import { isSlideComponent } from '../types';
-import { resolveGridPosition, mergeGridConfigs } from './grid';
+import { resolveGridPosition, resolveComponentGridPosition, mergeGridConfigs } from './grid';
 import { getPptxTheme } from '../themes';
 import type { GenerationOptions } from './generator';
 
@@ -30,10 +30,10 @@ export function processPresentation(
   let masters: MasterSlideDefinition[] | undefined;
   if (props.masters && props.masters.length > 0) {
     masters = props.masters.map((m: MasterSlideDefinition) => {
-      if (!m.placeholders) return m;
-      // Resolve grid positions on placeholders using master's grid (merged with presentation)
       const effectiveGrid = mergeGridConfigs(props.grid, m.grid);
-      const resolvedPhs = m.placeholders.map(ph => {
+
+      // Resolve grid positions on placeholders
+      const resolvedPhs = m.placeholders?.map(ph => {
         if (!ph.grid) return ph;
         const abs = resolveGridPosition(ph.grid, effectiveGrid, slideWidth, slideHeight);
         return {
@@ -45,7 +45,13 @@ export function processPresentation(
           grid: undefined,
         };
       });
-      return { ...m, placeholders: resolvedPhs };
+
+      // Resolve grid positions on fixed objects (unified components)
+      const resolvedObjects = m.objects?.map(obj =>
+        resolveComponentGridPosition(obj, effectiveGrid, slideWidth, slideHeight)
+      );
+
+      return { ...m, placeholders: resolvedPhs, objects: resolvedObjects };
     });
   }
 

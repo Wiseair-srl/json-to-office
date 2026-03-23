@@ -2,85 +2,63 @@
  * Master Slide Definition Schemas
  */
 
-import { Type, Static } from '@sinclair/typebox';
-import { SlideBackgroundSchema, GridPositionSchema, PptxAlignmentSchema, VerticalAlignmentSchema } from './common';
-import { ColorValueSchema, GridConfigSchema, StyleNameSchema } from '../theme';
+import { Type, Static, TSchema } from '@sinclair/typebox';
+import { SlideBackgroundSchema, GridPositionSchema } from './common';
+import { ColorValueSchema, GridConfigSchema } from '../theme';
+import { TextPropsSchema } from './text';
+import { PptxImagePropsSchema } from './image';
+import { ShapePropsSchema } from './shape';
+import { PptxTablePropsSchema } from './table';
+import { PptxChartPropsSchema } from './chart';
+import { PptxHighchartsPropsSchema } from './highcharts';
 
 // Position helpers (number in inches)
 const Inches = Type.Number({ description: 'Position/size in inches' });
 
-// Fixed objects on a master slide
-export const MasterObjectSchema = Type.Union([
-  Type.Object({
-    image: Type.Object({
-      path: Type.Optional(Type.String({ description: 'Image file path or URL' })),
-      data: Type.Optional(Type.String({ description: 'Base64-encoded image data' })),
-      x: Type.Optional(Inches), y: Type.Optional(Inches), w: Type.Optional(Inches), h: Type.Optional(Inches),
-      grid: Type.Optional(GridPositionSchema),
-    }, { additionalProperties: false }),
-  }, { additionalProperties: false }),
-  Type.Object({
-    text: Type.Object({
-      text: Type.String(),
-      x: Type.Optional(Inches), y: Type.Optional(Inches), w: Type.Optional(Inches), h: Type.Optional(Inches),
-      grid: Type.Optional(GridPositionSchema),
-      fontSize: Type.Optional(Type.Number()),
-      fontFace: Type.Optional(Type.String()),
-      color: Type.Optional(ColorValueSchema),
-      bold: Type.Optional(Type.Boolean()),
-      italic: Type.Optional(Type.Boolean()),
-      align: Type.Optional(PptxAlignmentSchema),
-      charSpacing: Type.Optional(Type.Number()),
-    }, { additionalProperties: false }),
-  }, { additionalProperties: false }),
-  Type.Object({
-    rect: Type.Object({
-      x: Type.Optional(Inches), y: Type.Optional(Inches), w: Type.Optional(Inches), h: Type.Optional(Inches),
-      grid: Type.Optional(GridPositionSchema),
-      fill: Type.Optional(ColorValueSchema),
-      line: Type.Optional(Type.Object({
-        color: Type.Optional(ColorValueSchema),
-        width: Type.Optional(Type.Number()),
-      }, { additionalProperties: false })),
-    }, { additionalProperties: false }),
-  }, { additionalProperties: false }),
-  Type.Object({
-    line: Type.Object({
-      x: Type.Optional(Inches), y: Type.Optional(Inches), w: Type.Optional(Inches), h: Type.Optional(Inches),
-      grid: Type.Optional(GridPositionSchema),
-      line: Type.Optional(Type.Object({
-        color: Type.Optional(ColorValueSchema),
-        width: Type.Optional(Type.Number()),
-      }, { additionalProperties: false })),
-    }, { additionalProperties: false }),
-  }, { additionalProperties: false }),
-], { description: 'Fixed object on a master slide (image, text, rect, or line)' });
+// Helper: wrap a props schema into { name, props } component format
+function contentComponent(name: string, propsSchema: TSchema) {
+  return Type.Object({
+    name: Type.Literal(name),
+    id: Type.Optional(Type.String()),
+    enabled: Type.Optional(Type.Boolean({
+      default: true,
+      description: 'When false, this component is filtered out and not rendered. Defaults to true.',
+    })),
+    props: propsSchema,
+  }, { additionalProperties: false });
+}
+
+// Content component union — same { name, props } format as slide children
+const MasterObjectComponentSchema = Type.Union([
+  contentComponent('text', TextPropsSchema),
+  contentComponent('image', PptxImagePropsSchema),
+  contentComponent('shape', ShapePropsSchema),
+  contentComponent('table', PptxTablePropsSchema),
+  contentComponent('chart', PptxChartPropsSchema),
+  contentComponent('highcharts', PptxHighchartsPropsSchema),
+], {
+  discriminator: { propertyName: 'name' },
+  description: 'Fixed component on a master slide (same format as slide children)',
+});
+
+// Defaults schema — partial component stub (carries styling props, not content)
+// Loose { name, props } because defaults don't require content-specific fields
+// (e.g. a text defaults stub doesn't need the "text" prop itself)
+const PlaceholderDefaultsSchema = Type.Object({
+  name: Type.String({ description: 'Component type name (text, shape, chart, etc.)' }),
+  props: Type.Record(Type.String(), Type.Any(), { description: 'Default props inherited by the component placed in this placeholder' }),
+}, { additionalProperties: false, description: 'Partial component stub — styling defaults only' });
 
 // Placeholder definition
 export const PlaceholderDefinitionSchema = Type.Object({
   name: Type.String({ description: 'Unique placeholder name' }),
-  type: Type.Union([
-    Type.Literal('title'), Type.Literal('body'), Type.Literal('pic'),
-    Type.Literal('chart'), Type.Literal('tbl'), Type.Literal('media'),
-  ], { description: 'Placeholder content type' }),
   x: Type.Optional(Inches),
   y: Type.Optional(Inches),
   w: Type.Optional(Inches),
   h: Type.Optional(Inches),
   grid: Type.Optional(GridPositionSchema),
-  fontSize: Type.Optional(Type.Number({ description: 'Default font size in points' })),
-  fontFace: Type.Optional(Type.String({ description: 'Default font family' })),
-  color: Type.Optional(ColorValueSchema),
-  align: Type.Optional(PptxAlignmentSchema),
-  valign: Type.Optional(VerticalAlignmentSchema),
-  margin: Type.Optional(Type.Union([Type.Number(), Type.Array(Type.Number(), { minItems: 4, maxItems: 4 })])),
-  bold: Type.Optional(Type.Boolean({ description: 'Default bold for components in this placeholder' })),
-  italic: Type.Optional(Type.Boolean({ description: 'Default italic for components in this placeholder' })),
-  style: Type.Optional(StyleNameSchema),
-  charSpacing: Type.Optional(Type.Number({ description: 'Default character spacing in points' })),
-  lineSpacing: Type.Optional(Type.Number({ description: 'Default line spacing in points' })),
-  text: Type.Optional(Type.String({ description: 'Default placeholder text (shown until user adds content)' })),
-}, { additionalProperties: false, description: 'Placeholder on a master slide' });
+  defaults: Type.Optional(PlaceholderDefaultsSchema),
+}, { additionalProperties: false, description: 'Placeholder on a master slide — defaults is a component stub whose props are inherited by the actual component' });
 
 // Master slide definition
 export const MasterSlideDefinitionSchema = Type.Object({
@@ -97,11 +75,10 @@ export const MasterSlideDefinitionSchema = Type.Object({
     color: Type.Optional(ColorValueSchema),
     fontSize: Type.Optional(Type.Number({ description: 'Slide number font size in points' })),
   }, { additionalProperties: false, description: 'Slide number position and styling' })),
-  objects: Type.Optional(Type.Array(MasterObjectSchema, { description: 'Fixed objects (logos, footers, decorations)' })),
+  objects: Type.Optional(Type.Array(MasterObjectComponentSchema, { description: 'Fixed components (logos, footers, decorations) — same { name, props } format as slide children' })),
   placeholders: Type.Optional(Type.Array(PlaceholderDefinitionSchema, { description: 'Placeholder regions for slide content' })),
   grid: Type.Optional(GridConfigSchema),
 }, { additionalProperties: false, description: 'Master slide definition (reusable slide template)' });
 
-export type MasterObject = Static<typeof MasterObjectSchema>;
 export type PlaceholderDefinition = Static<typeof PlaceholderDefinitionSchema>;
 export type MasterSlideDefinition = Static<typeof MasterSlideDefinitionSchema>;
