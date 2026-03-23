@@ -12,8 +12,14 @@ import { PptxTablePropsSchema } from './table';
 import { PptxChartPropsSchema } from './chart';
 import { PptxHighchartsPropsSchema } from './highcharts';
 
-// Position helpers (number in inches)
-const Inches = Type.Number({ description: 'Position/size in inches' });
+// Position helpers (number in inches OR percentage string e.g. "50%")
+const Coord = Type.Union([
+  Type.Number({ description: 'Position/size in inches' }),
+  Type.String({
+    pattern: '^\\d+(\\.\\d+)?%$',
+    description: 'Position/size as percentage of slide dimension (e.g., "50%")',
+  }),
+]);
 
 // Helper: wrap a props schema into { name, props } component format
 function contentComponent(name: string, propsSchema: TSchema) {
@@ -52,10 +58,10 @@ const PlaceholderDefaultsSchema = Type.Object({
 // Placeholder definition
 export const PlaceholderDefinitionSchema = Type.Object({
   name: Type.String({ description: 'Unique placeholder name' }),
-  x: Type.Optional(Inches),
-  y: Type.Optional(Inches),
-  w: Type.Optional(Inches),
-  h: Type.Optional(Inches),
+  x: Type.Optional(Coord),
+  y: Type.Optional(Coord),
+  w: Type.Optional(Coord),
+  h: Type.Optional(Coord),
   grid: Type.Optional(GridPositionSchema),
   defaults: Type.Optional(PlaceholderDefaultsSchema),
 }, { additionalProperties: false, description: 'Placeholder on a master slide — defaults is a component stub whose props are inherited by the actual component' });
@@ -69,9 +75,9 @@ export const MasterSlideDefinitionSchema = Type.Object({
     Type.Array(Type.Number(), { minItems: 4, maxItems: 4, description: 'Margin [top, right, bottom, left] in inches' }),
   ])),
   slideNumber: Type.Optional(Type.Object({
-    x: Inches, y: Inches,
-    w: Type.Optional(Inches),
-    h: Type.Optional(Inches),
+    x: Coord, y: Coord,
+    w: Type.Optional(Coord),
+    h: Type.Optional(Coord),
     color: Type.Optional(ColorValueSchema),
     fontSize: Type.Optional(Type.Number({ description: 'Slide number font size in points' })),
   }, { additionalProperties: false, description: 'Slide number position and styling' })),

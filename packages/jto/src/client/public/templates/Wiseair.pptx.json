@@ -1,0 +1,4476 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Wiseair — Template Deck",
+    "author": "Wiseair",
+    "company": "Wiseair",
+    "theme": "wiseair",
+    "grid": {
+      "columns": 12,
+      "rows": 12,
+      "margin": {
+        "top": 0.5,
+        "right": 0.5,
+        "bottom": 0.5,
+        "left": 0.5
+      },
+      "gutter": {
+        "column": 0.15,
+        "row": 0.15
+      }
+    },
+    "masters": [
+      {
+        "name": "COVER_MASTER",
+        "background": {
+          "color": "primary"
+        },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "5.33%",
+              "w": "25%",
+              "h": "6%",
+              "fontSize": 16,
+              "fontFace": "Inter Light",
+              "color": "background"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "Confidential",
+              "x": "70%",
+              "y": "89.33%",
+              "w": "25%",
+              "h": "4.67%",
+              "fontSize": 9,
+              "fontFace": "Inter Light",
+              "color": "#454A5E",
+              "align": "right"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "40%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "70%",
+              "y": "20%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 80
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "75%",
+              "y": "20%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 75
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "20%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 85
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "20%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 72
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "20%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 78
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "72%",
+              "y": "26.67%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 72
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77%",
+              "y": "26.67%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "26.67%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "26.67%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "26.67%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 75
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "70%",
+              "y": "33.33%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 68
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "75%",
+              "y": "33.33%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "33.33%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "33.33%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "33.33%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "72%",
+              "y": "40%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77%",
+              "y": "40%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 45
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "40%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 40
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "40%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "70%",
+              "y": "46.67%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "75%",
+              "y": "46.67%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "46.67%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 35
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "46.67%",
+              "w": "4.6%",
+              "h": "6.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 40
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "46.67%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 30
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "72%",
+              "y": "53.33%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77%",
+              "y": "53.33%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 40
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "53.33%",
+              "w": "4.6%",
+              "h": "6.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 35
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "53.33%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 25
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "53.33%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 45
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "70%",
+              "y": "60%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "75%",
+              "y": "60%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "60%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "60%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 45
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "60%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "72%",
+              "y": "66.67%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 78
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77%",
+              "y": "66.67%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 68
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "66.67%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 75
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "66.67%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "66.67%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 72
+              }
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "date",
+            "grid": {
+              "column": 9,
+              "row": 0,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "fontFace": "Inter Light",
+                "color": "#6E7389",
+                "align": "right"
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": {
+              "column": 0,
+              "row": 3,
+              "columnSpan": 10,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 44,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "subtitle",
+            "grid": {
+              "column": 0,
+              "row": 9,
+              "columnSpan": 7,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "SECTION_AZURE_MASTER",
+        "background": {
+          "color": "accent"
+        },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "background"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "75%",
+              "y": "69.33%",
+              "w": "1.6%",
+              "h": "2.13%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 80
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79%",
+              "y": "69.33%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 75
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "69.33%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "69.33%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "91%",
+              "y": "69.33%",
+              "w": "1.6%",
+              "h": "2.13%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 80
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77%",
+              "y": "74.67%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 75
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "74.67%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "74.67%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "74.67%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79%",
+              "y": "80%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "80%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "80%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "91%",
+              "y": "80%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "85.33%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "85.33%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "85.33%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 55
+              }
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "background",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "label",
+            "grid": {
+              "column": 0,
+              "row": 5,
+              "columnSpan": 7,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": {
+              "column": 0,
+              "row": 6,
+              "columnSpan": 9,
+              "rowSpan": 4
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 40,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "description",
+            "grid": {
+              "column": 0,
+              "row": 10,
+              "columnSpan": 7,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#B5BBE6"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TEXT_VISUAL_MASTER",
+        "background": {
+          "color": "background2"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "x": "50%",
+              "y": "0%",
+              "w": "50%",
+              "h": "100%",
+              "fill": {
+                "color": "primary"
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "x": "5%",
+              "y": "30.4%",
+              "w": "5%",
+              "h": "0.53%",
+              "fill": {
+                "color": "accent"
+              },
+              "rectRadius": 0.02
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "63%",
+              "y": "30.67%",
+              "w": "25%",
+              "h": "33.33%",
+              "fill": {
+                "color": "accent",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "68%",
+              "y": "37.33%",
+              "w": "15%",
+              "h": "20%",
+              "fill": {
+                "color": "background",
+                "transparency": 90
+              }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "text"
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "text2",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "number",
+            "grid": {
+              "column": 0,
+              "row": 2,
+              "columnSpan": 2,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "color": "accent",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": {
+              "column": 0,
+              "row": 4,
+              "columnSpan": 6,
+              "rowSpan": 3
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "color": "text",
+                "lineSpacing": 34
+              }
+            }
+          },
+          {
+            "name": "content",
+            "grid": {
+              "column": 0,
+              "row": 7,
+              "columnSpan": 6,
+              "rowSpan": 3
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "valign": "top"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "THREE_COL_MASTER",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": {
+                "color": "background2",
+                "width": 0.75
+              }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "text"
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "text2",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "col1",
+            "grid": {
+              "column": 0,
+              "row": 3,
+              "columnSpan": 4,
+              "rowSpan": 8
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": {
+                  "color": "background2"
+                },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "col2",
+            "grid": {
+              "column": 4,
+              "row": 3,
+              "columnSpan": 4,
+              "rowSpan": 8
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": {
+                  "color": "background2"
+                },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "col3",
+            "grid": {
+              "column": 8,
+              "row": 3,
+              "columnSpan": 4,
+              "rowSpan": 8
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": {
+                  "color": "background2"
+                },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "METRICS_MASTER",
+        "background": {
+          "color": "primary"
+        },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "background"
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "#6E7389",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#6E7389"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "col1",
+            "grid": {
+              "column": 0,
+              "row": 3,
+              "columnSpan": 3,
+              "rowSpan": 8
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": {
+                  "color": "2A2E42"
+                },
+                "line": {
+                  "color": "3A3F55",
+                  "width": 0.75
+                },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "col2",
+            "grid": {
+              "column": 3,
+              "row": 3,
+              "columnSpan": 3,
+              "rowSpan": 8
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": {
+                  "color": "2A2E42"
+                },
+                "line": {
+                  "color": "3A3F55",
+                  "width": 0.75
+                },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "col3",
+            "grid": {
+              "column": 6,
+              "row": 3,
+              "columnSpan": 3,
+              "rowSpan": 8
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": {
+                  "color": "2A2E42"
+                },
+                "line": {
+                  "color": "3A3F55",
+                  "width": 0.75
+                },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "col4",
+            "grid": {
+              "column": 9,
+              "row": 3,
+              "columnSpan": 3,
+              "rowSpan": 8
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": {
+                  "color": "2A2E42"
+                },
+                "line": {
+                  "color": "3A3F55",
+                  "width": 0.75
+                },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TWO_COL_MASTER",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": {
+                "color": "background2",
+                "width": 0.75
+              }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "text"
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "text2",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "leftTitle",
+            "grid": {
+              "column": 0,
+              "row": 3,
+              "columnSpan": 6
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 20,
+                "color": "text",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "rightTitle",
+            "grid": {
+              "column": 6,
+              "row": 3,
+              "columnSpan": 6
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 20,
+                "color": "text",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "left",
+            "grid": {
+              "column": 0,
+              "row": 4,
+              "columnSpan": 6,
+              "rowSpan": 6
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "valign": "top",
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2"
+              }
+            }
+          },
+          {
+            "name": "right",
+            "grid": {
+              "column": 6,
+              "row": 4,
+              "columnSpan": 6,
+              "rowSpan": 6
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "valign": "top",
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "CHART_MASTER",
+        "background": {
+          "color": "background2"
+        },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "text"
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "text2",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "chart",
+            "grid": {
+              "column": 0,
+              "row": 3,
+              "columnSpan": 12,
+              "rowSpan": 8
+            },
+            "defaults": {
+              "name": "chart",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "QUOTE_MASTER",
+        "background": {
+          "color": "secondary"
+        },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "“",
+              "x": "35%",
+              "y": "10.67%",
+              "w": "30%",
+              "h": "24%",
+              "fontSize": 96,
+              "fontFace": "Inter Light",
+              "color": "accent",
+              "align": "center"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "background"
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "#6E7389",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "quote",
+            "grid": {
+              "column": 1,
+              "row": 4,
+              "columnSpan": 10,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 22,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "author_name",
+            "grid": {
+              "column": 2,
+              "row": 9,
+              "columnSpan": 8,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "align": "center",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "author_title",
+            "grid": {
+              "column": 2,
+              "row": 10,
+              "columnSpan": 8,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "#8B90A5",
+                "align": "center"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TIMELINE_MASTER",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": {
+                "color": "background2",
+                "width": 0.75
+              }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "text"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "16%",
+              "y": "45.33%",
+              "w": "68%",
+              "h": "0%",
+              "line": {
+                "color": "accent4",
+                "width": 2
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "13.5%",
+              "y": "41.33%",
+              "w": "6%",
+              "h": "8%",
+              "fill": {
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "36%",
+              "y": "41.33%",
+              "w": "6%",
+              "h": "8%",
+              "fill": {
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "58.5%",
+              "y": "41.33%",
+              "w": "6%",
+              "h": "8%",
+              "fill": {
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "41.33%",
+              "w": "6%",
+              "h": "8%",
+              "fill": {
+                "color": "accent"
+              }
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "text2",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "step1_number",
+            "x": "13.5%",
+            "y": "41.33%",
+            "w": "6%",
+            "h": "8%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "step1_title",
+            "grid": {
+              "column": 0,
+              "row": 6,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "color": "text",
+                "fontFace": "Inter",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "step1_desc",
+            "grid": {
+              "column": 0,
+              "row": 7,
+              "columnSpan": 3,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "align": "center",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "step2_number",
+            "x": "36%",
+            "y": "41.33%",
+            "w": "6%",
+            "h": "8%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "step2_title",
+            "grid": {
+              "column": 3,
+              "row": 6,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "color": "text",
+                "fontFace": "Inter",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "step2_desc",
+            "grid": {
+              "column": 3,
+              "row": 7,
+              "columnSpan": 3,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "align": "center",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "step3_number",
+            "x": "58.5%",
+            "y": "41.33%",
+            "w": "6%",
+            "h": "8%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "step3_title",
+            "grid": {
+              "column": 6,
+              "row": 6,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "color": "text",
+                "fontFace": "Inter",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "step3_desc",
+            "grid": {
+              "column": 6,
+              "row": 7,
+              "columnSpan": 3,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "align": "center",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "step4_number",
+            "x": "81%",
+            "y": "41.33%",
+            "w": "6%",
+            "h": "8%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "step4_title",
+            "grid": {
+              "column": 9,
+              "row": 6,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "color": "text",
+                "fontFace": "Inter",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "step4_desc",
+            "grid": {
+              "column": 9,
+              "row": 7,
+              "columnSpan": 3,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "align": "center",
+                "lineSpacing": 20
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "SECTION_LIGHT_MASTER",
+        "background": {
+          "color": "accent4"
+        },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "text"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "75%",
+              "y": "69.33%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 72
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79%",
+              "y": "69.33%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 68
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "69.33%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "69.33%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "91%",
+              "y": "69.33%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 72
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77%",
+              "y": "74.67%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 68
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "74.67%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 58
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "74.67%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "74.67%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 62
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79%",
+              "y": "80%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 62
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "80%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 48
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "80%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 42
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "91%",
+              "y": "80%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 58
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "85.33%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 58
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "85.33%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 42
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "85.33%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 48
+              }
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "text2",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "label",
+            "grid": {
+              "column": 0,
+              "row": 5,
+              "columnSpan": 7,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": {
+              "column": 0,
+              "row": 6,
+              "columnSpan": 9,
+              "rowSpan": 4
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 40,
+                "fontFace": "Inter Light",
+                "color": "text",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "description",
+            "grid": {
+              "column": 0,
+              "row": 10,
+              "columnSpan": 7,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "IMG_TEXT_MASTER",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "x": "0%",
+              "y": "0%",
+              "w": "50%",
+              "h": "100%",
+              "fill": {
+                "color": "primary"
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "x": "54%",
+              "y": "26.4%",
+              "w": "5%",
+              "h": "0.53%",
+              "fill": {
+                "color": "accent"
+              },
+              "rectRadius": 0.02
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "background"
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "text2",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "image",
+            "x": "3%",
+            "y": "4%",
+            "w": "44%",
+            "h": "86.67%",
+            "defaults": {
+              "name": "image",
+              "props": {
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "number",
+            "x": "54%",
+            "y": "20%",
+            "w": "10%",
+            "h": "5.33%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "color": "accent",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "title",
+            "x": "54%",
+            "y": "30.67%",
+            "w": "41%",
+            "h": "16%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "color": "text",
+                "lineSpacing": 34
+              }
+            }
+          },
+          {
+            "name": "content",
+            "x": "54%",
+            "y": "48%",
+            "w": "41%",
+            "h": "13.33%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "valign": "top",
+                "lineSpacing": 24
+              }
+            }
+          },
+          {
+            "name": "stats",
+            "x": "54%",
+            "y": "66.67%",
+            "w": "41%",
+            "h": "12%"
+          }
+        ]
+      },
+      {
+        "name": "COMPARISON_MASTER",
+        "background": {
+          "color": "background2"
+        },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "text"
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "text2",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "table",
+            "grid": {
+              "column": 0,
+              "row": 3,
+              "columnSpan": 12,
+              "rowSpan": 7
+            },
+            "defaults": {
+              "name": "table",
+              "props": {
+                "fontSize": 13,
+                "fontFace": "Inter Light"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TEAM_MASTER",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": {
+                "color": "background2",
+                "width": 0.75
+              }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "text"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "12.2%",
+              "y": "34.67%",
+              "w": "8%",
+              "h": "10.67%",
+              "fill": {
+                "color": "background2"
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "34.7%",
+              "y": "34.67%",
+              "w": "8%",
+              "h": "10.67%",
+              "fill": {
+                "color": "background2"
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "57.2%",
+              "y": "34.67%",
+              "w": "8%",
+              "h": "10.67%",
+              "fill": {
+                "color": "background2"
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79.7%",
+              "y": "34.67%",
+              "w": "8%",
+              "h": "10.67%",
+              "fill": {
+                "color": "background2"
+              }
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "text2",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "member1_initials",
+            "x": "12.2%",
+            "y": "34.67%",
+            "w": "8%",
+            "h": "10.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "color": "text2",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "member1_name",
+            "x": "5%",
+            "y": "47.33%",
+            "w": "22.5%",
+            "h": "4.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "color": "text",
+                "align": "center",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "member1_role",
+            "x": "5%",
+            "y": "52.27%",
+            "w": "22.5%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "color": "accent",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "member1_bio",
+            "x": "5%",
+            "y": "57.07%",
+            "w": "22.5%",
+            "h": "9.33%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "align": "center",
+                "lineSpacing": 17
+              }
+            }
+          },
+          {
+            "name": "member2_initials",
+            "x": "34.7%",
+            "y": "34.67%",
+            "w": "8%",
+            "h": "10.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "color": "text2",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "member2_name",
+            "x": "27.5%",
+            "y": "47.33%",
+            "w": "22.5%",
+            "h": "4.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "color": "text",
+                "align": "center",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "member2_role",
+            "x": "27.5%",
+            "y": "52.27%",
+            "w": "22.5%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "color": "accent",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "member2_bio",
+            "x": "27.5%",
+            "y": "57.07%",
+            "w": "22.5%",
+            "h": "9.33%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "align": "center",
+                "lineSpacing": 17
+              }
+            }
+          },
+          {
+            "name": "member3_initials",
+            "x": "57.2%",
+            "y": "34.67%",
+            "w": "8%",
+            "h": "10.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "color": "text2",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "member3_name",
+            "x": "50%",
+            "y": "47.33%",
+            "w": "22.5%",
+            "h": "4.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "color": "text",
+                "align": "center",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "member3_role",
+            "x": "50%",
+            "y": "52.27%",
+            "w": "22.5%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "color": "accent",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "member3_bio",
+            "x": "50%",
+            "y": "57.07%",
+            "w": "22.5%",
+            "h": "9.33%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "align": "center",
+                "lineSpacing": 17
+              }
+            }
+          },
+          {
+            "name": "member4_initials",
+            "x": "79.7%",
+            "y": "34.67%",
+            "w": "8%",
+            "h": "10.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "color": "text2",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "member4_name",
+            "x": "72.5%",
+            "y": "47.33%",
+            "w": "22.5%",
+            "h": "4.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "color": "text",
+                "align": "center",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "member4_role",
+            "x": "72.5%",
+            "y": "52.27%",
+            "w": "22.5%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "color": "accent",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "member4_bio",
+            "x": "72.5%",
+            "y": "57.07%",
+            "w": "22.5%",
+            "h": "9.33%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "align": "center",
+                "lineSpacing": 17
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "CLOSING_MASTER",
+        "background": {
+          "color": "primary"
+        },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "5.33%",
+              "w": "25%",
+              "h": "6%",
+              "fontSize": 16,
+              "fontFace": "Inter Light",
+              "color": "background"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "x": "5%",
+              "y": "94.67%",
+              "w": "20%",
+              "h": "4%",
+              "fontSize": 10,
+              "fontFace": "Inter Light",
+              "color": "background"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "75%",
+              "y": "53.33%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 72
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "53.33%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "53.33%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "53.33%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 48
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77%",
+              "y": "60%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 68
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "60%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "60%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 45
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "60%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 40
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "75%",
+              "y": "66.67%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "66.67%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 48
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "66.67%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 38
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "66.67%",
+              "w": "4.6%",
+              "h": "6.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 32
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77%",
+              "y": "73.33%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 52
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "73.33%",
+              "w": "4.6%",
+              "h": "6.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 40
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "73.33%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 30
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "73.33%",
+              "w": "5%",
+              "h": "6.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 25
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79%",
+              "y": "80%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 62
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "80%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "80%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 42
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "80%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 35
+              }
+            }
+          }
+        ],
+        "slideNumber": {
+          "x": "90%",
+          "y": "94.67%",
+          "w": "5%",
+          "h": "4%",
+          "color": "#6E7389",
+          "fontSize": 9
+        },
+        "placeholders": [
+          {
+            "name": "heading",
+            "grid": {
+              "row": 5,
+              "rowSpan": 2,
+              "column": 0,
+              "columnSpan": 12
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 38,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "body",
+            "grid": {
+              "row": 7,
+              "rowSpan": 2,
+              "column": 0,
+              "columnSpan": 7
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0"
+              }
+            }
+          },
+          {
+            "name": "contacts",
+            "grid": {
+              "row": 11,
+              "rowSpan": 1,
+              "column": 0,
+              "columnSpan": 7
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {
+        "master": "COVER_MASTER",
+        "notes": "Cover slide — customize title, subtitle, and date",
+        "placeholders": {
+          "date": {
+            "name": "text",
+            "props": {
+              "text": "March 2026"
+            }
+          },
+          "title": {
+            "name": "text",
+            "props": {
+              "text": "Deck Title\nGoes Here"
+            }
+          },
+          "subtitle": {
+            "name": "text",
+            "props": {
+              "text": "A short subtitle or description that sets the context for this presentation.",
+              "lineSpacing": 26
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "SECTION_AZURE_MASTER",
+        "notes": "Section divider (azure) — use to introduce major sections",
+        "placeholders": {
+          "label": {
+            "name": "text",
+            "props": {
+              "text": "SECTION 01"
+            }
+          },
+          "title": {
+            "name": "text",
+            "props": {
+              "text": "Section Title\nGoes Here"
+            }
+          },
+          "description": {
+            "name": "text",
+            "props": {
+              "text": "Brief context-setting text that introduces what this section covers and why it matters.",
+              "lineSpacing": 24
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "TEXT_VISUAL_MASTER",
+        "notes": "Text + visual split — narrative left, visual right on dark panel",
+        "placeholders": {
+          "number": {
+            "name": "text",
+            "props": {
+              "text": "01"
+            }
+          },
+          "title": {
+            "name": "text",
+            "props": {
+              "text": "Slide headline that captures the key message"
+            }
+          },
+          "content": {
+            "name": "text",
+            "props": {
+              "text": "Supporting body text that elaborates on the headline. Use this space to provide context, evidence, or narrative that reinforces your argument. Keep it focused and scannable.",
+              "lineSpacing": 24
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "THREE_COL_MASTER",
+        "notes": "Three-column feature cards with icons",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "02"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Three key points or features"
+            }
+          },
+          "col1": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "ⓘ",
+                  "fontSize": 22,
+                  "color": "accent",
+                  "breakLine": true
+                },
+                {
+                  "text": "",
+                  "fontSize": 8,
+                  "breakLine": true
+                },
+                {
+                  "text": "Feature One",
+                  "fontSize": 16,
+                  "fontFace": "Inter",
+                  "color": "text",
+                  "breakLine": true
+                },
+                {
+                  "text": "",
+                  "fontSize": 8,
+                  "breakLine": true
+                },
+                {
+                  "text": "Brief description of this feature or point. Focus on the value it delivers to the audience.",
+                  "fontSize": 13
+                }
+              ]
+            }
+          },
+          "col2": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "⚡",
+                  "fontSize": 22,
+                  "color": "accent",
+                  "breakLine": true
+                },
+                {
+                  "text": "",
+                  "fontSize": 8,
+                  "breakLine": true
+                },
+                {
+                  "text": "Feature Two",
+                  "fontSize": 16,
+                  "fontFace": "Inter",
+                  "color": "text",
+                  "breakLine": true
+                },
+                {
+                  "text": "",
+                  "fontSize": 8,
+                  "breakLine": true
+                },
+                {
+                  "text": "Brief description of this feature or point. Focus on the value it delivers to the audience.",
+                  "fontSize": 13
+                }
+              ]
+            }
+          },
+          "col3": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "◈",
+                  "fontSize": 22,
+                  "color": "accent",
+                  "breakLine": true
+                },
+                {
+                  "text": "",
+                  "fontSize": 8,
+                  "breakLine": true
+                },
+                {
+                  "text": "Feature Three",
+                  "fontSize": 16,
+                  "fontFace": "Inter",
+                  "color": "text",
+                  "breakLine": true
+                },
+                {
+                  "text": "",
+                  "fontSize": 8,
+                  "breakLine": true
+                },
+                {
+                  "text": "Brief description of this feature or point. Focus on the value it delivers to the audience.",
+                  "fontSize": 13
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "METRICS_MASTER",
+        "notes": "KPI / metrics dashboard — dark background with 4 metric cards",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "03"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Key metrics at a glance"
+            }
+          },
+          "col1": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "124K",
+                  "fontSize": 32,
+                  "color": "background",
+                  "breakLine": true
+                },
+                {
+                  "text": "Employees profiled across client base",
+                  "fontSize": 12,
+                  "color": "#9A9EB0",
+                  "breakLine": true,
+                  "spaceBefore": 6
+                },
+                {
+                  "text": "▲ 34% YoY",
+                  "fontSize": 11,
+                  "color": "22C55E",
+                  "breakLine": true,
+                  "spaceBefore": 8
+                }
+              ]
+            }
+          },
+          "col2": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "98%",
+                  "fontSize": 32,
+                  "color": "background",
+                  "breakLine": true
+                },
+                {
+                  "text": "Client retention rate",
+                  "fontSize": 12,
+                  "color": "#9A9EB0",
+                  "breakLine": true,
+                  "spaceBefore": 6
+                },
+                {
+                  "text": "▲ 5% QoQ",
+                  "fontSize": 11,
+                  "color": "22C55E",
+                  "breakLine": true,
+                  "spaceBefore": 8
+                }
+              ]
+            }
+          },
+          "col3": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "47",
+                  "fontSize": 32,
+                  "color": "background",
+                  "breakLine": true
+                },
+                {
+                  "text": "Enterprise clients under management",
+                  "fontSize": 12,
+                  "color": "#9A9EB0",
+                  "breakLine": true,
+                  "spaceBefore": 6
+                },
+                {
+                  "text": "▲ 12 new in 2025",
+                  "fontSize": 11,
+                  "color": "22C55E",
+                  "breakLine": true,
+                  "spaceBefore": 8
+                }
+              ]
+            }
+          },
+          "col4": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "3.2M",
+                  "fontSize": 32,
+                  "color": "background",
+                  "breakLine": true
+                },
+                {
+                  "text": "ARR run rate (placeholder)",
+                  "fontSize": 12,
+                  "color": "#9A9EB0",
+                  "breakLine": true,
+                  "spaceBefore": 6
+                },
+                {
+                  "text": "▲ 68% YoY",
+                  "fontSize": 11,
+                  "color": "22C55E",
+                  "breakLine": true,
+                  "spaceBefore": 8
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "TWO_COL_MASTER",
+        "notes": "Two-column content — narrative left, custom bullets right",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "04"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Detailed content in two columns"
+            }
+          },
+          "leftTitle": {
+            "name": "text",
+            "props": {
+              "text": "Left title"
+            }
+          },
+          "rightTitle": {
+            "name": "text",
+            "props": {
+              "text": "Right title"
+            }
+          },
+          "left": {
+            "name": "text",
+            "props": {
+              "text": "Use this space for narrative text that provides depth and context. This layout works well for comparing two concepts, presenting problem/solution framing, or detailing features alongside benefits.",
+              "lineSpacing": 24
+            }
+          },
+          "right": {
+            "name": "text",
+            "props": {
+              "text": "First key point with supporting detail\nSecond key point with supporting detail\nThird key point with supporting detail\nFourth key point with supporting detail",
+              "lineSpacing": 28,
+              "bullet": {
+                "type": "bullet",
+                "style": "●"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "CHART_MASTER",
+        "notes": "Bar chart — revenue growth by quarter",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "05"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Revenue growth by quarter"
+            }
+          },
+          "chart": {
+            "name": "chart",
+            "props": {
+              "type": "bar",
+              "barDir": "col",
+              "barGrouping": "clustered",
+              "barGapWidthPct": 80,
+              "data": [
+                {
+                  "name": "Previous Year",
+                  "labels": [
+                    "Q1",
+                    "Q2",
+                    "Q3",
+                    "Q4",
+                    "Q1",
+                    "Q2"
+                  ],
+                  "values": [
+                    1,
+                    1.2,
+                    0.9,
+                    1.4,
+                    1.5,
+                    1.6
+                  ]
+                },
+                {
+                  "name": "Current Year",
+                  "labels": [
+                    "Q1",
+                    "Q2",
+                    "Q3",
+                    "Q4",
+                    "Q1",
+                    "Q2"
+                  ],
+                  "values": [
+                    1.4,
+                    1.75,
+                    2,
+                    2.5,
+                    2.2,
+                    2.6
+                  ]
+                }
+              ],
+              "chartColors": [
+                "accent4",
+                "accent"
+              ],
+              "showLegend": true,
+              "legendPos": "t",
+              "legendFontSize": 10,
+              "legendFontFace": "Inter Light",
+              "legendColor": "text2",
+              "catAxisLabelFontSize": 10,
+              "catAxisLabelColor": "text2",
+              "valAxisLabelFormatCode": "$0.0M",
+              "valAxisLabelColor": "text2"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "QUOTE_MASTER",
+        "notes": "Quote / testimonial — centered on dark slate background",
+        "placeholders": {
+          "quote": {
+            "name": "text",
+            "props": {
+              "text": "Place a compelling client testimonial or strategic quote here. This layout is designed to give weight to a single, powerful statement.",
+              "lineSpacing": 36
+            }
+          },
+          "author_name": {
+            "name": "text",
+            "props": {
+              "text": "Full Name"
+            }
+          },
+          "author_title": {
+            "name": "text",
+            "props": {
+              "text": "Title, Company Name"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "TIMELINE_MASTER",
+        "notes": "Timeline / process — four-step horizontal flow",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "06"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "How it works — four-step process"
+            }
+          },
+          "step1_number": {
+            "name": "text",
+            "props": {
+              "text": "1"
+            }
+          },
+          "step1_title": {
+            "name": "text",
+            "props": {
+              "text": "Step One"
+            }
+          },
+          "step1_desc": {
+            "name": "text",
+            "props": {
+              "text": "Brief description of this phase and what it achieves."
+            }
+          },
+          "step2_number": {
+            "name": "text",
+            "props": {
+              "text": "2"
+            }
+          },
+          "step2_title": {
+            "name": "text",
+            "props": {
+              "text": "Step Two"
+            }
+          },
+          "step2_desc": {
+            "name": "text",
+            "props": {
+              "text": "Brief description of this phase and what it achieves."
+            }
+          },
+          "step3_number": {
+            "name": "text",
+            "props": {
+              "text": "3"
+            }
+          },
+          "step3_title": {
+            "name": "text",
+            "props": {
+              "text": "Step Three"
+            }
+          },
+          "step3_desc": {
+            "name": "text",
+            "props": {
+              "text": "Brief description of this phase and what it achieves."
+            }
+          },
+          "step4_number": {
+            "name": "text",
+            "props": {
+              "text": "4"
+            }
+          },
+          "step4_title": {
+            "name": "text",
+            "props": {
+              "text": "Step Four"
+            }
+          },
+          "step4_desc": {
+            "name": "text",
+            "props": {
+              "text": "Brief description of this phase and what it achieves."
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "SECTION_LIGHT_MASTER",
+        "notes": "Section divider (light blue) — alternate section break",
+        "placeholders": {
+          "label": {
+            "name": "text",
+            "props": {
+              "text": "SECTION 02"
+            }
+          },
+          "title": {
+            "name": "text",
+            "props": {
+              "text": "Alternate Section\nDivider"
+            }
+          },
+          "description": {
+            "name": "text",
+            "props": {
+              "text": "A lighter section divider variant using Light Blue. Provides visual rhythm between dark and light sections.",
+              "lineSpacing": 24
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "IMG_TEXT_MASTER",
+        "notes": "Image + text split — visual left, narrative and stats right",
+        "placeholders": {
+          "image": {
+            "name": "text",
+            "props": {
+              "text": "Image / Screenshot",
+              "fontSize": 11,
+              "color": "#6E7389",
+              "align": "center",
+              "valign": "middle"
+            }
+          },
+          "number": {
+            "name": "text",
+            "props": {
+              "text": "07"
+            }
+          },
+          "title": {
+            "name": "text",
+            "props": {
+              "text": "Visual alongside narrative content"
+            }
+          },
+          "content": {
+            "name": "text",
+            "props": {
+              "text": "Use this layout when you need to pair a product screenshot, photo, or illustration with explanatory text. The left panel accommodates any visual."
+            }
+          }
+        }
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "x": "54%",
+            "y": "66.67%",
+            "w": "12%",
+            "h": "12%",
+            "fill": {
+              "color": "background"
+            },
+            "rectRadius": 0.08,
+            "text": "3x\nFaster insights",
+            "fontSize": 10,
+            "fontColor": "accent",
+            "fontFace": "Inter",
+            "align": "left",
+            "valign": "middle"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "x": "68%",
+            "y": "66.67%",
+            "w": "12%",
+            "h": "12%",
+            "fill": {
+              "color": "background"
+            },
+            "rectRadius": 0.08,
+            "text": "92%\nSatisfaction",
+            "fontSize": 10,
+            "fontColor": "accent",
+            "fontFace": "Inter",
+            "align": "left",
+            "valign": "middle"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "x": "82%",
+            "y": "66.67%",
+            "w": "12%",
+            "h": "12%",
+            "fill": {
+              "color": "background"
+            },
+            "rectRadius": 0.08,
+            "text": "-40%\nCO₂ reduction",
+            "fontSize": 10,
+            "fontColor": "accent",
+            "fontFace": "Inter",
+            "align": "left",
+            "valign": "middle"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "COMPARISON_MASTER",
+        "notes": "Comparison table — competitive differentiation",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "08"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Competitive differentiation"
+            }
+          },
+          "table": {
+            "name": "table",
+            "props": {
+              "color": "text2",
+              "border": {
+                "type": "solid",
+                "pt": 0.5,
+                "color": "background2"
+              },
+              "colW": [
+                3.5,
+                1.8,
+                1.8,
+                1.8
+              ],
+              "rowH": 0.45,
+              "margin": [
+                3,
+                6,
+                3,
+                6
+              ],
+              "borderRadius": 0.15,
+              "rows": [
+                [
+                  {
+                    "text": "CAPABILITY",
+                    "color": "background",
+                    "fill": "primary",
+                    "fontSize": 11,
+                    "fontFace": "Inter"
+                  },
+                  {
+                    "text": "WISEAIR",
+                    "color": "background",
+                    "fill": "primary",
+                    "align": "center",
+                    "fontSize": 11,
+                    "fontFace": "Inter"
+                  },
+                  {
+                    "text": "ALT. A",
+                    "color": "background",
+                    "fill": "primary",
+                    "align": "center",
+                    "fontSize": 11,
+                    "fontFace": "Inter"
+                  },
+                  {
+                    "text": "ALT. B",
+                    "color": "background",
+                    "fill": "primary",
+                    "align": "center",
+                    "fontSize": 11,
+                    "fontFace": "Inter"
+                  }
+                ],
+                [
+                  "Georeferenced analysis",
+                  {
+                    "text": "✓",
+                    "align": "center",
+                    "color": "accent",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  }
+                ],
+                [
+                  "Territorial coalitions",
+                  {
+                    "text": "✓",
+                    "align": "center",
+                    "color": "accent",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  }
+                ],
+                [
+                  "PSCL compliance engine",
+                  {
+                    "text": "✓",
+                    "align": "center",
+                    "color": "accent",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "✓",
+                    "align": "center",
+                    "color": "accent",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  }
+                ],
+                [
+                  "First-mile journey data",
+                  {
+                    "text": "✓",
+                    "align": "center",
+                    "color": "accent",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "✓",
+                    "align": "center",
+                    "color": "accent",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  }
+                ],
+                [
+                  "Enablement module",
+                  {
+                    "text": "✓",
+                    "align": "center",
+                    "color": "accent",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  }
+                ],
+                [
+                  "Objective convenience model",
+                  {
+                    "text": "✓",
+                    "align": "center",
+                    "color": "accent",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  },
+                  {
+                    "text": "—",
+                    "align": "center",
+                    "color": "#9A9EB0",
+                    "fill": "background",
+                    "fontFace": "Arial"
+                  }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "TEAM_MASTER",
+        "notes": "Team grid — four team member cards with avatars and bios",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "09"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "The team behind the platform"
+            }
+          },
+          "member1_initials": {
+            "name": "text",
+            "props": {
+              "text": "PB"
+            }
+          },
+          "member1_name": {
+            "name": "text",
+            "props": {
+              "text": "Paolo Barbato"
+            }
+          },
+          "member1_role": {
+            "name": "text",
+            "props": {
+              "text": "CEO & Co-founder"
+            }
+          },
+          "member1_bio": {
+            "name": "text",
+            "props": {
+              "text": "Brief bio line. Background, focus area, and one distinguishing detail."
+            }
+          },
+          "member2_initials": {
+            "name": "text",
+            "props": {
+              "text": "AB"
+            }
+          },
+          "member2_name": {
+            "name": "text",
+            "props": {
+              "text": "Team Member"
+            }
+          },
+          "member2_role": {
+            "name": "text",
+            "props": {
+              "text": "Role Title"
+            }
+          },
+          "member2_bio": {
+            "name": "text",
+            "props": {
+              "text": "Brief bio line. Background, focus area, and one distinguishing detail."
+            }
+          },
+          "member3_initials": {
+            "name": "text",
+            "props": {
+              "text": "CD"
+            }
+          },
+          "member3_name": {
+            "name": "text",
+            "props": {
+              "text": "Team Member"
+            }
+          },
+          "member3_role": {
+            "name": "text",
+            "props": {
+              "text": "Role Title"
+            }
+          },
+          "member3_bio": {
+            "name": "text",
+            "props": {
+              "text": "Brief bio line. Background, focus area, and one distinguishing detail."
+            }
+          },
+          "member4_initials": {
+            "name": "text",
+            "props": {
+              "text": "EF"
+            }
+          },
+          "member4_name": {
+            "name": "text",
+            "props": {
+              "text": "Team Member"
+            }
+          },
+          "member4_role": {
+            "name": "text",
+            "props": {
+              "text": "Role Title"
+            }
+          },
+          "member4_bio": {
+            "name": "text",
+            "props": {
+              "text": "Brief bio line. Background, focus area, and one distinguishing detail."
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "master": "CLOSING_MASTER",
+        "notes": "Closing slide — thank you with contact details",
+        "placeholders": {
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Thank you"
+            }
+          },
+          "body": {
+            "name": "text",
+            "props": {
+              "text": "We look forward to continuing the conversation. Please reach out with any questions or next steps.",
+              "lineSpacing": 24
+            }
+          },
+          "contacts": {
+            "name": "text",
+            "props": {
+              "text": "hello@wiseair.com  ·  wiseair.com   ·  +39 000 000 0000"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
