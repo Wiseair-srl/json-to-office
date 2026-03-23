@@ -219,6 +219,86 @@ describe('similarity', () => {
   });
 });
 
+// ── Named-object splice ─────────────────────────────────────────────────
+
+describe('mergeAiOutput — named-object splice', () => {
+  const doc = JSON.stringify(
+    {
+      name: 'pptx',
+      props: {
+        templates: [
+          { name: 'COVER', background: { color: 'red' }, objects: [] },
+          { name: 'CLOSING', background: { color: 'blue' }, objects: [] },
+        ],
+      },
+    },
+    null,
+    2
+  );
+
+  it('replaces only the matching named object', () => {
+    const aiOutput = JSON.stringify(
+      { name: 'COVER', background: { color: 'green' }, objects: [{ type: 'text' }] },
+      null,
+      2
+    );
+    const { modified } = mergeAiOutput(doc, aiOutput);
+    const parsed = JSON.parse(modified);
+    expect(parsed.props.templates[0].background.color).toBe('green');
+    expect(parsed.props.templates[0].objects).toEqual([{ type: 'text' }]);
+    // CLOSING should be untouched
+    expect(parsed.props.templates[1].background.color).toBe('blue');
+  });
+
+  it('replaces second named object without affecting first', () => {
+    const aiOutput = JSON.stringify(
+      { name: 'CLOSING', background: { color: 'purple' }, objects: [] },
+      null,
+      2
+    );
+    const { modified } = mergeAiOutput(doc, aiOutput);
+    const parsed = JSON.parse(modified);
+    expect(parsed.props.templates[1].background.color).toBe('purple');
+    // COVER should be untouched
+    expect(parsed.props.templates[0].background.color).toBe('red');
+  });
+
+  it('falls through when name not found in doc', () => {
+    const aiOutput = JSON.stringify({ name: 'NONEXISTENT', x: 1 }, null, 2);
+    const { modified } = mergeAiOutput(doc, aiOutput);
+    // Should fall through to other strategies (full-doc replacement as last resort)
+    expect(modified).toBe(aiOutput);
+  });
+
+  it('falls through when doc is not valid JSON', () => {
+    const badDoc = '{ not valid json';
+    const aiOutput = JSON.stringify({ name: 'COVER', x: 1 }, null, 2);
+    const { modified } = mergeAiOutput(badDoc, aiOutput);
+    expect(modified).toBe(aiOutput);
+  });
+
+  it('selection splice wins over named-object splice', () => {
+    const aiOutput = JSON.stringify(
+      { name: 'COVER', background: { color: 'green' }, objects: [] },
+      null,
+      2
+    );
+    const selectedText = '"color": "red"';
+    const { modified } = mergeAiOutput(doc, aiOutput, { selectedText });
+    // Selection splice should replace the selected text, not do a named splice
+    expect(modified).toContain(aiOutput);
+    expect(modified).not.toContain('"color": "red"');
+  });
+
+  it('falls through to full-doc when AI name matches only the root', () => {
+    const aiOutput = JSON.stringify({ name: 'pptx', props: { templates: [] } }, null, 2);
+    const { modified } = mergeAiOutput(doc, aiOutput);
+    // 'pptx' only exists on the root (not inside any array), so named splice
+    // can't find it → falls through to full-doc replacement
+    expect(modified).toBe(aiOutput);
+  });
+});
+
 // ── Full integration ───────────────────────────────────────────────────
 
 describe('mergeAiOutput — integration', () => {

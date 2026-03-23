@@ -22,6 +22,15 @@ export function mergeAiOutput(
   aiOutput: string,
   ctx?: { selectedText?: string; startLine?: number; endLine?: number }
 ): { original: string; modified: string } {
+  // ── 0. Named-object splice ─────────────────────────────────────────
+  // When the AI output is a JSON object with a "name" field, find the
+  // matching named object in the document and replace only that one.
+  // Only when there's no active selection — selection splice takes priority.
+  if (!ctx?.selectedText) {
+    const namedResult = tryNamedObjectSplice(currentDoc, aiOutput);
+    if (namedResult) return namedResult;
+  }
+
   // ── 1. Selection splice ────────────────────────────────────────────
   if (ctx?.selectedText) {
     const needle = ctx.selectedText;
@@ -67,6 +76,65 @@ export function mergeAiOutput(
 
   // ── 3. Full-doc replacement ────────────────────────────────────────
   return { original: currentDoc, modified: aiOutput };
+}
+
+/**
+ * When the AI output is a JSON object with a "name" property, locate the
+ * matching named object in the parsed document tree, replace it, and
+ * re-serialize with the document's own indent style to avoid format diffs.
+ */
+function tryNamedObjectSplice(
+  currentDoc: string,
+  aiOutput: string
+): { original: string; modified: string } | null {
+  let aiParsed: Record<string, unknown>;
+  try {
+    aiParsed = JSON.parse(aiOutput);
+  } catch {
+    return null;
+  }
+  if (!aiParsed || typeof aiParsed !== 'object' || Array.isArray(aiParsed)) return null;
+  const name = aiParsed.name;
+  if (typeof name !== 'string' || !name) return null;
+
+  let doc: unknown;
+  try {
+    doc = JSON.parse(currentDoc);
+  } catch {
+    return null;
+  }
+
+  // Detect the document's indent size from the source text
+  const indentMatch = currentDoc.match(/\n(\s+)"/);
+  const indent = indentMatch ? indentMatch[1].length : 2;
+
+  // Recursively find and replace the named object in the parsed tree
+  if (!replaceNamedObject(doc, name, aiParsed)) return null;
+
+  const modified = JSON.stringify(doc, null, indent);
+  return { original: currentDoc, modified };
+}
+
+/** Recursively walk a parsed JSON tree and replace the first object whose
+ *  "name" matches `target`. Returns true if a replacement was made. */
+function replaceNamedObject(node: unknown, target: string, replacement: Record<string, unknown>): boolean {
+  if (Array.isArray(node)) {
+    for (let i = 0; i < node.length; i++) {
+      const item = node[i];
+      if (item && typeof item === 'object' && !Array.isArray(item) && (item as Record<string, unknown>).name === target) {
+        node[i] = replacement;
+        return true;
+      }
+      if (replaceNamedObject(item, target, replacement)) return true;
+    }
+    return false;
+  }
+  if (node && typeof node === 'object') {
+    for (const val of Object.values(node as Record<string, unknown>)) {
+      if (replaceNamedObject(val, target, replacement)) return true;
+    }
+  }
+  return false;
 }
 
 /**
