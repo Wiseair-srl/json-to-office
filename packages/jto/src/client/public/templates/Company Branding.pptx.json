@@ -6,9 +6,9 @@
     "company": "Acme Corp",
     "theme": "corporate",
     "grid": { "columns": 12, "rows": 6, "margin": { "top": 0.75, "right": 0.6, "bottom": 0.5, "left": 0.6 }, "gutter": { "column": 0.2, "row": 0.15 } },
-    "masters": [
+    "templates": [
       {
-        "name": "TITLE_MASTER",
+        "name": "TITLE_TEMPLATE",
         "background": { "color": "primary" },
         "objects": [
           { "name": "shape", "props": { "type": "rect", "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": { "color": "secondary" } } },
@@ -20,7 +20,7 @@
         ]
       },
       {
-        "name": "CONTENT_MASTER",
+        "name": "CONTENT_TEMPLATE",
         "objects": [
           { "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } },
           { "name": "text", "props": { "text": "ACME CORP", "grid": { "column": 0, "row": 0, "columnSpan": 5 }, "y": 0.15, "h": 0.6, "fontSize": 14, "bold": true, "color": "background" } },
@@ -34,7 +34,7 @@
         ]
       },
       {
-        "name": "TWO_COLUMN_MASTER",
+        "name": "TWO_COLUMN_TEMPLATE",
         "objects": [
           { "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } },
           { "name": "text", "props": { "text": "ACME CORP", "grid": { "column": 0, "row": 0, "columnSpan": 5 }, "y": 0.15, "h": 0.6, "fontSize": 14, "bold": true, "color": "background" } },
@@ -53,7 +53,7 @@
     {
       "name": "slide",
       "props": {
-        "master": "TITLE_MASTER",
+        "template": "TITLE_TEMPLATE",
         "placeholders": {
           "title": { "name": "text", "props": { "text": "Acme Corp" } },
           "subtitle": { "name": "text", "props": { "text": "Building the future, one innovation at a time" } }
@@ -63,7 +63,7 @@
     {
       "name": "slide",
       "props": {
-        "master": "CONTENT_MASTER",
+        "template": "CONTENT_TEMPLATE",
         "placeholders": {
           "heading": { "name": "text", "props": { "text": "Who We Are" } },
           "body": { "name": "text", "props": { "text": "Acme Corp is a global leader in enterprise technology, serving 10,000+ customers across 80 countries.", "grid": { "column": 0, "row": 2, "columnSpan": 12 }, "lineSpacing": 26 } }
@@ -78,7 +78,7 @@
     {
       "name": "slide",
       "props": {
-        "master": "TWO_COLUMN_MASTER",
+        "template": "TWO_COLUMN_TEMPLATE",
         "placeholders": {
           "heading": { "name": "text", "props": { "text": "Our Strengths" } },
           "left": {
@@ -106,7 +106,7 @@
     {
       "name": "slide",
       "props": {
-        "master": "CONTENT_MASTER",
+        "template": "CONTENT_TEMPLATE",
         "placeholders": {
           "heading": { "name": "text", "props": { "text": "Product Roadmap" } },
           "body": {
@@ -132,7 +132,7 @@
     {
       "name": "slide",
       "props": {
-        "master": "TITLE_MASTER",
+        "template": "TITLE_TEMPLATE",
         "placeholders": {
           "title": { "name": "text", "props": { "text": "Thank You" } },
           "subtitle": { "name": "text", "props": { "text": "sales@acmecorp.com  ·  acmecorp.com" } }

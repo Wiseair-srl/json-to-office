@@ -8,7 +8,7 @@ import type {
   PresentationComponentDefinition,
   ProcessedPresentation,
   ProcessedSlide,
-  MasterSlideDefinition,
+  TemplateSlideDefinition,
 } from '../types';
 import { isSlideComponent } from '../types';
 import { resolveGridPosition, resolveComponentGridPosition, mergeGridConfigs } from './grid';
@@ -26,10 +26,10 @@ export function processPresentation(
   const slideWidth = props.slideWidth ?? 10;
   const slideHeight = props.slideHeight ?? 7.5;
 
-  // Process master slide definitions
-  let masters: MasterSlideDefinition[] | undefined;
-  if (props.masters && props.masters.length > 0) {
-    masters = props.masters.map((m: MasterSlideDefinition) => {
+  // Process template slide definitions
+  let templates: TemplateSlideDefinition[] | undefined;
+  if (props.templates && props.templates.length > 0) {
+    templates = props.templates.map((m: TemplateSlideDefinition) => {
       const effectiveGrid = mergeGridConfigs(props.grid, m.grid);
 
       // Resolve grid positions on placeholders
@@ -72,7 +72,7 @@ export function processPresentation(
         notes: child.props.notes,
         layout: child.props.layout,
         hidden: child.props.hidden,
-        master: child.props.master,
+        template: child.props.template,
         placeholders: child.props.placeholders as Record<string, any> | undefined,
       });
     }
@@ -90,7 +90,8 @@ export function processPresentation(
     slideWidth,
     slideHeight,
     rtlMode: props.rtlMode ?? false,
+    pageNumberFormat: props.pageNumberFormat ?? '9',
     slides,
-    masters,
+    templates,
   };
 }

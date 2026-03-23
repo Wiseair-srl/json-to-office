@@ -760,9 +760,12 @@ function EditorComponent() {
       let themeDirty = false;
       const editorRef = useEditorRefsStore.getState().getActiveEditor();
       if (editorRef) {
-        const liveText = editorRef.editor.getValue();
-        // Save imperatively via store to avoid reactive deps on `documents`
-        documentsStore.getState().saveDocument(editorRef.documentName, liveText);
+        // Don't flush if a pending diff is active — editor may be disposed
+        const hasPendingDiff = documentsStore.getState().pendingDiffs[editorRef.documentName];
+        if (!hasPendingDiff) {
+          const liveText = editorRef.editor.getValue();
+          documentsStore.getState().saveDocument(editorRef.documentName, liveText);
+        }
       }
 
       // Flush all open theme editors whose live text differs from the
@@ -813,11 +816,14 @@ function EditorComponent() {
 
         const freshDoc = docs.find((d) => d.name === targetName);
         if (freshDoc) {
-          // If the document tab has an open editor, use its live text
+          // If a pending diff exists (AI suggestion), preview the modified version
+          const pending = documentsStore.getState().pendingDiffs[targetName];
           const ref = useEditorRefsStore.getState().getEditor(targetName);
-          const doc = ref
-            ? { ...freshDoc, text: ref.editor.getValue() }
-            : freshDoc;
+          const doc = pending
+            ? { ...freshDoc, text: pending.modified }
+            : ref
+              ? { ...freshDoc, text: ref.editor.getValue() }
+              : freshDoc;
           getDocumentVersionRef.current(doc.name);
           // Bypass cache only when a theme was updated during this flush
           buildDocumentRef.current(doc, undefined, themeDirty ? { bypassCache: true } : undefined);

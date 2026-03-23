@@ -18,8 +18,13 @@ export function defaultThreadTitle(): string {
   return `Chat ${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+export type AiScope = 'global' | 'slides' | 'templates';
+export type AiModel = 'opus' | 'sonnet' | 'haiku';
+
 export type ChatState = {
   chatOpen: boolean;
+  scope: AiScope;
+  model: AiModel;
   contextAttachments: (SelectionContext & { documentName?: string })[];
   threads: Record<string, ChatThread>;
   activeThreadId: Record<string, string>; // documentName → thread id
@@ -39,6 +44,8 @@ export type ChatActions = {
   updateThreadTitle: (id: string, title: string) => void;
   deleteThreadsForDocument: (docName: string) => void;
   renameThreadsForDocument: (oldName: string, newName: string) => void;
+  setScope: (scope: AiScope) => void;
+  setModel: (model: AiModel) => void;
   clearChat: () => void;
 };
 
@@ -46,6 +53,8 @@ export type ChatStore = ChatState & ChatActions;
 
 export const initChatStore = (): ChatState => ({
   chatOpen: false,
+  scope: 'global',
+  model: 'opus',
   contextAttachments: [],
   threads: {},
   activeThreadId: {},
@@ -73,6 +82,8 @@ export const createChatStore = (
               ),
             })),
           clearContext: () => set({ contextAttachments: [] }),
+          setScope: (scope) => set({ scope }),
+          setModel: (model) => set({ model }),
 
           createThread: (docName: string) => {
             const id = crypto.randomUUID();
@@ -204,6 +215,8 @@ export const createChatStore = (
           partialize: (state) => ({
             threads: state.threads,
             activeThreadId: state.activeThreadId,
+            scope: state.scope,
+            model: state.model,
           }),
           migrate: (persisted: any, version: number) => {
             if (version === 0 && persisted) {

@@ -1,16 +1,16 @@
 # PPTX Design Patterns & Best Practices
 
-## Recommended Master Set
+## Recommended Template Set
 
-Always define at least these 2-3 masters:
+Always define at least these 2-3 templates:
 
-1. **TITLE_MASTER** — full-bleed title slide. Placeholders: `title`, `subtitle`
-2. **CONTENT_MASTER** — standard content slide with heading + body. Placeholders: `heading`, `body`
-3. **TWO_COLUMN_MASTER** — heading + left/right columns. Placeholders: `heading`, `left`, `right`
+1. **TITLE_TEMPLATE** — full-bleed title slide. Placeholders: `title`, `subtitle`
+2. **CONTENT_TEMPLATE** — standard content slide with heading + body. Placeholders: `heading`, `body`
+3. **TWO_COLUMN_TEMPLATE** — heading + left/right columns. Placeholders: `heading`, `left`, `right`
 
-## Custom Slides (no master) — AVOID
+## Custom Slides (no template) — AVOID
 
-For one-off layouts, skip `master`/`placeholders` and use `children` directly. **If you have more than one custom slide, you almost certainly need another master instead.**
+For one-off layouts, skip `template`/`placeholders` and use `children` directly. **If you have more than one custom slide, you almost certainly need another template instead.**
 
 ```json
 {
@@ -22,7 +22,7 @@ For one-off layouts, skip `master`/`placeholders` and use `children` directly. *
 }
 ```
 
-Only use this for truly unique, unrepeatable slides. Prefer masters for any layout used more than once.
+Only use this for truly unique, unrepeatable slides. Prefer templates for any layout used more than once.
 
 ## Complete Minimal Example
 
@@ -32,9 +32,9 @@ Only use this for truly unique, unrepeatable slides. Prefer masters for any layo
   "props": {
     "title": "Quarterly Update",
     "theme": "corporate",
-    "masters": [
+    "templates": [
       {
-        "name": "TITLE_MASTER",
+        "name": "TITLE_TEMPLATE",
         "background": { "color": "primary" },
         "objects": [
           { "name": "shape", "props": { "type": "rect", "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": { "color": "secondary" } } }
@@ -45,7 +45,7 @@ Only use this for truly unique, unrepeatable slides. Prefer masters for any layo
         ]
       },
       {
-        "name": "CONTENT_MASTER",
+        "name": "CONTENT_TEMPLATE",
         "grid": { "margin": { "top": 1.1 } },
         "objects": [
           { "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } },
@@ -63,7 +63,7 @@ Only use this for truly unique, unrepeatable slides. Prefer masters for any layo
     {
       "name": "slide",
       "props": {
-        "master": "TITLE_MASTER",
+        "template": "TITLE_TEMPLATE",
         "placeholders": {
           "title": { "name": "text", "props": { "text": "Q1 2026 Update" } },
           "subtitle": { "name": "text", "props": { "text": "Engineering Division" } }
@@ -73,7 +73,7 @@ Only use this for truly unique, unrepeatable slides. Prefer masters for any layo
     {
       "name": "slide",
       "props": {
-        "master": "CONTENT_MASTER",
+        "template": "CONTENT_TEMPLATE",
         "placeholders": {
           "heading": { "name": "text", "props": { "text": "Highlights" } },
           "body": { "name": "table", "props": { "rows": [["Feature", "Status"], ["Search v2", "Shipped"], ["Auth rewrite", "In Progress"]], "grid": { "column": 0, "row": 3, "columnSpan": 12, "rowSpan": 2 }, "fontSize": 12, "border": { "type": "solid", "pt": 0.5, "color": "E2E8F0" } } }

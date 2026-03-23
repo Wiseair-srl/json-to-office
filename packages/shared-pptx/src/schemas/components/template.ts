@@ -1,5 +1,5 @@
 /**
- * Master Slide Definition Schemas
+ * Template Slide Definition Schemas
  */
 
 import { Type, Static, TSchema } from '@sinclair/typebox';
@@ -35,7 +35,7 @@ function contentComponent(name: string, propsSchema: TSchema) {
 }
 
 // Content component union — same { name, props } format as slide children
-const MasterObjectComponentSchema = Type.Union([
+const TemplateObjectComponentSchema = Type.Union([
   contentComponent('text', TextPropsSchema),
   contentComponent('image', PptxImagePropsSchema),
   contentComponent('shape', ShapePropsSchema),
@@ -44,7 +44,7 @@ const MasterObjectComponentSchema = Type.Union([
   contentComponent('highcharts', PptxHighchartsPropsSchema),
 ], {
   discriminator: { propertyName: 'name' },
-  description: 'Fixed component on a master slide (same format as slide children)',
+  description: 'Fixed component on a template slide (same format as slide children)',
 });
 
 // Defaults schema — partial component stub (carries styling props, not content)
@@ -77,11 +77,11 @@ export const PlaceholderDefinitionSchema = Type.Object({
   h: Type.Optional(Coord),
   grid: Type.Optional(GridPositionSchema),
   defaults: Type.Optional(PlaceholderDefaultsSchema),
-}, { additionalProperties: false, description: 'Placeholder on a master slide — defaults is a component stub whose props are inherited by the actual component' });
+}, { additionalProperties: false, description: 'Placeholder on a template slide — defaults is a component stub whose props are inherited by the actual component' });
 
-// Master slide definition
-export const MasterSlideDefinitionSchema = Type.Object({
-  name: Type.String({ description: 'Unique master slide name' }),
+// Template slide definition
+export const TemplateSlideDefinitionSchema = Type.Object({
+  name: Type.String({ description: 'Unique template slide name' }),
   background: Type.Optional(SlideBackgroundSchema),
   margin: Type.Optional(Type.Union([
     Type.Number({ description: 'Margin in inches (all sides)' }),
@@ -94,10 +94,10 @@ export const MasterSlideDefinitionSchema = Type.Object({
     color: Type.Optional(ColorValueSchema),
     fontSize: Type.Optional(Type.Number({ description: 'Slide number font size in points' })),
   }, { additionalProperties: false, description: 'Slide number position and styling' })),
-  objects: Type.Optional(Type.Array(MasterObjectComponentSchema, { description: 'Fixed components (logos, footers, decorations) — same { name, props } format as slide children' })),
+  objects: Type.Optional(Type.Array(TemplateObjectComponentSchema, { description: 'Fixed components (logos, footers, decorations) — same { name, props } format as slide children' })),
   placeholders: Type.Optional(Type.Array(PlaceholderDefinitionSchema, { description: 'Placeholder regions for slide content' })),
   grid: Type.Optional(GridConfigSchema),
-}, { additionalProperties: false, description: 'Master slide definition (reusable slide template)' });
+}, { additionalProperties: false, description: 'Template slide definition (reusable slide template)' });
 
 export type PlaceholderDefinition = Static<typeof PlaceholderDefinitionSchema>;
-export type MasterSlideDefinition = Static<typeof MasterSlideDefinitionSchema>;
+export type TemplateSlideDefinition = Static<typeof TemplateSlideDefinitionSchema>;

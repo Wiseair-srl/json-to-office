@@ -138,13 +138,13 @@ export function ChatThreadList({
                     Delete this thread?
                   </span>
                   <button
-                    className="shrink-0 text-red-400 hover:text-red-300 transition-colors"
+                    className="shrink-0 text-red-400 hover:text-red-300 transition-colors cursor-pointer"
                     onClick={confirmDelete}
                   >
                     <Check className="h-3.5 w-3.5" />
                   </button>
                   <button
-                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     onClick={cancelDelete}
                   >
                     <X className="h-3.5 w-3.5" />
@@ -171,7 +171,7 @@ export function ChatThreadList({
                     className="flex-1 min-w-0 text-sm rounded border border-border bg-background px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-primary/40"
                   />
                   <button
-                    className="shrink-0 text-primary hover:text-primary/80 transition-colors"
+                    className="shrink-0 text-primary hover:text-primary/80 transition-colors cursor-pointer"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       commitRename();
@@ -180,7 +180,7 @@ export function ChatThreadList({
                     <Check className="h-3.5 w-3.5" />
                   </button>
                   <button
-                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       cancelRename();
@@ -203,14 +203,14 @@ export function ChatThreadList({
                 </span>
                 <div className="ml-auto shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                    className="text-muted-foreground hover:text-foreground transition-colors p-0.5 cursor-pointer"
                     onClick={(e) => startRename(t, e)}
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
                   {threads.length > 1 && (
                     <button
-                      className="text-muted-foreground hover:text-destructive transition-colors p-0.5"
+                      className="text-muted-foreground hover:text-destructive transition-colors p-0.5 cursor-pointer"
                       onClick={(e) => startDelete(t.id, e)}
                     >
                       <Trash2 className="h-3 w-3" />

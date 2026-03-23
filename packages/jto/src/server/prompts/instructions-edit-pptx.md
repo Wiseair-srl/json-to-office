@@ -11,7 +11,7 @@ IMPORTANT: Produce ONLY the modified fragment that replaces the selected text ab
 
 ### PPTX selection editing rules
 
-- This fragment lives inside a master-based slide. The master's placeholders already define default styling.
+- This fragment lives inside a template-based slide. The template's placeholders already define default styling.
 - **Don't add props the placeholder already defines** — `fontSize`, `fontFace`, `color`, `bold`, `italic`, `align`, `valign`, `margin`, `charSpacing`, `lineSpacing`, `style`, and position are inherited automatically.
 - Grid positions are slide-relative, not placeholder-relative.
 - Keep components minimal — only include props that differ from placeholder defaults.

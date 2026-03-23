@@ -48,7 +48,7 @@ export function ChatContextChip({ context, onRemove }: ChatContextChipProps) {
       <button
         type="button"
         onClick={onRemove}
-        className="shrink-0 rounded-sm p-0.5 opacity-60 hover:opacity-100 hover:bg-muted transition-opacity"
+        className="shrink-0 rounded-sm p-0.5 opacity-60 hover:opacity-100 hover:bg-muted transition-opacity cursor-pointer"
         aria-label="Remove context"
       >
         <X className="h-3 w-3" />

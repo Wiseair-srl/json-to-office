@@ -3,7 +3,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { MasterSlideDefinitionSchema } from './master';
+import { TemplateSlideDefinitionSchema } from './template';
 import { GridConfigSchema } from '../theme';
 
 export const PresentationPropsSchema = Type.Object(
@@ -41,10 +41,16 @@ export const PresentationPropsSchema = Type.Object(
     rtlMode: Type.Optional(
       Type.Boolean({ description: 'Right-to-left text direction' })
     ),
+    pageNumberFormat: Type.Optional(
+      Type.Union([Type.Literal('9'), Type.Literal('09')], {
+        description: 'Format for {PAGE_NUMBER} placeholders: "9" = bare number (default), "09" = zero-padded',
+        default: '9',
+      })
+    ),
     grid: Type.Optional(GridConfigSchema),
-    masters: Type.Optional(
-      Type.Array(MasterSlideDefinitionSchema, {
-        description: 'Master slide definitions (reusable slide templates)',
+    templates: Type.Optional(
+      Type.Array(TemplateSlideDefinitionSchema, {
+        description: 'Template slide definitions (reusable slide templates)',
       })
     ),
   },

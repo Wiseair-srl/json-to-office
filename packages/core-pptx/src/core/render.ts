@@ -4,12 +4,12 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
-import type { ProcessedPresentation, PipelineWarning } from '../types';
+import type { ProcessedPresentation, PipelineWarning, SlideContext } from '../types';
 import { renderComponent } from '../components';
 import { resolveComponentGridPosition, mergeGridConfigs } from './grid';
 import { resolveColor } from '../utils/color';
 import { warn, W } from '../utils/warn';
-import { buildSlideMasterProps } from './master';
+import { buildSlideTemplateProps } from './template';
 
 export async function renderPresentation(
   processed: ProcessedPresentation,
@@ -42,20 +42,26 @@ export async function renderPresentation(
     bodyFontFace: processed.theme.fonts.body,
   };
 
-  // Register master slides
-  const masterMap = new Map(processed.masters?.map(m => [m.name, m]) ?? []);
-  if (processed.masters) {
-    for (const masterDef of processed.masters) {
-      const masterProps = buildSlideMasterProps(masterDef, processed.theme, warnings);
-      pptx.defineSlideMaster(masterProps as any);
+  // Register template slides
+  const templateMap = new Map(processed.templates?.map(m => [m.name, m]) ?? []);
+  if (processed.templates) {
+    for (const templateDef of processed.templates) {
+      const templateProps = buildSlideTemplateProps(templateDef, processed.theme, warnings);
+      pptx.defineSlideMaster(templateProps as any);
     }
   }
 
   // Render each slide
-  for (let slideIdx = 0; slideIdx < processed.slides.length; slideIdx++) {
+  const totalSlides = processed.slides.length;
+  for (let slideIdx = 0; slideIdx < totalSlides; slideIdx++) {
     const slideData = processed.slides[slideIdx];
-    const slide = slideData.master
-      ? pptx.addSlide({ masterName: slideData.master })
+    const slideCtx: SlideContext = {
+      slideNumber: slideIdx + 1,
+      totalSlides,
+      pageNumberFormat: processed.pageNumberFormat,
+    };
+    const slide = slideData.template
+      ? pptx.addSlide({ masterName: slideData.template })
       : pptx.addSlide();
 
     // Apply slide background
@@ -76,17 +82,17 @@ export async function renderPresentation(
       slide.hidden = true;
     }
 
-    // Determine effective grid for this slide (master grid merged with presentation grid)
-    const masterDef = slideData.master ? masterMap.get(slideData.master) : undefined;
-    if (slideData.master && !masterDef) {
-      warn(warnings, W.MISSING_MASTER, `Unknown master "${slideData.master}". Available: ${[...masterMap.keys()].join(', ')}`, { slide: slideIdx });
+    // Determine effective grid for this slide (template grid merged with presentation grid)
+    const templateDef = slideData.template ? templateMap.get(slideData.template) : undefined;
+    if (slideData.template && !templateDef) {
+      warn(warnings, W.MISSING_TEMPLATE, `Unknown template "${slideData.template}". Available: ${[...templateMap.keys()].join(', ')}`, { slide: slideIdx });
     }
-    const effectiveGrid = mergeGridConfigs(processed.grid, masterDef?.grid);
+    const effectiveGrid = mergeGridConfigs(processed.grid, templateDef?.grid);
 
-    // Render master fixed objects (grid already resolved in structure.ts)
-    if (masterDef?.objects) {
-      for (const obj of masterDef.objects) {
-        await renderComponent(slide, obj, processed.theme, pptx, warnings);
+    // Render template fixed objects (grid already resolved in structure.ts)
+    if (templateDef?.objects) {
+      for (const obj of templateDef.objects) {
+        await renderComponent(slide, obj, processed.theme, pptx, warnings, slideCtx);
       }
     }
 
@@ -99,18 +105,18 @@ export async function renderPresentation(
         processed.slideHeight,
         warnings
       );
-      await renderComponent(slide, resolved, processed.theme, pptx, warnings);
+      await renderComponent(slide, resolved, processed.theme, pptx, warnings, slideCtx);
     }
 
     // Render placeholder content
     if (slideData.placeholders) {
-      if (masterDef) {
-        const phMap = new Map(masterDef.placeholders?.map(p => [p.name, p]) ?? []);
+      if (templateDef) {
+        const phMap = new Map(templateDef.placeholders?.map(p => [p.name, p]) ?? []);
 
         for (const [phName, component] of Object.entries(slideData.placeholders)) {
           const phDef = phMap.get(phName);
           if (!phDef) {
-            warn(warnings, W.UNKNOWN_PLACEHOLDER, `Unknown placeholder "${phName}" in master "${slideData.master}". Available: ${[...phMap.keys()].join(', ')}`, { slide: slideIdx });
+            warn(warnings, W.UNKNOWN_PLACEHOLDER, `Unknown placeholder "${phName}" in template "${slideData.template}". Available: ${[...phMap.keys()].join(', ')}`, { slide: slideIdx });
             continue;
           }
 
@@ -127,10 +133,10 @@ export async function renderPresentation(
           if (phDef.h != null) posDefaults.h = phDef.h;
 
           const props = { ...posDefaults, ...(phDef.defaults?.props ?? {}), ...gridResolved.props };
-          await renderComponent(slide, { ...gridResolved, props }, processed.theme, pptx, warnings);
+          await renderComponent(slide, { ...gridResolved, props }, processed.theme, pptx, warnings, slideCtx);
         }
       } else {
-        // No master found — render placeholders at their own positions if available
+        // No template found — render placeholders at their own positions if available
         for (const [phName, component] of Object.entries(slideData.placeholders)) {
           const hasPosition = component.props.x != null || component.props.y != null || component.props.grid;
           if (hasPosition) {
@@ -138,9 +144,9 @@ export async function renderPresentation(
               component, effectiveGrid,
               processed.slideWidth, processed.slideHeight, warnings
             );
-            await renderComponent(slide, resolved, processed.theme, pptx, warnings);
+            await renderComponent(slide, resolved, processed.theme, pptx, warnings, slideCtx);
           } else {
-            warn(warnings, W.PLACEHOLDER_NO_POSITION, `Placeholder "${phName}" has no master and no explicit position — skipped`, { slide: slideIdx });
+            warn(warnings, W.PLACEHOLDER_NO_POSITION, `Placeholder "${phName}" has no template and no explicit position — skipped`, { slide: slideIdx });
           }
         }
       }

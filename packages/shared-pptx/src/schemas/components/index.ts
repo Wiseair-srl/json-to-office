@@ -11,4 +11,4 @@ export * from './shape';
 export * from './table';
 export * from './highcharts';
 export * from './chart';
-export * from './master';
+export * from './template';

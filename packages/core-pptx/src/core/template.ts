@@ -1,16 +1,16 @@
 /**
- * Master Slide Builder
- * Converts internal MasterSlideDefinition to pptxgenjs SlideMasterProps
+ * Template Slide Builder
+ * Converts internal TemplateSlideDefinition to pptxgenjs SlideMasterProps
  *
  * Fixed objects (shapes, text, images) are no longer rendered here — they use
  * the unified component pipeline and are rendered per-slide in render.ts.
  */
 
-import type { MasterSlideDefinition, PptxThemeConfig, PipelineWarning } from '../types';
+import type { TemplateSlideDefinition, PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
 
-export function buildSlideMasterProps(
-  def: MasterSlideDefinition,
+export function buildSlideTemplateProps(
+  def: TemplateSlideDefinition,
   theme: PptxThemeConfig,
   warnings?: PipelineWarning[]
 ): Record<string, any> {
@@ -44,7 +44,7 @@ export function buildSlideMasterProps(
     if (def.slideNumber.fontSize) result.slideNumber.fontSize = def.slideNumber.fontSize;
   }
 
-  // Placeholders (registered in pptxgenjs master for OOXML placeholder support)
+  // Placeholders (registered in pptxgenjs for OOXML placeholder support)
   const objects: Record<string, any>[] = [];
 
   if (def.placeholders) {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState, useMemo, memo } from 'react';
-import { Send, X, Loader2, Square, Paperclip } from 'lucide-react';
+import { Send, X, Loader2, Square, Paperclip, AlertTriangle, Trash2 } from 'lucide-react';
 import type { FileUIPart } from 'ai';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,8 +12,12 @@ import { ChatContextChip } from './chat-context-chip';
 import { ChatApplyButton } from './chat-apply-button';
 import { ChatThreadList } from './chat-thread-list';
 import { ScrollArea } from '../../ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 import { KbdShortcut } from '../../ui/kbd';
 import { defaultThreadTitle } from '../../../store/chat-store';
+import type { AiScope, AiModel } from '../../../store/chat-store';
+import { FORMAT } from '../../../lib/env';
 
 const ALLOWED_TYPES = new Set([
   'image/png', 'image/jpeg', 'image/gif', 'image/webp',
@@ -48,6 +52,10 @@ export function ChatPanel() {
   const contextAttachments = useChatStore((s) => s.contextAttachments);
   const addContext = useChatStore((s) => s.addContext);
   const removeContext = useChatStore((s) => s.removeContext);
+  const scope = useChatStore((s) => s.scope);
+  const setScope = useChatStore((s) => s.setScope);
+  const model = useChatStore((s) => s.model);
+  const setModel = useChatStore((s) => s.setModel);
   const openChat = useChatStore((s) => s.openChat);
   const closeChat = useChatStore((s) => s.closeChat);
 
@@ -63,7 +71,7 @@ export function ChatPanel() {
   const activeTab = useDocumentsStore((s) => s.activeTab);
   const documents = useDocumentsStore((s) => s.documents);
 
-  const { messages, sendMessage, status, error, setMessages, stop, getMessageContext } = useChatSessionContext();
+  const { messages, sendMessage, status, error, setMessages, stop, getMessageContext, getMessageScope } = useChatSessionContext();
 
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<FileUIPart[]>([]);
@@ -227,6 +235,29 @@ export function ChatPanel() {
     }
   }, [setMessages, activeThreadId, updateThreadMessages, updateThreadTitle]);
 
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
+
+  const requestDeleteMessage = useCallback((msgId: string) => {
+    setDeleteMessageId(msgId);
+  }, []);
+
+  const confirmDeleteMessage = useCallback(() => {
+    if (!deleteMessageId) return;
+    const idx = messages.findIndex((m) => m.id === deleteMessageId);
+    if (idx === -1) { setDeleteMessageId(null); return; }
+    const msg = messages[idx];
+    const toRemove = new Set<number>([idx]);
+    if (msg.role === 'user' && messages[idx + 1]?.role === 'assistant') {
+      toRemove.add(idx + 1);
+    } else if (msg.role === 'assistant' && idx > 0 && messages[idx - 1]?.role === 'user') {
+      toRemove.add(idx - 1);
+    }
+    const filtered = messages.filter((_, i) => !toRemove.has(i));
+    setMessages(filtered);
+    if (activeThreadId) updateThreadMessages(activeThreadId, filtered as any);
+    setDeleteMessageId(null);
+  }, [deleteMessageId, messages, setMessages, activeThreadId, updateThreadMessages]);
+
   const handleDeleteThread = useCallback(
     (id: string) => {
       if (isLoading) return;
@@ -329,6 +360,7 @@ export function ChatPanel() {
             }
 
             const isMsgStreaming = isStreaming && i === messages.length - 1 && msg.role === 'assistant';
+            const msgScope = msg.role === 'user' ? getMessageScope(msg.id) : undefined;
 
             return (
               <ChatMessage
@@ -336,6 +368,8 @@ export function ChatPanel() {
                 msg={msg}
                 isStreaming={isMsgStreaming}
                 context={msgContext}
+                scope={msgScope}
+                onDelete={!isLoading ? requestDeleteMessage : undefined}
               />
             );
           })}
@@ -379,6 +413,12 @@ export function ChatPanel() {
             ))}
           </div>
         )}
+        <div className="flex items-center gap-3 flex-wrap">
+          <ModelSelector model={model} setModel={setModel} />
+          {FORMAT === 'pptx' && activeTab && (
+            <ScopeSelector scope={scope} setScope={setScope} docSize={documents.find((d) => d.name === activeTab)?.text?.length ?? 0} />
+          )}
+        </div>
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {attachments.map((f, i) => (
@@ -398,7 +438,7 @@ export function ChatPanel() {
                 <button
                   type="button"
                   onClick={() => removeAttachment(i)}
-                  className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -442,7 +482,11 @@ export function ChatPanel() {
             placeholder={
               contextAttachments.length > 0
                 ? 'Describe how to edit the selection...'
-                : 'Ask AI to generate or edit JSON...'
+                : scope === 'slides'
+                  ? 'Add, edit, or remove slides...'
+                  : scope === 'templates'
+                    ? 'Edit template layouts and placeholders...'
+                    : 'Ask AI to generate or edit JSON...'
             }
             className="flex-1 min-h-[36px] max-h-32 resize-none overflow-y-auto rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground placeholder:whitespace-nowrap placeholder:overflow-hidden placeholder:text-ellipsis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-shadow"
             rows={1}
@@ -488,6 +532,24 @@ export function ChatPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={deleteMessageId !== null} onOpenChange={(open) => { if (!open) setDeleteMessageId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete message</DialogTitle>
+            <DialogDescription>
+              This will delete the message and its paired response. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="ghost" size="sm">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" size="sm" onClick={confirmDeleteMessage}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -497,10 +559,14 @@ const ChatMessage = memo(function ChatMessage({
   msg,
   isStreaming,
   context,
+  scope,
+  onDelete,
 }: {
   msg: any;
   isStreaming: boolean;
   context?: any[];
+  scope?: AiScope;
+  onDelete?: (id: string) => void;
 }) {
   const text = msg.parts
     ?.filter((p: any) => p.type === 'text')
@@ -509,7 +575,7 @@ const ChatMessage = memo(function ChatMessage({
   const fileParts = msg.parts?.filter((p: any) => p.type === 'file') || [];
 
   return (
-    <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div className={`group/msg flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div
         className={`rounded-lg px-3 py-2 max-w-[90%] overflow-hidden min-w-0 ${
           msg.role === 'user'
@@ -539,14 +605,28 @@ const ChatMessage = memo(function ChatMessage({
               </div>
             )}
             {text && <div className="whitespace-pre-wrap text-sm break-words">{text}</div>}
+            {scope && scope !== 'global' && (
+              <span className="text-[10px] text-primary-foreground/60 mt-0.5 block text-right">{scope}</span>
+            )}
           </div>
         ) : (
           <AssistantMessage text={text} isStreaming={isStreaming} context={context} />
         )}
+        {onDelete && !isStreaming && (
+          <div className="opacity-0 group-hover/msg:opacity-100 transition-opacity mt-1">
+            <button
+              type="button"
+              onClick={() => onDelete(msg.id)}
+              className={`p-0.5 rounded cursor-pointer ${msg.role === 'user' ? 'text-primary-foreground/50 hover:text-primary-foreground/80' : 'text-muted-foreground hover:text-destructive'}`}
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
-}, (prev, next) => prev.msg.id === next.msg.id && prev.isStreaming === next.isStreaming);
+}, (prev, next) => prev.msg.id === next.msg.id && prev.isStreaming === next.isStreaming && prev.scope === next.scope && prev.onDelete === next.onDelete);
 
 /** Fix 2: Skip Markdown parsing during streaming — render plain text instead */
 function AssistantMessage({ text, isStreaming, context }: { text: string; isStreaming: boolean; context?: any[] }) {
@@ -597,6 +677,76 @@ function AssistantMessage({ text, isStreaming, context }: { text: string; isStre
       >
         {text}
       </Markdown>
+    </div>
+  );
+}
+
+const MODEL_OPTIONS: { value: AiModel; label: string }[] = [
+  { value: 'opus', label: 'Opus' },
+  { value: 'sonnet', label: 'Sonnet' },
+  { value: 'haiku', label: 'Haiku' },
+];
+
+function ModelSelector({ model, setModel }: { model: AiModel; setModel: (m: AiModel) => void }) {
+  return (
+    <Select value={model} onValueChange={(v) => setModel(v as AiModel)}>
+      <SelectTrigger className="h-6 w-auto gap-1 border-none bg-muted/40 px-2 py-0 text-[10px] shadow-none focus:ring-0">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {MODEL_OPTIONS.map((m) => (
+          <SelectItem key={m.value} value={m.value} className="text-xs">
+            {m.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+const SCOPE_HINTS: Record<AiScope, string> = {
+  global: 'AI sees and edits the entire document',
+  slides: 'AI sees and edits only slides — templates stay unchanged',
+  templates: 'AI sees and edits only template layouts — slides stay unchanged',
+};
+const LARGE_DOC_THRESHOLD = 100_000;
+
+function ScopeSelector({ scope, setScope, docSize }: { scope: AiScope; setScope: (s: AiScope) => void; docSize: number }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] text-muted-foreground">Scope</span>
+        <div className="flex items-center bg-muted/40 rounded-md p-0.5 gap-px">
+          {(Object.keys(SCOPE_HINTS) as AiScope[]).map((s) => (
+            <Tooltip key={s}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setScope(s)}
+                  className={`px-2 py-0.5 rounded text-[10px] cursor-pointer transition-colors ${
+                    scope === s
+                      ? 'bg-background text-foreground font-medium shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >{s}</button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs max-w-[200px]">
+                {SCOPE_HINTS[s]}
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </div>
+      {scope === 'global' && docSize > LARGE_DOC_THRESHOLD && (
+        <div className="text-[10px] text-amber-500 flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          <span>Large doc — switch to{' '}
+            <button type="button" onClick={() => setScope('slides')} className="underline cursor-pointer hover:text-amber-400">slides</button>
+            {' '}or{' '}
+            <button type="button" onClick={() => setScope('templates')} className="underline cursor-pointer hover:text-amber-400">templates</button>
+          </span>
+        </div>
+      )}
     </div>
   );
 }

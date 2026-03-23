@@ -3,7 +3,7 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig, PptxComponentInput, PipelineWarning } from '../types';
+import type { PptxThemeConfig, PptxComponentInput, PipelineWarning, SlideContext } from '../types';
 import { warn, W } from '../utils/warn';
 import { renderTextComponent } from './text';
 import { renderImageComponent } from './image';
@@ -24,7 +24,8 @@ export async function renderComponent(
   component: PptxComponentInput,
   theme: PptxThemeConfig,
   pptx: PptxGenJS,
-  warnings?: PipelineWarning[]
+  warnings?: PipelineWarning[],
+  slideCtx?: SlideContext
 ): Promise<void> {
   if (component.enabled === false) return;
 
@@ -33,7 +34,7 @@ export async function renderComponent(
 
   switch (name) {
   case 'text':
-    renderTextComponent(slide, p, theme, warnings);
+    renderTextComponent(slide, p, theme, warnings, slideCtx);
     break;
   case 'image':
     renderImageComponent(slide, p, theme, warnings);

@@ -130,7 +130,9 @@ export function createAiRouter() {
     async (c) => {
     try {
       const body = await c.req.json();
-      const { messages, context, format: clientFormat, activeDocument, documentType } = body;
+      const { messages, context, format: clientFormat, activeDocument, documentType, scope, model: requestedModel } = body;
+      const VALID_MODELS = ['opus', 'sonnet', 'haiku'] as const;
+      const model = VALID_MODELS.includes(requestedModel) ? requestedModel : 'opus';
 
       const format = clientFormat || getFormatFromContainer();
       const isTheme = documentType === 'application/json+theme';
@@ -177,19 +179,59 @@ export function createAiRouter() {
           selectedText: ctx.selectedText,
         });
       } else if (hasActiveDoc) {
-        const editDocFiles: Record<string, string> = {
-          pptx: 'instructions-edit-document-pptx.md',
-          docx: 'instructions-edit-document-docx.md',
-        };
-        const editDocFile = isTheme
-          ? 'instructions-edit-document.md'
-          : editDocFiles[format] ?? 'instructions-edit-document.md';
-        systemPrompt += '\n\n' + loadPrompt(editDocFile, {
-          contentLabel,
-          contentLabelLower: contentLabel.toLowerCase(),
-          documentName: activeDocument.name || 'untitled',
-          documentText: activeDocument.text,
-        });
+        const pptxScope = format === 'pptx' && !isTheme && (scope === 'slides' || scope === 'templates');
+
+        let parsedDoc: any = null;
+        if (pptxScope) {
+          try { parsedDoc = JSON.parse(activeDocument.text); } catch { /* fall through to global */ }
+        }
+
+        if (pptxScope && parsedDoc) {
+          const doc = parsedDoc;
+
+          if (scope === 'slides') {
+            const templatesSummary = (doc.props?.templates || []).map((m: any) => {
+              const phs = (m.placeholders || [])
+                .map((p: any) => {
+                  const d = p.defaults ? ` → defaults: ${JSON.stringify(p.defaults)}` : '';
+                  return `  - \`${p.name}\`${d}`;
+                }).join('\n');
+              return `**${m.name}**\n${phs}`;
+            }).join('\n\n');
+            const slidesText = JSON.stringify(doc.children || [], null, 2);
+            systemPrompt += '\n\n' + loadPrompt('instructions-edit-document-pptx-slides.md', {
+              documentName: activeDocument.name || 'untitled',
+              templatesSummary,
+              slidesText,
+            });
+          } else {
+            const templatesText = JSON.stringify(doc.props?.templates || [], null, 2);
+            const slidesSummary = (doc.children || []).map((s: any, i: number) => {
+              const template = s.props?.template || '(none)';
+              const phs = Object.keys(s.props?.placeholders || {}).join(', ');
+              return `  ${i}: template=${template}, placeholders=[${phs}]`;
+            }).join('\n');
+            systemPrompt += '\n\n' + loadPrompt('instructions-edit-document-pptx-templates.md', {
+              documentName: activeDocument.name || 'untitled',
+              templatesText,
+              slidesSummary,
+            });
+          }
+        } else {
+          const editDocFiles: Record<string, string> = {
+            pptx: 'instructions-edit-document-pptx.md',
+            docx: 'instructions-edit-document-docx.md',
+          };
+          const editDocFile = isTheme
+            ? 'instructions-edit-document.md'
+            : editDocFiles[format] ?? 'instructions-edit-document.md';
+          systemPrompt += '\n\n' + loadPrompt(editDocFile, {
+            contentLabel,
+            contentLabelLower: contentLabel.toLowerCase(),
+            documentName: activeDocument.name || 'untitled',
+            documentText: activeDocument.text,
+          });
+        }
       } else if (isGenerate) {
         const generateFiles: Record<string, string> = {
           pptx: 'instructions-generate-pptx.md',
@@ -235,7 +277,7 @@ export function createAiRouter() {
       );
 
       const result = streamText({
-        model: claudeCode('opus', { streamingInput: 'always' }),
+        model: claudeCode(model, { streamingInput: 'always' }),
         system: systemPrompt,
         messages: modelMessages,
       });

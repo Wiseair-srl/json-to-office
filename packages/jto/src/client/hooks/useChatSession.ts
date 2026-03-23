@@ -6,6 +6,7 @@ import { useDocumentsStore } from '../store/documents-store-provider';
 import { FORMAT } from '../lib/env';
 import { mergeAiOutput, applyId } from '../lib/apply-merge';
 import type { SelectionContext } from '../lib/monaco-selection-utils';
+import type { AiScope } from '../store/chat-store';
 
 type ContextEntry = (SelectionContext & { documentName?: string })[];
 
@@ -20,6 +21,35 @@ function tryParseJsonBlocks(blocks: RegExpMatchArray[]): string | null {
   return null;
 }
 
+/**
+ * Structured JSON merge for scoped AI output.
+ * Instead of text-based heuristics, parses both JSONs and replaces
+ * the exact key path based on scope. Returns null if scope is global
+ * or if parsing fails (falls back to mergeAiOutput).
+ */
+function scopedMerge(
+  currentDoc: string,
+  aiOutput: string,
+  scope: AiScope,
+): { original: string; modified: string } | null {
+  if (scope === 'global') return null;
+  try {
+    const doc = JSON.parse(currentDoc);
+    const fragment = JSON.parse(aiOutput);
+    if (scope === 'slides' && Array.isArray(fragment.children)) {
+      doc.children = fragment.children;
+    } else if (scope === 'templates' && Array.isArray(fragment.templates)) {
+      if (!doc.props) doc.props = {};
+      doc.props.templates = fragment.templates;
+    } else {
+      return null; // unexpected shape, fall back
+    }
+    return { original: currentDoc, modified: JSON.stringify(doc, null, 2) };
+  } catch {
+    return null;
+  }
+}
+
 export function useChatSession() {
   const threads = useChatStore((s) => s.threads);
   const activeThreadIdMap = useChatStore((s) => s.activeThreadId);
@@ -27,6 +57,8 @@ export function useChatSession() {
   const updateThreadTitle = useChatStore((s) => s.updateThreadTitle);
   const clearContext = useChatStore((s) => s.clearContext);
   const contextAttachments = useChatStore((s) => s.contextAttachments);
+  const scope = useChatStore((s) => s.scope);
+  const model = useChatStore((s) => s.model);
 
   const activeTab = useDocumentsStore((s) => s.activeTab);
   const documents = useDocumentsStore((s) => s.documents);
@@ -51,9 +83,11 @@ export function useChatSession() {
   const activeThreadIdRef = useRef(activeThreadId);
   activeThreadIdRef.current = activeThreadId;
 
-  // Per-message context: queue for pending sends, map for completed
+  // Per-message context & scope: queue for pending sends, map for completed
   const pendingContextsRef = useRef<ContextEntry[]>([]);
+  const pendingScopesRef = useRef<AiScope[]>([]);
   const messageContextMapRef = useRef<Record<string, ContextEntry>>({});
+  const messageScopeMapRef = useRef<Record<string, AiScope>>({});
 
   const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
   if (!transportRef.current) {
@@ -73,6 +107,7 @@ export function useChatSession() {
     transport: transportRef.current,
     onError: () => {
       pendingContextsRef.current.shift();
+      pendingScopesRef.current.shift();
       clearContext();
     },
     onFinish: ({ messages: allMsgs }) => {
@@ -97,14 +132,16 @@ export function useChatSession() {
         }
       }
 
-      // Pop context from queue (captured at send time)
+      // Pop context + scope from queue (captured at send time)
       const sendContext = pendingContextsRef.current.shift() || [];
+      const sendScope = pendingScopesRef.current.shift() || 'global';
 
-      // Store context keyed by the user message that triggered this response
+      // Store context + scope keyed by the user message that triggered this response
       const userMsgs = (allMsgs as any[]).filter((m) => m.role === 'user');
       const lastUserMsg = userMsgs[userMsgs.length - 1];
       if (lastUserMsg?.id) {
         messageContextMapRef.current[lastUserMsg.id] = sendContext;
+        messageScopeMapRef.current[lastUserMsg.id] = sendScope;
       }
 
       // Auto-apply: extract last JSON code block from assistant response
@@ -124,7 +161,12 @@ export function useChatSession() {
               const doc = documentsRef.current.find((d) => d.name === tab);
               const original = doc?.text || '';
               const ctx = sendContext[0];
-              const { original: orig, modified } = mergeAiOutput(original, formatted, ctx);
+              const scopedResult = scopedMerge(original, formatted, sendScope);
+              if (!scopedResult && sendScope !== 'global') {
+                console.warn(`[chat] scopedMerge failed for scope="${sendScope}", falling back to text merge`);
+              }
+              const { original: orig, modified } = scopedResult
+                ?? mergeAiOutput(original, formatted, ctx);
               setPendingDiff(tab, orig, modified, applyId(raw.replace(/\n$/, '')));
             } else {
               const name = `ai-generated-${Date.now()}`;
@@ -140,8 +182,9 @@ export function useChatSession() {
 
   const wrappedSendMessage = useCallback(
     (input: string, files?: FileUIPart[]) => {
-      // Capture context at send time into the queue
+      // Capture context + scope at send time into the queue
       pendingContextsRef.current.push([...contextAttachments]);
+      pendingScopesRef.current.push(scope);
       clearContext();
       const message: { text: string; files?: FileUIPart[] } = { text: input };
       if (files?.length) message.files = files;
@@ -151,11 +194,17 @@ export function useChatSession() {
           context: contextAttachments,
           activeDocument: getActiveDocument(),
           documentType: (activeTabRef.current && documentTypesRef.current[activeTabRef.current]) || 'application/json+report',
+          scope,
+          model,
         },
       });
     },
-    [chat.sendMessage, contextAttachments, getActiveDocument, clearContext]
+    [chat.sendMessage, contextAttachments, getActiveDocument, clearContext, scope, model]
   );
+
+  const getMessageScope = useCallback((userMsgId: string): AiScope | undefined => {
+    return messageScopeMapRef.current[userMsgId];
+  }, []);
 
   return {
     messages: chat.messages,
@@ -165,5 +214,6 @@ export function useChatSession() {
     setMessages: chat.setMessages,
     stop: chat.stop,
     getMessageContext,
+    getMessageScope,
   };
 }

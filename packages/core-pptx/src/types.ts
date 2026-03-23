@@ -23,8 +23,9 @@ export interface PresentationComponentDefinition {
     slideWidth?: number;
     slideHeight?: number;
     rtlMode?: boolean;
+    pageNumberFormat?: '9' | '09';
     grid?: GridConfig;
-    masters?: MasterSlideDefinition[];
+    templates?: TemplateSlideDefinition[];
   };
   children?: PptxComponentInput[];
 }
@@ -44,7 +45,7 @@ export interface SlideComponentDefinition {
     notes?: string;
     layout?: string;
     hidden?: boolean;
-    master?: string;
+    template?: string;
     placeholders?: Record<string, PptxComponentInput>;
   };
   children?: PptxComponentInput[];
@@ -62,8 +63,9 @@ export interface ProcessedPresentation {
   slideWidth: number;
   slideHeight: number;
   rtlMode: boolean;
+  pageNumberFormat: '9' | '09';
   slides: ProcessedSlide[];
-  masters?: MasterSlideDefinition[];
+  templates?: TemplateSlideDefinition[];
 }
 
 export interface ProcessedSlide {
@@ -75,7 +77,7 @@ export interface ProcessedSlide {
   notes?: string;
   layout?: string;
   hidden?: boolean;
-  master?: string;
+  template?: string;
   placeholders?: Record<string, PptxComponentInput>;
 }
 
@@ -139,7 +141,7 @@ export interface PlaceholderDefinition {
   defaults?: PptxComponentInput;
 }
 
-export interface MasterSlideDefinition {
+export interface TemplateSlideDefinition {
   name: string;
   background?: { color?: string; image?: { path?: string; base64?: string } };
   margin?: number | [number, number, number, number];
@@ -147,6 +149,12 @@ export interface MasterSlideDefinition {
   objects?: PptxComponentInput[];
   placeholders?: PlaceholderDefinition[];
   grid?: GridConfig;
+}
+
+export interface SlideContext {
+  slideNumber: number;
+  totalSlides: number;
+  pageNumberFormat: '9' | '09';
 }
 
 export interface PipelineWarning {

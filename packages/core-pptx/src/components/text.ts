@@ -3,7 +3,7 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig, StyleName, PipelineWarning } from '../types';
+import type { PptxThemeConfig, StyleName, PipelineWarning, SlideContext } from '../types';
 import { resolveColor } from '../utils/color';
 
 interface TextComponentProps {
@@ -42,11 +42,22 @@ interface TextComponentProps {
   style?: StyleName;
 }
 
+function resolvePagePlaceholders(text: string, ctx: SlideContext): string {
+  const { slideNumber, totalSlides, pageNumberFormat } = ctx;
+  const fmt = (n: number) => pageNumberFormat === '09'
+    ? String(n).padStart(String(totalSlides).length, '0')
+    : String(n);
+  return text
+    .replace(/\{PAGE_NUMBER\}/g, fmt(slideNumber))
+    .replace(/\{PAGE_COUNT\}/g, fmt(totalSlides));
+}
+
 export function renderTextComponent(
   slide: PptxGenJS.Slide,
   props: TextComponentProps,
   theme: PptxThemeConfig,
-  warnings?: PipelineWarning[]
+  warnings?: PipelineWarning[],
+  slideCtx?: SlideContext
 ): void {
   // Resolve named style as defaults
   const style = props.style ? theme.styles?.[props.style] : undefined;
@@ -151,5 +162,6 @@ export function renderTextComponent(
   // Break line handling
   if (props.breakLine) opts.breakLine = true;
 
-  slide.addText(props.text, opts as any);
+  const text = slideCtx ? resolvePagePlaceholders(props.text, slideCtx) : props.text;
+  slide.addText(text, opts as any);
 }

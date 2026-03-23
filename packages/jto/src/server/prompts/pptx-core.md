@@ -5,28 +5,28 @@
 A PPTX presentation has this structure:
 
 ```
-pptx.props.masters[]        → reusable slide layouts (defined once)
-pptx.children[].props.master → slide references a master by name
-pptx.children[].props.placeholders → slide fills master's named regions
+pptx.props.templates[]        → reusable slide layouts (defined once)
+pptx.children[].props.template → slide references a template by name
+pptx.children[].props.placeholders → slide fills template's named regions
 ```
 
-**Master slides are the foundation of every presentation.** Every slide MUST reference a master. Masters enforce visual consistency, reduce repetition, and let placeholders carry default styling so slides stay minimal. Custom (masterless) slides are an absolute last resort.
+**Template slides are the foundation of every presentation.** Every slide MUST reference a template. Templates enforce visual consistency, reduce repetition, and let placeholders carry default styling so slides stay minimal. Custom (templateless) slides are an absolute last resort.
 
-## Master Slide Definition
+## Template Slide Definition
 
-Each master has:
+Each template has:
 - `name` — unique identifier (SCREAMING_SNAKE_CASE)
 - `background` — optional, color or image
-- `objects[]` — fixed components (shapes, text, images) that appear on every slide using this master. Uses the same `{ name, props }` format as slide children
+- `objects[]` — fixed components (shapes, text, images) that appear on every slide using this template. Uses the same `{ name, props }` format as slide children
 - `placeholders[]` — named content regions that slides fill with components
 - `slideNumber` — optional, position and style of auto slide numbers
 - `grid` — optional grid override, merged with the presentation grid. Use this to shift the content area below header bars. Example: `"grid": { "margin": { "top": 1.1 } }` pushes row 0 below a 0.9" header.
 
 ### Fixed objects in `objects[]`
 
-Master objects use the **same `{ name, props }` component format** as slide children. Any content component (shape, text, image, table, chart) can be used as a master object.
+Template objects use the **same `{ name, props }` component format** as slide children. Any content component (shape, text, image, table, chart) can be used as a template object.
 
-**Important:** Fixed decorations (header bars, footer bars) should use absolute `x`/`y`/`w`/`h`, not grid — because the master's `grid` override shifts grid positions, and decorations shouldn't shift themselves.
+**Important:** Fixed decorations (header bars, footer bars) should use absolute `x`/`y`/`w`/`h`, not grid — because the template's `grid` override shifts grid positions, and decorations shouldn't shift themselves.
 
 ```json
 { "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } }
@@ -36,7 +36,7 @@ Master objects use the **same `{ name, props }` component format** as slide chil
 { "name": "image", "props": { "path": "logo.png", "x": 8.5, "y": 0.15, "w": 1, "h": 0.6 } }
 ```
 
-Master objects support all component props including `rectRadius`, `shadow`, `rotate`, `fill.transparency`, `line.dashType`, rich text segments, etc.
+Template objects support all component props including `rectRadius`, `shadow`, `rotate`, `fill.transparency`, `line.dashType`, rich text segments, etc.
 
 ### Placeholder definition
 
@@ -79,13 +79,13 @@ Use the 12-column × 6-row grid instead of absolute x/y/w/h:
 
 ## Filling Placeholders (Slide Level)
 
-Slides reference a master and fill each placeholder with a single component:
+Slides reference a template and fill each placeholder with a single component:
 
 ```json
 {
   "name": "slide",
   "props": {
-    "master": "CONTENT_MASTER",
+    "template": "CONTENT_TEMPLATE",
     "placeholders": {
       "heading": { "name": "text", "props": { "text": "Slide Title" } },
       "body": { "name": "text", "props": { "text": "Key insight here." } }
@@ -171,8 +171,8 @@ Themes can override styles in the `styles` key:
 
 ## Available Components
 
-Use these inside `placeholders`, `children`, or master `objects`:
-- **text** — headings, paragraphs, bullets. Props: `text`, `fontSize`, `bold`, `italic`, `color`, `align`, `bullet`, `lineSpacing`, `charSpacing`
+Use these inside `placeholders`, `children`, or template `objects`:
+- **text** — headings, paragraphs, bullets. Props: `text`, `fontSize`, `bold`, `italic`, `color`, `align`, `bullet`, `lineSpacing`, `charSpacing`, `paraSpaceAfter`
 - **shape** — rectangles, circles, arrows, etc. Props: `type` (rect, roundRect, ellipse, triangle, etc.), `fill`, `text` (string or `[{ text, fontSize?, color?, bold?, italic?, breakLine? }]` for rich text), `fontSize`, `fontColor`, `charSpacing`
 - **table** — data grids. Props: `rows` (2D array of strings or cell objects), `colW`, `rowH`, `border`, `fontSize`, `margin`, `borderRadius`
 - **image** — pictures. Props: `path` or `base64`, `sizing` ({ type: "cover"|"contain" })
