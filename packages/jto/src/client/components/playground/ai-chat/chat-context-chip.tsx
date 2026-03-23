@@ -4,7 +4,8 @@ import type { SelectionContext } from '../../../lib/monaco-selection-utils';
 
 interface ChatContextChipProps {
   context: SelectionContext & { documentName?: string };
-  onRemove: () => void;
+  onRemove?: () => void;
+  variant?: 'default' | 'sent';
 }
 
 /** Turn `children[0].children[0]` into a short human label like "paragraph" */
@@ -35,24 +36,31 @@ function previewText(text: string, max = 50) {
   return oneLine.length > max ? oneLine.slice(0, max) + '…' : oneLine;
 }
 
-export function ChatContextChip({ context, onRemove }: ChatContextChipProps) {
+export function ChatContextChip({ context, onRemove, variant = 'default' }: ChatContextChipProps) {
   const componentName = humanizeContext(context);
   const docName = context.documentName?.replace(/\.json$/, '') ?? '';
   const label = docName ? `${docName} › ${componentName}` : componentName;
   const preview = previewText(context.selectedText);
 
+  const sent = variant === 'sent';
   const chip = (
-    <div className="group flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 pl-2 pr-1 py-1 text-xs max-w-[280px] transition-colors hover:bg-primary/10">
-      <FileCode2 className="h-3 w-3 shrink-0 text-primary/60" />
+    <div className={`group flex items-center gap-1.5 rounded-md border pl-2 ${onRemove ? 'pr-1' : 'pr-2'} py-1 text-xs max-w-[280px] transition-colors ${
+      sent
+        ? 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/20'
+        : 'border-primary/20 bg-primary/5 hover:bg-primary/10'
+    }`}>
+      <FileCode2 className={`h-3 w-3 shrink-0 ${sent ? 'text-primary-foreground/60' : 'text-primary/60'}`} />
       <span className="truncate font-medium">{label}</span>
-      <button
-        type="button"
-        onClick={onRemove}
-        className="shrink-0 rounded-sm p-0.5 opacity-60 hover:opacity-100 hover:bg-muted transition-opacity cursor-pointer"
-        aria-label="Remove context"
-      >
-        <X className="h-3 w-3" />
-      </button>
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="shrink-0 rounded-sm p-0.5 opacity-60 hover:opacity-100 hover:bg-muted transition-opacity cursor-pointer"
+          aria-label="Remove context"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
     </div>
   );
 

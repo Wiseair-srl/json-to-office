@@ -22,641 +22,6 @@
     },
     "templates": [
       {
-        "name": "COVER_TEMPLATE",
-        "background": {
-          "color": "primary"
-        },
-        "objects": [
-          {
-            "name": "image",
-            "props": {
-              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
-              "w": "10%",
-              "h": "2.8%",
-              "grid": {
-                "column": 0,
-                "row": 0
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "82%",
-              "y": "40%",
-              "w": "4.2%",
-              "h": "5.6%",
-              "fill": {
-                "color": "accent",
-                "transparency": 50
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "70%",
-              "y": "20%",
-              "w": "2.2%",
-              "h": "2.93%",
-              "fill": {
-                "color": "accent",
-                "transparency": 80
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "75%",
-              "y": "20%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "accent",
-                "transparency": 75
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "80%",
-              "y": "20%",
-              "w": "1.8%",
-              "h": "2.4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 85
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "85%",
-              "y": "20%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 72
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "90%",
-              "y": "20%",
-              "w": "2.2%",
-              "h": "2.93%",
-              "fill": {
-                "color": "accent",
-                "transparency": 78
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "72%",
-              "y": "26.67%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 72
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "77%",
-              "y": "26.67%",
-              "w": "2.2%",
-              "h": "2.93%",
-              "fill": {
-                "color": "accent",
-                "transparency": 65
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "82%",
-              "y": "26.67%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 70
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "87%",
-              "y": "26.67%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "accent",
-                "transparency": 60
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "92%",
-              "y": "26.67%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 75
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "70%",
-              "y": "33.33%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "accent",
-                "transparency": 68
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "75%",
-              "y": "33.33%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 60
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "80%",
-              "y": "33.33%",
-              "w": "2.2%",
-              "h": "2.93%",
-              "fill": {
-                "color": "accent",
-                "transparency": 50
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "85%",
-              "y": "33.33%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 55
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "90%",
-              "y": "33.33%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 65
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "72%",
-              "y": "40%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 55
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "77%",
-              "y": "40%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "accent",
-                "transparency": 45
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "87%",
-              "y": "40%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 40
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "92%",
-              "y": "40%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 55
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "70%",
-              "y": "46.67%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 60
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "75%",
-              "y": "46.67%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 50
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "80%",
-              "y": "46.67%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 35
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "85%",
-              "y": "46.67%",
-              "w": "4.6%",
-              "h": "6.13%",
-              "fill": {
-                "color": "accent",
-                "transparency": 40
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "90%",
-              "y": "46.67%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 30
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "72%",
-              "y": "53.33%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 50
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "77%",
-              "y": "53.33%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 40
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "82%",
-              "y": "53.33%",
-              "w": "4.6%",
-              "h": "6.13%",
-              "fill": {
-                "color": "accent",
-                "transparency": 35
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "87%",
-              "y": "53.33%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 25
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "92%",
-              "y": "53.33%",
-              "w": "4.2%",
-              "h": "5.6%",
-              "fill": {
-                "color": "accent",
-                "transparency": 45
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "70%",
-              "y": "60%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "accent",
-                "transparency": 70
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "75%",
-              "y": "60%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 60
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "80%",
-              "y": "60%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "accent",
-                "transparency": 50
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "85%",
-              "y": "60%",
-              "w": "4.2%",
-              "h": "5.6%",
-              "fill": {
-                "color": "accent",
-                "transparency": 45
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "90%",
-              "y": "60%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 55
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "72%",
-              "y": "66.67%",
-              "w": "2.2%",
-              "h": "2.93%",
-              "fill": {
-                "color": "accent",
-                "transparency": 78
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "77%",
-              "y": "66.67%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "accent",
-                "transparency": 68
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "82%",
-              "y": "66.67%",
-              "w": "1.8%",
-              "h": "2.4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 75
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "87%",
-              "y": "66.67%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 65
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "92%",
-              "y": "66.67%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "accent",
-                "transparency": 72
-              }
-            }
-          }
-        ],
-        "placeholders": [
-          {
-            "name": "date",
-            "grid": {
-              "column": 9,
-              "row": 0,
-              "columnSpan": 3,
-              "rowSpan": 1
-            },
-            "defaults": {
-              "name": "text",
-              "props": {
-                "fontSize": 11,
-                "fontFace": "Inter Light",
-                "color": "#6E7389",
-                "align": "right"
-              }
-            }
-          },
-          {
-            "name": "title",
-            "grid": {
-              "column": 0,
-              "row": 3,
-              "columnSpan": 10,
-              "rowSpan": 5
-            },
-            "defaults": {
-              "name": "text",
-              "props": {
-                "fontSize": 44,
-                "fontFace": "Inter Light",
-                "color": "background",
-                "valign": "bottom"
-              }
-            }
-          },
-          {
-            "name": "subtitle",
-            "grid": {
-              "column": 0,
-              "row": 9,
-              "columnSpan": 7,
-              "rowSpan": 2
-            },
-            "defaults": {
-              "name": "text",
-              "props": {
-                "fontSize": 16,
-                "fontFace": "Inter Light",
-                "color": "#9A9EB0"
-              }
-            }
-          }
-        ]
-      },
-      {
         "name": "SECTION_AZURE_TEMPLATE",
         "background": {
           "color": "accent"
@@ -679,10 +44,38 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "75%",
-              "y": "69.33%",
-              "w": "1.6%",
-              "h": "2.13%",
+              "x": "92%",
+              "y": "68%",
+              "w": "1.4%",
+              "h": "1.87%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 85
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88%",
+              "y": "65%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 82
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83.5%",
+              "y": "64%",
+              "w": "2%",
+              "h": "2.67%",
               "fill": {
                 "color": "FFFFFF",
                 "transparency": 80
@@ -694,12 +87,12 @@
             "props": {
               "type": "ellipse",
               "x": "79%",
-              "y": "69.33%",
-              "w": "2%",
-              "h": "2.67%",
+              "y": "65.5%",
+              "w": "1.6%",
+              "h": "2.13%",
               "fill": {
                 "color": "FFFFFF",
-                "transparency": 75
+                "transparency": 84
               }
             }
           },
@@ -707,10 +100,38 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "83%",
-              "y": "69.33%",
-              "w": "2.6%",
-              "h": "3.47%",
+              "x": "94%",
+              "y": "72.5%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 78
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "71%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 74
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "70%",
+              "w": "2.8%",
+              "h": "3.73%",
               "fill": {
                 "color": "FFFFFF",
                 "transparency": 70
@@ -721,13 +142,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "87%",
-              "y": "69.33%",
-              "w": "3%",
-              "h": "4%",
+              "x": "81%",
+              "y": "71.5%",
+              "w": "2.2%",
+              "h": "2.93%",
               "fill": {
                 "color": "FFFFFF",
-                "transparency": 65
+                "transparency": 76
               }
             }
           },
@@ -735,10 +156,10 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "91%",
-              "y": "69.33%",
-              "w": "1.6%",
-              "h": "2.13%",
+              "x": "77%",
+              "y": "74%",
+              "w": "1.8%",
+              "h": "2.4%",
               "fill": {
                 "color": "FFFFFF",
                 "transparency": 80
@@ -749,24 +170,10 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "77%",
-              "y": "74.67%",
-              "w": "2%",
-              "h": "2.67%",
-              "fill": {
-                "color": "FFFFFF",
-                "transparency": 75
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "81%",
-              "y": "74.67%",
-              "w": "3%",
-              "h": "4%",
+              "x": "92.5%",
+              "y": "78%",
+              "w": "2.8%",
+              "h": "3.73%",
               "fill": {
                 "color": "FFFFFF",
                 "transparency": 65
@@ -777,10 +184,52 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "85%",
-              "y": "74.67%",
-              "w": "3.4%",
-              "h": "4.53%",
+              "x": "87.5%",
+              "y": "77%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 58
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "77.5%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 64
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79.5%",
+              "y": "80%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 72
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "83.5%",
+              "w": "2.4%",
+              "h": "3.2%",
               "fill": {
                 "color": "FFFFFF",
                 "transparency": 60
@@ -791,83 +240,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "89%",
-              "y": "74.67%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "FFFFFF",
-                "transparency": 70
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "79%",
-              "y": "80%",
-              "w": "2.6%",
-              "h": "3.47%",
-              "fill": {
-                "color": "FFFFFF",
-                "transparency": 70
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "83%",
-              "y": "80%",
+              "x": "89.5%",
+              "y": "83%",
               "w": "3.4%",
               "h": "4.53%",
               "fill": {
                 "color": "FFFFFF",
-                "transparency": 55
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "87%",
-              "y": "80%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "FFFFFF",
-                "transparency": 50
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "91%",
-              "y": "80%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "FFFFFF",
-                "transparency": 65
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "81%",
-              "y": "85.33%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "FFFFFF",
-                "transparency": 65
+                "transparency": 52
               }
             }
           },
@@ -876,9 +255,37 @@
             "props": {
               "type": "ellipse",
               "x": "85%",
-              "y": "85.33%",
-              "w": "3.8%",
-              "h": "5.07%",
+              "y": "84%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 56
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81.5%",
+              "y": "86%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "FFFFFF",
+                "transparency": 66
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "89%",
+              "w": "3%",
+              "h": "4%",
               "fill": {
                 "color": "FFFFFF",
                 "transparency": 50
@@ -889,13 +296,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "89%",
-              "y": "85.33%",
-              "w": "3.4%",
-              "h": "4.53%",
+              "x": "87%",
+              "y": "89.5%",
+              "w": "3.6%",
+              "h": "4.8%",
               "fill": {
                 "color": "FFFFFF",
-                "transparency": 55
+                "transparency": 45
               }
             }
           },
@@ -964,6 +371,1022 @@
                 "fontSize": 14,
                 "fontFace": "Inter Light",
                 "color": "#B5BBE6"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "COVER_TEMPLATE",
+        "background": {
+          "color": "primary"
+        },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "w": "10%",
+              "h": "2.8%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "14%",
+              "w": "1.4%",
+              "h": "1.87%",
+              "fill": {
+                "color": "accent",
+                "transparency": 88
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "12%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 85
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "13.5%",
+              "w": "1.6%",
+              "h": "2.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 86
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "19%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 80
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87.5%",
+              "y": "18%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 78
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "19.5%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 82
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79%",
+              "y": "22%",
+              "w": "1.6%",
+              "h": "2.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 84
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "25%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 75
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89.5%",
+              "y": "24.5%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": {
+                "color": "accent",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "25.5%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 72
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80.5%",
+              "y": "27.5%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 76
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "76.5%",
+              "y": "30%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 80
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "31%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "31.5%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82.5%",
+              "y": "33%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": {
+                "color": "accent",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "78%",
+              "y": "35.5%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "74%",
+              "y": "38.5%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 76
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "37.5%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "38%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84.5%",
+              "y": "39.5%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "42%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 62
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "76%",
+              "y": "45%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "44%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 42
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "45%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 38
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82.5%",
+              "y": "47%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 45
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "78.5%",
+              "y": "49.5%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "51%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": {
+                "color": "accent",
+                "transparency": 48
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "52%",
+              "w": "4.6%",
+              "h": "6.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 35
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "54%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 40
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "57%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "58.5%",
+              "w": "4%",
+              "h": "5.33%",
+              "fill": {
+                "color": "accent",
+                "transparency": 38
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "60%",
+              "w": "3.6%",
+              "h": "4.8%",
+              "fill": {
+                "color": "accent",
+                "transparency": 42
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "62%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "66%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "67.5%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "65%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 52
+              }
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "date",
+            "grid": {
+              "column": 9,
+              "row": 0,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "fontFace": "Inter Light",
+                "color": "#6E7389",
+                "align": "right"
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": {
+              "column": 0,
+              "row": 3,
+              "columnSpan": 10,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 44,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "subtitle",
+            "grid": {
+              "column": 0,
+              "row": 9,
+              "columnSpan": 7,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "CLOSING_TEMPLATE",
+        "background": {
+          "color": "primary"
+        },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "w": "10%",
+              "h": "2.8%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "50%",
+              "w": "1.6%",
+              "h": "2.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 82
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88.5%",
+              "y": "48.5%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 78
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "50%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 80
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "95%",
+              "y": "55%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 74
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90.5%",
+              "y": "54%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 68
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "86%",
+              "y": "55.5%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": {
+                "color": "accent",
+                "transparency": 65
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81.5%",
+              "y": "57.5%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 72
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "78%",
+              "y": "60%",
+              "w": "1.6%",
+              "h": "2.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 78
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "61%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88%",
+              "y": "60.5%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 54
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83.5%",
+              "y": "63%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 58
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79.5%",
+              "y": "66%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 66
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "95%",
+              "y": "67.5%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "67%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 44
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "69.5%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 48
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "72.5%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": {
+                "color": "accent",
+                "transparency": 58
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "74%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": {
+                "color": "accent",
+                "transparency": 38
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88%",
+              "y": "74.5%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 40
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83.5%",
+              "y": "77%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": {
+                "color": "accent",
+                "transparency": 48
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "80%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 58
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "95%",
+              "y": "81%",
+              "w": "3.6%",
+              "h": "4.8%",
+              "fill": {
+                "color": "accent",
+                "transparency": 35
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "81.5%",
+              "w": "4.6%",
+              "h": "6.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 30
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "84%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 38
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "87%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 50
+              }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "heading",
+            "grid": {
+              "row": 5,
+              "rowSpan": 2,
+              "column": 0,
+              "columnSpan": 12
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 38,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "body",
+            "grid": {
+              "row": 7,
+              "rowSpan": 2,
+              "column": 0,
+              "columnSpan": 7
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0"
+              }
+            }
+          },
+          {
+            "name": "contacts",
+            "grid": {
+              "row": 11,
+              "rowSpan": 1,
+              "column": 0,
+              "columnSpan": 7
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0"
               }
             }
           }
@@ -2147,13 +2570,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "75%",
-              "y": "69.33%",
-              "w": "2%",
-              "h": "2.67%",
+              "x": "91%",
+              "y": "66%",
+              "w": "1.6%",
+              "h": "2.13%",
               "fill": {
                 "color": "accent",
-                "transparency": 72
+                "transparency": 82
               }
             }
           },
@@ -2161,10 +2584,66 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "79%",
-              "y": "69.33%",
-              "w": "2.4%",
-              "h": "3.2%",
+              "x": "86.5%",
+              "y": "64.5%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 78
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "65.5%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 80
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "78.5%",
+              "y": "68%",
+              "w": "1.4%",
+              "h": "1.87%",
+              "fill": {
+                "color": "accent",
+                "transparency": 84
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93.5%",
+              "y": "71%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 74
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "70%",
+              "w": "2.6%",
+              "h": "3.47%",
               "fill": {
                 "color": "accent",
                 "transparency": 68
@@ -2175,8 +2654,8 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "83%",
-              "y": "69.33%",
+              "x": "84%",
+              "y": "70.5%",
               "w": "3%",
               "h": "4%",
               "fill": {
@@ -2189,24 +2668,10 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "87%",
-              "y": "69.33%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 60
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "91%",
-              "y": "69.33%",
-              "w": "2%",
-              "h": "2.67%",
+              "x": "80%",
+              "y": "73%",
+              "w": "2.2%",
+              "h": "2.93%",
               "fill": {
                 "color": "accent",
                 "transparency": 72
@@ -2217,13 +2682,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "77%",
-              "y": "74.67%",
-              "w": "2.4%",
-              "h": "3.2%",
+              "x": "76%",
+              "y": "76%",
+              "w": "1.6%",
+              "h": "2.13%",
               "fill": {
                 "color": "accent",
-                "transparency": 68
+                "transparency": 78
               }
             }
           },
@@ -2231,13 +2696,27 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "81%",
-              "y": "74.67%",
+              "x": "91.5%",
+              "y": "76.5%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "86.5%",
+              "y": "76%",
               "w": "3.4%",
               "h": "4.53%",
               "fill": {
                 "color": "accent",
-                "transparency": 58
+                "transparency": 54
               }
             }
           },
@@ -2245,24 +2724,10 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "85%",
-              "y": "74.67%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 50
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "89%",
-              "y": "74.67%",
-              "w": "3%",
-              "h": "4%",
+              "x": "82%",
+              "y": "78%",
+              "w": "2.8%",
+              "h": "3.73%",
               "fill": {
                 "color": "accent",
                 "transparency": 62
@@ -2273,13 +2738,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "79%",
-              "y": "80%",
-              "w": "3%",
-              "h": "4%",
+              "x": "78.5%",
+              "y": "81%",
+              "w": "2%",
+              "h": "2.67%",
               "fill": {
                 "color": "accent",
-                "transparency": 62
+                "transparency": 70
               }
             }
           },
@@ -2287,10 +2752,24 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "83%",
-              "y": "80%",
-              "w": "3.8%",
-              "h": "5.07%",
+              "x": "93%",
+              "y": "82.5%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88.5%",
+              "y": "82%",
+              "w": "3.6%",
+              "h": "4.8%",
               "fill": {
                 "color": "accent",
                 "transparency": 48
@@ -2301,13 +2780,27 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "87%",
-              "y": "80%",
-              "w": "4.2%",
-              "h": "5.6%",
+              "x": "84%",
+              "y": "84.5%",
+              "w": "3.2%",
+              "h": "4.27%",
               "fill": {
                 "color": "accent",
-                "transparency": 42
+                "transparency": 52
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "87.5%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 62
               }
             }
           },
@@ -2316,12 +2809,12 @@
             "props": {
               "type": "ellipse",
               "x": "91%",
-              "y": "80%",
-              "w": "3.4%",
-              "h": "4.53%",
+              "y": "88.5%",
+              "w": "3.2%",
+              "h": "4.27%",
               "fill": {
                 "color": "accent",
-                "transparency": 58
+                "transparency": 46
               }
             }
           },
@@ -2329,41 +2822,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "81%",
-              "y": "85.33%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 58
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "85%",
-              "y": "85.33%",
-              "w": "4.2%",
-              "h": "5.6%",
-              "fill": {
-                "color": "accent",
-                "transparency": 42
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "89%",
-              "y": "85.33%",
+              "x": "86%",
+              "y": "89%",
               "w": "3.8%",
               "h": "5.07%",
               "fill": {
                 "color": "accent",
-                "transparency": 48
+                "transparency": 42
               }
             }
           },
@@ -3072,66 +3537,80 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "75%",
-              "y": "53.33%",
+              "x": "91%",
+              "y": "66%",
+              "w": "1.6%",
+              "h": "2.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 82
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "86.5%",
+              "y": "64.5%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 78
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "65.5%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 80
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "78.5%",
+              "y": "68%",
+              "w": "1.4%",
+              "h": "1.87%",
+              "fill": {
+                "color": "accent",
+                "transparency": 84
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93.5%",
+              "y": "71%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 74
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "70%",
               "w": "2.6%",
               "h": "3.47%",
-              "fill": {
-                "color": "accent",
-                "transparency": 72
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "80%",
-              "y": "53.33%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 65
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "85%",
-              "y": "53.33%",
-              "w": "3%",
-              "h": "4%",
-              "fill": {
-                "color": "accent",
-                "transparency": 55
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "90%",
-              "y": "53.33%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 48
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "77%",
-              "y": "60%",
-              "w": "3%",
-              "h": "4%",
               "fill": {
                 "color": "accent",
                 "transparency": 68
@@ -3142,13 +3621,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "82%",
-              "y": "60%",
-              "w": "3.8%",
-              "h": "5.07%",
+              "x": "84%",
+              "y": "70.5%",
+              "w": "3%",
+              "h": "4%",
               "fill": {
                 "color": "accent",
-                "transparency": 55
+                "transparency": 65
               }
             }
           },
@@ -3156,13 +3635,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "87%",
-              "y": "60%",
-              "w": "3.4%",
-              "h": "4.53%",
+              "x": "80%",
+              "y": "73%",
+              "w": "2.2%",
+              "h": "2.93%",
               "fill": {
                 "color": "accent",
-                "transparency": 45
+                "transparency": 72
               }
             }
           },
@@ -3170,13 +3649,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "92%",
-              "y": "60%",
-              "w": "4.2%",
-              "h": "5.6%",
+              "x": "76%",
+              "y": "76%",
+              "w": "1.6%",
+              "h": "2.13%",
               "fill": {
                 "color": "accent",
-                "transparency": 40
+                "transparency": 78
               }
             }
           },
@@ -3184,10 +3663,10 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "75%",
-              "y": "66.67%",
-              "w": "3.4%",
-              "h": "4.53%",
+              "x": "91.5%",
+              "y": "76.5%",
+              "w": "3%",
+              "h": "4%",
               "fill": {
                 "color": "accent",
                 "transparency": 60
@@ -3198,55 +3677,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "80%",
-              "y": "66.67%",
-              "w": "4.2%",
-              "h": "5.6%",
+              "x": "86.5%",
+              "y": "76%",
+              "w": "3.4%",
+              "h": "4.53%",
               "fill": {
                 "color": "accent",
-                "transparency": 48
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "85%",
-              "y": "66.67%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 38
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "90%",
-              "y": "66.67%",
-              "w": "4.6%",
-              "h": "6.13%",
-              "fill": {
-                "color": "accent",
-                "transparency": 32
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "77%",
-              "y": "73.33%",
-              "w": "3.8%",
-              "h": "5.07%",
-              "fill": {
-                "color": "accent",
-                "transparency": 52
+                "transparency": 54
               }
             }
           },
@@ -3255,51 +3692,9 @@
             "props": {
               "type": "ellipse",
               "x": "82%",
-              "y": "73.33%",
-              "w": "4.6%",
-              "h": "6.13%",
-              "fill": {
-                "color": "accent",
-                "transparency": 40
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "87%",
-              "y": "73.33%",
-              "w": "4.2%",
-              "h": "5.6%",
-              "fill": {
-                "color": "accent",
-                "transparency": 30
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "92%",
-              "y": "73.33%",
-              "w": "5%",
-              "h": "6.67%",
-              "fill": {
-                "color": "accent",
-                "transparency": 25
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "79%",
-              "y": "80%",
-              "w": "3%",
-              "h": "4%",
+              "y": "78%",
+              "w": "2.8%",
+              "h": "3.73%",
               "fill": {
                 "color": "accent",
                 "transparency": 62
@@ -3310,27 +3705,13 @@
             "name": "shape",
             "props": {
               "type": "ellipse",
-              "x": "84%",
-              "y": "80%",
-              "w": "3.8%",
-              "h": "5.07%",
+              "x": "78.5%",
+              "y": "81%",
+              "w": "2%",
+              "h": "2.67%",
               "fill": {
                 "color": "accent",
-                "transparency": 50
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "ellipse",
-              "x": "89%",
-              "y": "80%",
-              "w": "3.4%",
-              "h": "4.53%",
-              "fill": {
-                "color": "accent",
-                "transparency": 42
+                "transparency": 70
               }
             }
           },
@@ -3339,12 +3720,82 @@
             "props": {
               "type": "ellipse",
               "x": "93%",
-              "y": "80%",
-              "w": "4.2%",
-              "h": "5.6%",
+              "y": "82.5%",
+              "w": "2.6%",
+              "h": "3.47%",
               "fill": {
                 "color": "accent",
-                "transparency": 35
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88.5%",
+              "y": "82%",
+              "w": "3.6%",
+              "h": "4.8%",
+              "fill": {
+                "color": "accent",
+                "transparency": 48
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "84.5%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": {
+                "color": "accent",
+                "transparency": 52
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "87.5%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 62
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "91%",
+              "y": "88.5%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": {
+                "color": "accent",
+                "transparency": 46
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "86%",
+              "y": "89%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 42
               }
             }
           },
@@ -3413,6 +3864,384 @@
                 "fontSize": 12,
                 "fontFace": "Inter Light",
                 "color": "#9A9EB0"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "BIG_STAT_TEMPLATE",
+        "background": {
+          "color": "primary"
+        },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "w": "10%",
+              "h": "2.8%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "2%",
+              "y": "71%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 88
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "5.5%",
+              "y": "73%",
+              "w": "1.6%",
+              "h": "2.13%",
+              "fill": {
+                "color": "accent",
+                "transparency": 82
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "8%",
+              "y": "70%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": {
+                "color": "accent",
+                "transparency": 76
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "3%",
+              "y": "76%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": {
+                "color": "accent",
+                "transparency": 72
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "7.5%",
+              "y": "77.5%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": {
+                "color": "accent",
+                "transparency": 68
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "11%",
+              "y": "75%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 74
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "1.5%",
+              "y": "82%",
+              "w": "3.6%",
+              "h": "4.8%",
+              "fill": {
+                "color": "accent",
+                "transparency": 62
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "6%",
+              "y": "83.5%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": {
+                "color": "accent",
+                "transparency": 56
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "10%",
+              "y": "81%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "14%",
+              "y": "84%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": {
+                "color": "accent",
+                "transparency": 66
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "72%",
+              "w": "3%",
+              "h": "4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 78
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "74.5%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 84
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "76.5%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 70
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89.5%",
+              "y": "78%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": {
+                "color": "accent",
+                "transparency": 64
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "79.5%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": {
+                "color": "accent",
+                "transparency": 75
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "83%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": {
+                "color": "accent",
+                "transparency": 55
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "84.5%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": {
+                "color": "accent",
+                "transparency": 60
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "86%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": {
+                "color": "accent",
+                "transparency": 68
+              }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "label",
+            "grid": {
+              "column": 2,
+              "row": 3,
+              "columnSpan": 8,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 13,
+                "fontFace": "Inter Light",
+                "color": "#6E7389",
+                "align": "center",
+                "charSpacing": 3,
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "stat",
+            "grid": {
+              "column": 1,
+              "row": 4,
+              "columnSpan": 10,
+              "rowSpan": 4
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 96,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "description",
+            "grid": {
+              "column": 2,
+              "row": 8,
+              "columnSpan": 8,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0",
+                "align": "center",
+                "lineSpacing": 26
+              }
+            }
+          },
+          {
+            "name": "source",
+            "grid": {
+              "column": 3,
+              "row": 10,
+              "columnSpan": 6,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 10,
+                "fontFace": "Inter Light",
+                "color": "#4A4E63",
+                "align": "center",
+                "italic": true
               }
             }
           }
@@ -3773,7 +4602,7 @@
           "section": {
             "name": "text",
             "props": {
-                "text": "{PAGE_NUMBER}"
+              "text": "{PAGE_NUMBER}"
             }
           },
           "heading": {
@@ -4483,6 +5312,39 @@
             "name": "text",
             "props": {
               "text": "Brief bio line. Background, focus area, and one distinguishing detail."
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "BIG_STAT_TEMPLATE",
+        "notes": "Big stat — single dramatic metric for maximum impact",
+        "placeholders": {
+          "label": {
+            "name": "text",
+            "props": {
+              "text": "CITIES MONITORED"
+            }
+          },
+          "stat": {
+            "name": "text",
+            "props": {
+              "text": "2,400+"
+            }
+          },
+          "description": {
+            "name": "text",
+            "props": {
+              "text": "Air quality monitoring points deployed across Europe,\ndelivering hyperlocal data to municipalities."
+            }
+          },
+          "source": {
+            "name": "text",
+            "props": {
+              "text": "Source: Wiseair internal data, Q1 2026"
             }
           }
         }

@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage, type FileUIPart } from 'ai';
 import { useChatStore } from '../store/chat-store-provider';
@@ -88,6 +88,9 @@ export function useChatSession() {
   const pendingScopesRef = useRef<AiScope[]>([]);
   const messageContextMapRef = useRef<Record<string, ContextEntry>>({});
   const messageScopeMapRef = useRef<Record<string, AiScope>>({});
+  // Version counter to force re-renders when context/scope maps are updated
+  const [, setMapVersion] = useState(0);
+  const bumpMapVersion = useCallback(() => setMapVersion((v) => v + 1), []);
 
   const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
   if (!transportRef.current) {
@@ -179,6 +182,22 @@ export function useChatSession() {
       clearContext();
     },
   });
+
+  // Eagerly map context/scope to user messages as soon as they appear
+  // (so chips render immediately, not only after onFinish)
+  useEffect(() => {
+    const userMsgs = (chat.messages as any[]).filter((m) => m.role === 'user');
+    for (let i = userMsgs.length - 1; i >= 0; i--) {
+      const id = userMsgs[i].id;
+      if (id in messageContextMapRef.current) break; // already mapped
+      if (pendingContextsRef.current.length > 0) {
+        messageContextMapRef.current[id] = pendingContextsRef.current[0];
+        messageScopeMapRef.current[id] = pendingScopesRef.current[0] || 'global';
+        bumpMapVersion();
+      }
+      break; // only process the latest unmapped user message
+    }
+  }, [chat.messages, bumpMapVersion]);
 
   const wrappedSendMessage = useCallback(
     (input: string, files?: FileUIPart[]) => {

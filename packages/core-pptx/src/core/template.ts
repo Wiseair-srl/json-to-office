@@ -44,21 +44,5 @@ export function buildSlideTemplateProps(
     if (def.slideNumber.fontSize) result.slideNumber.fontSize = def.slideNumber.fontSize;
   }
 
-  // Placeholders (registered in pptxgenjs for OOXML placeholder support)
-  const objects: Record<string, any>[] = [];
-
-  if (def.placeholders) {
-    for (const ph of def.placeholders) {
-      const opts: Record<string, any> = { name: ph.name, type: 'body' };
-      if (ph.x != null) opts.x = ph.x;
-      if (ph.y != null) opts.y = ph.y;
-      if (ph.w != null) opts.w = ph.w;
-      if (ph.h != null) opts.h = ph.h;
-      objects.push({ placeholder: { options: opts, text: '' } });
-    }
-  }
-
-  if (objects.length > 0) result.objects = objects;
-
   return result;
 }

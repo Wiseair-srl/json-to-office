@@ -350,7 +350,10 @@ export function ChatPanel() {
           {messages.map((msg, i) => {
             // For assistant messages, find the preceding user message's context
             let msgContext: ReturnType<typeof getMessageContext> | undefined;
-            if (msg.role === 'assistant') {
+            if (msg.role === 'user') {
+              const ctx = getMessageContext(msg.id);
+              if (ctx && ctx.length > 0) msgContext = ctx;
+            } else if (msg.role === 'assistant') {
               for (let j = i - 1; j >= 0; j--) {
                 if (messages[j].role === 'user') {
                   msgContext = getMessageContext(messages[j].id);
@@ -604,6 +607,13 @@ const ChatMessage = memo(function ChatMessage({
                 )}
               </div>
             )}
+            {context && context.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-1.5">
+                {context.map((ctx: any, i: number) => (
+                  <ChatContextChip key={i} context={ctx} variant="sent" />
+                ))}
+              </div>
+            )}
             {text && <div className="whitespace-pre-wrap text-sm break-words">{text}</div>}
             {scope && scope !== 'global' && (
               <span className="text-[10px] text-primary-foreground/60 mt-0.5 block text-right">{scope}</span>
@@ -626,7 +636,7 @@ const ChatMessage = memo(function ChatMessage({
       </div>
     </div>
   );
-}, (prev, next) => prev.msg.id === next.msg.id && prev.isStreaming === next.isStreaming && prev.scope === next.scope && prev.onDelete === next.onDelete);
+}, (prev, next) => prev.msg.id === next.msg.id && prev.isStreaming === next.isStreaming && prev.scope === next.scope && prev.onDelete === next.onDelete && prev.context === next.context);
 
 /** Fix 2: Skip Markdown parsing during streaming — render plain text instead */
 function AssistantMessage({ text, isStreaming, context }: { text: string; isStreaming: boolean; context?: any[] }) {
