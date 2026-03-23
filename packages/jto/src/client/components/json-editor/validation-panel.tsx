@@ -5,6 +5,8 @@ import {
   ChevronUp,
   X,
   AlertTriangle,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { JsonEditorError } from '../../lib/json-types';
@@ -67,6 +69,7 @@ export function ValidationPanel({
           </span>
         </div>
         <div className="flex items-center gap-1">
+          <CopyErrorsButton errors={errors} />
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -111,6 +114,49 @@ export function ValidationPanel({
         </div>
       )}
     </div>
+  );
+}
+
+function CopyErrorsButton({ errors }: { errors: JsonEditorError[] }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = errors
+      .map((err) => {
+        const loc =
+          err.startLineNumber && err.startColumn
+            ? `Line ${err.startLineNumber}:${err.startColumn}`
+            : 'Unknown location';
+        return `${loc} — ${err.message}`;
+      })
+      .join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={cn(
+        'flex items-center gap-1 px-1.5 py-1 rounded transition-all duration-200 cursor-pointer',
+        copied
+          ? 'bg-green-500/15 text-green-500'
+          : 'hover:bg-destructive/20'
+      )}
+      aria-label="Copy all errors"
+    >
+      {copied ? (
+        <>
+          <Check className="w-3.5 h-3.5" />
+          <span className="text-xs font-medium">Copied</span>
+        </>
+      ) : (
+        <Copy className="w-4 h-4" />
+      )}
+    </button>
   );
 }
 
