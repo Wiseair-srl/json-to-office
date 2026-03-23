@@ -9,11 +9,15 @@
 export {
   generatePresentation,
   generateBufferFromJson,
+  generateBufferWithWarnings,
   generateAndSaveFromJson,
   generateFromFile,
   savePresentation,
   PresentationGenerator,
 } from '@json-to-office/core-pptx';
+
+export type { GenerationResult, PipelineWarning, WarningCode } from '@json-to-office/core-pptx';
+export { WarningCodes } from '@json-to-office/core-pptx';
 
 // Re-export shared-pptx schemas and types
 export * from '@json-to-office/shared-pptx';

@@ -3,8 +3,9 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig } from '../types';
+import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
+import { warn, W } from '../utils/warn';
 
 interface ImageComponentProps {
   path?: string;
@@ -31,7 +32,8 @@ interface ImageComponentProps {
 export function renderImageComponent(
   slide: PptxGenJS.Slide,
   props: ImageComponentProps,
-  theme: PptxThemeConfig
+  theme: PptxThemeConfig,
+  warnings?: PipelineWarning[]
 ): void {
   const opts: Record<string, unknown> = {};
 
@@ -41,7 +43,7 @@ export function renderImageComponent(
   } else if (props.base64) {
     opts.data = props.base64;
   } else {
-    console.warn('Image component missing both path and base64');
+    warn(warnings, W.IMAGE_NO_SOURCE, 'Image component missing both path and base64', { component: 'image' });
     return;
   }
 
@@ -66,7 +68,7 @@ export function renderImageComponent(
   if (props.shadow) {
     opts.shadow = {
       type: props.shadow.type ?? 'outer',
-      color: resolveColor(props.shadow.color ?? '000000', theme),
+      color: resolveColor(props.shadow.color ?? '000000', theme, warnings),
       blur: props.shadow.blur ?? 3,
       offset: props.shadow.offset ?? 3,
       angle: props.shadow.angle ?? 45,

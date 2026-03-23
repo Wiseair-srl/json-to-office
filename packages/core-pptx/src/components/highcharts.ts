@@ -3,7 +3,7 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig } from '../types';
+import type { PptxThemeConfig, PipelineWarning } from '../types';
 import type { PptxHighchartsProps } from '@json-to-office/shared-pptx';
 import { isNodeEnvironment } from '../utils/environment';
 
@@ -56,15 +56,16 @@ async function generateChart(
 
   return {
     base64DataUri: `data:image/png;base64,${base64Data}`,
-    width: config.options.chart.width,
-    height: config.options.chart.height,
+    width: config.options.chart?.width ?? 960,
+    height: config.options.chart?.height ?? 720,
   };
 }
 
 export async function renderHighchartsComponent(
   slide: PptxGenJS.Slide,
   props: PptxHighchartsProps,
-  _theme: PptxThemeConfig
+  _theme: PptxThemeConfig,
+  _warnings?: PipelineWarning[]
 ): Promise<void> {
   const chart = await generateChart(props);
 

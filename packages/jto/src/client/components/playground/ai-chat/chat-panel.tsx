@@ -139,11 +139,14 @@ export function ChatPanel() {
     }
   }, [activeTab, threadsForDoc.length, createThread]);
 
-  // Orphan cleanup: delete threads for docs that no longer exist
+  // Orphan cleanup: delete threads for docs that no longer exist.
+  // Read threads via ref to avoid re-triggering when deleteThreadsForDocument mutates threads.
+  const threadsCleanupRef = useRef(threads);
+  threadsCleanupRef.current = threads;
   useEffect(() => {
     const docNames = new Set(documents.map((d) => d.name));
     const orphanDocs = new Set<string>();
-    for (const thread of Object.values(threads)) {
+    for (const thread of Object.values(threadsCleanupRef.current)) {
       if (!docNames.has(thread.documentName) && thread.documentName !== '__migrated__') {
         orphanDocs.add(thread.documentName);
       }
@@ -151,7 +154,7 @@ export function ChatPanel() {
     for (const docName of orphanDocs) {
       deleteThreadsForDocument(docName);
     }
-  }, [documents, threads, deleteThreadsForDocument]);
+  }, [documents, deleteThreadsForDocument]);
 
   // Swap messages when active thread changes (null sentinel ensures first mount always syncs)
   const prevThreadIdRef = useRef<string | undefined | null>(null);

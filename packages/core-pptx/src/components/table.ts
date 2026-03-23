@@ -3,7 +3,7 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig } from '../types';
+import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
 
 /**
@@ -56,7 +56,8 @@ export function renderTableComponent(
   slide: PptxGenJS.Slide,
   props: TableComponentProps,
   theme: PptxThemeConfig,
-  pptx?: PptxGenJS
+  pptx?: PptxGenJS,
+  warnings?: PipelineWarning[]
 ): void {
   // Pre-compute fills and width for borderRadius feature
   let bgFill: string | undefined;
@@ -66,13 +67,13 @@ export function renderTableComponent(
     const lastRow = props.rows[props.rows.length - 1];
     const lastCell = lastRow?.[0];
     bgFill = props.fill
-      ? resolveColor(props.fill, theme)
+      ? resolveColor(props.fill, theme, warnings)
       : (typeof lastCell === 'object' && lastCell.fill)
-        ? resolveColor(lastCell.fill, theme)
+        ? resolveColor(lastCell.fill, theme, warnings)
         : 'FFFFFF';
     const firstCell = props.rows[0]?.[0];
     headerFill = (typeof firstCell === 'object' && firstCell.fill)
-      ? resolveColor(firstCell.fill, theme)
+      ? resolveColor(firstCell.fill, theme, warnings)
       : bgFill;
     // Derive width from colW (actual cell widths) so shapes match the table exactly
     borderRadiusTableW = Array.isArray(props.colW)
@@ -87,7 +88,7 @@ export function renderTableComponent(
     ? {
       type: props.border.type ?? 'solid',
       pt: props.border.pt ?? 1,
-      color: resolveColor(props.border.color ?? '000000', theme),
+      color: resolveColor(props.border.color ?? '000000', theme, warnings),
     }
     : undefined;
 
@@ -129,16 +130,16 @@ export function renderTableComponent(
         return { text: applyTextVariationSelector(cell), options: opts };
       }
       const cellOpts: Record<string, unknown> = {};
-      if (cell.color) cellOpts.color = resolveColor(cell.color, theme);
+      if (cell.color) cellOpts.color = resolveColor(cell.color, theme, warnings);
       if (bgFill) {
         const isHeader = rowIndex === 0;
         if (!isCorner) {
-          const resolvedFill = cell.fill ? resolveColor(cell.fill, theme) : (isHeader ? headerFill : bgFill);
+          const resolvedFill = cell.fill ? resolveColor(cell.fill, theme, warnings) : (isHeader ? headerFill : bgFill);
           cellOpts.fill = { color: resolvedFill };
         }
         cellOpts.border = buildBorderRadiusBorders(rowIndex, colIndex, row.length);
       } else if (cell.fill) {
-        cellOpts.fill = { color: resolveColor(cell.fill, theme) };
+        cellOpts.fill = { color: resolveColor(cell.fill, theme, warnings) };
       }
       if (cell.fontSize) cellOpts.fontSize = cell.fontSize;
       if (cell.fontFace) cellOpts.fontFace = cell.fontFace;
@@ -171,17 +172,17 @@ export function renderTableComponent(
     opts.border = {
       type: props.border.type ?? 'solid',
       pt: props.border.pt ?? 1,
-      color: resolveColor(props.border.color ?? '000000', theme),
+      color: resolveColor(props.border.color ?? '000000', theme, warnings),
     };
   }
 
   // Fill
-  if (props.fill) opts.fill = { color: resolveColor(props.fill, theme) };
+  if (props.fill) opts.fill = { color: resolveColor(props.fill, theme, warnings) };
 
   // Font defaults
   opts.fontSize = props.fontSize ?? theme.defaults.fontSize;
   opts.fontFace = props.fontFace ?? theme.fonts.body;
-  if (props.color) opts.color = resolveColor(props.color, theme);
+  if (props.color) opts.color = resolveColor(props.color, theme, warnings);
 
   // Alignment
   if (props.align) opts.align = props.align;

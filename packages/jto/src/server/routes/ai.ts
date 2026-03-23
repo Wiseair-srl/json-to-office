@@ -6,8 +6,7 @@ import { AppEnv } from '../types/hono.js';
 import { getSchemaString, getFormatFromContainer } from '../services/ai-schema.js';
 import { loadPrompt } from '../services/prompt-loader.js';
 import { logger } from '../utils/logger.js';
-
-const MAX_DOC_CHARS = 100_000; // ~25k tokens
+import { rateLimiter } from '../middleware/hono/rate-limit.js';
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[[\]\n\r]/g, '_');
@@ -42,11 +41,6 @@ function fixDataUrlFileParts(messages: ModelMessage[]): ModelMessage[] {
     }
   }
   return messages;
-}
-
-function truncate(text: string, limit: number): string {
-  if (text.length <= limit) return text;
-  return text.slice(0, limit) + `\n...(truncated, showing first ${limit} chars)`;
 }
 
 const TEXT_MIME_TYPES = new Set([
@@ -107,8 +101,7 @@ async function extractNonImageFileParts(
       if (mime === 'application/pdf' || TEXT_MIME_TYPES.has(mime)) {
         const filename = sanitizeFilename((part as any).filename || 'file');
         try {
-          const raw = await extractFileText(mime, part.data);
-          const text = truncate(raw, MAX_DOC_CHARS);
+          const text = await extractFileText(mime, part.data);
           newContent.push({ type: 'text' as const, text: `[Attached file: ${filename}]\n${text}` });
         } catch (err: any) {
           logger.warn('Failed to extract file content', { filename, mime, error: err.message });
@@ -128,7 +121,13 @@ async function extractNonImageFileParts(
 export function createAiRouter() {
   const router = new Hono<AppEnv>();
 
-  router.post('/chat', async (c) => {
+  router.post('/chat',
+    rateLimiter({
+      limit: process.env.NODE_ENV === 'production' ? 30 : 1000,
+      window: 15 * 60 * 1000,
+      keyGenerator: (c) => c.req.header('X-Real-IP') || c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() || 'anonymous',
+    }),
+    async (c) => {
     try {
       const body = await c.req.json();
       const { messages, context, format: clientFormat, activeDocument, documentType } = body;
@@ -168,10 +167,6 @@ export function createAiRouter() {
       // Layer 4: Mode-specific instructions
       if (hasSelection) {
         const ctx = context[0];
-        const selectedText = truncate(ctx.selectedText, MAX_DOC_CHARS);
-        if (selectedText !== ctx.selectedText) {
-          logger.warn('Truncated selectedText in AI context', { originalLength: ctx.selectedText.length });
-        }
         // Use pptx-aware selection editing for pptx, generic for others
         const editFile = format === 'pptx' && !isTheme
           ? 'instructions-edit-pptx.md'
@@ -179,13 +174,9 @@ export function createAiRouter() {
         systemPrompt += '\n\n' + loadPrompt(editFile, {
           documentName: ctx.documentName || 'unknown',
           jsonPath: ctx.jsonPath || '',
-          selectedText,
+          selectedText: ctx.selectedText,
         });
       } else if (hasActiveDoc) {
-        const docText = truncate(activeDocument.text, MAX_DOC_CHARS);
-        if (docText !== activeDocument.text) {
-          logger.warn('Truncated activeDocument.text in AI system prompt', { originalLength: activeDocument.text.length });
-        }
         const editDocFiles: Record<string, string> = {
           pptx: 'instructions-edit-document-pptx.md',
           docx: 'instructions-edit-document-docx.md',
@@ -197,7 +188,7 @@ export function createAiRouter() {
           contentLabel,
           contentLabelLower: contentLabel.toLowerCase(),
           documentName: activeDocument.name || 'untitled',
-          documentText: docText,
+          documentText: activeDocument.text,
         });
       } else if (isGenerate) {
         const generateFiles: Record<string, string> = {
@@ -251,8 +242,24 @@ export function createAiRouter() {
 
       return result.toUIMessageStreamResponse();
     } catch (error: any) {
-      logger.error('AI chat error', { error: error.message });
-      return c.json({ error: error.message }, 500);
+      const message = error.message || 'Unknown error';
+      const status = error.status || error.statusCode || 500;
+
+      if (status === 429 || message.includes('rate')) {
+        logger.warn('AI rate limit hit', { error: message });
+        return c.json({ error: 'Rate limit exceeded. Please wait before sending another message.' }, 429);
+      }
+      if (status === 413 || message.includes('too large') || message.includes('too long')) {
+        logger.warn('AI request too large', { error: message });
+        return c.json({ error: 'Request too large for the AI model. Try selecting a smaller portion of the document.' }, 413);
+      }
+      if (error.name === 'AbortError' || message.includes('abort')) {
+        logger.info('AI request aborted');
+        return c.json({ error: 'Request was cancelled.' }, 400);
+      }
+
+      logger.error('AI chat error', { error: message, stack: error.stack });
+      return c.json({ error: process.env.NODE_ENV === 'production' ? 'Something went wrong. Please try again.' : message }, 500);
     }
   });
 

@@ -6,19 +6,20 @@
  * the unified component pipeline and are rendered per-slide in render.ts.
  */
 
-import type { MasterSlideDefinition, PptxThemeConfig } from '../types';
+import type { MasterSlideDefinition, PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
 
 export function buildSlideMasterProps(
   def: MasterSlideDefinition,
   theme: PptxThemeConfig,
+  warnings?: PipelineWarning[]
 ): Record<string, any> {
   const result: Record<string, any> = { title: def.name };
 
   // Background
   if (def.background) {
     if (def.background.color) {
-      result.background = { color: resolveColor(def.background.color, theme) };
+      result.background = { color: resolveColor(def.background.color, theme, warnings) };
     } else if (def.background.image) {
       if (def.background.image.path) {
         result.background = { path: def.background.image.path };
@@ -39,7 +40,7 @@ export function buildSlideMasterProps(
     };
     if (def.slideNumber.w !== undefined) result.slideNumber.w = def.slideNumber.w;
     if (def.slideNumber.h !== undefined) result.slideNumber.h = def.slideNumber.h;
-    if (def.slideNumber.color) result.slideNumber.color = resolveColor(def.slideNumber.color, theme);
+    if (def.slideNumber.color) result.slideNumber.color = resolveColor(def.slideNumber.color, theme, warnings);
     if (def.slideNumber.fontSize) result.slideNumber.fontSize = def.slideNumber.fontSize;
   }
 

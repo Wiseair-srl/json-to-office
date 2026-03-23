@@ -105,17 +105,6 @@ export function Preview() {
     }
   }, []);
 
-  // Track document switches and clear preview when switching to a different document
-  useEffect(() => {
-    const isActiveTabTheme =
-      activeTab && documentTypes[activeTab] === 'application/json+theme';
-
-    if (name && activeTab && name !== activeTab && !isActiveTabTheme) {
-      cleanupRenderedPreview();
-      setIframeSrc(undefined);
-      setIframeSrcDoc(undefined);
-    }
-  }, [name, activeTab, documentTypes, cleanupRenderedPreview]);
 
   // Core render function
   const doRender = useCallback(

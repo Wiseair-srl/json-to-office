@@ -3,8 +3,9 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig } from '../types';
+import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
+import { warn, W } from '../utils/warn';
 
 interface ChartDataSeries {
   name?: string;
@@ -94,12 +95,28 @@ export function renderChartComponent(
   slide: PptxGenJS.Slide,
   props: ChartComponentProps,
   theme: PptxThemeConfig,
-  _pptx: PptxGenJS
+  _pptx: PptxGenJS,
+  warnings?: PipelineWarning[]
 ): void {
   const chartType = CHART_TYPE_MAP[props.type];
   if (!chartType) {
-    console.warn(`Unknown chart type: ${props.type}`);
+    warn(warnings, W.UNKNOWN_CHART_TYPE, `Unknown chart type: ${props.type}`, { component: 'chart' });
     return;
+  }
+
+  // Validate data
+  if (!props.data || props.data.length === 0) {
+    warn(warnings, W.CHART_NO_DATA, 'Chart component has no data series', { component: 'chart' });
+    return;
+  }
+  for (const series of props.data) {
+    if (!series.labels || !series.values) {
+      warn(warnings, W.CHART_INVALID_SERIES, `Chart series "${series.name ?? '(unnamed)'}" missing labels or values`, { component: 'chart' });
+      return;
+    }
+  }
+  if ((chartType === 'pie' || chartType === 'doughnut') && props.data.length > 1) {
+    warn(warnings, W.CHART_MULTI_SERIES, `${props.type} chart has ${props.data.length} series — only the first will render`, { component: 'chart' });
   }
 
   // Build data array
@@ -123,14 +140,14 @@ export function renderChartComponent(
 
   // Colors — resolve semantic names to hex
   const colorSources = props.chartColors ?? DEFAULT_THEME_COLORS;
-  opts.chartColors = colorSources.map((c) => resolveColor(c, theme));
+  opts.chartColors = colorSources.map((c) => resolveColor(c, theme, warnings));
 
   // Auto-default chart text colors from theme to prevent dark-on-dark / light-on-light
-  const themeTextColor = resolveColor('text', theme);
-  opts.titleColor = props.titleColor ? resolveColor(props.titleColor, theme) : themeTextColor;
-  opts.legendColor = props.legendColor ? resolveColor(props.legendColor, theme) : themeTextColor;
-  opts.catAxisLabelColor = props.catAxisLabelColor ? resolveColor(props.catAxisLabelColor, theme) : themeTextColor;
-  opts.valAxisLabelColor = props.valAxisLabelColor ? resolveColor(props.valAxisLabelColor, theme) : themeTextColor;
+  const themeTextColor = resolveColor('text', theme, warnings);
+  opts.titleColor = props.titleColor ? resolveColor(props.titleColor, theme, warnings) : themeTextColor;
+  opts.legendColor = props.legendColor ? resolveColor(props.legendColor, theme, warnings) : themeTextColor;
+  opts.catAxisLabelColor = props.catAxisLabelColor ? resolveColor(props.catAxisLabelColor, theme, warnings) : themeTextColor;
+  opts.valAxisLabelColor = props.valAxisLabelColor ? resolveColor(props.valAxisLabelColor, theme, warnings) : themeTextColor;
 
   // Display toggles
   if (props.showLegend !== undefined) opts.showLegend = props.showLegend;
@@ -188,7 +205,7 @@ export function renderChartComponent(
   if (props.radarStyle !== undefined) opts.radarStyle = props.radarStyle;
 
   // Data labels
-  opts.dataLabelColor = props.dataLabelColor ? resolveColor(props.dataLabelColor, theme) : themeTextColor;
+  opts.dataLabelColor = props.dataLabelColor ? resolveColor(props.dataLabelColor, theme, warnings) : themeTextColor;
   if (props.dataLabelFontSize !== undefined) opts.dataLabelFontSize = props.dataLabelFontSize;
   if (props.dataLabelFontFace !== undefined) opts.dataLabelFontFace = props.dataLabelFontFace;
   if (props.dataLabelFontBold !== undefined) opts.dataLabelFontBold = props.dataLabelFontBold;

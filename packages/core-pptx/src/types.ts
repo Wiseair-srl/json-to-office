@@ -149,6 +149,13 @@ export interface MasterSlideDefinition {
   grid?: GridConfig;
 }
 
+export interface PipelineWarning {
+  code: string;  // WarningCode at call sites; string here to avoid circular import
+  message: string;
+  component?: string;
+  slide?: number;
+}
+
 export function isPresentationComponent(
   component: unknown
 ): component is PresentationComponentDefinition {

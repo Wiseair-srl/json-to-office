@@ -6,7 +6,7 @@
 import PptxGenJS from 'pptxgenjs';
 import JSZip from 'jszip';
 import { writeFileSync } from 'fs';
-import type { PresentationComponentDefinition, PptxThemeConfig } from '../types';
+import type { PresentationComponentDefinition, PptxThemeConfig, PipelineWarning } from '../types';
 import { isPresentationComponent } from '../types';
 import { processPresentation } from './structure';
 import { renderPresentation } from './render';
@@ -16,6 +16,14 @@ import { renderPresentation } from './render';
  */
 export interface GenerationOptions {
   customThemes?: Record<string, PptxThemeConfig>;
+}
+
+/**
+ * Result from generateBufferWithWarnings
+ */
+export interface GenerationResult {
+  buffer: Buffer;
+  warnings: PipelineWarning[];
 }
 
 /**
@@ -34,14 +42,15 @@ export function isPresentationComponentDefinition(
  */
 export async function generatePresentation(
   document: PresentationComponentDefinition,
-  options?: GenerationOptions
+  options?: GenerationOptions,
+  warnings?: PipelineWarning[]
 ): Promise<PptxGenJS> {
   if (!document || document.name !== 'pptx') {
     throw new Error('Top-level component must be a pptx component');
   }
 
   const processed = processPresentation(document, options);
-  return await renderPresentation(processed);
+  return await renderPresentation(processed, warnings);
 }
 
 /**
@@ -51,6 +60,17 @@ export async function generateBufferFromJson(
   jsonConfig: string | PresentationComponentDefinition,
   options?: GenerationOptions
 ): Promise<Buffer> {
+  const result = await generateBufferWithWarnings(jsonConfig, options);
+  return result.buffer;
+}
+
+/**
+ * Generate a buffer from JSON definition, returning warnings alongside the buffer
+ */
+export async function generateBufferWithWarnings(
+  jsonConfig: string | PresentationComponentDefinition,
+  options?: GenerationOptions
+): Promise<GenerationResult> {
   let component: PresentationComponentDefinition;
 
   if (typeof jsonConfig === 'string') {
@@ -63,9 +83,11 @@ export async function generateBufferFromJson(
     component = jsonConfig;
   }
 
-  const pptx = await generatePresentation(component, options);
+  const warnings: PipelineWarning[] = [];
+  const pptx = await generatePresentation(component, options, warnings);
   const data = await pptx.write({ outputType: 'nodebuffer' });
-  return await neutralizeTableStyle(data as Buffer);
+  const buffer = await neutralizeTableStyle(data as Buffer);
+  return { buffer, warnings };
 }
 
 /**
@@ -103,7 +125,7 @@ async function neutralizeTableStyle(buffer: Buffer): Promise<Buffer> {
   const zip = await JSZip.loadAsync(buffer);
   let changed = false;
   for (const [path, entry] of Object.entries(zip.files)) {
-    if (entry.dir || !path.endsWith('.xml')) continue;
+    if (!path.match(/^ppt\/slides\/slide\d+\.xml$/)) continue;
     const xml = await entry.async('string');
     if (xml.includes(MEDIUM_STYLE_2_ACCENT_1)) {
       zip.file(path, xml.replaceAll(MEDIUM_STYLE_2_ACCENT_1, NO_STYLE_NO_GRID));
@@ -131,6 +153,7 @@ export async function savePresentation(
 export const PresentationGenerator = {
   generate: generatePresentation,
   generateBufferFromJson,
+  generateBufferWithWarnings,
   generateAndSaveFromJson,
   generateFromFile,
   save: savePresentation,

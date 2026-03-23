@@ -9,6 +9,17 @@ import type { SelectionContext } from '../lib/monaco-selection-utils';
 
 type ContextEntry = (SelectionContext & { documentName?: string })[];
 
+/** Validate & return the last JSON code block, preserving original formatting. */
+function tryParseJsonBlocks(blocks: RegExpMatchArray[]): string | null {
+  const raw = blocks[blocks.length - 1][1];
+  try { JSON.parse(raw); return raw; } catch {}
+  if (blocks.length > 1) {
+    const combined = blocks.map(m => m[1]).join('\n');
+    try { JSON.parse(combined); return combined; } catch {}
+  }
+  return null;
+}
+
 export function useChatSession() {
   const threads = useChatStore((s) => s.threads);
   const activeThreadIdMap = useChatStore((s) => s.activeThreadId);
@@ -60,6 +71,10 @@ export function useChatSession() {
 
   const chat = useChat({
     transport: transportRef.current,
+    onError: () => {
+      pendingContextsRef.current.shift();
+      clearContext();
+    },
     onFinish: ({ messages: allMsgs }) => {
       const tid = activeThreadIdRef.current;
       if (tid) {
@@ -101,34 +116,21 @@ export function useChatSession() {
           .join('') || '';
         const jsonBlocks = [...fullText.matchAll(/```(?:json|jsonc)\s*\n([\s\S]*?)```/g)];
         if (jsonBlocks.length > 0) {
-          const raw = jsonBlocks[jsonBlocks.length - 1][1];
-          let formatted: string;
-          try {
-            formatted = JSON.stringify(JSON.parse(raw), null, 2);
-          } catch {
-            // If last block doesn't parse, try concatenating all blocks
-            if (jsonBlocks.length > 1) {
-              const combined = jsonBlocks.map(m => m[1]).join('\n');
-              try {
-                formatted = JSON.stringify(JSON.parse(combined), null, 2);
-              } catch {
-                formatted = raw;
-              }
+          const formatted = tryParseJsonBlocks(jsonBlocks);
+          if (formatted) {
+            const raw = jsonBlocks[jsonBlocks.length - 1][1];
+            const tab = activeTabRef.current;
+            if (tab) {
+              const doc = documentsRef.current.find((d) => d.name === tab);
+              const original = doc?.text || '';
+              const ctx = sendContext[0];
+              const { original: orig, modified } = mergeAiOutput(original, formatted, ctx);
+              setPendingDiff(tab, orig, modified, applyId(raw.replace(/\n$/, '')));
             } else {
-              formatted = raw;
+              const name = `ai-generated-${Date.now()}`;
+              createDocument(name, formatted);
+              openDocument(name);
             }
-          }
-          const tab = activeTabRef.current;
-          if (tab) {
-            const doc = documentsRef.current.find((d) => d.name === tab);
-            const original = doc?.text || '';
-            const ctx = sendContext[0];
-            const { original: orig, modified } = mergeAiOutput(original, formatted, ctx);
-            setPendingDiff(tab, orig, modified, applyId(raw.replace(/\n$/, '')));
-          } else {
-            const name = `ai-generated-${Date.now()}`;
-            createDocument(name, formatted);
-            openDocument(name);
           }
         }
       }

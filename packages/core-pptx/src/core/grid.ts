@@ -3,7 +3,8 @@
  * Converts grid coordinates to absolute x/y/w/h positions
  */
 
-import type { GridConfig, GridPosition, PptxComponentInput } from '../types';
+import type { GridConfig, GridPosition, PptxComponentInput, PipelineWarning } from '../types';
+import { warn, W } from '../utils/warn';
 
 export const DEFAULT_GRID_CONFIG: Required<{
   columns: number;
@@ -77,10 +78,11 @@ export function resolveGridPosition(
   gridPos: GridPosition,
   gridConfig: GridConfig | undefined,
   slideWidth: number,
-  slideHeight: number
+  slideHeight: number,
+  warnings?: PipelineWarning[]
 ): { x: number; y: number; w: number; h: number } {
-  const cols = gridConfig?.columns ?? DEFAULT_GRID_CONFIG.columns;
-  const rows = gridConfig?.rows ?? DEFAULT_GRID_CONFIG.rows;
+  const cols = Math.max(1, gridConfig?.columns ?? DEFAULT_GRID_CONFIG.columns);
+  const rows = Math.max(1, gridConfig?.rows ?? DEFAULT_GRID_CONFIG.rows);
   const margin = resolveMargin(gridConfig?.margin);
   const gutter = resolveGutter(gridConfig?.gutter);
 
@@ -90,7 +92,7 @@ export function resolveGridPosition(
   const rowSpan = Math.max(1, Math.min(gridPos.rowSpan ?? 1, rows - row));
 
   if (gridPos.column !== col || gridPos.row !== row) {
-    console.warn(
+    warn(warnings, W.GRID_POSITION_CLAMPED,
       `Grid position clamped: column ${gridPos.column}→${col}, row ${gridPos.row}→${row} (grid: ${cols}×${rows})`
     );
   }
@@ -112,21 +114,30 @@ export function resolveComponentGridPosition(
   component: PptxComponentInput,
   gridConfig: GridConfig | undefined,
   slideWidth: number,
-  slideHeight: number
+  slideHeight: number,
+  warnings?: PipelineWarning[]
 ): PptxComponentInput {
   const gridPos = component.props.grid as GridPosition | undefined;
   if (!gridPos) return component;
 
-  const resolved = resolveGridPosition(gridPos, gridConfig, slideWidth, slideHeight);
+  const resolved = resolveGridPosition(gridPos, gridConfig, slideWidth, slideHeight, warnings);
 
   const { grid: _grid, ...restProps } = component.props; // eslint-disable-line no-unused-vars, @typescript-eslint/no-unused-vars
   const newProps = { ...restProps };
 
+  // When explicit values use percentage strings, convert grid-resolved inches
+  // to percentages too so pptxgenjs receives consistent units per element.
+  const hasPercentX = typeof newProps.x === 'string' || typeof newProps.w === 'string';
+  const hasPercentY = typeof newProps.y === 'string' || typeof newProps.h === 'string';
+
+  const toPercX = (v: number) => `${+((v / slideWidth) * 100).toFixed(2)}%`;
+  const toPercY = (v: number) => `${+((v / slideHeight) * 100).toFixed(2)}%`;
+
   // Grid sets x/y/w/h, but explicit values on the element override individually
-  if (newProps.x == null) newProps.x = resolved.x;
-  if (newProps.y == null) newProps.y = resolved.y;
-  if (newProps.w == null) newProps.w = resolved.w;
-  if (newProps.h == null) newProps.h = resolved.h;
+  if (newProps.x == null) newProps.x = hasPercentX ? toPercX(resolved.x) : resolved.x;
+  if (newProps.y == null) newProps.y = hasPercentY ? toPercY(resolved.y) : resolved.y;
+  if (newProps.w == null) newProps.w = hasPercentX ? toPercX(resolved.w) : resolved.w;
+  if (newProps.h == null) newProps.h = hasPercentY ? toPercY(resolved.h) : resolved.h;
 
   return { ...component, props: newProps };
 }

@@ -37,7 +37,7 @@ Only use this for truly unique, unrepeatable slides. Prefer masters for any layo
         "name": "TITLE_MASTER",
         "background": { "color": "primary" },
         "objects": [
-          { "rect": { "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": "secondary" } }
+          { "name": "shape", "props": { "type": "rect", "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": { "color": "secondary" } } }
         ],
         "placeholders": [
           { "name": "title", "type": "title", "style": "title", "grid": { "column": 1, "row": 1, "columnSpan": 10, "rowSpan": 2 }, "fontSize": 44, "color": "FFFFFF", "valign": "middle" },
@@ -48,8 +48,8 @@ Only use this for truly unique, unrepeatable slides. Prefer masters for any layo
         "name": "CONTENT_MASTER",
         "grid": { "margin": { "top": 1.1 } },
         "objects": [
-          { "rect": { "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": "primary" } },
-          { "text": { "text": "COMPANY", "x": 0.6, "y": 0.15, "w": 4, "h": 0.6, "fontSize": 14, "bold": true, "color": "FFFFFF" } }
+          { "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } },
+          { "name": "text", "props": { "text": "COMPANY", "x": 0.6, "y": 0.15, "w": 4, "h": 0.6, "fontSize": 14, "bold": true, "color": "FFFFFF" } }
         ],
         "slideNumber": { "x": 9, "y": 6.85, "w": 0.5, "h": 0.5, "color": "text2", "fontSize": 8 },
         "placeholders": [

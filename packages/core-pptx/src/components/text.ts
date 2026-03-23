@@ -3,7 +3,7 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig, StyleName } from '../types';
+import type { PptxThemeConfig, StyleName, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
 
 interface TextComponentProps {
@@ -45,7 +45,8 @@ interface TextComponentProps {
 export function renderTextComponent(
   slide: PptxGenJS.Slide,
   props: TextComponentProps,
-  theme: PptxThemeConfig
+  theme: PptxThemeConfig,
+  warnings?: PipelineWarning[]
 ): void {
   // Resolve named style as defaults
   const style = props.style ? theme.styles?.[props.style] : undefined;
@@ -64,14 +65,15 @@ export function renderTextComponent(
   // the text. Also mark as textBox for proper auto-sizing in PowerPoint.
   if (props.h === undefined) {
     const fontSize = props.fontSize ?? theme.defaults.fontSize ?? 18;
-    opts.h = Math.max(0.5, (fontSize / 72) * 1.6);
+    const lines = (props.text.match(/\n/g)?.length ?? 0) + 1;
+    opts.h = Math.max(0.5, (fontSize / 72) * 1.6 * lines);
     opts.isTextBox = true;
   }
 
   // Font — cascade: component props → style → theme defaults
   opts.fontSize = props.fontSize ?? style?.fontSize ?? theme.defaults.fontSize;
   opts.fontFace = props.fontFace ?? style?.fontFace ?? (isHeadingStyle ? theme.fonts.heading : theme.fonts.body);
-  opts.color = resolveColor(props.color ?? style?.fontColor ?? theme.defaults.fontColor, theme);
+  opts.color = resolveColor(props.color ?? style?.fontColor ?? theme.defaults.fontColor, theme, warnings);
 
   // Formatting
   const bold = props.bold ?? style?.bold;
@@ -91,19 +93,13 @@ export function renderTextComponent(
   // Alignment
   const align = props.align ?? style?.align;
   if (align) opts.align = align;
-  if (props.valign) opts.valign = props.valign;
+  opts.valign = props.valign ?? 'top';
 
   // Bullet
-  if (props.bullet !== undefined) {
-    if (typeof props.bullet === 'boolean') {
-      opts.bullet = props.bullet;
-    } else {
-      opts.bullet = props.bullet;
-    }
-  }
+  if (props.bullet !== undefined) opts.bullet = props.bullet;
 
-  // Margin
-  if (props.margin !== undefined) opts.margin = props.margin;
+  // Margin — default to 0 so text aligns exactly to grid positions
+  opts.margin = props.margin ?? 0;
 
   // Rotation
   if (props.rotate !== undefined) opts.rotate = props.rotate;
@@ -112,7 +108,7 @@ export function renderTextComponent(
   if (props.shadow) {
     opts.shadow = {
       type: props.shadow.type ?? 'outer',
-      color: resolveColor(props.shadow.color ?? '000000', theme),
+      color: resolveColor(props.shadow.color ?? '000000', theme, warnings),
       blur: props.shadow.blur ?? 3,
       offset: props.shadow.offset ?? 3,
       angle: props.shadow.angle ?? 45,
@@ -122,7 +118,7 @@ export function renderTextComponent(
 
   // Fill
   if (props.fill) {
-    opts.fill = { color: resolveColor(props.fill.color, theme) };
+    opts.fill = { color: resolveColor(props.fill.color, theme, warnings) };
     if (props.fill.transparency !== undefined) {
       (opts.fill as Record<string, unknown>).transparency = props.fill.transparency;
     }

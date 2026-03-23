@@ -21,22 +21,15 @@ export function ChatApplyButton({ json, context }: ChatApplyButtonProps) {
   const openDocument = useDocumentsStore((s) => s.openDocument);
 
   const handleApply = useCallback(() => {
-    let formatted: string;
-    try {
-      formatted = JSON.stringify(JSON.parse(json), null, 2);
-    } catch {
-      formatted = json;
-    }
-
     if (activeTab) {
       const doc = documents.find((d) => d.name === activeTab);
       const original = doc?.text || '';
       const ctx = context?.[0];
-      const { original: orig, modified } = mergeAiOutput(original, formatted, ctx);
+      const { original: orig, modified } = mergeAiOutput(original, json, ctx);
       setPendingDiff(activeTab, orig, modified, applyId);
     } else {
       const name = `ai-generated-${Date.now()}`;
-      createDocument(name, formatted);
+      createDocument(name, json);
       openDocument(name);
     }
   }, [json, activeTab, documents, setPendingDiff, createDocument, openDocument, context, applyId]);

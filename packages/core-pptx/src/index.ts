@@ -7,6 +7,7 @@ export function getPptxCoreVersion(): string {
 export {
   generatePresentation,
   generateBufferFromJson,
+  generateBufferWithWarnings,
   generateAndSaveFromJson,
   generateFromFile,
   savePresentation,
@@ -14,7 +15,7 @@ export {
   PresentationGenerator,
 } from './core/generator';
 
-export type { GenerationOptions } from './core/generator';
+export type { GenerationOptions, GenerationResult } from './core/generator';
 
 // Types
 export type {
@@ -24,9 +25,14 @@ export type {
   ProcessedPresentation,
   ProcessedSlide,
   PptxThemeConfig,
+  PipelineWarning,
 } from './types';
 
 export { isPresentationComponent, isSlideComponent } from './types';
+
+// Warning utilities
+export { W as WarningCodes } from './utils/warn';
+export type { WarningCode } from './utils/warn';
 
 // Themes
 export { DEFAULT_PPTX_THEME, getPptxTheme, pptxThemes } from './themes';

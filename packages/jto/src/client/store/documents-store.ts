@@ -199,7 +199,7 @@ export const createDocumentsStore = (
               const ids = state.acceptedApplyIds || [];
               const acceptedApplyIds =
                 accepted && diff.applyId
-                  ? [...ids, diff.applyId]
+                  ? [...ids.slice(-(200 - 1)), diff.applyId]
                   : ids;
               return { pendingDiffs: next, acceptedApplyIds };
             }),

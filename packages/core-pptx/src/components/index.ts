@@ -3,7 +3,8 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig, PptxComponentInput } from '../types';
+import type { PptxThemeConfig, PptxComponentInput, PipelineWarning } from '../types';
+import { warn, W } from '../utils/warn';
 import { renderTextComponent } from './text';
 import { renderImageComponent } from './image';
 import { renderShapeComponent } from './shape';
@@ -22,7 +23,8 @@ export async function renderComponent(
   slide: PptxGenJS.Slide,
   component: PptxComponentInput,
   theme: PptxThemeConfig,
-  pptx: PptxGenJS
+  pptx: PptxGenJS,
+  warnings?: PipelineWarning[]
 ): Promise<void> {
   if (component.enabled === false) return;
 
@@ -31,24 +33,24 @@ export async function renderComponent(
 
   switch (name) {
   case 'text':
-    renderTextComponent(slide, p, theme);
+    renderTextComponent(slide, p, theme, warnings);
     break;
   case 'image':
-    renderImageComponent(slide, p, theme);
+    renderImageComponent(slide, p, theme, warnings);
     break;
   case 'shape':
-    renderShapeComponent(slide, p, theme, pptx);
+    renderShapeComponent(slide, p, theme, pptx, warnings);
     break;
   case 'table':
-    renderTableComponent(slide, p, theme, pptx);
+    renderTableComponent(slide, p, theme, pptx, warnings);
     break;
   case 'highcharts':
-    await renderHighchartsComponent(slide, p, theme);
+    await renderHighchartsComponent(slide, p, theme, warnings);
     break;
   case 'chart':
-    renderChartComponent(slide, p, theme, pptx);
+    renderChartComponent(slide, p, theme, pptx, warnings);
     break;
   default:
-    console.warn(`Unknown PPTX component type: ${name}`);
+    warn(warnings, W.UNKNOWN_COMPONENT, `Unknown PPTX component type: ${name}`, { component: name });
   }
 }

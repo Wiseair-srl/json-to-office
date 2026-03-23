@@ -355,6 +355,18 @@ function DocumentFormDialogContent({
           }
         }
 
+        // Auto-suffix if a document with this name already exists
+        const extMatch = finalName.match(/(\.(pptx|docx)(\.theme)?\.json|\.json)$/i);
+        const ext = extMatch ? extMatch[0] : '';
+        const baseName = finalName.slice(0, finalName.length - ext.length);
+        let deduped = finalName;
+        let counter = 1;
+        while (documents.some((d) => d.name === deduped)) {
+          counter++;
+          deduped = `${baseName} (${counter})${ext}`;
+        }
+        finalName = deduped;
+
         createDocument(finalName, content);
         openDocument(finalName);
 

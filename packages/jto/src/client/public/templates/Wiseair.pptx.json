@@ -1,7 +1,7 @@
 {
   "name": "pptx",
   "props": {
-    "title": "Wiseair — Template Deck",
+    "title": "Wiseair \u2014 Template Deck",
     "author": "Wiseair",
     "company": "Wiseair",
     "theme": "wiseair",
@@ -27,30 +27,15 @@
         },
         "objects": [
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
-              "y": "5.33%",
-              "w": "25%",
-              "h": "6%",
-              "fontSize": 16,
-              "fontFace": "Inter Light",
-              "color": "background"
-            }
-          },
-          {
-            "name": "text",
-            "props": {
-              "text": "Confidential",
-              "x": "70%",
-              "y": "89.33%",
-              "w": "25%",
-              "h": "4.67%",
-              "fontSize": 9,
-              "fontFace": "Inter Light",
-              "color": "#454A5E",
-              "align": "right"
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "w": "10%",
+              "h": "2.8%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           },
           {
@@ -677,16 +662,16 @@
         },
         "objects": [
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "background"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           },
           {
@@ -947,15 +932,14 @@
               "column": 0,
               "row": 6,
               "columnSpan": 9,
-              "rowSpan": 4
+              "rowSpan": 3
             },
             "defaults": {
               "name": "text",
               "props": {
                 "fontSize": 40,
                 "fontFace": "Inter Light",
-                "color": "background",
-                "valign": "top"
+                "color": "background"
               }
             }
           },
@@ -963,7 +947,7 @@
             "name": "description",
             "grid": {
               "column": 0,
-              "row": 10,
+              "row": 9,
               "columnSpan": 7,
               "rowSpan": 2
             },
@@ -1040,16 +1024,16 @@
             }
           },
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "text"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           }
         ],
@@ -1109,8 +1093,7 @@
               "props": {
                 "fontSize": 14,
                 "fontFace": "Inter Light",
-                "color": "text2",
-                "valign": "top"
+                "color": "text2"
               }
             }
           }
@@ -1137,16 +1120,16 @@
             }
           },
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "text"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           }
         ],
@@ -1189,8 +1172,7 @@
               "props": {
                 "fontSize": 28,
                 "fontFace": "Inter Light",
-                "color": "text",
-                "valign": "top"
+                "color": "text"
               }
             }
           },
@@ -1210,8 +1192,7 @@
                   "color": "background2"
                 },
                 "rectRadius": 0.15,
-                "align": "left",
-                "valign": "top"
+                "align": "left"
               }
             }
           },
@@ -1231,8 +1212,7 @@
                   "color": "background2"
                 },
                 "rectRadius": 0.15,
-                "align": "left",
-                "valign": "top"
+                "align": "left"
               }
             }
           },
@@ -1252,8 +1232,7 @@
                   "color": "background2"
                 },
                 "rectRadius": 0.15,
-                "align": "left",
-                "valign": "top"
+                "align": "left"
               }
             }
           }
@@ -1266,16 +1245,16 @@
         },
         "objects": [
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "background"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           }
         ],
@@ -1318,8 +1297,7 @@
               "props": {
                 "fontSize": 28,
                 "fontFace": "Inter Light",
-                "color": "background",
-                "valign": "top"
+                "color": "background"
               }
             }
           },
@@ -1343,8 +1321,7 @@
                   "width": 0.75
                 },
                 "rectRadius": 0.15,
-                "align": "left",
-                "valign": "top"
+                "align": "left"
               }
             }
           },
@@ -1368,8 +1345,7 @@
                   "width": 0.75
                 },
                 "rectRadius": 0.15,
-                "align": "left",
-                "valign": "top"
+                "align": "left"
               }
             }
           },
@@ -1393,8 +1369,7 @@
                   "width": 0.75
                 },
                 "rectRadius": 0.15,
-                "align": "left",
-                "valign": "top"
+                "align": "left"
               }
             }
           },
@@ -1418,8 +1393,7 @@
                   "width": 0.75
                 },
                 "rectRadius": 0.15,
-                "align": "left",
-                "valign": "top"
+                "align": "left"
               }
             }
           }
@@ -1446,16 +1420,16 @@
             }
           },
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "text"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           }
         ],
@@ -1498,8 +1472,7 @@
               "props": {
                 "fontSize": 28,
                 "fontFace": "Inter Light",
-                "color": "text",
-                "valign": "top"
+                "color": "text"
               }
             }
           },
@@ -1546,7 +1519,6 @@
             "defaults": {
               "name": "text",
               "props": {
-                "valign": "top",
                 "fontSize": 14,
                 "fontFace": "Inter Light",
                 "color": "text2"
@@ -1564,7 +1536,6 @@
             "defaults": {
               "name": "text",
               "props": {
-                "valign": "top",
                 "fontSize": 14,
                 "fontFace": "Inter Light",
                 "color": "text2"
@@ -1580,16 +1551,16 @@
         },
         "objects": [
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "text"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           }
         ],
@@ -1632,8 +1603,7 @@
               "props": {
                 "fontSize": 28,
                 "fontFace": "Inter Light",
-                "color": "text",
-                "valign": "top"
+                "color": "text"
               }
             }
           },
@@ -1648,8 +1618,8 @@
             "defaults": {
               "name": "chart",
               "props": {
-                "fontSize": 14,
-                "fontFace": "Inter Light"
+                "dataLabelFontSize": 14,
+                "dataLabelFontFace": "Inter Light"
               }
             }
           }
@@ -1664,7 +1634,7 @@
           {
             "name": "text",
             "props": {
-              "text": "“",
+              "text": "\u201c",
               "x": "35%",
               "y": "10.67%",
               "w": "30%",
@@ -1676,16 +1646,16 @@
             }
           },
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "background"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           }
         ],
@@ -1777,16 +1747,16 @@
             }
           },
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "text"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           },
           {
@@ -1895,8 +1865,7 @@
               "props": {
                 "fontSize": 28,
                 "fontFace": "Inter Light",
-                "color": "text",
-                "valign": "top"
+                "color": "text"
               }
             }
           },
@@ -2113,16 +2082,16 @@
         },
         "objects": [
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "text"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           },
           {
@@ -2383,15 +2352,14 @@
               "column": 0,
               "row": 6,
               "columnSpan": 9,
-              "rowSpan": 4
+              "rowSpan": 3
             },
             "defaults": {
               "name": "text",
               "props": {
                 "fontSize": 40,
                 "fontFace": "Inter Light",
-                "color": "text",
-                "valign": "top"
+                "color": "text"
               }
             }
           },
@@ -2399,7 +2367,7 @@
             "name": "description",
             "grid": {
               "column": 0,
-              "row": 10,
+              "row": 9,
               "columnSpan": 7,
               "rowSpan": 2
             },
@@ -2448,16 +2416,16 @@
             }
           },
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "background"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           }
         ],
@@ -2479,8 +2447,9 @@
             "defaults": {
               "name": "image",
               "props": {
-                "align": "center",
-                "valign": "middle"
+                "sizing": {
+                  "type": "contain"
+                }
               }
             }
           },
@@ -2526,7 +2495,6 @@
                 "fontSize": 14,
                 "fontFace": "Inter Light",
                 "color": "text2",
-                "valign": "top",
                 "lineSpacing": 24
               }
             }
@@ -2547,16 +2515,16 @@
         },
         "objects": [
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "text"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           }
         ],
@@ -2599,8 +2567,7 @@
               "props": {
                 "fontSize": 28,
                 "fontFace": "Inter Light",
-                "color": "text",
-                "valign": "top"
+                "color": "text"
               }
             }
           },
@@ -2643,16 +2610,16 @@
             }
           },
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "text"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           },
           {
@@ -2747,8 +2714,7 @@
               "props": {
                 "fontSize": 28,
                 "fontFace": "Inter Light",
-                "color": "text",
-                "valign": "top"
+                "color": "text"
               }
             }
           },
@@ -3005,29 +2971,28 @@
         },
         "objects": [
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
-              "y": "5.33%",
-              "w": "25%",
-              "h": "6%",
-              "fontSize": 16,
-              "fontFace": "Inter Light",
-              "color": "background"
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "w": "10%",
+              "h": "2.8%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           },
           {
-            "name": "text",
+            "name": "image",
             "props": {
-              "text": "wiseair",
-              "x": "5%",
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
               "y": "94.67%",
-              "w": "20%",
-              "h": "4%",
-              "fontSize": 10,
-              "fontFace": "Inter Light",
-              "color": "background"
+              "w": "8%",
+              "h": "2.2%",
+              "grid": {
+                "column": 0,
+                "row": 0
+              }
             }
           },
           {
@@ -3381,7 +3346,7 @@
       "name": "slide",
       "props": {
         "master": "COVER_MASTER",
-        "notes": "Cover slide — customize title, subtitle, and date",
+        "notes": "Cover slide \u2014 customize title, subtitle, and date",
         "placeholders": {
           "date": {
             "name": "text",
@@ -3409,7 +3374,7 @@
       "name": "slide",
       "props": {
         "master": "SECTION_AZURE_MASTER",
-        "notes": "Section divider (azure) — use to introduce major sections",
+        "notes": "Section divider (azure) \u2014 use to introduce major sections",
         "placeholders": {
           "label": {
             "name": "text",
@@ -3437,7 +3402,7 @@
       "name": "slide",
       "props": {
         "master": "TEXT_VISUAL_MASTER",
-        "notes": "Text + visual split — narrative left, visual right on dark panel",
+        "notes": "Text + visual split \u2014 narrative left, visual right on dark panel",
         "placeholders": {
           "number": {
             "name": "text",
@@ -3485,7 +3450,7 @@
               "type": "roundRect",
               "text": [
                 {
-                  "text": "ⓘ",
+                  "text": "\u24d8",
                   "fontSize": 22,
                   "color": "accent",
                   "breakLine": true
@@ -3520,7 +3485,7 @@
               "type": "roundRect",
               "text": [
                 {
-                  "text": "⚡",
+                  "text": "\u26a1",
                   "fontSize": 22,
                   "color": "accent",
                   "breakLine": true
@@ -3555,7 +3520,7 @@
               "type": "roundRect",
               "text": [
                 {
-                  "text": "◈",
+                  "text": "\u25c8",
                   "fontSize": 22,
                   "color": "accent",
                   "breakLine": true
@@ -3591,7 +3556,7 @@
       "name": "slide",
       "props": {
         "master": "METRICS_MASTER",
-        "notes": "KPI / metrics dashboard — dark background with 4 metric cards",
+        "notes": "KPI / metrics dashboard \u2014 dark background with 4 metric cards",
         "placeholders": {
           "section": {
             "name": "text",
@@ -3624,7 +3589,7 @@
                   "spaceBefore": 6
                 },
                 {
-                  "text": "▲ 34% YoY",
+                  "text": "\u25b2 34% YoY",
                   "fontSize": 11,
                   "color": "22C55E",
                   "breakLine": true,
@@ -3652,7 +3617,7 @@
                   "spaceBefore": 6
                 },
                 {
-                  "text": "▲ 5% QoQ",
+                  "text": "\u25b2 5% QoQ",
                   "fontSize": 11,
                   "color": "22C55E",
                   "breakLine": true,
@@ -3680,7 +3645,7 @@
                   "spaceBefore": 6
                 },
                 {
-                  "text": "▲ 12 new in 2025",
+                  "text": "\u25b2 12 new in 2025",
                   "fontSize": 11,
                   "color": "22C55E",
                   "breakLine": true,
@@ -3708,7 +3673,7 @@
                   "spaceBefore": 6
                 },
                 {
-                  "text": "▲ 68% YoY",
+                  "text": "\u25b2 68% YoY",
                   "fontSize": 11,
                   "color": "22C55E",
                   "breakLine": true,
@@ -3724,7 +3689,7 @@
       "name": "slide",
       "props": {
         "master": "TWO_COL_MASTER",
-        "notes": "Two-column content — narrative left, custom bullets right",
+        "notes": "Two-column content \u2014 narrative left, custom bullets right",
         "placeholders": {
           "section": {
             "name": "text",
@@ -3764,7 +3729,7 @@
               "lineSpacing": 28,
               "bullet": {
                 "type": "bullet",
-                "style": "●"
+                "style": "\u25cf"
               }
             }
           }
@@ -3775,7 +3740,7 @@
       "name": "slide",
       "props": {
         "master": "CHART_MASTER",
-        "notes": "Bar chart — revenue growth by quarter",
+        "notes": "Bar chart \u2014 revenue growth by quarter",
         "placeholders": {
           "section": {
             "name": "text",
@@ -3858,7 +3823,7 @@
       "name": "slide",
       "props": {
         "master": "QUOTE_MASTER",
-        "notes": "Quote / testimonial — centered on dark slate background",
+        "notes": "Quote / testimonial \u2014 centered on dark slate background",
         "placeholders": {
           "quote": {
             "name": "text",
@@ -3886,7 +3851,7 @@
       "name": "slide",
       "props": {
         "master": "TIMELINE_MASTER",
-        "notes": "Timeline / process — four-step horizontal flow",
+        "notes": "Timeline / process \u2014 four-step horizontal flow",
         "placeholders": {
           "section": {
             "name": "text",
@@ -3897,7 +3862,7 @@
           "heading": {
             "name": "text",
             "props": {
-              "text": "How it works — four-step process"
+              "text": "How it works \u2014 four-step process"
             }
           },
           "step1_number": {
@@ -3979,7 +3944,7 @@
       "name": "slide",
       "props": {
         "master": "SECTION_LIGHT_MASTER",
-        "notes": "Section divider (light blue) — alternate section break",
+        "notes": "Section divider (light blue) \u2014 alternate section break",
         "placeholders": {
           "label": {
             "name": "text",
@@ -4007,7 +3972,7 @@
       "name": "slide",
       "props": {
         "master": "IMG_TEXT_MASTER",
-        "notes": "Image + text split — visual left, narrative and stats right",
+        "notes": "Image + text split \u2014 visual left, narrative and stats right",
         "placeholders": {
           "image": {
             "name": "text",
@@ -4092,7 +4057,7 @@
               "color": "background"
             },
             "rectRadius": 0.08,
-            "text": "-40%\nCO₂ reduction",
+            "text": "-40%\nCO\u2082 reduction",
             "fontSize": 10,
             "fontColor": "accent",
             "fontFace": "Inter",
@@ -4106,7 +4071,7 @@
       "name": "slide",
       "props": {
         "master": "COMPARISON_MASTER",
-        "notes": "Comparison table — competitive differentiation",
+        "notes": "Comparison table \u2014 competitive differentiation",
         "placeholders": {
           "section": {
             "name": "text",
@@ -4180,21 +4145,21 @@
                 [
                   "Georeferenced analysis",
                   {
-                    "text": "✓",
+                    "text": "\u2713",
                     "align": "center",
                     "color": "accent",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
@@ -4204,21 +4169,21 @@
                 [
                   "Territorial coalitions",
                   {
-                    "text": "✓",
+                    "text": "\u2713",
                     "align": "center",
                     "color": "accent",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
@@ -4228,21 +4193,21 @@
                 [
                   "PSCL compliance engine",
                   {
-                    "text": "✓",
+                    "text": "\u2713",
                     "align": "center",
                     "color": "accent",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "✓",
+                    "text": "\u2713",
                     "align": "center",
                     "color": "accent",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
@@ -4252,21 +4217,21 @@
                 [
                   "First-mile journey data",
                   {
-                    "text": "✓",
+                    "text": "\u2713",
                     "align": "center",
                     "color": "accent",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "✓",
+                    "text": "\u2713",
                     "align": "center",
                     "color": "accent",
                     "fill": "background",
@@ -4276,21 +4241,21 @@
                 [
                   "Enablement module",
                   {
-                    "text": "✓",
+                    "text": "\u2713",
                     "align": "center",
                     "color": "accent",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
@@ -4300,21 +4265,21 @@
                 [
                   "Objective convenience model",
                   {
-                    "text": "✓",
+                    "text": "\u2713",
                     "align": "center",
                     "color": "accent",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
                     "fontFace": "Arial"
                   },
                   {
-                    "text": "—",
+                    "text": "\u2014",
                     "align": "center",
                     "color": "#9A9EB0",
                     "fill": "background",
@@ -4331,7 +4296,7 @@
       "name": "slide",
       "props": {
         "master": "TEAM_MASTER",
-        "notes": "Team grid — four team member cards with avatars and bios",
+        "notes": "Team grid \u2014 four team member cards with avatars and bios",
         "placeholders": {
           "section": {
             "name": "text",
@@ -4448,7 +4413,7 @@
       "name": "slide",
       "props": {
         "master": "CLOSING_MASTER",
-        "notes": "Closing slide — thank you with contact details",
+        "notes": "Closing slide \u2014 thank you with contact details",
         "placeholders": {
           "heading": {
             "name": "text",
@@ -4466,7 +4431,7 @@
           "contacts": {
             "name": "text",
             "props": {
-              "text": "hello@wiseair.com  ·  wiseair.com   ·  +39 000 000 0000"
+              "text": "hello@wiseair.com  \u00b7  wiseair.com   \u00b7  +39 000 000 0000"
             }
           }
         }

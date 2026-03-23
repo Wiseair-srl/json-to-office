@@ -48,12 +48,25 @@ const MasterObjectComponentSchema = Type.Union([
 });
 
 // Defaults schema — partial component stub (carries styling props, not content)
-// Loose { name, props } because defaults don't require content-specific fields
-// (e.g. a text defaults stub doesn't need the "text" prop itself)
-const PlaceholderDefaultsSchema = Type.Object({
-  name: Type.String({ description: 'Component type name (text, shape, chart, etc.)' }),
-  props: Type.Record(Type.String(), Type.Any(), { description: 'Default props inherited by the component placed in this placeholder' }),
-}, { additionalProperties: false, description: 'Partial component stub — styling defaults only' });
+// Discriminated union so Monaco can autocomplete prop names per component type
+function defaultsComponent(name: string, propsSchema: TSchema) {
+  return Type.Object({
+    name: Type.Literal(name),
+    props: Type.Partial(propsSchema, { description: 'Default props inherited by the component placed in this placeholder' }),
+  }, { additionalProperties: false });
+}
+
+const PlaceholderDefaultsSchema = Type.Union([
+  defaultsComponent('text', TextPropsSchema),
+  defaultsComponent('image', PptxImagePropsSchema),
+  defaultsComponent('shape', ShapePropsSchema),
+  defaultsComponent('table', PptxTablePropsSchema),
+  defaultsComponent('chart', PptxChartPropsSchema),
+  defaultsComponent('highcharts', PptxHighchartsPropsSchema),
+], {
+  discriminator: { propertyName: 'name' },
+  description: 'Partial component stub — styling defaults only',
+});
 
 // Placeholder definition
 export const PlaceholderDefinitionSchema = Type.Object({
