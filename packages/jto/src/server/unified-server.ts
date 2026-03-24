@@ -122,7 +122,7 @@ export class UnifiedServer {
 
       for (const p of possiblePaths) {
         if (existsSync(p)) {
-          if (p.includes('/src/client')) {
+          if (p.replace(/\\/g, '/').includes('/src/client')) {
             serverLogger.debug('[Dev Server] Using Vite dev server for', { path: p });
             try {
               const { createServer: createViteServer } = await import('vite');
