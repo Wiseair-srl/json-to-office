@@ -12,7 +12,7 @@ type ExecError = NodeJS.ErrnoException & { stdout?: string | Buffer; stderr?: st
 
 function executeFile(binary: string, args: string[], timeoutMs: number): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    execFile(binary, args, { timeout: timeoutMs, maxBuffer: MAX_EXEC_BUFFER_BYTES }, (error, stdout, stderr) => {
+    execFile(binary, args, { timeout: timeoutMs, maxBuffer: MAX_EXEC_BUFFER_BYTES, windowsHide: true }, (error, stdout, stderr) => {
       if (error) {
         const execError = error as ExecError;
         execError.stdout = stdout;
@@ -155,7 +155,8 @@ export class LibreOfficeConverterService {
   }
 
   private async runConversion(binaryPath: string, inputPath: string, outputDir: string, filterName: string): Promise<void> {
-    const userInstallation = `file://${path.join(outputDir, 'user-profile')}`;
+    const userProfilePath = path.join(outputDir, 'user-profile').replace(/\\/g, '/');
+    const userInstallation = `file:///${userProfilePath.replace(/^\//, '')}`;
     const args = [
       '--headless', '--norestore', '--nolockcheck', '--nodefault',
       `-env:UserInstallation=${userInstallation}`,
