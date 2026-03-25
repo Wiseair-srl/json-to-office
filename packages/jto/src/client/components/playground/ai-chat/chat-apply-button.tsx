@@ -19,7 +19,11 @@ export function ChatApplyButton({ json: rawJson, context, scope }: ChatApplyButt
 
   const json = useMemo(() => {
     try { JSON.parse(rawJson); return rawJson; } catch { /* needs repair */ }
-    try { return jsonrepair(rawJson); } catch { return null; }
+    try { return jsonrepair(rawJson); } catch { /* try wrapping */ }
+    // Bare property like "key": { ... } — wrap in braces
+    const wrapped = `{${rawJson}}`;
+    try { JSON.parse(wrapped); return wrapped; } catch { /* needs repair */ }
+    try { return jsonrepair(wrapped); } catch { return null; }
   }, [rawJson]);
 
   const applyId = useMemo(() => stableId(json || rawJson), [json, rawJson]);
