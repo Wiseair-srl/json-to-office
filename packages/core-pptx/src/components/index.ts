@@ -37,7 +37,7 @@ export async function renderComponent(
     renderTextComponent(slide, p, theme, warnings, slideCtx);
     break;
   case 'image':
-    renderImageComponent(slide, p, theme, warnings);
+    await renderImageComponent(slide, p, theme, warnings);
     break;
   case 'shape':
     renderShapeComponent(slide, p, theme, pptx, warnings);
