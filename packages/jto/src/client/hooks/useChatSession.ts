@@ -4,7 +4,7 @@ import { DefaultChatTransport, type UIMessage, type FileUIPart } from 'ai';
 import { useChatStore } from '../store/chat-store-provider';
 import { useDocumentsStore } from '../store/documents-store-provider';
 import { FORMAT } from '../lib/env';
-import { mergeAiOutput, applyId } from '../lib/apply-merge';
+import { mergeAiOutput, applyId, mergeTemplatesDelta } from '../lib/apply-merge';
 import type { SelectionContext } from '../lib/monaco-selection-utils';
 import type { AiScope } from '../store/chat-store';
 
@@ -40,7 +40,7 @@ function scopedMerge(
       doc.children = fragment.children;
     } else if (scope === 'templates' && Array.isArray(fragment.templates)) {
       if (!doc.props) doc.props = {};
-      doc.props.templates = fragment.templates;
+      doc.props.templates = mergeTemplatesDelta(doc.props.templates || [], fragment.templates);
     } else {
       return null; // unexpected shape, fall back
     }

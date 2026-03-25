@@ -1,3 +1,24 @@
+/**
+ * Delta-merge an array of template patches into an existing templates array.
+ * Matches by `name`. Supports `_delete: true` to remove a template.
+ * Returns a new array (does not mutate `existing`).
+ */
+export function mergeTemplatesDelta(existing: any[], delta: any[]): any[] {
+  const result = [...existing];
+  for (const tpl of delta) {
+    if (!tpl || typeof tpl.name !== 'string') continue;
+    const idx = result.findIndex((e: any) => e.name === tpl.name);
+    if (tpl._delete) {
+      if (idx !== -1) result.splice(idx, 1);
+    } else if (idx !== -1) {
+      result[idx] = tpl;
+    } else {
+      result.push(tpl);
+    }
+  }
+  return result;
+}
+
 /** Deterministic hash of a string — used as a stable apply-diff ID. */
 export function applyId(str: string): string {
   let h = 0;

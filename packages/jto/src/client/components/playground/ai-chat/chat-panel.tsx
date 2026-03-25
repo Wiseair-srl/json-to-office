@@ -620,7 +620,7 @@ const ChatMessage = memo(function ChatMessage({
             )}
           </div>
         ) : (
-          <AssistantMessage text={text} isStreaming={isStreaming} context={context} />
+          <AssistantMessage text={text} isStreaming={isStreaming} context={context} scope={scope} />
         )}
         {onDelete && !isStreaming && (
           <div className="opacity-0 group-hover/msg:opacity-100 transition-opacity mt-1">
@@ -639,7 +639,7 @@ const ChatMessage = memo(function ChatMessage({
 }, (prev, next) => prev.msg.id === next.msg.id && prev.isStreaming === next.isStreaming && prev.scope === next.scope && prev.onDelete === next.onDelete && prev.context === next.context);
 
 /** Fix 2: Skip Markdown parsing during streaming — render plain text instead */
-function AssistantMessage({ text, isStreaming, context }: { text: string; isStreaming: boolean; context?: any[] }) {
+function AssistantMessage({ text, isStreaming, context, scope }: { text: string; isStreaming: boolean; context?: any[]; scope?: AiScope }) {
   // During streaming, skip expensive Markdown + remarkGfm parsing
   if (isStreaming) {
     return (
@@ -679,7 +679,7 @@ function AssistantMessage({ text, isStreaming, context }: { text: string; isStre
                 <pre className="p-3 text-xs font-mono overflow-x-auto max-h-80 overflow-y-auto m-0">
                   <code>{code}</code>
                 </pre>
-                {isJson && <ChatApplyButton json={code} context={context} />}
+                {isJson && <ChatApplyButton json={code} context={context} scope={scope} />}
               </div>
             );
           },
