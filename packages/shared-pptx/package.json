@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/shared-pptx",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "PPTX-specific schemas, component registry and validation",
   "type": "module",
   "main": "dist/index.js",
@@ -32,15 +32,44 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage --passWithNoTests"
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "prepublishOnly": "cp ../../LICENSE ."
   },
   "dependencies": {
-    "@json-to-office/shared": "workspace:*",
+    "@json-to-office/shared": "workspace:^",
     "@sinclair/typebox": "0.34.38"
   },
   "devDependencies": {
     "@types/node": "20.11.0",
     "tsup": "8.5.0",
     "typescript": "5.3.3"
+  },
+  "license": "MIT",
+  "author": "Paolo Barbato",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wiseair-srl/json-to-office.git",
+    "directory": "packages/shared-pptx"
+  },
+  "homepage": "https://github.com/Wiseair-srl/json-to-office/tree/main/packages/shared-pptx",
+  "bugs": {
+    "url": "https://github.com/Wiseair-srl/json-to-office/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "keywords": [
+    "json-to-office",
+    "typescript",
+    "pptx",
+    "presentation",
+    "powerpoint"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

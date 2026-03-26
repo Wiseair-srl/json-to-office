@@ -1,6 +1,6 @@
 {
   "name": "json-to-office",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Generate professional .docx and .pptx files from JSON definitions",
   "private": true,
   "scripts": {
@@ -29,6 +29,10 @@
     "cli": "tsx packages/jto/src/cli.ts",
     "cli:dev:docx": "tsx packages/jto/src/cli.ts docx dev",
     "cli:dev:pptx": "tsx packages/jto/src/cli.ts pptx dev",
+    "\n\n=== RELEASE ===": "",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish",
     "\n\n=== GIT HOOKS ===": "",
     "prepare": "husky"
   },
@@ -43,13 +47,25 @@
   ],
   "author": "Paolo Barbato",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wiseair-srl/json-to-office.git"
+  },
+  "homepage": "https://github.com/Wiseair-srl/json-to-office",
+  "bugs": {
+    "url": "https://github.com/Wiseair-srl/json-to-office/issues"
+  },
   "devDependencies": {
+    "@changesets/cli": "^2.30.0",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@types/node": "20.11.0",
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
     "@vitest/coverage-v8": "1.1.0",
     "eslint": "8.56.0",
     "husky": "9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "3.2.4",
     "tsup": "8.5.0",
     "tsx": "4.20.3",
@@ -76,5 +92,14 @@
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1"
   },
-  "type": "module"
+  "type": "module",
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml}": [
+      "prettier --write"
+    ]
+  }
 }
