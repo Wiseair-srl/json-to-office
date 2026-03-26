@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/json-to-pptx",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Professional .pptx presentation generation from JSON - Public API package",
   "type": "module",
   "main": "dist/index.cjs",
@@ -33,12 +33,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage --passWithNoTests"
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "prepublishOnly": "cp ../../LICENSE ."
   },
   "dependencies": {
-    "@json-to-office/core-pptx": "workspace:*",
-    "@json-to-office/shared": "workspace:*",
-    "@json-to-office/shared-pptx": "workspace:*"
+    "@json-to-office/core-pptx": "workspace:^",
+    "@json-to-office/shared": "workspace:^",
+    "@json-to-office/shared-pptx": "workspace:^"
   },
   "peerDependencies": {
     "pptxgenjs": "^3.12.0"
@@ -59,6 +60,18 @@
   "author": "Paolo Barbato",
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wiseair-srl/json-to-office.git",
+    "directory": "packages/json-to-pptx"
+  },
+  "homepage": "https://github.com/Wiseair-srl/json-to-office/tree/main/packages/json-to-pptx",
+  "bugs": {
+    "url": "https://github.com/Wiseair-srl/json-to-office/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

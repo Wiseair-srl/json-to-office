@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/core-pptx",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Core PPTX presentation generation engine",
   "type": "module",
   "main": "dist/index.js",
@@ -29,11 +29,12 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage --passWithNoTests"
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "prepublishOnly": "cp ../../LICENSE ."
   },
   "dependencies": {
-    "@json-to-office/shared": "workspace:*",
-    "@json-to-office/shared-pptx": "workspace:*",
+    "@json-to-office/shared": "workspace:^",
+    "@json-to-office/shared-pptx": "workspace:^",
     "@sinclair/typebox": "0.34.38",
     "jszip": "3.10.1",
     "probe-image-size": "7.2.3",
@@ -44,5 +45,33 @@
     "@types/probe-image-size": "7.2.4",
     "tsup": "8.5.0",
     "typescript": "5.3.3"
+  },
+  "license": "MIT",
+  "author": "Paolo Barbato",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wiseair-srl/json-to-office.git",
+    "directory": "packages/core-pptx"
+  },
+  "homepage": "https://github.com/Wiseair-srl/json-to-office/tree/main/packages/core-pptx",
+  "bugs": {
+    "url": "https://github.com/Wiseair-srl/json-to-office/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "keywords": [
+    "json-to-office",
+    "typescript",
+    "pptx",
+    "presentation",
+    "powerpoint"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/shared",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Format-agnostic shared types, schemas and validation utilities",
   "type": "module",
   "main": "dist/index.js",
@@ -47,7 +47,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage --passWithNoTests"
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "prepublishOnly": "cp ../../LICENSE ."
   },
   "dependencies": {
     "@sinclair/typebox": "0.34.38",
@@ -58,5 +59,32 @@
     "@types/node": "20.11.0",
     "tsup": "8.5.0",
     "typescript": "5.3.3"
+  },
+  "license": "MIT",
+  "author": "Paolo Barbato",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wiseair-srl/json-to-office.git",
+    "directory": "packages/shared"
+  },
+  "homepage": "https://github.com/Wiseair-srl/json-to-office/tree/main/packages/shared",
+  "bugs": {
+    "url": "https://github.com/Wiseair-srl/json-to-office/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "keywords": [
+    "json-to-office",
+    "typescript",
+    "schemas",
+    "validation"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
