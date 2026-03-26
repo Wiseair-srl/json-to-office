@@ -31,22 +31,22 @@ function fixDataUrlFileParts(messages: ModelMessage[]): ModelMessage[] {
         if (commaIdx !== -1) {
           const isBase64 = str.slice(0, commaIdx).includes(';base64');
           const payload = str.slice(commaIdx + 1);
-          part.data = isBase64
-            ? payload
-            : Buffer.from(decodeURIComponent(payload), 'utf-8').toString(
-                'base64'
-              );
+          const decoded = Buffer.from(
+            decodeURIComponent(payload),
+            'utf-8'
+          ).toString('base64');
+          part.data = isBase64 ? payload : decoded;
         }
       } else if (typeof data === 'string' && data.startsWith('data:')) {
         const commaIdx = data.indexOf(',');
         if (commaIdx !== -1) {
           const isBase64 = data.slice(0, commaIdx).includes(';base64');
           const payload = data.slice(commaIdx + 1);
-          part.data = isBase64
-            ? payload
-            : Buffer.from(decodeURIComponent(payload), 'utf-8').toString(
-                'base64'
-              );
+          const decoded = Buffer.from(
+            decodeURIComponent(payload),
+            'utf-8'
+          ).toString('base64');
+          part.data = isBase64 ? payload : decoded;
         }
       }
     }
