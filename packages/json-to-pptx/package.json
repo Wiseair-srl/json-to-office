@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/json-to-pptx",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Professional .pptx presentation generation from JSON - Public API package",
   "type": "module",
   "main": "dist/index.cjs",
