@@ -1,0 +1,189 @@
+{
+  "name": "docx",
+  "props": {
+    "metadata": { "title": "Invoice #1042" },
+    "theme": "minimal"
+  },
+  "children": [
+    {
+      "name": "columns",
+      "props": { "columns": 2, "gap": 0.4 },
+      "children": [
+        { "name": "heading", "props": { "text": "INVOICE", "level": 1 } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "#1042\nDate: March 15, 2026\nDue: April 14, 2026",
+            "alignment": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "columns",
+      "props": { "columns": 2, "gap": 0.4 },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "**From**\nAcme Corp\n123 Business Ave\nSan Francisco, CA 94102\nhello@acme.com"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "**Bill To**\nWidget Inc\n456 Commerce St\nNew York, NY 10001\nbilling@widget.co"
+          }
+        }
+      ]
+    },
+    {
+      "name": "table",
+      "props": {
+        "columns": [
+          {
+            "header": {
+              "content": "Description",
+              "backgroundColor": "#1a365d",
+              "color": "#FFFFFF",
+              "font": { "bold": true }
+            },
+            "cells": [
+              { "content": "UI/UX Design Sprint" },
+              { "content": "Frontend Development" },
+              { "content": "API Integration" },
+              { "content": "QA & Testing" }
+            ]
+          },
+          {
+            "header": {
+              "content": "Hours",
+              "backgroundColor": "#1a365d",
+              "color": "#FFFFFF",
+              "font": { "bold": true },
+              "horizontalAlignment": "right"
+            },
+            "cellDefaults": { "horizontalAlignment": "right" },
+            "cells": [
+              { "content": "40" },
+              { "content": "120" },
+              { "content": "60" },
+              { "content": "30" }
+            ]
+          },
+          {
+            "header": {
+              "content": "Rate",
+              "backgroundColor": "#1a365d",
+              "color": "#FFFFFF",
+              "font": { "bold": true },
+              "horizontalAlignment": "right"
+            },
+            "cellDefaults": { "horizontalAlignment": "right" },
+            "cells": [
+              { "content": "$150/hr" },
+              { "content": "$175/hr" },
+              { "content": "$175/hr" },
+              { "content": "$125/hr" }
+            ]
+          },
+          {
+            "header": {
+              "content": "Amount",
+              "backgroundColor": "#1a365d",
+              "color": "#FFFFFF",
+              "font": { "bold": true },
+              "horizontalAlignment": "right"
+            },
+            "cellDefaults": { "horizontalAlignment": "right" },
+            "cells": [
+              { "content": "$6,000" },
+              { "content": "$21,000" },
+              { "content": "$10,500" },
+              { "content": "$3,750" }
+            ]
+          }
+        ],
+        "padding": 80,
+        "spacing": { "before": 400 }
+      }
+    },
+    {
+      "name": "paragraph",
+      "props": { "text": "" }
+    },
+    {
+      "name": "table",
+      "props": {
+        "columns": [
+          {
+            "cells": [
+              { "content": "" },
+              { "content": "" },
+              { "content": "Subtotal" }
+            ]
+          },
+          {
+            "cellDefaults": { "horizontalAlignment": "right" },
+            "cells": [
+              { "content": "" },
+              { "content": "" },
+              { "content": "$41,250" }
+            ]
+          }
+        ],
+        "hideBorders": true
+      }
+    },
+    {
+      "name": "table",
+      "props": {
+        "columns": [
+          {
+            "cells": [
+              { "content": "" },
+              { "content": "" },
+              { "content": "Tax (8.5%)" }
+            ]
+          },
+          {
+            "cellDefaults": { "horizontalAlignment": "right" },
+            "cells": [
+              { "content": "" },
+              { "content": "" },
+              { "content": "$3,506.25" }
+            ]
+          }
+        ],
+        "hideBorders": true
+      }
+    },
+    {
+      "name": "table",
+      "props": {
+        "columns": [
+          {
+            "cells": [
+              { "content": "Total Due", "font": { "bold": true, "size": 14 } }
+            ]
+          },
+          {
+            "cellDefaults": { "horizontalAlignment": "right" },
+            "cells": [
+              { "content": "$44,756.25", "font": { "bold": true, "size": 14 } }
+            ]
+          }
+        ],
+        "hideBorders": true
+      }
+    },
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "Payment terms: Net 30. Please include invoice number on your payment.\nBank: First National | Routing: 021000021 | Account: 1234567890",
+        "spacing": { "before": 600 },
+        "font": { "size": 9, "color": "#666666" }
+      }
+    }
+  ]
+}
