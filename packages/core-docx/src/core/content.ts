@@ -1846,9 +1846,8 @@ export async function createTable(
 
   if (hasExplicitWidths) {
     // Use explicit widths in DXA (twips) - convert from points
-    const { getAvailableWidthTwips, relativeLengthToTwips } = await import(
-      '../utils/widthUtils'
-    );
+    const widthUtils = await import('../utils/widthUtils');
+    const { getAvailableWidthTwips, relativeLengthToTwips } = widthUtils;
 
     // Get available table width in twips (page width minus margins)
     const availableTableWidth = getAvailableWidthTwips(theme, themeName);
