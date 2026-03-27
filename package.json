@@ -1,6 +1,6 @@
 {
   "name": "json-to-office",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generate professional .docx and .pptx files from JSON definitions",
   "private": true,
   "scripts": {
