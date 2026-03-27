@@ -1,0 +1,271 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Acme Corp - Series A",
+    "author": "Acme Corp",
+    "theme": "corporate",
+    "grid": {
+      "columns": 12,
+      "rows": 6,
+      "margin": { "top": 0.75, "right": 0.6, "bottom": 0.5, "left": 0.6 },
+      "gutter": { "column": 0.2, "row": 0.15 }
+    }
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": { "background": { "color": "primary" } },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "Acme Corp",
+            "style": "title",
+            "color": "FFFFFF",
+            "align": "center",
+            "valign": "middle",
+            "grid": { "column": 2, "row": 1, "columnSpan": 8, "rowSpan": 2 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Documents as data.\nSeries A  |  March 2026",
+            "style": "subtitle",
+            "color": "accent",
+            "align": "center",
+            "grid": { "column": 2, "row": 3, "columnSpan": 8 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": { "background": { "color": "background" } },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "The Problem",
+            "style": "heading1",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Every SaaS company generates documents.\nInvoices, reports, proposals, contracts.",
+            "fontSize": 18,
+            "color": "text",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12 }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.1,
+            "text": "80%\nstill use templates",
+            "fontSize": 16,
+            "bold": true,
+            "fontColor": "primary",
+            "align": "center",
+            "valign": "middle",
+            "grid": { "column": 0, "row": 2, "columnSpan": 4, "rowSpan": 2 }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.1,
+            "text": "3 weeks\navg integration time",
+            "fontSize": 16,
+            "bold": true,
+            "fontColor": "accent4",
+            "align": "center",
+            "valign": "middle",
+            "grid": { "column": 4, "row": 2, "columnSpan": 4, "rowSpan": 2 }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.1,
+            "text": "$50K+\nannual doc infra cost",
+            "fontSize": 16,
+            "bold": true,
+            "fontColor": "accent5",
+            "align": "center",
+            "valign": "middle",
+            "grid": { "column": 8, "row": 2, "columnSpan": 4, "rowSpan": 2 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Template-based systems break when document structure is dynamic.\nCode-first libraries trap definitions in application code.",
+            "fontSize": 14,
+            "color": "text2",
+            "grid": { "column": 0, "row": 5, "columnSpan": 12 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": { "background": { "color": "background" } },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "Traction",
+            "style": "heading1",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12 }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "accent" },
+            "rectRadius": 0.1,
+            "text": "$1.2M\nARR",
+            "fontSize": 20,
+            "bold": true,
+            "fontColor": "FFFFFF",
+            "align": "center",
+            "valign": "middle",
+            "grid": { "column": 0, "row": 1, "columnSpan": 3, "rowSpan": 2 }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "primary" },
+            "rectRadius": 0.1,
+            "text": "42\nCustomers",
+            "fontSize": 20,
+            "bold": true,
+            "fontColor": "FFFFFF",
+            "align": "center",
+            "valign": "middle",
+            "grid": { "column": 3, "row": 1, "columnSpan": 3, "rowSpan": 2 }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "accent5" },
+            "rectRadius": 0.1,
+            "text": "< 1%\nChurn",
+            "fontSize": 20,
+            "bold": true,
+            "fontColor": "FFFFFF",
+            "align": "center",
+            "valign": "middle",
+            "grid": { "column": 6, "row": 1, "columnSpan": 3, "rowSpan": 2 }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "accent4" },
+            "rectRadius": 0.1,
+            "text": "3.2M\nDocs/month",
+            "fontSize": 20,
+            "bold": true,
+            "fontColor": "FFFFFF",
+            "align": "center",
+            "valign": "middle",
+            "grid": { "column": 9, "row": 1, "columnSpan": 3, "rowSpan": 2 }
+          }
+        },
+        {
+          "name": "chart",
+          "props": {
+            "chartType": "bar",
+            "data": [
+              { "name": "ARR ($K)", "values": [120, 340, 580, 850, 1200] }
+            ],
+            "catAxisLabels": ["Q1'25", "Q2'25", "Q3'25", "Q4'25", "Q1'26"],
+            "grid": { "column": 0, "row": 3, "columnSpan": 12, "rowSpan": 3 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": { "background": { "color": "background" } },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "The Ask",
+            "style": "heading1",
+            "align": "center",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "$8M Series A",
+            "fontSize": 36,
+            "bold": true,
+            "color": "primary",
+            "align": "center",
+            "grid": { "column": 2, "row": 1, "columnSpan": 8 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "18 months runway to:",
+            "fontSize": 18,
+            "color": "text",
+            "align": "center",
+            "grid": { "column": 2, "row": 2, "columnSpan": 8 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Hit $5M ARR",
+            "fontSize": 20,
+            "color": "text",
+            "bullet": true,
+            "grid": { "column": 3, "row": 3, "columnSpan": 6 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Expand to 5 enterprise verticals",
+            "fontSize": 20,
+            "color": "text",
+            "bullet": true,
+            "grid": { "column": 3, "row": 4, "columnSpan": 6 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Launch self-serve platform",
+            "fontSize": 20,
+            "color": "text",
+            "bullet": true,
+            "grid": { "column": 3, "row": 5, "columnSpan": 6 }
+          }
+        }
+      ]
+    }
+  ]
+}
