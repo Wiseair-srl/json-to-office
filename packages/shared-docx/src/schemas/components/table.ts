@@ -182,11 +182,18 @@ const CellSchema = Type.Object({
 // Column schema with new structure
 const ColumnSchema = Type.Object({
   width: Type.Optional(
-    Type.Number({
-      minimum: 0,
-      description:
-        'Column width in points. When set on some columns, remaining columns will automatically share the leftover table space equally. Leave undefined to distribute space evenly among unspecified columns.',
-    })
+    Type.Union([
+      Type.Number({
+        minimum: 0,
+        description:
+          'Column width in points. When set on some columns, remaining columns will automatically share the leftover table space equally. Leave undefined to distribute space evenly among unspecified columns.',
+      }),
+      Type.String({
+        pattern: '^\\d+(\\.\\d+)?%$',
+        description:
+          'Column width as percentage of available width (e.g., "40%")',
+      }),
+    ])
   ),
   cellDefaults: Type.Optional(CellDefaultsSchema),
   header: Type.Optional(HeaderSchema),

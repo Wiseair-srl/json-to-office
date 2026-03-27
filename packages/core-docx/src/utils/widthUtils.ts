@@ -79,5 +79,3 @@ export function relativeLengthToTwips(
   if (fraction === undefined) return 0;
   return Math.round(availableWidthTwips * fraction);
 }
-
-export const __widthUtils = true;

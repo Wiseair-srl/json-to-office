@@ -68,7 +68,8 @@ type TableConfig = {
   headerCellDefaults?: CellDefaults;
   width?: number;
   columns: {
-    width?: number;
+    /** Width in points (number) or as percentage string e.g. "40%" */
+    width?: number | string;
     cellDefaults?: CellDefaults;
     header?: CellDefaults & {
       content?: CellContent;
