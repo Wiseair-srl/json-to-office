@@ -43,7 +43,7 @@
   "dependencies": {
     "@json-to-office/shared": "workspace:^",
     "@sinclair/typebox": "0.34.38",
-    "docx": "9.0.4"
+    "docx": "9.5.1"
   },
   "devDependencies": {
     "@types/node": "20.11.0",
