@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, changeset-release/main]
     paths-ignore: ['*.md', 'LICENSE', '.changeset/*.md']
   pull_request:
     branches: [main]
