@@ -1,4 +1,12 @@
-import { useCallback, useState, useMemo, memo, useEffect, useRef } from 'react';
+import {
+  useCallback,
+  useState,
+  useMemo,
+  memo,
+  useEffect,
+  useRef,
+  useContext,
+} from 'react';
 import {
   FilePlusIcon,
   PaletteIcon,
@@ -25,7 +33,10 @@ import {
   SidebarSeparator,
 } from '../ui/sidebar';
 import { useDocumentsStore } from '../../store/documents-store-provider';
-import { useThemesStore } from '../../store/themes-store-provider';
+import {
+  useThemesStore,
+  ThemesStoreContext,
+} from '../../store/themes-store-provider';
 import type {
   DiscoveryResult,
   DocumentMetadata,
@@ -59,15 +70,18 @@ function DocumentSidebarComponent({
   isCollapsed = false,
   isAnimating = false,
 }: DocumentSidebarProps) {
-  const { documents, documentTypes, createDocument, openDocument } = useDocumentsStore(
-    useShallow((state) => ({
-      documents: state.documents,
-      documentTypes: state.documentTypes,
-      createDocument: state.createDocument,
-      openDocument: state.openDocument,
-    }))
-  );
+  const { documents, documentTypes, createDocument, openDocument } =
+    useDocumentsStore(
+      useShallow((state) => ({
+        documents: state.documents,
+        documentTypes: state.documentTypes,
+        createDocument: state.createDocument,
+        openDocument: state.openDocument,
+      }))
+    );
   const updateTheme = useThemesStore((state) => state.updateTheme);
+  const removeTheme = useThemesStore((state) => state.removeTheme);
+  const themesStoreApi = useContext(ThemesStoreContext);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [themeDialogOpen, setThemeDialogOpen] = useState<boolean>(false);
   const [pluginSelectorOpen, setPluginSelectorOpen] = useState<boolean>(false);
@@ -154,26 +168,41 @@ function DocumentSidebarComponent({
   // Track previous theme documents to detect changes
   const prevThemeDocsRef = useRef<Map<string, string>>(new Map());
 
-  // Sync only changed theme documents to the themes store
+  // Sync theme documents to the themes store (add, update, and remove)
   useEffect(() => {
     const prevThemeDocs = prevThemeDocsRef.current;
     const currentThemeDocs = new Map<string, string>();
 
-    // Build current themes map and detect changes
+    // Add/update changed themes
     themeDocuments.forEach((themeDoc) => {
       currentThemeDocs.set(themeDoc.name, themeDoc.text);
-
-      // Check if this theme is new or has changed
       const prevContent = prevThemeDocs.get(themeDoc.name);
       if (prevContent !== themeDoc.text) {
-        // Only sync themes that have actually changed
         updateTheme(themeDoc.name, themeDoc.text);
       }
     });
 
-    // Update the ref for next comparison
+    // Remove themes whose documents were deleted
+    prevThemeDocs.forEach((_, name) => {
+      if (!currentThemeDocs.has(name)) {
+        removeTheme(name);
+      }
+    });
+
     prevThemeDocsRef.current = currentThemeDocs;
-  }, [themeDocuments, updateTheme]);
+  }, [themeDocuments, updateTheme, removeTheme]);
+
+  // One-time reconciliation: clean up IDB orphans from historical sync gaps
+  const reconciled = useRef(false);
+  useEffect(() => {
+    if (reconciled.current || !themesStoreApi) return;
+    reconciled.current = true;
+    const currentNames = new Set(themeDocuments.map((d) => d.name));
+    const storeKeys = Object.keys(themesStoreApi.getState().customThemes);
+    storeKeys.forEach((key) => {
+      if (!currentNames.has(key)) removeTheme(key);
+    });
+  }, [themeDocuments, removeTheme, themesStoreApi]);
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups((prev) => {
@@ -454,7 +483,9 @@ function DocumentSidebarComponent({
                       const parsed = JSON.parse(doc.text);
                       themeName = getThemeName(parsed);
                     } catch {}
-                    const isInUse = themeName ? themesInUse.has(themeName) : false;
+                    const isInUse = themeName
+                      ? themesInUse.has(themeName)
+                      : false;
 
                     return (
                       <Tooltip key={doc.name}>
@@ -479,7 +510,9 @@ function DocumentSidebarComponent({
                         <TooltipContent side="right">
                           <div className="text-xs">
                             {doc.name}
-                            {isInUse && <div className="opacity-70">In use</div>}
+                            {isInUse && (
+                              <div className="opacity-70">In use</div>
+                            )}
                           </div>
                         </TooltipContent>
                       </Tooltip>
@@ -533,199 +566,207 @@ function DocumentSidebarComponent({
           {discoveryData &&
             (discoveryData.documents.length > 0 ||
               discoveryData.themes.length > 0) && (
-            <SidebarGroup className="mt-2 border-t pt-4">
-              <SidebarGroupLabel
-                className={cn(
-                  'flex items-center mb-2',
-                  isCollapsed ? 'justify-center' : 'gap-2'
-                )}
-              >
-                {isCollapsed ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Search className="size-3" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <span className="text-xs">
+              <SidebarGroup className="mt-2 border-t pt-4">
+                <SidebarGroupLabel
+                  className={cn(
+                    'flex items-center mb-2',
+                    isCollapsed ? 'justify-center' : 'gap-2'
+                  )}
+                >
+                  {isCollapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Search className="size-3" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <span className="text-xs">
                           Expand sidebar to show discovered resources
-                      </span>
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
+                        </span>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <>
+                      <Search className="size-3" />
+                      <span>Discovered Resources</span>
+                    </>
+                  )}
+                </SidebarGroupLabel>
+
+                {!isCollapsed && (
                   <>
-                    <Search className="size-3" />
-                    <span>Discovered Resources</span>
+                    {/* Discovered Documents */}
+                    {Object.entries(groupedDiscoveredDocuments).map(
+                      ([location, docs]) => {
+                        if (docs.length === 0) return null;
+                        const groupId = `${location}-docs`;
+                        const isExpanded = expandedGroups.has(groupId);
+
+                        return (
+                          <Collapsible key={groupId} open={isExpanded}>
+                            <CollapsibleTrigger
+                              className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+                              onClick={() => toggleGroup(groupId)}
+                            >
+                              <ChevronDown
+                                className={cn(
+                                  'size-3 transition-transform',
+                                  !isExpanded && '-rotate-90'
+                                )}
+                              />
+                              <FilePlusIcon className="size-3" />
+                              {location === 'current'
+                                ? 'Current Directory'
+                                : 'Project'}{' '}
+                              Documents ({docs.length})
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="pl-4 space-y-0.5">
+                                {docs.map((doc, idx) => {
+                                  const alreadyAdded = documents.some(
+                                    (d) => d.name === doc.name
+                                  );
+                                  return (
+                                    <button
+                                      key={idx}
+                                      onClick={() =>
+                                        handleQuickAdd(doc.name, false)
+                                      }
+                                      className={cn(
+                                        'w-full text-left py-1 px-2 rounded text-sm transition-colors',
+                                        'border-l-2 border-blue-400/60 dark:border-blue-500/40',
+                                        'hover:bg-accent hover:text-accent-foreground',
+                                        alreadyAdded && 'opacity-50'
+                                      )}
+                                    >
+                                      <div className="font-medium truncate">
+                                        {doc.name}
+                                      </div>
+                                      {doc.title && (
+                                        <div className="text-xs text-muted-foreground truncate">
+                                          {doc.title}
+                                        </div>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      }
+                    )}
+
+                    {/* Discovered Themes */}
+                    {Object.entries(groupedDiscoveredThemes).map(
+                      ([location, themes]) => {
+                        if (themes.length === 0) return null;
+                        const groupId = `${location}-themes`;
+                        const isExpanded = expandedGroups.has(groupId);
+
+                        return (
+                          <Collapsible key={groupId} open={isExpanded}>
+                            <CollapsibleTrigger
+                              className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+                              onClick={() => toggleGroup(groupId)}
+                            >
+                              <ChevronDown
+                                className={cn(
+                                  'size-3 transition-transform',
+                                  !isExpanded && '-rotate-90'
+                                )}
+                              />
+                              <PaletteIcon className="size-3" />
+                              {location === 'current'
+                                ? 'Current Directory'
+                                : 'Project'}{' '}
+                              Themes ({themes.length})
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="pl-4 space-y-0.5">
+                                {themes.map((theme, idx) => {
+                                  const alreadyAdded = documents.some(
+                                    (d) => d.name === theme.name
+                                  );
+                                  return (
+                                    <button
+                                      key={idx}
+                                      onClick={() =>
+                                        handleQuickAdd(theme.name, true)
+                                      }
+                                      className={cn(
+                                        'w-full text-left py-1 px-2 rounded text-sm transition-colors',
+                                        'border-l-2 border-purple-400/60 dark:border-purple-500/40',
+                                        'hover:bg-accent hover:text-accent-foreground',
+                                        alreadyAdded && 'opacity-50'
+                                      )}
+                                    >
+                                      <div className="font-medium truncate">
+                                        {theme.name}
+                                      </div>
+                                      {theme.description && (
+                                        <div className="text-xs text-muted-foreground truncate">
+                                          {theme.description}
+                                        </div>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      }
+                    )}
+
+                    {/* Discovered Plugins */}
+                    {discoveryData && discoveryData.plugins.length > 0 && (
+                      <Collapsible open={expandedGroups.has('plugins')}>
+                        <CollapsibleTrigger
+                          className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+                          onClick={() => toggleGroup('plugins')}
+                        >
+                          <ChevronDown
+                            className={cn(
+                              'size-3 transition-transform',
+                              !expandedGroups.has('plugins') && '-rotate-90'
+                            )}
+                          />
+                          <Sparkles className="size-3 text-amber-600 dark:text-amber-400" />
+                          Plugins ({discoveryData.plugins.length})
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="pl-4 space-y-0.5">
+                            {discoveryData.plugins.map((p, idx) => (
+                              <div
+                                key={idx}
+                                className="py-1 px-2 text-sm text-muted-foreground border-l-2 border-amber-400/60 dark:border-amber-500/40"
+                              >
+                                <div className="font-medium">{p.name}</div>
+                                {p.description && (
+                                  <div className="text-xs opacity-70 truncate">
+                                    {p.description}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            <div className="flex items-center justify-end pr-3 pt-1">
+                              <Button
+                                className="h-6 px-2 text-xs"
+                                variant="ghost"
+                                title="Open plugin manager"
+                                onClick={() => setPluginSelectorOpen(true)}
+                              >
+                                Manage plugins
+                              </Button>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    )}
                   </>
                 )}
-              </SidebarGroupLabel>
-
-              {!isCollapsed && (
-                <>
-                  {/* Discovered Documents */}
-                  {Object.entries(groupedDiscoveredDocuments).map(
-                    ([location, docs]) => {
-                      if (docs.length === 0) return null;
-                      const groupId = `${location}-docs`;
-                      const isExpanded = expandedGroups.has(groupId);
-
-                      return (
-                        <Collapsible key={groupId} open={isExpanded}>
-                          <CollapsibleTrigger
-                            className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                            onClick={() => toggleGroup(groupId)}
-                          >
-                            <ChevronDown
-                              className={cn(
-                                'size-3 transition-transform',
-                                !isExpanded && '-rotate-90'
-                              )}
-                            />
-                            <FilePlusIcon className="size-3" />
-                            {location === 'current'
-                              ? 'Current Directory'
-                              : 'Project'}{' '}
-                              Documents ({docs.length})
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="pl-4 space-y-0.5">
-                              {docs.map((doc, idx) => {
-                                const alreadyAdded = documents.some((d) => d.name === doc.name);
-                                return (
-                                  <button
-                                    key={idx}
-                                    onClick={() => handleQuickAdd(doc.name, false)}
-                                    className={cn(
-                                      'w-full text-left py-1 px-2 rounded text-sm transition-colors',
-                                      'border-l-2 border-blue-400/60 dark:border-blue-500/40',
-                                      'hover:bg-accent hover:text-accent-foreground',
-                                      alreadyAdded && 'opacity-50'
-                                    )}
-                                  >
-                                    <div className="font-medium truncate">
-                                      {doc.name}
-                                    </div>
-                                    {doc.title && (
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        {doc.title}
-                                      </div>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      );
-                    }
-                  )}
-
-                  {/* Discovered Themes */}
-                  {Object.entries(groupedDiscoveredThemes).map(
-                    ([location, themes]) => {
-                      if (themes.length === 0) return null;
-                      const groupId = `${location}-themes`;
-                      const isExpanded = expandedGroups.has(groupId);
-
-                      return (
-                        <Collapsible key={groupId} open={isExpanded}>
-                          <CollapsibleTrigger
-                            className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                            onClick={() => toggleGroup(groupId)}
-                          >
-                            <ChevronDown
-                              className={cn(
-                                'size-3 transition-transform',
-                                !isExpanded && '-rotate-90'
-                              )}
-                            />
-                            <PaletteIcon className="size-3" />
-                            {location === 'current'
-                              ? 'Current Directory'
-                              : 'Project'}{' '}
-                              Themes ({themes.length})
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="pl-4 space-y-0.5">
-                              {themes.map((theme, idx) => {
-                                const alreadyAdded = documents.some((d) => d.name === theme.name);
-                                return (
-                                  <button
-                                    key={idx}
-                                    onClick={() => handleQuickAdd(theme.name, true)}
-                                    className={cn(
-                                      'w-full text-left py-1 px-2 rounded text-sm transition-colors',
-                                      'border-l-2 border-purple-400/60 dark:border-purple-500/40',
-                                      'hover:bg-accent hover:text-accent-foreground',
-                                      alreadyAdded && 'opacity-50'
-                                    )}
-                                  >
-                                    <div className="font-medium truncate">
-                                      {theme.name}
-                                    </div>
-                                    {theme.description && (
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        {theme.description}
-                                      </div>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      );
-                    }
-                  )}
-
-                  {/* Discovered Plugins */}
-                  {discoveryData && discoveryData.plugins.length > 0 && (
-                    <Collapsible open={expandedGroups.has('plugins')}>
-                      <CollapsibleTrigger
-                        className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                        onClick={() => toggleGroup('plugins')}
-                      >
-                        <ChevronDown
-                          className={cn(
-                            'size-3 transition-transform',
-                            !expandedGroups.has('plugins') && '-rotate-90'
-                          )}
-                        />
-                        <Sparkles className="size-3 text-amber-600 dark:text-amber-400" />
-                          Plugins ({discoveryData.plugins.length})
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="pl-4 space-y-0.5">
-                          {discoveryData.plugins.map((p, idx) => (
-                            <div
-                              key={idx}
-                              className="py-1 px-2 text-sm text-muted-foreground border-l-2 border-amber-400/60 dark:border-amber-500/40"
-                            >
-                              <div className="font-medium">{p.name}</div>
-                              {p.description && (
-                                <div className="text-xs opacity-70 truncate">
-                                  {p.description}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          <div className="flex items-center justify-end pr-3 pt-1">
-                            <Button
-                              className="h-6 px-2 text-xs"
-                              variant="ghost"
-                              title="Open plugin manager"
-                              onClick={() => setPluginSelectorOpen(true)}
-                            >
-                                Manage plugins
-                            </Button>
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  )}
-                </>
-              )}
-            </SidebarGroup>
-          )}
+              </SidebarGroup>
+            )}
         </SidebarContent>
         <SidebarFooter>
           <div
@@ -742,10 +783,7 @@ function DocumentSidebarComponent({
         {/* Plugin Selector Dialog */}
         <Dialog open={pluginSelectorOpen} onOpenChange={setPluginSelectorOpen}>
           <DialogContent className="sm:max-w-5xl max-h-[85vh] overflow-hidden">
-            <PluginSelector
-              plugins={discoveryData?.plugins || []}
-              onClose={() => setPluginSelectorOpen(false)}
-            />
+            <PluginSelector plugins={discoveryData?.plugins || []} />
           </DialogContent>
         </Dialog>
       </Sidebar>

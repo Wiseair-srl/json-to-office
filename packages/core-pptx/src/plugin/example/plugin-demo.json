@@ -1,0 +1,54 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Weather Plugin Demo",
+    "author": "json-to-office"
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        {
+          "name": "weather",
+          "version": "1.0.0",
+          "props": {
+            "city": "London",
+            "units": "metric",
+            "showDetails": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        {
+          "name": "weather",
+          "version": "1.0.0",
+          "props": {
+            "city": "New York",
+            "units": "imperial",
+            "showDetails": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {},
+      "children": [
+        {
+          "name": "weather",
+          "version": "2.0.0",
+          "props": {
+            "city": "Tokyo",
+            "units": "metric",
+            "days": 5
+          }
+        }
+      ]
+    }
+  ]
+}

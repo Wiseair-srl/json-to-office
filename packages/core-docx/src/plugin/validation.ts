@@ -1,56 +1,23 @@
-import type { TSchema } from '@sinclair/typebox';
+import type { TSchema, Static } from '@sinclair/typebox';
 import type { CustomComponent } from './createComponent';
 import type { ReportComponentDefinition } from '../types';
 import { resolveComponentVersion } from './version-resolver';
 import {
   validateCustomComponentProps,
+  ComponentValidationError,
+  type ComponentValidationResult,
+} from '@json-to-office/shared/plugin';
+import {
   validateDocument as validateDocumentUnified,
   type ValidationError,
-  type ComponentValidationResult,
 } from '@json-to-office/shared-docx/validation/unified';
 import type { ValidationResult } from '@json-to-office/shared';
 
-/**
- * Error thrown when attempting to register a component with a duplicate name
- */
-export class DuplicateComponentError extends Error {
-  public readonly componentName: string;
-  public readonly code = 'DUPLICATE_COMPONENT';
-
-  constructor(componentName: string) {
-    super(
-      `Cannot register component "${componentName}": a component with this name is already registered. ` +
-        'Component names must be unique within a document generator.'
-    );
-    this.name = 'DuplicateComponentError';
-    this.componentName = componentName;
-
-    // Maintain proper stack trace in V8 environments
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, DuplicateComponentError);
-    }
-  }
-}
-
-/**
- * Custom validation error class
- */
-export class ComponentValidationError extends Error {
-  public errors: ValidationError[];
-  public props: unknown;
-
-  constructor(errors: ValidationError[], props?: unknown) {
-    const propsStr =
-      props !== undefined ? `\nProps: ${JSON.stringify(props, null, 2)}` : '';
-    const message = `Document validation failed:\n${errors
-      .map((e) => `  ${e.path}: ${e.message}`)
-      .join('\n')}${propsStr}`;
-    super(message);
-    this.name = 'ComponentValidationError';
-    this.errors = errors;
-    this.props = props;
-  }
-}
+// Re-export errors from shared
+export {
+  DuplicateComponentError,
+  ComponentValidationError,
+} from '@json-to-office/shared/plugin';
 
 /**
  * Validate a component props against a schema.
@@ -58,11 +25,13 @@ export class ComponentValidationError extends Error {
  */
 export function validateComponentProps<TPropsSchema extends TSchema>(
   schema: { propsSchema: TPropsSchema },
-  props: unknown
+  props: unknown,
+  componentName?: string
 ): ComponentValidationResult<TPropsSchema> {
   return validateCustomComponentProps<TPropsSchema>(schema.propsSchema, props, {
     clean: true,
     applyDefaults: true,
+    componentName,
   });
 }
 
@@ -88,29 +57,26 @@ export function validateDocument(
 
   function validateComponents(components: any[], pathPrefix = 'children') {
     components.forEach((componentData, index) => {
-      // Skip standard components (they have their own validation)
       const customComponent = customComponents.find(
         (cc) => cc.name === componentData.name
       );
       if (!customComponent) {
-        return; // This is a standard component, skip validation here
+        return;
       }
 
-      // Resolve the correct version
       const versionEntry = resolveComponentVersion(
         customComponent.name,
         customComponent.versions,
         componentData.version
       );
 
-      // Validate custom component against the resolved version's schema
       const validation = validateComponentProps(
         versionEntry,
-        componentData.props
+        componentData.props,
+        customComponent.name
       );
 
       if (!validation.valid && validation.errors) {
-        // Add component index to error paths
         const indexedErrors = validation.errors.map(
           (error: ValidationError) => ({
             ...error,
@@ -120,7 +86,6 @@ export function validateDocument(
         errors.push(...indexedErrors);
       }
 
-      // Recursively validate nested children
       if (componentData.children && Array.isArray(componentData.children)) {
         validateComponents(
           componentData.children,
@@ -141,12 +106,11 @@ export function validateDocument(
 
 /**
  * Validates component props and returns the typed props or throws.
- * Accepts a narrower interface — only needs { propsSchema }.
  */
 export function getValidatedProps<TPropsSchema extends TSchema>(
   schema: { propsSchema: TPropsSchema },
   props: unknown
-): TPropsSchema {
+): Static<TPropsSchema> {
   const validation = validateComponentProps(schema, props);
 
   if (!validation.valid) {
@@ -158,7 +122,6 @@ export function getValidatedProps<TPropsSchema extends TSchema>(
 
 // Re-export types
 export type { ValidationError } from '@json-to-office/shared-docx/validation/unified';
-export type { ComponentValidationResult } from '@json-to-office/shared-docx/validation/unified';
+export type { ComponentValidationResult } from '@json-to-office/shared/plugin';
 
-// Export cleanComponentProps as an alias for getValidatedProps for backward compatibility
 export const cleanComponentProps = getValidatedProps;

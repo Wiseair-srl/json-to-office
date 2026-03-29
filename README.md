@@ -67,10 +67,10 @@ Your document is just JSON now. Generate it, store it, validate it, version it, 
 | **LLM-friendly**  | Yes: LLMs emit JSON reliably                 | Fragile: no schema to constrain output | No: requires a pre-made template         | No              |
 | **Validation**    | Full schema validation (TypeBox)             | None                                   | None                                     | None            |
 | **Themes**        | Built-in theme system                        | Manual styling                         | Template-based                           | Manual styling  |
-| **Extensibility** | Plugin architecture with semver (DOCX)       | N/A                                    | N/A                                      | N/A             |
+| **Extensibility** | Plugin architecture with semver              | N/A                                    | N/A                                      | N/A             |
 | **Dependencies**  | Node.js only                                 | Node.js only                           | Node.js + LibreOffice                    | Node.js only    |
 
-**vs. docx / pptxgenjs**: These are json-to-office's own rendering backends. json-to-office is the declarative layer on top: a schema-validated JSON contract that compiles down to those libraries. It also adds abstractions they don't have: themes, a layout pipeline, a plugin architecture (DOCX), a template/placeholder system (PPTX), and TypeBox schemas that serve as both TypeScript types and runtime validators from a single source of truth.
+**vs. docx / pptxgenjs**: These are json-to-office's own rendering backends. json-to-office is the declarative layer on top: a schema-validated JSON contract that compiles down to those libraries. It also adds abstractions they don't have: themes, a layout pipeline, a plugin architecture, a template/placeholder system (PPTX), and TypeBox schemas that serve as both TypeScript types and runtime validators from a single source of truth.
 
 **vs. Carbone**: Carbone is template-driven: design a `.docx` in Word, sprinkle `{placeholders}`, inject data. Works when structure is fixed and only data changes. When structure is dynamic (conditional sections, variable-length tables, data-driven layouts) templates become brittle. json-to-office replaces the template file with a composable component tree. No LibreOffice dependency.
 
@@ -84,7 +84,7 @@ Your document is just JSON now. Generate it, store it, validate it, version it, 
 
 - **Theme system**: Colors, fonts, spacing, and component defaults. 3 built-in themes per format (minimal, corporate, vibrant/modern), or define your own.
 - **Schema validation**: Full TypeBox schemas that serve as TypeScript types _and_ runtime validators. Catch errors before rendering.
-- **Plugin architecture** (DOCX): Create versioned custom components with `createComponent()`. Full TypeScript support, chainable API, schema generation.
+- **Plugin architecture**: Create versioned custom components with `createComponent()`. Full TypeScript support, chainable API, schema generation. Works for both DOCX and PPTX.
 - **Template/placeholder system** (PPTX): Define slide templates with named placeholder regions. Static + dynamic content, style inheritance.
 - **Grid layout** (PPTX): 12-column responsive grid with configurable margins and gutters.
 

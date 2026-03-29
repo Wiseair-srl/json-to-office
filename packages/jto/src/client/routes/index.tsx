@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { RouteObject } from 'react-router-dom';
 import { RootLayout } from '@/layouts/RootLayout';
 import { Spinner } from '@/components/ui/spinner';
-import { MonacoPluginProvider } from '@/components/MonacoPluginProvider';
 
 // Lazy load all pages for code splitting
 const HomePage = lazy(() =>
@@ -41,9 +40,7 @@ export const routes: RouteObject[] = [
         index: true,
         element: (
           <LazyLoadWrapper>
-            <MonacoPluginProvider>
-              <HomePage />
-            </MonacoPluginProvider>
+            <HomePage />
           </LazyLoadWrapper>
         ),
       },
@@ -51,9 +48,7 @@ export const routes: RouteObject[] = [
         path: 'json-editor',
         element: (
           <LazyLoadWrapper>
-            <MonacoPluginProvider>
-              <JsonEditorPage />
-            </MonacoPluginProvider>
+            <JsonEditorPage />
           </LazyLoadWrapper>
         ),
       },

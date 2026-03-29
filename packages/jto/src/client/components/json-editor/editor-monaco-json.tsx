@@ -7,7 +7,7 @@ import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useOutputStore } from '../../store/output-store-provider';
 import { Button } from '../ui/button';
 import { type JsonEditorError } from '../../lib/json-types';
-import { configureMonacoInstance } from '../../lib/monaco-config';
+// configureMonacoInstance is called at startup (main.tsx) and by useMonacoPlugins
 import { useEditorRefsStore } from '../../store/editor-refs-store';
 import {
   getSelectionContext,
@@ -53,13 +53,11 @@ function EditorMonacoJson({
   );
 
   // Setup Monaco editor for JSON with schema validation
-  const handleEditorWillMount = useCallback((monaco: Monaco) => {
+  // Note: schema configuration is handled by configureMonaco() at startup
+  // and updateMonacoWithPlugins() via useMonacoPlugins hook.
+  // Calling configureMonacoInstance here would overwrite plugin-aware schemas.
+  const handleEditorWillMount = useCallback((_monaco: Monaco) => {
     console.debug('Setting up Monaco for JSON editor');
-
-    // Enhanced error styles removed - using Monaco's native styling
-
-    // Ensure Monaco is configured with schemas
-    configureMonacoInstance(monaco);
   }, []);
 
   function handleEditorDidMount(
@@ -184,11 +182,11 @@ function EditorMonacoJson({
     }
   }
 
-  // Cancel debounced saveDocument on unmount and unregister editor
+  // Flush debounced saveDocument on unmount and unregister editor
   useEffect(() => {
     const debouncedSaveDocument = debouncedSaveDocumentRef?.current;
     return () => {
-      debouncedSaveDocument?.cancel();
+      debouncedSaveDocument?.flush();
       // Decorations cleanup handled by Monaco
       unregisterEditor(name);
       console.debug(`EditorWillUnMount: (name: ${name})`);
@@ -256,9 +254,7 @@ function EditorMonacoJson({
           height="100%"
           defaultLanguage="json"
           theme={`vs-${resolvedTheme}`}
-          defaultPath={
-            name.endsWith('.json') ? name : `${name}.json`
-          }
+          defaultPath={name.endsWith('.json') ? name : `${name}.json`}
           value={value ?? defaultValue}
           beforeMount={handleEditorWillMount}
           onMount={handleEditorDidMount}

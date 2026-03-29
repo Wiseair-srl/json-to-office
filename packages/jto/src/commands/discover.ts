@@ -13,7 +13,9 @@ import { createTable, dimPath, formatError, EXIT_CODES } from './ui.js';
 
 export function createDiscoverCommand(adapter: FormatAdapter): Command {
   return new Command('discover')
-    .description(`Discover json-to-${adapter.name} plugins, documents, and themes`)
+    .description(
+      `Discover json-to-${adapter.name} plugins, documents, and themes`
+    )
     .option('-j, --json', 'Output as JSON')
     .option('-s, --schema', 'Include full schemas in output (plugins only)')
     .option('-e, --examples', 'Include usage examples (plugins only)')
@@ -77,7 +79,7 @@ export function createDiscoverCommand(adapter: FormatAdapter): Command {
           themes = results.themes;
           totalCount = plugins.length + documents.length + themes.length;
         } else if (discoverType === 'plugin') {
-          plugins = await discovery.discoverPlugins();
+          plugins = await discovery.discoverPlugins(format);
           totalCount = plugins.length;
         } else if (discoverType === 'document') {
           documents = await discovery.discoverDocuments(format);

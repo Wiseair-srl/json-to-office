@@ -21,7 +21,11 @@ export {
   createJsonParseError,
   calculatePosition,
 } from './validation/unified';
-export type { ValidationError, ValidationResult, TransformedError } from './validation/unified';
+export type {
+  ValidationError,
+  ValidationResult,
+  TransformedError,
+} from './validation/unified';
 export {
   type ErrorFormatterConfig,
   DEFAULT_ERROR_CONFIG,
@@ -39,6 +43,26 @@ export {
   clearComponentNamesCache,
   getSchemaMetadata,
 } from './validation/unified';
+
+// Plugin system
+export {
+  createComponent,
+  createVersion,
+  resolveComponentVersion,
+  DuplicateComponentError,
+  ComponentValidationError,
+  validateCustomComponentProps,
+  isValidationSuccess,
+  getValidationSummary,
+  type RenderContext,
+  type RenderFunction,
+  type ComponentVersion,
+  type ComponentVersionMap,
+  type CustomComponent,
+  type PluginValidationOptions,
+  type PluginValidationResult,
+  type ComponentValidationResult,
+} from './plugin';
 
 // Semver utilities
 export {

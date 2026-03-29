@@ -5,6 +5,7 @@
 
 import { Value } from '@sinclair/typebox/value';
 import type { Static, TSchema } from '@sinclair/typebox';
+import { validateCustomComponentProps as sharedValidateCustomComponentProps } from '@json-to-office/shared/plugin';
 import {
   ReportPropsSchema,
   SectionPropsSchema,
@@ -105,45 +106,19 @@ export function validateComponentDefinition(
 }
 
 /**
- * Validate a custom component configuration with a custom schema
- * This is for plugin components that have their own TypeBox schema
+ * Validate a custom component configuration with a custom schema.
+ * Delegates to @json-to-office/shared/plugin to avoid duplication.
  */
 export function validateCustomComponentProps<T>(
   componentSchema: TSchema,
   config: unknown,
   options?: ValidationOptions
 ): ComponentValidationResult<T> {
-  try {
-    // Use the custom schema for validation
-    const result = validateAgainstSchema(componentSchema, config, {
-      ...options,
-      clean: options?.clean ?? true,
-      applyDefaults: options?.applyDefaults ?? true,
-    });
-
-    return {
-      ...result,
-      success: result.valid, // Add success for backward compatibility
-      data: result.data as T, // Cast to generic type T
-      componentName: 'custom',
-      isCustomComponent: true,
-    };
-  } catch (error) {
-    return {
-      valid: false,
-      success: false, // Add success for backward compatibility
-      errors: [
-        {
-          path: 'props',
-          message:
-            error instanceof Error ? error.message : 'Unknown validation error',
-          code: 'validation_exception',
-        },
-      ],
-      componentName: 'custom',
-      isCustomComponent: true,
-    };
-  }
+  return sharedValidateCustomComponentProps<T>(
+    componentSchema,
+    config,
+    options
+  );
 }
 
 /**

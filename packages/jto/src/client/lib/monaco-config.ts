@@ -13,6 +13,9 @@ import { schemaService } from './schema-service';
 
 let isConfigured = false;
 let completionDisposable: { dispose(): void } | null = null;
+// Remember last custom theme names so callers that don't pass them
+// (e.g. applyPluginsWithValidation) still get them injected.
+let lastCustomThemeNames: string[] = [];
 
 export interface MonacoSchemaConfig {
   uri: string;
@@ -157,6 +160,30 @@ function stripDiscriminator(obj: any): void {
   delete obj.discriminator;
   for (const value of Object.values(obj)) {
     stripDiscriminator(value);
+  }
+}
+
+/**
+ * Inject custom theme names into the document schema's theme property
+ * so Monaco autocomplete suggests them alongside built-in themes.
+ */
+function injectCustomThemeNames(schema: any, themeNames: string[]): void {
+  function inject(themeProp: any): void {
+    if (!themeProp || themeProp.type !== 'string') return;
+    const existing = Array.isArray(themeProp.examples)
+      ? themeProp.examples
+      : [];
+    themeProp.examples = [...new Set([...existing, ...themeNames])];
+  }
+
+  // Direct path (docx schema)
+  inject(schema?.properties?.props?.properties?.theme);
+
+  // anyOf branches (pptx schema)
+  if (Array.isArray(schema?.anyOf)) {
+    for (const branch of schema.anyOf) {
+      inject(branch?.properties?.props?.properties?.theme);
+    }
   }
 }
 
@@ -320,14 +347,18 @@ function registerJsonCompletionProvider(monaco: Monaco): void {
  */
 export async function updateMonacoWithPlugins(
   monaco: Monaco,
-  pluginNames?: string[]
+  pluginNames?: string[],
+  customThemeNames?: string[]
 ): Promise<boolean> {
   try {
     // Clear stale plugin schema cache to ensure fresh data after rebuilds
     schemaService.clearPluginSchemaCache();
 
-    // Fetch the enhanced schema with plugins from the backend
-    const documentSchema = await schemaService.fetchDocumentSchema(pluginNames);
+    // Fetch the enhanced schema with plugins from the backend.
+    // Deep clone so client-side mutations (theme injection, discriminator
+    // stripping) don't pollute the cached copy.
+    const cachedSchema = await schemaService.fetchDocumentSchema(pluginNames);
+    const documentSchema = JSON.parse(JSON.stringify(cachedSchema));
 
     // Validate that we received a valid schema
     if (!documentSchema || typeof documentSchema !== 'object') {
@@ -339,6 +370,16 @@ export async function updateMonacoWithPlugins(
     // support OpenAPI-style discriminators; standard anyOf validation works
     // correctly without it.
     stripDiscriminator(documentSchema);
+
+    // Update cached theme names when explicitly provided
+    if (customThemeNames) {
+      lastCustomThemeNames = customThemeNames;
+    }
+
+    // Inject custom theme names into the theme property for autocomplete
+    if (lastCustomThemeNames.length) {
+      injectCustomThemeNames(documentSchema, lastCustomThemeNames);
+    }
 
     // Create the Monaco schema configuration with the SAME URI as the base schema
     const reportSchema: MonacoSchemaConfig = {

@@ -11,7 +11,7 @@ export const createReportPropsSchema = (_moduleRef?: TSchema) =>
       theme: Type.Optional(
         Type.String({
           description: 'Theme name to apply (default: "minimal")',
-          examples: ['corporate', 'professional', 'minimal'],
+          examples: ['minimal', 'corporate', 'modern'],
           default: 'minimal',
         })
       ),

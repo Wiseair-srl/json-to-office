@@ -3,6 +3,17 @@ import * as fs from 'fs';
 
 export type FormatName = 'docx' | 'pptx';
 
+/** Minimal builder shape shared by DOCX and PPTX generators */
+interface GeneratorBuilder {
+  addComponent(component: any): GeneratorBuilder;
+  validate(document: any): {
+    valid: boolean;
+    errors?: { path: string; message: string }[];
+  };
+  generateBuffer(document: any): Promise<{ buffer: Buffer; warnings: any }>;
+  getStandardComponentsDefinition?: (document: any) => Promise<any>;
+}
+
 export interface GeneratorOptions {
   theme?: string | any;
   themePath?: string;
@@ -54,11 +65,17 @@ export class DocxFormatAdapter implements FormatAdapter {
   label = 'document';
   defaultPort = 3003;
 
-  async generateBuffer(json: unknown, options: GeneratorOptions): Promise<Buffer> {
+  async generateBuffer(
+    json: unknown,
+    options: GeneratorOptions
+  ): Promise<Buffer> {
     const core = await import('@json-to-office/core-docx');
-    const docDefinition = typeof json === 'string' ? JSON.parse(json as string) : json;
+    const docDefinition =
+      typeof json === 'string' ? JSON.parse(json as string) : json;
     const customThemes = await this.loadCustomThemes(options);
-    return await core.generateBufferFromJson(docDefinition as any, { customThemes });
+    return await core.generateBufferFromJson(docDefinition as any, {
+      customThemes,
+    });
   }
 
   async createGenerator(
@@ -75,7 +92,9 @@ export class DocxFormatAdapter implements FormatAdapter {
           const docDefinition =
             typeof document === 'string' ? JSON.parse(document) : document;
           const customThemes = await this.loadCustomThemes(options);
-          return await core.generateBufferFromJson(docDefinition, { customThemes });
+          return await core.generateBufferFromJson(docDefinition, {
+            customThemes,
+          });
         },
         hasPlugins: false,
         pluginNames: [],
@@ -83,11 +102,12 @@ export class DocxFormatAdapter implements FormatAdapter {
     }
 
     const theme = await this.resolveTheme(options);
-    // createDocumentGenerator returns a builder; add components via .addComponent()
-    let generator = core.createDocumentGenerator({
+    const customThemes = await this.loadCustomThemes(options);
+    let generator: GeneratorBuilder = core.createDocumentGenerator({
       theme,
+      customThemes,
       debug: process.env.DEBUG === 'true',
-    }) as any;
+    });
 
     for (const plugin of plugins) {
       generator = generator.addComponent(plugin);
@@ -111,7 +131,7 @@ export class DocxFormatAdapter implements FormatAdapter {
         return result.buffer;
       },
       getStandardComponentsDefinition: generator.getStandardComponentsDefinition
-        ? (config: any) => generator.getStandardComponentsDefinition(config)
+        ? (config: any) => generator.getStandardComponentsDefinition!(config)
         : undefined,
       hasPlugins: true,
       pluginNames,
@@ -161,7 +181,9 @@ export class DocxFormatAdapter implements FormatAdapter {
     }
 
     if (typeof options.theme === 'string') {
-      const builtInTheme = (core.themes as Record<string, any>)?.[options.theme];
+      const builtInTheme = (core.themes as Record<string, any>)?.[
+        options.theme
+      ];
       if (builtInTheme) return builtInTheme;
 
       if (options.theme.endsWith('.json') && fs.existsSync(options.theme)) {
@@ -299,11 +321,17 @@ export class PptxFormatAdapter implements FormatAdapter {
   label = 'presentation';
   defaultPort = 3004;
 
-  async generateBuffer(json: unknown, options: GeneratorOptions): Promise<Buffer> {
+  async generateBuffer(
+    json: unknown,
+    options: GeneratorOptions
+  ): Promise<Buffer> {
     const core = await import('@json-to-office/core-pptx');
-    const docDefinition = typeof json === 'string' ? JSON.parse(json as string) : json;
+    const docDefinition =
+      typeof json === 'string' ? JSON.parse(json as string) : json;
     const customThemes = await this.loadCustomThemes(options);
-    return await core.generateBufferFromJson(docDefinition as any, { customThemes });
+    return await core.generateBufferFromJson(docDefinition as any, {
+      customThemes,
+    });
   }
 
   async createGenerator(
@@ -314,14 +342,50 @@ export class PptxFormatAdapter implements FormatAdapter {
     const hasPlugins = plugins.length > 0;
     const pluginNames = plugins.map((p) => p.name);
 
+    if (!hasPlugins) {
+      return {
+        generateBuffer: async (document: any) => {
+          const docDefinition =
+            typeof document === 'string' ? JSON.parse(document) : document;
+          const customThemes = await this.loadCustomThemes(options);
+          return await core.generateBufferFromJson(docDefinition, {
+            customThemes,
+          });
+        },
+        hasPlugins: false,
+        pluginNames: [],
+      };
+    }
+
+    const theme = await this.resolveTheme(options);
+    const customThemes = await this.loadCustomThemes(options);
+    let generator: GeneratorBuilder = core.createPresentationGenerator({
+      theme,
+      customThemes,
+      debug: process.env.DEBUG === 'true',
+    });
+
+    for (const plugin of plugins) {
+      generator = generator.addComponent(plugin);
+    }
+
     return {
       generateBuffer: async (document: any) => {
         const docDefinition =
           typeof document === 'string' ? JSON.parse(document) : document;
-        const customThemes = await this.loadCustomThemes(options);
-        return await core.generateBufferFromJson(docDefinition, { customThemes });
+        const validationResult = generator.validate(docDefinition);
+        if (!validationResult.valid) {
+          const errors = validationResult.errors || [];
+          throw new Error(
+            `Presentation validation failed:\n${errors
+              .map((e: any) => `  - ${e.path}: ${e.message}`)
+              .join('\n')}`
+          );
+        }
+        const result = await generator.generateBuffer(docDefinition);
+        return result.buffer;
       },
-      hasPlugins,
+      hasPlugins: true,
       pluginNames,
     };
   }
@@ -434,11 +498,11 @@ export class PptxFormatAdapter implements FormatAdapter {
 
 export function createAdapter(format: FormatName): FormatAdapter {
   switch (format) {
-  case 'docx':
-    return new DocxFormatAdapter();
-  case 'pptx':
-    return new PptxFormatAdapter();
-  default:
-    throw new Error(`Unknown format: ${format}`);
+    case 'docx':
+      return new DocxFormatAdapter();
+    case 'pptx':
+      return new PptxFormatAdapter();
+    default:
+      throw new Error(`Unknown format: ${format}`);
   }
 }

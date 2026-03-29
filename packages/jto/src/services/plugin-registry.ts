@@ -12,6 +12,7 @@ export class PluginRegistry {
   private pluginMetadata: Map<string, PluginMetadata> = new Map();
   private loader: PluginLoader;
   private discoveryService: PluginDiscoveryService;
+  private _format?: 'docx' | 'pptx';
 
   private constructor() {
     this.loader = new PluginLoader();
@@ -23,6 +24,10 @@ export class PluginRegistry {
       PluginRegistry.instance = new PluginRegistry();
     }
     return PluginRegistry.instance;
+  }
+
+  setFormat(format: 'docx' | 'pptx'): void {
+    this._format = format;
   }
 
   private notifyCacheInvalidation(): void {
@@ -108,7 +113,7 @@ export class PluginRegistry {
         maxDepth: 5,
       });
 
-      const pluginMetadata = await discovery.discover();
+      const pluginMetadata = await discovery.discover(this._format);
       return await this.loadPluginsFromMetadata(pluginMetadata);
     } catch (error: any) {
       throw new Error(
@@ -123,7 +128,7 @@ export class PluginRegistry {
     try {
       await this.loader.initialize();
 
-      const pluginMetadata = await this.discoveryService.discover();
+      const pluginMetadata = await this.discoveryService.discover(this._format);
       const discovered = pluginMetadata.length;
 
       if (discovered === 0) {
@@ -145,7 +150,7 @@ export class PluginRegistry {
     }
 
     try {
-      const pluginMetadata = await this.discoveryService.discover();
+      const pluginMetadata = await this.discoveryService.discover(this._format);
       const metadata = pluginMetadata.find((p) => p.name === name);
       if (metadata) return metadata.filePath;
     } catch {}

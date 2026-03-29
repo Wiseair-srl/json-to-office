@@ -64,11 +64,11 @@ export class PluginDiscoveryService {
     this.metadataExtractor = new PluginMetadataExtractor(this.searchPath);
   }
 
-  async discover(): Promise<PluginMetadata[]> {
-    return this.discoverPlugins();
+  async discover(format?: 'docx' | 'pptx'): Promise<PluginMetadata[]> {
+    return this.discoverPlugins(format);
   }
 
-  async discoverPlugins(): Promise<PluginMetadata[]> {
+  async discoverPlugins(format?: 'docx' | 'pptx'): Promise<PluginMetadata[]> {
     const startPath = this.searchPath;
 
     try {
@@ -101,19 +101,28 @@ export class PluginDiscoveryService {
         return a.name.localeCompare(b.name);
       });
 
+      if (format) {
+        return metadata.filter((p) => !p.format || p.format === format);
+      }
       return metadata;
     } finally {
       this.loader.cleanup();
     }
   }
 
-  async discoverDocuments(format?: 'docx' | 'pptx'): Promise<DocumentMetadata[]> {
+  async discoverDocuments(
+    format?: 'docx' | 'pptx'
+  ): Promise<DocumentMetadata[]> {
     const startPath = this.searchPath;
 
-    const discoveryType: DiscoveryType = format === 'pptx' ? 'pptx-document' : 'docx-document';
+    const discoveryType: DiscoveryType =
+      format === 'pptx' ? 'pptx-document' : 'docx-document';
     const ext = format === 'pptx' ? '.pptx.json' : '.docx.json';
 
-    const allDocumentPaths = await this.searchDownstream(startPath, discoveryType);
+    const allDocumentPaths = await this.searchDownstream(
+      startPath,
+      discoveryType
+    );
     const uniquePaths = this.scanner.deduplicatePaths(allDocumentPaths);
 
     const metadata: DocumentMetadata[] = [];
@@ -136,8 +145,13 @@ export class PluginDiscoveryService {
     }
 
     metadata.sort((a, b) => {
-      const locationOrder: Record<string, number> = { current: 0, downstream: 1, upstream: 2 };
-      const locationDiff = locationOrder[a.location] - locationOrder[b.location];
+      const locationOrder: Record<string, number> = {
+        current: 0,
+        downstream: 1,
+        upstream: 2,
+      };
+      const locationDiff =
+        locationOrder[a.location] - locationOrder[b.location];
       if (locationDiff !== 0) return locationDiff;
       return a.name.localeCompare(b.name);
     });
@@ -148,7 +162,8 @@ export class PluginDiscoveryService {
   async discoverThemes(format: 'docx' | 'pptx'): Promise<ThemeMetadata[]> {
     const startPath = this.searchPath;
 
-    const discoveryType: DiscoveryType = format === 'pptx' ? 'pptx-theme' : 'docx-theme';
+    const discoveryType: DiscoveryType =
+      format === 'pptx' ? 'pptx-theme' : 'docx-theme';
     const ext = format === 'pptx' ? '.pptx.theme.json' : '.docx.theme.json';
 
     const allThemePaths = await this.searchDownstream(startPath, discoveryType);
@@ -171,8 +186,13 @@ export class PluginDiscoveryService {
     }
 
     metadata.sort((a, b) => {
-      const locationOrder: Record<string, number> = { current: 0, downstream: 1, upstream: 2 };
-      const locationDiff = locationOrder[a.location] - locationOrder[b.location];
+      const locationOrder: Record<string, number> = {
+        current: 0,
+        downstream: 1,
+        upstream: 2,
+      };
+      const locationDiff =
+        locationOrder[a.location] - locationOrder[b.location];
       if (locationDiff !== 0) return locationDiff;
       return a.name.localeCompare(b.name);
     });
@@ -180,14 +200,20 @@ export class PluginDiscoveryService {
     return metadata;
   }
 
-  async getDocumentContent(name: string, format?: 'docx' | 'pptx'): Promise<string> {
+  async getDocumentContent(
+    name: string,
+    format?: 'docx' | 'pptx'
+  ): Promise<string> {
     const documents = await this.discoverDocuments(format);
     const document = documents.find((doc) => doc.name === name);
     if (!document) throw new Error(`Document '${name}' not found`);
     return await fs.readFile(document.path, 'utf-8');
   }
 
-  async getThemeContent(name: string, format: 'docx' | 'pptx'): Promise<string> {
+  async getThemeContent(
+    name: string,
+    format: 'docx' | 'pptx'
+  ): Promise<string> {
     const themes = await this.discoverThemes(format);
     const theme = themes.find((t) => t.name === name);
     if (!theme) throw new Error(`Theme '${name}' not found`);
@@ -200,7 +226,7 @@ export class PluginDiscoveryService {
     themes: ThemeMetadata[];
   }> {
     const [plugins, documents, themes] = await Promise.all([
-      this.discoverPlugins(),
+      this.discoverPlugins(format),
       this.discoverDocuments(format),
       this.discoverThemes(format),
     ]);

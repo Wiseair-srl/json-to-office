@@ -23,27 +23,15 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { SchemaViewer } from './schema-viewer';
-import { useToast } from '../ui/use-toast';
 import { usePluginsStore } from '../../store/plugins-store';
 
 interface PluginSelectorProps {
   plugins: PluginMetadata[];
-  onClose: () => void;
 }
 
-export function PluginSelector({
-  plugins,
-  onClose: _onClose,
-}: PluginSelectorProps) {
-  const { toast } = useToast();
+export function PluginSelector({ plugins }: PluginSelectorProps) {
   const togglePlugin = usePluginsStore((state) => state.togglePlugin);
   const isPluginSelected = usePluginsStore((state) => state.isPluginSelected);
-  const clearSelections = usePluginsStore((state) => state.clearSelections);
-  const selectedPlugins = usePluginsStore((state) => state.selectedPlugins);
-  const applyPluginsWithValidation = usePluginsStore(
-    (state) => state.applyPluginsWithValidation
-  );
-  const isApplyingPlugins = usePluginsStore((state) => state.isApplyingPlugins);
 
   const [selectedPlugin, setSelectedPlugin] = useState<PluginMetadata | null>(
     null
@@ -53,8 +41,6 @@ export function PluginSelector({
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [selectedExample, setSelectedExample] = useState(0);
   const [exampleView, setExampleView] = useState<'list' | 'detail'>('list');
-
-  const selectedPluginNames = Array.from(selectedPlugins);
 
   const handlePluginSelect = (plugin: PluginMetadata) => {
     setSelectedPlugin(plugin);
@@ -94,27 +80,27 @@ export function PluginSelector({
 
   const getLocationLabel = (location: string) => {
     switch (location) {
-    case 'current':
-      return 'Current Directory';
-    case 'downstream':
-      return 'Project';
-    case 'upstream':
-      return 'Parent Directories';
-    default:
-      return location;
+      case 'current':
+        return 'Current Directory';
+      case 'downstream':
+        return 'Project';
+      case 'upstream':
+        return 'Parent Directories';
+      default:
+        return location;
     }
   };
 
   const getLocationIcon = (location: string) => {
     switch (location) {
-    case 'current':
-      return <MapPin className="size-3" />;
-    case 'downstream':
-      return <Package className="size-3" />;
-    case 'upstream':
-      return <FileText className="size-3" />;
-    default:
-      return null;
+      case 'current':
+        return <MapPin className="size-3" />;
+      case 'downstream':
+        return <Package className="size-3" />;
+      case 'upstream':
+        return <FileText className="size-3" />;
+      default:
+        return null;
     }
   };
 
@@ -127,74 +113,9 @@ export function PluginSelector({
         </DialogTitle>
         <DialogDescription>
           {plugins.length} plugin{plugins.length !== 1 ? 's' : ''} discovered in
-          your project.{' '}
-          {selectedPluginNames.length > 0 && (
-            <span className="text-primary font-medium">
-              {selectedPluginNames.length} selected
-            </span>
-          )}
+          your project.
         </DialogDescription>
       </DialogHeader>
-
-      {/* Action buttons for list view */}
-      {currentView === 'list' && selectedPluginNames.length > 0 && (
-        <div className="flex items-center justify-between mt-4 p-2 bg-muted/50 rounded-lg">
-          <div className="text-sm text-muted-foreground">
-            {selectedPluginNames.length} plugin
-            {selectedPluginNames.length !== 1 ? 's' : ''} selected
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={clearSelections}>
-              Clear All
-            </Button>
-            <Button
-              size="sm"
-              disabled={isApplyingPlugins}
-              onClick={async () => {
-                console.log(
-                  'Apply Selection clicked with plugins:',
-                  selectedPluginNames
-                );
-
-                // Apply plugins with validation
-                await applyPluginsWithValidation(
-                  // Success callback
-                  () => {
-                    toast({
-                      title: 'Plugins Applied Successfully!',
-                      description: `${selectedPluginNames.length} plugin${selectedPluginNames.length !== 1 ? 's' : ''} have been applied. Autocomplete and validation are now updated.`,
-                      className: 'border-green-500',
-                    });
-                    _onClose();
-                  },
-                  // Error callback
-                  (error) => {
-                    toast({
-                      title: 'Failed to Apply Plugins',
-                      description:
-                        error ||
-                        'Unable to update schema validation. Please try again.',
-                      variant: 'destructive',
-                    });
-                  }
-                );
-              }}
-            >
-              {isApplyingPlugins ? (
-                <>
-                  <div className="size-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Applying...
-                </>
-              ) : (
-                <>
-                  <Check className="size-4 mr-1" />
-                  Apply Selection
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
 
       <div className="mt-4 flex-1 overflow-hidden">
         {/* List View */}
@@ -214,58 +135,69 @@ export function PluginSelector({
                       </Badge>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {locationPlugins.map((plugin) => {
                         const isSelected = isPluginSelected(plugin.name);
                         return (
                           <div
                             key={plugin.name}
+                            role="checkbox"
+                            aria-checked={isSelected}
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === ' ' || e.key === 'Enter') {
+                                e.preventDefault();
+                                togglePlugin(plugin);
+                              }
+                            }}
+                            onClick={() => togglePlugin(plugin)}
                             className={cn(
-                              'flex items-center justify-between p-3 rounded-lg border transition-colors group',
-                              isSelected && 'bg-primary/10 border-primary',
-                              'hover:bg-accent/50'
+                              'flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors group',
+                              isSelected
+                                ? 'bg-primary/10 border-primary'
+                                : 'hover:bg-accent/50'
                             )}
                           >
                             <div
-                              className="flex-1 cursor-pointer"
-                              onClick={() => handlePluginSelect(plugin)}
+                              className={cn(
+                                'flex-none size-4 rounded border transition-colors flex items-center justify-center',
+                                isSelected
+                                  ? 'bg-primary border-primary'
+                                  : 'border-muted-foreground/40'
+                              )}
                             >
+                              {isSelected && (
+                                <Check className="size-3 text-primary-foreground" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <Code className="size-4 text-blue-600 dark:text-blue-400" />
-                                <span className="font-medium">
+                                <span className="font-medium truncate">
                                   {plugin.name}
                                 </span>
                                 {plugin.version && (
-                                  <Badge variant="outline" className="text-xs">
+                                  <span className="text-xs text-muted-foreground font-mono">
                                     v{plugin.version}
-                                  </Badge>
+                                  </span>
                                 )}
                               </div>
                               {plugin.description && (
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-xs text-muted-foreground mt-0.5 truncate">
                                   {plugin.description}
                                 </p>
                               )}
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {plugin.relativePath}
-                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {isSelected && (
-                                <CheckCircle className="size-4 text-primary" />
-                              )}
-                              <Button
-                                size="sm"
-                                variant={isSelected ? 'secondary' : 'outline'}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  togglePlugin(plugin);
-                                }}
-                              >
-                                {isSelected ? 'Selected' : 'Select'}
-                              </Button>
-                              <ChevronRight className="size-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="flex-none size-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePluginSelect(plugin);
+                              }}
+                            >
+                              <ChevronRight className="size-4 text-muted-foreground" />
+                            </Button>
                           </div>
                         );
                       })}
@@ -423,9 +355,9 @@ export function PluginSelector({
               <TabsContent value="examples" className="flex-1 overflow-hidden">
                 {selectedPlugin.examples &&
                 selectedPlugin.examples.length > 0 ? (
-                    <>
-                      {/* Examples List View */}
-                      {exampleView === 'list' &&
+                  <>
+                    {/* Examples List View */}
+                    {exampleView === 'list' &&
                       selectedPlugin.examples.length > 1 && (
                         <ScrollArea className="h-[500px]">
                           <div className="space-y-3">
@@ -466,8 +398,8 @@ export function PluginSelector({
                         </ScrollArea>
                       )}
 
-                      {/* Example Detail View */}
-                      {(exampleView === 'detail' ||
+                    {/* Example Detail View */}
+                    {(exampleView === 'detail' ||
                       selectedPlugin.examples.length === 1) &&
                       selectedPlugin.examples[selectedExample] && (
                         <>
@@ -559,29 +491,13 @@ export function PluginSelector({
                           </ScrollArea>
                         </>
                       )}
-
-                      <div className="mt-4 p-3 bg-muted rounded-lg">
-                        <div className="flex items-start gap-2">
-                          <FileText className="size-4 text-muted-foreground mt-0.5" />
-                          <div className="text-xs text-muted-foreground">
-                            <p className="font-medium mb-1">How to use:</p>
-                            <ol className="list-decimal list-inside space-y-1">
-                              <li>Copy the example configuration</li>
-                              <li>
-                              Paste it into your document's children array
-                              </li>
-                              <li>Adjust the configuration values as needed</li>
-                            </ol>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-12">
-                      <Eye className="size-12 mx-auto mb-3 opacity-20" />
-                      <p>No examples available for this plugin</p>
-                    </div>
-                  )}
+                  </>
+                ) : (
+                  <div className="text-center text-muted-foreground py-12">
+                    <Eye className="size-12 mx-auto mb-3 opacity-20" />
+                    <p>No examples available for this plugin</p>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </div>
