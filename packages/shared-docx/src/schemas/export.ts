@@ -6,6 +6,7 @@
  */
 
 import { TSchema } from '@sinclair/typebox';
+import { getContainerComponents } from './component-registry';
 
 /**
  * Configuration for a component schema
@@ -213,7 +214,8 @@ export function createComponentSchema(
   };
 
   // Add children array for container types
-  if (['docx', 'section', 'columns', 'text-box'].includes(name)) {
+  const containerNames = getContainerComponents().map((c) => c.name);
+  if (containerNames.includes(name)) {
     (componentStructure.properties as Record<string, unknown>).children = {
       type: 'array',
       description: 'Children within this container',

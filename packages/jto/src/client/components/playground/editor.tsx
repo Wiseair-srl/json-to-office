@@ -1,11 +1,27 @@
-import { useEffect, useCallback, useRef, useMemo, memo, useContext } from 'react';
+import {
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  memo,
+  useContext,
+} from 'react';
 import { EditorTabsContentMemoized } from './editor-tabs-content';
 import { Tabs } from '../ui/tabs';
-import { useDocumentsStore, DocumentsStoreContext } from '../../store/documents-store-provider';
-import { useOutputStore, OutputStoreContext } from '../../store/output-store-provider';
+import {
+  useDocumentsStore,
+  DocumentsStoreContext,
+} from '../../store/documents-store-provider';
+import {
+  useOutputStore,
+  OutputStoreContext,
+} from '../../store/output-store-provider';
 import { useSettingsStore } from '../../store/settings-store-provider';
 import { useEditorRefsStore } from '../../store/editor-refs-store';
-import { useThemesStore, ThemesStoreContext } from '../../store/themes-store-provider';
+import {
+  useThemesStore,
+  ThemesStoreContext,
+} from '../../store/themes-store-provider';
 import { usePresentationGenerator } from '../../hooks/usePresentationGenerator';
 import { retry, RetryStrategies } from '../../utils/retry';
 import { themeChangeEmitter } from '../../utils/theme-change-emitter';
@@ -112,7 +128,11 @@ function EditorComponent() {
       };
 
       // Process immediately (bypass queue for theme changes)
-      await processBuildRequestWithThemesRef.current(buildRequest, version, themesData);
+      await processBuildRequestWithThemesRef.current(
+        buildRequest,
+        version,
+        themesData
+      );
     },
     [generatePresentation, setOutput, getDocumentVersion]
   );
@@ -224,8 +244,12 @@ function EditorComponent() {
     },
     [generatePresentation, setOutput, setBuildError, outputStore]
   );
-  const processBuildRequestWithThemesRef = useRef(processBuildRequestWithThemes);
-  useEffect(() => { processBuildRequestWithThemesRef.current = processBuildRequestWithThemes; });
+  const processBuildRequestWithThemesRef = useRef(
+    processBuildRequestWithThemes
+  );
+  useEffect(() => {
+    processBuildRequestWithThemesRef.current = processBuildRequestWithThemes;
+  });
 
   // Prepare valid custom themes with deep comparison
   const customThemesContentHash = useMemo(() => {
@@ -276,7 +300,11 @@ function EditorComponent() {
 
   // Helper function to build a document with proper cancellation and retry
   const buildDocument = useCallback(
-    async (doc: any, signal?: AbortSignal, options?: { bypassCache?: boolean }) => {
+    async (
+      doc: any,
+      signal?: AbortSignal,
+      options?: { bypassCache?: boolean }
+    ) => {
       if (!doc || !generatePresentation) {
         return;
       }
@@ -315,7 +343,11 @@ function EditorComponent() {
 
   // Process a build request from the queue
   const processBuildRequest = useCallback(
-    async (request: BuildRequest, version: number, options?: { bypassCache?: boolean }) => {
+    async (
+      request: BuildRequest,
+      version: number,
+      options?: { bypassCache?: boolean }
+    ) => {
       const { doc, signal, id } = request;
 
       // Check if this is still the latest request
@@ -476,14 +508,21 @@ function EditorComponent() {
         buildAbortControllersRef.current.delete(doc.name);
       }
     },
-    [generatePresentation, getFreshThemeData, setOutput, setBuildError, outputStore]
+    [
+      generatePresentation,
+      getFreshThemeData,
+      setOutput,
+      setBuildError,
+      outputStore,
+    ]
   );
   const processBuildRequestRef = useRef(processBuildRequest);
-  useEffect(() => { processBuildRequestRef.current = processBuildRequest; });
+  useEffect(() => {
+    processBuildRequestRef.current = processBuildRequest;
+  });
 
   // Track the last viewed document for theme updates
   const lastViewedDocumentRef = useRef<string | null>(null);
-
 
   // re-build on active tab change or any document change
   useEffect(() => {
@@ -527,16 +566,39 @@ function EditorComponent() {
         });
 
         // Debounce the build to avoid rapid rebuilds
+        // Only fire when the JSON is syntactically valid to avoid
+        // sending incomplete/invalid payloads during mid-edit typing.
         const timeout = setTimeout(() => {
-          console.log('Editor: Triggering document build after debounce', {
-            docName: activeFile.name,
-            debounceTime,
-          });
           buildTimeoutsRef.current.delete(activeTab);
 
+          // Re-read from store to avoid stale-closure issues
+          const latestFile = documentsStore
+            .getState()
+            .documents.find((d) => d.name === activeTab);
+          if (!latestFile) return;
+
+          try {
+            JSON.parse(latestFile.text);
+          } catch {
+            // JSON not valid yet — mark stale, don't fire build
+            setOutput({ isPreviewStale: true });
+            return;
+          }
+
+          // Skip if Monaco reports schema validation errors (e.g. unknown component names)
+          if (outputStore.getState().hasValidationErrors) {
+            setOutput({ isPreviewStale: true });
+            return;
+          }
+
+          console.log('Editor: Triggering document build after debounce', {
+            docName: latestFile.name,
+            debounceTime,
+          });
+
           // Force new version when themes change to ensure rebuild
-          getDocumentVersion(activeFile.name);
-          buildDocument(activeFile);
+          getDocumentVersion(latestFile.name);
+          buildDocument(latestFile);
         }, debounceTime);
 
         buildTimeoutsRef.current.set(activeTab, timeout);
@@ -570,7 +632,10 @@ function EditorComponent() {
   const documentThemeDependencies = useMemo(() => {
     const deps = new Map<string, string>();
     const activeDoc = documents.find((d) => d.name === activeTab);
-    if (activeDoc && documentTypes[activeDoc.name] === 'application/json+report') {
+    if (
+      activeDoc &&
+      documentTypes[activeDoc.name] === 'application/json+report'
+    ) {
       try {
         const parsed = JSON.parse(activeDoc.text);
         const themeName = parsed.props?.theme;
@@ -746,9 +811,13 @@ function EditorComponent() {
   // Stable refs so the event handler never goes stale and doesn't need
   // reactive deps that would cause cleanup to cancel the pending timeout
   const buildDocumentRef = useRef(buildDocument);
-  useEffect(() => { buildDocumentRef.current = buildDocument; });
+  useEffect(() => {
+    buildDocumentRef.current = buildDocument;
+  });
   const getDocumentVersionRef = useRef(getDocumentVersion);
-  useEffect(() => { getDocumentVersionRef.current = getDocumentVersion; });
+  useEffect(() => {
+    getDocumentVersionRef.current = getDocumentVersion;
+  });
 
   useEffect(() => {
     const handler = () => {
@@ -761,16 +830,20 @@ function EditorComponent() {
       const editorRef = useEditorRefsStore.getState().getActiveEditor();
       if (editorRef) {
         // Don't flush if a pending diff is active — editor may be disposed
-        const hasPendingDiff = documentsStore.getState().pendingDiffs[editorRef.documentName];
+        const hasPendingDiff =
+          documentsStore.getState().pendingDiffs[editorRef.documentName];
         if (!hasPendingDiff) {
           const liveText = editorRef.editor.getValue();
-          documentsStore.getState().saveDocument(editorRef.documentName, liveText);
+          documentsStore
+            .getState()
+            .saveDocument(editorRef.documentName, liveText);
         }
       }
 
       // Flush all open theme editors whose live text differs from the
       // themes store so the build always uses up-to-date theme data.
-      const { documents: allDocs, documentTypes: allDtypes } = documentsStore.getState();
+      const { documents: allDocs, documentTypes: allDtypes } =
+        documentsStore.getState();
       for (const doc of allDocs) {
         if (allDtypes[doc.name] === 'application/json+theme') {
           const ref = useEditorRefsStore.getState().getEditor(doc.name);
@@ -799,7 +872,11 @@ function EditorComponent() {
       }
       flushBuildTimerRef.current = setTimeout(() => {
         flushBuildTimerRef.current = null;
-        const { documents: docs, activeTab: tab, documentTypes: dtypes } = documentsStore.getState();
+        const {
+          documents: docs,
+          activeTab: tab,
+          documentTypes: dtypes,
+        } = documentsStore.getState();
 
         // Determine target: if active tab is a theme, build the last-viewed document instead
         let targetName = tab;
@@ -826,7 +903,11 @@ function EditorComponent() {
               : freshDoc;
           getDocumentVersionRef.current(doc.name);
           // Bypass cache only when a theme was updated during this flush
-          buildDocumentRef.current(doc, undefined, themeDirty ? { bypassCache: true } : undefined);
+          buildDocumentRef.current(
+            doc,
+            undefined,
+            themeDirty ? { bypassCache: true } : undefined
+          );
         } else {
           setOutput({ isGenerating: false });
         }

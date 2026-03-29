@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { getContainer } from '../container/index.js';
-import { LooseDocumentGenerationRequestSchema, LooseDocumentValidationRequestSchema } from '../schemas/loose.js';
+import {
+  LooseDocumentGenerationRequestSchema,
+  LooseDocumentValidationRequestSchema,
+} from '../schemas/loose.js';
 import { tbValidator, getValidated } from '../lib/typebox-validator.js';
 import { logger } from '../utils/logger.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
@@ -21,7 +24,9 @@ export function createFormatRouter(adapter: FormatAdapter) {
   const contentTypeMw = async (c: any, next: () => Promise<void>) => {
     const contentType = c.req.header('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      throw new HTTPException(400, { message: 'Content-Type must be application/json' });
+      throw new HTTPException(400, {
+        message: 'Content-Type must be application/json',
+      });
     }
     await next();
   };
@@ -32,7 +37,10 @@ export function createFormatRouter(adapter: FormatAdapter) {
     rateLimiter({
       limit: process.env.NODE_ENV === 'production' ? 10 : 1000,
       window: 15 * 60 * 1000,
-      keyGenerator: (c) => c.req.header('X-Real-IP') || c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() || 'anonymous',
+      keyGenerator: (c) =>
+        c.req.header('X-Real-IP') ||
+        c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
+        'anonymous',
     }),
     contentTypeMw,
     tbValidator(LooseDocumentGenerationRequestSchema),
@@ -60,9 +68,10 @@ export function createFormatRouter(adapter: FormatAdapter) {
         const cacheService = getContainer().get('cacheService');
         const cacheStats = cacheService.getStats();
 
-        const contentType = adapter.name === 'pptx'
-          ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-          : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        const contentType =
+          adapter.name === 'pptx'
+            ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
         return c.json({
           success: true,
@@ -80,11 +89,19 @@ export function createFormatRouter(adapter: FormatAdapter) {
           meta: { timestamp: new Date().toISOString(), requestId },
         });
       } catch (error) {
-        logger.error(`${adapter.label} generation failed`, { error, requestId });
+        logger.error(`${adapter.label} generation failed`, {
+          error,
+          requestId,
+        });
 
         if (error instanceof Error) {
           const msg = error.message.toLowerCase();
-          if (msg.includes('invalid') || msg.includes('validation') || msg.includes('missing required')) {
+          if (
+            msg.includes('invalid') ||
+            msg.includes('validation') ||
+            msg.includes('missing required') ||
+            msg.includes('unknown component')
+          ) {
             throw new HTTPException(400, { message: error.message });
           }
         }
@@ -103,7 +120,10 @@ export function createFormatRouter(adapter: FormatAdapter) {
     tbValidator(LooseDocumentValidationRequestSchema),
     async (c) => {
       const generatorService = getContainer().get('generatorService');
-      const { jsonDefinition } = getValidated<{ jsonDefinition: any }>(c, 'json');
+      const { jsonDefinition } = getValidated<{ jsonDefinition: any }>(
+        c,
+        'json'
+      );
       const requestId = c.get('requestId');
 
       try {
@@ -126,45 +146,70 @@ export function createFormatRouter(adapter: FormatAdapter) {
     rateLimiter({
       limit: process.env.NODE_ENV === 'production' ? 20 : 1000,
       window: 15 * 60 * 1000,
-      keyGenerator: (c) => c.req.header('X-Real-IP') || c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() || 'anonymous',
+      keyGenerator: (c) =>
+        c.req.header('X-Real-IP') ||
+        c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
+        'anonymous',
     }),
     async (c) => {
       const requestId = c.get('requestId');
-      const libreOfficeService = getContainer().get('libreOfficeConverterService');
+      const libreOfficeService = getContainer().get(
+        'libreOfficeConverterService'
+      );
 
       try {
         const body = await c.req.parseBody();
         const file = body.file;
 
         if (!file || typeof file === 'string') {
-          throw new HTTPException(400, { message: `No ${adapter.name.toUpperCase()} file provided` });
+          throw new HTTPException(400, {
+            message: `No ${adapter.name.toUpperCase()} file provided`,
+          });
         }
         if ((file as File).size === 0) {
-          throw new HTTPException(400, { message: `${adapter.name.toUpperCase()} file is empty` });
+          throw new HTTPException(400, {
+            message: `${adapter.name.toUpperCase()} file is empty`,
+          });
         }
 
         const arrayBuffer = await (file as File).arrayBuffer();
         const inputBuffer = Buffer.from(arrayBuffer);
-        const pdfBuffer = await libreOfficeService.convertToPdf(inputBuffer, (file as File).name);
+        const pdfBuffer = await libreOfficeService.convertToPdf(
+          inputBuffer,
+          (file as File).name
+        );
 
-        const pdfName = ((file as File).name || 'preview').replace(/\.[^.]+$/i, '') + '.pdf';
+        const pdfName =
+          ((file as File).name || 'preview').replace(/\.[^.]+$/i, '') + '.pdf';
         c.header('Content-Type', 'application/pdf');
         c.header('Content-Disposition', `inline; filename="${pdfName}"`);
         c.header('Content-Length', String(pdfBuffer.length));
 
         return c.body(pdfBuffer);
       } catch (error) {
-        logger.error('LibreOffice preview conversion failed', { error, requestId });
+        logger.error('LibreOffice preview conversion failed', {
+          error,
+          requestId,
+        });
         if (error instanceof HTTPException) throw error;
         if (error instanceof LibreOfficeBinaryNotFoundError) {
           throw new HTTPException(503, {
-            message: 'LibreOffice is not available. Install LibreOffice or set LIBREOFFICE_PATH.',
+            message:
+              'LibreOffice is not available. Install LibreOffice or set LIBREOFFICE_PATH.',
           });
         }
-        if (error instanceof LibreOfficeTimeoutError || error instanceof LibreOfficeConversionError || error instanceof LibreOfficeOutputNotFoundError) {
-          throw new HTTPException(500, { message: 'LibreOffice preview conversion failed.' });
+        if (
+          error instanceof LibreOfficeTimeoutError ||
+          error instanceof LibreOfficeConversionError ||
+          error instanceof LibreOfficeOutputNotFoundError
+        ) {
+          throw new HTTPException(500, {
+            message: 'LibreOffice preview conversion failed.',
+          });
         }
-        throw new HTTPException(500, { message: 'Internal server error during preview conversion' });
+        throw new HTTPException(500, {
+          message: 'Internal server error during preview conversion',
+        });
       }
     }
   );
@@ -213,9 +258,14 @@ export function createFormatRouter(adapter: FormatAdapter) {
           meta: { timestamp: new Date().toISOString(), requestId },
         });
       } catch (error) {
-        logger.error('Failed to get standard components definition', { error, requestId });
+        logger.error('Failed to get standard components definition', {
+          error,
+          requestId,
+        });
         if (error instanceof HTTPException) throw error;
-        throw new HTTPException(500, { message: 'Failed to get standard components definition' });
+        throw new HTTPException(500, {
+          message: 'Failed to get standard components definition',
+        });
       }
     }
   );
@@ -243,7 +293,9 @@ export function createFormatRouter(adapter: FormatAdapter) {
       });
     } catch (error) {
       logger.error('Failed to get cache statistics', { error });
-      throw new HTTPException(500, { message: 'Failed to get cache statistics' });
+      throw new HTTPException(500, {
+        message: 'Failed to get cache statistics',
+      });
     }
   });
 
@@ -252,7 +304,11 @@ export function createFormatRouter(adapter: FormatAdapter) {
     try {
       const analytics = await adapter.getComponentCacheAnalytics?.();
       if (!analytics) {
-        return c.json({ success: true, data: null, meta: { timestamp: new Date().toISOString() } });
+        return c.json({
+          success: true,
+          data: null,
+          meta: { timestamp: new Date().toISOString() },
+        });
       }
       return c.json({
         success: true,
@@ -261,7 +317,9 @@ export function createFormatRouter(adapter: FormatAdapter) {
       });
     } catch (error) {
       logger.error('Failed to get cache analytics', { error });
-      throw new HTTPException(500, { message: 'Failed to get cache analytics' });
+      throw new HTTPException(500, {
+        message: 'Failed to get cache analytics',
+      });
     }
   });
 
@@ -270,7 +328,9 @@ export function createFormatRouter(adapter: FormatAdapter) {
     try {
       const cacheService = getContainer().get('cacheService');
       cacheService.clear();
-      const { invalidateAllCaches } = await import('../../services/cache-events.js');
+      const { invalidateAllCaches } = await import(
+        '../../services/cache-events.js'
+      );
       invalidateAllCaches();
       return c.json({
         success: true,
