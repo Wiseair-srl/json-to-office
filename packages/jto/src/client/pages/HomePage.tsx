@@ -6,6 +6,7 @@ import { OutputStoreProvider } from '../store/output-store-provider';
 import { SettingsStoreProvider } from '../store/settings-store-provider';
 import { ThemesStoreProvider } from '../store/themes-store-provider';
 import { ChatStoreProvider } from '../store/chat-store-provider';
+import { MonacoPluginProvider } from '../components/MonacoPluginProvider';
 import { useDiscovery, useLoadPlugins } from '../hooks/useDiscovery';
 import { usePluginsStore } from '../store/plugins-store';
 
@@ -72,17 +73,19 @@ export function HomePage() {
     <SettingsStoreProvider>
       <OutputStoreProvider>
         <ThemesStoreProvider>
-          <DocumentsStoreProvider>
-            <ChatStoreProvider>
-              <SidebarProvider>
-                <section className="flex h-screen w-full flex-col">
-                  <div className="grow overflow-hidden">
-                    <DevEnv discoveryData={discoveryData} />
-                  </div>
-                </section>
-              </SidebarProvider>
-            </ChatStoreProvider>
-          </DocumentsStoreProvider>
+          <MonacoPluginProvider>
+            <DocumentsStoreProvider>
+              <ChatStoreProvider>
+                <SidebarProvider>
+                  <section className="flex h-screen w-full flex-col">
+                    <div className="grow overflow-hidden">
+                      <DevEnv discoveryData={discoveryData} />
+                    </div>
+                  </section>
+                </SidebarProvider>
+              </ChatStoreProvider>
+            </DocumentsStoreProvider>
+          </MonacoPluginProvider>
         </ThemesStoreProvider>
       </OutputStoreProvider>
     </SettingsStoreProvider>

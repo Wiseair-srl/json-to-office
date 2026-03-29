@@ -35,7 +35,10 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
     )
     .option('--plugin-dir <dir>', 'Directory to search for plugins')
     .option('--theme <name-or-path>', 'Theme name or path to theme file')
-    .option('--theme-path <path>', 'Path to theme file (alternative to --theme)')
+    .option(
+      '--theme-path <path>',
+      'Path to theme file (alternative to --theme)'
+    )
     .option('--strict', 'Enable strict validation')
     .option('--dry-run', 'Preview without writing files')
     .action(async (input: string, options: GenerateOptions) => {
@@ -48,17 +51,23 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
 
         const mergedConfig = config
           ? configService.mergeWithOptions({
-            theme: options.theme,
-            themePath: options.themePath,
-            validation: { strict: options.strict },
-          })
+              theme: options.theme,
+              themePath: options.themePath,
+              validation: { strict: options.strict },
+            })
           : {
-            theme: options.theme,
-            themePath: options.themePath,
-            validation: { strict: options.strict },
-          };
+              theme: options.theme,
+              themePath: options.themePath,
+              validation: { strict: options.strict },
+            };
 
-        await loadPlugins(options, config, configService, spinner);
+        await loadPlugins(
+          options,
+          config,
+          configService,
+          spinner,
+          adapter.name as 'docx' | 'pptx'
+        );
 
         spinner.text = 'Reading input file...';
         const inputPath = resolve(process.cwd(), input);
@@ -69,7 +78,10 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
 
         const outputPath = options.output
           ? resolve(process.cwd(), options.output)
-          : resolve(process.cwd(), basename(input, '.json') + adapter.extension);
+          : resolve(
+              process.cwd(),
+              basename(input, '.json') + adapter.extension
+            );
 
         const pluginInfo = factory.getPluginInfo();
 
@@ -84,7 +96,9 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
             `${chalk.cyan('Strict:')}     ${mergedConfig.validation?.strict ? 'yes' : 'no'}`,
           ];
           if (pluginInfo.hasPlugins) {
-            lines.push(`${chalk.cyan('Plugins:')}    ${pluginInfo.count} loaded (${pluginInfo.names.join(', ')})`);
+            lines.push(
+              `${chalk.cyan('Plugins:')}    ${pluginInfo.count} loaded (${pluginInfo.names.join(', ')})`
+            );
           }
           lines.push(`${chalk.cyan('Validation:')} ${chalk.green('passed')}`);
 
@@ -122,7 +136,9 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
           `${chalk.cyan('Format:')}  ${adapter.name}`,
         ];
         if (pluginInfo.hasPlugins) {
-          lines.push(`${chalk.cyan('Plugins:')} ${pluginInfo.count} loaded (${pluginInfo.names.join(', ')})`);
+          lines.push(
+            `${chalk.cyan('Plugins:')} ${pluginInfo.count} loaded (${pluginInfo.names.join(', ')})`
+          );
         }
 
         console.log(
@@ -130,14 +146,17 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
             padding: 1,
             borderColor: 'green',
             borderStyle: 'round',
-            title: adapter.label.charAt(0).toUpperCase() + adapter.label.slice(1),
+            title:
+              adapter.label.charAt(0).toUpperCase() + adapter.label.slice(1),
             titleAlignment: 'center',
           })
         );
 
         PluginRegistry.getInstance().clear();
       } catch (error: any) {
-        spinner.fail(`${adapter.label.charAt(0).toUpperCase() + adapter.label.slice(1)} generation failed`);
+        spinner.fail(
+          `${adapter.label.charAt(0).toUpperCase() + adapter.label.slice(1)} generation failed`
+        );
         formatError(error);
 
         PluginRegistry.getInstance().clear();

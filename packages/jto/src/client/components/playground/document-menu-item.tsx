@@ -221,8 +221,7 @@ function DocumentMenuItem({
               !isPreviewing &&
               !isThemeUsedInPreview &&
               'text-purple-700 dark:text-purple-300',
-            (isEditing || isPreviewing || isThemeUsedInPreview) &&
-              'font-medium'
+            (isEditing || isPreviewing || isThemeUsedInPreview) && 'font-medium'
           )}
         >
           {document.name}
@@ -264,7 +263,7 @@ function DocumentMenuItem({
             onClick={() => {
               if (document)
                 download(
-                  `${document.name}.js`,
+                  document.name,
                   new Blob([document.text], { type: document.type })
                 );
             }}

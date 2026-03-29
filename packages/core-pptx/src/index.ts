@@ -38,6 +38,44 @@ export type { WarningCode } from './utils/warn';
 // Themes
 export { DEFAULT_PPTX_THEME, getPptxTheme, pptxThemes } from './themes';
 
+// Plugin system
+export {
+  createComponent,
+  createVersion,
+  createPresentationGenerator,
+  resolveComponentVersion,
+  validateComponentProps,
+  validatePresentation,
+  cleanComponentProps,
+  ComponentValidationError,
+  DuplicateComponentError,
+  generatePluginPresentationSchema,
+  exportPluginSchema,
+} from './plugin';
+
+export type {
+  CustomComponent,
+  ComponentVersion,
+  ComponentVersionMap,
+  RenderFunction,
+  RenderContext,
+  PresentationGeneratorOptions,
+  PresentationGenerator as PluginPresentationGenerator,
+  PresentationGeneratorBuilder,
+  BufferGenerationResult as PluginBufferGenerationResult,
+  FileGenerationResult as PluginFileGenerationResult,
+  ValidationResult as PluginValidationResult,
+  ExtractCustomComponentType,
+  CustomComponentUnion,
+  ExtendedPptxComponentInput,
+  ExtendedPresentationComponent,
+  InferBuilderComponents,
+  InferDocumentType,
+  InferComponentDefinition,
+  ComponentValidationResult,
+  ValidationError as PluginValidationError,
+} from './plugin';
+
 // Component renderers
 export {
   renderTextComponent,

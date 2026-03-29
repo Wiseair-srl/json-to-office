@@ -2,6 +2,7 @@ import type { FormatAdapter } from '../../format-adapter.js';
 import { CacheService } from './cache.js';
 import { logger } from '../utils/logger.js';
 import { cacheEvents } from '../../services/cache-events.js';
+import { PluginRegistry } from '../../services/plugin-registry.js';
 
 export class GeneratorService {
   private adapter: FormatAdapter;
@@ -34,7 +35,13 @@ export class GeneratorService {
         : jsonDefinition;
 
     const bypassCache = options?.bypassCache === true;
-    const cacheKeyData = { config, customThemes: customThemes && Object.keys(customThemes).length > 0 ? customThemes : null };
+    const cacheKeyData = {
+      config,
+      customThemes:
+        customThemes && Object.keys(customThemes).length > 0
+          ? customThemes
+          : null,
+    };
     const cacheKey = this.cacheService.generateCacheKey(cacheKeyData);
     const hasDynamicContent = this.cacheService.hasDynamicContent(config);
 
@@ -53,9 +60,22 @@ export class GeneratorService {
       }
     }
 
-    // Generate
-    logger.info(`Generating ${this.adapter.label}`, { title: config.metadata?.title });
-    const buffer = await this.adapter.generateBuffer(config, { customThemes });
+    // Generate — use plugin-aware generator when plugins are loaded
+    logger.info(`Generating ${this.adapter.label}`, {
+      title: config.metadata?.title,
+    });
+    const registry = PluginRegistry.getInstance();
+    let buffer: Buffer;
+
+    if (registry.hasPlugins()) {
+      const plugins = registry.getPlugins();
+      const generator = await this.adapter.createGenerator(plugins, {
+        customThemes,
+      });
+      buffer = await generator.generateBuffer(config);
+    } else {
+      buffer = await this.adapter.generateBuffer(config, { customThemes });
+    }
 
     // Store in cache
     this.cacheService.set(cacheKey, buffer, config, {
@@ -71,7 +91,9 @@ export class GeneratorService {
     };
   }
 
-  async validate(jsonDefinition: any): Promise<{ valid: boolean; errors?: string[] }> {
+  async validate(
+    jsonDefinition: any
+  ): Promise<{ valid: boolean; errors?: string[] }> {
     const config =
       typeof jsonDefinition === 'string'
         ? JSON.parse(jsonDefinition)

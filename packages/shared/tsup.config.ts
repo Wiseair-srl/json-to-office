@@ -8,6 +8,7 @@ export default defineConfig({
     'src/utils/semver.ts',
     'src/types/warnings.ts',
     'src/cache/index.ts',
+    'src/plugin/index.ts',
   ],
   format: ['esm'],
   dts: {

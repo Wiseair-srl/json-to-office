@@ -107,9 +107,13 @@ function DocumentFormDialogContent({
     openDocument,
     closeDocument,
   } = useDocumentsStore((state) => state);
-  const { updateTheme } = useThemesStore((state) => state);
-  const renameThreadsForDocument = useChatStore((s) => s.renameThreadsForDocument);
-  const deleteThreadsForDocument = useChatStore((s) => s.deleteThreadsForDocument);
+  const { updateTheme, removeTheme } = useThemesStore((state) => state);
+  const renameThreadsForDocument = useChatStore(
+    (s) => s.renameThreadsForDocument
+  );
+  const deleteThreadsForDocument = useChatStore(
+    (s) => s.deleteThreadsForDocument
+  );
 
   // Prepare discovered items for the form
   const discoveredItems: DiscoveredItem[] = useMemo(() => {
@@ -181,7 +185,11 @@ function DocumentFormDialogContent({
 
   // Load content when selected path changes
   useEffect(() => {
-    if (selectedPath && selectedPath !== EMPTY_TEMPLATE_VALUE && mode === 'create') {
+    if (
+      selectedPath &&
+      selectedPath !== EMPTY_TEMPLATE_VALUE &&
+      mode === 'create'
+    ) {
       const item = itemsByPath.get(selectedPath);
       if (item) {
         fetch(
@@ -241,38 +249,38 @@ function DocumentFormDialogContent({
           const defaultTheme =
             FORMAT === 'docx'
               ? {
-                name: themeName,
-                colors: {
-                  primary: '#2563EB',
-                  secondary: '#64748B',
-                  accent: '#F8FAFC',
-                  background: '#FFFFFF',
-                  text: '#334155',
-                },
-                fonts: {
-                  heading: { family: 'Calibri', size: 28 },
-                  body: { family: 'Calibri', size: 11 },
-                },
-                page: { size: 'A4' },
-              }
+                  name: themeName,
+                  colors: {
+                    primary: '#2563EB',
+                    secondary: '#64748B',
+                    accent: '#F8FAFC',
+                    background: '#FFFFFF',
+                    text: '#334155',
+                  },
+                  fonts: {
+                    heading: { family: 'Calibri', size: 28 },
+                    body: { family: 'Calibri', size: 11 },
+                  },
+                  page: { size: 'A4' },
+                }
               : {
-                name: themeName,
-                colors: {
-                  primary: '#2563EB',
-                  secondary: '#64748B',
-                  accent: '#F8FAFC',
-                  background: '#FFFFFF',
-                  text: '#334155',
-                },
-                fonts: {
-                  heading: 'Calibri',
-                  body: 'Calibri',
-                },
-                defaults: {
-                  fontSize: 18,
-                  fontColor: '#334155',
-                },
-              };
+                  name: themeName,
+                  colors: {
+                    primary: '#2563EB',
+                    secondary: '#64748B',
+                    accent: '#F8FAFC',
+                    background: '#FFFFFF',
+                    text: '#334155',
+                  },
+                  fonts: {
+                    heading: 'Calibri',
+                    body: 'Calibri',
+                  },
+                  defaults: {
+                    fontSize: 18,
+                    fontColor: '#334155',
+                  },
+                };
           content =
             selectedItemContent || JSON.stringify(defaultTheme, null, 2);
           // Ensure theme files have format-specific .theme.json extension
@@ -293,70 +301,71 @@ function DocumentFormDialogContent({
             JSON.stringify(
               FORMAT === 'docx'
                 ? {
-                  name: 'docx',
-                  props: {
-                    theme: docItem?.theme || 'default',
-                    metadata: {
-                      title:
-                          docItem?.title || finalName.replace(/\.(json|js)$/i, ''),
+                    name: 'docx',
+                    props: {
+                      theme: docItem?.theme || 'default',
+                      metadata: {
+                        title:
+                          docItem?.title ||
+                          finalName.replace(/\.(json|js)$/i, ''),
+                      },
                     },
-                  },
-                  children: [
-                    {
-                      name: 'section',
-                      props: {},
-                      children: [
-                        {
-                          name: 'paragraph',
-                          props: {
-                            text: 'Start writing your document content here...',
+                    children: [
+                      {
+                        name: 'section',
+                        props: {},
+                        children: [
+                          {
+                            name: 'paragraph',
+                            props: {
+                              text: 'Start writing your document content here...',
+                            },
                           },
-                        },
-                      ],
-                    },
-                  ],
-                }
+                        ],
+                      },
+                    ],
+                  }
                 : {
-                  name: 'pptx',
-                  props: {
-                    title:
-                        docItem?.title || finalName.replace(/\.(json|js)$/i, ''),
-                    theme: docItem?.theme || 'default',
-                  },
-                  children: [
-                    {
-                      name: 'slide',
-                      props: {},
-                      children: [
-                        {
-                          name: 'text',
-                          props: {
-                            text: 'Start writing your presentation content here...',
-                            fontSize: 24,
-                            y: 2,
-                            x: 1,
-                            w: 8,
-                          },
-                        },
-                      ],
+                    name: 'pptx',
+                    props: {
+                      title:
+                        docItem?.title ||
+                        finalName.replace(/\.(json|js)$/i, ''),
+                      theme: docItem?.theme || 'default',
                     },
-                  ],
-                },
+                    children: [
+                      {
+                        name: 'slide',
+                        props: {},
+                        children: [
+                          {
+                            name: 'text',
+                            props: {
+                              text: 'Start writing your presentation content here...',
+                              fontSize: 24,
+                              y: 2,
+                              x: 1,
+                              w: 8,
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
               null,
               2
             );
           // Ensure document files have format-specific extension
           const docExt = FORMAT === 'docx' ? '.docx.json' : '.pptx.json';
-          if (
-            !finalName.endsWith(docExt) &&
-            !finalName.endsWith('.json')
-          ) {
+          if (!finalName.endsWith(docExt) && !finalName.endsWith('.json')) {
             finalName += docExt;
           }
         }
 
         // Auto-suffix if a document with this name already exists
-        const extMatch = finalName.match(/(\.(pptx|docx)(\.theme)?\.json|\.json)$/i);
+        const extMatch = finalName.match(
+          /(\.(pptx|docx)(\.theme)?\.json|\.json)$/i
+        );
         const ext = extMatch ? extMatch[0] : '';
         const baseName = finalName.slice(0, finalName.length - ext.length);
         let deduped = finalName;
@@ -387,6 +396,9 @@ function DocumentFormDialogContent({
         closeDocument(oldName);
         deleteDocument(oldName);
         deleteThreadsForDocument(oldName);
+        if (isTheme) {
+          removeTheme(oldName);
+        }
       }
       postSubmit();
     } finally {

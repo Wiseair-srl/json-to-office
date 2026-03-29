@@ -72,6 +72,8 @@ export const usePluginsStore = create<PluginsState>()(
         } else {
           get().selectPlugin(plugin);
         }
+        // Auto-apply schema changes
+        get().applyPluginsWithValidation().catch(console.error);
       },
 
       clearSelections: () => {
@@ -79,6 +81,8 @@ export const usePluginsStore = create<PluginsState>()(
           selectedPlugins: new Set<string>(),
           selectedPluginMetadata: new Map<string, PluginMetadata>(),
         });
+        // Auto-apply schema changes
+        get().applyPluginsWithValidation().catch(console.error);
       },
 
       isPluginSelected: (pluginName: string) => {

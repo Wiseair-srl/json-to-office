@@ -7,7 +7,13 @@ import { PluginRegistry } from '../services/plugin-registry.js';
 import { PluginConfigService } from '../config/plugin-config.js';
 import { SchemaGenerator } from '../services/schema-generator.js';
 import { loadPlugins } from './shared.js';
-import { createTable, shortPath, formatTiming, formatError, EXIT_CODES } from './ui.js';
+import {
+  createTable,
+  shortPath,
+  formatTiming,
+  formatError,
+  EXIT_CODES,
+} from './ui.js';
 
 interface JsonSchemaOptions {
   outputDir?: string;
@@ -35,10 +41,7 @@ export function createSchemasCommand(adapter: FormatAdapter): Command {
     .option('-f, --format <type>', 'Output format (json or typebox)', 'json')
     .option('--theme-only', 'Generate only theme schemas')
     .option('--document-only', 'Generate only document schemas')
-    .option(
-      '--split',
-      'Generate separate schema files for each component type'
-    )
+    .option('--split', 'Generate separate schema files for each component type')
     .action(async (options: JsonSchemaOptions) => {
       const spinner = ora('Initializing...').start();
       const startTime = performance.now();
@@ -48,7 +51,13 @@ export function createSchemasCommand(adapter: FormatAdapter): Command {
         const config = await configService.loadConfig();
 
         if (!options.themeOnly) {
-          await loadPlugins(options, config, configService, spinner);
+          await loadPlugins(
+            options,
+            config,
+            configService,
+            spinner,
+            adapter.name as 'docx' | 'pptx'
+          );
         }
 
         spinner.text = 'Generating schemas...';
@@ -70,7 +79,9 @@ export function createSchemasCommand(adapter: FormatAdapter): Command {
           generateOptions
         );
 
-        spinner.succeed(`Schema generation completed! ${formatTiming(startTime)}`);
+        spinner.succeed(
+          `Schema generation completed! ${formatTiming(startTime)}`
+        );
 
         const rows: string[][] = [];
         if (results.document) {

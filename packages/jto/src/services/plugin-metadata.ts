@@ -14,6 +14,7 @@ export interface PluginMetadata {
   name: string;
   description?: string;
   version?: string;
+  format?: 'docx' | 'pptx';
   filePath: string;
   relativePath: string;
   location: 'upstream' | 'downstream' | 'current';
@@ -46,10 +47,22 @@ export class PluginMetadataExtractor {
       versionKeys.length > 0 ? latestVersion(versionKeys) : undefined;
     const latestEntry = latestVer ? versions[latestVer] : undefined;
 
+    let format: 'docx' | 'pptx' | undefined;
+    try {
+      const source = await fs.readFile(filePath, 'utf-8');
+      format = this.detectFormat(source);
+    } catch (err) {
+      console.warn(
+        `Failed to read plugin source for format detection: ${filePath}`,
+        err
+      );
+    }
+
     const metadata: PluginMetadata = {
       name: component.name,
       description: latestEntry?.description,
       version: latestVer,
+      format,
       filePath,
       relativePath,
       location,
@@ -94,6 +107,30 @@ export class PluginMetadataExtractor {
     }
 
     return 'upstream';
+  }
+
+  private detectFormat(source: string): 'docx' | 'pptx' | undefined {
+    const docxSignals = [
+      '@json-to-office/shared-docx',
+      '@json-to-office/core-docx',
+      '@json-to-office/json-to-docx',
+      'ComponentDefinition',
+      'ReportComponentDefinition',
+    ];
+    const pptxSignals = [
+      '@json-to-office/shared-pptx',
+      '@json-to-office/core-pptx',
+      '@json-to-office/json-to-pptx',
+      'PptxComponentInput',
+      'PresentationComponentDefinition',
+    ];
+
+    const hasDocx = docxSignals.some((s) => source.includes(s));
+    const hasPptx = pptxSignals.some((s) => source.includes(s));
+
+    if (hasDocx && !hasPptx) return 'docx';
+    if (hasPptx && !hasDocx) return 'pptx';
+    return undefined;
   }
 
   private typeboxToJsonSchema(schema: TSchema): any {

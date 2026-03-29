@@ -8,9 +8,11 @@ export class PluginResolver {
   private discoveredPlugins: Map<string, PluginMetadata> = new Map();
   private lastDiscoveryTime: number = 0;
   private readonly CACHE_DURATION = 5 * 60 * 1000;
+  private format?: 'docx' | 'pptx';
 
-  constructor() {
+  constructor(format?: 'docx' | 'pptx') {
     this.discoveryService = new PluginDiscoveryService();
+    this.format = format;
   }
 
   async resolve(input: string): Promise<string> {
@@ -78,7 +80,7 @@ export class PluginResolver {
 
   private async refreshDiscoveryCache(): Promise<void> {
     try {
-      const plugins = await this.discoveryService.discover();
+      const plugins = await this.discoveryService.discover(this.format);
       this.discoveredPlugins.clear();
       for (const plugin of plugins) {
         this.discoveredPlugins.set(plugin.name, plugin);
@@ -108,19 +110,23 @@ export class PluginResolver {
       const suggestions = this.findSimilarNames(input);
       if (suggestions.length > 0) {
         message += '\n\nDid you mean one of these?';
-        suggestions.forEach((name) => { message += `\n  - ${name}`; });
+        suggestions.forEach((name) => {
+          message += `\n  - ${name}`;
+        });
       } else {
         message += '\n\nAvailable plugins:';
         Array.from(this.discoveredPlugins.keys())
           .slice(0, 5)
-          .forEach((name) => { message += `\n  - ${name}`; });
+          .forEach((name) => {
+            message += `\n  - ${name}`;
+          });
         if (this.discoveredPlugins.size > 5) {
           message += `\n  ... and ${this.discoveredPlugins.size - 5} more`;
         }
       }
     }
 
-    message += '\n\nUse \'jto <format> discover\' to list all available plugins.';
+    message += "\n\nUse 'jto <format> discover' to list all available plugins.";
 
     return new Error(message);
   }

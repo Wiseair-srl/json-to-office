@@ -11,9 +11,11 @@ export async function loadPlugins(
   options: PluginOptions,
   config: any,
   configService: PluginConfigService,
-  spinner: any
+  spinner: any,
+  format?: 'docx' | 'pptx'
 ): Promise<void> {
   const registry = PluginRegistry.getInstance();
+  if (format) registry.setFormat(format);
 
   if (options.plugins !== undefined) {
     spinner.text = 'Loading plugins...';
@@ -40,7 +42,7 @@ export async function loadPlugins(
     }
   } else if (config?.plugins && config.plugins.length > 0) {
     spinner.text = 'Loading configured plugins...';
-    const resolver = new PluginResolver();
+    const resolver = new PluginResolver(format);
     const resolved = await resolver.resolveMultiple(config.plugins);
     const paths: string[] = [];
     for (const [, resolvedPath] of resolved) {

@@ -2,7 +2,7 @@ import { Packer } from 'docx';
 import type { TSchema } from '@sinclair/typebox';
 import type { CustomComponent } from './createComponent';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
-import type { ThemeConfig } from '../styles';
+import { type ThemeConfig, getThemeWithFallback } from '../styles';
 import type { GenerationWarning } from '@json-to-office/shared-docx';
 import type {
   ExtendedReportComponent,
@@ -24,8 +24,6 @@ import { processDocument } from '../core/structure';
 import { applyLayout } from '../core/layout';
 import { renderDocument } from '../core/render';
 import { normalizeDocument } from '../json/normalizer';
-import { resolveTheme } from '../styles/theme-resolver';
-import { validateTheme } from '../styles/theme-validator';
 
 /**
  * Options for creating a document generator
@@ -33,6 +31,8 @@ import { validateTheme } from '../styles/theme-validator';
 export interface DocumentGeneratorOptions {
   /** Theme configuration */
   theme: ThemeConfig;
+  /** Custom themes keyed by name, resolved per-document via document.props.theme */
+  customThemes?: Record<string, ThemeConfig>;
   /** Enable caching for better performance */
   enableCache?: boolean;
   /** Enable debug logging */
@@ -46,6 +46,7 @@ interface BuilderState {
   components: readonly CustomComponent<any, any, any>[];
   componentNames: Set<string>;
   theme: ThemeConfig;
+  customThemes?: Record<string, ThemeConfig>;
   debug: boolean;
   enableCache: boolean;
 }
@@ -56,20 +57,41 @@ interface BuilderState {
 function createBuilderImpl<
   TComponents extends readonly CustomComponent<any, any, any>[],
 >(state: BuilderState): DocumentGeneratorBuilder<TComponents> {
-  // Validate and resolve theme
-  const validatedTheme = validateTheme(state.theme);
-  const fullTheme = resolveTheme(validatedTheme);
-
   // Create component map for quick lookup
   const componentMap = new Map(state.components.map((c) => [c.name, c]));
+
+  /**
+   * Resolve theme for a document: customThemes → built-in → constructor fallback
+   */
+  function resolveDocumentTheme(themeName: string): ThemeConfig {
+    if (state.customThemes) {
+      if (state.customThemes[themeName]) {
+        return state.customThemes[themeName];
+      }
+      const key = Object.keys(state.customThemes).find(
+        (k) => k.toLowerCase() === themeName.toLowerCase()
+      );
+      if (key) {
+        return state.customThemes[key];
+      }
+    }
+    return getThemeWithFallback(themeName);
+  }
 
   /**
    * Process custom components in the document
    */
   async function processDocumentComponents(
     components: ComponentDefinition[],
-    warningsCollector: GenerationWarning[]
+    warningsCollector: GenerationWarning[],
+    resolvedTheme: ThemeConfig,
+    depth = 0
   ): Promise<ComponentDefinition[]> {
+    if (depth > 20) {
+      throw new Error(
+        'Maximum component nesting depth exceeded (20). Check for circular component references.'
+      );
+    }
     const processedComponents: ComponentDefinition[] = [];
 
     for (const componentData of components) {
@@ -120,7 +142,9 @@ function createBuilderImpl<
           ) {
             nestedChildren = await processDocumentComponents(
               componentWithName.children as ComponentDefinition[],
-              warningsCollector
+              warningsCollector,
+              resolvedTheme,
+              depth + 1
             );
           }
 
@@ -144,18 +168,22 @@ function createBuilderImpl<
           // Call the render function with context object
           const result = await versionEntry.render({
             props: cleanedProps,
-            theme: fullTheme,
+            theme: resolvedTheme,
             addWarning,
             children: nestedChildren,
           });
 
           // Ensure result is an array
-          const resultComponents = Array.isArray(result) ? result : [result];
+          const resultComponents = (
+            Array.isArray(result) ? result : [result]
+          ) as ComponentDefinition[];
 
           // Recursively process the result in case it contains more custom components
           const processedResult = await processDocumentComponents(
             resultComponents,
-            warningsCollector
+            warningsCollector,
+            resolvedTheme,
+            depth + 1
           );
           processedComponents.push(...processedResult);
 
@@ -183,7 +211,9 @@ function createBuilderImpl<
         ) {
           const processedNested = await processDocumentComponents(
             componentData.children,
-            warningsCollector
+            warningsCollector,
+            resolvedTheme,
+            depth + 1
           );
           processedComponents.push({
             ...componentData,
@@ -204,14 +234,12 @@ function createBuilderImpl<
   function addComponent<TNewComponent extends CustomComponent<any, any, any>>(
     component: TNewComponent
   ): DocumentGeneratorBuilder<readonly [...TComponents, TNewComponent]> {
-    // Runtime duplicate check
-    if (state.componentNames.has(component.name)) {
-      throw new DuplicateComponentError(component.name);
-    }
-
-    // createComponent already validates — just check name for safety
     if (!component.name) {
       throw new Error('Component name is required');
+    }
+
+    if (state.componentNames.has(component.name)) {
+      throw new DuplicateComponentError(component.name);
     }
 
     // Create NEW immutable state
@@ -222,6 +250,7 @@ function createBuilderImpl<
       components: [...state.components, component],
       componentNames: newComponentNames,
       theme: state.theme,
+      customThemes: state.customThemes,
       debug: state.debug,
       enableCache: state.enableCache,
     };
@@ -248,13 +277,18 @@ function createBuilderImpl<
         state.components as unknown as CustomComponent<TSchema>[]
       );
 
+      // Resolve theme per-document: customThemes → built-in → constructor fallback
+      const themeName = internalDocument.props.theme || 'minimal';
+      const docTheme = resolveDocumentTheme(themeName);
+
       // Initialize warnings collector
       const warnings: GenerationWarning[] = [];
 
       // Process custom components to convert them to standard components
       const processedComponents = await processDocumentComponents(
         internalDocument.children || [],
-        warnings
+        warnings,
+        docTheme
       );
 
       // Create a new document definition with processed components
@@ -270,10 +304,10 @@ function createBuilderImpl<
       // Use the document generation pipeline directly
       const structure = await processDocument(
         finalReportComponent,
-        fullTheme,
-        'custom'
+        docTheme,
+        themeName
       );
-      const layout = applyLayout(structure.sections, fullTheme, 'custom');
+      const layout = applyLayout(structure.sections, docTheme, themeName);
       const generatedDocument = await renderDocument(structure, layout);
 
       return {
@@ -398,13 +432,18 @@ function createBuilderImpl<
         state.components as unknown as CustomComponent<TSchema>[]
       );
 
+      // Resolve theme for plugin component rendering
+      const themeName = internalDocument.props.theme || 'minimal';
+      const docTheme = resolveDocumentTheme(themeName);
+
       // Initialize warnings collector (not returned by this function)
       const warnings: GenerationWarning[] = [];
 
       // Process custom components to convert them to standard components
       const processedComponents = await processDocumentComponents(
         internalDocument.children || [],
-        warnings
+        warnings,
+        docTheme
       );
 
       // Create a new document definition with processed components
@@ -451,6 +490,7 @@ export function createDocumentGenerator(
     components: [],
     componentNames: new Set(),
     theme: options.theme,
+    customThemes: options.customThemes,
     debug: options.debug ?? false,
     enableCache: options.enableCache ?? false,
   };

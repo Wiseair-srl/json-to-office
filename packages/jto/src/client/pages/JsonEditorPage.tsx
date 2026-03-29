@@ -4,6 +4,7 @@ import { DocumentsStoreProvider } from '../store/documents-store-provider';
 import { OutputStoreProvider } from '../store/output-store-provider';
 import { SettingsStoreProvider } from '../store/settings-store-provider';
 import { ThemesStoreProvider } from '../store/themes-store-provider';
+import { MonacoPluginProvider } from '../components/MonacoPluginProvider';
 
 export function JsonEditorPage() {
   const [loading, setLoading] = useState(true);
@@ -25,22 +26,24 @@ export function JsonEditorPage() {
     <SettingsStoreProvider>
       <OutputStoreProvider>
         <ThemesStoreProvider>
-          <DocumentsStoreProvider>
-            <section className="flex h-screen w-full flex-col">
-              <div className="grow overflow-hidden">
-                <div className="p-4 h-full">
-                  <h1 className="text-2xl font-bold mb-4">JSON Editor</h1>
-                  <div className="h-full">
-                    <EditorMonacoJsonMemoized
-                      name="untitled"
-                      defaultValue=""
-                      saveDocumentDebounceWait={1000}
-                    />
+          <MonacoPluginProvider>
+            <DocumentsStoreProvider>
+              <section className="flex h-screen w-full flex-col">
+                <div className="grow overflow-hidden">
+                  <div className="p-4 h-full">
+                    <h1 className="text-2xl font-bold mb-4">JSON Editor</h1>
+                    <div className="h-full">
+                      <EditorMonacoJsonMemoized
+                        name="untitled"
+                        defaultValue=""
+                        saveDocumentDebounceWait={1000}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </section>
-          </DocumentsStoreProvider>
+              </section>
+            </DocumentsStoreProvider>
+          </MonacoPluginProvider>
         </ThemesStoreProvider>
       </OutputStoreProvider>
     </SettingsStoreProvider>
