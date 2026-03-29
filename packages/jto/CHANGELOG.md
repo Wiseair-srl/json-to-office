@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.2.1
+
+### Patch Changes
+
+- 94314f8: Redesign plugin sidebar UX: inline Switch toggles, active/inactive state, split-pane detail modal
+
 ## 0.2.0
 
 ### Minor Changes
