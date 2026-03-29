@@ -15,10 +15,12 @@ import {
   Search,
   PanelLeftClose,
   PanelLeftOpen,
+  Info,
 } from 'lucide-react';
 import { DocumentFormDialogContentMemoized } from './document-form-dialog-content';
 import { DocumentMenuItemMemoized } from './document-menu-item';
 import { PluginSelector } from './plugin-selector';
+import { Switch } from '../ui/switch';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 import {
@@ -56,6 +58,7 @@ import { SchemaDialog } from './schema-dialog';
 import { useTheme } from '../theme-provider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { useToast } from '../ui/use-toast';
+import { usePluginsStore } from '../../store/plugins-store';
 
 interface DocumentSidebarProps {
   discoveryData: DiscoveryResult | null;
@@ -85,6 +88,12 @@ function DocumentSidebarComponent({
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [themeDialogOpen, setThemeDialogOpen] = useState<boolean>(false);
   const [pluginSelectorOpen, setPluginSelectorOpen] = useState<boolean>(false);
+  const [pluginSelectorFocusedPlugin, setPluginSelectorFocusedPlugin] =
+    useState<string | null>(null);
+  const togglePlugin = usePluginsStore((state) => state.togglePlugin);
+  const isPluginSelected = usePluginsStore((state) => state.isPluginSelected);
+  const selectedPlugins = usePluginsStore((state) => state.selectedPlugins);
+  const isApplyingPlugins = usePluginsStore((state) => state.isApplyingPlugins);
   const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(['current-docs', 'current-themes'])
@@ -732,33 +741,54 @@ function DocumentSidebarComponent({
                             )}
                           />
                           <Sparkles className="size-3 text-amber-600 dark:text-amber-400" />
-                          Plugins ({discoveryData.plugins.length})
+                          Plugins ({selectedPlugins.size}/
+                          {discoveryData.plugins.length})
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <div className="pl-4 space-y-0.5">
-                            {discoveryData.plugins.map((p, idx) => (
-                              <div
-                                key={idx}
-                                className="py-1 px-2 text-sm text-muted-foreground border-l-2 border-amber-400/60 dark:border-amber-500/40"
-                              >
-                                <div className="font-medium">{p.name}</div>
-                                {p.description && (
-                                  <div className="text-xs opacity-70 truncate">
-                                    {p.description}
+                            {discoveryData.plugins.map((p, idx) => {
+                              const isActive = isPluginSelected(p.name);
+                              return (
+                                <div
+                                  key={idx}
+                                  className={cn(
+                                    'py-1 px-2 text-sm border-l-2 flex items-center gap-2 group transition-colors',
+                                    isActive
+                                      ? 'border-amber-500 dark:border-amber-400 text-foreground'
+                                      : 'border-amber-400/30 dark:border-amber-500/20 text-muted-foreground'
+                                  )}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium truncate">
+                                      {p.name}
+                                    </div>
+                                    {p.description && (
+                                      <div className="text-xs opacity-70 truncate">
+                                        {p.description}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            ))}
-                            <div className="flex items-center justify-end pr-3 pt-1">
-                              <Button
-                                className="h-6 px-2 text-xs"
-                                variant="ghost"
-                                title="Open plugin manager"
-                                onClick={() => setPluginSelectorOpen(true)}
-                              >
-                                Manage plugins
-                              </Button>
-                            </div>
+                                  <button
+                                    className="flex-none size-5 flex items-center justify-center rounded-sm opacity-0 group-hover:opacity-100 hover:bg-accent transition-all cursor-pointer"
+                                    title={`View details for ${p.name}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPluginSelectorFocusedPlugin(p.name);
+                                      setPluginSelectorOpen(true);
+                                    }}
+                                  >
+                                    <Info className="size-3 text-muted-foreground" />
+                                  </button>
+                                  <Switch
+                                    checked={isActive}
+                                    onCheckedChange={() => togglePlugin(p)}
+                                    disabled={isApplyingPlugins}
+                                    className="flex-none scale-[0.8]"
+                                    aria-label={`Toggle ${p.name} plugin`}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
                         </CollapsibleContent>
                       </Collapsible>
@@ -781,9 +811,18 @@ function DocumentSidebarComponent({
         </SidebarFooter>
 
         {/* Plugin Selector Dialog */}
-        <Dialog open={pluginSelectorOpen} onOpenChange={setPluginSelectorOpen}>
+        <Dialog
+          open={pluginSelectorOpen}
+          onOpenChange={(open) => {
+            setPluginSelectorOpen(open);
+            if (!open) setPluginSelectorFocusedPlugin(null);
+          }}
+        >
           <DialogContent className="sm:max-w-5xl max-h-[85vh] overflow-hidden">
-            <PluginSelector plugins={discoveryData?.plugins || []} />
+            <PluginSelector
+              plugins={discoveryData?.plugins || []}
+              initialFocusedPlugin={pluginSelectorFocusedPlugin}
+            />
           </DialogContent>
         </Dialog>
       </Sidebar>
