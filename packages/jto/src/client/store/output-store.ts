@@ -26,6 +26,7 @@ export type OutputState = {
   editSequence?: number; // incremented on every Monaco keystroke (init 0)
   lastBuiltSequence?: number; // stamped when generation completes (init 0)
   editTimestamp?: number; // Date.now() of the last edit (for debounce countdown)
+  hasValidationErrors?: boolean; // true when Monaco reports schema validation errors
   // ⚠️ name doesn't necessarily correspond to the global error message
 };
 
@@ -48,6 +49,7 @@ export const initOutputStore = (): OutputState => {
     isPreviewStale: false,
     editSequence: 0,
     lastBuiltSequence: 0,
+    hasValidationErrors: false,
   };
 };
 

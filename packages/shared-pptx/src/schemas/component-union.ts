@@ -7,7 +7,10 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { createAllPptxComponentSchemas } from './component-registry';
+import {
+  createAllPptxComponentSchemas,
+  createAllPptxComponentSchemasNarrowed,
+} from './component-registry';
 
 export const PptxStandardComponentDefinitionSchema = Type.Union(
   [...createAllPptxComponentSchemas(Type.Any())],
@@ -18,13 +21,12 @@ export const PptxStandardComponentDefinitionSchema = Type.Union(
 );
 
 export const PptxComponentDefinitionSchema = Type.Recursive((This) =>
-  Type.Union(
-    [...createAllPptxComponentSchemas(This)],
-    {
-      discriminator: { propertyName: 'name' },
-      description: 'PPTX component definition with discriminated union',
-    }
-  )
+  Type.Union([...createAllPptxComponentSchemasNarrowed(This)], {
+    discriminator: { propertyName: 'name' },
+    description: 'PPTX component definition with discriminated union',
+  })
 );
 
-export type PptxComponentDefinition = Static<typeof PptxComponentDefinitionSchema>;
+export type PptxComponentDefinition = Static<
+  typeof PptxComponentDefinitionSchema
+>;

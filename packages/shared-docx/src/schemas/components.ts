@@ -9,7 +9,10 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { createAllComponentSchemas } from './component-registry';
+import {
+  createAllComponentSchemas,
+  createAllComponentSchemasNarrowed,
+} from './component-registry';
 
 // Re-export all schemas from individual component files
 export * from './components/common';
@@ -40,18 +43,15 @@ export const StandardComponentDefinitionSchema = Type.Union(
   [...createAllComponentSchemas(Type.Any())],
   {
     discriminator: { propertyName: 'name' },
-    description:
-      'Standard component definition with discriminated union',
+    description: 'Standard component definition with discriminated union',
   }
 );
 
 export const ComponentDefinitionSchema = Type.Recursive((This) =>
   Type.Union(
     [
-      // Standard components from registry - SINGLE SOURCE OF TRUTH
-      // Note: Report and section use special factory functions with recursive refs
-      // Convert readonly array to mutable array for Type.Union
-      ...createAllComponentSchemas(This),
+      // Standard components from registry with per-container narrowed children
+      ...createAllComponentSchemasNarrowed(This).schemas,
     ],
     {
       discriminator: { propertyName: 'name' },

@@ -35,6 +35,7 @@ function EditorMonacoJson({
   const { resolvedTheme } = useTheme();
   const saveDocument = useDocumentsStore((state) => state.saveDocument);
   const bumpEditSequence = useOutputStore((state) => state.bumpEditSequence);
+  const setOutput = useOutputStore((state) => state.setOutput);
   const closeDocument = useDocumentsStore((state) => state.closeDocument);
   const pendingDiff = useDocumentsStore((state) => state.pendingDiffs[name]);
   const clearPendingDiff = useDocumentsStore((state) => state.clearPendingDiff);
@@ -171,6 +172,9 @@ function EditorMonacoJson({
     }));
 
     setValidationErrors(errors);
+    setOutput({
+      hasValidationErrors: errors.some((e) => e.severity === 'error'),
+    });
 
     // Decorations are now handled by Monaco's native validation
     decorationIdsRef.current = [];

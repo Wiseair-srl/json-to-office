@@ -1,19 +1,8 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  memo,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
 import { PreviewFrameMemoized } from './preview-frame';
 import { PreviewHeaderMemoized } from './preview-header';
 import { WarningsPanel } from './warnings-panel';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Separator } from '../ui/separator';
 import { useOutputStore } from '../../store/output-store-provider';
 import { useSettingsStore } from '../../store/settings-store-provider';
@@ -21,7 +10,6 @@ import { renderDocument } from '../../lib/render';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { CacheMetrics } from '../cache-metrics';
 import { FORMAT_LABEL } from '../../lib/env';
-
 
 /**
  * Tiny live countdown that ticks every 100ms and shows the
@@ -40,14 +28,17 @@ const DebounceCountdown = memo(function DebounceCountdown({
   );
 
   useEffect(() => {
+    let id: ReturnType<typeof setInterval> | undefined;
     const tick = () => {
       const r = Math.max(0, editTimestamp + debounceMs - Date.now());
       setRemaining(r);
-      if (r <= 0) clearInterval(id);
+      if (r <= 0 && id != null) clearInterval(id);
     };
     tick();
-    const id = setInterval(tick, 100);
-    return () => clearInterval(id);
+    id = setInterval(tick, 100);
+    return () => {
+      if (id != null) clearInterval(id);
+    };
   }, [editTimestamp, debounceMs]);
 
   if (remaining <= 0) return null;
@@ -67,7 +58,12 @@ const DebounceCountdown = memo(function DebounceCountdown({
 });
 
 export function Preview() {
-  const { autoReload, renderingLibrary, saveDocumentDebounceWait, setSettings } = useSettingsStore((state) => state);
+  const {
+    autoReload,
+    renderingLibrary,
+    saveDocumentDebounceWait,
+    setSettings,
+  } = useSettingsStore((state) => state);
   const {
     name,
     text,
@@ -83,6 +79,7 @@ export function Preview() {
     editSequence,
     lastBuiltSequence,
     editTimestamp,
+    hasValidationErrors,
     setOutput,
   } = useOutputStore((state) => state);
   const activeTab = useDocumentsStore((state) => state.activeTab);
@@ -105,17 +102,20 @@ export function Preview() {
     }
   }, []);
 
-
   // Core render function
   const doRender = useCallback(
     async (docName: string, docBlob: Blob) => {
-      setOutput({ isRendering: true, isPreviewStale: false, globalError: undefined });
+      setOutput({
+        isRendering: true,
+        isPreviewStale: false,
+        globalError: undefined,
+      });
 
       try {
         const { status, payload } = await renderDocument(
           docName,
           docBlob,
-          renderingLibrary,
+          renderingLibrary
         );
 
         if (status !== 'success') {
@@ -200,66 +200,89 @@ export function Preview() {
         {(useSettingsStore as any) &&
           (useSettingsStore as any).getState?.().useGlobalPreviewHeader ===
             false && (
-          <PreviewHeaderMemoized
-            iframeRef={iframeRef}
-            displayReloadButton={
-              Boolean(iframeSrc) && !(iframeSrc?.startsWith('blob:') ?? false)
-            }
-            name={name?.trim() || 'Preview'}
-            blob={blob}
-            autoReload={autoReload}
-            onToggleAutoReload={() => setSettings({ autoReload: !autoReload })}
-            onManualRender={handleManualRender}
-            isGenerating={isGenerating}
-            isRendering={isRendering}
-            onShowCacheMetrics={() => setShowCacheMetrics(true)}
-            documentText={text}
-            warnings={warnings}
-            renderingLibrary={renderingLibrary}
-            setRenderingLibrary={(lib) => setSettings({ renderingLibrary: lib } as any)}
-          />
-        )}
+            <PreviewHeaderMemoized
+              iframeRef={iframeRef}
+              displayReloadButton={
+                Boolean(iframeSrc) && !(iframeSrc?.startsWith('blob:') ?? false)
+              }
+              name={name?.trim() || 'Preview'}
+              blob={blob}
+              autoReload={autoReload}
+              onToggleAutoReload={() =>
+                setSettings({ autoReload: !autoReload })
+              }
+              onManualRender={handleManualRender}
+              isGenerating={isGenerating}
+              isRendering={isRendering}
+              onShowCacheMetrics={() => setShowCacheMetrics(true)}
+              documentText={text}
+              warnings={warnings}
+              renderingLibrary={renderingLibrary}
+              setRenderingLibrary={(lib) =>
+                setSettings({ renderingLibrary: lib } as any)
+              }
+            />
+          )}
         <Separator />
         {/* Status Bar: cache + stale combined */}
         {(() => {
-          const hasUnsyncedEdits = (editSequence ?? 0) > (lastBuiltSequence ?? 0);
-          const isStale = (isPreviewStale || hasUnsyncedEdits) && !isGenerating && !isRendering;
-          return ((cacheStatus && cacheStatus !== 'UNKNOWN') || isStale) && (
-            <div className={
-              `px-3 py-1.5 flex items-center justify-between border-b overflow-hidden ${
-                isStale
-                  ? 'bg-amber-500/10 border-amber-500/30'
-                  : 'bg-muted/30'
-              }`
-            }>
-              <div className="flex items-center gap-2 min-w-0 truncate">
-                {cacheStatus === 'HIT' && !isStale ? (
-                  <>
-                    <div className="h-1.5 w-1.5 rounded-full bg-green-500 flex-shrink-0" />
-                    <span className="text-xs text-muted-foreground truncate">Cached</span>
-                  </>
-                ) : cacheStatus === 'MISS' && !isStale ? (
-                  <>
-                    <div className="h-1.5 w-1.5 rounded-full bg-orange-500 flex-shrink-0" />
-                    <span className="text-xs text-muted-foreground truncate">Fresh {FORMAT_LABEL.toLowerCase()}</span>
-                  </>
-                ) : isStale ? (
-                  <>
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500 flex-shrink-0" />
-                    <span className="text-xs text-amber-600 dark:text-amber-400 truncate">Outdated — click Run</span>
-                    {editTimestamp && hasUnsyncedEdits && !isGenerating && autoReload && renderingLibrary === 'docxjs' && (
-                      <DebounceCountdown
-                        editTimestamp={editTimestamp}
-                        debounceMs={saveDocumentDebounceWait + 200}
-                      />
-                    )}
-                  </>
-                ) : null}
+          const hasUnsyncedEdits =
+            (editSequence ?? 0) > (lastBuiltSequence ?? 0);
+          const isStale =
+            (isPreviewStale || hasUnsyncedEdits) &&
+            !isGenerating &&
+            !isRendering;
+          return (
+            ((cacheStatus && cacheStatus !== 'UNKNOWN') || isStale) && (
+              <div
+                className={`px-3 py-1.5 flex items-center justify-between border-b overflow-hidden ${
+                  isStale
+                    ? 'bg-amber-500/10 border-amber-500/30'
+                    : 'bg-muted/30'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0 truncate">
+                  {cacheStatus === 'HIT' && !isStale ? (
+                    <>
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                      <span className="text-xs text-muted-foreground truncate">
+                        Cached
+                      </span>
+                    </>
+                  ) : cacheStatus === 'MISS' && !isStale ? (
+                    <>
+                      <div className="h-1.5 w-1.5 rounded-full bg-orange-500 flex-shrink-0" />
+                      <span className="text-xs text-muted-foreground truncate">
+                        Fresh {FORMAT_LABEL.toLowerCase()}
+                      </span>
+                    </>
+                  ) : isStale ? (
+                    <>
+                      <div className="h-1.5 w-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                      <span className="text-xs text-amber-600 dark:text-amber-400 truncate">
+                        Outdated — click Run
+                      </span>
+                      {editTimestamp &&
+                        hasUnsyncedEdits &&
+                        !isGenerating &&
+                        !hasValidationErrors &&
+                        autoReload &&
+                        renderingLibrary === 'docxjs' && (
+                          <DebounceCountdown
+                            editTimestamp={editTimestamp}
+                            debounceMs={saveDocumentDebounceWait + 200}
+                          />
+                        )}
+                    </>
+                  ) : null}
+                </div>
+                {!isStale && cacheHitRate && cacheHitRate !== '0.0%' && (
+                  <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                    {cacheHitRate} hit rate
+                  </span>
+                )}
               </div>
-              {!isStale && cacheHitRate && cacheHitRate !== '0.0%' && (
-                <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">{cacheHitRate} hit rate</span>
-              )}
-            </div>
+            )
           );
         })()}
         {/* Warnings Panel */}
@@ -269,7 +292,9 @@ export function Preview() {
           <div className="flex-1 flex items-center justify-center p-6">
             <div className="max-w-md rounded-lg border border-red-400/50 bg-red-400/10 px-4 py-3 text-sm text-red-400">
               <p className="font-medium mb-1">Generation failed</p>
-              <p className="text-xs text-red-400/80 break-words">{globalError}</p>
+              <p className="text-xs text-red-400/80 break-words">
+                {globalError}
+              </p>
             </div>
           </div>
         ) : (
@@ -280,16 +305,28 @@ export function Preview() {
             iframeSrcDoc={iframeSrcDoc}
             isGenerating={(() => {
               const willAutoBuild = autoReload && renderingLibrary === 'docxjs';
-              const isSwitchingDoc = activeTab && name && activeTab !== name &&
+              const isSwitchingDoc =
+                activeTab &&
+                name &&
+                activeTab !== name &&
                 documentTypes[activeTab] !== 'application/json+theme';
-              return Boolean(isGenerating) || Boolean(willAutoBuild && isSwitchingDoc);
+              return (
+                Boolean(isGenerating) ||
+                Boolean(willAutoBuild && isSwitchingDoc)
+              );
             })()}
             generationProgress={(() => {
               const willAutoBuild = autoReload && renderingLibrary === 'docxjs';
-              const isSwitchingDoc = activeTab && name && activeTab !== name &&
+              const isSwitchingDoc =
+                activeTab &&
+                name &&
+                activeTab !== name &&
                 documentTypes[activeTab] !== 'application/json+theme';
               return willAutoBuild && isSwitchingDoc && !isGenerating
-                ? { stage: 'parsing' as const, message: `Building preview for ${activeTab}...` }
+                ? {
+                    stage: 'parsing' as const,
+                    message: `Building preview for ${activeTab}...`,
+                  }
                 : generationProgress;
             })()}
           />

@@ -27,8 +27,7 @@
 
 import { Type, TSchema } from '@sinclair/typebox';
 import {
-  STANDARD_COMPONENTS_REGISTRY,
-  createComponentSchemaObject,
+  createAllComponentSchemasNarrowed,
   getStandardComponent,
 } from './component-registry';
 import { latestVersion } from '@json-to-office/shared';
@@ -94,19 +93,16 @@ export function generateUnifiedDocumentSchema(
     description = 'JSON report definition with TypeBox schemas',
   } = options;
 
+  // Captured from inside the recursive callback for the root's children.
+  let capturedSectionSchema: TSchema | undefined;
+  let capturedPluginSchemas: TSchema[] = [];
+
   // Create a recursive component definition schema
   const ComponentDefinition = Type.Recursive(
     (This) => {
-      const componentSchemas: TSchema[] = [];
+      // ── Phase 1: Build plugin schemas (plugins get Self for arbitrary nesting) ──
+      const pluginSchemas: TSchema[] = [];
 
-      // Add standard components from registry - SINGLE SOURCE OF TRUTH
-      if (includeStandardComponents) {
-        for (const component of STANDARD_COMPONENTS_REGISTRY) {
-          componentSchemas.push(createComponentSchemaObject(component, This));
-        }
-      }
-
-      // Add custom components
       for (const customComponent of customComponents) {
         if (
           customComponent.versionedProps &&
@@ -118,8 +114,6 @@ export function generateUnifiedDocumentSchema(
 
           // Per-version variants: version is required, props are version-specific
           for (const entry of versionEntries) {
-            // Attach description directly to the version literal so Monaco
-            // shows it in the autocomplete dropdown for version values
             const versionLiteralDesc =
               entry.description || customComponent.description;
             const schema: Record<string, TSchema> = {
@@ -127,21 +121,20 @@ export function generateUnifiedDocumentSchema(
               id: Type.Optional(Type.String()),
               version: versionLiteralDesc
                 ? Type.Literal(entry.version, {
-                  description: versionLiteralDesc,
-                })
+                    description: versionLiteralDesc,
+                  })
                 : Type.Literal(entry.version),
               props: entry.propsSchema,
             };
             if (entry.hasChildren) {
               schema.children = Type.Optional(Type.Array(This));
             }
-            // Build description: combine component-level + version-level descriptions
             const versionDesc = entry.description
               ? `${customComponent.name} v${entry.version} — ${entry.description}`
               : customComponent.description
                 ? `${customComponent.name} v${entry.version} — ${customComponent.description}`
                 : `${customComponent.name} v${entry.version}`;
-            componentSchemas.push(
+            pluginSchemas.push(
               Type.Object(schema, {
                 additionalProperties: false,
                 description: versionDesc,
@@ -164,7 +157,7 @@ export function generateUnifiedDocumentSchema(
             : customComponent.description
               ? `${customComponent.name} (latest: v${latest}) — ${customComponent.description}`
               : `${customComponent.name} (latest: v${latest})`;
-          componentSchemas.push(
+          pluginSchemas.push(
             Type.Object(fallbackSchema, {
               additionalProperties: false,
               description: fallbackDesc,
@@ -181,7 +174,7 @@ export function generateUnifiedDocumentSchema(
           if (hasChildren) {
             schema.children = Type.Optional(Type.Array(This));
           }
-          componentSchemas.push(
+          pluginSchemas.push(
             Type.Object(schema, {
               additionalProperties: false,
               ...(customComponent.description
@@ -192,13 +185,24 @@ export function generateUnifiedDocumentSchema(
         }
       }
 
+      // ── Phase 2: Build standard components with narrowed children ──
+      const { schemas: standardSchemas, byName } = includeStandardComponents
+        ? createAllComponentSchemasNarrowed(This, pluginSchemas)
+        : { schemas: [] as TSchema[], byName: new Map<string, TSchema>() };
+
+      // Capture the narrowed section schema + plugins for the root's children.
+      // Must happen inside the callback while standardSchemas is available.
+      capturedSectionSchema = byName.get('section');
+      capturedPluginSchemas = pluginSchemas;
+
+      const componentSchemas = [...standardSchemas, ...pluginSchemas];
+
       // Create the union based on the number of schemas
       if (componentSchemas.length === 0) {
         return Type.Any();
       } else if (componentSchemas.length === 1) {
         return componentSchemas[0];
       } else {
-        // Create union with discriminator for proper JSON Schema generation
         const componentDescription =
           customComponents.length > 0
             ? 'Component definition with discriminated union including custom components'
@@ -213,13 +217,16 @@ export function generateUnifiedDocumentSchema(
     { $id: 'ComponentDefinition' }
   );
 
-  // In the unified structure, a document IS a report component with an optional $schema field
-  // Only support the new unified structure - no legacy support
-
-  // Get report component props from registry
+  // Build root docx schema with narrowed children (section only).
+  // ComponentDefinition is embedded in `definitions` so that $refs inside
+  // section header/footer and table cell content resolve correctly.
   const reportComponent = getStandardComponent('docx');
   if (!reportComponent) {
     throw new Error('Docx root component not found in registry');
+  }
+
+  if (!capturedSectionSchema) {
+    throw new Error('Section schema not found in narrowed standard schemas');
   }
 
   return Type.Object(
@@ -228,12 +235,21 @@ export function generateUnifiedDocumentSchema(
       id: Type.Optional(Type.String()),
       $schema: Type.Optional(Type.String({ format: 'uri' })),
       props: reportComponent.propsSchema,
-      children: Type.Optional(Type.Array(ComponentDefinition)),
+      children: Type.Optional(
+        Type.Array(
+          capturedPluginSchemas.length > 0
+            ? Type.Union([capturedSectionSchema, ...capturedPluginSchemas])
+            : capturedSectionSchema
+        )
+      ),
     },
     {
       additionalProperties: false,
       title,
       description,
-    }
+      // Embed ComponentDefinition so convertToJsonSchema extracts it to
+      // definitions and bare $ref: "ComponentDefinition" values resolve.
+      definitions: { ComponentDefinition },
+    } as Record<string, unknown>
   );
 }

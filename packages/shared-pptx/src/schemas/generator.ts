@@ -6,8 +6,8 @@
  */
 import { Type, TSchema } from '@sinclair/typebox';
 import {
-  PPTX_STANDARD_COMPONENTS_REGISTRY,
   createPptxComponentSchemaObject,
+  createAllPptxComponentSchemasNarrowed,
   type PptxStandardComponentDefinition,
 } from './component-registry';
 
@@ -38,13 +38,9 @@ export function generateUnifiedDocumentSchema(
   const { customComponents = [] } = options;
 
   return Type.Recursive((Self) => {
-    const componentSchemas: TSchema[] = [];
+    // ── Phase 1: Build plugin schemas (plugins get Self for arbitrary nesting) ──
+    const pluginSchemas: TSchema[] = [];
 
-    for (const entry of PPTX_STANDARD_COMPONENTS_REGISTRY) {
-      componentSchemas.push(createPptxComponentSchemaObject(entry, Self));
-    }
-
-    // Add custom plugin components
     for (const custom of customComponents) {
       if (custom.versions.length > 0) {
         const latest = custom.versions.reduce((a, b) =>
@@ -57,9 +53,17 @@ export function generateUnifiedDocumentSchema(
           category: 'content',
           description: custom.name,
         };
-        componentSchemas.push(createPptxComponentSchemaObject(customDef, Self));
+        pluginSchemas.push(createPptxComponentSchemaObject(customDef, Self));
       }
     }
+
+    // ── Phase 2: Build standard components with narrowed children ──
+    const standardSchemas = createAllPptxComponentSchemasNarrowed(
+      Self,
+      pluginSchemas
+    );
+
+    const componentSchemas = [...standardSchemas, ...pluginSchemas];
 
     if (componentSchemas.length === 0) {
       return Type.Object({});

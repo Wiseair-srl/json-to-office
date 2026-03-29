@@ -2,7 +2,7 @@
  * Table Component Schema
  */
 
-import { Type, Static } from '@sinclair/typebox';
+import { Type, Static, TSchema } from '@sinclair/typebox';
 import { HexColorSchema } from '../font';
 
 // Define Cell type - can be plain text or a component definition
@@ -147,100 +147,103 @@ const CellDefaultsSchema = Type.Object({
   ),
 });
 
-// Header schema - includes all CellDefaults properties plus content
-const HeaderSchema = Type.Object({
-  color: Type.Optional(HexColorSchema),
-  backgroundColor: Type.Optional(HexColorSchema),
-  horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
-  verticalAlignment: Type.Optional(VerticalAlignmentSchema),
-  font: Type.Optional(FontConfigSchema),
-  borderColor: Type.Optional(BorderColorSchema),
-  borderSize: Type.Optional(BorderSizeSchema),
-  padding: Type.Optional(PaddingSchema),
-  height: Type.Optional(
-    Type.Number({ minimum: 0, description: 'Cell height in points' })
-  ),
-  content: Type.Optional(CellContentSchema),
-});
+/**
+ * Build TablePropsSchema with a given cell-content type.
+ * Called with `CellContentSchema` for the static export below, and with a
+ * live recursive ref at schema-generation time.
+ */
+export function createTablePropsSchema(componentRef: TSchema): TSchema {
+  const cellContent = Type.Union([Type.String(), componentRef]);
 
-// Cell schema - includes all CellDefaults properties plus content
-const CellSchema = Type.Object({
-  color: Type.Optional(HexColorSchema),
-  backgroundColor: Type.Optional(HexColorSchema),
-  horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
-  verticalAlignment: Type.Optional(VerticalAlignmentSchema),
-  font: Type.Optional(FontConfigSchema),
-  borderColor: Type.Optional(BorderColorSchema),
-  borderSize: Type.Optional(BorderSizeSchema),
-  padding: Type.Optional(PaddingSchema),
-  height: Type.Optional(
-    Type.Number({ minimum: 0, description: 'Cell height in points' })
-  ),
-  content: Type.Optional(CellContentSchema),
-});
-
-// Column schema with new structure
-const ColumnSchema = Type.Object({
-  width: Type.Optional(
-    Type.Union([
-      Type.Number({
-        minimum: 0,
-        description:
-          'Column width in points. When set on some columns, remaining columns will automatically share the leftover table space equally. Leave undefined to distribute space evenly among unspecified columns.',
-      }),
-      Type.String({
-        pattern: '^\\d+(\\.\\d+)?%$',
-        description:
-          'Column width as percentage of available width (e.g., "40%")',
-      }),
-    ])
-  ),
-  cellDefaults: Type.Optional(CellDefaultsSchema),
-  header: Type.Optional(HeaderSchema),
-  cells: Type.Optional(Type.Array(CellSchema)),
-});
-
-export const TablePropsSchema = Type.Object(
-  {
+  const cellFields = {
+    color: Type.Optional(HexColorSchema),
+    backgroundColor: Type.Optional(HexColorSchema),
+    horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
+    verticalAlignment: Type.Optional(VerticalAlignmentSchema),
+    font: Type.Optional(FontConfigSchema),
     borderColor: Type.Optional(BorderColorSchema),
     borderSize: Type.Optional(BorderSizeSchema),
-    hideBorders: Type.Optional(HideBordersSchema),
-    cellDefaults: Type.Optional(CellDefaultsSchema),
-    headerCellDefaults: Type.Optional(CellDefaultsSchema),
+    padding: Type.Optional(PaddingSchema),
+    height: Type.Optional(
+      Type.Number({ minimum: 0, description: 'Cell height in points' })
+    ),
+  };
+
+  const headerSchema = Type.Object({
+    ...cellFields,
+    content: Type.Optional(cellContent),
+  });
+
+  const cellSchema = Type.Object({
+    ...cellFields,
+    content: Type.Optional(cellContent),
+  });
+
+  const columnSchema = Type.Object({
     width: Type.Optional(
-      Type.Number({
-        minimum: 0,
-        maximum: 100,
-        description: 'Table width in percentage (0-100)',
-      })
+      Type.Union([
+        Type.Number({
+          minimum: 0,
+          description:
+            'Column width in points. When set on some columns, remaining columns will automatically share the leftover table space equally. Leave undefined to distribute space evenly among unspecified columns.',
+        }),
+        Type.String({
+          pattern: '^\\d+(\\.\\d+)?%$',
+          description:
+            'Column width as percentage of available width (e.g., "40%")',
+        }),
+      ])
     ),
-    columns: Type.Array(ColumnSchema, {
-      description: 'Table columns with headers and cells',
-      minItems: 1,
-    }),
-    keepInOnePage: Type.Optional(
-      Type.Boolean({
-        description:
-          'Keep table rows together on the same page by setting keepNext on all paragraphs',
-      })
-    ),
-    keepNext: Type.Optional(
-      Type.Boolean({
-        description:
-          'Set keepNext on the last row to keep it connected to the next element. Works independently of keepInOnePage. Defaults to false.',
-      })
-    ),
-    repeatHeaderOnPageBreak: Type.Optional(
-      Type.Boolean({
-        description:
-          'Repeat the header row on each page when the table spans multiple pages. Defaults to false.',
-        default: true,
-      })
-    ),
-  },
-  {
-    description: 'Table component props with column-based structure',
-  }
-);
+    cellDefaults: Type.Optional(CellDefaultsSchema),
+    header: Type.Optional(headerSchema),
+    cells: Type.Optional(Type.Array(cellSchema)),
+  });
+
+  return Type.Object(
+    {
+      borderColor: Type.Optional(BorderColorSchema),
+      borderSize: Type.Optional(BorderSizeSchema),
+      hideBorders: Type.Optional(HideBordersSchema),
+      cellDefaults: Type.Optional(CellDefaultsSchema),
+      headerCellDefaults: Type.Optional(CellDefaultsSchema),
+      width: Type.Optional(
+        Type.Number({
+          minimum: 0,
+          maximum: 100,
+          description: 'Table width in percentage (0-100)',
+        })
+      ),
+      columns: Type.Array(columnSchema, {
+        description: 'Table columns with headers and cells',
+        minItems: 1,
+      }),
+      keepInOnePage: Type.Optional(
+        Type.Boolean({
+          description:
+            'Keep table rows together on the same page by setting keepNext on all paragraphs',
+        })
+      ),
+      keepNext: Type.Optional(
+        Type.Boolean({
+          description:
+            'Set keepNext on the last row to keep it connected to the next element. Works independently of keepInOnePage. Defaults to false.',
+        })
+      ),
+      repeatHeaderOnPageBreak: Type.Optional(
+        Type.Boolean({
+          description:
+            'Repeat the header row on each page when the table spans multiple pages. Defaults to false.',
+          default: true,
+        })
+      ),
+    },
+    {
+      description: 'Table component props with column-based structure',
+    }
+  );
+}
+
+// Static version for validators, type inference, and theme defaults.
+export const TablePropsSchema = createTablePropsSchema(CellContentSchema);
 
 export type TableProps = Static<typeof TablePropsSchema>;
