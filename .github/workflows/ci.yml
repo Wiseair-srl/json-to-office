@@ -14,6 +14,8 @@ concurrency:
 
 jobs:
   quality:
+    # Skip on version-bump commits — already validated on the PR
+    if: "${{ github.event.head_commit.message != 'chore: version packages' }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +34,8 @@ jobs:
       - run: pnpm typecheck
 
   test:
+    # Skip on version-bump commits — already validated on the PR
+    if: "${{ github.event.head_commit.message != 'chore: version packages' }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -53,8 +57,13 @@ jobs:
       - run: pnpm test
 
   release:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: [quality, test]
+    # Allow release when quality/test are skipped (version-bump commits)
+    if: |
+      always() &&
+      github.ref == 'refs/heads/main' && github.event_name == 'push' &&
+      (needs.quality.result == 'success' || needs.quality.result == 'skipped') &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
