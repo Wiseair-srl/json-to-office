@@ -1,5 +1,12 @@
 # @json-to-office/jto
 
+## 0.3.3
+
+### Patch Changes
+
+- ce2016f: fix(jto): include prompt .md files in published package via tsup onSuccess copy
+- 3553ec5: fix(jto): always show add buttons for documents and themes in sidebar
+
 ## 0.3.2
 
 ### Patch Changes
