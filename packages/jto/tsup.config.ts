@@ -78,5 +78,6 @@ export default defineConfig([
       options.platform = 'node';
       options.target = 'node18';
     },
+    onSuccess: 'cp -r src/server/prompts dist/prompts',
   },
 ]);
