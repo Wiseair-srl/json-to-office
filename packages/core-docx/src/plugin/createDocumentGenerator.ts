@@ -29,8 +29,8 @@ import { normalizeDocument } from '../json/normalizer';
  * Options for creating a document generator
  */
 export interface DocumentGeneratorOptions {
-  /** Theme configuration */
-  theme: ThemeConfig;
+  /** Default theme used when no custom or built-in theme matches */
+  theme?: ThemeConfig;
   /** Custom themes keyed by name, resolved per-document via document.props.theme */
   customThemes?: Record<string, ThemeConfig>;
   /** Enable caching for better performance */
@@ -45,7 +45,7 @@ export interface DocumentGeneratorOptions {
 interface BuilderState {
   components: readonly CustomComponent<any, any, any>[];
   componentNames: Set<string>;
-  theme: ThemeConfig;
+  theme?: ThemeConfig;
   customThemes?: Record<string, ThemeConfig>;
   debug: boolean;
   enableCache: boolean;
@@ -74,6 +74,9 @@ function createBuilderImpl<
       if (key) {
         return state.customThemes[key];
       }
+    }
+    if (state.theme) {
+      return state.theme;
     }
     return getThemeWithFallback(themeName);
   }
