@@ -29,10 +29,23 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
+          if (!id.includes('node_modules')) return;
           if (id.includes('monaco-editor')) return 'monaco-editor';
-          if (id.includes('react-router') || id.includes('react-dom')) return 'react-vendor';
-          if (id.includes('lucide-react') || id.includes('clsx') || id.includes('class-variance-authority')) return 'ui-vendor';
-          if (id.includes('@tanstack/react-query') || id.includes('axios')) return 'query-vendor';
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/react-router') ||
+            id.includes('node_modules/scheduler/')
+          )
+            return 'react-vendor';
+          if (
+            id.includes('lucide-react') ||
+            id.includes('clsx') ||
+            id.includes('class-variance-authority')
+          )
+            return 'ui-vendor';
+          if (id.includes('@tanstack/react-query') || id.includes('axios'))
+            return 'query-vendor';
           if (id.includes('@radix-ui')) return 'radix-ui';
           if (id.includes('zustand')) return 'state-vendor';
           if (id.includes('docx-preview')) return 'docx-preview';
