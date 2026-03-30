@@ -348,9 +348,6 @@ function DocumentSidebarComponent({
                       variant="ghost"
                       size="icon"
                       title="New Document"
-                      disabled={
-                        !discoveryData || discoveryData.documents.length === 0
-                      }
                     >
                       {isCollapsed ? (
                         <FilePlusIcon className="size-4" />
@@ -440,46 +437,41 @@ function DocumentSidebarComponent({
                 )}
                 {!isCollapsed && <span>Active Themes</span>}
               </div>
-              {discoveryData && discoveryData.themes.length > 0 && (
-                <Dialog
-                  open={themeDialogOpen}
-                  onOpenChange={setThemeDialogOpen}
-                >
-                  <DialogTrigger asChild>
-                    <div
+              <Dialog open={themeDialogOpen} onOpenChange={setThemeDialogOpen}>
+                <DialogTrigger asChild>
+                  <div
+                    className={cn(
+                      'flex',
+                      isCollapsed ? 'w-full justify-center' : ''
+                    )}
+                  >
+                    <Button
                       className={cn(
-                        'flex',
-                        isCollapsed ? 'w-full justify-center' : ''
+                        'h-6 w-6 p-0 flex-shrink-0',
+                        isCollapsed && 'mx-auto'
                       )}
+                      variant="ghost"
+                      size="icon"
+                      title="New Theme"
                     >
-                      <Button
-                        className={cn(
-                          'h-6 w-6 p-0 flex-shrink-0',
-                          isCollapsed && 'mx-auto'
-                        )}
-                        variant="ghost"
-                        size="icon"
-                        title="New Theme"
-                      >
-                        {isCollapsed ? (
-                          <PaletteIcon className="size-4" />
-                        ) : (
-                          <Plus className="size-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[525px]">
-                    <DocumentFormDialogContentMemoized
-                      mode="create"
-                      shouldReset={!themeDialogOpen}
-                      postSubmit={closeThemeDialog}
-                      discoveredThemes={discoveryData?.themes || []}
-                      isTheme={true}
-                    />
-                  </DialogContent>
-                </Dialog>
-              )}
+                      {isCollapsed ? (
+                        <PaletteIcon className="size-4" />
+                      ) : (
+                        <Plus className="size-4" />
+                      )}
+                    </Button>
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[525px]">
+                  <DocumentFormDialogContentMemoized
+                    mode="create"
+                    shouldReset={!themeDialogOpen}
+                    postSubmit={closeThemeDialog}
+                    discoveredThemes={discoveryData?.themes || []}
+                    isTheme={true}
+                  />
+                </DialogContent>
+              </Dialog>
             </SidebarGroupLabel>
             {isCollapsed ? (
               /* Collapsed: show icon badges for each theme */
