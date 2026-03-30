@@ -354,7 +354,19 @@ export function createAiRouter() {
         );
 
         const result = streamText({
-          model: claudeCode(model, { streamingInput: 'always' }),
+          model: claudeCode(model, {
+            streamingInput: 'always',
+            disallowedTools: [
+              'Read',
+              'Write',
+              'Edit',
+              'Glob',
+              'Grep',
+              'Bash',
+              'Agent',
+            ],
+            persistSession: false,
+          }),
           system: systemPrompt,
           messages: modelMessages,
         });
@@ -377,7 +389,8 @@ export function createAiRouter() {
         if (
           status === 413 ||
           message.includes('too large') ||
-          message.includes('too long')
+          message.includes('too long') ||
+          message.includes('exceeds maximum')
         ) {
           logger.warn('AI request too large', { error: message });
           return c.json(
