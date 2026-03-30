@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.3.2
+
+### Patch Changes
+
+- e96c957: Upgrade Radix UI dependencies and fix vite manualChunks to scope matching to node_modules
+
 ## 0.3.0
 
 ### Patch Changes
