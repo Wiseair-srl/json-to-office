@@ -1,5 +1,11 @@
 # @json-to-office/core-docx
 
+## 0.3.1
+
+### Patch Changes
+
+- 3ce62dd: Use theme option as fallback in resolveDocumentTheme, fixing regressions for users migrating from @wiseair-srl/json-to-docx
+
 ## 0.3.0
 
 ### Patch Changes
