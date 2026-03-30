@@ -78,7 +78,7 @@
     "cosmiconfig": "9.0.0",
     "docx-preview": "0.3.3",
     "dotenv": "16.3.1",
-    "glob": "10.3.10",
+    "glob": "^13.0.0",
     "hono": "4.6.14",
     "idb-keyval": "^6.2.2",
     "jsonrepair": "^3.13.3",

@@ -1,6 +1,6 @@
 import { readFileSync, statSync, readdirSync } from 'fs';
 import { resolve, join, extname } from 'path';
-import * as glob from 'glob';
+import { glob } from 'glob';
 import type { FormatName } from '../format-adapter.js';
 
 export interface ValidationError {
@@ -294,7 +294,7 @@ export class JsonValidator {
       } else if (stats.isDirectory()) {
         if (options.recursive) {
           const pattern = join(resolvedPath, '**/*.json');
-          return glob.glob(pattern, {
+          return glob(pattern, {
             ignore: ['**/node_modules/**', '**/dist/**', '**/build/**'],
           });
         } else {
@@ -305,7 +305,7 @@ export class JsonValidator {
         }
       }
     } catch {
-      return glob.glob(pathOrPattern, {
+      return glob(pathOrPattern, {
         ignore: ['**/node_modules/**', '**/dist/**', '**/build/**'],
       });
     }
