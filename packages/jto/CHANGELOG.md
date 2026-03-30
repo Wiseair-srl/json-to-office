@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.3.4
+
+### Patch Changes
+
+- 411fa3e: Disable filesystem tools (Read, Write, Edit, Glob, Grep, Bash, Agent) in AI chat provider to prevent crash when Claude Code autonomously reads large files. Also disable session persistence and improve error detection for oversized requests.
+
 ## 0.3.3
 
 ### Patch Changes
