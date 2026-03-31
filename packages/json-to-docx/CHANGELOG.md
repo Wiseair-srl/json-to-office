@@ -1,5 +1,11 @@
 # @json-to-office/json-to-docx
 
+## 0.4.0
+
+### Minor Changes
+
+- f6f9f3f: Re-export core generation and validation functions from public API
+
 ## 0.3.0
 
 ### Patch Changes

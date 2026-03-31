@@ -42,8 +42,14 @@ const buffer = await generateBufferFromJson({
         {
           name: 'chart',
           props: {
-            chartType: 'bar',
-            data: [{ name: 'Revenue ($M)', values: [1.2, 2.4, 3.1, 4.2] }],
+            type: 'bar',
+            data: [
+              {
+                name: 'Revenue ($M)',
+                labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                values: [1.2, 2.4, 3.1, 4.2],
+              },
+            ],
             grid: { column: 0, row: 1, columnSpan: 8, rowSpan: 5 },
           },
         },
