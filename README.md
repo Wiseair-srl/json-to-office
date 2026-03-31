@@ -2,9 +2,10 @@
 
 **Documents as data, not code.** Describe `.docx` and `.pptx` files as plain JSON (serializable, portable, language-agnostic) and render them into real Office documents.
 
-[CI](https://github.com/Wiseair-srl/json-to-office/actions/workflows/ci.yml)
-[npm](https://www.npmjs.com/package/@json-to-office/json-to-docx)
-[License: MIT](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/Wiseair-srl/json-to-office/ci.yml?branch=main&label=CI)](https://github.com/Wiseair-srl/json-to-office/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@json-to-office/json-to-docx?label=json-to-docx)](https://www.npmjs.com/package/@json-to-office/json-to-docx)
+[![npm](https://img.shields.io/npm/v/@json-to-office/json-to-pptx?label=json-to-pptx)](https://www.npmjs.com/package/@json-to-office/json-to-pptx)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## Quick start
 
@@ -80,7 +81,7 @@ jto docx dev
 jto pptx dev
 ```
 
-Visual Playground
+![Visual Playground](docs/playground.gif)
 
 ## The problem
 
