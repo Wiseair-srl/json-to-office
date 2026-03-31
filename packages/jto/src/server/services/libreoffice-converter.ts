@@ -8,20 +8,36 @@ const DEFAULT_CONVERSION_TIMEOUT_MS = 30000;
 const BINARY_PROBE_TIMEOUT_MS = 5000;
 const MAX_EXEC_BUFFER_BYTES = 20 * 1024 * 1024;
 
-type ExecError = NodeJS.ErrnoException & { stdout?: string | Buffer; stderr?: string | Buffer };
+type ExecError = NodeJS.ErrnoException & {
+  stdout?: string | Buffer;
+  stderr?: string | Buffer;
+};
 
-function executeFile(binary: string, args: string[], timeoutMs: number): Promise<{ stdout: string; stderr: string }> {
+function executeFile(
+  binary: string,
+  args: string[],
+  timeoutMs: number
+): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    execFile(binary, args, { timeout: timeoutMs, maxBuffer: MAX_EXEC_BUFFER_BYTES, windowsHide: true }, (error, stdout, stderr) => {
-      if (error) {
-        const execError = error as ExecError;
-        execError.stdout = stdout;
-        execError.stderr = stderr;
-        reject(execError);
-        return;
+    execFile(
+      binary,
+      args,
+      {
+        timeout: timeoutMs,
+        maxBuffer: MAX_EXEC_BUFFER_BYTES,
+        windowsHide: true,
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          const execError = error as ExecError;
+          execError.stdout = stdout;
+          execError.stderr = stderr;
+          reject(execError);
+          return;
+        }
+        resolve({ stdout: stdout ?? '', stderr: stderr ?? '' });
       }
-      resolve({ stdout: stdout ?? '', stderr: stderr ?? '' });
-    });
+    );
   });
 }
 
@@ -34,11 +50,17 @@ function toErrorText(value: unknown): string {
 
 function sanitizeBaseName(originalName?: string): string {
   const parsed = path.parse(originalName || 'document');
-  return (parsed.name || 'document').replace(/[^a-zA-Z0-9._-]/g, '_') || 'document';
+  return (
+    (parsed.name || 'document').replace(/[^a-zA-Z0-9._-]/g, '_') || 'document'
+  );
 }
 
 export class LibreOfficeError extends Error {
-  readonly code: 'BINARY_NOT_FOUND' | 'CONVERSION_TIMEOUT' | 'CONVERSION_FAILED' | 'OUTPUT_NOT_FOUND';
+  readonly code:
+    | 'BINARY_NOT_FOUND'
+    | 'CONVERSION_TIMEOUT'
+    | 'CONVERSION_FAILED'
+    | 'OUTPUT_NOT_FOUND';
   constructor(code: LibreOfficeError['code'], message: string) {
     super(message);
     this.name = 'LibreOfficeError';
@@ -49,7 +71,10 @@ export class LibreOfficeError extends Error {
 export class LibreOfficeBinaryNotFoundError extends LibreOfficeError {
   readonly candidates: string[];
   constructor(candidates: string[]) {
-    super('BINARY_NOT_FOUND', 'LibreOffice binary not found. Install LibreOffice locally or set LIBREOFFICE_PATH.');
+    super(
+      'BINARY_NOT_FOUND',
+      'LibreOffice binary not found. Install LibreOffice locally or set LIBREOFFICE_PATH.'
+    );
     this.name = 'LibreOfficeBinaryNotFoundError';
     this.candidates = candidates;
   }
@@ -58,7 +83,10 @@ export class LibreOfficeBinaryNotFoundError extends LibreOfficeError {
 export class LibreOfficeTimeoutError extends LibreOfficeError {
   readonly timeoutMs: number;
   constructor(timeoutMs: number) {
-    super('CONVERSION_TIMEOUT', `LibreOffice conversion timed out after ${timeoutMs}ms`);
+    super(
+      'CONVERSION_TIMEOUT',
+      `LibreOffice conversion timed out after ${timeoutMs}ms`
+    );
     this.name = 'LibreOfficeTimeoutError';
     this.timeoutMs = timeoutMs;
   }
@@ -76,7 +104,10 @@ export class LibreOfficeConversionError extends LibreOfficeError {
 export class LibreOfficeOutputNotFoundError extends LibreOfficeError {
   readonly outputPath: string;
   constructor(outputPath: string) {
-    super('OUTPUT_NOT_FOUND', 'LibreOffice conversion completed but PDF output was not produced');
+    super(
+      'OUTPUT_NOT_FOUND',
+      'LibreOffice conversion completed but PDF output was not produced'
+    );
     this.name = 'LibreOfficeOutputNotFoundError';
     this.outputPath = outputPath;
   }
@@ -88,16 +119,24 @@ export class LibreOfficeConverterService {
 
   constructor(format: 'docx' | 'pptx', timeoutMs?: number) {
     this.format = format;
-    this.timeoutMs = timeoutMs || config.LIBREOFFICE_TIMEOUT_MS || DEFAULT_CONVERSION_TIMEOUT_MS;
+    this.timeoutMs =
+      timeoutMs ||
+      config.LIBREOFFICE_TIMEOUT_MS ||
+      DEFAULT_CONVERSION_TIMEOUT_MS;
   }
 
-  async convertToPdf(input: Buffer, originalName: string = 'document'): Promise<Buffer> {
+  async convertToPdf(
+    input: Buffer,
+    originalName: string = 'document'
+  ): Promise<Buffer> {
     if (!input || input.length === 0) {
       throw new LibreOfficeConversionError('Input file is empty');
     }
 
     const binaryPath = await this.resolveBinaryPath();
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-libreoffice-'));
+    const tempDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'jto-libreoffice-')
+    );
     const outputBaseName = sanitizeBaseName(originalName);
     const ext = this.format === 'pptx' ? '.pptx' : '.docx';
     const inputPath = path.join(tempDir, `${outputBaseName}${ext}`);
@@ -106,7 +145,8 @@ export class LibreOfficeConverterService {
     try {
       await fs.writeFile(inputPath, input);
 
-      const filterName = this.format === 'pptx' ? 'impress_pdf_Export' : 'writer_pdf_Export';
+      const filterName =
+        this.format === 'pptx' ? 'impress_pdf_Export' : 'writer_pdf_Export';
       await this.runConversion(binaryPath, inputPath, tempDir, filterName);
 
       try {
@@ -128,6 +168,11 @@ export class LibreOfficeConverterService {
     if (configured) candidates.push(configured);
     if (process.platform === 'darwin') {
       candidates.push('/Applications/LibreOffice.app/Contents/MacOS/soffice');
+    } else if (process.platform === 'win32') {
+      candidates.push('C:\\Program Files\\LibreOffice\\program\\soffice.exe');
+      candidates.push(
+        'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe'
+      );
     }
     candidates.push('soffice', 'libreoffice');
     return [...new Set(candidates)];
@@ -143,7 +188,11 @@ export class LibreOfficeConverterService {
 
   private async isBinaryAvailable(binaryPath: string): Promise<boolean> {
     if (binaryPath.includes(path.sep)) {
-      try { await fs.access(binaryPath); } catch { return false; }
+      try {
+        await fs.access(binaryPath);
+      } catch {
+        return false;
+      }
     }
     try {
       await executeFile(binaryPath, ['--version'], BINARY_PROBE_TIMEOUT_MS);
@@ -154,24 +203,48 @@ export class LibreOfficeConverterService {
     }
   }
 
-  private async runConversion(binaryPath: string, inputPath: string, outputDir: string, filterName: string): Promise<void> {
-    const userProfilePath = path.join(outputDir, 'user-profile').replace(/\\/g, '/');
+  private async runConversion(
+    binaryPath: string,
+    inputPath: string,
+    outputDir: string,
+    filterName: string
+  ): Promise<void> {
+    const userProfilePath = path
+      .join(outputDir, 'user-profile')
+      .replace(/\\/g, '/');
     const userInstallation = `file:///${userProfilePath.replace(/^\//, '')}`;
     const args = [
-      '--headless', '--norestore', '--nolockcheck', '--nodefault',
+      '--headless',
+      '--norestore',
+      '--nolockcheck',
+      '--nodefault',
       `-env:UserInstallation=${userInstallation}`,
-      '--convert-to', `pdf:${filterName}`,
-      '--outdir', outputDir, inputPath,
+      '--convert-to',
+      `pdf:${filterName}`,
+      '--outdir',
+      outputDir,
+      inputPath,
     ];
 
     try {
       await executeFile(binaryPath, args, this.timeoutMs);
     } catch (error) {
       const execError = error as ExecError;
-      if (execError.code === 'ETIMEDOUT') throw new LibreOfficeTimeoutError(this.timeoutMs);
-      if (execError.code === 'ENOENT') throw new LibreOfficeBinaryNotFoundError(this.getBinaryCandidates());
-      const details = [toErrorText(execError.stderr), toErrorText(execError.stdout)].filter(Boolean).join('\n').trim();
-      throw new LibreOfficeConversionError('LibreOffice failed to convert to PDF', details || execError.message);
+      if (execError.code === 'ETIMEDOUT')
+        throw new LibreOfficeTimeoutError(this.timeoutMs);
+      if (execError.code === 'ENOENT')
+        throw new LibreOfficeBinaryNotFoundError(this.getBinaryCandidates());
+      const details = [
+        toErrorText(execError.stderr),
+        toErrorText(execError.stdout),
+      ]
+        .filter(Boolean)
+        .join('\n')
+        .trim();
+      throw new LibreOfficeConversionError(
+        'LibreOffice failed to convert to PDF',
+        details || execError.message
+      );
     }
   }
 }
