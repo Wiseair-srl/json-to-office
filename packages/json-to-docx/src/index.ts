@@ -6,7 +6,15 @@
  */
 
 // Core generation API
-export { generateDocument } from '@json-to-office/core-docx';
+export {
+  generateDocument,
+  generateDocumentFromJson,
+  generateBufferFromJson,
+  generateAndSaveFromJson,
+  generateDocumentFromFile,
+  validateJsonSchema,
+  saveDocument,
+} from '@json-to-office/core-docx';
 
 // Re-export shared-docx schemas and types
 export * from '@json-to-office/shared-docx';
