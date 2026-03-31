@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.4.1
+
+### Patch Changes
+
+- 5b07742: Auto-detect LibreOffice on Windows default install paths
+
 ## 0.3.6
 
 ### Patch Changes
