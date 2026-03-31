@@ -57,12 +57,7 @@ jobs:
       - run: pnpm test
 
   release:
-    needs: [quality, test]
-    # Allow release when quality/test are skipped (version-bump commits)
-    if: |
-      github.ref == 'refs/heads/main' && github.event_name == 'push' &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
