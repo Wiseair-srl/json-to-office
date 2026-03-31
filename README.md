@@ -2,9 +2,78 @@
 
 **Documents as data, not code.** Describe `.docx` and `.pptx` files as plain JSON (serializable, portable, language-agnostic) and render them into real Office documents.
 
-[![CI](https://github.com/Wiseair-srl/json-to-office/actions/workflows/ci.yml/badge.svg)](https://github.com/Wiseair-srl/json-to-office/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/@json-to-office/json-to-docx.svg)](https://www.npmjs.com/package/@json-to-office/json-to-docx)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[CI](https://github.com/Wiseair-srl/json-to-office/actions/workflows/ci.yml)
+[npm](https://www.npmjs.com/package/@json-to-office/json-to-docx)
+[License: MIT](LICENSE)
+
+## Quick start
+
+```bash
+npm install @json-to-office/json-to-docx @json-to-office/json-to-pptx
+```
+
+```ts
+import { generateAndSaveFromJson as docx } from '@json-to-office/json-to-docx';
+import { generateAndSaveFromJson as pptx } from '@json-to-office/json-to-pptx';
+
+// DOCX
+await docx(
+  {
+    name: 'docx',
+    children: [
+      { name: 'heading', props: { text: 'Q1 Report', level: 1 } },
+      {
+        name: 'paragraph',
+        props: { text: 'Revenue grew **32%** quarter-over-quarter.' },
+      },
+    ],
+  },
+  'report.docx'
+);
+
+// PPTX
+await pptx(
+  {
+    name: 'pptx',
+    props: { theme: 'corporate', grid: { columns: 12, rows: 6 } },
+    children: [
+      {
+        name: 'slide',
+        props: { background: { color: 'background' } },
+        children: [
+          {
+            name: 'text',
+            props: {
+              text: 'Q1 Results',
+              style: 'title',
+              grid: { column: 0, row: 0, columnSpan: 12 },
+            },
+          },
+          {
+            name: 'chart',
+            props: {
+              chartType: 'bar',
+              data: [{ name: 'Revenue', values: [1.2, 2.4, 3.1, 4.2] }],
+              grid: { column: 0, row: 1, columnSpan: 8, rowSpan: 5 },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  'deck.pptx'
+);
+```
+
+Or explore interactively with the visual playground (Monaco editor, live preview, AI assistant):
+
+```bash
+npm install -g @json-to-office/jto
+jto docx dev
+jto pptx dev
+```
+
+Visual Playground
 
 ## The problem
 
@@ -60,35 +129,62 @@ Your document is just JSON now. Generate it, store it, validate it, version it, 
 
 ## Why not X?
 
-|                   | json-to-office                               | docx / pptxgenjs                       | Carbone                                  | officegen       |
-| ----------------- | -------------------------------------------- | -------------------------------------- | ---------------------------------------- | --------------- |
-| **Format**        | Declarative JSON                             | Imperative code                        | Template `.docx` + data                  | Imperative code |
-| **Serializable**  | Yes: store, send, generate from any language | No: trapped in code                    | Partially: data is JSON, structure isn't | No              |
-| **LLM-friendly**  | Yes: LLMs emit JSON reliably                 | Fragile: no schema to constrain output | No: requires a pre-made template         | No              |
-| **Validation**    | Full schema validation (TypeBox)             | None                                   | None                                     | None            |
-| **Themes**        | Built-in theme system                        | Manual styling                         | Template-based                           | Manual styling  |
-| **Extensibility** | Plugin architecture with semver              | N/A                                    | N/A                                      | N/A             |
-| **Dependencies**  | Node.js only                                 | Node.js only                           | Node.js + LibreOffice                    | Node.js only    |
+|                   | json-to-office                               | docx / pptxgenjs                       | Carbone                                  | Gamma                  | officegen       |
+| ----------------- | -------------------------------------------- | -------------------------------------- | ---------------------------------------- | ---------------------- | --------------- |
+| **Format**        | Declarative JSON                             | Imperative code                        | Template `.docx` + data                  | SaaS GUI               | Imperative code |
+| **Serializable**  | Yes: store, send, generate from any language | No: trapped in code                    | Partially: data is JSON, structure isn't | No: locked in platform | No              |
+| **LLM-friendly**  | Yes: LLMs emit JSON reliably                 | Fragile: no schema to constrain output | No: requires a pre-made template         | N/A                    | No              |
+| **Validation**    | Full schema validation (TypeBox)             | None                                   | None                                     | N/A                    | None            |
+| **Themes**        | Built-in theme system                        | Manual styling                         | Template-based                           | Built-in               | Manual styling  |
+| **Extensibility** | Plugin architecture with semver              | N/A                                    | N/A                                      | N/A                    | N/A             |
+| **Self-hosted**   | Yes                                          | Yes                                    | Yes                                      | No: SaaS only          | Yes             |
+| **Dependencies**  | Node.js only                                 | Node.js only                           | Node.js + LibreOffice                    | None (hosted)          | Node.js only    |
 
 **vs. docx / pptxgenjs**: These are json-to-office's own rendering backends. json-to-office is the declarative layer on top: a schema-validated JSON contract that compiles down to those libraries. It also adds abstractions they don't have: themes, a layout pipeline, a plugin architecture, a template/placeholder system (PPTX), and TypeBox schemas that serve as both TypeScript types and runtime validators from a single source of truth.
 
 **vs. Carbone**: Carbone is template-driven: design a `.docx` in Word, sprinkle `{placeholders}`, inject data. Works when structure is fixed and only data changes. When structure is dynamic (conditional sections, variable-length tables, data-driven layouts) templates become brittle. json-to-office replaces the template file with a composable component tree. No LibreOffice dependency.
 
+**vs. Gamma**: Gamma is a SaaS presentation tool with AI-powered design — great for one-off decks made by hand. But your data never leaves their platform, there's no API for programmatic generation, and output is tied to their format. json-to-office is infrastructure: self-hosted, schema-driven, embeddable in any pipeline, producing native `.pptx`/`.docx` files you fully own.
+
 ## Features
 
-**DOCX**: 13 component types: paragraph, heading (h1-h6), table, image (URL/file/base64, contain/cover/crop, captions, floating), list (57 numbering formats, 9 nesting levels), columns, text-box, statistic, highcharts, header/footer, table of contents, and sections with independent page config.
+### DOCX: 13 components
 
-**PPTX**: 7 component types: text (with bullets, hyperlinks, style presets), image (rotation, rounded corners, shadows), shape (15 types including rect, ellipse, arrow, star, cloud), table (auto-pagination with header repeat, colspan/rowspan), chart (8 native PowerPoint types: bar, line, pie, area, doughnut, radar, bubble, scatter), highcharts, and slides with grid-based positioning.
+| Component          | Highlights                                                      |
+| ------------------ | --------------------------------------------------------------- |
+| paragraph, heading | Markdown-style bold/italic in text, h1–h6                       |
+| table              | Auto-width columns, merged cells, styled headers                |
+| image              | URL / file / base64, contain / cover / crop, captions, floating |
+| list               | 57 numbering formats, 9 nesting levels                          |
+| columns            | Multi-column layouts                                            |
+| text-box           | Positioned text regions                                         |
+| statistic          | KPI cards                                                       |
+| highcharts         | Server-side chart rendering                                     |
+| header / footer    | Per-section, first-page variant                                 |
+| table of contents  | Auto-generated from headings                                    |
+| section            | Independent page size, orientation, margins                     |
 
-**Cross-format:**
+### PPTX: 7 components
 
-- **Theme system**: Colors, fonts, spacing, and component defaults. 3 built-in themes per format (minimal, corporate, vibrant/modern), or define your own.
-- **Schema validation**: Full TypeBox schemas that serve as TypeScript types _and_ runtime validators. Catch errors before rendering.
-- **Plugin architecture**: Create versioned custom components with `createComponent()`. Full TypeScript support, chainable API, schema generation. Works for both DOCX and PPTX.
-- **Template/placeholder system** (PPTX): Define slide templates with named placeholder regions. Static + dynamic content, style inheritance.
+| Component  | Highlights                                                                        |
+| ---------- | --------------------------------------------------------------------------------- |
+| text       | Bullets, hyperlinks, style presets                                                |
+| image      | Rotation, rounded corners, shadows                                                |
+| shape      | 15 types: rect, ellipse, arrow, star, cloud, etc.                                 |
+| table      | Auto-pagination with header repeat, colspan/rowspan                               |
+| chart      | 8 native PowerPoint types: bar, line, pie, area, doughnut, radar, bubble, scatter |
+| highcharts | Server-side chart rendering                                                       |
+| slide      | Grid-based positioning, backgrounds, templates                                    |
+
+### Cross-format
+
+- **Theme system**: colors, fonts, spacing, component defaults. 3 built-in themes per format (minimal, corporate, vibrant/modern), or define your own.
+- **Schema validation**: full TypeBox schemas that serve as TypeScript types _and_ runtime validators. Catch errors before rendering.
+- **Plugin architecture**: create versioned custom components with `createComponent()`. Full TypeScript support, chainable API, schema generation.
+- **Template / placeholder system** (PPTX): slide templates with named placeholder regions, static + dynamic content, style inheritance.
 - **Grid layout** (PPTX): 12-column responsive grid with configurable margins and gutters.
 
-## Quick start
+## Full examples
 
 ### DOCX
 
@@ -97,17 +193,14 @@ npm install @json-to-office/json-to-docx
 ```
 
 ```ts
-import { generateAndSaveFromJson } from '@json-to-office/json-to-docx';
+import { generateAndSaveFromJson as docx } from '@json-to-office/json-to-docx';
 
-await generateAndSaveFromJson(
+await docx(
   {
     name: 'docx',
     props: { theme: 'minimal' },
     children: [
-      {
-        name: 'heading',
-        props: { text: 'Hello from json-to-office', level: 1 },
-      },
+      { name: 'heading', props: { text: 'Q1 Report', level: 1 } },
       {
         name: 'paragraph',
         props: { text: 'Revenue grew **32%** quarter-over-quarter.' },
@@ -118,19 +211,11 @@ await generateAndSaveFromJson(
           columns: [
             {
               header: { content: 'Metric' },
-              cells: [
-                { content: 'Revenue' },
-                { content: 'Users' },
-                { content: 'NPS' },
-              ],
+              cells: [{ content: 'Revenue' }, { content: 'Users' }],
             },
             {
               header: { content: 'Value' },
-              cells: [
-                { content: '$4.2M' },
-                { content: '12,847' },
-                { content: '72' },
-              ],
+              cells: [{ content: '$4.2M' }, { content: '12,847' }],
             },
           ],
         },
@@ -148,9 +233,9 @@ npm install @json-to-office/json-to-pptx
 ```
 
 ```ts
-import { generateAndSaveFromJson } from '@json-to-office/json-to-pptx';
+import { generateAndSaveFromJson as pptx } from '@json-to-office/json-to-pptx';
 
-await generateAndSaveFromJson(
+await pptx(
   {
     name: 'pptx',
     props: {
@@ -187,22 +272,21 @@ await generateAndSaveFromJson(
 );
 ```
 
-### CLI & dev server
+### CLI
 
 ```bash
-npm install -g @json-to-office/jto
-
-# Start the dev server with visual playground (Monaco editor + live preview)
+# Start the visual playground with live preview
 jto docx dev --input ./my-template.json
+jto pptx dev --input ./my-template.json
 
-# Generate a file directly
+# Generate files directly
 jto docx generate --input ./my-template.json --output ./report.docx
 jto pptx generate --input ./my-template.json --output ./deck.pptx
 ```
 
-The visual playground gives you a Monaco editor with JSON autocomplete and validation, live document preview, built-in templates, and theme switching, all in the browser. It optionally uses **LibreOffice** (headless) for high-fidelity PDF preview — the only way to get pixel-accurate rendering, especially for PPTX where no browser renderer exists. It also integrates **Claude** (Opus/Sonnet/Haiku) as a built-in AI chat assistant: describe a document in plain English and get schema-validated JSON back, rendered live. Both features are playground-only — the core rendering libraries have zero dependency on either.
+### Visual playground
 
-![Visual Playground](docs/playground-screenshot.png)
+The dev server gives you a Monaco editor with JSON autocomplete and validation, live document preview, built-in templates, and theme switching, all in the browser. **LibreOffice is not required**: the playground renders previews natively. If LibreOffice (headless) is installed, the playground can optionally use it for high-fidelity PDF rendering, the only way to get pixel-accurate output, especially for PPTX where no browser renderer exists. It also integrates **Claude** (Opus/Sonnet/Haiku) as a built-in AI chat assistant: describe a document in plain English and get schema-validated JSON back, rendered live. Both LibreOffice and Claude are playground-only extras; the core rendering libraries have zero dependency on either.
 
 ## Who it's for
 
@@ -222,7 +306,7 @@ The visual playground gives you a Monaco editor with JSON autocomplete and valid
 
 ## Examples
 
-See the [`examples/`](examples/) directory for complete, runnable JSON definitions:
+See the `[examples/](examples/)` directory for complete, runnable JSON definitions:
 
 - **[invoice.docx.json](examples/invoice.docx.json)**: Professional invoice with line items, totals, payment terms
 - **[annual-review.docx.json](examples/annual-review.docx.json)**: Multi-section annual review with TOC, statistics, tables, lists
@@ -230,16 +314,21 @@ See the [`examples/`](examples/) directory for complete, runnable JSON definitio
 
 ## Packages
 
-| Package                                                 | Description                            |
-| ------------------------------------------------------- | -------------------------------------- |
-| [`@json-to-office/json-to-docx`](packages/json-to-docx) | Public API for DOCX generation         |
-| [`@json-to-office/json-to-pptx`](packages/json-to-pptx) | Public API for PPTX generation         |
-| [`@json-to-office/jto`](packages/jto)                   | CLI + dev server + visual playground   |
-| [`@json-to-office/core-docx`](packages/core-docx)       | Core DOCX engine                       |
-| [`@json-to-office/core-pptx`](packages/core-pptx)       | Core PPTX engine                       |
-| [`@json-to-office/shared`](packages/shared)             | Format-agnostic schemas and validation |
-| [`@json-to-office/shared-docx`](packages/shared-docx)   | DOCX-specific schemas                  |
-| [`@json-to-office/shared-pptx`](packages/shared-pptx)   | PPTX-specific schemas                  |
+| Package                                                 | Description                          |
+| ------------------------------------------------------- | ------------------------------------ |
+| `[@json-to-office/json-to-docx](packages/json-to-docx)` | DOCX generation from JSON            |
+| `[@json-to-office/json-to-pptx](packages/json-to-pptx)` | PPTX generation from JSON            |
+| `[@json-to-office/jto](packages/jto)`                   | CLI + dev server + visual playground |
+
+Internal packages
+
+| Package                                               | Description                            |
+| ----------------------------------------------------- | -------------------------------------- |
+| `[@json-to-office/core-docx](packages/core-docx)`     | Core DOCX engine                       |
+| `[@json-to-office/core-pptx](packages/core-pptx)`     | Core PPTX engine                       |
+| `[@json-to-office/shared](packages/shared)`           | Format-agnostic schemas and validation |
+| `[@json-to-office/shared-docx](packages/shared-docx)` | DOCX-specific schemas                  |
+| `[@json-to-office/shared-pptx](packages/shared-pptx)` | PPTX-specific schemas                  |
 
 ## Development
 
