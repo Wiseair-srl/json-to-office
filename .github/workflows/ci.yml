@@ -12,10 +12,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   quality:
-    # Skip on version-bump commits — already validated on the PR
-    if: "${{ github.event.head_commit.message != 'chore: version packages' }}"
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,8 +36,7 @@ jobs:
       - run: pnpm typecheck
 
   test:
-    # Skip on version-bump commits — already validated on the PR
-    if: "${{ github.event.head_commit.message != 'chore: version packages' }}"
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -60,10 +61,9 @@ jobs:
     needs: [quality, test]
     # Allow release when quality/test are skipped (version-bump commits)
     if: |
-      always() &&
       github.ref == 'refs/heads/main' && github.event_name == 'push' &&
-      (needs.quality.result == 'success' || needs.quality.result == 'skipped') &&
-      (needs.test.result == 'success' || needs.test.result == 'skipped')
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -81,7 +81,7 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
 
       - name: Create release PR or publish
         id: changesets
@@ -92,5 +92,4 @@ jobs:
           commit: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
