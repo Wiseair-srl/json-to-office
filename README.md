@@ -20,6 +20,7 @@ import { generateAndSaveFromJson as pptx } from '@json-to-office/json-to-pptx';
 await docx(
   {
     name: 'docx',
+    props: { theme: 'minimal' },
     children: [
       { name: 'heading', props: { text: 'Q1 Report', level: 1 } },
       {
@@ -52,8 +53,14 @@ await pptx(
           {
             name: 'chart',
             props: {
-              chartType: 'bar',
-              data: [{ name: 'Revenue', values: [1.2, 2.4, 3.1, 4.2] }],
+              type: 'bar',
+              data: [
+                {
+                  name: 'Revenue',
+                  labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                  values: [1.2, 2.4, 3.1, 4.2],
+                },
+              ],
               grid: { column: 0, row: 1, columnSpan: 8, rowSpan: 5 },
             },
           },
@@ -259,8 +266,14 @@ await pptx(
           {
             name: 'chart',
             props: {
-              chartType: 'bar',
-              data: [{ name: 'Revenue', values: [1.2, 2.4, 3.1, 4.2] }],
+              type: 'bar',
+              data: [
+                {
+                  name: 'Revenue',
+                  labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                  values: [1.2, 2.4, 3.1, 4.2],
+                },
+              ],
               grid: { column: 0, row: 1, columnSpan: 8, rowSpan: 5 },
             },
           },
@@ -276,8 +289,8 @@ await pptx(
 
 ```bash
 # Start the visual playground with live preview
-jto docx dev --input ./my-template.json
-jto pptx dev --input ./my-template.json
+jto docx dev ./my-template.json
+jto pptx dev ./my-template.json
 
 # Generate files directly
 jto docx generate --input ./my-template.json --output ./report.docx
