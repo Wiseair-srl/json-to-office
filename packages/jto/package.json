@@ -37,7 +37,7 @@
     "prepublishOnly": "cp ../../LICENSE ."
   },
   "dependencies": {
-    "@ai-sdk/react": "^3.0.118",
+    "@ai-sdk/react": "^3.0.143",
     "@hono/node-server": "1.13.7",
     "@json-to-office/core-docx": "workspace:^",
     "@json-to-office/core-pptx": "workspace:^",
@@ -63,8 +63,8 @@
     "@sinclair/typebox": "0.34.38",
     "@tailwindcss/postcss": "4.1.11",
     "@tanstack/react-query": "5.62.11",
-    "ai": "^6.0.116",
-    "ai-sdk-provider-claude-code": "^3.4.3",
+    "ai": "^6.0.141",
+    "ai-sdk-provider-claude-code": "^3.4.4",
     "ajv": "8.12.0",
     "ajv-formats": "2.1.1",
     "axios": "1.7.9",
