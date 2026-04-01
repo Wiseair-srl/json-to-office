@@ -1,78 +1,151 @@
 {
   "name": "docx",
   "props": {
-    "metadata": { "title": "Cloud Migration Proposal" },
-    "theme": "modern"
+    "metadata": {
+      "title": "Cloud Migration Proposal",
+      "author": "Apex Consulting",
+      "description": "Strategic proposal for Meridian Financial Group's cloud transformation initiative"
+    },
+    "theme": "apex"
   },
   "children": [
     {
-      "name": "header",
-      "props": {
-        "text": "Proposal — Confidential",
-        "alignment": "right"
-      }
-    },
-    {
-      "name": "footer",
-      "props": {
-        "text": "Apex Consulting",
-        "alignment": "left",
-        "showPageNumbers": true
-      }
-    },
-    {
       "name": "section",
-      "props": { "level": 1 },
+      "props": {
+        "level": 1,
+        "header": [
+          {
+            "name": "header",
+            "props": {
+              "text": "Apex Consulting — Confidential",
+              "alignment": "right"
+            }
+          }
+        ],
+        "footer": [
+          {
+            "name": "footer",
+            "props": {
+              "text": "Prepared for Meridian Financial Group",
+              "alignment": "left",
+              "showPageNumbers": true
+            }
+          }
+        ]
+      },
       "children": [
-        { "name": "heading", "props": { "text": "Cloud Migration Proposal", "level": 1 } },
-        { "name": "heading", "props": { "text": "Prepared for Meridian Financial Group", "level": 2 } },
-        { "name": "paragraph", "props": { "text": "Prepared by Apex Consulting — March 2025" } },
-        { "name": "paragraph", "props": { "text": "This proposal outlines a phased approach to migrate Meridian Financial Group's on-premise infrastructure to a cloud-native architecture. The migration will reduce operational costs by 40%, improve system reliability to 99.99% uptime, and enable rapid scaling for future growth." } }
+        {
+          "name": "heading",
+          "props": { "text": "Cloud Migration Proposal", "level": 1 }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Strategic Infrastructure Transformation for Meridian Financial Group",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Prepared by Apex Consulting — April 2026",
+            "font": { "italic": true, "color": "textSecondary" }
+          }
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "image",
+          "props": {
+            "path": "https://placehold.co/800x200/0C2340/D4A843?text=APEX+CONSULTING&font=georgia",
+            "width": "100%",
+            "caption": "Figure: Apex Consulting — Enterprise Cloud Advisory"
+          }
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "This proposal outlines a phased approach to migrate Meridian Financial Group's on-premise infrastructure to a cloud-native architecture on AWS. The initiative will reduce operational costs by 42%, improve system reliability to 99.99% uptime, and position Meridian for the next decade of growth in digital financial services."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Apex Consulting brings 14 years of experience in financial services cloud transformations, having successfully migrated 23 regulated financial institutions to cloud-native architectures. Our team holds AWS Advanced Consulting Partner status and specializes in PCI-DSS and SOC 2 compliant migrations."
+          }
+        },
+        { "name": "toc", "props": { "depth": { "from": 1, "to": 2 } } }
       ]
     },
     {
       "name": "section",
-      "props": { "level": 1, "pageBreak": true },
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
       "children": [
-        { "name": "heading", "props": { "text": "Current State Assessment", "level": 1 } },
-        { "name": "paragraph", "props": { "text": "Meridian's current infrastructure presents several challenges that limit business agility and increase operational risk:" } },
+        {
+          "name": "heading",
+          "props": { "text": "Executive Summary", "level": 1 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Meridian Financial Group's current infrastructure is approaching end-of-life across multiple critical systems. Server utilization has reached critical thresholds, monthly downtime exceeds SLA targets, and the 6-8 week hardware procurement cycle severely limits business agility. The security posture carries significant risk with 47 unpatched critical vulnerabilities across end-of-life systems."
+          }
+        },
         {
           "name": "columns",
-          "props": { "columns": 2, "gap": 0.5 },
+          "props": { "columns": 3, "gap": 0.4 },
           "children": [
             {
               "name": "statistic",
-              "props": { "number": "87%", "description": "Server Utilization", "trendValue": "Critical capacity" }
+              "props": {
+                "number": "$1.14M/yr",
+                "description": "Projected Savings",
+                "trendValue": "42% cost reduction"
+              }
             },
             {
               "name": "statistic",
-              "props": { "number": "23 hrs", "description": "Monthly Downtime", "trendValue": "Below SLA target" }
+              "props": {
+                "number": "99.99%",
+                "description": "Target Uptime",
+                "trendValue": "From 97.4% current"
+              }
+            },
+            {
+              "name": "statistic",
+              "props": {
+                "number": "26 weeks",
+                "description": "Migration Timeline",
+                "trendValue": "3-phase approach"
+              }
             }
           ]
         },
-        { "name": "heading", "props": { "text": "Infrastructure Inventory", "level": 2 } },
         {
-          "name": "table",
+          "name": "paragraph",
           "props": {
-            "columns": [
-              { "header": { "content": "Component" }, "cells": [{ "content": "Application Servers" }, { "content": "Database Cluster" }, { "content": "Storage" }, { "content": "Network" }, { "content": "Disaster Recovery" }] },
-              { "header": { "content": "Current" }, "cells": [{ "content": "12 physical" }, { "content": "3-node Oracle RAC" }, { "content": "NetApp SAN, 48TB" }, { "content": "Cisco catalyst stack" }, { "content": "Tape backup, 24hr RPO" }] },
-              { "header": { "content": "Age" }, "cells": [{ "content": "5-7 years" }, { "content": "6 years" }, { "content": "4 years" }, { "content": "8 years" }, { "content": "N/A" }] },
-              { "header": { "content": "Risk Level" }, "cells": [{ "content": "High" }, { "content": "Critical" }, { "content": "Medium" }, { "content": "High" }, { "content": "Critical" }] }
-            ]
+            "text": "We propose a three-phase migration to AWS, leveraging managed services to minimize operational burden while maximizing reliability and cost efficiency. The migration will be executed with zero planned downtime for customer-facing systems, using blue-green deployment strategies and automated rollback procedures."
           }
         },
-        { "name": "heading", "props": { "text": "Key Pain Points", "level": 2 } },
+        {
+          "name": "heading",
+          "props": { "text": "Strategic Objectives", "level": 2 }
+        },
         {
           "name": "list",
           "props": {
             "format": "decimal",
             "items": [
-              "Hardware refresh cycle requires $2.1M capital investment every 4 years",
-              "Scaling requires 6-8 week lead time for hardware procurement",
-              "Disaster recovery tested annually — last test revealed 4-hour data gap",
-              "Security patching backlog of 47 critical vulnerabilities across end-of-life systems",
-              "Development teams blocked by shared staging environment contention"
+              "Eliminate $2.1M hardware refresh cycle and transition to OpEx model",
+              "Reduce provisioning time from 6-8 weeks to under 15 minutes",
+              "Achieve SOC 2 Type II compliance through automated security controls",
+              "Enable engineering teams with isolated environments and CI/CD pipelines",
+              "Establish multi-region disaster recovery with < 1 minute RPO"
             ]
           }
         }
@@ -80,45 +153,484 @@
     },
     {
       "name": "section",
-      "props": { "level": 1, "pageBreak": true },
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
       "children": [
-        { "name": "heading", "props": { "text": "Proposed Solution", "level": 1 } },
-        { "name": "paragraph", "props": { "text": "We propose a three-phase migration to AWS, leveraging managed services to minimize operational burden while maximizing reliability and cost efficiency." } },
-        { "name": "heading", "props": { "text": "Phase 1: Foundation (Weeks 1-8)", "level": 2 } },
-        { "name": "paragraph", "props": { "text": "Establish cloud landing zone with networking, identity, security baselines, and CI/CD pipelines. Migrate non-critical workloads (dev/staging environments, internal tools) using lift-and-shift." } },
-        { "name": "heading", "props": { "text": "Phase 2: Core Migration (Weeks 9-20)", "level": 2 } },
-        { "name": "paragraph", "props": { "text": "Migrate production databases to Aurora PostgreSQL with zero-downtime cutover. Re-platform application servers to ECS Fargate containers. Implement auto-scaling and multi-AZ redundancy." } },
-        { "name": "heading", "props": { "text": "Phase 3: Optimization (Weeks 21-26)", "level": 2 } },
-        { "name": "paragraph", "props": { "text": "Right-size instances based on production metrics. Enable reserved capacity purchasing for predictable workloads. Implement cloud-native monitoring, alerting, and automated remediation." } }
+        {
+          "name": "heading",
+          "props": { "text": "Current State Assessment", "level": 1 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Our discovery audit of Meridian's infrastructure identified critical capacity constraints, security vulnerabilities, and operational inefficiencies that create material business risk. The following assessment is based on a two-week on-site evaluation conducted in February 2026."
+          }
+        },
+        {
+          "name": "columns",
+          "props": { "columns": 2, "gap": 0.5 },
+          "children": [
+            {
+              "name": "statistic",
+              "props": {
+                "number": "87%",
+                "description": "Server Utilization",
+                "trendValue": "Critical capacity"
+              }
+            },
+            {
+              "name": "statistic",
+              "props": {
+                "number": "23 hrs",
+                "description": "Monthly Downtime",
+                "trendValue": "Below SLA target"
+              }
+            }
+          ]
+        },
+        {
+          "name": "heading",
+          "props": { "text": "Infrastructure Inventory", "level": 2 }
+        },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "font": { "bold": true, "size": 10 },
+              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+            },
+            "cellDefaults": {
+              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "verticalAlignment": "middle",
+              "font": { "size": 10 }
+            },
+            "borderColor": "D6DAE0",
+            "borderSize": 1,
+            "hideBorders": { "insideVertical": true },
+            "columns": [
+              {
+                "header": { "content": "Component" },
+                "cells": [
+                  { "content": "Application Servers" },
+                  { "content": "Database Cluster" },
+                  { "content": "Storage" },
+                  { "content": "Network" },
+                  { "content": "Disaster Recovery" },
+                  { "content": "Load Balancers" },
+                  { "content": "Message Queue" }
+                ]
+              },
+              {
+                "header": { "content": "Current Configuration" },
+                "cells": [
+                  { "content": "12 physical Dell R740xd" },
+                  { "content": "3-node Oracle RAC 19c" },
+                  { "content": "NetApp FAS8200, 48TB" },
+                  { "content": "Cisco Catalyst 9300 stack" },
+                  { "content": "Tape backup, 24hr RPO" },
+                  { "content": "F5 BIG-IP pair (active/passive)" },
+                  { "content": "RabbitMQ 3.8 (single node)" }
+                ]
+              },
+              {
+                "header": { "content": "Age" },
+                "cells": [
+                  { "content": "5-7 years" },
+                  { "content": "6 years" },
+                  { "content": "4 years" },
+                  { "content": "8 years" },
+                  { "content": "N/A" },
+                  { "content": "5 years" },
+                  { "content": "3 years" }
+                ]
+              },
+              {
+                "header": { "content": "Risk Level" },
+                "cells": [
+                  { "content": "High" },
+                  { "content": "Critical" },
+                  { "content": "Medium" },
+                  { "content": "High" },
+                  { "content": "Critical" },
+                  { "content": "Medium" },
+                  { "content": "Low" }
+                ]
+              },
+              {
+                "header": { "content": "EoL Date" },
+                "cells": [
+                  { "content": "Sep 2026" },
+                  { "content": "Dec 2026" },
+                  { "content": "Mar 2028" },
+                  { "content": "Jun 2025 (past)" },
+                  { "content": "N/A" },
+                  { "content": "Mar 2027" },
+                  { "content": "Jun 2029" }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": { "text": "Key Pain Points", "level": 2 }
+        },
+        {
+          "name": "list",
+          "props": {
+            "format": "decimal",
+            "items": [
+              "Hardware refresh cycle requires $2.1M capital investment every 4 years, with a $1.8M refresh currently 6 months overdue",
+              "Scaling requires 6-8 week lead time for hardware procurement — three product launches were delayed in 2025 due to infrastructure constraints",
+              "Disaster recovery tested annually — last test in November 2025 revealed a 4-hour data gap and 12-hour RTO, far exceeding the 1-hour target",
+              "Security patching backlog of 47 critical vulnerabilities across end-of-life Cisco network equipment and Oracle database servers",
+              "Development teams blocked by shared staging environment contention — average wait time of 3.2 days for deployment slots",
+              "Monitoring is fragmented across 4 tools (Nagios, Splunk, custom scripts, manual checks) with no unified alerting or incident response automation"
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": { "text": "Compliance Gap Analysis", "level": 2 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Meridian's current infrastructure does not meet several requirements mandated by the upcoming PCI-DSS v4.0 standard (effective March 2025) and SOC 2 Type II certification goals:"
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "font": { "bold": true, "size": 10 },
+              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+            },
+            "cellDefaults": {
+              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "verticalAlignment": "middle",
+              "font": { "size": 10 }
+            },
+            "borderColor": "D6DAE0",
+            "borderSize": 1,
+            "hideBorders": { "insideVertical": true },
+            "columns": [
+              {
+                "header": { "content": "Requirement" },
+                "cells": [
+                  { "content": "Encryption at rest" },
+                  { "content": "Key rotation" },
+                  { "content": "Audit logging" },
+                  { "content": "Access controls" },
+                  { "content": "Vulnerability scanning" }
+                ]
+              },
+              {
+                "header": { "content": "Current State" },
+                "cells": [
+                  { "content": "Partial (DB only)" },
+                  { "content": "Manual, annual" },
+                  { "content": "Application-level only" },
+                  { "content": "LDAP, no MFA" },
+                  { "content": "Quarterly manual scans" }
+                ]
+              },
+              {
+                "header": { "content": "Required State" },
+                "cells": [
+                  { "content": "All data stores" },
+                  { "content": "Automated, 90-day" },
+                  { "content": "Infrastructure + app" },
+                  { "content": "SSO + MFA + RBAC" },
+                  { "content": "Continuous automated" }
+                ]
+              },
+              {
+                "header": { "content": "Gap Severity" },
+                "cells": [
+                  { "content": "High" },
+                  { "content": "Medium" },
+                  { "content": "Critical" },
+                  { "content": "High" },
+                  { "content": "Critical" }
+                ]
+              }
+            ]
+          }
+        }
       ]
     },
     {
       "name": "section",
-      "props": { "level": 1, "pageBreak": true },
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
       "children": [
-        { "name": "heading", "props": { "text": "Investment & ROI", "level": 1 } },
+        {
+          "name": "heading",
+          "props": { "text": "Proposed Solution", "level": 1 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "We propose a three-phase migration to AWS, leveraging managed services to minimize operational burden while maximizing reliability and cost efficiency. Each phase includes defined success criteria, rollback procedures, and a go/no-go checkpoint before proceeding."
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "https://placehold.co/800x300/F4F5F8/0C2340?text=Migration+Architecture+Diagram&font=georgia",
+            "width": "100%",
+            "caption": "Figure 2: Target cloud architecture — multi-AZ deployment across us-east-1 and eu-west-1"
+          }
+        },
+        {
+          "name": "heading",
+          "props": { "text": "Phase 1: Foundation (Weeks 1-8)", "level": 2 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Establish the cloud landing zone with networking (VPC, Transit Gateway, Direct Connect), identity (AWS SSO with Okta integration), security baselines (GuardDuty, SecurityHub, Config Rules), and CI/CD pipelines (GitHub Actions with AWS CodeDeploy). Migrate non-critical workloads including dev/staging environments, internal tools, and documentation systems using lift-and-shift."
+          }
+        },
+        {
+          "name": "list",
+          "props": {
+            "format": "bullet",
+            "items": [
+              "Landing zone: AWS Control Tower with custom SCPs for financial services compliance",
+              "Network: Hub-and-spoke VPC architecture with 10Gbps Direct Connect to Meridian data center",
+              "Identity: AWS SSO federated with existing Okta tenant, enforcing MFA on all accounts",
+              "CI/CD: GitHub Actions pipelines with automated security scanning (Snyk, tfsec)",
+              "First migrations: Developer environments, staging, internal wiki, and monitoring dashboards"
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Phase 2: Core Migration (Weeks 9-20)",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Migrate production databases to Aurora PostgreSQL with zero-downtime cutover using AWS DMS continuous replication. Re-platform application servers to ECS Fargate containers with auto-scaling policies. Implement multi-AZ redundancy across us-east-1 and eu-west-1 for the primary trading platform."
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "font": { "bold": true, "size": 10 },
+              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+            },
+            "cellDefaults": {
+              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "verticalAlignment": "middle",
+              "font": { "size": 10 }
+            },
+            "borderColor": "D6DAE0",
+            "borderSize": 1,
+            "hideBorders": { "insideVertical": true },
+            "columns": [
+              {
+                "header": { "content": "Workload" },
+                "cells": [
+                  { "content": "Trading Platform API" },
+                  { "content": "Client Portal" },
+                  { "content": "Risk Engine" },
+                  { "content": "Reporting Service" },
+                  { "content": "Notification System" }
+                ]
+              },
+              {
+                "header": { "content": "Strategy" },
+                "cells": [
+                  { "content": "Re-platform to ECS Fargate" },
+                  { "content": "Re-platform to ECS Fargate" },
+                  { "content": "Re-architect to Lambda + Step Functions" },
+                  { "content": "Re-platform to ECS + Aurora" },
+                  { "content": "Re-architect to SNS + SQS + Lambda" }
+                ]
+              },
+              {
+                "header": { "content": "Downtime Window" },
+                "cells": [
+                  { "content": "Zero (blue-green)" },
+                  { "content": "Zero (blue-green)" },
+                  { "content": "4 hours (weekend)" },
+                  { "content": "2 hours (weekend)" },
+                  { "content": "Zero (parallel run)" }
+                ]
+              },
+              {
+                "header": { "content": "Week" },
+                "cells": [
+                  { "content": "9-12" },
+                  { "content": "11-14" },
+                  { "content": "13-16" },
+                  { "content": "15-18" },
+                  { "content": "17-20" }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": { "text": "Phase 3: Optimization (Weeks 21-26)", "level": 2 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Right-size instances based on 4+ weeks of production metrics. Enable reserved capacity purchasing for predictable workloads (estimated 35% savings on compute). Implement cloud-native monitoring with CloudWatch, X-Ray distributed tracing, and automated remediation playbooks. Decommission on-premise equipment and terminate data center lease."
+          }
+        },
+        {
+          "name": "list",
+          "props": {
+            "format": "bullet",
+            "items": [
+              "Right-sizing: Analyze CPU/memory utilization, adjust instance families and sizes",
+              "Reserved capacity: Purchase 1-year reservations for baseline workloads, use Savings Plans for variable",
+              "Monitoring: Unified CloudWatch dashboards, X-Ray tracing, automated incident response via PagerDuty",
+              "Knowledge transfer: 40 hours of hands-on training for Meridian's 3-person ops team",
+              "Decommission: Secure data wipe, equipment disposal, data center lease termination"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": { "text": "Investment & ROI", "level": 1 }
+        },
         {
           "name": "columns",
           "props": { "columns": 3 },
           "children": [
-            { "name": "statistic", "props": { "number": "$680K", "description": "Migration Cost", "trendValue": "One-time investment" } },
-            { "name": "statistic", "props": { "number": "$1.2M/yr", "description": "Annual Savings", "trendValue": "vs. current spend" } },
-            { "name": "statistic", "props": { "number": "7 months", "description": "Payback Period", "trendValue": "Full ROI" } }
+            {
+              "name": "statistic",
+              "props": {
+                "number": "$680K",
+                "description": "Migration Investment",
+                "trendValue": "One-time cost"
+              }
+            },
+            {
+              "name": "statistic",
+              "props": {
+                "number": "$1.14M/yr",
+                "description": "Annual Savings",
+                "trendValue": "vs. current spend"
+              }
+            },
+            {
+              "name": "statistic",
+              "props": {
+                "number": "7.2 months",
+                "description": "Payback Period",
+                "trendValue": "Full ROI"
+              }
+            }
           ]
         },
-        { "name": "heading", "props": { "text": "Cost Breakdown", "level": 2 } },
+        {
+          "name": "heading",
+          "props": { "text": "Migration Cost Breakdown", "level": 2 }
+        },
         {
           "name": "table",
           "props": {
+            "headerCellDefaults": {
+              "font": { "bold": true, "size": 10 },
+              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+            },
+            "cellDefaults": {
+              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "verticalAlignment": "middle",
+              "font": { "size": 10 }
+            },
+            "borderColor": "D6DAE0",
+            "borderSize": 1,
+            "hideBorders": { "insideVertical": true },
             "columns": [
-              { "header": { "content": "Phase" }, "cells": [{ "content": "Foundation" }, { "content": "Core Migration" }, { "content": "Optimization" }] },
-              { "header": { "content": "Duration" }, "cells": [{ "content": "8 weeks" }, { "content": "12 weeks" }, { "content": "6 weeks" }] },
-              { "header": { "content": "Cost" }, "cells": [{ "content": "$180K" }, { "content": "$380K" }, { "content": "$120K" }] },
-              { "header": { "content": "Description" }, "cells": [{ "content": "Landing zone, security, CI/CD, dev migration" }, { "content": "Database, application, and storage migration" }, { "content": "Right-sizing, monitoring, knowledge transfer" }] }
+              {
+                "header": { "content": "Phase" },
+                "cells": [
+                  { "content": "Phase 1: Foundation" },
+                  { "content": "Phase 2: Core Migration" },
+                  { "content": "Phase 3: Optimization" },
+                  { "content": "Contingency (15%)" },
+                  { "content": "Total" }
+                ]
+              },
+              {
+                "header": { "content": "Duration" },
+                "cells": [
+                  { "content": "8 weeks" },
+                  { "content": "12 weeks" },
+                  { "content": "6 weeks" },
+                  { "content": "—" },
+                  { "content": "26 weeks" }
+                ]
+              },
+              {
+                "header": { "content": "Apex Fees" },
+                "cells": [
+                  { "content": "$140K" },
+                  { "content": "$280K" },
+                  { "content": "$90K" },
+                  { "content": "$76.5K" },
+                  { "content": "$586.5K" }
+                ]
+              },
+              {
+                "header": { "content": "AWS Costs" },
+                "cells": [
+                  { "content": "$12K" },
+                  { "content": "$38K" },
+                  { "content": "$18K" },
+                  { "content": "$10.2K" },
+                  { "content": "$78.2K" }
+                ]
+              },
+              {
+                "header": { "content": "Tooling/Licensing" },
+                "cells": [
+                  { "content": "$8K" },
+                  { "content": "$4K" },
+                  { "content": "$3.5K" },
+                  { "content": "—" },
+                  { "content": "$15.5K" }
+                ]
+              }
             ]
           }
         },
-        { "name": "heading", "props": { "text": "Annual Cost Comparison", "level": 2 } },
+        {
+          "name": "heading",
+          "props": { "text": "Annual Cost Comparison", "level": 2 }
+        },
         {
           "name": "columns",
           "props": { "columns": 2, "gap": 0.5 },
@@ -126,45 +638,268 @@
             {
               "name": "table",
               "props": {
+                "headerCellDefaults": {
+                  "font": { "bold": true, "size": 9 },
+                  "padding": { "top": 6, "right": 8, "bottom": 6, "left": 8 }
+                },
+                "cellDefaults": {
+                  "padding": { "top": 4, "right": 8, "bottom": 4, "left": 8 },
+                  "verticalAlignment": "middle",
+                  "font": { "size": 9 }
+                },
+                "borderColor": "D6DAE0",
+                "borderSize": 1,
+                "hideBorders": { "insideVertical": true },
                 "columns": [
-                  { "header": { "content": "Current (On-Premise)" }, "cells": [{ "content": "Hardware depreciation" }, { "content": "Data center lease" }, { "content": "Ops staff (3 FTE)" }, { "content": "Licensing (Oracle, VMware)" }, { "content": "Total" }] },
-                  { "header": { "content": "Annual Cost" }, "cells": [{ "content": "$525K" }, { "content": "$240K" }, { "content": "$420K" }, { "content": "$310K" }, { "content": "$1,495K" }] }
+                  {
+                    "header": { "content": "Current (On-Premise)" },
+                    "cells": [
+                      { "content": "Hardware depreciation" },
+                      { "content": "Data center lease" },
+                      { "content": "Ops staff (3 FTE)" },
+                      { "content": "Oracle licensing" },
+                      { "content": "VMware licensing" },
+                      { "content": "Network maintenance" },
+                      { "content": "DR infrastructure" },
+                      { "content": "Total" }
+                    ]
+                  },
+                  {
+                    "header": { "content": "Annual Cost" },
+                    "cells": [
+                      { "content": "$525K" },
+                      { "content": "$240K" },
+                      { "content": "$420K" },
+                      { "content": "$210K" },
+                      { "content": "$100K" },
+                      { "content": "$65K" },
+                      { "content": "$85K" },
+                      { "content": "$1,645K" }
+                    ]
+                  }
                 ]
               }
             },
             {
               "name": "table",
               "props": {
+                "headerCellDefaults": {
+                  "font": { "bold": true, "size": 9 },
+                  "padding": { "top": 6, "right": 8, "bottom": 6, "left": 8 }
+                },
+                "cellDefaults": {
+                  "padding": { "top": 4, "right": 8, "bottom": 4, "left": 8 },
+                  "verticalAlignment": "middle",
+                  "font": { "size": 9 }
+                },
+                "borderColor": "D6DAE0",
+                "borderSize": 1,
+                "hideBorders": { "insideVertical": true },
                 "columns": [
-                  { "header": { "content": "Proposed (Cloud)" }, "cells": [{ "content": "AWS compute & storage" }, { "content": "Managed services" }, { "content": "Ops staff (1 FTE)" }, { "content": "Licensing (open source)" }, { "content": "Total" }] },
-                  { "header": { "content": "Annual Cost" }, "cells": [{ "content": "$165K" }, { "content": "$48K" }, { "content": "$140K" }, { "content": "$0" }, { "content": "$353K" }] }
+                  {
+                    "header": { "content": "Proposed (AWS)" },
+                    "cells": [
+                      { "content": "Compute (ECS Fargate)" },
+                      { "content": "Database (Aurora)" },
+                      { "content": "Storage (S3 + EBS)" },
+                      { "content": "Network (Direct Connect)" },
+                      { "content": "Ops staff (1 FTE)" },
+                      { "content": "Monitoring (CloudWatch)" },
+                      { "content": "Security tooling" },
+                      { "content": "Total" }
+                    ]
+                  },
+                  {
+                    "header": { "content": "Annual Cost" },
+                    "cells": [
+                      { "content": "$142K" },
+                      { "content": "$96K" },
+                      { "content": "$28K" },
+                      { "content": "$48K" },
+                      { "content": "$140K" },
+                      { "content": "$18K" },
+                      { "content": "$32K" },
+                      { "content": "$504K" }
+                    ]
+                  }
                 ]
               }
             }
           ]
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The migration eliminates Oracle and VMware licensing entirely, reduces operations staffing from 3 FTE to 1 FTE through automation, and replaces capital-intensive hardware cycles with predictable cloud spend. The 2 freed operations engineers will be retrained as cloud/DevOps engineers, increasing Meridian's internal cloud capability."
+          }
         }
       ]
     },
     {
       "name": "section",
-      "props": { "level": 1, "pageBreak": true },
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": { "text": "Risk Mitigation", "level": 1 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Every migration carries inherent risk. Our approach minimizes exposure through proven methodologies, comprehensive testing, and clearly defined rollback procedures at each phase gate."
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "font": { "bold": true, "size": 10 },
+              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+            },
+            "cellDefaults": {
+              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "verticalAlignment": "middle",
+              "font": { "size": 10 }
+            },
+            "borderColor": "D6DAE0",
+            "borderSize": 1,
+            "hideBorders": { "insideVertical": true },
+            "columns": [
+              {
+                "header": { "content": "Risk" },
+                "cells": [
+                  { "content": "Data loss during migration" },
+                  { "content": "Extended downtime" },
+                  { "content": "Performance regression" },
+                  { "content": "Security breach during transition" },
+                  { "content": "Budget overrun" },
+                  { "content": "Team knowledge gap" }
+                ]
+              },
+              {
+                "header": { "content": "Probability" },
+                "cells": [
+                  { "content": "Low" },
+                  { "content": "Low" },
+                  { "content": "Medium" },
+                  { "content": "Low" },
+                  { "content": "Medium" },
+                  { "content": "High" }
+                ]
+              },
+              {
+                "header": { "content": "Impact" },
+                "cells": [
+                  { "content": "Critical" },
+                  { "content": "High" },
+                  { "content": "Medium" },
+                  { "content": "Critical" },
+                  { "content": "Medium" },
+                  { "content": "Medium" }
+                ]
+              },
+              {
+                "header": { "content": "Mitigation" },
+                "cells": [
+                  {
+                    "content": "Continuous DMS replication with automated validation checksums; dual-write for 2 weeks pre-cutover"
+                  },
+                  {
+                    "content": "Blue-green deployments; instant DNS failback to on-premise; weekend windows for non-zero-downtime workloads"
+                  },
+                  {
+                    "content": "Load testing at 2x production volumes before cutover; 1-week parallel-run period"
+                  },
+                  {
+                    "content": "Dedicated security engineer on migration team; WAF deployed Day 1; penetration testing at each phase gate"
+                  },
+                  {
+                    "content": "15% contingency buffer; fixed-price phases with clear scope boundaries; weekly budget reviews"
+                  },
+                  {
+                    "content": "40-hour training program; runbook documentation; 90-day post-migration support included"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
       "children": [
         { "name": "heading", "props": { "text": "Next Steps", "level": 1 } },
-        { "name": "paragraph", "props": { "text": "We recommend scheduling a 2-week discovery sprint to validate assumptions, finalize the migration plan, and establish the project governance framework." } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "We recommend initiating a 2-week discovery sprint in May 2026 to validate assumptions, complete infrastructure dependency mapping, and finalize the migration runbook. This sprint is included in the Phase 1 budget and serves as the formal project kickoff."
+          }
+        },
         {
           "name": "list",
           "props": {
             "format": "decimal",
             "items": [
-              "Sign statement of work and NDA",
-              "Complete infrastructure audit and dependency mapping (Week 1-2)",
-              "Finalize migration runbook with rollback procedures (Week 2)",
-              "Establish joint project team and communication cadence",
-              "Begin Phase 1 execution"
+              "Sign statement of work and mutual NDA (target: April 14, 2026)",
+              "Complete infrastructure audit and full dependency mapping (Weeks 1-2 of Phase 1)",
+              "Finalize migration runbook with rollback procedures and success criteria (Week 2)",
+              "Establish joint project team — Apex lead architect + 2 engineers, Meridian ops lead + security officer",
+              "Set up communication cadence — weekly stakeholder updates, daily standups during active migration",
+              "Begin Phase 1 execution (target: May 5, 2026)"
             ]
           }
         },
-        { "name": "paragraph", "props": { "text": "For questions, contact: solutions@apexconsulting.io" } }
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "columns",
+          "props": { "columns": 2, "gap": 0.5 },
+          "children": [
+            {
+              "name": "statistic",
+              "props": {
+                "number": "May 5",
+                "description": "Proposed Start Date",
+                "trendValue": "Phase 1 kickoff"
+              }
+            },
+            {
+              "name": "statistic",
+              "props": {
+                "number": "Oct 31",
+                "description": "Projected Completion",
+                "trendValue": "All 3 phases"
+              }
+            }
+          ]
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "For questions or to schedule the discovery sprint, contact:",
+            "font": { "bold": true }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Elena Vasquez, Principal Cloud Architect\nsolutions@apexconsulting.io  |  +1 (415) 555-0142",
+            "alignment": "left",
+            "font": { "color": "textSecondary" }
+          }
+        }
       ]
     }
   ]

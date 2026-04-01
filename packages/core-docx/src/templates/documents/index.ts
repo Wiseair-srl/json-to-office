@@ -70,12 +70,10 @@ export function getAvailableJsonExamples(): string[] {
  * Example descriptions for documentation
  */
 export const EXAMPLE_DESCRIPTIONS: Record<string, string> = {
-  'quarterly-report':
-    'Full quarterly report with TOC, sections, tables, statistics, columns, and lists',
   'technical-guide':
-    'API integration guide with headers/footers, code-style text, tables, images, and multi-column layouts',
+    'Arcline Platform integration guide with TOC, headers/footers, OAuth code samples, API reference tables, webhook docs, and troubleshooting',
   proposal:
-    'Cloud migration proposal with headers/footers, statistics, side-by-side cost comparison tables, and ordered lists',
+    'Apex Consulting cloud migration proposal with TOC, headers/footers, images, statistics, compliance tables, cost comparisons, and risk matrix',
 };
 
 /**
@@ -122,7 +120,6 @@ export const getExampleNames = (): string[] => {
 };
 
 // Use loadJsonExample() directly or access via the examples proxy
-export const quarterlyReportExample = () => loadJsonExample('quarterly-report');
 export const technicalGuideExample = () => loadJsonExample('technical-guide');
 export const proposalExample = () => loadJsonExample('proposal');
 

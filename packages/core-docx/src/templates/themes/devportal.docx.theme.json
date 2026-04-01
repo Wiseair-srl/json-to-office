@@ -1,0 +1,134 @@
+{
+  "name": "devportal",
+  "displayName": "Developer Portal",
+  "description": "A modern developer-focused theme with cool grays, teal accents, and monospace code styling",
+  "version": "2.0.0",
+  "colors": {
+    "primary": "#0F172A",
+    "secondary": "#334155",
+    "accent": "#0D9488",
+    "text": "#0F172A",
+    "background": "#FFFFFF",
+    "border": "#E2E8F0",
+    "textPrimary": "#0F172A",
+    "textSecondary": "#475569",
+    "textMuted": "#94A3B8",
+    "borderPrimary": "#CBD5E1",
+    "borderSecondary": "#F1F5F9",
+    "backgroundPrimary": "#FFFFFF",
+    "backgroundSecondary": "#F8FAFC"
+  },
+  "fonts": {
+    "heading": { "family": "Helvetica", "size": 24 },
+    "body": { "family": "Calibri", "size": 11 },
+    "mono": { "family": "Consolas", "size": 10 },
+    "light": { "family": "Helvetica", "size": 24 }
+  },
+  "page": {
+    "size": "A4",
+    "margins": {
+      "top": 1440,
+      "bottom": 1440,
+      "left": 1080,
+      "right": 1080,
+      "header": 720,
+      "footer": 720,
+      "gutter": 0
+    }
+  },
+  "styles": {
+    "normal": {
+      "font": "body",
+      "color": "textPrimary",
+      "lineSpacing": { "type": "multiple", "value": 1.5 },
+      "alignment": "left",
+      "spacing": { "after": 8 }
+    },
+    "heading1": {
+      "font": "heading",
+      "size": 24,
+      "bold": true,
+      "color": "primary",
+      "spacing": { "before": 24, "after": 12 },
+      "keepNext": true,
+      "alignment": "left",
+      "borders": {
+        "bottom": {
+          "style": "single",
+          "size": 1,
+          "color": "accent",
+          "space": 6
+        }
+      }
+    },
+    "heading2": {
+      "font": "heading",
+      "size": 18,
+      "bold": true,
+      "color": "secondary",
+      "spacing": { "before": 18, "after": 8 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading3": {
+      "font": "body",
+      "size": 13,
+      "bold": true,
+      "color": "accent",
+      "spacing": { "before": 12, "after": 6 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading4": {
+      "font": "body",
+      "size": 12,
+      "bold": true,
+      "color": "textSecondary",
+      "spacing": { "before": 8, "after": 4 },
+      "keepNext": true
+    },
+    "title": {
+      "font": "heading",
+      "size": 32,
+      "bold": true,
+      "color": "primary",
+      "alignment": "left",
+      "spacing": { "before": 0, "after": 12 }
+    },
+    "subtitle": {
+      "font": "light",
+      "size": 16,
+      "italic": false,
+      "color": "textSecondary",
+      "alignment": "left",
+      "spacing": { "before": 0, "after": 24 }
+    }
+  },
+  "componentDefaults": {
+    "table": {
+      "borders": true,
+      "striped": false,
+      "headerBackground": "#0F172A",
+      "headerColor": "#FFFFFF",
+      "borderColor": "#E2E8F0",
+      "borderWidth": 0.5
+    },
+    "list": {
+      "format": "bullet",
+      "bullet": "\u2013",
+      "indent": 3
+    },
+    "image": {
+      "alignment": "center"
+    },
+    "statistic": {
+      "alignment": "center"
+    },
+    "section": {
+      "pageBreak": false
+    },
+    "heading": {
+      "numbering": false
+    }
+  }
+}

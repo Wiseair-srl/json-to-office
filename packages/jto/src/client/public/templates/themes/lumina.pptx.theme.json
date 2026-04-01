@@ -1,0 +1,42 @@
+{
+  "name": "lumina",
+  "colors": {
+    "primary": "#0B1426",
+    "secondary": "#1E3A5F",
+    "accent": "#00B4D8",
+    "background": "#F8FAFC",
+    "text": "#0B1426",
+    "text2": "#475569",
+    "background2": "#E2E8F0",
+    "accent4": "#F59E0B",
+    "accent5": "#10B981",
+    "accent6": "#8B5CF6"
+  },
+  "fonts": {
+    "heading": "Helvetica",
+    "body": "Helvetica"
+  },
+  "defaults": {
+    "fontSize": 14,
+    "fontColor": "#0B1426"
+  },
+  "styles": {
+    "title": {
+      "fontSize": 44,
+      "bold": true,
+      "fontColor": "text",
+      "align": "center"
+    },
+    "subtitle": {
+      "fontSize": 18,
+      "italic": false,
+      "fontColor": "text2",
+      "align": "center"
+    },
+    "heading1": { "fontSize": 28, "bold": true, "fontColor": "primary" },
+    "heading2": { "fontSize": 22, "bold": true, "fontColor": "secondary" },
+    "heading3": { "fontSize": 18, "bold": true, "fontColor": "text" },
+    "body": { "fontSize": 14, "fontColor": "text" },
+    "caption": { "fontSize": 10, "italic": true, "fontColor": "text2" }
+  }
+}
