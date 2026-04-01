@@ -1,73 +1,556 @@
 {
   "name": "docx",
   "props": {
-    "metadata": { "title": "Platform Integration Guide" },
-    "theme": "minimal"
+    "metadata": {
+      "title": "Arcline Platform — Integration Guide",
+      "author": "Arcline Engineering",
+      "description": "Technical reference for integrating external systems with the Arcline Platform API"
+    },
+    "theme": "devportal"
   },
   "children": [
     {
-      "name": "header",
+      "name": "section",
       "props": {
-        "text": "Platform Integration Guide",
-        "alignment": "left",
-        "showPageNumbers": true
-      }
+        "level": 1,
+        "header": [
+          {
+            "name": "header",
+            "props": {
+              "text": "Arcline Platform — Integration Guide v3.2",
+              "alignment": "left",
+              "showPageNumbers": true
+            }
+          }
+        ],
+        "footer": [
+          {
+            "name": "footer",
+            "props": {
+              "text": "Confidential — Arcline Inc. — Do not distribute",
+              "alignment": "center"
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Platform Integration Guide",
+            "level": 1
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Arcline API v3.2 — Technical Reference",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Last updated: April 2026  |  Audience: Developers, System Architects, DevOps Engineers",
+            "font": {
+              "italic": true,
+              "color": "textSecondary"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": ""
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "https://placehold.co/800x200/0F172A/0D9488?text=ARCLINE+PLATFORM&font=helvetica",
+            "width": "100%",
+            "caption": "Arcline — Enterprise Data Platform"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": ""
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "This guide covers the integration of external systems with the Arcline Platform API. It is intended for developers and system architects building custom integrations, data pipelines, and embedded analytics solutions. The API follows RESTful conventions, uses OAuth 2.0 for authentication, and returns JSON responses."
+          }
+        },
+        {
+          "name": "toc",
+          "props": {
+            "depth": {
+              "from": 1,
+              "to": 2
+            }
+          }
+        }
+      ]
     },
-    {
-      "name": "footer",
-      "props": {
-        "text": "Confidential — TechCorp Inc.",
-        "alignment": "center"
-      }
-    },
-    { "name": "toc", "props": { "depth": { "from": 1, "to": 2 } } },
     {
       "name": "section",
-      "props": { "level": 1, "pageBreak": true },
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
       "children": [
-        { "name": "heading", "props": { "text": "Introduction", "level": 1 } },
-        { "name": "paragraph", "props": { "text": "This guide covers the integration of external systems with the Platform API. It is intended for developers and system architects building custom integrations." } },
-        { "name": "heading", "props": { "text": "Prerequisites", "level": 2 } },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Getting Started",
+            "level": 1
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Prerequisites",
+            "level": 2
+          }
+        },
         {
           "name": "list",
           "props": {
             "format": "bullet",
             "items": [
-              "API key with admin scope (Settings > API Keys)",
-              "Node.js 18+ or Python 3.10+",
-              "Network access to api.platform.io on port 443",
-              "Familiarity with REST APIs and OAuth 2.0"
+              "Arcline account with API access enabled (Settings > API Keys > Generate)",
+              "Node.js 20+ or Python 3.11+ (official SDKs available for both)",
+              "Network access to api.arcline.io on port 443 (TLS 1.3 required)",
+              "Familiarity with REST APIs, OAuth 2.0 client credentials flow, and webhook architectures"
             ]
           }
         },
-        { "name": "heading", "props": { "text": "Architecture Overview", "level": 2 } },
-        { "name": "paragraph", "props": { "text": "The platform exposes a RESTful API organized around resources. All endpoints accept and return JSON. Authentication uses OAuth 2.0 bearer tokens with configurable scopes." } },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Architecture Overview",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The Arcline Platform exposes a RESTful API organized around resources. All endpoints accept and return JSON. Authentication uses OAuth 2.0 bearer tokens with configurable scopes. Rate limiting is applied per-token with configurable burst allowances."
+          }
+        },
         {
           "name": "image",
           "props": {
-            "path": "https://placehold.co/800x400/f1f5f9/475569?text=Architecture+Diagram",
+            "path": "https://placehold.co/800x400/F8FAFC/0F172A?text=API+Gateway+%E2%86%92+Auth+Service+%E2%86%92+Microservices+%E2%86%92+Data+Layer&font=helvetica",
             "width": "100%",
-            "caption": "Figure 1: High-level architecture showing API gateway, services, and data flow"
+            "caption": "Figure 1: High-level architecture — API gateway, authentication layer, microservices, and data stores"
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Base URL & Environments",
+            "level": 2
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
+            },
+            "cellDefaults": {
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
+              "verticalAlignment": "middle",
+              "font": {
+                "size": 10
+              }
+            },
+            "borderColor": "E2E8F0",
+            "borderSize": 1,
+            "hideBorders": {
+              "insideVertical": true
+            },
+            "columns": [
+              {
+                "header": {
+                  "content": "Environment"
+                },
+                "cells": [
+                  {
+                    "content": "Production"
+                  },
+                  {
+                    "content": "Staging"
+                  },
+                  {
+                    "content": "Sandbox"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Base URL"
+                },
+                "cells": [
+                  {
+                    "content": "https://api.arcline.io/v3",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "https://staging-api.arcline.io/v3",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "https://sandbox-api.arcline.io/v3",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Data"
+                },
+                "cells": [
+                  {
+                    "content": "Live production data"
+                  },
+                  {
+                    "content": "Mirror of prod (24h delay)"
+                  },
+                  {
+                    "content": "Synthetic test data"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Rate Limit"
+                },
+                "cells": [
+                  {
+                    "content": "Per plan"
+                  },
+                  {
+                    "content": "50% of plan"
+                  },
+                  {
+                    "content": "Unlimited"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Quick Start",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Install the SDK, configure your credentials, and make your first API call:",
+            "font": {
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "npm install @arcline/sdk",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "import { ArclineClient } from '@arcline/sdk';\n\nconst client = new ArclineClient({\n  clientId: process.env.ARCLINE_CLIENT_ID,\n  clientSecret: process.env.ARCLINE_CLIENT_SECRET,\n});\n\nconst users = await client.users.list({ limit: 10 });\nconsole.log(users.data);",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
           }
         }
       ]
     },
     {
       "name": "section",
-      "props": { "level": 1, "pageBreak": true },
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
       "children": [
-        { "name": "heading", "props": { "text": "Authentication", "level": 1 } },
-        { "name": "paragraph", "props": { "text": "All API requests require a valid bearer token. Tokens are obtained via the OAuth 2.0 client credentials flow." } },
-        { "name": "heading", "props": { "text": "Token Exchange", "level": 2 } },
-        { "name": "paragraph", "props": { "text": "POST /oauth/token with your client_id and client_secret to receive an access token. Tokens expire after 3600 seconds. Include the token in subsequent requests via the Authorization header: Bearer <token>.", "font": { "family": "Courier New" } } },
-        { "name": "heading", "props": { "text": "Available Scopes", "level": 2 } },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Authentication",
+            "level": 1
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "All API requests require a valid bearer token. Tokens are obtained via the OAuth 2.0 client credentials flow and expire after 3600 seconds (1 hour). The SDK handles token refresh automatically."
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Token Exchange",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Request:",
+            "font": {
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "POST https://auth.arcline.io/oauth/token\nContent-Type: application/x-www-form-urlencoded\n\ngrant_type=client_credentials\n&client_id=YOUR_CLIENT_ID\n&client_secret=YOUR_CLIENT_SECRET\n&scope=read:data write:data",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Response:",
+            "font": {
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "{\n  \"access_token\": \"eyJhbGciOiJSUzI1NiIs...\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"scope\": \"read:data write:data\"\n}",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Include the token in subsequent requests via the Authorization header:",
+            "font": {
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Authorization: Bearer eyJhbGciOiJSUzI1NiIs...",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Available Scopes",
+            "level": 2
+          }
+        },
         {
           "name": "table",
           "props": {
+            "headerCellDefaults": {
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
+            },
+            "cellDefaults": {
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
+              "verticalAlignment": "middle",
+              "font": {
+                "size": 10
+              }
+            },
+            "borderColor": "E2E8F0",
+            "borderSize": 1,
+            "hideBorders": {
+              "insideVertical": true
+            },
             "columns": [
-              { "header": { "content": "Scope" }, "cells": [{ "content": "read:data" }, { "content": "write:data" }, { "content": "admin:users" }, { "content": "admin:config" }] },
-              { "header": { "content": "Access Level" }, "cells": [{ "content": "Read-only" }, { "content": "Read/Write" }, { "content": "User management" }, { "content": "Configuration" }] },
-              { "header": { "content": "Use Case" }, "cells": [{ "content": "Dashboards, reporting" }, { "content": "Data sync, imports" }, { "content": "Provisioning, SCIM" }, { "content": "Settings, webhooks" }] }
+              {
+                "header": {
+                  "content": "Scope"
+                },
+                "cells": [
+                  {
+                    "content": "read:data"
+                  },
+                  {
+                    "content": "write:data"
+                  },
+                  {
+                    "content": "read:analytics"
+                  },
+                  {
+                    "content": "admin:users"
+                  },
+                  {
+                    "content": "admin:config"
+                  },
+                  {
+                    "content": "webhooks:manage"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Access Level"
+                },
+                "cells": [
+                  {
+                    "content": "Read-only"
+                  },
+                  {
+                    "content": "Read/Write"
+                  },
+                  {
+                    "content": "Analytics queries"
+                  },
+                  {
+                    "content": "User management"
+                  },
+                  {
+                    "content": "Configuration"
+                  },
+                  {
+                    "content": "Webhook CRUD"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Use Case"
+                },
+                "cells": [
+                  {
+                    "content": "Dashboards, reporting, data sync"
+                  },
+                  {
+                    "content": "Data ingestion, imports, updates"
+                  },
+                  {
+                    "content": "Custom reports, BI integration"
+                  },
+                  {
+                    "content": "Provisioning, SSO/SCIM, RBAC"
+                  },
+                  {
+                    "content": "Settings, feature flags, themes"
+                  },
+                  {
+                    "content": "Event subscriptions, delivery mgmt"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Min Plan"
+                },
+                "cells": [
+                  {
+                    "content": "Free"
+                  },
+                  {
+                    "content": "Pro"
+                  },
+                  {
+                    "content": "Pro"
+                  },
+                  {
+                    "content": "Enterprise"
+                  },
+                  {
+                    "content": "Enterprise"
+                  },
+                  {
+                    "content": "Pro"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Token Security Best Practices",
+            "level": 2
+          }
+        },
+        {
+          "name": "list",
+          "props": {
+            "format": "bullet",
+            "items": [
+              "Never embed client secrets in client-side code or version control",
+              "Use environment variables or a secrets manager (AWS Secrets Manager, HashiCorp Vault)",
+              "Rotate client secrets every 90 days — the API supports two active secrets for zero-downtime rotation",
+              "Request only the scopes your integration needs (principle of least privilege)",
+              "Monitor the /oauth/audit endpoint for unauthorized token requests"
             ]
           }
         }
@@ -75,22 +558,43 @@
     },
     {
       "name": "section",
-      "props": { "level": 1, "pageBreak": true },
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
       "children": [
-        { "name": "heading", "props": { "text": "API Reference", "level": 1 } },
-        { "name": "heading", "props": { "text": "Resources", "level": 2 } },
+        {
+          "name": "heading",
+          "props": {
+            "text": "API Reference",
+            "level": 1
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Resource Endpoints",
+            "level": 2
+          }
+        },
         {
           "name": "columns",
-          "props": { "columns": 2, "gap": 0.5 },
+          "props": {
+            "columns": 2,
+            "gap": 0.5
+          },
           "children": [
             {
               "name": "list",
               "props": {
                 "format": "bullet",
                 "items": [
-                  "/users — User management",
-                  "/teams — Team operations",
-                  "/projects — Project CRUD",
+                  "/users — User management and profiles",
+                  "/teams — Team operations and membership",
+                  "/projects — Project CRUD and permissions",
+                  "/pipelines — Data pipeline orchestration",
                   "/webhooks — Event subscriptions"
                 ]
               }
@@ -100,42 +604,356 @@
               "props": {
                 "format": "bullet",
                 "items": [
-                  "/events — Activity log",
-                  "/files — File storage",
-                  "/search — Full-text search",
-                  "/analytics — Usage metrics"
+                  "/events — Activity log and audit trail",
+                  "/files — File storage and versioning",
+                  "/search — Full-text search across resources",
+                  "/analytics — Usage metrics and custom queries",
+                  "/exports — Scheduled data exports"
                 ]
               }
             }
           ]
         },
-        { "name": "heading", "props": { "text": "Rate Limits", "level": 2 } },
-        { "name": "paragraph", "props": { "text": "API requests are rate-limited per token. Exceeding the limit returns HTTP 429. Use the Retry-After header to determine when to retry." } },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Common Operations",
+            "level": 2
+          }
+        },
         {
           "name": "table",
           "props": {
+            "headerCellDefaults": {
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
+            },
+            "cellDefaults": {
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
+              "verticalAlignment": "middle",
+              "font": {
+                "size": 10
+              }
+            },
+            "borderColor": "E2E8F0",
+            "borderSize": 1,
+            "hideBorders": {
+              "insideVertical": true
+            },
             "columns": [
-              { "header": { "content": "Plan" }, "cells": [{ "content": "Free" }, { "content": "Pro" }, { "content": "Enterprise" }] },
-              { "header": { "content": "Requests/min" }, "cells": [{ "content": "60" }, { "content": "600" }, { "content": "6,000" }] },
-              { "header": { "content": "Burst" }, "cells": [{ "content": "10" }, { "content": "100" }, { "content": "1,000" }] },
-              { "header": { "content": "Concurrent" }, "cells": [{ "content": "5" }, { "content": "25" }, { "content": "100" }] }
-            ],
-            "headerCellDefaults": { "backgroundColor": "#1F2937", "color": "#FFFFFF" }
+              {
+                "header": {
+                  "content": "Operation"
+                },
+                "cells": [
+                  {
+                    "content": "List resources"
+                  },
+                  {
+                    "content": "Get single resource"
+                  },
+                  {
+                    "content": "Create resource"
+                  },
+                  {
+                    "content": "Update resource"
+                  },
+                  {
+                    "content": "Delete resource"
+                  },
+                  {
+                    "content": "Batch operations"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Method"
+                },
+                "cells": [
+                  {
+                    "content": "GET",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "GET",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "POST",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "PATCH",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "DELETE",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "POST",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Path"
+                },
+                "cells": [
+                  {
+                    "content": "/{resource}",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "/{resource}/{id}",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "/{resource}",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "/{resource}/{id}",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "/{resource}/{id}",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  },
+                  {
+                    "content": "/{resource}/batch",
+                    "font": {
+                      "family": "Consolas"
+                    }
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Notes"
+                },
+                "cells": [
+                  {
+                    "content": "Supports ?limit, ?offset, ?sort, ?filter"
+                  },
+                  {
+                    "content": "Returns 404 if not found"
+                  },
+                  {
+                    "content": "Returns 201 with Location header"
+                  },
+                  {
+                    "content": "Partial updates (merge semantics)"
+                  },
+                  {
+                    "content": "Returns 204 No Content"
+                  },
+                  {
+                    "content": "Up to 100 operations per request"
+                  }
+                ]
+              }
+            ]
           }
         },
-        { "name": "heading", "props": { "text": "Error Handling", "level": 2 } },
-        { "name": "paragraph", "props": { "text": "The API uses standard HTTP status codes. All error responses include a JSON body with code, message, and request_id fields. Common errors:" } },
         {
-          "name": "list",
+          "name": "heading",
           "props": {
-            "format": "bullet",
-            "items": [
-              "400 Bad Request — Invalid parameters or malformed JSON",
-              "401 Unauthorized — Missing or expired token",
-              "403 Forbidden — Insufficient scope for the requested operation",
-              "404 Not Found — Resource does not exist",
-              "429 Too Many Requests — Rate limit exceeded",
-              "500 Internal Server Error — Unexpected server failure (include request_id in support tickets)"
+            "text": "Pagination",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "All list endpoints support cursor-based pagination. The response includes a meta object with pagination details:",
+            "font": {
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "{\n  \"data\": [...],\n  \"meta\": {\n    \"total\": 1247,\n    \"limit\": 25,\n    \"has_more\": true,\n    \"next_cursor\": \"eyJpZCI6MTI0N30=\"\n  }\n}",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Pass the next_cursor value as the ?cursor query parameter to fetch the next page. Maximum limit is 100 items per request.",
+            "font": {
+              "color": "textSecondary"
+            }
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Rate Limits",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "API requests are rate-limited per token. Exceeding the limit returns HTTP 429 Too Many Requests. Use the Retry-After header (in seconds) to determine when to retry. The SDK handles retries with exponential backoff automatically."
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
+            },
+            "cellDefaults": {
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
+              "verticalAlignment": "middle",
+              "font": {
+                "size": 10
+              }
+            },
+            "borderColor": "E2E8F0",
+            "borderSize": 1,
+            "hideBorders": {
+              "insideVertical": true
+            },
+            "columns": [
+              {
+                "header": {
+                  "content": "Plan"
+                },
+                "cells": [
+                  {
+                    "content": "Free"
+                  },
+                  {
+                    "content": "Pro"
+                  },
+                  {
+                    "content": "Enterprise"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Requests/min"
+                },
+                "cells": [
+                  {
+                    "content": "60"
+                  },
+                  {
+                    "content": "600"
+                  },
+                  {
+                    "content": "6,000"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Burst"
+                },
+                "cells": [
+                  {
+                    "content": "10"
+                  },
+                  {
+                    "content": "100"
+                  },
+                  {
+                    "content": "1,000"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Concurrent"
+                },
+                "cells": [
+                  {
+                    "content": "5"
+                  },
+                  {
+                    "content": "25"
+                  },
+                  {
+                    "content": "100"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Daily Quota"
+                },
+                "cells": [
+                  {
+                    "content": "10,000"
+                  },
+                  {
+                    "content": "500,000"
+                  },
+                  {
+                    "content": "Unlimited"
+                  }
+                ]
+              }
             ]
           }
         }
@@ -143,30 +961,826 @@
     },
     {
       "name": "section",
-      "props": { "level": 1, "pageBreak": true },
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
       "children": [
-        { "name": "heading", "props": { "text": "Webhooks", "level": 1 } },
-        { "name": "paragraph", "props": { "text": "Webhooks deliver real-time event notifications to your endpoint via HTTP POST. Configure webhooks in the dashboard or via the /webhooks API. All payloads are signed with HMAC-SHA256." } },
-        { "name": "heading", "props": { "text": "Supported Events", "level": 2 } },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Webhooks",
+            "level": 1
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Webhooks deliver real-time event notifications to your endpoint via HTTP POST. Configure webhooks in the dashboard (Settings > Webhooks) or via the /webhooks API. All payloads are signed with HMAC-SHA256 using your webhook secret for verification."
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Supported Events",
+            "level": 2
+          }
+        },
         {
           "name": "columns",
-          "props": { "columns": 2 },
+          "props": {
+            "columns": 2
+          },
           "children": [
             {
               "name": "table",
               "props": {
+                "headerCellDefaults": {
+                  "font": {
+                    "bold": true,
+                    "size": 9
+                  },
+                  "padding": {
+                    "top": 6,
+                    "right": 8,
+                    "bottom": 6,
+                    "left": 8
+                  }
+                },
+                "cellDefaults": {
+                  "padding": {
+                    "top": 4,
+                    "right": 8,
+                    "bottom": 4,
+                    "left": 8
+                  },
+                  "verticalAlignment": "middle",
+                  "font": {
+                    "size": 9
+                  }
+                },
+                "borderColor": "E2E8F0",
+                "borderSize": 1,
+                "hideBorders": {
+                  "insideVertical": true
+                },
                 "columns": [
-                  { "header": { "content": "Event" }, "cells": [{ "content": "user.created" }, { "content": "user.updated" }, { "content": "project.created" }, { "content": "project.archived" }] },
-                  { "header": { "content": "Trigger" }, "cells": [{ "content": "New user signup" }, { "content": "Profile change" }, { "content": "New project" }, { "content": "Project archived" }] }
+                  {
+                    "header": {
+                      "content": "Event"
+                    },
+                    "cells": [
+                      {
+                        "content": "user.created"
+                      },
+                      {
+                        "content": "user.updated"
+                      },
+                      {
+                        "content": "user.deleted"
+                      },
+                      {
+                        "content": "project.created"
+                      },
+                      {
+                        "content": "project.archived"
+                      },
+                      {
+                        "content": "pipeline.completed"
+                      }
+                    ]
+                  },
+                  {
+                    "header": {
+                      "content": "Trigger"
+                    },
+                    "cells": [
+                      {
+                        "content": "New user signup or SSO provision"
+                      },
+                      {
+                        "content": "Profile or permission change"
+                      },
+                      {
+                        "content": "Account deactivation"
+                      },
+                      {
+                        "content": "New project created"
+                      },
+                      {
+                        "content": "Project archived by owner"
+                      },
+                      {
+                        "content": "Pipeline run finished"
+                      }
+                    ]
+                  }
                 ]
               }
             },
             {
               "name": "table",
               "props": {
+                "headerCellDefaults": {
+                  "font": {
+                    "bold": true,
+                    "size": 9
+                  },
+                  "padding": {
+                    "top": 6,
+                    "right": 8,
+                    "bottom": 6,
+                    "left": 8
+                  }
+                },
+                "cellDefaults": {
+                  "padding": {
+                    "top": 4,
+                    "right": 8,
+                    "bottom": 4,
+                    "left": 8
+                  },
+                  "verticalAlignment": "middle",
+                  "font": {
+                    "size": 9
+                  }
+                },
+                "borderColor": "E2E8F0",
+                "borderSize": 1,
+                "hideBorders": {
+                  "insideVertical": true
+                },
                 "columns": [
-                  { "header": { "content": "Event" }, "cells": [{ "content": "file.uploaded" }, { "content": "file.deleted" }, { "content": "team.member_added" }, { "content": "billing.invoice" }] },
-                  { "header": { "content": "Trigger" }, "cells": [{ "content": "New file" }, { "content": "File removed" }, { "content": "User joins team" }, { "content": "Invoice generated" }] }
+                  {
+                    "header": {
+                      "content": "Event"
+                    },
+                    "cells": [
+                      {
+                        "content": "pipeline.failed"
+                      },
+                      {
+                        "content": "file.uploaded"
+                      },
+                      {
+                        "content": "file.deleted"
+                      },
+                      {
+                        "content": "team.member_added"
+                      },
+                      {
+                        "content": "billing.invoice"
+                      },
+                      {
+                        "content": "export.ready"
+                      }
+                    ]
+                  },
+                  {
+                    "header": {
+                      "content": "Trigger"
+                    },
+                    "cells": [
+                      {
+                        "content": "Pipeline run errored"
+                      },
+                      {
+                        "content": "New file uploaded"
+                      },
+                      {
+                        "content": "File permanently removed"
+                      },
+                      {
+                        "content": "User added to team"
+                      },
+                      {
+                        "content": "Monthly invoice generated"
+                      },
+                      {
+                        "content": "Scheduled export completed"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Payload Structure",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Every webhook delivery includes the following envelope:",
+            "font": {
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "{\n  \"id\": \"evt_a1b2c3d4e5\",\n  \"type\": \"user.created\",\n  \"created_at\": \"2026-04-01T14:30:00Z\",\n  \"data\": { ... },\n  \"metadata\": {\n    \"delivery_id\": \"dlv_x9y8z7\",\n    \"attempt\": 1,\n    \"webhook_id\": \"whk_m4n5o6\"\n  }\n}",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Signature Verification",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Verify the X-Arcline-Signature header to ensure the payload was sent by Arcline and has not been tampered with:",
+            "font": {
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "import crypto from 'crypto';\n\nfunction verifySignature(payload, signature, secret) {\n  const expected = crypto\n    .createHmac('sha256', secret)\n    .update(payload)\n    .digest('hex');\n  return crypto.timingSafeEqual(\n    Buffer.from(signature),\n    Buffer.from(expected)\n  );\n}",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Retry Policy",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Failed deliveries (non-2xx response or timeout after 30 seconds) are retried with exponential backoff:"
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
+            },
+            "cellDefaults": {
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
+              "verticalAlignment": "middle",
+              "font": {
+                "size": 10
+              }
+            },
+            "borderColor": "E2E8F0",
+            "borderSize": 1,
+            "hideBorders": {
+              "insideVertical": true
+            },
+            "columns": [
+              {
+                "header": {
+                  "content": "Attempt"
+                },
+                "cells": [
+                  {
+                    "content": "1st retry"
+                  },
+                  {
+                    "content": "2nd retry"
+                  },
+                  {
+                    "content": "3rd retry"
+                  },
+                  {
+                    "content": "4th retry"
+                  },
+                  {
+                    "content": "5th retry (final)"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Delay"
+                },
+                "cells": [
+                  {
+                    "content": "1 minute"
+                  },
+                  {
+                    "content": "5 minutes"
+                  },
+                  {
+                    "content": "30 minutes"
+                  },
+                  {
+                    "content": "2 hours"
+                  },
+                  {
+                    "content": "24 hours"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Cumulative"
+                },
+                "cells": [
+                  {
+                    "content": "~1 min"
+                  },
+                  {
+                    "content": "~6 min"
+                  },
+                  {
+                    "content": "~36 min"
+                  },
+                  {
+                    "content": "~2.5 hours"
+                  },
+                  {
+                    "content": "~26.5 hours"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "After 5 failed attempts, the event is marked as failed and visible in the dashboard. Webhooks with > 95% failure rate over 48 hours are automatically disabled with an email notification to the account owner."
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Error Handling",
+            "level": 1
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The API uses standard HTTP status codes. All error responses include a JSON body with code, message, request_id, and optional details fields."
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Error Response Format",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "{\n  \"error\": {\n    \"code\": \"validation_error\",\n    \"message\": \"Invalid request parameters\",\n    \"request_id\": \"req_abc123\",\n    \"details\": [\n      { \"field\": \"email\", \"message\": \"must be a valid email address\" }\n    ]\n  }\n}",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Status Code Reference",
+            "level": 2
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
+            },
+            "cellDefaults": {
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
+              "verticalAlignment": "middle",
+              "font": {
+                "size": 10
+              }
+            },
+            "borderColor": "E2E8F0",
+            "borderSize": 1,
+            "hideBorders": {
+              "insideVertical": true
+            },
+            "columns": [
+              {
+                "header": {
+                  "content": "Code"
+                },
+                "cells": [
+                  {
+                    "content": "400"
+                  },
+                  {
+                    "content": "401"
+                  },
+                  {
+                    "content": "403"
+                  },
+                  {
+                    "content": "404"
+                  },
+                  {
+                    "content": "409"
+                  },
+                  {
+                    "content": "422"
+                  },
+                  {
+                    "content": "429"
+                  },
+                  {
+                    "content": "500"
+                  },
+                  {
+                    "content": "503"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Meaning"
+                },
+                "cells": [
+                  {
+                    "content": "Bad Request"
+                  },
+                  {
+                    "content": "Unauthorized"
+                  },
+                  {
+                    "content": "Forbidden"
+                  },
+                  {
+                    "content": "Not Found"
+                  },
+                  {
+                    "content": "Conflict"
+                  },
+                  {
+                    "content": "Unprocessable Entity"
+                  },
+                  {
+                    "content": "Rate Limited"
+                  },
+                  {
+                    "content": "Internal Error"
+                  },
+                  {
+                    "content": "Service Unavailable"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Common Cause"
+                },
+                "cells": [
+                  {
+                    "content": "Malformed JSON or invalid query parameters"
+                  },
+                  {
+                    "content": "Missing or expired bearer token"
+                  },
+                  {
+                    "content": "Insufficient scope for the operation"
+                  },
+                  {
+                    "content": "Resource does not exist or was deleted"
+                  },
+                  {
+                    "content": "Duplicate resource or concurrent modification"
+                  },
+                  {
+                    "content": "Valid JSON but semantic validation failed"
+                  },
+                  {
+                    "content": "Rate limit exceeded — check Retry-After header"
+                  },
+                  {
+                    "content": "Unexpected server error — include request_id in support tickets"
+                  },
+                  {
+                    "content": "Temporary outage — retry with backoff"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Retryable?"
+                },
+                "cells": [
+                  {
+                    "content": "No"
+                  },
+                  {
+                    "content": "No (refresh token)"
+                  },
+                  {
+                    "content": "No"
+                  },
+                  {
+                    "content": "No"
+                  },
+                  {
+                    "content": "Maybe"
+                  },
+                  {
+                    "content": "No (fix input)"
+                  },
+                  {
+                    "content": "Yes"
+                  },
+                  {
+                    "content": "Yes"
+                  },
+                  {
+                    "content": "Yes"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Idempotency",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "For POST and PATCH requests, include an Idempotency-Key header to safely retry failed requests without creating duplicates:",
+            "font": {
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "POST /v3/users\nIdempotency-Key: idk_unique-request-id-12345\nContent-Type: application/json\n\n{ \"email\": \"jane@example.com\", \"name\": \"Jane Doe\" }",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Idempotency keys are valid for 24 hours. Replayed requests within this window return the original response without executing the operation again."
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "level": 1,
+        "pageBreak": true,
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Troubleshooting",
+            "level": 1
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Common Issues",
+            "level": 2
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
+            },
+            "cellDefaults": {
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
+              "verticalAlignment": "middle",
+              "font": {
+                "size": 10
+              }
+            },
+            "borderColor": "E2E8F0",
+            "borderSize": 1,
+            "hideBorders": {
+              "insideVertical": true
+            },
+            "columns": [
+              {
+                "header": {
+                  "content": "Symptom"
+                },
+                "cells": [
+                  {
+                    "content": "401 on every request"
+                  },
+                  {
+                    "content": "Webhook not firing"
+                  },
+                  {
+                    "content": "Slow list queries"
+                  },
+                  {
+                    "content": "Missing data in responses"
+                  },
+                  {
+                    "content": "CORS errors in browser"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Likely Cause"
+                },
+                "cells": [
+                  {
+                    "content": "Expired or malformed token"
+                  },
+                  {
+                    "content": "Endpoint unreachable or auto-disabled"
+                  },
+                  {
+                    "content": "Missing index on filter field"
+                  },
+                  {
+                    "content": "Insufficient scope on token"
+                  },
+                  {
+                    "content": "Origin not in allowed list"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Resolution"
+                },
+                "cells": [
+                  {
+                    "content": "Refresh token; verify client_id/secret; check clock skew < 60s"
+                  },
+                  {
+                    "content": "Check dashboard > Webhooks > Delivery Log; re-enable if disabled"
+                  },
+                  {
+                    "content": "Use ?limit to reduce page size; add ?fields to select specific columns"
+                  },
+                  {
+                    "content": "Re-issue token with required scopes; check admin:users for user data"
+                  },
+                  {
+                    "content": "Add your domain in Settings > API Keys > Allowed Origins"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Debug Mode",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Enable verbose logging in the SDK to inspect request/response details:",
+            "font": {
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "const client = new ArclineClient({\n  clientId: process.env.ARCLINE_CLIENT_ID,\n  clientSecret: process.env.ARCLINE_CLIENT_SECRET,\n  debug: true,  // Logs full request/response to stdout\n  timeout: 30000,  // 30s timeout (default: 15s)\n});",
+            "font": {
+              "family": "Consolas",
+              "size": 10
+            }
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Support & Resources",
+            "level": 2
+          }
+        },
+        {
+          "name": "columns",
+          "props": {
+            "columns": 2,
+            "gap": 0.5
+          },
+          "children": [
+            {
+              "name": "list",
+              "props": {
+                "format": "bullet",
+                "items": [
+                  "API Status: status.arcline.io",
+                  "Developer Docs: docs.arcline.io",
+                  "SDK Source: github.com/arcline/sdk",
+                  "Community: community.arcline.io"
+                ]
+              }
+            },
+            {
+              "name": "list",
+              "props": {
+                "format": "bullet",
+                "items": [
+                  "Email: support@arcline.io",
+                  "Enterprise Support: 24/7 Slack channel",
+                  "Office Hours: Thursdays 2-3pm PT",
+                  "Security: security@arcline.io (PGP key on docs)"
                 ]
               }
             }

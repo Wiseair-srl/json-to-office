@@ -2,11 +2,12 @@
 
 Real-world JSON document definitions you can render with json-to-office.
 
-| File                                               | Format | Description                                                         |
-| -------------------------------------------------- | ------ | ------------------------------------------------------------------- |
-| [invoice.docx.json](invoice.docx.json)             | DOCX   | Professional invoice with line items, totals, and payment terms     |
-| [annual-review.docx.json](annual-review.docx.json) | DOCX   | Multi-section annual review with TOC, statistics, tables, and lists |
-| [pitch-deck.pptx.json](pitch-deck.pptx.json)       | PPTX   | Series A pitch deck with KPI cards, charts, and grid layout         |
+| File                                         | Format | Description                                                                        |
+| -------------------------------------------- | ------ | ---------------------------------------------------------------------------------- |
+| [invoice.docx.json](invoice.docx.json)       | DOCX   | Northvane Studio invoice with line items, payment instructions, and retainer terms |
+| [pitch-deck.pptx.json](pitch-deck.pptx.json) | PPTX   | Meridian Series B deck with grid layout, templates, decorative shapes, and charts  |
+
+More templates are available in the visual playground — run `jto pptx dev` or `jto docx dev` to browse the full gallery.
 
 ## Render an example
 
@@ -17,7 +18,7 @@ jto docx generate --input ./invoice.docx.json --output ./invoice.docx
 jto pptx generate --input ./pitch-deck.pptx.json --output ./deck.pptx
 
 # Or open in the visual playground
-jto docx dev --input ./annual-review.docx.json
+jto docx dev --input ./invoice.docx.json
 ```
 
 ## Render programmatically

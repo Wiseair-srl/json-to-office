@@ -326,9 +326,8 @@ The dev server gives you a Monaco editor with JSON autocomplete and validation, 
 
 See the `[examples/](examples/)` directory for complete, runnable JSON definitions:
 
-- **[invoice.docx.json](examples/invoice.docx.json)**: Professional invoice with line items, totals, payment terms
-- **[annual-review.docx.json](examples/annual-review.docx.json)**: Multi-section annual review with TOC, statistics, tables, lists
-- **[pitch-deck.pptx.json](examples/pitch-deck.pptx.json)**: Series A pitch deck with KPI cards, charts, grid layout
+- **[invoice.docx.json](examples/invoice.docx.json)**: Branded invoice with line items, payment instructions, and retainer terms
+- **[pitch-deck.pptx.json](examples/pitch-deck.pptx.json)**: Series B pitch deck with grid layout, templates, decorative shapes, and charts
 
 ## Packages
 

@@ -1,189 +1,281 @@
 {
   "name": "docx",
   "props": {
-    "metadata": { "title": "Invoice #1042" },
+    "metadata": {
+      "title": "Invoice #INV-2026-0387",
+      "author": "Northvane Studio",
+      "description": "Professional services invoice for Crestfield Partners"
+    },
     "theme": "minimal"
   },
   "children": [
     {
-      "name": "columns",
-      "props": { "columns": 2, "gap": 0.4 },
-      "children": [
-        { "name": "heading", "props": { "text": "INVOICE", "level": 1 } },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "#1042\nDate: March 15, 2026\nDue: April 14, 2026",
-            "alignment": "right"
+      "name": "section",
+      "props": {
+        "header": [
+          {
+            "name": "header",
+            "props": {
+              "text": "Northvane Studio — Invoice",
+              "alignment": "right"
+            }
           }
-        }
-      ]
-    },
-    {
-      "name": "columns",
-      "props": { "columns": 2, "gap": 0.4 },
+        ],
+        "footer": [
+          {
+            "name": "footer",
+            "props": {
+              "text": "Thank you for your business  |  northvane.studio",
+              "alignment": "center",
+              "showPageNumbers": true
+            }
+          }
+        ]
+      },
       "children": [
         {
-          "name": "paragraph",
+          "name": "columns",
+          "props": { "columns": 2, "gap": 0.4 },
+          "children": [
+            {
+              "name": "heading",
+              "props": { "text": "INVOICE", "level": 1 }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "**#INV-2026-0387**\nDate: April 1, 2026\nDue: April 30, 2026\nTerms: Net 30",
+                "alignment": "right"
+              }
+            }
+          ]
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "columns",
+          "props": { "columns": 2, "gap": 0.4 },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "**From**\nNorthvane Studio\n84 Harbor Drive, Suite 200\nSan Francisco, CA 94111\nhello@northvane.studio\n+1 (415) 555-0198",
+                "alignment": "left"
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "**Bill To**\nCrestfield Partners LLC\n220 Park Avenue, 14th Floor\nNew York, NY 10003\naccounts@crestfield.co\n+1 (212) 555-0274",
+                "alignment": "left"
+              }
+            }
+          ]
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "heading",
           "props": {
-            "text": "**From**\nAcme Corp\n123 Business Ave\nSan Francisco, CA 94102\nhello@acme.com"
+            "text": "Project: Crestfield Brand Refresh & Digital Platform",
+            "level": 2
           }
         },
         {
           "name": "paragraph",
           "props": {
-            "text": "**Bill To**\nWidget Inc\n456 Commerce St\nNew York, NY 10001\nbilling@widget.co"
+            "text": "Professional services rendered for the brand identity redesign, website development, and marketing collateral production per SOW-2026-014 dated January 15, 2026.",
+            "font": { "color": "textSecondary" }
+          }
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "table",
+          "props": {
+            "headerCellDefaults": {
+              "backgroundColor": "000000",
+              "color": "FFFFFF",
+              "font": { "bold": true, "size": 10 },
+              "padding": { "top": 8, "right": 12, "bottom": 8, "left": 12 }
+            },
+            "cellDefaults": {
+              "padding": { "top": 6, "right": 12, "bottom": 6, "left": 12 },
+              "verticalAlignment": "middle"
+            },
+            "borderColor": "E0E0E0",
+            "borderSize": 1,
+            "hideBorders": { "insideVertical": true },
+            "columns": [
+              {
+                "header": { "content": "Description" },
+                "cells": [
+                  { "content": "Brand Strategy & Discovery Workshop (2 days)" },
+                  {
+                    "content": "Visual Identity Design (logo, typography, color system)"
+                  },
+                  { "content": "Brand Guidelines Document (48 pages)" },
+                  { "content": "Website Design (12 pages, responsive)" },
+                  { "content": "Frontend Development (Next.js, headless CMS)" },
+                  {
+                    "content": "Marketing Collateral (pitch deck, one-pager, social templates)"
+                  },
+                  { "content": "QA Testing & Browser Compatibility" },
+                  { "content": "Project Management & Client Coordination" }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Hours",
+                  "horizontalAlignment": "right"
+                },
+                "cellDefaults": { "horizontalAlignment": "right" },
+                "cells": [
+                  { "content": "16" },
+                  { "content": "48" },
+                  { "content": "24" },
+                  { "content": "64" },
+                  { "content": "120" },
+                  { "content": "32" },
+                  { "content": "20" },
+                  { "content": "36" }
+                ]
+              },
+              {
+                "header": { "content": "Rate", "horizontalAlignment": "right" },
+                "cellDefaults": { "horizontalAlignment": "right" },
+                "cells": [
+                  { "content": "$250/hr" },
+                  { "content": "$200/hr" },
+                  { "content": "$175/hr" },
+                  { "content": "$200/hr" },
+                  { "content": "$185/hr" },
+                  { "content": "$175/hr" },
+                  { "content": "$150/hr" },
+                  { "content": "$125/hr" }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Amount",
+                  "horizontalAlignment": "right"
+                },
+                "cellDefaults": { "horizontalAlignment": "right" },
+                "cells": [
+                  { "content": "$4,000" },
+                  { "content": "$9,600" },
+                  { "content": "$4,200" },
+                  { "content": "$12,800" },
+                  { "content": "$22,200" },
+                  { "content": "$5,600" },
+                  { "content": "$3,000" },
+                  { "content": "$4,500" }
+                ]
+              }
+            ],
+            "spacing": { "before": 200 }
+          }
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "table",
+          "props": {
+            "columns": [
+              {
+                "cells": [
+                  { "content": "" },
+                  { "content": "" },
+                  { "content": "Subtotal" },
+                  { "content": "Tax (8.875% — NY Sales Tax)" },
+                  {
+                    "content": "Discount (10% — retainer agreement)",
+                    "font": { "italic": true }
+                  }
+                ]
+              },
+              {
+                "cellDefaults": { "horizontalAlignment": "right" },
+                "cells": [
+                  { "content": "" },
+                  { "content": "" },
+                  { "content": "$65,900.00" },
+                  { "content": "$5,848.63" },
+                  { "content": "-$6,590.00" }
+                ]
+              }
+            ],
+            "hideBorders": true
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "columns": [
+              {
+                "cells": [
+                  {
+                    "content": "Total Due",
+                    "font": { "bold": true, "size": 16 }
+                  }
+                ]
+              },
+              {
+                "cellDefaults": { "horizontalAlignment": "right" },
+                "cells": [
+                  {
+                    "content": "$65,158.63",
+                    "font": { "bold": true, "size": 16 }
+                  }
+                ]
+              }
+            ],
+            "hideBorders": true
+          }
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "heading",
+          "props": { "text": "Payment Instructions", "level": 2 }
+        },
+        {
+          "name": "columns",
+          "props": { "columns": 2, "gap": 0.5 },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "**Wire Transfer**\nBank: Silicon Valley Bank\nRouting: 121140399\nAccount: 3302-8847-10\nSWIFT: SVBKUS6S\nRef: INV-2026-0387"
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "**ACH / Check**\nPayable to: Northvane Studio LLC\nMail: 84 Harbor Drive, Suite 200\nSan Francisco, CA 94111\n\nQuestions: billing@northvane.studio"
+              }
+            }
+          ]
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        { "name": "heading", "props": { "text": "Notes", "level": 2 } },
+        {
+          "name": "list",
+          "props": {
+            "format": "bullet",
+            "items": [
+              "Payment terms: Net 30 from invoice date. Late payments accrue 1.5% monthly interest.",
+              "This invoice covers Phase 2 of SOW-2026-014. Phase 3 (analytics integration) to be invoiced separately upon completion.",
+              "All deliverables have been approved by Crestfield via the shared Figma workspace (crestfield-brand-v2).",
+              "Please include the invoice number (INV-2026-0387) on all payment correspondence."
+            ]
+          }
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "This document is generated from structured JSON data using json-to-office. Learn more at github.com/json-to-office.",
+            "font": { "size": 8, "color": "textMuted", "italic": true },
+            "spacing": { "before": 400 }
           }
         }
       ]
-    },
-    {
-      "name": "table",
-      "props": {
-        "columns": [
-          {
-            "header": {
-              "content": "Description",
-              "backgroundColor": "#1a365d",
-              "color": "#FFFFFF",
-              "font": { "bold": true }
-            },
-            "cells": [
-              { "content": "UI/UX Design Sprint" },
-              { "content": "Frontend Development" },
-              { "content": "API Integration" },
-              { "content": "QA & Testing" }
-            ]
-          },
-          {
-            "header": {
-              "content": "Hours",
-              "backgroundColor": "#1a365d",
-              "color": "#FFFFFF",
-              "font": { "bold": true },
-              "horizontalAlignment": "right"
-            },
-            "cellDefaults": { "horizontalAlignment": "right" },
-            "cells": [
-              { "content": "40" },
-              { "content": "120" },
-              { "content": "60" },
-              { "content": "30" }
-            ]
-          },
-          {
-            "header": {
-              "content": "Rate",
-              "backgroundColor": "#1a365d",
-              "color": "#FFFFFF",
-              "font": { "bold": true },
-              "horizontalAlignment": "right"
-            },
-            "cellDefaults": { "horizontalAlignment": "right" },
-            "cells": [
-              { "content": "$150/hr" },
-              { "content": "$175/hr" },
-              { "content": "$175/hr" },
-              { "content": "$125/hr" }
-            ]
-          },
-          {
-            "header": {
-              "content": "Amount",
-              "backgroundColor": "#1a365d",
-              "color": "#FFFFFF",
-              "font": { "bold": true },
-              "horizontalAlignment": "right"
-            },
-            "cellDefaults": { "horizontalAlignment": "right" },
-            "cells": [
-              { "content": "$6,000" },
-              { "content": "$21,000" },
-              { "content": "$10,500" },
-              { "content": "$3,750" }
-            ]
-          }
-        ],
-        "padding": 80,
-        "spacing": { "before": 400 }
-      }
-    },
-    {
-      "name": "paragraph",
-      "props": { "text": "" }
-    },
-    {
-      "name": "table",
-      "props": {
-        "columns": [
-          {
-            "cells": [
-              { "content": "" },
-              { "content": "" },
-              { "content": "Subtotal" }
-            ]
-          },
-          {
-            "cellDefaults": { "horizontalAlignment": "right" },
-            "cells": [
-              { "content": "" },
-              { "content": "" },
-              { "content": "$41,250" }
-            ]
-          }
-        ],
-        "hideBorders": true
-      }
-    },
-    {
-      "name": "table",
-      "props": {
-        "columns": [
-          {
-            "cells": [
-              { "content": "" },
-              { "content": "" },
-              { "content": "Tax (8.5%)" }
-            ]
-          },
-          {
-            "cellDefaults": { "horizontalAlignment": "right" },
-            "cells": [
-              { "content": "" },
-              { "content": "" },
-              { "content": "$3,506.25" }
-            ]
-          }
-        ],
-        "hideBorders": true
-      }
-    },
-    {
-      "name": "table",
-      "props": {
-        "columns": [
-          {
-            "cells": [
-              { "content": "Total Due", "font": { "bold": true, "size": 14 } }
-            ]
-          },
-          {
-            "cellDefaults": { "horizontalAlignment": "right" },
-            "cells": [
-              { "content": "$44,756.25", "font": { "bold": true, "size": 14 } }
-            ]
-          }
-        ],
-        "hideBorders": true
-      }
-    },
-    {
-      "name": "paragraph",
-      "props": {
-        "text": "Payment terms: Net 30. Please include invoice number on your payment.\nBank: First National | Routing: 021000021 | Account: 1234567890",
-        "spacing": { "before": 600 },
-        "font": { "size": 9, "color": "#666666" }
-      }
     }
   ]
 }

@@ -1,0 +1,126 @@
+{
+  "name": "apex",
+  "displayName": "Apex Consulting",
+  "description": "A premium consulting theme with deep navy, warm amber accents, and authoritative typography",
+  "version": "2.0.0",
+  "colors": {
+    "primary": "#0C2340",
+    "secondary": "#1B3A5C",
+    "accent": "#D4A843",
+    "text": "#1A1A2E",
+    "background": "#FFFFFF",
+    "border": "#D6DAE0",
+    "textPrimary": "#1A1A2E",
+    "textSecondary": "#4A5066",
+    "textMuted": "#8B91A0",
+    "borderPrimary": "#B8BCC6",
+    "borderSecondary": "#E8EAF0",
+    "backgroundPrimary": "#FFFFFF",
+    "backgroundSecondary": "#F4F5F8"
+  },
+  "fonts": {
+    "heading": { "family": "Georgia", "size": 26 },
+    "body": { "family": "Calibri", "size": 11 },
+    "mono": { "family": "Consolas", "size": 10 },
+    "light": { "family": "Georgia", "size": 26 }
+  },
+  "page": {
+    "size": "A4",
+    "margins": {
+      "top": 1440,
+      "bottom": 1440,
+      "left": 1200,
+      "right": 1200,
+      "header": 720,
+      "footer": 720,
+      "gutter": 0
+    }
+  },
+  "styles": {
+    "normal": {
+      "font": "body",
+      "color": "textPrimary",
+      "lineSpacing": { "type": "multiple", "value": 1.4 },
+      "alignment": "justify",
+      "spacing": { "after": 8 }
+    },
+    "heading1": {
+      "font": "heading",
+      "size": 26,
+      "bold": false,
+      "color": "primary",
+      "spacing": { "before": 24, "after": 12 },
+      "keepNext": true,
+      "alignment": "left",
+      "borders": {
+        "bottom": {
+          "style": "single",
+          "size": 2,
+          "color": "accent",
+          "space": 6
+        }
+      }
+    },
+    "heading2": {
+      "font": "heading",
+      "size": 18,
+      "bold": false,
+      "color": "secondary",
+      "spacing": { "before": 18, "after": 8 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading3": {
+      "font": "body",
+      "size": 13,
+      "bold": true,
+      "color": "accent",
+      "spacing": { "before": 12, "after": 6 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "title": {
+      "font": "light",
+      "size": 36,
+      "bold": false,
+      "color": "primary",
+      "alignment": "left",
+      "spacing": { "before": 0, "after": 18 }
+    },
+    "subtitle": {
+      "font": "body",
+      "size": 16,
+      "italic": false,
+      "color": "textSecondary",
+      "alignment": "left",
+      "spacing": { "before": 0, "after": 24 }
+    }
+  },
+  "componentDefaults": {
+    "table": {
+      "borders": true,
+      "striped": true,
+      "headerBackground": "#0C2340",
+      "headerColor": "#FFFFFF",
+      "borderColor": "#D6DAE0",
+      "borderWidth": 0.5
+    },
+    "list": {
+      "format": "bullet",
+      "bullet": "\u2022",
+      "indent": 3
+    },
+    "image": {
+      "alignment": "center"
+    },
+    "statistic": {
+      "alignment": "center"
+    },
+    "section": {
+      "pageBreak": false
+    },
+    "heading": {
+      "numbering": false
+    }
+  }
+}

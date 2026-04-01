@@ -1,0 +1,42 @@
+{
+  "name": "meridian",
+  "colors": {
+    "primary": "#1B2B4B",
+    "secondary": "#2D4A7A",
+    "accent": "#E8973F",
+    "background": "#FAFBFC",
+    "text": "#1B2B4B",
+    "text2": "#5A6B82",
+    "background2": "#EEF1F5",
+    "accent4": "#D93B3B",
+    "accent5": "#2DA87E",
+    "accent6": "#7C5CBF"
+  },
+  "fonts": {
+    "heading": "Georgia",
+    "body": "Arial"
+  },
+  "defaults": {
+    "fontSize": 14,
+    "fontColor": "#1B2B4B"
+  },
+  "styles": {
+    "title": {
+      "fontSize": 44,
+      "bold": false,
+      "fontColor": "text",
+      "align": "left"
+    },
+    "subtitle": {
+      "fontSize": 20,
+      "italic": false,
+      "fontColor": "text2",
+      "align": "left"
+    },
+    "heading1": { "fontSize": 30, "bold": false, "fontColor": "primary" },
+    "heading2": { "fontSize": 22, "bold": false, "fontColor": "secondary" },
+    "heading3": { "fontSize": 18, "bold": true, "fontColor": "text" },
+    "body": { "fontSize": 14, "fontColor": "text" },
+    "caption": { "fontSize": 10, "italic": true, "fontColor": "text2" }
+  }
+}

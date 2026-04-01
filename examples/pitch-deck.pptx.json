@@ -1,63 +1,655 @@
 {
   "name": "pptx",
   "props": {
-    "title": "Acme Corp - Series A",
-    "author": "Acme Corp",
-    "theme": "corporate",
+    "title": "Meridian — Series B",
+    "author": "Meridian",
+    "company": "Meridian",
+    "theme": "meridian",
+    "pageNumberFormat": "09",
     "grid": {
       "columns": 12,
-      "rows": 6,
-      "margin": { "top": 0.75, "right": 0.6, "bottom": 0.5, "left": 0.6 },
-      "gutter": { "column": 0.2, "row": 0.15 }
-    }
+      "rows": 12,
+      "margin": {
+        "top": 0.5,
+        "right": 0.5,
+        "bottom": 0.5,
+        "left": 0.5
+      },
+      "gutter": {
+        "column": 0.15,
+        "row": 0.15
+      }
+    },
+    "templates": [
+      {
+        "name": "TITLE_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://placehold.co/200x50/1B2B4B/E8973F?text=MERIDIAN&font=georgia",
+              "w": "12%",
+              "h": "3.5%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "12%",
+              "w": "1.8%",
+              "h": "2.4%",
+              "fill": { "color": "E8973F", "transparency": 85 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "86%",
+              "y": "10%",
+              "w": "2.2%",
+              "h": "2.93%",
+              "fill": { "color": "E8973F", "transparency": 82 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "13%",
+              "w": "1.6%",
+              "h": "2.13%",
+              "fill": { "color": "E8973F", "transparency": 86 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "18%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": { "color": "E8973F", "transparency": 76 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88%",
+              "y": "19%",
+              "w": "3%",
+              "h": "4%",
+              "fill": { "color": "E8973F", "transparency": 70 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83.5%",
+              "y": "20.5%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": { "color": "E8973F", "transparency": 74 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79.5%",
+              "y": "23%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": { "color": "E8973F", "transparency": 78 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "91%",
+              "y": "25.5%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": { "color": "E8973F", "transparency": 65 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "86%",
+              "y": "27%",
+              "w": "3.6%",
+              "h": "4.8%",
+              "fill": { "color": "E8973F", "transparency": 58 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81.5%",
+              "y": "29%",
+              "w": "3%",
+              "h": "4%",
+              "fill": { "color": "E8973F", "transparency": 62 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77.5%",
+              "y": "32%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": { "color": "E8973F", "transparency": 68 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "33%",
+              "w": "3.6%",
+              "h": "4.8%",
+              "fill": { "color": "E8973F", "transparency": 52 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88%",
+              "y": "35%",
+              "w": "4%",
+              "h": "5.33%",
+              "fill": { "color": "E8973F", "transparency": 45 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83.5%",
+              "y": "37.5%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": { "color": "E8973F", "transparency": 48 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79%",
+              "y": "40.5%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": { "color": "E8973F", "transparency": 55 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "91%",
+              "y": "42%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": { "color": "E8973F", "transparency": 38 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "86.5%",
+              "y": "44.5%",
+              "w": "4.6%",
+              "h": "6.13%",
+              "fill": { "color": "E8973F", "transparency": 32 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "47.5%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": { "color": "E8973F", "transparency": 38 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "78%",
+              "y": "50.5%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": { "color": "E8973F", "transparency": 48 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "51%",
+              "w": "4%",
+              "h": "5.33%",
+              "fill": { "color": "E8973F", "transparency": 35 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88.5%",
+              "y": "54%",
+              "w": "5%",
+              "h": "6.67%",
+              "fill": { "color": "E8973F", "transparency": 25 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "57%",
+              "w": "4.4%",
+              "h": "5.87%",
+              "fill": { "color": "E8973F", "transparency": 28 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "60.5%",
+              "w": "3.6%",
+              "h": "4.8%",
+              "fill": { "color": "E8973F", "transparency": 38 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "91%",
+              "y": "62%",
+              "w": "5.2%",
+              "h": "6.93%",
+              "fill": { "color": "E8973F", "transparency": 20 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "86%",
+              "y": "65.5%",
+              "w": "4.8%",
+              "h": "6.4%",
+              "fill": { "color": "E8973F", "transparency": 22 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81.5%",
+              "y": "69%",
+              "w": "4.2%",
+              "h": "5.6%",
+              "fill": { "color": "E8973F", "transparency": 28 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77.5%",
+              "y": "72.5%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": { "color": "E8973F", "transparency": 38 }
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "title",
+            "grid": { "column": 0, "row": 3, "columnSpan": 8, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 48,
+                "fontFace": "Georgia",
+                "color": "FFFFFF"
+              }
+            }
+          },
+          {
+            "name": "subtitle",
+            "grid": { "column": 0, "row": 6, "columnSpan": 7, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 18, "color": "accent" }
+            }
+          },
+          {
+            "name": "meta",
+            "grid": { "column": 0, "row": 10, "columnSpan": 6, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 12, "color": "text2" }
+            }
+          }
+        ]
+      },
+      {
+        "name": "CONTENT_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://placehold.co/200x50/1B2B4B/E8973F?text=MERIDIAN&font=georgia",
+              "w": "8%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "x": "0%",
+              "y": "96%",
+              "w": "100%",
+              "h": "4%",
+              "fill": { "color": "primary" }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "MERIDIAN  \u00b7  CONFIDENTIAL",
+              "x": "4%",
+              "y": "96.5%",
+              "w": "40%",
+              "h": "3%",
+              "fontSize": 8,
+              "color": "text2",
+              "italic": true
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "96.5%",
+              "w": "6%",
+              "h": "3%",
+              "fontSize": 8,
+              "color": "text2",
+              "align": "right"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": { "name": "text", "props": { "style": "heading1" } }
+          },
+          {
+            "name": "body",
+            "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 9 },
+            "defaults": { "name": "text", "props": { "style": "body" } }
+          }
+        ]
+      },
+      {
+        "name": "SECTION_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://placehold.co/200x50/1B2B4B/E8973F?text=MERIDIAN&font=georgia",
+              "y": "94%",
+              "w": "8%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88%",
+              "y": "65%",
+              "w": "2%",
+              "h": "2.67%",
+              "fill": { "color": "FFFFFF", "transparency": 85 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "63%",
+              "w": "2.4%",
+              "h": "3.2%",
+              "fill": { "color": "FFFFFF", "transparency": 82 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "70%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": { "color": "FFFFFF", "transparency": 75 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "71%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": { "color": "FFFFFF", "transparency": 68 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82.5%",
+              "y": "73%",
+              "w": "2.6%",
+              "h": "3.47%",
+              "fill": { "color": "FFFFFF", "transparency": 72 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "77%",
+              "w": "3.4%",
+              "h": "4.53%",
+              "fill": { "color": "FFFFFF", "transparency": 60 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "78%",
+              "w": "3.8%",
+              "h": "5.07%",
+              "fill": { "color": "FFFFFF", "transparency": 52 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84.5%",
+              "y": "80%",
+              "w": "3.2%",
+              "h": "4.27%",
+              "fill": { "color": "FFFFFF", "transparency": 58 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80.5%",
+              "y": "82.5%",
+              "w": "2.8%",
+              "h": "3.73%",
+              "fill": { "color": "FFFFFF", "transparency": 64 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "85%",
+              "w": "4%",
+              "h": "5.33%",
+              "fill": { "color": "FFFFFF", "transparency": 45 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "86.5%",
+              "w": "4.4%",
+              "h": "5.87%",
+              "fill": { "color": "FFFFFF", "transparency": 38 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82.5%",
+              "y": "88.5%",
+              "w": "3.6%",
+              "h": "4.8%",
+              "fill": { "color": "FFFFFF", "transparency": 42 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "label",
+            "grid": { "column": 0, "row": 5, "columnSpan": 7, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "color": "accent", "bold": true }
+            }
+          },
+          {
+            "name": "title",
+            "grid": { "column": 0, "row": 6, "columnSpan": 9, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 40,
+                "fontFace": "Georgia",
+                "color": "FFFFFF"
+              }
+            }
+          }
+        ]
+      }
+    ]
   },
   "children": [
     {
       "name": "slide",
-      "props": { "background": { "color": "primary" } },
-      "children": [
-        {
-          "name": "text",
-          "props": {
-            "text": "Acme Corp",
-            "style": "title",
-            "color": "FFFFFF",
-            "align": "center",
-            "valign": "middle",
-            "grid": { "column": 2, "row": 1, "columnSpan": 8, "rowSpan": 2 }
-          }
-        },
-        {
-          "name": "text",
-          "props": {
-            "text": "Documents as data.\nSeries A  |  March 2026",
-            "style": "subtitle",
-            "color": "accent",
-            "align": "center",
-            "grid": { "column": 2, "row": 3, "columnSpan": 8 }
+      "props": {
+        "template": "TITLE_TEMPLATE",
+        "placeholders": {
+          "title": { "name": "text", "props": { "text": "Meridian" } },
+          "subtitle": {
+            "name": "text",
+            "props": {
+              "text": "Documents as data.\nSeries B  \u00b7  April 2026"
+            }
+          },
+          "meta": {
+            "name": "text",
+            "props": { "text": "Confidential  \u00b7  For Investor Use Only" }
           }
         }
-      ]
+      }
     },
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "template": "CONTENT_TEMPLATE",
+        "placeholders": {
+          "heading": { "name": "text", "props": { "text": "The Problem" } }
+        }
+      },
       "children": [
         {
           "name": "text",
           "props": {
-            "text": "The Problem",
-            "style": "heading1",
-            "grid": { "column": 0, "row": 0, "columnSpan": 12 }
-          }
-        },
-        {
-          "name": "text",
-          "props": {
-            "text": "Every SaaS company generates documents.\nInvoices, reports, proposals, contracts.",
-            "fontSize": 18,
+            "text": "Every SaaS company generates documents — invoices, reports, proposals, contracts. Yet document infrastructure remains one of the last unsolved platform problems.",
+            "fontSize": 16,
             "color": "text",
-            "grid": { "column": 0, "row": 1, "columnSpan": 12 }
+            "lineSpacing": 24,
+            "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 2 }
           }
         },
         {
@@ -66,13 +658,13 @@
             "type": "roundRect",
             "fill": { "color": "background2" },
             "rectRadius": 0.1,
-            "text": "80%\nstill use templates",
-            "fontSize": 16,
+            "text": "80%\nstill use file-based\ntemplates",
+            "fontSize": 15,
             "bold": true,
             "fontColor": "primary",
             "align": "center",
             "valign": "middle",
-            "grid": { "column": 0, "row": 2, "columnSpan": 4, "rowSpan": 2 }
+            "grid": { "column": 0, "row": 4, "columnSpan": 4, "rowSpan": 3 }
           }
         },
         {
@@ -81,13 +673,13 @@
             "type": "roundRect",
             "fill": { "color": "background2" },
             "rectRadius": 0.1,
-            "text": "3 weeks\navg integration time",
-            "fontSize": 16,
+            "text": "3 weeks\navg integration\ntime",
+            "fontSize": 15,
             "bold": true,
             "fontColor": "accent4",
             "align": "center",
             "valign": "middle",
-            "grid": { "column": 4, "row": 2, "columnSpan": 4, "rowSpan": 2 }
+            "grid": { "column": 4, "row": 4, "columnSpan": 4, "rowSpan": 3 }
           }
         },
         {
@@ -96,51 +688,228 @@
             "type": "roundRect",
             "fill": { "color": "background2" },
             "rectRadius": 0.1,
-            "text": "$50K+\nannual doc infra cost",
-            "fontSize": 16,
+            "text": "$50K+\nannual doc infra\ncost per company",
+            "fontSize": 15,
             "bold": true,
             "fontColor": "accent5",
             "align": "center",
             "valign": "middle",
-            "grid": { "column": 8, "row": 2, "columnSpan": 4, "rowSpan": 2 }
+            "grid": { "column": 8, "row": 4, "columnSpan": 4, "rowSpan": 3 }
           }
         },
         {
           "name": "text",
           "props": {
-            "text": "Template-based systems break when document structure is dynamic.\nCode-first libraries trap definitions in application code.",
-            "fontSize": 14,
+            "text": "Template-based systems break when document structure is dynamic. Code-first libraries trap definitions inside application code, making them invisible to designers and non-technical stakeholders.",
+            "fontSize": 13,
             "color": "text2",
-            "grid": { "column": 0, "row": 5, "columnSpan": 12 }
+            "lineSpacing": 22,
+            "grid": { "column": 0, "row": 8, "columnSpan": 12, "rowSpan": 3 }
           }
         }
       ]
     },
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "template": "CONTENT_TEMPLATE",
+        "placeholders": {
+          "heading": { "name": "text", "props": { "text": "The Solution" } }
+        }
+      },
       "children": [
         {
           "name": "text",
           "props": {
-            "text": "Traction",
-            "style": "heading1",
-            "grid": { "column": 0, "row": 0, "columnSpan": 12 }
+            "text": "Meridian treats documents as serializable JSON — a portable, version-controlled, AI-friendly format that decouples structure from rendering.",
+            "fontSize": 16,
+            "color": "text",
+            "lineSpacing": 24,
+            "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 2 }
           }
         },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 0, "row": 4, "columnSpan": 4, "rowSpan": 3 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "JSON-First",
+            "fontSize": 14,
+            "bold": true,
+            "color": "accent",
+            "grid": { "column": 0, "row": 4, "columnSpan": 4, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Define documents as data. Store in databases, transmit via APIs, generate with AI.",
+            "fontSize": 12,
+            "color": "text2",
+            "lineSpacing": 20,
+            "grid": { "column": 0, "row": 5, "columnSpan": 4, "rowSpan": 2 }
+          }
+        },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 4, "row": 4, "columnSpan": 4, "rowSpan": 3 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Multi-Format",
+            "fontSize": 14,
+            "bold": true,
+            "color": "accent",
+            "grid": { "column": 4, "row": 4, "columnSpan": 4, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "One schema, multiple outputs — DOCX, PPTX, PDF. Consistent design across every format.",
+            "fontSize": 12,
+            "color": "text2",
+            "lineSpacing": 20,
+            "grid": { "column": 4, "row": 5, "columnSpan": 4, "rowSpan": 2 }
+          }
+        },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 8, "row": 4, "columnSpan": 4, "rowSpan": 3 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Theme System",
+            "fontSize": 14,
+            "bold": true,
+            "color": "accent",
+            "grid": { "column": 8, "row": 4, "columnSpan": 4, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Design tokens, component defaults, and brand assets. Change the theme, change every document.",
+            "fontSize": 12,
+            "color": "text2",
+            "lineSpacing": 20,
+            "grid": { "column": 8, "row": 5, "columnSpan": 4, "rowSpan": 2 }
+          }
+        },
+
+        {
+          "name": "table",
+          "props": {
+            "rows": [
+              [
+                {
+                  "text": "Capability",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "Templates",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "Code Libraries",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "Meridian",
+                  "bold": true,
+                  "fill": "accent",
+                  "color": "FFFFFF"
+                }
+              ],
+              [
+                "Dynamic Structure",
+                "\u2717",
+                "\u2713",
+                { "text": "\u2713", "bold": true }
+              ],
+              [
+                "Version Control",
+                "\u2717",
+                "\u2713",
+                { "text": "\u2713", "bold": true }
+              ],
+              [
+                "Non-dev Editable",
+                "\u2713",
+                "\u2717",
+                { "text": "\u2713", "bold": true }
+              ],
+              [
+                "AI-Compatible",
+                "\u2717",
+                "\u2717",
+                { "text": "\u2713", "bold": true }
+              ],
+              [
+                "Multi-Format",
+                "\u2717",
+                "\u2717",
+                { "text": "\u2713", "bold": true }
+              ]
+            ],
+            "fontSize": 11,
+            "color": "text",
+            "border": { "type": "solid", "pt": 0.5, "color": "text2" },
+            "grid": { "column": 0, "row": 8, "columnSpan": 12, "rowSpan": 4 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "CONTENT_TEMPLATE",
+        "placeholders": {
+          "heading": { "name": "text", "props": { "text": "Traction" } }
+        }
+      },
+      "children": [
         {
           "name": "shape",
           "props": {
             "type": "roundRect",
             "fill": { "color": "accent" },
             "rectRadius": 0.1,
-            "text": "$1.2M\nARR",
+            "text": "$4.8M\nARR",
             "fontSize": 20,
             "bold": true,
             "fontColor": "FFFFFF",
             "align": "center",
             "valign": "middle",
-            "grid": { "column": 0, "row": 1, "columnSpan": 3, "rowSpan": 2 }
+            "grid": { "column": 0, "row": 2, "columnSpan": 3, "rowSpan": 2 }
           }
         },
         {
@@ -149,13 +918,13 @@
             "type": "roundRect",
             "fill": { "color": "primary" },
             "rectRadius": 0.1,
-            "text": "42\nCustomers",
+            "text": "186\nCustomers",
             "fontSize": 20,
             "bold": true,
             "fontColor": "FFFFFF",
             "align": "center",
             "valign": "middle",
-            "grid": { "column": 3, "row": 1, "columnSpan": 3, "rowSpan": 2 }
+            "grid": { "column": 3, "row": 2, "columnSpan": 3, "rowSpan": 2 }
           }
         },
         {
@@ -164,108 +933,524 @@
             "type": "roundRect",
             "fill": { "color": "accent5" },
             "rectRadius": 0.1,
-            "text": "< 1%\nChurn",
+            "text": "< 2%\nChurn",
             "fontSize": 20,
             "bold": true,
             "fontColor": "FFFFFF",
             "align": "center",
             "valign": "middle",
-            "grid": { "column": 6, "row": 1, "columnSpan": 3, "rowSpan": 2 }
+            "grid": { "column": 6, "row": 2, "columnSpan": 3, "rowSpan": 2 }
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "roundRect",
-            "fill": { "color": "accent4" },
+            "fill": { "color": "accent6" },
             "rectRadius": 0.1,
-            "text": "3.2M\nDocs/month",
+            "text": "8.4M\nDocs/month",
             "fontSize": 20,
             "bold": true,
             "fontColor": "FFFFFF",
             "align": "center",
             "valign": "middle",
-            "grid": { "column": 9, "row": 1, "columnSpan": 3, "rowSpan": 2 }
+            "grid": { "column": 9, "row": 2, "columnSpan": 3, "rowSpan": 2 }
           }
         },
         {
           "name": "chart",
           "props": {
-            "chartType": "bar",
+            "type": "bar",
+            "barDir": "col",
+            "showLegend": false,
+            "showTitle": true,
+            "title": "ARR Growth ($K)",
+            "titleFontSize": 12,
+            "valAxisLabelFormatCode": "$#,##0",
+            "barGapWidthPct": 60,
             "data": [
-              { "name": "ARR ($K)", "values": [120, 340, 580, 850, 1200] }
+              {
+                "name": "ARR ($K)",
+                "labels": ["Q1'25", "Q2'25", "Q3'25", "Q4'25", "Q1'26"],
+                "values": [820, 1400, 2200, 3400, 4800]
+              }
             ],
-            "catAxisLabels": ["Q1'25", "Q2'25", "Q3'25", "Q4'25", "Q1'26"],
-            "grid": { "column": 0, "row": 3, "columnSpan": 12, "rowSpan": 3 }
+            "grid": { "column": 0, "row": 5, "columnSpan": 7, "rowSpan": 6 }
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "rows": [
+              [
+                {
+                  "text": "Metric",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "Value",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                }
+              ],
+              ["Net Revenue Retention", { "text": "148%", "color": "accent5" }],
+              ["Avg Contract Value", "$26K"],
+              ["CAC Payback", "8 months"],
+              ["LTV:CAC Ratio", "6.2x"],
+              ["Gross Margin", "82%"],
+              ["MoM Growth", { "text": "+14%", "color": "accent5" }]
+            ],
+            "fontSize": 11,
+            "color": "text",
+            "border": { "type": "solid", "pt": 0.5, "color": "text2" },
+            "grid": { "column": 7, "row": 5, "columnSpan": 5, "rowSpan": 6 }
           }
         }
       ]
     },
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "template": "CONTENT_TEMPLATE",
+        "placeholders": {
+          "heading": { "name": "text", "props": { "text": "Go-to-Market" } }
+        }
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 0, "row": 2, "columnSpan": 6, "rowSpan": 4 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "PRODUCT-LED GROWTH",
+            "fontSize": 13,
+            "bold": true,
+            "color": "accent",
+            "grid": { "column": 0, "row": 2, "columnSpan": 6, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Open-source core with cloud rendering API. Developers discover via npm, convert to paid plans when they need hosted generation, collaboration, or enterprise features.",
+            "fontSize": 12,
+            "color": "text2",
+            "lineSpacing": 20,
+            "grid": { "column": 0, "row": 3, "columnSpan": 6, "rowSpan": 3 }
+          }
+        },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 6, "row": 2, "columnSpan": 6, "rowSpan": 4 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "ENTERPRISE SALES",
+            "fontSize": 13,
+            "bold": true,
+            "color": "accent",
+            "grid": { "column": 6, "row": 2, "columnSpan": 6, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Dedicated AE team for $50K+ deals. Focused on financial services, healthcare, and legal verticals where document compliance drives urgency.",
+            "fontSize": 12,
+            "color": "text2",
+            "lineSpacing": 20,
+            "grid": { "column": 6, "row": 3, "columnSpan": 6, "rowSpan": 3 }
+          }
+        },
+
+        {
+          "name": "table",
+          "props": {
+            "rows": [
+              [
+                {
+                  "text": "Channel",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "Customers",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "ARR",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "ACV",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                }
+              ],
+              ["Self-Serve", "142", "$1.2M", "$8.4K"],
+              ["Sales-Assisted", "32", "$1.4M", "$43.8K"],
+              ["Enterprise", "12", "$2.2M", "$183K"]
+            ],
+            "fontSize": 11,
+            "color": "text",
+            "border": { "type": "solid", "pt": 0.5, "color": "text2" },
+            "grid": { "column": 0, "row": 7, "columnSpan": 12, "rowSpan": 4 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "SECTION_TEMPLATE",
+        "placeholders": {
+          "label": { "name": "text", "props": { "text": "THE TEAM" } },
+          "title": {
+            "name": "text",
+            "props": { "text": "Built by\nDocument People" }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "CONTENT_TEMPLATE",
+        "placeholders": {
+          "heading": { "name": "text", "props": { "text": "Leadership" } }
+        }
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 0, "row": 2, "columnSpan": 4, "rowSpan": 4 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Sarah Chen\nCEO & Co-founder",
+            "fontSize": 14,
+            "bold": true,
+            "color": "primary",
+            "grid": { "column": 0, "row": 2, "columnSpan": 4, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Previously VP Engineering at DocuSign. Led the team that built the PDF generation platform processing 2B+ documents annually.",
+            "fontSize": 11,
+            "color": "text2",
+            "lineSpacing": 18,
+            "grid": { "column": 0, "row": 3, "columnSpan": 4, "rowSpan": 3 }
+          }
+        },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 4, "row": 2, "columnSpan": 4, "rowSpan": 4 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Marcus Webb\nCTO & Co-founder",
+            "fontSize": 14,
+            "bold": true,
+            "color": "primary",
+            "grid": { "column": 4, "row": 2, "columnSpan": 4, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Former Staff Engineer at Stripe. Built the invoicing and receipt generation system serving 3M+ businesses. Open-source maintainer.",
+            "fontSize": 11,
+            "color": "text2",
+            "lineSpacing": 18,
+            "grid": { "column": 4, "row": 3, "columnSpan": 4, "rowSpan": 3 }
+          }
+        },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 8, "row": 2, "columnSpan": 4, "rowSpan": 4 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Priya Sharma\nVP Sales",
+            "fontSize": 14,
+            "bold": true,
+            "color": "primary",
+            "grid": { "column": 8, "row": 2, "columnSpan": 4, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Built and scaled Figma\u2019s enterprise sales org from $5M to $40M ARR. Deep expertise in developer-tool GTM and product-led sales.",
+            "fontSize": 11,
+            "color": "text2",
+            "lineSpacing": 18,
+            "grid": { "column": 8, "row": 3, "columnSpan": 4, "rowSpan": 3 }
+          }
+        },
+
+        {
+          "name": "text",
+          "props": {
+            "text": "38 team members across San Francisco, London, and S\u00e3o Paulo. Engineering-heavy (65%) with deep expertise in document formats, rendering engines, and developer tooling.",
+            "fontSize": 13,
+            "color": "text2",
+            "lineSpacing": 22,
+            "grid": { "column": 0, "row": 7, "columnSpan": 12, "rowSpan": 2 }
+          }
+        },
+
+        {
+          "name": "table",
+          "props": {
+            "rows": [
+              [
+                {
+                  "text": "Team",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "Headcount",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "Key Hires Q1",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                }
+              ],
+              ["Engineering", "25", "3 (rendering, SDK, infra)"],
+              ["Sales & Marketing", "8", "2 (enterprise AE, DevRel)"],
+              ["Operations", "5", "1 (finance)"]
+            ],
+            "fontSize": 11,
+            "color": "text",
+            "border": { "type": "solid", "pt": 0.5, "color": "text2" },
+            "grid": { "column": 0, "row": 9, "columnSpan": 12, "rowSpan": 3 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "CONTENT_TEMPLATE",
+        "placeholders": {
+          "heading": { "name": "text", "props": { "text": "The Ask" } }
+        }
+      },
       "children": [
         {
           "name": "text",
           "props": {
-            "text": "The Ask",
-            "style": "heading1",
-            "align": "center",
-            "grid": { "column": 0, "row": 0, "columnSpan": 12 }
-          }
-        },
-        {
-          "name": "text",
-          "props": {
-            "text": "$8M Series A",
-            "fontSize": 36,
+            "text": "$25M Series B",
+            "fontSize": 40,
             "bold": true,
             "color": "primary",
             "align": "center",
-            "grid": { "column": 2, "row": 1, "columnSpan": 8 }
+            "grid": { "column": 2, "row": 2, "columnSpan": 8, "rowSpan": 2 }
           }
         },
         {
           "name": "text",
           "props": {
-            "text": "18 months runway to:",
-            "fontSize": 18,
-            "color": "text",
+            "text": "24 months runway to:",
+            "fontSize": 16,
+            "color": "text2",
             "align": "center",
-            "grid": { "column": 2, "row": 2, "columnSpan": 8 }
+            "grid": { "column": 2, "row": 4, "columnSpan": 8, "rowSpan": 1 }
+          }
+        },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 0, "row": 5, "columnSpan": 6, "rowSpan": 3 }
           }
         },
         {
           "name": "text",
           "props": {
-            "text": "Hit $5M ARR",
+            "text": "$20M ARR",
             "fontSize": 20,
-            "color": "text",
-            "bullet": true,
-            "grid": { "column": 3, "row": 3, "columnSpan": 6 }
+            "bold": true,
+            "color": "accent",
+            "grid": { "column": 0, "row": 5, "columnSpan": 6, "rowSpan": 1 }
           }
         },
         {
           "name": "text",
           "props": {
-            "text": "Expand to 5 enterprise verticals",
-            "fontSize": 20,
-            "color": "text",
-            "bullet": true,
-            "grid": { "column": 3, "row": 4, "columnSpan": 6 }
+            "text": "4x current ARR through enterprise expansion, APAC launch, and self-serve conversion optimization.",
+            "fontSize": 12,
+            "color": "text2",
+            "lineSpacing": 20,
+            "grid": { "column": 0, "row": 6, "columnSpan": 6, "rowSpan": 2 }
+          }
+        },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 6, "row": 5, "columnSpan": 6, "rowSpan": 3 }
           }
         },
         {
           "name": "text",
           "props": {
-            "text": "Launch self-serve platform",
+            "text": "500+ Customers",
             "fontSize": 20,
-            "color": "text",
-            "bullet": true,
-            "grid": { "column": 3, "row": 5, "columnSpan": 6 }
+            "bold": true,
+            "color": "accent",
+            "grid": { "column": 6, "row": 5, "columnSpan": 6, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Expand into financial services, healthcare, and legal verticals. Launch partner channel with 15+ SI partners.",
+            "fontSize": 12,
+            "color": "text2",
+            "lineSpacing": 20,
+            "grid": { "column": 6, "row": 6, "columnSpan": 6, "rowSpan": 2 }
+          }
+        },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 0, "row": 8, "columnSpan": 6, "rowSpan": 3 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "100-Person Team",
+            "fontSize": 20,
+            "bold": true,
+            "color": "accent",
+            "grid": { "column": 0, "row": 8, "columnSpan": 6, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Scale engineering to 65, sales to 20, customer success to 10. Open Tokyo and Berlin offices.",
+            "fontSize": 12,
+            "color": "text2",
+            "lineSpacing": 20,
+            "grid": { "column": 0, "row": 9, "columnSpan": 6, "rowSpan": 2 }
+          }
+        },
+
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "fill": { "color": "background2" },
+            "rectRadius": 0.08,
+            "grid": { "column": 6, "row": 8, "columnSpan": 6, "rowSpan": 3 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Platform Maturity",
+            "fontSize": 20,
+            "bold": true,
+            "color": "accent",
+            "grid": { "column": 6, "row": 8, "columnSpan": 6, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Ship XLSX support, visual template builder, and enterprise SSO/SCIM. SOC 2 Type II certification.",
+            "fontSize": 12,
+            "color": "text2",
+            "lineSpacing": 20,
+            "grid": { "column": 6, "row": 9, "columnSpan": 6, "rowSpan": 2 }
           }
         }
       ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "TITLE_TEMPLATE",
+        "placeholders": {
+          "title": { "name": "text", "props": { "text": "Thank You" } },
+          "subtitle": {
+            "name": "text",
+            "props": { "text": "investors@meridian.dev  \u00b7  meridian.dev" }
+          },
+          "meta": {
+            "name": "text",
+            "props": {
+              "text": "This document contains proprietary information. Do not distribute."
+            }
+          }
+        }
+      }
     }
   ]
 }
