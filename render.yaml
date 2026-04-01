@@ -3,7 +3,7 @@ services:
     name: jto-playground-docx
     runtime: node
     plan: starter
-    buildCommand: npm i -g pnpm@9.15.9 && pnpm install && pnpm build
+    buildCommand: npm i -g pnpm@9.15.9 && NODE_ENV=development pnpm install && pnpm build
     startCommand: node packages/jto/dist/cli.js docx dev --host 0.0.0.0 --port 10000
     envVars:
       - key: NODE_ENV
@@ -22,7 +22,7 @@ services:
     name: jto-playground-pptx
     runtime: node
     plan: starter
-    buildCommand: npm i -g pnpm@9.15.9 && pnpm install && pnpm build
+    buildCommand: npm i -g pnpm@9.15.9 && NODE_ENV=development pnpm install && pnpm build
     startCommand: node packages/jto/dist/cli.js pptx dev --host 0.0.0.0 --port 10000
     envVars:
       - key: NODE_ENV
