@@ -1,38 +1,24 @@
 services:
   - type: web
     name: jto-playground-docx
-    runtime: node
+    runtime: docker
     plan: starter
-    buildCommand: npm i -g pnpm@9.15.9 && NODE_ENV=development pnpm install && pnpm build
-    startCommand: node packages/jto/dist/cli.js docx dev --host 0.0.0.0 --port 10000
+    dockerfilePath: ./Dockerfile
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: AI_ENABLED
-        value: "false"
+      - key: FORMAT
+        value: docx
       - key: VITE_AI_ENABLED
         value: "false"
-      - key: ENABLE_COREPACK
-        value: "1"
-      - key: NODE_VERSION
-        value: "20"
     healthCheckPath: /health
 
   - type: web
     name: jto-playground-pptx
-    runtime: node
+    runtime: docker
     plan: starter
-    buildCommand: npm i -g pnpm@9.15.9 && NODE_ENV=development pnpm install && pnpm build
-    startCommand: node packages/jto/dist/cli.js pptx dev --host 0.0.0.0 --port 10000
+    dockerfilePath: ./Dockerfile
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: AI_ENABLED
-        value: "false"
+      - key: FORMAT
+        value: pptx
       - key: VITE_AI_ENABLED
         value: "false"
-      - key: ENABLE_COREPACK
-        value: "1"
-      - key: NODE_VERSION
-        value: "20"
     healthCheckPath: /health
