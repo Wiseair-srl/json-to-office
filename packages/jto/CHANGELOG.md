@@ -1,5 +1,26 @@
 # @json-to-office/jto
 
+## 0.5.0
+
+### Minor Changes
+
+- bcd6237: feat(jto): add AI feature flag (AI_ENABLED / VITE_AI_ENABLED env vars), fix prod static serving, respect NODE_ENV for config mode, add Render blueprint for DOCX + PPTX deployment
+- b34970d: feat: upgrade JSON template examples to Wiseair-level quality
+
+  - Rewrite proposal (apex theme), technical-guide (devportal theme), invoice (modern table styling)
+  - Replace Charts Demo with Lumina Analytics deck (39K, 15 slides, all native chart types, grid + templates + decorative shapes)
+  - Rewrite pitch-deck as Meridian Series B (29K, 9 slides, grid + templates + decorative shapes)
+  - Add 4 custom themes: apex, devportal (DOCX), lumina, meridian (PPTX)
+  - Modern table styling: hide vertical inside borders, cell padding, headerCellDefaults
+  - Delete 7 low-quality templates: Sales Deck, Company Branding, Product Launch, Dashboard, Charts Demo, quarterly-report, annual-review
+  - Remove quarterlyReportExample export from core-docx
+
+### Patch Changes
+
+- 9972863: fix(jto): reinforce `{ name, props }` component format in all PPTX AI prompts to prevent non-compliant template output
+- Updated dependencies [b34970d]
+  - @json-to-office/core-docx@0.5.0
+
 ## 0.4.1
 
 ### Patch Changes
