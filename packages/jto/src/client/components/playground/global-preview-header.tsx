@@ -6,6 +6,8 @@ import { SchemaDialog } from './schema-dialog';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useChatStore } from '../../store/chat-store-provider';
 
+const noop = () => {};
+
 export function GlobalPreviewHeader({
   previewOpen,
   onTogglePreview,
@@ -35,8 +37,9 @@ export function GlobalPreviewHeader({
       ? 'theme'
       : 'document';
 
-  const chatOpen = useChatStore((s) => s.chatOpen);
-  const toggleChat = useChatStore((s) => s.toggleChat);
+  const chatOpen = __AI_ENABLED__ ? useChatStore((s) => s.chatOpen) : false;
+
+  const toggleChat = __AI_ENABLED__ ? useChatStore((s) => s.toggleChat) : noop;
 
   const [schemaOpen, setSchemaOpen] = React.useState(false);
 
@@ -80,9 +83,11 @@ export function GlobalPreviewHeader({
         documentText={text}
         warnings={warnings}
         renderingLibrary={renderingLibrary}
-        setRenderingLibrary={(lib) => setSettings({ renderingLibrary: lib } as any)}
-        onToggleChat={toggleChat}
-        chatOpen={chatOpen}
+        setRenderingLibrary={(lib) =>
+          setSettings({ renderingLibrary: lib } as any)
+        }
+        onToggleChat={__AI_ENABLED__ ? toggleChat : undefined}
+        chatOpen={__AI_ENABLED__ ? chatOpen : undefined}
         onTogglePreview={onTogglePreview}
         previewOpen={previewOpen}
       />

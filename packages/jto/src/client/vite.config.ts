@@ -5,6 +5,9 @@ import path from 'path';
 export default defineConfig({
   root: path.resolve(__dirname, '.'),
   plugins: [react()],
+  define: {
+    __AI_ENABLED__: JSON.stringify(process.env.VITE_AI_ENABLED !== 'false'),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),

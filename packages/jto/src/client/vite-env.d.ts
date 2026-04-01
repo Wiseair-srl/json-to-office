@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __AI_ENABLED__: boolean;
+
 interface ImportMetaEnv {
   readonly VITE_API_URL: string;
   readonly VITE_IMAGEKIT_PUBLIC_KEY: string;

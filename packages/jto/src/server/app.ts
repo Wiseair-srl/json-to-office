@@ -67,14 +67,17 @@ export function createAPIApp(adapter: FormatAdapter) {
   honoApp.route(`/api/${adapter.name}`, formatRouter);
 
   // Also mount at /api/documents or /api/presentations for backward compat
-  const legacyPath = adapter.name === 'docx' ? '/api/documents' : '/api/presentations';
+  const legacyPath =
+    adapter.name === 'docx' ? '/api/documents' : '/api/presentations';
   honoApp.route(legacyPath, formatRouter);
 
   // Discovery routes
   honoApp.route('/api/discovery', discoveryRouter);
 
-  // AI chat routes
-  honoApp.route('/api/ai', createAiRouter());
+  // AI chat routes (disabled via AI_ENABLED=false)
+  if (process.env.AI_ENABLED !== 'false') {
+    honoApp.route('/api/ai', createAiRouter());
+  }
 
   // Root endpoint
   honoApp.get('/', async (c) => {
