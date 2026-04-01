@@ -4,7 +4,7 @@ FROM node:20-slim AS builder
 RUN npm i -g pnpm@9.15.9
 
 WORKDIR /app
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig*.json ./
 COPY packages/ packages/
 
 RUN pnpm install --frozen-lockfile
