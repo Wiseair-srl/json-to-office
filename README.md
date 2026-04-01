@@ -75,6 +75,8 @@ await pptx(
 
 Or explore interactively with the visual playground (Monaco editor, live preview, AI assistant):
 
+**Try it online:** [DOCX Playground](https://docx.json-to-office.com) | [PPTX Playground](https://pptx.json-to-office.com)
+
 ```bash
 npm install -g @json-to-office/jto
 jto docx dev
