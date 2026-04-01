@@ -7,6 +7,8 @@
 [![npm](https://img.shields.io/npm/v/@json-to-office/json-to-pptx?label=json-to-pptx)](https://www.npmjs.com/package/@json-to-office/json-to-pptx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+> **Try the live playgrounds:** [DOCX Playground](https://docx.json-to-office.com) | [PPTX Playground](https://pptx.json-to-office.com)
+
 ## Quick start
 
 ```bash
