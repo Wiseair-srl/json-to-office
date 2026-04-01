@@ -18,6 +18,10 @@ import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 import type { DiscoveryResult } from '../../hooks/useDiscovery';
 
+// Compile-time constant: __AI_ENABLED__ is replaced by Vite at build time.
+// The conditional hook calls below are safe because the branch never changes at runtime.
+const noop = () => {};
+
 type MobilePanel = 'editor' | 'preview' | 'chat';
 
 export function DevEnv({
@@ -28,8 +32,9 @@ export function DevEnv({
   const isMobile = useIsMobile();
   const isNarrow = useIsNarrow();
 
-  const chatOpen = useChatStore((s) => s.chatOpen);
-  const toggleChat = useChatStore((s) => s.toggleChat);
+  const chatOpen = __AI_ENABLED__ ? useChatStore((s) => s.chatOpen) : false;
+
+  const toggleChat = __AI_ENABLED__ ? useChatStore((s) => s.toggleChat) : noop;
 
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
     try {
@@ -110,9 +115,15 @@ export function DevEnv({
   const toggleChatRef = useRef(toggleChat);
   const toggleSidebarRef = useRef(toggleSidebar);
   const togglePreviewRef = useRef(togglePreview);
-  useEffect(() => { toggleChatRef.current = toggleChat; });
-  useEffect(() => { toggleSidebarRef.current = toggleSidebar; });
-  useEffect(() => { togglePreviewRef.current = togglePreview; });
+  useEffect(() => {
+    toggleChatRef.current = toggleChat;
+  });
+  useEffect(() => {
+    toggleSidebarRef.current = toggleSidebar;
+  });
+  useEffect(() => {
+    togglePreviewRef.current = togglePreview;
+  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -136,16 +147,33 @@ export function DevEnv({
     return () => window.removeEventListener('keydown', onKey, true);
   }, []);
 
+  const AiWrapper = __AI_ENABLED__
+    ? ChatSessionProvider
+    : ({ children }: { children: React.ReactNode }) => <>{children}</>;
+
+  const mobileTabs: { key: MobilePanel; icon: typeof Code2; label: string }[] =
+    [
+      { key: 'editor', icon: Code2, label: 'Editor' },
+      { key: 'preview', icon: Eye, label: 'Preview' },
+      ...(__AI_ENABLED__
+        ? [{ key: 'chat' as const, icon: MessageSquare, label: 'Chat' }]
+        : []),
+    ];
+
   // Mobile layout: Sheet sidebar + tabbed panels
   if (isMobile) {
     return (
-      <ChatSessionProvider>
+      <AiWrapper>
         <div className="flex flex-col h-full w-full overflow-hidden">
           {/* Mobile header: sidebar trigger + panel tabs */}
           <div className="flex items-center gap-1 px-2 py-1.5 border-b bg-sidebar shrink-0">
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                >
                   <PanelLeftOpen className="h-4 w-4" />
                 </Button>
               </SheetTrigger>
@@ -159,11 +187,7 @@ export function DevEnv({
             </Sheet>
 
             <div className="flex gap-0.5 flex-1 min-w-0">
-              {([
-                { key: 'editor' as const, icon: Code2, label: 'Editor' },
-                { key: 'preview' as const, icon: Eye, label: 'Preview' },
-                { key: 'chat' as const, icon: MessageSquare, label: 'Chat' },
-              ]).map(({ key, icon: Icon, label }) => (
+              {mobileTabs.map(({ key, icon: Icon, label }) => (
                 <Button
                   key={key}
                   variant={mobilePanel === key ? 'default' : 'ghost'}
@@ -180,7 +204,10 @@ export function DevEnv({
 
           {/* Toolbar — only show when not in chat */}
           {mobilePanel !== 'chat' && (
-            <GlobalPreviewHeader previewOpen={previewOpen} onTogglePreview={togglePreview} />
+            <GlobalPreviewHeader
+              previewOpen={previewOpen}
+              onTogglePreview={togglePreview}
+            />
           )}
 
           {/* Active panel */}
@@ -195,16 +222,16 @@ export function DevEnv({
                 <Preview />
               </div>
             )}
-            {mobilePanel === 'chat' && <ChatPanel />}
+            {__AI_ENABLED__ && mobilePanel === 'chat' && <ChatPanel />}
           </div>
         </div>
-      </ChatSessionProvider>
+      </AiWrapper>
     );
   }
 
   // Desktop layout
   return (
-    <ChatSessionProvider>
+    <AiWrapper>
       <div className="flex h-full w-full overflow-hidden">
         {/* Fixed-width, collapsible sidebar */}
         <div
@@ -229,13 +256,21 @@ export function DevEnv({
         </div>
         {/* Main editor/preview area with resizable split */}
         <div className="flex-1 min-w-0 flex flex-col h-full">
-          <GlobalPreviewHeader previewOpen={previewOpen} onTogglePreview={togglePreview} />
+          <GlobalPreviewHeader
+            previewOpen={previewOpen}
+            onTogglePreview={togglePreview}
+          />
           <ResizablePanelGroup
             direction="horizontal"
             autoSaveId="layout-main"
             className="flex-1 min-h-0"
           >
-            <ResizablePanel defaultSize={previewOpen ? 50 : 100} minSize={20} id="editor" order={1}>
+            <ResizablePanel
+              defaultSize={previewOpen ? 50 : 100}
+              minSize={20}
+              id="editor"
+              order={1}
+            >
               <div className="h-full bg-surface-editor">
                 <Editor />
               </div>
@@ -243,14 +278,19 @@ export function DevEnv({
             {previewOpen && (
               <>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={50} minSize={20} id="preview" order={2}>
+                <ResizablePanel
+                  defaultSize={50}
+                  minSize={20}
+                  id="preview"
+                  order={2}
+                >
                   <div className="h-full bg-surface-preview">
                     <Preview />
                   </div>
                 </ResizablePanel>
               </>
             )}
-            {chatOpen && (
+            {__AI_ENABLED__ && chatOpen && (
               <>
                 <ResizableHandle withHandle />
                 <ResizablePanel
@@ -267,6 +307,6 @@ export function DevEnv({
           </ResizablePanelGroup>
         </div>
       </div>
-    </ChatSessionProvider>
+    </AiWrapper>
   );
 }

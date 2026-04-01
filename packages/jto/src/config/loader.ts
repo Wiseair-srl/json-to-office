@@ -35,6 +35,10 @@ export async function loadConfig(configPath?: string): Promise<Config> {
 
   const config = deepMerge(defaultConfig, userConfig);
 
+  if (process.env.NODE_ENV === 'production') {
+    config.mode = 'production';
+  }
+
   if (!Value.Check(ConfigSchema, config)) {
     const errors = [...Value.Errors(ConfigSchema, config)];
     console.warn('Warning: Invalid configuration detected:', errors);

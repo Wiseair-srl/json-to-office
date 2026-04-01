@@ -104,15 +104,25 @@ export class UnifiedServer {
     // Check env var
     if (process.env.JTO_CLIENT_PATH) {
       const envClientPath = process.env.JTO_CLIENT_PATH;
-      if (existsSync(envClientPath) && existsSync(resolve(envClientPath, 'index.html'))) {
+      if (
+        existsSync(envClientPath) &&
+        existsSync(resolve(envClientPath, 'index.html'))
+      ) {
         clientPath = envClientPath;
-        serverLogger.debug('[Dev Server] Using client from JTO_CLIENT_PATH', { path: clientPath });
+        serverLogger.debug('[Dev Server] Using client from JTO_CLIENT_PATH', {
+          path: clientPath,
+        });
       }
     } else if (isBundled) {
       const bundledClientPath = resolve(__dirname, 'client');
-      if (existsSync(bundledClientPath) && existsSync(resolve(bundledClientPath, 'index.html'))) {
+      if (
+        existsSync(bundledClientPath) &&
+        existsSync(resolve(bundledClientPath, 'index.html'))
+      ) {
         clientPath = bundledClientPath;
-        serverLogger.debug('[Dev Server] Using bundled client at', { path: clientPath });
+        serverLogger.debug('[Dev Server] Using bundled client at', {
+          path: clientPath,
+        });
       }
     } else {
       const possiblePaths = [
@@ -123,7 +133,9 @@ export class UnifiedServer {
       for (const p of possiblePaths) {
         if (existsSync(p)) {
           if (p.replace(/\\/g, '/').includes('/src/client')) {
-            serverLogger.debug('[Dev Server] Using Vite dev server for', { path: p });
+            serverLogger.debug('[Dev Server] Using Vite dev server for', {
+              path: p,
+            });
             try {
               const { createServer: createViteServer } = await import('vite');
               this.viteServer = await createViteServer({
@@ -140,7 +152,9 @@ export class UnifiedServer {
             break;
           } else if (existsSync(resolve(p, 'index.html'))) {
             clientPath = p;
-            serverLogger.debug('[Dev Server] Using pre-built client at', { path: clientPath });
+            serverLogger.debug('[Dev Server] Using pre-built client at', {
+              path: clientPath,
+            });
             break;
           }
         }
@@ -172,7 +186,10 @@ export class UnifiedServer {
       this.app.use('*', async (c, next) => {
         const path = c.req.path;
 
-        if ((path.startsWith('/api') || path === '/health') && !/\.(ts|tsx|js|jsx|css|map)$/.test(path)) {
+        if (
+          (path.startsWith('/api') || path === '/health') &&
+          !/\.(ts|tsx|js|jsx|css|map)$/.test(path)
+        ) {
           return next();
         }
 
@@ -202,10 +219,13 @@ export class UnifiedServer {
     const format = this.adapter.name.replace(/[^a-zA-Z0-9]/g, '');
 
     // Serve static assets
-    this.app.use('/assets/*', serveStatic({
-      root: clientPath,
-      rewriteRequestPath: (path) => path.replace(/^\/assets/, '/assets'),
-    }));
+    this.app.use(
+      '/assets/*',
+      serveStatic({
+        root: clientPath,
+        rewriteRequestPath: (path) => path.replace(/^\/assets/, '/assets'),
+      })
+    );
 
     // Handle file requests
     this.app.use('/*', async (c, next) => {
@@ -229,7 +249,8 @@ export class UnifiedServer {
     // SPA fallback - inject format into HTML
     this.app.get('*', async (c) => {
       const reqPath = c.req.path;
-      if (reqPath.startsWith('/api') || reqPath === '/health') return c.notFound();
+      if (reqPath.startsWith('/api') || reqPath === '/health')
+        return c.notFound();
 
       const indexPath = resolve(clientPath, 'index.html');
       if (fs.existsSync(indexPath)) {
@@ -247,33 +268,8 @@ export class UnifiedServer {
   }
 
   private async setupProdClient() {
-    const { serveStatic } = await import('@hono/node-server/serve-static');
-    const format = this.adapter.name.replace(/[^a-zA-Z0-9]/g, '');
-
-    this.app.use('/*', async (c, next) => {
-      const path = c.req.path;
-      if (path.startsWith('/api') || path === '/health') return next();
-      return serveStatic({ root: './dist/client' })(c, next);
-    });
-
-    this.app.get('*', (c) => {
-      const path = c.req.path;
-      if (path.startsWith('/api') || path === '/health') return c.notFound();
-
-      return c.html(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JSON to Office</title>
-  <script>window.__JTO_FORMAT__ = '${format}';</script>
-  <script>window.location.href = '/';</script>
-</head>
-<body>
-  <noscript>You need to enable JavaScript to run this app.</noscript>
-</body>
-</html>`);
-    });
+    const clientPath = resolve(__dirname, 'client');
+    return this.setupBuiltClient(clientPath);
   }
 
   async start(): Promise<void> {
