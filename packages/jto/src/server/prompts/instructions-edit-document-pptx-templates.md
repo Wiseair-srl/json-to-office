@@ -1,14 +1,17 @@
 ## Presentation: {{documentName}}
 
 ### Current Templates
+
 ```json
 {{templatesText}}
 ```
 
 ### Slides Using These Templates (reference only — do not output these)
+
 {{slidesSummary}}
 
 You are EDITING the template slides of this presentation. Output **only new or modified** templates:
+
 ```json
 {
   "templates": [ ...only new/changed templates... ]
@@ -27,12 +30,14 @@ Unchanged templates are automatically preserved — do NOT echo them back.
 - When adding a new template, use SCREAMING_SNAKE_CASE naming (e.g. `FULLSCREEN_IMAGE_TEMPLATE`).
 - Each template needs: `name`, `placeholders[]`, and optionally `background`, `objects[]`, `grid`.
 - For page numbers, add a text component with `"text": "{PAGE_NUMBER}"` inside `objects[]` — do NOT use a `slideNumber` key.
+- **Object format:** every item in `objects[]` MUST be `{ "name": "<type>", "props": { ... } }`. Never use `{ "type": "...", ... }` with flat props. Wrong: `{ "type": "image", "src": "logo.svg" }`. Correct: `{ "name": "image", "props": { "src": "logo.svg" } }`. Same applies to `placeholders[].defaults`.
 
 ### Example
 
 **User request:** "Add a divider bar to CONTENT_TEMPLATE"
 
 **Correct output (only the modified template):**
+
 ```json
 {
   "templates": [
@@ -40,7 +45,17 @@ Unchanged templates are automatically preserved — do NOT echo them back.
       "name": "CONTENT_TEMPLATE",
       "placeholders": [{ "name": "heading" }, { "name": "body" }],
       "objects": [
-        { "name": "shape", "props": { "type": "line", "x": "5%", "y": "20%", "w": "90%", "h": "0%", "line": { "color": "accent", "width": 1 } } }
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": "5%",
+            "y": "20%",
+            "w": "90%",
+            "h": "0%",
+            "line": { "color": "accent", "width": 1 }
+          }
+        }
       ]
     }
   ]
