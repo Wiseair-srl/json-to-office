@@ -547,8 +547,8 @@ packages:
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
 
-  '@anthropic-ai/claude-agent-sdk@0.2.88':
-    resolution: {integrity: sha512-hm9AYD8UGpGouOlmWB6kMRjIUCMtO13N3HDsviu7/htOXJZ/KKypgEd5yW04Ro6421SwX4KfQNrwayJ6R227+g==}
+  '@anthropic-ai/claude-agent-sdk@0.2.89':
+    resolution: {integrity: sha512-/9W0lyBGuGHw1uu7pQafsp6BLpxfqCv1QYE0Z/eZTX6lGHht4j4Q+O3UImzjsiyEE9cGkOAwZBGAEHDEqt+QUA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       zod: ^4.0.0
@@ -5581,6 +5581,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.20.0:
+    resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xml-js@1.6.11:
     resolution: {integrity: sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g==}
     hasBin: true
@@ -5706,7 +5718,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
 
-  '@anthropic-ai/claude-agent-sdk@0.2.88(zod@4.3.6)':
+  '@anthropic-ai/claude-agent-sdk@0.2.89(zod@4.3.6)':
     dependencies:
       '@anthropic-ai/sdk': 0.74.0(zod@4.3.6)
       '@modelcontextprotocol/sdk': 1.29.0(zod@4.3.6)
@@ -7569,7 +7581,7 @@ snapshots:
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@ai-sdk/provider-utils': 4.0.21(zod@4.3.6)
-      '@anthropic-ai/claude-agent-sdk': 0.2.88(zod@4.3.6)
+      '@anthropic-ai/claude-agent-sdk': 0.2.89(zod@4.3.6)
       zod: 4.3.6
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -9074,7 +9086,7 @@ snapshots:
       whatwg-encoding: 3.1.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
-      ws: 8.19.0
+      ws: 8.20.0
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -11136,6 +11148,8 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@8.19.0: {}
+
+  ws@8.20.0: {}
 
   xml-js@1.6.11:
     dependencies:
