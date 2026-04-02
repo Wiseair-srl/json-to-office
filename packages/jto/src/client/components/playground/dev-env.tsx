@@ -59,23 +59,10 @@ export function DevEnv({
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('editor');
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Stagger content swap: content fades out → width animates → content fades in
-  const CONTENT_FADE_MS = 120;
-  const WIDTH_ANIM_MS = 280;
+  // Content swap delay: content fades out while width animates, swaps at midpoint
+  const CONTENT_SWAP_MS = 150;
   const [contentCollapsed, setContentCollapsed] = useState(!sidebarOpen);
   const [isAnimating, setIsAnimating] = useState(false);
-  const animSafetyRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  // Safety: if transitionend never fires (e.g. no actual transition), clear isAnimating
-  useEffect(() => {
-    if (isAnimating) {
-      animSafetyRef.current = setTimeout(
-        () => setIsAnimating(false),
-        CONTENT_FADE_MS + WIDTH_ANIM_MS + 50
-      );
-    }
-    return () => clearTimeout(animSafetyRef.current);
-  }, [isAnimating]);
 
   useEffect(() => {
     try {
@@ -96,17 +83,19 @@ export function DevEnv({
   useEffect(() => {
     if (isNarrow && !prevNarrowRef.current && sidebarOpen) {
       setIsAnimating(true);
+      setSidebarOpen(false);
       setTimeout(() => {
-        setSidebarOpen(false);
         setContentCollapsed(true);
-      }, CONTENT_FADE_MS);
+        setIsAnimating(false);
+      }, CONTENT_SWAP_MS);
     }
     if (!isNarrow && prevNarrowRef.current && !sidebarOpen) {
       setIsAnimating(true);
+      setSidebarOpen(true);
       setTimeout(() => {
-        setSidebarOpen(true);
         setContentCollapsed(false);
-      }, CONTENT_FADE_MS);
+        setIsAnimating(false);
+      }, CONTENT_SWAP_MS);
     }
     prevNarrowRef.current = isNarrow;
   }, [isNarrow, sidebarOpen]);
@@ -116,13 +105,14 @@ export function DevEnv({
       setSheetOpen((v) => !v);
       return;
     }
-    // 1. Start fade-out
+    // Fade out content + start width animation simultaneously
     setIsAnimating(true);
-    // 2. After content fades out, swap layout + start width animation
+    setSidebarOpen((v) => !v);
+    // Swap content at midpoint, then fade in
     setTimeout(() => {
-      setSidebarOpen((v) => !v);
       setContentCollapsed((v) => !v);
-    }, CONTENT_FADE_MS);
+      setIsAnimating(false);
+    }, CONTENT_SWAP_MS);
   }, [isMobile]);
   const togglePreview = useCallback(() => setPreviewOpen((v) => !v), []);
 
@@ -252,15 +242,9 @@ export function DevEnv({
         <div
           className={cn(
             'shrink-0 overflow-hidden border-r bg-sidebar',
-            'transition-[width] duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
-            sidebarOpen ? 'w-64' : 'w-10'
+            'transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+            sidebarOpen ? 'w-64' : 'w-12'
           )}
-          onTransitionEnd={(e) => {
-            // Only react to width transitions on this element
-            if (e.propertyName === 'width' && e.target === e.currentTarget) {
-              setIsAnimating(false);
-            }
-          }}
         >
           <DocumentSidebar
             discoveryData={discoveryData}

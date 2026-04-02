@@ -272,12 +272,12 @@ function DocumentSidebarComponent({
     <>
       <Sidebar
         collapsible="none"
-        style={{ ['--sidebar-width' as any]: isCollapsed ? '2.5rem' : '16rem' }}
+        style={{ ['--sidebar-width' as any]: isCollapsed ? '3rem' : '16rem' }}
       >
         <SidebarHeader>
           <div
             className={cn(
-              'flex items-center transition-opacity duration-[120ms] ease-in-out',
+              'flex items-center transition-opacity duration-150 ease-out',
               isAnimating ? 'opacity-0' : 'opacity-100',
               isCollapsed ? 'justify-center' : 'justify-between'
             )}
@@ -286,7 +286,8 @@ function DocumentSidebarComponent({
               <Button
                 variant="ghost"
                 size="icon"
-                title="Expand sidebar"
+                aria-label="Expand sidebar"
+                aria-expanded={false}
                 onClick={onToggleSidebar}
               >
                 <PanelLeftOpen className="h-4 w-4" />
@@ -304,7 +305,8 @@ function DocumentSidebarComponent({
                   <Button
                     variant="ghost"
                     size="icon"
-                    title="Collapse sidebar"
+                    aria-label="Collapse sidebar"
+                    aria-expanded={true}
                     onClick={onToggleSidebar}
                   >
                     <PanelLeftClose className="h-4 w-4" />
@@ -316,7 +318,7 @@ function DocumentSidebarComponent({
         </SidebarHeader>
         <SidebarContent
           className={cn(
-            'h-full transition-opacity duration-[120ms] ease-in-out',
+            'h-full transition-opacity duration-150 ease-out',
             isAnimating ? 'opacity-0' : 'opacity-100'
           )}
         >
@@ -333,30 +335,27 @@ function DocumentSidebarComponent({
                 {!isCollapsed && <span>Active Documents</span>}
               </div>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <div
-                    className={cn(
-                      'flex',
-                      isCollapsed ? 'w-full justify-center' : ''
-                    )}
-                  >
-                    <Button
-                      className={cn(
-                        'h-6 w-6 p-0 flex-shrink-0',
-                        isCollapsed && 'mx-auto'
-                      )}
-                      variant="ghost"
-                      size="icon"
-                      title="New Document"
-                    >
-                      {isCollapsed ? (
-                        <FilePlusIcon className="size-4" />
-                      ) : (
-                        <Plus className="size-4" />
-                      )}
-                    </Button>
-                  </div>
-                </DialogTrigger>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button
+                        className={cn(
+                          'p-0 flex-shrink-0',
+                          isCollapsed
+                            ? 'mx-auto h-8 w-8 rounded border border-dashed border-sidebar-foreground/20 hover:border-sidebar-foreground/40'
+                            : 'h-6 w-6'
+                        )}
+                        variant="ghost"
+                        size="icon"
+                      >
+                        <Plus className={isCollapsed ? 'size-3.5' : 'size-4'} />
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side={isCollapsed ? 'right' : 'bottom'}>
+                    <span className="text-xs">New Document</span>
+                  </TooltipContent>
+                </Tooltip>
                 <DialogContent className="sm:max-w-[525px]">
                   <DocumentFormDialogContentMemoized
                     mode="create"
@@ -378,8 +377,9 @@ function DocumentSidebarComponent({
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => openDocument(doc.name)}
+                            aria-label={doc.name}
                             className={cn(
-                              'relative w-7 h-7 rounded flex items-center justify-center text-[10px] font-bold transition-colors',
+                              'relative w-8 h-8 rounded flex items-center justify-center text-[11px] font-bold transition-colors cursor-pointer',
                               isActive
                                 ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
                                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -388,7 +388,10 @@ function DocumentSidebarComponent({
                             {isActive && (
                               <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-green-500 dark:bg-green-400" />
                             )}
-                            {doc.name.charAt(0).toUpperCase()}
+                            {doc.name
+                              .replace(/\.[^.]+$/, '')
+                              .slice(0, 2)
+                              .toUpperCase()}
                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="right">
@@ -438,30 +441,27 @@ function DocumentSidebarComponent({
                 {!isCollapsed && <span>Active Themes</span>}
               </div>
               <Dialog open={themeDialogOpen} onOpenChange={setThemeDialogOpen}>
-                <DialogTrigger asChild>
-                  <div
-                    className={cn(
-                      'flex',
-                      isCollapsed ? 'w-full justify-center' : ''
-                    )}
-                  >
-                    <Button
-                      className={cn(
-                        'h-6 w-6 p-0 flex-shrink-0',
-                        isCollapsed && 'mx-auto'
-                      )}
-                      variant="ghost"
-                      size="icon"
-                      title="New Theme"
-                    >
-                      {isCollapsed ? (
-                        <PaletteIcon className="size-4" />
-                      ) : (
-                        <Plus className="size-4" />
-                      )}
-                    </Button>
-                  </div>
-                </DialogTrigger>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button
+                        className={cn(
+                          'p-0 flex-shrink-0',
+                          isCollapsed
+                            ? 'mx-auto h-8 w-8 rounded border border-dashed border-sidebar-foreground/20 hover:border-sidebar-foreground/40'
+                            : 'h-6 w-6'
+                        )}
+                        variant="ghost"
+                        size="icon"
+                      >
+                        <Plus className={isCollapsed ? 'size-3.5' : 'size-4'} />
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side={isCollapsed ? 'right' : 'bottom'}>
+                    <span className="text-xs">New Theme</span>
+                  </TooltipContent>
+                </Tooltip>
                 <DialogContent className="sm:max-w-[525px]">
                   <DocumentFormDialogContentMemoized
                     mode="create"
@@ -493,8 +493,9 @@ function DocumentSidebarComponent({
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => openDocument(doc.name)}
+                            aria-label={doc.name}
                             className={cn(
-                              'relative w-7 h-7 rounded flex items-center justify-center text-[10px] font-bold transition-colors',
+                              'relative w-8 h-8 rounded flex items-center justify-center text-[11px] font-bold transition-colors cursor-pointer',
                               isActive
                                 ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
                                 : isInUse
@@ -505,7 +506,7 @@ function DocumentSidebarComponent({
                             {isActive && (
                               <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-purple-500 dark:bg-purple-400" />
                             )}
-                            <PaletteIcon className="size-3" />
+                            {(themeName || doc.name).charAt(0).toUpperCase()}
                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="right">
@@ -564,236 +565,215 @@ function DocumentSidebarComponent({
           {/* Plugins moved under Discovered Resources */}
 
           {/* Discovered Resources Section */}
-          {discoveryData &&
+          {!isCollapsed &&
+            discoveryData &&
             (discoveryData.documents.length > 0 ||
               discoveryData.themes.length > 0) && (
               <SidebarGroup className="mt-2 border-t pt-4">
-                <SidebarGroupLabel
-                  className={cn(
-                    'flex items-center mb-2',
-                    isCollapsed ? 'justify-center' : 'gap-2'
-                  )}
-                >
-                  {isCollapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Search className="size-3" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <span className="text-xs">
-                          Expand sidebar to show discovered resources
-                        </span>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <>
-                      <Search className="size-3" />
-                      <span>Discovered Resources</span>
-                    </>
-                  )}
+                <SidebarGroupLabel className="flex items-center mb-2 gap-2">
+                  <Search className="size-3" />
+                  <span>Discovered Resources</span>
                 </SidebarGroupLabel>
 
-                {!isCollapsed && (
-                  <>
-                    {/* Discovered Documents */}
-                    {Object.entries(groupedDiscoveredDocuments).map(
-                      ([location, docs]) => {
-                        if (docs.length === 0) return null;
-                        const groupId = `${location}-docs`;
-                        const isExpanded = expandedGroups.has(groupId);
+                <>
+                  {/* Discovered Documents */}
+                  {Object.entries(groupedDiscoveredDocuments).map(
+                    ([location, docs]) => {
+                      if (docs.length === 0) return null;
+                      const groupId = `${location}-docs`;
+                      const isExpanded = expandedGroups.has(groupId);
 
-                        return (
-                          <Collapsible key={groupId} open={isExpanded}>
-                            <CollapsibleTrigger
-                              className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                              onClick={() => toggleGroup(groupId)}
-                            >
-                              <ChevronDown
-                                className={cn(
-                                  'size-3 transition-transform',
-                                  !isExpanded && '-rotate-90'
-                                )}
-                              />
-                              <FilePlusIcon className="size-3" />
-                              {location === 'current'
-                                ? 'Current Directory'
-                                : 'Project'}{' '}
-                              Documents ({docs.length})
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="pl-4 space-y-0.5">
-                                {docs.map((doc, idx) => {
-                                  const alreadyAdded = documents.some(
-                                    (d) => d.name === doc.name
-                                  );
-                                  return (
-                                    <button
-                                      key={idx}
-                                      onClick={() =>
-                                        handleQuickAdd(doc.name, false)
-                                      }
-                                      className={cn(
-                                        'w-full text-left py-1 px-2 rounded text-sm transition-colors',
-                                        'border-l-2 border-blue-400/60 dark:border-blue-500/40',
-                                        'hover:bg-accent hover:text-accent-foreground',
-                                        alreadyAdded && 'opacity-50'
-                                      )}
-                                    >
-                                      <div className="font-medium truncate">
-                                        {doc.name}
-                                      </div>
-                                      {doc.title && (
-                                        <div className="text-xs text-muted-foreground truncate">
-                                          {doc.title}
-                                        </div>
-                                      )}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        );
-                      }
-                    )}
-
-                    {/* Discovered Themes */}
-                    {Object.entries(groupedDiscoveredThemes).map(
-                      ([location, themes]) => {
-                        if (themes.length === 0) return null;
-                        const groupId = `${location}-themes`;
-                        const isExpanded = expandedGroups.has(groupId);
-
-                        return (
-                          <Collapsible key={groupId} open={isExpanded}>
-                            <CollapsibleTrigger
-                              className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                              onClick={() => toggleGroup(groupId)}
-                            >
-                              <ChevronDown
-                                className={cn(
-                                  'size-3 transition-transform',
-                                  !isExpanded && '-rotate-90'
-                                )}
-                              />
-                              <PaletteIcon className="size-3" />
-                              {location === 'current'
-                                ? 'Current Directory'
-                                : 'Project'}{' '}
-                              Themes ({themes.length})
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="pl-4 space-y-0.5">
-                                {themes.map((theme, idx) => {
-                                  const alreadyAdded = documents.some(
-                                    (d) => d.name === theme.name
-                                  );
-                                  return (
-                                    <button
-                                      key={idx}
-                                      onClick={() =>
-                                        handleQuickAdd(theme.name, true)
-                                      }
-                                      className={cn(
-                                        'w-full text-left py-1 px-2 rounded text-sm transition-colors',
-                                        'border-l-2 border-purple-400/60 dark:border-purple-500/40',
-                                        'hover:bg-accent hover:text-accent-foreground',
-                                        alreadyAdded && 'opacity-50'
-                                      )}
-                                    >
-                                      <div className="font-medium truncate">
-                                        {theme.name}
-                                      </div>
-                                      {theme.description && (
-                                        <div className="text-xs text-muted-foreground truncate">
-                                          {theme.description}
-                                        </div>
-                                      )}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        );
-                      }
-                    )}
-
-                    {/* Discovered Plugins */}
-                    {discoveryData && discoveryData.plugins.length > 0 && (
-                      <Collapsible open={expandedGroups.has('plugins')}>
-                        <CollapsibleTrigger
-                          className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                          onClick={() => toggleGroup('plugins')}
-                        >
-                          <ChevronDown
-                            className={cn(
-                              'size-3 transition-transform',
-                              !expandedGroups.has('plugins') && '-rotate-90'
-                            )}
-                          />
-                          <Sparkles className="size-3 text-amber-600 dark:text-amber-400" />
-                          Plugins ({selectedPlugins.size}/
-                          {discoveryData.plugins.length})
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="pl-4 space-y-0.5">
-                            {discoveryData.plugins.map((p, idx) => {
-                              const isActive = isPluginSelected(p.name);
-                              return (
-                                <div
-                                  key={idx}
-                                  className={cn(
-                                    'py-1 px-2 text-sm border-l-2 flex items-center gap-2 group transition-colors',
-                                    isActive
-                                      ? 'border-amber-500 dark:border-amber-400 text-foreground'
-                                      : 'border-amber-400/30 dark:border-amber-500/20 text-muted-foreground'
-                                  )}
-                                >
-                                  <div className="flex-1 min-w-0">
+                      return (
+                        <Collapsible key={groupId} open={isExpanded}>
+                          <CollapsibleTrigger
+                            className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+                            onClick={() => toggleGroup(groupId)}
+                          >
+                            <ChevronDown
+                              className={cn(
+                                'size-3 transition-transform',
+                                !isExpanded && '-rotate-90'
+                              )}
+                            />
+                            <FilePlusIcon className="size-3" />
+                            {location === 'current'
+                              ? 'Current Directory'
+                              : 'Project'}{' '}
+                            Documents ({docs.length})
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="pl-4 space-y-0.5">
+                              {docs.map((doc, idx) => {
+                                const alreadyAdded = documents.some(
+                                  (d) => d.name === doc.name
+                                );
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() =>
+                                      handleQuickAdd(doc.name, false)
+                                    }
+                                    className={cn(
+                                      'w-full text-left py-1 px-2 rounded text-sm transition-colors',
+                                      'border-l-2 border-blue-400/60 dark:border-blue-500/40',
+                                      'hover:bg-accent hover:text-accent-foreground',
+                                      alreadyAdded && 'opacity-50'
+                                    )}
+                                  >
                                     <div className="font-medium truncate">
-                                      {p.name}
+                                      {doc.name}
                                     </div>
-                                    {p.description && (
-                                      <div className="text-xs opacity-70 truncate">
-                                        {p.description}
+                                    {doc.title && (
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {doc.title}
                                       </div>
                                     )}
-                                  </div>
-                                  <button
-                                    className="flex-none size-5 flex items-center justify-center rounded-sm opacity-0 group-hover:opacity-100 hover:bg-accent transition-all cursor-pointer"
-                                    title={`View details for ${p.name}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setPluginSelectorFocusedPlugin(p.name);
-                                      setPluginSelectorOpen(true);
-                                    }}
-                                  >
-                                    <Info className="size-3 text-muted-foreground" />
                                   </button>
-                                  <Switch
-                                    checked={isActive}
-                                    onCheckedChange={() => togglePlugin(p)}
-                                    disabled={isApplyingPlugins}
-                                    className="flex-none scale-[0.8]"
-                                    aria-label={`Toggle ${p.name} plugin`}
-                                  />
+                                );
+                              })}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      );
+                    }
+                  )}
+
+                  {/* Discovered Themes */}
+                  {Object.entries(groupedDiscoveredThemes).map(
+                    ([location, themes]) => {
+                      if (themes.length === 0) return null;
+                      const groupId = `${location}-themes`;
+                      const isExpanded = expandedGroups.has(groupId);
+
+                      return (
+                        <Collapsible key={groupId} open={isExpanded}>
+                          <CollapsibleTrigger
+                            className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+                            onClick={() => toggleGroup(groupId)}
+                          >
+                            <ChevronDown
+                              className={cn(
+                                'size-3 transition-transform',
+                                !isExpanded && '-rotate-90'
+                              )}
+                            />
+                            <PaletteIcon className="size-3" />
+                            {location === 'current'
+                              ? 'Current Directory'
+                              : 'Project'}{' '}
+                            Themes ({themes.length})
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="pl-4 space-y-0.5">
+                              {themes.map((theme, idx) => {
+                                const alreadyAdded = documents.some(
+                                  (d) => d.name === theme.name
+                                );
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() =>
+                                      handleQuickAdd(theme.name, true)
+                                    }
+                                    className={cn(
+                                      'w-full text-left py-1 px-2 rounded text-sm transition-colors',
+                                      'border-l-2 border-purple-400/60 dark:border-purple-500/40',
+                                      'hover:bg-accent hover:text-accent-foreground',
+                                      alreadyAdded && 'opacity-50'
+                                    )}
+                                  >
+                                    <div className="font-medium truncate">
+                                      {theme.name}
+                                    </div>
+                                    {theme.description && (
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {theme.description}
+                                      </div>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      );
+                    }
+                  )}
+
+                  {/* Discovered Plugins */}
+                  {discoveryData && discoveryData.plugins.length > 0 && (
+                    <Collapsible open={expandedGroups.has('plugins')}>
+                      <CollapsibleTrigger
+                        className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+                        onClick={() => toggleGroup('plugins')}
+                      >
+                        <ChevronDown
+                          className={cn(
+                            'size-3 transition-transform',
+                            !expandedGroups.has('plugins') && '-rotate-90'
+                          )}
+                        />
+                        <Sparkles className="size-3 text-amber-600 dark:text-amber-400" />
+                        Plugins ({selectedPlugins.size}/
+                        {discoveryData.plugins.length})
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="pl-4 space-y-0.5">
+                          {discoveryData.plugins.map((p, idx) => {
+                            const isActive = isPluginSelected(p.name);
+                            return (
+                              <div
+                                key={idx}
+                                className={cn(
+                                  'py-1 px-2 text-sm border-l-2 flex items-center gap-2 group transition-colors',
+                                  isActive
+                                    ? 'border-amber-500 dark:border-amber-400 text-foreground'
+                                    : 'border-amber-400/30 dark:border-amber-500/20 text-muted-foreground'
+                                )}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">
+                                    {p.name}
+                                  </div>
+                                  {p.description && (
+                                    <div className="text-xs opacity-70 truncate">
+                                      {p.description}
+                                    </div>
+                                  )}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    )}
-                  </>
-                )}
+                                <button
+                                  className="flex-none size-5 flex items-center justify-center rounded-sm opacity-0 group-hover:opacity-100 hover:bg-accent transition-all cursor-pointer"
+                                  title={`View details for ${p.name}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPluginSelectorFocusedPlugin(p.name);
+                                    setPluginSelectorOpen(true);
+                                  }}
+                                >
+                                  <Info className="size-3 text-muted-foreground" />
+                                </button>
+                                <Switch
+                                  checked={isActive}
+                                  onCheckedChange={() => togglePlugin(p)}
+                                  disabled={isApplyingPlugins}
+                                  className="flex-none scale-[0.8]"
+                                  aria-label={`Toggle ${p.name} plugin`}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+                </>
               </SidebarGroup>
             )}
         </SidebarContent>
         <SidebarFooter>
           <div
             className={cn(
-              'flex w-full items-center transition-opacity duration-[120ms] ease-in-out',
+              'flex w-full items-center transition-opacity duration-150 ease-out',
               isAnimating ? 'opacity-0' : 'opacity-100',
               isCollapsed ? 'justify-center' : 'justify-end pr-2'
             )}
