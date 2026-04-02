@@ -3,9 +3,13 @@ import * as React from 'react';
 const MOBILE_BREAKPOINT = 768;
 const NARROW_BREAKPOINT = 1200;
 
+function getInitial(breakpoint: number): boolean {
+  return typeof window !== 'undefined' ? window.innerWidth < breakpoint : false;
+}
+
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined
+  const [isMobile, setIsMobile] = React.useState(() =>
+    getInitial(MOBILE_BREAKPOINT)
   );
 
   React.useEffect(() => {
@@ -14,16 +18,15 @@ export function useIsMobile() {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
     mql.addEventListener('change', onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     return () => mql.removeEventListener('change', onChange);
   }, []);
 
-  return !!isMobile;
+  return isMobile;
 }
 
 export function useIsNarrow() {
-  const [isNarrow, setIsNarrow] = React.useState<boolean | undefined>(
-    undefined
+  const [isNarrow, setIsNarrow] = React.useState(() =>
+    getInitial(NARROW_BREAKPOINT)
   );
 
   React.useEffect(() => {
@@ -32,9 +35,8 @@ export function useIsNarrow() {
       setIsNarrow(window.innerWidth < NARROW_BREAKPOINT);
     };
     mql.addEventListener('change', onChange);
-    setIsNarrow(window.innerWidth < NARROW_BREAKPOINT);
     return () => mql.removeEventListener('change', onChange);
   }, []);
 
-  return !!isNarrow;
+  return isNarrow;
 }
