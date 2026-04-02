@@ -39,9 +39,11 @@ export function DevEnv({
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem('dev-env.sidebar-open');
-      return stored ? stored === 'true' : true;
+      const preferred = stored ? stored === 'true' : true;
+      // If viewport is narrow on mount, start collapsed regardless of stored preference
+      return isNarrow ? false : preferred;
     } catch {
-      return true;
+      return !isNarrow;
     }
   });
 
@@ -59,8 +61,21 @@ export function DevEnv({
 
   // Stagger content swap: content fades out → width animates → content fades in
   const CONTENT_FADE_MS = 120;
+  const WIDTH_ANIM_MS = 280;
   const [contentCollapsed, setContentCollapsed] = useState(!sidebarOpen);
   const [isAnimating, setIsAnimating] = useState(false);
+  const animSafetyRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Safety: if transitionend never fires (e.g. no actual transition), clear isAnimating
+  useEffect(() => {
+    if (isAnimating) {
+      animSafetyRef.current = setTimeout(
+        () => setIsAnimating(false),
+        CONTENT_FADE_MS + WIDTH_ANIM_MS + 50
+      );
+    }
+    return () => clearTimeout(animSafetyRef.current);
+  }, [isAnimating]);
 
   useEffect(() => {
     try {
