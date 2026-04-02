@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.5.1
+
+### Patch Changes
+
+- 7ae10c1: Improve sidebar collapsed state UX: faster expand/collapse animation (300ms simultaneous vs 450ms sequential), wider collapsed rail (48px), 2-char doc badges, distinguishable theme badges, tooltip on add buttons, and accessibility attributes.
+
 ## 0.5.0
 
 ### Minor Changes
