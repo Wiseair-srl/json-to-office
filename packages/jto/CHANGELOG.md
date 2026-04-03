@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.5.2
+
+### Patch Changes
+
+- 662bef5: feat: default to LibreOffice renderer in both docx and pptx playgrounds, add fidelity warning for docxjs
+
 ## 0.5.1
 
 ### Patch Changes
