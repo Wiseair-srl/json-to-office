@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
+import { InfoIcon } from 'lucide-react';
 import { PreviewFrameMemoized } from './preview-frame';
 import { PreviewHeaderMemoized } from './preview-header';
 import { WarningsPanel } from './warnings-panel';
@@ -9,7 +10,7 @@ import { useSettingsStore } from '../../store/settings-store-provider';
 import { renderDocument } from '../../lib/render';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { CacheMetrics } from '../cache-metrics';
-import { FORMAT_LABEL } from '../../lib/env';
+import { FORMAT, FORMAT_LABEL } from '../../lib/env';
 
 /**
  * Tiny live countdown that ticks every 100ms and shows the
@@ -224,6 +225,15 @@ export function Preview() {
             />
           )}
         <Separator />
+        {FORMAT === 'docx' && renderingLibrary === 'docxjs' && (
+          <div className="px-3 py-1.5 flex items-center gap-2 border-b bg-blue-500/10 border-blue-500/30 text-xs text-blue-700 dark:text-blue-300">
+            <InfoIcon className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              The docxjs renderer is not 100% representative of the actual
+              .docx. Use LibreOffice for higher fidelity.
+            </span>
+          </div>
+        )}
         {/* Status Bar: cache + stale combined */}
         {(() => {
           const hasUnsyncedEdits =
