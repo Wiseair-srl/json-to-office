@@ -1,7 +1,6 @@
 import { devtools, persist } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { Settings } from '../lib/types';
-import { FORMAT } from '../lib/env';
 
 export type SettingsState = Settings;
 
@@ -15,7 +14,7 @@ export const initSettingsStore = (): SettingsState => {
   return {
     saveDocumentDebounceWait: 300,
     autoReload: true,
-    renderingLibrary: FORMAT === 'docx' ? 'docxjs' : 'LibreOffice',
+    renderingLibrary: 'LibreOffice',
     // UI preference to use a single preview header spanning editor + preview
     useGlobalPreviewHeader: true,
   };

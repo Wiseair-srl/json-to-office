@@ -52,12 +52,10 @@ import { FORMAT, FORMAT_EXT } from '../../lib/env';
 import type { RenderingLibrary } from '../../lib/types';
 
 const RENDERING_LIBRARIES: RenderingLibrary[] =
-  FORMAT === 'docx'
-    ? ['docxjs', 'LibreOffice']
-    : ['LibreOffice'];
+  FORMAT === 'docx' ? ['docxjs', 'LibreOffice'] : ['LibreOffice'];
 
 const tooltips: Record<RenderingLibrary, [string, string]> = {
-  docxjs: ['⚡', '(Recommended) works in the browser'],
+  docxjs: ['⚡', '(Fast) works in the browser — lower fidelity'],
   LibreOffice: [
     '🖨️',
     '(High fidelity) converts to PDF locally with LibreOffice',
@@ -105,8 +103,7 @@ function PreviewHeader({
   onTogglePreview?: () => void;
   previewOpen?: boolean;
 }) {
-  const usesManualRenderByDefault =
-    renderingLibrary !== 'docxjs';
+  const usesManualRenderByDefault = renderingLibrary !== 'docxjs';
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDownloadingWarnings, setIsDownloadingWarnings] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
@@ -344,8 +341,11 @@ function PreviewHeader({
             </TooltipTrigger>
             <TooltipContent className="max-w-sm">
               <p className="text-sm">
-                Preview uses {FORMAT === 'docx' ? 'docx-preview' : 'LibreOffice PDF conversion'}. Download the {FORMAT_EXT} to
-                verify fidelity.
+                Preview uses{' '}
+                {FORMAT === 'docx'
+                  ? 'docx-preview'
+                  : 'LibreOffice PDF conversion'}
+                . Download the {FORMAT_EXT} to verify fidelity.
               </p>
             </TooltipContent>
           </Tooltip>
@@ -361,15 +361,27 @@ function PreviewHeader({
                   className="gap-1.5 h-7 px-2.5"
                   onClick={onManualRender}
                   aria-label="Render preview"
-                  disabled={isGenerating || isRendering || previewOpen === false}
+                  disabled={
+                    isGenerating || isRendering || previewOpen === false
+                  }
                 >
-                  {isRendering ? <Spinner size="sm" /> : <PlayIcon className="h-3.5 w-3.5" />}
-                  <span className="text-xs font-medium hidden sm:inline">Run</span>
+                  {isRendering ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <PlayIcon className="h-3.5 w-3.5" />
+                  )}
+                  <span className="text-xs font-medium hidden sm:inline">
+                    Run
+                  </span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>
-                  {previewOpen === false ? 'Open preview to run' : isRendering ? 'Rendering preview...' : 'Render preview'}
+                  {previewOpen === false
+                    ? 'Open preview to run'
+                    : isRendering
+                      ? 'Rendering preview...'
+                      : 'Render preview'}
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -407,7 +419,11 @@ function PreviewHeader({
                   onClick={handleReload}
                   disabled={isReloading || isGenerating || isRendering}
                 >
-                  {isReloading ? <Spinner size="sm" /> : <RefreshCwIcon className="h-3.5 w-3.5" />}
+                  {isReloading ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <RefreshCwIcon className="h-3.5 w-3.5" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -429,8 +445,14 @@ function PreviewHeader({
                 disabled={!blob || isDownloading || isGenerating}
                 onClick={handleDownload}
               >
-                {isDownloading ? <Spinner size="sm" /> : <SaveIcon className="h-3.5 w-3.5" />}
-                <span className="text-xs font-medium hidden sm:inline">Download</span>
+                {isDownloading ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <SaveIcon className="h-3.5 w-3.5" />
+                )}
+                <span className="text-xs font-medium hidden sm:inline">
+                  Download
+                </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -463,7 +485,10 @@ function PreviewHeader({
           )}
 
           {renderingLibrary && setRenderingLibrary && (
-            <Select value={renderingLibrary} onValueChange={setRenderingLibrary}>
+            <Select
+              value={renderingLibrary}
+              onValueChange={setRenderingLibrary}
+            >
               <Tooltip>
                 <TooltipTrigger asChild>
                   <SelectTrigger className="w-[140px] h-7 text-xs hidden lg:flex">
@@ -481,9 +506,7 @@ function PreviewHeader({
                       <TooltipTrigger tabIndex={-1}>
                         {tooltips[library][0]}
                       </TooltipTrigger>
-                      <TooltipContent>
-                        {tooltips[library][1]}
-                      </TooltipContent>
+                      <TooltipContent>{tooltips[library][1]}</TooltipContent>
                     </Tooltip>{' '}
                     {library}
                   </SelectItem>
@@ -527,7 +550,9 @@ function PreviewHeader({
                 disabled={!documentText || isCopyingStandardComponents}
               >
                 <Code2 className="h-4 w-4 mr-2" />
-                {isCopyingStandardComponents ? 'Copying...' : 'Copy standard components'}
+                {isCopyingStandardComponents
+                  ? 'Copying...'
+                  : 'Copy standard components'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -548,7 +573,9 @@ function PreviewHeader({
                       className="lg:hidden"
                       onClick={() => setRenderingLibrary(library)}
                     >
-                      <span className="mr-2">{renderingLibrary === library ? '●' : '○'}</span>
+                      <span className="mr-2">
+                        {renderingLibrary === library ? '●' : '○'}
+                      </span>
                       {tooltips[library][0]} {library}
                     </DropdownMenuItem>
                   ))}
@@ -567,11 +594,18 @@ function PreviewHeader({
                   className="h-7 w-7"
                   onClick={onTogglePreview}
                 >
-                  {previewOpen ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  {previewOpen ? (
+                    <Eye className="h-3.5 w-3.5" />
+                  ) : (
+                    <EyeOff className="h-3.5 w-3.5" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <span className="flex items-center gap-1.5">{previewOpen ? 'Hide' : 'Show'} Preview <KbdShortcut shortcut="mod+shift+p" /></span>
+                <span className="flex items-center gap-1.5">
+                  {previewOpen ? 'Hide' : 'Show'} Preview{' '}
+                  <KbdShortcut shortcut="mod+shift+p" />
+                </span>
               </TooltipContent>
             </Tooltip>
           )}
@@ -590,7 +624,10 @@ function PreviewHeader({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <span className="flex items-center gap-1.5">{chatOpen ? 'Close' : 'Open'} AI Chat <KbdShortcut shortcut="mod+shift+j" /></span>
+                <span className="flex items-center gap-1.5">
+                  {chatOpen ? 'Close' : 'Open'} AI Chat{' '}
+                  <KbdShortcut shortcut="mod+shift+j" />
+                </span>
               </TooltipContent>
             </Tooltip>
           )}
@@ -603,11 +640,16 @@ function PreviewHeader({
           <DialogHeader>
             <DialogTitle>Clear all caches?</DialogTitle>
             <DialogDescription>
-              This will clear document and component caches. Next generation will be uncached.
+              This will clear document and component caches. Next generation
+              will be uncached.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setShowClearConfirm(false)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowClearConfirm(false)}
+            >
               Cancel
             </Button>
             <Button
