@@ -9,6 +9,21 @@
 
 > **Try the live playgrounds:** [DOCX Playground](https://docx.json-to-office.com) | [PPTX Playground](https://pptx.json-to-office.com)
 
+## Table of contents
+
+- [Quick start](#quick-start)
+- [The problem](#the-problem)
+- [The solution](#the-solution)
+- [Architecture](#architecture)
+- [Why not X?](#why-not-x)
+- [Features](#features)
+- [Full examples](#full-examples)
+- [Who it's for](#who-its-for)
+- [Use cases](#use-cases)
+- [Examples](#examples)
+- [Packages](#packages)
+- [Development](#development)
+
 ## Quick start
 
 ```bash
@@ -138,6 +153,68 @@ json-to-office makes the document definition **data**. You describe a `.docx` or
 ```
 
 Your document is just JSON now. Generate it, store it, validate it, version it, and render it anywhere, without touching TypeScript or Office internals.
+
+## Architecture
+
+A JSON document is a tree of **modules**. Each module contains **base components** (heading, paragraph, table, etc.) and optionally **custom components** that you define in your project via a plugin system.
+
+![Architecture](docs/architecture.png)
+
+The **processor** walks the tree. When it encounters a custom component, it validates the props against the schema, resolves the requested semver version, calls `render()`, and splices the result back into the tree. If `render()` returns other custom components, the processor re-expands them recursively (up to 20 levels deep). The output is a flat tree of base components only, which the **renderer** converts into native Office objects via docx.js or pptxgenjs.
+
+### Custom components (plugin system)
+
+Define custom components with `createComponent` + `createVersion`. Each version has a [TypeBox](https://github.com/sinclairzx81/typebox) schema for props (chosen over Zod for first-class JSON Schema support) and an async `render()` function that returns an array of standard components (or other custom components, which are expanded recursively):
+
+```ts
+import {
+  createComponent,
+  createVersion,
+} from '@json-to-office/json-to-docx/plugin';
+import { Type } from '@sinclair/typebox';
+
+const kpiCard = createComponent({
+  name: 'kpi-card',
+  versions: {
+    '1.0.0': createVersion({
+      propsSchema: Type.Object({
+        label: Type.String(),
+        value: Type.Number(),
+        unit: Type.Optional(Type.String()),
+      }),
+      render: async ({ props }) => [
+        { name: 'heading', props: { text: props.label, level: 3 } },
+        {
+          name: 'statistic',
+          props: {
+            value: `${props.value}${props.unit ? ` ${props.unit}` : ''}`,
+          },
+        },
+      ],
+    }),
+  },
+});
+```
+
+Then register it in the generator and use it in JSON like any built-in component:
+
+```ts
+const generator = createDocumentGenerator().addComponent(kpiCard).build();
+
+await generator.generateToFile(
+  {
+    name: 'docx',
+    children: [
+      { name: 'kpi-card', props: { label: 'Revenue', value: 4.2, unit: 'M$' } },
+    ],
+  },
+  'report.docx'
+);
+```
+
+**Versioning.** Each component supports multiple semver-keyed versions with different props and rendering logic. The document specifies which version to use; if omitted, the latest is resolved automatically. This enables non-breaking evolution of enterprise templates across clients.
+
+**Schema generation.** The enriched schema (standard + custom components) is exportable as JSON Schema, so you get validation and IDE autocomplete even for your custom components.
 
 ## Why not X?
 
