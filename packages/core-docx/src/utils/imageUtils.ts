@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import probe from 'probe-image-size';
+import { ImageRun, IFloating } from 'docx';
 import { parsePercentageStringToFraction } from './widthUtils';
 
 export interface ImageDimensions {
@@ -10,6 +11,11 @@ export interface ImageDimensions {
 export interface CalculatedDimensions {
   width: number;
   height: number;
+}
+
+export interface ImageBufferResult {
+  buffer: Buffer;
+  contentType?: string;
 }
 
 /**
@@ -134,19 +140,19 @@ export function detectImageTypeFromExtension(
 ): 'jpg' | 'png' | 'gif' | 'bmp' | 'svg' | undefined {
   const extension = path.toLowerCase().split('.').pop()?.split('?')[0]; // Handle query params in URLs
   switch (extension) {
-  case 'jpg':
-  case 'jpeg':
-    return 'jpg';
-  case 'png':
-    return 'png';
-  case 'gif':
-    return 'gif';
-  case 'bmp':
-    return 'bmp';
-  case 'svg':
-    return 'svg';
-  default:
-    return undefined;
+    case 'jpg':
+    case 'jpeg':
+      return 'jpg';
+    case 'png':
+      return 'png';
+    case 'gif':
+      return 'gif';
+    case 'bmp':
+      return 'bmp';
+    case 'svg':
+      return 'svg';
+    default:
+      return undefined;
   }
 }
 
@@ -169,13 +175,21 @@ export function detectImageTypeFromMimeType(
 
 /**
  * Detect image type from path or base64 data URI
- * Prioritizes: MIME type from base64 > file extension > default to 'png'
+ * Prioritizes: response Content-Type > MIME type from base64 > file extension > default to 'png'
  * @param imagePath - File path, URL, or base64 data URI
+ * @param responseContentType - Optional Content-Type header from HTTP response
  * @returns Image type (jpg, png, gif, bmp, svg)
  */
 export function detectImageType(
-  imagePath: string
+  imagePath: string,
+  responseContentType?: string
 ): 'jpg' | 'png' | 'gif' | 'bmp' | 'svg' {
+  // Highest priority: Content-Type from HTTP response
+  if (responseContentType) {
+    const typeFromResponse = detectImageTypeFromMimeType(responseContentType);
+    if (typeFromResponse) return typeFromResponse;
+  }
+
   // Check if it's a base64 data URI and extract MIME type
   if (isBase64Image(imagePath)) {
     const mimeType = extractMimeTypeFromDataUri(imagePath);
@@ -194,10 +208,38 @@ export function detectImageType(
 }
 
 /**
+ * Create an ImageRun with correct type handling, including SVG fallback.
+ * TODO: SVG fallback uses raw SVG as PNG — works in Word 2016+ which renders
+ * SVG natively; fallback won't render correctly in older versions.
+ */
+export function createTypedImageRun(opts: {
+  type: 'jpg' | 'png' | 'gif' | 'bmp' | 'svg';
+  data: Buffer;
+  transformation: { width: number; height: number };
+  floating?: IFloating;
+}): ImageRun {
+  const base = {
+    data: opts.data,
+    transformation: opts.transformation,
+    ...(opts.floating && { floating: opts.floating }),
+  };
+  if (opts.type === 'svg') {
+    return new ImageRun({
+      type: 'svg',
+      ...base,
+      fallback: { type: 'png', data: opts.data },
+    });
+  }
+  return new ImageRun({ type: opts.type, ...base });
+}
+
+/**
  * Download image from URL and return buffer
  * Uses native fetch with automatic redirect following and proper headers
  */
-export async function downloadImageFromUrl(url: string): Promise<Buffer> {
+export async function downloadImageFromUrl(
+  url: string
+): Promise<ImageBufferResult> {
   try {
     // Create an AbortController for timeout
     const controller = new AbortController();
@@ -219,11 +261,13 @@ export async function downloadImageFromUrl(url: string): Promise<Buffer> {
       );
     }
 
+    const contentType = response.headers.get('content-type') || undefined;
+
     // Get the response as an ArrayBuffer
     const arrayBuffer = await response.arrayBuffer();
 
     // Convert ArrayBuffer to Buffer
-    return Buffer.from(arrayBuffer);
+    return { buffer: Buffer.from(arrayBuffer), contentType };
   } catch (error) {
     if (error instanceof Error) {
       // Handle timeout errors
@@ -241,17 +285,19 @@ export async function downloadImageFromUrl(url: string): Promise<Buffer> {
 /**
  * Get image buffer from base64 data URI, URL, or local file
  */
-export async function getImageBuffer(imagePath: string): Promise<Buffer> {
+export async function getImageBuffer(
+  imagePath: string
+): Promise<ImageBufferResult> {
   // Check for base64 data URI first
   if (isBase64Image(imagePath)) {
-    return decodeBase64Image(imagePath);
+    return { buffer: decodeBase64Image(imagePath) };
   }
   // Check for URL
   if (isValidUrl(imagePath)) {
     return await downloadImageFromUrl(imagePath);
   }
   // Otherwise treat as local file path
-  return readFileSync(imagePath);
+  return { buffer: readFileSync(imagePath) };
 }
 
 /**
@@ -261,7 +307,7 @@ export async function getImageDimensions(
   imagePath: string
 ): Promise<ImageDimensions> {
   try {
-    const imageBuffer = await getImageBuffer(imagePath);
+    const { buffer: imageBuffer } = await getImageBuffer(imagePath);
     const result = probe.sync(imageBuffer);
 
     if (!result) {

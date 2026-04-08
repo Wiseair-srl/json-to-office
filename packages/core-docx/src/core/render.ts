@@ -10,7 +10,6 @@ import {
   TableOfContents,
   ISectionOptions,
   TextRun,
-  ImageRun,
   AlignmentType,
   BookmarkStart,
   BookmarkEnd,
@@ -20,6 +19,8 @@ import {
   calculateImageDimensions,
   getImageBuffer,
   parseWidthValue,
+  detectImageType,
+  createTypedImageRun,
 } from '../utils/imageUtils';
 import {
   getThemeColors,
@@ -326,10 +327,13 @@ async function renderHeaderFooterComponents(
       }
 
       let imageBuffer: Buffer;
+      let responseContentType: string | undefined;
 
       try {
         // Try to use the provided source first
-        imageBuffer = await getImageBuffer(imageSource);
+        const imageResult = await getImageBuffer(imageSource);
+        imageBuffer = imageResult.buffer;
+        responseContentType = imageResult.contentType;
       } catch (error) {
         throw new Error(
           `Failed to load image from ${imageSource.substring(0, 50)}`
@@ -397,8 +401,10 @@ async function renderHeaderFooterComponents(
         // Map floating options if present
         const floatingOptions = mapFloatingOptions(imageComp.props.floating);
 
-        const imageRun = new ImageRun({
-          type: 'png',
+        const imageType = detectImageType(imageSource, responseContentType);
+
+        const imageRun = createTypedImageRun({
+          type: imageType,
           data: imageBuffer,
           transformation: {
             width: dimensions.width,
