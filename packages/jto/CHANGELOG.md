@@ -1,5 +1,14 @@
 # @json-to-office/jto
 
+## 0.6.0
+
+### Patch Changes
+
+- 84299d3: Remove placeholder header/footer component types and exports. Centralize image type detection and ImageRun construction. Support percentage strings (e.g., "50%") for floating position offsets and wrap margins, resolved against page or available dimensions. Fix table cell backgroundColor defaulting to transparent when unset.
+- Updated dependencies [84299d3]
+  - @json-to-office/shared-docx@0.6.0
+  - @json-to-office/core-docx@0.6.0
+
 ## 0.5.3
 
 ### Patch Changes
