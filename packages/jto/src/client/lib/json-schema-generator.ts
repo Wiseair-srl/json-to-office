@@ -132,7 +132,7 @@ export function generateThemeConfigSchema(): any {
   const source =
     FORMAT === 'docx' ? DocxThemeConfigSchema : PptxThemeConfigSchema;
   const schema = JSON.parse(JSON.stringify(source));
-  cleanupTypeBoxIds(schema);
+  cleanupTypeBoxIds(schema, false);
 
   const label = FORMAT === 'docx' ? 'DOCX' : 'PPTX';
   return {
@@ -287,9 +287,7 @@ export function generateComponentSchemas(): Record<string, any> {
  * Creates Monaco editor schema configuration for document/presentation definitions
  */
 export function createReportSchemaConfig(
-  filePatterns: string[] = FORMAT === 'docx'
-    ? ['*.docx.json']
-    : ['*.pptx.json']
+  filePatterns: string[] = FORMAT === 'docx' ? ['*.docx.json'] : ['*.pptx.json']
 ): MonacoSchemaConfig {
   return {
     uri: 'https://json-to-office.dev/schema/report/v1.0.0',
@@ -315,10 +313,7 @@ export function createThemeSchemaConfig(
  * Generates a complete schema configuration for Monaco editor
  */
 export function generateMonacoSchemaConfigs(): MonacoSchemaConfig[] {
-  return [
-    createReportSchemaConfig(),
-    createThemeSchemaConfig(),
-  ];
+  return [createReportSchemaConfig(), createThemeSchemaConfig()];
 }
 
 // ---------------------------------------------------------------------------
@@ -364,13 +359,10 @@ function getComponentDescription(type: string): string {
     footer: 'Page footer - content displayed at the bottom of each page.',
     'text-box': 'Text box element - a positioned box with text content.',
     // pptx
-    pptx:
-      'Main presentation container - defines the overall presentation structure.',
-    slide:
-      'Slide container - groups content elements within a single slide.',
+    pptx: 'Main presentation container - defines the overall presentation structure.',
+    slide: 'Slide container - groups content elements within a single slide.',
     text: 'Text element - displays text with formatting and positioning.',
-    shape:
-      'Shape element - geometric shapes with optional text and styling.',
+    shape: 'Shape element - geometric shapes with optional text and styling.',
     // shared
     image: 'Image element - displays images with sizing and positioning.',
     table: 'Table element - displays tabular data with headers and rows.',
@@ -431,7 +423,7 @@ function enhancePropsDescriptions(
   }
 }
 
-function cleanupTypeBoxIds(schema: any): void {
+function cleanupTypeBoxIds(schema: any, hasDefinitions = true): void {
   if (typeof schema !== 'object' || schema === null) return;
 
   if (schema.$id && /^T\d+$/.test(schema.$id)) {
@@ -439,17 +431,22 @@ function cleanupTypeBoxIds(schema: any): void {
   }
 
   if (schema.$ref && /^T\d+$/.test(schema.$ref)) {
-    schema.$ref = '#/definitions/ComponentDefinition';
+    if (hasDefinitions) {
+      schema.$ref = '#/definitions/ComponentDefinition';
+    } else {
+      // Theme schemas have no $ref — this is a safety guard
+      delete schema.$ref;
+    }
   }
 
   if (Array.isArray(schema)) {
-    schema.forEach((item) => cleanupTypeBoxIds(item));
+    schema.forEach((item) => cleanupTypeBoxIds(item, hasDefinitions));
     return;
   }
 
   Object.keys(schema).forEach((key) => {
     if (typeof schema[key] === 'object' && schema[key] !== null) {
-      cleanupTypeBoxIds(schema[key]);
+      cleanupTypeBoxIds(schema[key], hasDefinitions);
     }
   });
 }

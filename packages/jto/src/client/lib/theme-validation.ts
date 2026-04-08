@@ -11,7 +11,8 @@ export interface ThemeValidationResult {
 }
 
 /**
- * Validates a theme JSON string - checks structure without requiring format-specific schemas
+ * Basic structural validation for theme JSON (used by themes store).
+ * Full schema validation is handled by Monaco's JSON language service.
  */
 export function validateThemeJson(jsonString: string): ThemeValidationResult {
   try {

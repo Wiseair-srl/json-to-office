@@ -142,9 +142,7 @@ function CopyErrorsButton({ errors }: { errors: JsonEditorError[] }) {
       onClick={handleCopy}
       className={cn(
         'flex items-center gap-1 px-1.5 py-1 rounded transition-all duration-200 cursor-pointer',
-        copied
-          ? 'bg-green-500/15 text-green-500'
-          : 'hover:bg-destructive/20'
+        copied ? 'bg-green-500/15 text-green-500' : 'hover:bg-destructive/20'
       )}
       aria-label="Copy all errors"
     >
@@ -168,16 +166,16 @@ interface ErrorItemProps {
 function ErrorItem({ error, onClick }: ErrorItemProps) {
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
-    case 'error':
-      return (
-        <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
-      );
-    case 'warning':
-      return (
-        <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-      );
-    default:
-      return <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />;
+      case 'error':
+        return (
+          <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
+        );
+      case 'warning':
+        return (
+          <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+        );
+      default:
+        return <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />;
     }
   };
 
@@ -252,4 +250,6 @@ export function ValidationStatusBar({
       </div>
     );
   }
+
+  return null;
 }

@@ -95,7 +95,9 @@ export function DocumentGenerationLoader({
                         ? 'bg-primary animate-pulse'
                         : 'bg-transparent'
                   )}
-                  style={{ width: isCompleted ? '100%' : isActive ? '100%' : '0%' }}
+                  style={{
+                    width: isCompleted ? '100%' : isActive ? '100%' : '0%',
+                  }}
                 />
               </div>
             </div>
@@ -117,23 +119,23 @@ export function PreviewLoading({
 }: PreviewLoadingProps) {
   const getLibraryInfo = (library?: string) => {
     switch (library) {
-    case 'LibreOffice':
-      return {
-        name: 'LibreOffice',
-        description: 'Converting PPTX to PDF locally...',
-      };
-    case 'Office':
-      return {
-        name: 'Microsoft Office',
-        description: 'Uploading file and loading Office viewer...',
-      };
-    case 'Docs':
-      return {
-        name: 'Google Docs',
-        description: 'Uploading file and loading Docs viewer...',
-      };
-    default:
-      return { name: 'Default', description: 'Processing document...' };
+      case 'LibreOffice':
+        return {
+          name: 'LibreOffice',
+          description: 'Converting document to PDF locally...',
+        };
+      case 'Office':
+        return {
+          name: 'Microsoft Office',
+          description: 'Uploading file and loading Office viewer...',
+        };
+      case 'Docs':
+        return {
+          name: 'Google Docs',
+          description: 'Uploading file and loading Docs viewer...',
+        };
+      default:
+        return { name: 'Default', description: 'Processing document...' };
     }
   };
 

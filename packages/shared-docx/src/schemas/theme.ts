@@ -4,7 +4,11 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { FontDefinitionSchema, TextFormattingPropertiesSchema, HexColorSchema } from './font';
+import {
+  FontDefinitionSchema,
+  TextFormattingPropertiesSchema,
+  HexColorSchema,
+} from './font';
 import { IndentSchema } from './components/common';
 
 // ============================================================================
@@ -21,7 +25,7 @@ export const DocumentMarginsSchema = Type.Object(
     footer: Type.Number({ minimum: 0 }),
     gutter: Type.Number({ minimum: 0 }),
   },
-  { description: 'Document margin configuration' }
+  { additionalProperties: false, description: 'Document margin configuration' }
 );
 
 // ============================================================================
@@ -33,7 +37,7 @@ export const PageDimensionsSchema = Type.Object(
     width: Type.Number({ minimum: 0 }),
     height: Type.Number({ minimum: 0 }),
   },
-  { description: 'Page dimensions in twips' }
+  { additionalProperties: false, description: 'Page dimensions in twips' }
 );
 
 // ============================================================================
@@ -48,10 +52,13 @@ export const PageSchema = Type.Object(
         Type.Literal('A3'),
         Type.Literal('LETTER'),
         Type.Literal('LEGAL'),
-        Type.Object({
-          width: Type.Number({ minimum: 0 }),
-          height: Type.Number({ minimum: 0 }),
-        }),
+        Type.Object(
+          {
+            width: Type.Number({ minimum: 0 }),
+            height: Type.Number({ minimum: 0 }),
+          },
+          { additionalProperties: false }
+        ),
       ],
       { description: 'Standard page size or custom dimensions' }
     ),
@@ -77,7 +84,10 @@ export const FontsSchema = Type.Object(
     mono: FontDefinitionSchema,
     light: FontDefinitionSchema,
   },
-  { description: 'Font definitions for different text types' }
+  {
+    additionalProperties: false,
+    description: 'Font definitions for different text types',
+  }
 );
 
 // ============================================================================
