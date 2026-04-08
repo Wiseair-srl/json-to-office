@@ -368,14 +368,6 @@ export const COMPONENT_METADATA: Record<
     description: 'Tabular data display with headers and rows',
     enhanceForRichContent: true,
   },
-  header: {
-    title: 'Header Component',
-    description: 'Document header with page numbering and metadata',
-  },
-  footer: {
-    title: 'Footer Component',
-    description: 'Document footer with page numbering and metadata',
-  },
   list: {
     title: 'List Component',
     description: 'Ordered or unordered list with nested items',

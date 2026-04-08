@@ -17,8 +17,6 @@ import type {
   HighchartsPropsSchema,
   StatisticPropsSchema,
   TablePropsSchema,
-  HeaderPropsSchema,
-  FooterPropsSchema,
   ListPropsSchema,
   TocPropsSchema,
 } from '../schemas/components';
@@ -133,28 +131,6 @@ export interface HighchartsComponent {
 }
 
 /**
- * Header component with literal name discriminator
- */
-export interface HeaderComponent {
-  name: 'header';
-  id?: string;
-  /** When false, this component is filtered out and not rendered. Defaults to true */
-  enabled?: boolean;
-  props: Static<typeof HeaderPropsSchema>;
-}
-
-/**
- * Footer component with literal name discriminator
- */
-export interface FooterComponent {
-  name: 'footer';
-  id?: string;
-  /** When false, this component is filtered out and not rendered. Defaults to true */
-  enabled?: boolean;
-  props: Static<typeof FooterPropsSchema>;
-}
-
-/**
  * Text Box component with literal name discriminator
  * Container for child components with floating positioning
  */
@@ -222,8 +198,6 @@ export type StandardComponentDefinition =
   | HighchartsComponent
   | StatisticComponent
   | TableComponent
-  | HeaderComponent
-  | FooterComponent
   | ListComponent
   | TocComponent;
 
@@ -233,8 +207,6 @@ export type StandardComponentDefinition =
  */
 export const STANDARD_COMPONENTS = [
   'columns',
-  'footer',
-  'header',
   'heading',
   'highcharts',
   'image',
@@ -350,18 +322,6 @@ export function isTableComponent(
   component: ComponentDefinition
 ): component is TableComponent {
   return component.name === 'table';
-}
-
-export function isHeaderComponent(
-  component: ComponentDefinition
-): component is HeaderComponent {
-  return component.name === 'header';
-}
-
-export function isFooterComponent(
-  component: ComponentDefinition
-): component is FooterComponent {
-  return component.name === 'footer';
 }
 
 export function isListComponent(

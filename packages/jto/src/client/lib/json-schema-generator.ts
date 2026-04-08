@@ -65,7 +65,7 @@ function generateDocxDocumentSchema(): any {
         description:
           'Array of document components. Type "name" to see available component types.',
         markdownDescription:
-          'Array of document components. Available types:\n- `docx` - Main container\n- `section` - Section container\n- `heading` - Heading element\n- `paragraph` - Paragraph element\n- `image` - Image element\n- `table` - Data table\n- `list` - List element\n- `columns` - Column layout\n- `statistic` - Statistic element\n- `highcharts` - Highcharts chart\n- `toc` - Table of contents\n- `header` - Page header\n- `footer` - Page footer',
+          'Array of document components. Available types:\n- `docx` - Main container\n- `section` - Section container\n- `heading` - Heading element\n- `paragraph` - Paragraph element\n- `image` - Image element\n- `table` - Data table\n- `list` - List element\n- `columns` - Column layout\n- `statistic` - Statistic element\n- `highcharts` - Highcharts chart\n- `toc` - Table of contents',
       },
     },
     definitions: {
@@ -355,8 +355,6 @@ function getComponentDescription(type: string): string {
     statistic: 'Statistic element - displays key metrics.',
     highcharts: 'Highcharts chart - renders a chart from Highcharts options.',
     toc: 'Table of contents - generates a document TOC.',
-    header: 'Page header - content displayed at the top of each page.',
-    footer: 'Page footer - content displayed at the bottom of each page.',
     'text-box': 'Text box element - a positioned box with text content.',
     // pptx
     pptx: 'Main presentation container - defines the overall presentation structure.',

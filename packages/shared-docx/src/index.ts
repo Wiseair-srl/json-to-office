@@ -7,7 +7,10 @@ export const SHARED_DOCX_VERSION = '1.0.0';
 
 // Types
 export type { ComponentDefinition as SharedComponentDefinition } from '@json-to-office/shared';
-export type { GenerationWarning, AddWarningFunction } from '@json-to-office/shared';
+export type {
+  GenerationWarning,
+  AddWarningFunction,
+} from '@json-to-office/shared';
 
 // Schema utilities
 export {
@@ -138,8 +141,6 @@ export {
   isImageProps,
   isStatisticProps,
   isTableProps,
-  isHeaderProps,
-  isFooterProps,
   isListProps,
   isCustomComponentProps,
   getValidationErrors,
@@ -208,8 +209,6 @@ export {
   TextBoxPropsSchema,
   StatisticPropsSchema,
   TablePropsSchema,
-  HeaderPropsSchema,
-  FooterPropsSchema,
   ListPropsSchema,
   TocPropsSchema,
   StandardComponentDefinitionSchema,
@@ -228,8 +227,6 @@ export type {
   TextBoxProps,
   StatisticProps,
   TableProps,
-  HeaderProps,
-  FooterProps,
   ListProps,
   TocProps,
   Alignment,
@@ -263,9 +260,7 @@ export {
   CustomComponentDefinitionSchema,
 } from './schemas/custom-components';
 
-export type {
-  TextSpaceAfterProps,
-} from './schemas/custom-components';
+export type { TextSpaceAfterProps } from './schemas/custom-components';
 
 // Legacy support - re-export common types from schemas
 export type { ThemeName } from './types/common';
@@ -312,8 +307,6 @@ export {
   type HighchartsComponent,
   type StatisticComponent,
   type TableComponent,
-  type HeaderComponent,
-  type FooterComponent,
   type ListComponent,
   type TocComponent,
   type TextSpaceAfterComponent,
@@ -327,8 +320,6 @@ export {
   isHighchartsComponent,
   isStatisticComponent,
   isTableComponent,
-  isHeaderComponent,
-  isFooterComponent,
   isListComponent,
   isTocComponent,
   isTextSpaceAfterComponent,

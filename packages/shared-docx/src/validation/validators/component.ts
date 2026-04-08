@@ -27,8 +27,6 @@ export {
   isImageProps,
   isStatisticProps,
   isTableProps,
-  isHeaderProps,
-  isFooterProps,
   isListProps,
   isCustomComponentProps,
   type StandardComponentName,

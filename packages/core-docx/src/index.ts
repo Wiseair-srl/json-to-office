@@ -64,8 +64,6 @@ export {
   isStatisticComponent,
   isTableComponent,
   isListComponent,
-  isHeaderComponent,
-  isFooterComponent,
   isHighchartsComponent,
 } from './types/index';
 

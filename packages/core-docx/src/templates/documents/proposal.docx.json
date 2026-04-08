@@ -15,7 +15,7 @@
         "level": 1,
         "header": [
           {
-            "name": "header",
+            "name": "paragraph",
             "props": {
               "text": "Apex Consulting — Confidential",
               "alignment": "right"
@@ -24,11 +24,10 @@
         ],
         "footer": [
           {
-            "name": "footer",
+            "name": "paragraph",
             "props": {
               "text": "Prepared for Meridian Financial Group",
-              "alignment": "left",
-              "showPageNumbers": true
+              "alignment": "left"
             }
           }
         ]

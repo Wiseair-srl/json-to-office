@@ -137,17 +137,17 @@ export class SchemaGenerator {
           name: m.name,
           versions: m.versionedProps
             ? m.versionedProps.map((vp) => ({
-              version: vp.version,
-              propsSchema: vp.propsSchema,
-              hasChildren: vp.hasChildren,
-            }))
+                version: vp.version,
+                propsSchema: vp.propsSchema,
+                hasChildren: vp.hasChildren,
+              }))
             : [
-              {
-                version: '1.0.0',
-                propsSchema: m.propsSchema,
-                hasChildren: m.hasChildren,
-              },
-            ],
+                {
+                  version: '1.0.0',
+                  propsSchema: m.propsSchema,
+                  hasChildren: m.hasChildren,
+                },
+              ],
         })),
       });
 
@@ -236,7 +236,11 @@ export class SchemaGenerator {
         paths.push(outputPath);
       } else {
         const outputPath = path.join(componentsDir, `${type}.schema.ts`);
-        await this.typeboxExporter.exportComponentSchema(type, schema, outputPath);
+        await this.typeboxExporter.exportComponentSchema(
+          type,
+          schema,
+          outputPath
+        );
         paths.push(outputPath);
       }
     }
@@ -275,7 +279,9 @@ export class SchemaGenerator {
     return paths;
   }
 
-  private async getStandardComponentSchemas(): Promise<Record<string, TSchema>> {
+  private async getStandardComponentSchemas(): Promise<
+    Record<string, TSchema>
+  > {
     if (this.formatName === 'docx') {
       const shared = await import('@json-to-office/shared-docx');
       return {
@@ -287,8 +293,6 @@ export class SchemaGenerator {
         image: shared.ImagePropsSchema,
         statistic: shared.StatisticPropsSchema,
         table: shared.TablePropsSchema,
-        header: shared.HeaderPropsSchema,
-        footer: shared.FooterPropsSchema,
         list: shared.ListPropsSchema,
       };
     } else {

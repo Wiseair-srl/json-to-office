@@ -15,8 +15,6 @@ import {
   ImagePropsSchema,
   StatisticPropsSchema,
   TablePropsSchema,
-  HeaderPropsSchema,
-  FooterPropsSchema,
   ListPropsSchema,
   ComponentDefinitionSchema,
 } from '../../schemas/components';
@@ -34,8 +32,6 @@ const COMPONENT_SCHEMA_MAP = {
   image: ImagePropsSchema,
   statistic: StatisticPropsSchema,
   table: TablePropsSchema,
-  header: HeaderPropsSchema,
-  footer: FooterPropsSchema,
   list: ListPropsSchema,
   custom: CustomComponentDefinitionSchema,
 } as const;
@@ -191,18 +187,6 @@ export function isTableProps(
   config: unknown
 ): config is Static<typeof TablePropsSchema> {
   return Value.Check(TablePropsSchema, config);
-}
-
-export function isHeaderProps(
-  config: unknown
-): config is Static<typeof HeaderPropsSchema> {
-  return Value.Check(HeaderPropsSchema, config);
-}
-
-export function isFooterProps(
-  config: unknown
-): config is Static<typeof FooterPropsSchema> {
-  return Value.Check(FooterPropsSchema, config);
 }
 
 export function isListProps(

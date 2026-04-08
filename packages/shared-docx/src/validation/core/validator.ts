@@ -10,8 +10,6 @@ import {
   ImagePropsSchema,
   StatisticPropsSchema,
   TablePropsSchema,
-  HeaderPropsSchema,
-  FooterPropsSchema,
   ListPropsSchema,
 } from '../../schemas/components';
 import { CustomComponentDefinitionSchema } from '../../schemas/custom-components';
@@ -49,8 +47,6 @@ const COMPONENT_SCHEMA_MAP = {
   image: ImagePropsSchema,
   statistic: StatisticPropsSchema,
   table: TablePropsSchema,
-  header: HeaderPropsSchema,
-  footer: FooterPropsSchema,
   list: ListPropsSchema,
 } as const;
 

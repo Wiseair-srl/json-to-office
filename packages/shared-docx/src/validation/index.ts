@@ -78,8 +78,6 @@ export {
   isImageProps,
   isStatisticProps,
   isTableProps,
-  isHeaderProps,
-  isFooterProps,
   isListProps,
   isCustomComponentProps,
   // Error formatting
