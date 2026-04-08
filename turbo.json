@@ -50,6 +50,20 @@
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": []
+    },
+    "//#generate:schemas": {
+      "dependsOn": [
+        "@json-to-office/shared#build",
+        "@json-to-office/shared-docx#build",
+        "@json-to-office/shared-pptx#build"
+      ],
+      "outputs": ["schemas/**"],
+      "inputs": [
+        "scripts/generate-schemas.ts",
+        "packages/shared/dist/**",
+        "packages/shared-docx/dist/**",
+        "packages/shared-pptx/dist/**"
+      ]
     }
   }
 }
