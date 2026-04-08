@@ -600,7 +600,7 @@ export async function renderComponent(
   } else if (isColumnsComponent(component)) {
     return await renderColumnsComponent(component, theme, themeName, context);
   } else if (isImageComponent(component)) {
-    return await renderImageComponent(component, theme);
+    return await renderImageComponent(component, theme, themeName);
   } else if (isTextBoxComponent(component)) {
     return await renderTextBoxComponent(component, theme, themeName, context);
   } else if (isStatisticComponent(component)) {

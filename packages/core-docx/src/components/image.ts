@@ -14,7 +14,8 @@ import { createImage } from '../core/content';
  */
 export async function renderImageComponent(
   component: ComponentDefinition,
-  theme: ThemeConfig
+  theme: ThemeConfig,
+  themeName?: string
 ): Promise<Paragraph[]> {
   if (!isImageComponent(component)) return [];
 
@@ -30,7 +31,7 @@ export async function renderImageComponent(
     );
   }
 
-  return await createImage(imageSource, theme, {
+  return await createImage(imageSource, theme, themeName, {
     caption: resolvedConfig.caption,
     width: resolvedConfig.width,
     height: resolvedConfig.height,

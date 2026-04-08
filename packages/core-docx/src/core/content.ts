@@ -338,21 +338,27 @@ function mapFrameOptions(
   }
 
   if (useAbsolute) {
-    const hRelative = floating.horizontalPosition?.relative;
-    const vRelative = floating.verticalPosition?.relative;
-    const hRef =
-      hRelative && hRelative !== 'page'
-        ? getAvailableWidthTwips(theme, themeName)
-        : getPageWidthTwips(theme, themeName);
-    const vRef =
-      vRelative && vRelative !== 'page'
-        ? getAvailableHeightTwips(theme, themeName)
-        : getPageHeightTwips(theme, themeName);
-    const x = resolveOffsetTwips(
-      floating.horizontalPosition?.offset ?? 0,
-      hRef
-    );
-    const y = resolveOffsetTwips(floating.verticalPosition?.offset ?? 0, vRef);
+    const rawX = floating.horizontalPosition?.offset ?? 0;
+    const rawY = floating.verticalPosition?.offset ?? 0;
+    let x: number;
+    let y: number;
+    if (typeof rawX === 'string' || typeof rawY === 'string') {
+      const hRelative = floating.horizontalPosition?.relative;
+      const vRelative = floating.verticalPosition?.relative;
+      const hRef =
+        hRelative && hRelative !== 'page'
+          ? getAvailableWidthTwips(theme, themeName)
+          : getPageWidthTwips(theme, themeName);
+      const vRef =
+        vRelative && vRelative !== 'page'
+          ? getAvailableHeightTwips(theme, themeName)
+          : getPageHeightTwips(theme, themeName);
+      x = resolveOffsetTwips(rawX, hRef);
+      y = resolveOffsetTwips(rawY, vRef);
+    } else {
+      x = rawX;
+      y = rawY;
+    }
     return {
       type: 'absolute',
       position: { x, y },
@@ -536,6 +542,7 @@ export function createTitleContent(
 export async function createImage(
   path: string,
   theme: ThemeConfig,
+  themeName?: string,
   options: ImageOptions = {}
 ): Promise<Paragraph[]> {
   const elements: Paragraph[] = [];
