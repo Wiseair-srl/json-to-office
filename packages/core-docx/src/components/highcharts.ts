@@ -27,7 +27,9 @@ export interface ChartGenerationResult {
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 
 function getExportServerUrl(propsUrl?: string): string {
-  return propsUrl || process.env.HIGHCHARTS_SERVER_URL || DEFAULT_EXPORT_SERVER_URL;
+  return (
+    propsUrl || process.env.HIGHCHARTS_SERVER_URL || DEFAULT_EXPORT_SERVER_URL
+  );
 }
 
 /**
@@ -91,7 +93,7 @@ async function generateChart(
 export async function renderHighchartsComponent(
   component: ComponentDefinition,
   theme: ThemeConfig,
-  _themeName: string
+  themeName: string
 ): Promise<(Paragraph | Table)[]> {
   if (!isHighchartsComponent(component)) return [];
 
@@ -105,14 +107,13 @@ export async function renderHighchartsComponent(
   const hasConfigDimensions =
     config.width !== undefined || config.height !== undefined;
   const renderWidth = hasConfigDimensions ? config.width : chartResult.width;
-  const renderHeight = hasConfigDimensions
-    ? config.height
-    : chartResult.height;
+  const renderHeight = hasConfigDimensions ? config.height : chartResult.height;
 
   // Add chart image using the image component with base64 data URI
   const imageParagraphs = await createImage(
     chartResult.base64DataUri,
     theme,
+    themeName,
     {
       width: renderWidth,
       height: renderHeight,

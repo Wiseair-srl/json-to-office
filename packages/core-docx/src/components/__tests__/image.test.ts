@@ -34,6 +34,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           caption: undefined,
           width: undefined,
@@ -59,6 +60,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.jpg',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           caption: 'Figure 1: Sample Image',
         })
@@ -81,6 +83,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           width: 400,
         })
@@ -102,6 +105,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           height: 300,
         })
@@ -124,6 +128,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           width: 600,
           height: 400,
@@ -146,6 +151,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           alignment: 'left',
         })
@@ -167,6 +173,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           alignment: 'center',
         })
@@ -188,6 +195,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           alignment: 'right',
         })
@@ -219,6 +227,7 @@ describe('components/image', () => {
         expect(mockCreateImage).toHaveBeenCalledWith(
           `/path/to/image${format}`,
           expect.any(Object),
+          undefined,
           expect.any(Object)
         );
         expect(result).toHaveLength(1);
@@ -238,6 +247,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/Users/user/Documents/images/photo.jpg',
         expect.any(Object),
+        undefined,
         expect.any(Object)
       );
       expect(result).toHaveLength(1);
@@ -256,6 +266,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         './images/logo.png',
         expect.any(Object),
+        undefined,
         expect.any(Object)
       );
       expect(result).toHaveLength(1);
@@ -274,6 +285,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         'https://example.com/image.png',
         expect.any(Object),
+        undefined,
         expect.any(Object)
       );
       expect(result).toHaveLength(1);
@@ -296,6 +308,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         base64Data,
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           width: 100,
           height: 100,
@@ -321,6 +334,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         base64Data,
         expect.any(Object),
+        undefined,
         expect.any(Object)
       );
       expect(result).toHaveLength(1);
@@ -409,6 +423,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           caption: expect.stringContaining('This is a very long caption'),
         })
@@ -433,6 +448,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/complex/path/to/image.jpg',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           caption: 'Complex Image with All Options',
           width: 800,
@@ -458,6 +474,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           width: '90%',
         })
@@ -479,6 +496,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           width: '50%',
         })
@@ -500,6 +518,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           width: '100%',
         })
@@ -521,6 +540,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           width: '75.5%',
         })
@@ -542,6 +562,7 @@ describe('components/image', () => {
       expect(mockCreateImage).toHaveBeenCalledWith(
         '/path/to/image.png',
         expect.any(Object),
+        undefined,
         expect.objectContaining({
           width: undefined,
         })
