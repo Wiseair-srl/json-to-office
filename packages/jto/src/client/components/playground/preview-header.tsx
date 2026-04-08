@@ -141,7 +141,7 @@ function PreviewHeader({
         return;
       }
 
-      // Generate PPTX from warnings document JSON
+      // Generate document from warnings document JSON
       // Pass empty customThemes to ensure we use built-in themes only
       const result = await generatePresentation(
         'warnings',

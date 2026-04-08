@@ -10,10 +10,10 @@ export interface GenerationWarning {
 
 export type OutputState = {
   name?: string; // last success => document name
-  text?: string; // last success => code used to generate the pptx
-  blob?: Blob; // last success => generated pptx
+  text?: string; // last success => code used to generate the document
+  blob?: Blob; // last success => generated document
   globalError?: string; // last failed => global error message
-  isGenerating?: boolean; // presentation generation in progress
+  isGenerating?: boolean; // document generation in progress
   generationProgress?: {
     stage: 'parsing' | 'building' | 'rendering' | 'finalizing';
     message?: string;

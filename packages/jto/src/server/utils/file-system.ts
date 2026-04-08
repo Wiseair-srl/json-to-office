@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { globSync } from 'glob';
-export const TMP_DIR = path.join(os.tmpdir(), 'pptx');
+export const TMP_DIR = path.join(os.tmpdir(), 'jto');
 
 export interface TextFile {
   name: string;

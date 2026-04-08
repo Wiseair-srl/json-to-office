@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTheme } from '../theme-provider';
 import { constrainedEditor } from 'constrained-editor-plugin';
 import MonacoEditor, { Monaco, DiffEditor } from '@monaco-editor/react';
 import type { editor as MonacoEditorType } from 'monaco-editor';
 import type { TextFile } from '../../lib/types';
-import { validateThemeJson } from '../../lib/theme-validation';
+import { type JsonEditorError } from '../../lib/json-types';
+import { FORMAT } from '../../lib/env';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { Button } from '../ui/button';
 import { useEditorRefsStore } from '../../store/editor-refs-store';
@@ -12,6 +13,18 @@ import {
   getSelectionContext,
   createContextSnippet,
 } from '../../lib/monaco-selection-utils';
+import { ValidationPanel, ValidationStatusBar } from './validation-panel';
+
+/** Ensure defaultPath matches the schema fileMatch pattern (*.FORMAT.theme.json) */
+function resolveThemeDefaultPath(name: string): string {
+  const ext = `.${FORMAT}.theme.json`;
+  if (name.endsWith(ext)) return name;
+  const base = name
+    .replace(/\.\w+\.theme\.json$/, '')
+    .replace(/\.theme\.json$/, '')
+    .replace(/\.json$/, '');
+  return base + ext;
+}
 
 /**
  * EditorMonacoTheme component for editing JSON theme files with schema validation
@@ -29,7 +42,13 @@ function EditorMonacoTheme({
   const monacoRef = useRef<Monaco | null>(null);
   const modelRef = useRef<MonacoEditorType.ITextModel | null>(null);
   const { theme } = useTheme();
-  const [isReady, setIsReady] = React.useState(false);
+  const [validationErrors, setValidationErrors] = useState<JsonEditorError[]>(
+    []
+  );
+  const [showValidationPanel, setShowValidationPanel] = useState(true);
+  const [isValidationPanelMinimized, setIsValidationPanelMinimized] =
+    useState(false);
+  const userDismissedRef = useRef(false);
   const pendingDiff = useDocumentsStore((s) => s.pendingDiffs[document.name]);
   const clearPendingDiff = useDocumentsStore((s) => s.clearPendingDiff);
   const saveDocument = useDocumentsStore((s) => s.saveDocument);
@@ -46,15 +65,10 @@ function EditorMonacoTheme({
 
   // Initialize Monaco editor
   const handleEditorWillMount = useCallback((monaco: Monaco) => {
-    console.log('Monaco theme editor will mount');
     monacoRef.current = monaco;
-
-    // Ensure global schemas (report + theme) are configured.
     // Don't call setDiagnosticsOptions here — it would clobber the global
     // config. The theme schema is already registered by configureMonacoInstance
     // and matched via defaultPath → fileMatch.
-
-    setIsReady(true);
   }, []);
 
   // Handle editor mount
@@ -184,39 +198,51 @@ function EditorMonacoTheme({
     [onChange]
   );
 
-  // Validate theme content
-  useEffect(() => {
-    if (
-      !editorRef.current ||
-      !monacoRef.current ||
-      !modelRef.current ||
-      !isReady
-    ) {
-      return;
-    }
-
-    const monaco = monacoRef.current;
-    const model = modelRef.current;
-
-    // Clear existing markers
-    monaco.editor.setModelMarkers(model, 'theme-validation', []);
-
-    // Validate theme JSON
-    const validationResult = validateThemeJson(document.text);
-    if (!validationResult.valid && validationResult.errors) {
-      const markers = validationResult.errors.map((error) => ({
-        severity: monaco.MarkerSeverity.Error,
-        startLineNumber: error.line || 1,
-        startColumn: error.column || 1,
-        endLineNumber: error.line || 1,
-        endColumn: error.column || 1000,
-        message: error.message,
-        source: 'theme-validation',
+  // Handle Monaco's built-in schema validation markers
+  const handleEditorValidation = useCallback(
+    (markers: MonacoEditorType.IMarker[]) => {
+      const errors: JsonEditorError[] = markers.map((marker) => ({
+        path: '',
+        message: marker.message,
+        code:
+          typeof marker.code === 'string'
+            ? marker.code
+            : marker.code?.value || 'validation_error',
+        startLineNumber: marker.startLineNumber,
+        startColumn: marker.startColumn,
+        endLineNumber: marker.endLineNumber,
+        endColumn: marker.endColumn,
+        severity:
+          marker.severity >= 8
+            ? 'error'
+            : marker.severity >= 4
+              ? 'warning'
+              : 'info',
       }));
 
-      monaco.editor.setModelMarkers(model, 'theme-validation', markers);
+      setValidationErrors(errors);
+
+      if (errors.length > 0 && !userDismissedRef.current) {
+        setShowValidationPanel(true);
+        setIsValidationPanelMinimized(false);
+      }
+      if (errors.length === 0) {
+        userDismissedRef.current = false;
+      }
+    },
+    []
+  );
+
+  const handleErrorClick = useCallback((error: JsonEditorError) => {
+    if (editorRef.current && error.startLineNumber && error.startColumn) {
+      editorRef.current.setPosition({
+        lineNumber: error.startLineNumber,
+        column: error.startColumn,
+      });
+      editorRef.current.revealLineInCenter(error.startLineNumber);
+      editorRef.current.focus();
     }
-  }, [document.text, isReady]);
+  }, []);
 
   // Update theme
   useEffect(() => {
@@ -274,12 +300,13 @@ function EditorMonacoTheme({
         <MonacoEditor
           height="100%"
           language="json"
-          defaultPath={document.name}
+          defaultPath={resolveThemeDefaultPath(document.name)}
           value={document.text}
           theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs'}
           onChange={handleChange}
           beforeMount={handleEditorWillMount}
           onMount={handleEditorMount}
+          onValidate={handleEditorValidation}
           options={{
             readOnly,
             lineNumbers: 'on',
@@ -304,6 +331,34 @@ function EditorMonacoTheme({
             scrollBeyondLastLine: true,
             wordWrap: 'on',
           }}
+        />
+      )}
+
+      {/* Validation Status Bar */}
+      <div className="absolute top-0 right-0">
+        <ValidationStatusBar
+          errors={validationErrors}
+          onClick={() => {
+            setShowValidationPanel(true);
+            setIsValidationPanelMinimized(false);
+          }}
+        />
+      </div>
+
+      {/* Validation Panel */}
+      {showValidationPanel && validationErrors.length > 0 && (
+        <ValidationPanel
+          errors={validationErrors}
+          isMinimized={isValidationPanelMinimized}
+          onToggleMinimize={() =>
+            setIsValidationPanelMinimized(!isValidationPanelMinimized)
+          }
+          onErrorClick={handleErrorClick}
+          onClose={() => {
+            setShowValidationPanel(false);
+            userDismissedRef.current = true;
+          }}
+          className="z-40"
         />
       )}
     </div>
