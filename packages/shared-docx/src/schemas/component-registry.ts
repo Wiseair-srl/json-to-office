@@ -28,8 +28,6 @@ import { TextBoxPropsSchema } from './components/text-box';
 import { ImagePropsSchema } from './components/image';
 import { StatisticPropsSchema } from './components/statistic';
 import { TablePropsSchema, createTablePropsSchema } from './components/table';
-import { HeaderPropsSchema } from './components/header';
-import { FooterPropsSchema } from './components/footer';
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
 import { HighchartsPropsSchema } from './components/highcharts';
@@ -189,22 +187,6 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       category: 'content',
       description:
         'Data table - displays tabular data with headers. Supports formatting and alignment.',
-    },
-    {
-      name: 'header',
-      propsSchema: HeaderPropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        'Page header - appears at the top of pages. Can include text and page numbers.',
-    },
-    {
-      name: 'footer',
-      propsSchema: FooterPropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        'Page footer - appears at the bottom of pages. Can include text and page numbers.',
     },
     {
       name: 'list',

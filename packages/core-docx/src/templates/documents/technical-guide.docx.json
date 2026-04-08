@@ -15,17 +15,16 @@
         "level": 1,
         "header": [
           {
-            "name": "header",
+            "name": "paragraph",
             "props": {
               "text": "Arcline Platform — Integration Guide v3.2",
-              "alignment": "left",
-              "showPageNumbers": true
+              "alignment": "left"
             }
           }
         ],
         "footer": [
           {
-            "name": "footer",
+            "name": "paragraph",
             "props": {
               "text": "Confidential — Arcline Inc. — Do not distribute",
               "alignment": "center"

@@ -13,8 +13,6 @@ import type {
   HighchartsComponent,
   StatisticComponent,
   TableComponent,
-  HeaderComponent,
-  FooterComponent,
   ListComponent,
   TocComponent,
   TextBoxComponent,
@@ -28,8 +26,6 @@ import type {
   ImageProps as SharedImageProps,
   StatisticProps as SharedStatisticProps,
   TableProps as SharedTableProps,
-  HeaderProps as SharedHeaderProps,
-  FooterProps as SharedFooterProps,
   ListProps as SharedListProps,
   TocProps as SharedTocProps,
   TextBoxProps as SharedTextBoxProps,
@@ -48,8 +44,6 @@ export {
   isTableComponent,
   isListComponent,
   isTocComponent,
-  isHeaderComponent,
-  isFooterComponent,
   isHighchartsComponent,
 } from '@json-to-office/shared-docx';
 
@@ -67,8 +61,6 @@ export type ImageComponentDefinition = ImageComponent;
 export type TextBoxComponentDefinition = TextBoxComponent;
 export type StatisticComponentDefinition = StatisticComponent;
 export type TableComponentDefinition = TableComponent;
-export type HeaderComponentDefinition = HeaderComponent;
-export type FooterComponentDefinition = FooterComponent;
 export type ListComponentDefinition = ListComponent;
 export type TocComponentDefinition = TocComponent;
 
@@ -84,8 +76,6 @@ export type StandardComponentDefinition =
   | HighchartsComponent
   | StatisticComponent
   | TableComponent
-  | HeaderComponent
-  | FooterComponent
   | ListComponent
   | TocComponent;
 
@@ -99,8 +89,6 @@ export type ImageProps = SharedImageProps;
 export type TextBoxProps = SharedTextBoxProps;
 export type StatisticProps = SharedStatisticProps;
 export type TableProps = SharedTableProps;
-export type HeaderProps = SharedHeaderProps;
-export type FooterProps = SharedFooterProps;
 export type ListProps = SharedListProps;
 export type TocProps = SharedTocProps;
 

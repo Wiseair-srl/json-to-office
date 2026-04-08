@@ -37,8 +37,6 @@ import {
   isStatisticComponent,
   isTableComponent,
   isSectionComponent,
-  isHeaderComponent,
-  isFooterComponent,
   isListComponent,
   isTocComponent,
   isHighchartsComponent,
@@ -67,8 +65,6 @@ import {
   renderSectionComponent,
   renderColumnsComponent,
   renderStatisticComponent,
-  renderHeaderComponent,
-  renderFooterComponent,
   renderTocComponent,
   renderHighchartsComponent,
   renderTextBoxComponent,
@@ -83,14 +79,14 @@ function getAlignment(
   alignment: string
 ): (typeof AlignmentType)[keyof typeof AlignmentType] {
   switch (alignment) {
-  case 'center':
-    return AlignmentType.CENTER;
-  case 'right':
-    return AlignmentType.RIGHT;
-  case 'justify':
-    return AlignmentType.JUSTIFIED;
-  default:
-    return AlignmentType.LEFT;
+    case 'center':
+      return AlignmentType.CENTER;
+    case 'right':
+      return AlignmentType.RIGHT;
+    case 'justify':
+      return AlignmentType.JUSTIFIED;
+    default:
+      return AlignmentType.LEFT;
   }
 }
 
@@ -601,10 +597,6 @@ export async function renderComponent(
     return renderStatisticComponent(component, theme);
   } else if (isTableComponent(component)) {
     return await renderTableComponent(component, theme, themeName);
-  } else if (isHeaderComponent(component)) {
-    return renderHeaderComponent(component, theme, themeName);
-  } else if (isFooterComponent(component)) {
-    return renderFooterComponent(component, theme, themeName);
   } else if (isListComponent(component)) {
     return renderListComponent(component, theme, themeName);
   } else if (isTocComponent(component)) {

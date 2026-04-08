@@ -9,8 +9,7 @@ import { ComponentDefinitionSchema } from '../schemas/components';
 describe('allowedChildren coverage', () => {
   const containers = getContainerComponents();
   const allAllowed = containers.flatMap((c) => c.allowedChildren ?? []);
-  // header/footer are special — they go in section props, not children
-  const excludeFromCoverage = new Set(['docx', 'header', 'footer']);
+  const excludeFromCoverage = new Set(['docx']);
   const nonRootComponents = STANDARD_COMPONENTS_REGISTRY.filter(
     (c) => !excludeFromCoverage.has(c.name)
   );

@@ -25,8 +25,6 @@ export * from './components/image';
 export * from './components/highcharts';
 export * from './components/statistic';
 export * from './components/table';
-export * from './components/header';
-export * from './components/footer';
 export * from './components/list';
 export * from './components/toc';
 export * from './components/text-box';

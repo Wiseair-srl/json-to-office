@@ -13,8 +13,6 @@ export { renderTableComponent } from './table';
 export { renderSectionComponent } from './section';
 export { renderColumnsComponent } from './columns';
 export { renderStatisticComponent } from './statistic';
-export { renderHeaderComponent } from './header';
-export { renderFooterComponent } from './footer';
 export { renderTocComponent } from './toc';
 export { renderHighchartsComponent } from './highcharts';
 

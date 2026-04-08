@@ -14,7 +14,7 @@
       "props": {
         "header": [
           {
-            "name": "header",
+            "name": "paragraph",
             "props": {
               "text": "Northvane Studio — Invoice",
               "alignment": "right"
@@ -23,11 +23,10 @@
         ],
         "footer": [
           {
-            "name": "footer",
+            "name": "paragraph",
             "props": {
               "text": "Thank you for your business  |  northvane.studio",
-              "alignment": "center",
-              "showPageNumbers": true
+              "alignment": "center"
             }
           }
         ]

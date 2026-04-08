@@ -16,8 +16,6 @@ import {
   ListPropsSchema,
   StatisticPropsSchema,
   ColumnsPropsSchema,
-  HeaderPropsSchema,
-  FooterPropsSchema,
 } from '../../schemas/components';
 import { CustomComponentDefinitionSchema } from '../../schemas/custom-components';
 import { transformValueErrors } from './error-transformer';
@@ -33,8 +31,6 @@ const COMPONENT_SCHEMAS: Record<string, TSchema> = {
   list: ListPropsSchema,
   statistic: StatisticPropsSchema,
   columns: ColumnsPropsSchema,
-  header: HeaderPropsSchema,
-  footer: FooterPropsSchema,
   custom: CustomComponentDefinitionSchema,
 };
 

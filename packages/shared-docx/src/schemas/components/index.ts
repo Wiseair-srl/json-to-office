@@ -18,8 +18,6 @@ export * from './image';
 export * from './highcharts';
 export * from './statistic';
 export * from './table';
-export * from './header';
-export * from './footer';
 export * from './list';
 export * from './toc';
 

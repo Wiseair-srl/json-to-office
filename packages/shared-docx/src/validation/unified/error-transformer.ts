@@ -436,7 +436,7 @@ function getSuggestion(
 
   // Path-based suggestions
   if (path?.includes('name') || path?.includes('type')) {
-    return 'Use a valid component name: docx, section, columns, heading, paragraph, image, statistic, table, header, footer, list, toc, text-box, or highcharts';
+    return 'Use a valid component name: docx, section, columns, heading, paragraph, image, statistic, table, list, toc, text-box, or highcharts';
   }
 
   return undefined;
