@@ -29,6 +29,8 @@ import {
   getImageBuffer,
   parseWidthValue,
   parseDimensionValue,
+  detectImageType,
+  createTypedImageRun,
 } from '../utils/imageUtils';
 import { ThemeConfig } from '../styles';
 import { getTableStyle } from '../styles';
@@ -522,10 +524,13 @@ export async function createImage(
 
   let imagePath = path;
   let imageBuffer: Buffer;
+  let responseContentType: string | undefined;
 
   try {
     // Try to use the provided path first
-    imageBuffer = await getImageBuffer(imagePath);
+    const imageResult = await getImageBuffer(imagePath);
+    imageBuffer = imageResult.buffer;
+    responseContentType = imageResult.contentType;
 
     // Calculate available document width/height for percentage calculations
     const {
@@ -584,35 +589,16 @@ export async function createImage(
       ? mapFloatingOptions(options.floating)
       : undefined;
 
-    // Detect image type from path/base64 data URI
-    const { detectImageType } = await import('../utils/imageUtils');
-    const imageType = detectImageType(imagePath);
+    // Detect image type from response Content-Type, path, or base64 data URI
+    const imageType = detectImageType(imagePath, responseContentType);
 
     // Create ImageRun based on image type
-    const imageRun =
-      imageType === 'svg'
-        ? new ImageRun({
-            type: 'svg',
-            data: imageBuffer,
-            fallback: {
-              type: 'png',
-              data: imageBuffer, // Use the same buffer as fallback for now
-            },
-            transformation: {
-              width: dimensions.width,
-              height: dimensions.height,
-            },
-            ...(floating && { floating }),
-          })
-        : new ImageRun({
-            type: imageType,
-            data: imageBuffer,
-            transformation: {
-              width: dimensions.width,
-              height: dimensions.height,
-            },
-            ...(floating && { floating }),
-          });
+    const imageRun = createTypedImageRun({
+      type: imageType,
+      data: imageBuffer,
+      transformation: { width: dimensions.width, height: dimensions.height },
+      ...(floating && { floating }),
+    });
 
     // Convert spacing from points to twips
     const spacing: any = {};
@@ -1455,7 +1441,7 @@ export async function createTable(
           }
 
           // Read from local file, URL, or base64
-          const imageBuffer = await getImageBuffer(imageSource);
+          const imageResult = await getImageBuffer(imageSource);
 
           // Parse width value if it's a string percentage (like "90%")
           const parsedWidth =
@@ -1478,9 +1464,10 @@ export async function createTable(
             20 // fallback height
           );
 
-          const imageRun = new ImageRun({
-            type: 'png',
-            data: imageBuffer,
+          const imgType = detectImageType(imageSource, imageResult.contentType);
+          const imageRun = createTypedImageRun({
+            type: imgType,
+            data: imageResult.buffer,
             transformation: {
               width: dimensions.width,
               height: dimensions.height,
@@ -2045,7 +2032,7 @@ export async function createMixedContentParagraph(
   // Add image if provided
   if (imagePath) {
     try {
-      const imageBuffer = await getImageBuffer(imagePath);
+      const imageResult = await getImageBuffer(imagePath);
 
       // Calculate dimensions with aspect ratio preservation
       const dimensions = await calculateImageDimensions(
@@ -2056,13 +2043,11 @@ export async function createMixedContentParagraph(
         20 // fallback height
       );
 
-      const imageRun = new ImageRun({
-        type: 'png',
-        data: imageBuffer,
-        transformation: {
-          width: dimensions.width,
-          height: dimensions.height,
-        },
+      const imgType = detectImageType(imagePath, imageResult.contentType);
+      const imageRun = createTypedImageRun({
+        type: imgType,
+        data: imageResult.buffer,
+        transformation: { width: dimensions.width, height: dimensions.height },
       });
 
       // Add some spacing before the image
@@ -2191,7 +2176,7 @@ export async function createHeaderFooterTable(
                     }
 
                     // Read from local file, URL, or base64
-                    const imageBuffer = await getImageBuffer(imageSource);
+                    const imageResult = await getImageBuffer(imageSource);
 
                     // Parse width value if it's a string percentage (like "90%")
                     const parsedWidth =
@@ -2214,9 +2199,13 @@ export async function createHeaderFooterTable(
                       20 // fallback height
                     );
 
-                    const imageRun = new ImageRun({
-                      type: 'png',
-                      data: imageBuffer,
+                    const imgType = detectImageType(
+                      imageSource,
+                      imageResult.contentType
+                    );
+                    const imageRun = createTypedImageRun({
+                      type: imgType,
+                      data: imageResult.buffer,
                       transformation: {
                         width: dimensions.width,
                         height: dimensions.height,
