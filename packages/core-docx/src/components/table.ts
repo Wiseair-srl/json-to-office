@@ -105,7 +105,7 @@ export async function renderTableComponent(
 
     const defaultCellDefaults: CellDefaults = {
       color: '000000',
-      backgroundColor: 'FFFFFF',
+      backgroundColor: 'transparent',
       horizontalAlignment: 'left',
       verticalAlignment: 'top',
       font: {

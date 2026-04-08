@@ -8,7 +8,7 @@ import type { ThemeConfig } from '../../styles';
 function createDefaultCellDefaults() {
   return {
     color: '000000',
-    backgroundColor: 'FFFFFF',
+    backgroundColor: 'transparent',
     horizontalAlignment: 'left' as const,
     verticalAlignment: 'top' as const,
     font: {
