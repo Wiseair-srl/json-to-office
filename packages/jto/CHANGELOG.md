@@ -1,5 +1,16 @@
 # @json-to-office/jto
 
+## 0.5.3
+
+### Patch Changes
+
+- a89a7cc: feat: use Monaco built-in JSON schema validation for theme editor
+
+  Replace custom `validateThemeJson` marker-setting with Monaco's native `onValidate`, add ValidationPanel/StatusBar UI, and tighten theme schemas with `additionalProperties: false`.
+
+- Updated dependencies [a89a7cc]
+  - @json-to-office/shared-docx@0.5.3
+
 ## 0.5.2
 
 ### Patch Changes
