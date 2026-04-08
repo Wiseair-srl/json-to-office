@@ -66,9 +66,16 @@ const FloatingFramePropertiesSchema = Type.Object(
           relative: Type.Optional(FrameAnchorTypeSchema),
           align: Type.Optional(FrameHorizontalAlignSchema),
           offset: Type.Optional(
-            Type.Number({
-              description: 'Horizontal offset in twips (1/20 of a point)',
-            })
+            Type.Union([
+              Type.Number({
+                description: 'Horizontal offset in twips (1/20 of a point)',
+              }),
+              Type.String({
+                pattern: '^\\d+(\\.\\d+)?%$',
+                description:
+                  'Horizontal offset as percentage (e.g., "50%") relative to page or margin width',
+              }),
+            ])
           ),
         },
         {
@@ -83,9 +90,16 @@ const FloatingFramePropertiesSchema = Type.Object(
           relative: Type.Optional(FrameAnchorTypeSchema),
           align: Type.Optional(FrameVerticalAlignSchema),
           offset: Type.Optional(
-            Type.Number({
-              description: 'Vertical offset in twips (1/20 of a point)',
-            })
+            Type.Union([
+              Type.Number({
+                description: 'Vertical offset in twips (1/20 of a point)',
+              }),
+              Type.String({
+                pattern: '^\\d+(\\.\\d+)?%$',
+                description:
+                  'Vertical offset as percentage (e.g., "50%") relative to page or margin height',
+              }),
+            ])
           ),
         },
         {
