@@ -5,6 +5,7 @@ RUN npm i -g pnpm@9.15.9
 
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig*.json ./
+COPY scripts/ scripts/
 COPY packages/ packages/
 
 RUN pnpm install --frozen-lockfile
