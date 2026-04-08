@@ -15,6 +15,12 @@ export const HexColorSchema = Type.String({
   description: 'Hex color with # prefix (e.g. "#000000") or theme color name',
 });
 
+/** Like HexColorSchema but also accepts "transparent" (used for backgroundColor) */
+export const HexColorOrTransparentSchema = Type.String({
+  pattern: '^(transparent|#[0-9A-Fa-f]{6}|[a-zA-Z][a-zA-Z0-9]*)$',
+  description: 'Hex color with # prefix, theme color name, or "transparent"',
+});
+
 // ----------------------------------------------------------------------------
 // Shared Text Formatting Properties
 // ----------------------------------------------------------------------------

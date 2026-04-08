@@ -869,7 +869,7 @@ export async function createTable(
   // Default values for missing cell defaults
   const getDefaultCellDefaults = (): CellDefaults => ({
     color: '000000',
-    backgroundColor: 'FFFFFF',
+    backgroundColor: 'transparent',
     horizontalAlignment: 'left',
     verticalAlignment: 'top',
     font: {
@@ -1424,9 +1424,29 @@ export async function createTable(
       // Handle ComponentDefinition
       if (isParagraphComponent(cell)) {
         const textComp = cell as ParagraphComponentDefinition;
+        const paragraphFont = textComp.props.font;
+        const paragraphStyle = {
+          ...mergedStyle,
+          ...(paragraphFont?.family && { font: paragraphFont.family }),
+          ...(paragraphFont?.size && { size: paragraphFont.size * 2 }),
+          ...(paragraphFont?.bold !== undefined && {
+            bold: paragraphFont.bold,
+          }),
+          ...(paragraphFont?.italic !== undefined && {
+            italics: paragraphFont.italic,
+          }),
+          ...(paragraphFont?.underline !== undefined && {
+            underline: paragraphFont.underline
+              ? { type: 'single' as const }
+              : undefined,
+          }),
+          ...(paragraphFont?.color && {
+            color: resolveColor(paragraphFont.color, theme),
+          }),
+        };
         cellChildren = parseTextWithDecorators(
           textComp.props.text,
-          mergedStyle,
+          paragraphStyle,
           { enableHyperlinks: true }
         );
       } else if (isImageComponent(cell)) {
@@ -1591,11 +1611,11 @@ export async function createTable(
           ],
 
           verticalAlign: verticalAlignment,
-          shading: {
-            fill:
-              mergedDefaults.backgroundColor ||
-              getThemeColors(theme).background,
-          },
+          ...(mergedDefaults.backgroundColor !== 'transparent' && {
+            shading: {
+              fill: mergedDefaults.backgroundColor,
+            },
+          }),
           margins: createMarginsFromPadding(mergedDefaults.padding),
           borders: {
             top: createBorder(
@@ -1784,11 +1804,11 @@ export async function createTable(
                 }),
               ],
               verticalAlign: verticalAlignment,
-              shading: {
-                fill:
-                  mergedDefaults.backgroundColor ||
-                  getThemeColors(theme).background,
-              },
+              ...(mergedDefaults.backgroundColor !== 'transparent' && {
+                shading: {
+                  fill: mergedDefaults.backgroundColor,
+                },
+              }),
               margins: createMarginsFromPadding(mergedDefaults.padding),
               borders: {
                 top: createBorder(

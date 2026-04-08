@@ -3,7 +3,7 @@
  */
 
 import { Type, Static, TSchema } from '@sinclair/typebox';
-import { HexColorSchema } from '../font';
+import { HexColorSchema, HexColorOrTransparentSchema } from '../font';
 
 // Define Cell type - can be plain text or a component definition
 const CellContentSchema = Type.Recursive((This) =>
@@ -135,7 +135,7 @@ const PaddingSchema = Type.Union([
 // Cell defaults configuration
 const CellDefaultsSchema = Type.Object({
   color: Type.Optional(HexColorSchema),
-  backgroundColor: Type.Optional(HexColorSchema),
+  backgroundColor: Type.Optional(HexColorOrTransparentSchema),
   horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
   verticalAlignment: Type.Optional(VerticalAlignmentSchema),
   font: Type.Optional(FontConfigSchema),
@@ -157,7 +157,7 @@ export function createTablePropsSchema(componentRef: TSchema): TSchema {
 
   const cellFields = {
     color: Type.Optional(HexColorSchema),
-    backgroundColor: Type.Optional(HexColorSchema),
+    backgroundColor: Type.Optional(HexColorOrTransparentSchema),
     horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
     verticalAlignment: Type.Optional(VerticalAlignmentSchema),
     font: Type.Optional(FontConfigSchema),
