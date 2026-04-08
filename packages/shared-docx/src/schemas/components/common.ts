@@ -225,9 +225,16 @@ export const FloatingPropertiesSchema = Type.Object(
           relative: Type.Optional(HorizontalPositionRelativeFromSchema),
           align: Type.Optional(HorizontalPositionAlignSchema),
           offset: Type.Optional(
-            Type.Number({
-              description: 'Horizontal offset in twips (1/20 of a point)',
-            })
+            Type.Union([
+              Type.Number({
+                description: 'Horizontal offset in twips (1/20 of a point)',
+              }),
+              Type.String({
+                pattern: '^\\d+(\\.\\d+)?%$',
+                description:
+                  'Horizontal offset as percentage (e.g., "50%") relative to page or margin width',
+              }),
+            ])
           ),
         },
         {
@@ -242,9 +249,16 @@ export const FloatingPropertiesSchema = Type.Object(
           relative: Type.Optional(VerticalPositionRelativeFromSchema),
           align: Type.Optional(VerticalPositionAlignSchema),
           offset: Type.Optional(
-            Type.Number({
-              description: 'Vertical offset in twips (1/20 of a point)',
-            })
+            Type.Union([
+              Type.Number({
+                description: 'Vertical offset in twips (1/20 of a point)',
+              }),
+              Type.String({
+                pattern: '^\\d+(\\.\\d+)?%$',
+                description:
+                  'Vertical offset as percentage (e.g., "50%") relative to page or margin height',
+              }),
+            ])
           ),
         },
         {
@@ -262,16 +276,40 @@ export const FloatingPropertiesSchema = Type.Object(
             Type.Object(
               {
                 top: Type.Optional(
-                  Type.Number({ description: 'Top margin in twips' })
+                  Type.Union([
+                    Type.Number({ description: 'Top margin in twips' }),
+                    Type.String({
+                      pattern: '^\\d+(\\.\\d+)?%$',
+                      description: 'Top margin as percentage of page height',
+                    }),
+                  ])
                 ),
                 bottom: Type.Optional(
-                  Type.Number({ description: 'Bottom margin in twips' })
+                  Type.Union([
+                    Type.Number({ description: 'Bottom margin in twips' }),
+                    Type.String({
+                      pattern: '^\\d+(\\.\\d+)?%$',
+                      description: 'Bottom margin as percentage of page height',
+                    }),
+                  ])
                 ),
                 left: Type.Optional(
-                  Type.Number({ description: 'Left margin in twips' })
+                  Type.Union([
+                    Type.Number({ description: 'Left margin in twips' }),
+                    Type.String({
+                      pattern: '^\\d+(\\.\\d+)?%$',
+                      description: 'Left margin as percentage of page width',
+                    }),
+                  ])
                 ),
                 right: Type.Optional(
-                  Type.Number({ description: 'Right margin in twips' })
+                  Type.Union([
+                    Type.Number({ description: 'Right margin in twips' }),
+                    Type.String({
+                      pattern: '^\\d+(\\.\\d+)?%$',
+                      description: 'Right margin as percentage of page width',
+                    }),
+                  ])
                 ),
               },
               {

@@ -66,6 +66,25 @@ export function parsePercentageStringToFraction(
 }
 
 /**
+ * Resolve an offset value (twips or percentage string) to twips.
+ * Numbers pass through unchanged; percentage strings are resolved against referenceTwips.
+ */
+export function resolveOffsetTwips(
+  value: number | string,
+  referenceTwips: number
+): number {
+  if (typeof value === 'number') return value;
+  const match = /^([0-9]+(?:\.[0-9]+)?)%$/.exec(value);
+  if (!match) {
+    console.warn(
+      `resolveOffsetTwips: invalid percentage string "${value}", defaulting to 0`
+    );
+    return 0;
+  }
+  return Math.round((referenceTwips * parseFloat(match[1])) / 100);
+}
+
+/**
  * Convert a numeric (points) or percentage string to twips using available width
  */
 export function relativeLengthToTwips(

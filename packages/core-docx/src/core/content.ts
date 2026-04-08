@@ -53,7 +53,13 @@ import {
   pointsToTwips,
   convertLineSpacing as convertLineSpacingToDocx,
 } from '../styles/utils/styleHelpers';
-// width/height utils are imported dynamically where needed
+import {
+  resolveOffsetTwips,
+  getPageWidthTwips,
+  getPageHeightTwips,
+  getAvailableWidthTwips,
+  getAvailableHeightTwips,
+} from '../utils/widthUtils';
 
 export interface TextOptions {
   style?: string;
@@ -88,12 +94,12 @@ export interface TextOptions {
     horizontalPosition?: {
       relative?: 'margin' | 'page' | 'text';
       align?: 'left' | 'center' | 'right' | 'inside' | 'outside';
-      offset?: number;
+      offset?: number | string;
     };
     verticalPosition?: {
       relative?: 'margin' | 'page' | 'text';
       align?: 'top' | 'center' | 'bottom' | 'inside' | 'outside' | 'inline';
-      offset?: number;
+      offset?: number | string;
     };
     wrap?: {
       type: 'around' | 'none' | 'notBeside' | 'through' | 'tight' | 'auto';
@@ -123,22 +129,22 @@ export interface ImageOptions {
     horizontalPosition?: {
       relative?: 'character' | 'column' | 'margin' | 'page' | 'text';
       align?: 'left' | 'center' | 'right' | 'inside' | 'outside';
-      offset?: number;
+      offset?: number | string;
     };
     verticalPosition?: {
       relative?: 'margin' | 'page' | 'paragraph' | 'line' | 'text';
       align?: 'top' | 'center' | 'bottom' | 'inside' | 'outside';
-      offset?: number;
+      offset?: number | string;
     };
     wrap?: {
       // 'tight', 'around', 'through' are VML-style; only 'none', 'square', 'topAndBottom' are supported for images
       type: 'none' | 'square' | 'topAndBottom' | 'around' | 'tight' | 'through';
       side?: 'bothSides' | 'left' | 'right' | 'largest';
       margins?: {
-        top?: number;
-        bottom?: number;
-        left?: number;
-        right?: number;
+        top?: number | string;
+        bottom?: number | string;
+        left?: number | string;
+        right?: number | string;
       };
     };
     allowOverlap?: boolean;
@@ -189,7 +195,7 @@ export interface ListOptions {
 export function createText(
   content: string,
   theme: ThemeConfig,
-  _themeName: string,
+  themeName: string,
   options: TextOptions = {}
 ): Paragraph {
   const normalizedContent = normalizeUnicodeText(content);
@@ -270,7 +276,7 @@ export function createText(
   const isFloating = !!options.floating;
   const frameOptions =
     isFloating && options.floating
-      ? mapFrameOptions(options.floating)
+      ? mapFrameOptions(options.floating, theme, themeName)
       : undefined;
 
   return new Paragraph({
@@ -294,7 +300,11 @@ export function createText(
  * Supports mixed positioning: alignment on one axis, offset on the other.
  * When mixing, calculates the position for the aligned axis.
  */
-function mapFrameOptions(floating: NonNullable<TextOptions['floating']>): any {
+function mapFrameOptions(
+  floating: NonNullable<TextOptions['floating']>,
+  theme?: ThemeConfig,
+  themeName?: string
+): any {
   const hasHorizontalOffset = floating.horizontalPosition?.offset !== undefined;
   const hasVerticalOffset = floating.verticalPosition?.offset !== undefined;
   const hasHorizontalAlign = floating.horizontalPosition?.align !== undefined;
@@ -328,9 +338,21 @@ function mapFrameOptions(floating: NonNullable<TextOptions['floating']>): any {
   }
 
   if (useAbsolute) {
-    // Absolute positioning: use provided offsets; default missing axis to 0
-    const x = floating.horizontalPosition?.offset ?? 0;
-    const y = floating.verticalPosition?.offset ?? 0;
+    const hRelative = floating.horizontalPosition?.relative;
+    const vRelative = floating.verticalPosition?.relative;
+    const hRef =
+      hRelative && hRelative !== 'page'
+        ? getAvailableWidthTwips(theme, themeName)
+        : getPageWidthTwips(theme, themeName);
+    const vRef =
+      vRelative && vRelative !== 'page'
+        ? getAvailableHeightTwips(theme, themeName)
+        : getPageHeightTwips(theme, themeName);
+    const x = resolveOffsetTwips(
+      floating.horizontalPosition?.offset ?? 0,
+      hRef
+    );
+    const y = resolveOffsetTwips(floating.verticalPosition?.offset ?? 0, vRef);
     return {
       type: 'absolute',
       position: { x, y },
@@ -586,7 +608,7 @@ export async function createImage(
       '../utils/docxImagePositioning'
     );
     const floating = isFloating
-      ? mapFloatingOptions(options.floating)
+      ? mapFloatingOptions(options.floating, theme, themeName)
       : undefined;
 
     // Detect image type from response Content-Type, path, or base64 data URI

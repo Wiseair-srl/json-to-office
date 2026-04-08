@@ -251,7 +251,7 @@ export async function renderDocument(
 async function renderHeaderFooterComponents(
   components: ComponentDefinition[] | undefined,
   theme: ThemeConfig,
-  _themeName: string,
+  themeName: string,
   _context: RenderContext
 ): Promise<(Paragraph | Table)[]> {
   if (!components || components.length === 0) {
@@ -399,7 +399,11 @@ async function renderHeaderFooterComponents(
         );
 
         // Map floating options if present
-        const floatingOptions = mapFloatingOptions(imageComp.props.floating);
+        const floatingOptions = mapFloatingOptions(
+          imageComp.props.floating,
+          theme,
+          themeName
+        );
 
         const imageType = detectImageType(imageSource, responseContentType);
 
@@ -446,7 +450,7 @@ async function renderHeaderFooterComponents(
     } else if (isTableComponent(component)) {
       // Use renderTableComponent for consistent table rendering in headers/footers
       // This ensures cellDefaults, padding, borders, and all table features work correctly
-      const tables = await renderTableComponent(component, theme, _themeName);
+      const tables = await renderTableComponent(component, theme, themeName);
       elements.push(...tables);
     }
     // Other component types can be added here as needed

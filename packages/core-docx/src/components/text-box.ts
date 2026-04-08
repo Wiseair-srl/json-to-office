@@ -25,6 +25,13 @@ import { ThemeConfig } from '../styles';
 import { renderComponent } from '../core/render';
 import { NONE_BORDERS } from '../styles/utils/borderUtils';
 import { buildCellOptions, CellStyleConfig } from '../styles/utils/cellUtils';
+import {
+  resolveOffsetTwips,
+  getPageWidthTwips,
+  getPageHeightTwips,
+  getAvailableWidthTwips,
+  getAvailableHeightTwips,
+} from '../utils/widthUtils';
 
 // VML style helpers removed in favor of floating table approach
 
@@ -32,11 +39,25 @@ import { buildCellOptions, CellStyleConfig } from '../styles/utils/cellUtils';
 
 // Map floating config to table float options for a one-cell table container
 function mapTableFloatOptions(
-  floating?: NonNullable<TextBoxComponentDefinition['props']['floating']>
+  floating?: NonNullable<TextBoxComponentDefinition['props']['floating']>,
+  theme?: ThemeConfig,
+  themeName?: string
 ): any | undefined {
   if (!floating) return undefined;
 
   const opt: any = {};
+
+  // Determine reference dimensions for percentage resolution
+  const hRelative = floating.horizontalPosition?.relative;
+  const vRelative = floating.verticalPosition?.relative;
+  const hRef =
+    hRelative && hRelative !== 'page'
+      ? getAvailableWidthTwips(theme, themeName)
+      : getPageWidthTwips(theme, themeName);
+  const vRef =
+    vRelative && vRelative !== 'page'
+      ? getAvailableHeightTwips(theme, themeName)
+      : getPageHeightTwips(theme, themeName);
 
   const hp = floating.horizontalPosition;
   if (hp?.relative) {
@@ -48,7 +69,7 @@ function mapTableFloatOptions(
           : TableAnchorType.TEXT;
   }
   if (hp?.offset !== undefined) {
-    opt.absoluteHorizontalPosition = hp.offset;
+    opt.absoluteHorizontalPosition = resolveOffsetTwips(hp.offset, hRef);
   } else if (hp?.align) {
     const map: Record<
       string,
@@ -73,7 +94,7 @@ function mapTableFloatOptions(
           : TableAnchorType.TEXT;
   }
   if (vp?.offset !== undefined) {
-    opt.absoluteVerticalPosition = vp.offset;
+    opt.absoluteVerticalPosition = resolveOffsetTwips(vp.offset, vRef);
   } else if (vp?.align) {
     const mapV: Record<
       string,
@@ -88,13 +109,18 @@ function mapTableFloatOptions(
     opt.relativeVerticalPosition = mapV[vp.align];
   }
 
-  // Map wrap margins to clearance distances
+  // Map wrap margins to clearance distances (resolve percentages against page dimensions)
+  const pageW = getPageWidthTwips(theme, themeName);
+  const pageH = getPageHeightTwips(theme, themeName);
   const m = floating.wrap?.margins;
   if (m) {
-    if (m.top !== undefined) opt.topFromText = m.top;
-    if (m.right !== undefined) opt.rightFromText = m.right;
-    if (m.bottom !== undefined) opt.bottomFromText = m.bottom;
-    if (m.left !== undefined) opt.leftFromText = m.left;
+    if (m.top !== undefined) opt.topFromText = resolveOffsetTwips(m.top, pageH);
+    if (m.right !== undefined)
+      opt.rightFromText = resolveOffsetTwips(m.right, pageW);
+    if (m.bottom !== undefined)
+      opt.bottomFromText = resolveOffsetTwips(m.bottom, pageH);
+    if (m.left !== undefined)
+      opt.leftFromText = resolveOffsetTwips(m.left, pageW);
   }
 
   opt.overlap = OverlapType.OVERLAP;
@@ -171,7 +197,7 @@ export async function renderTextBoxComponent(
     children: [new TableCell(cellOpts)],
   });
 
-  const float = mapTableFloatOptions(tb.props.floating);
+  const float = mapTableFloatOptions(tb.props.floating, theme, themeName);
 
   // Conversion factor: 1 pixel = 15 twips (at 96 DPI: 1440 twips/inch / 96 pixels/inch)
   const PIXELS_TO_TWIPS = 15;
