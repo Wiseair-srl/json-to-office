@@ -1,7 +1,24 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
+import type { ServicesConfig } from '@json-to-office/shared';
+
 export type FormatName = 'docx' | 'pptx';
+
+function buildServicesFromEnv(): ServicesConfig | undefined {
+  const serverUrl = process.env.HIGHCHARTS_SERVER_URL;
+  const apiKey = process.env.HIGHCHARTS_API_KEY;
+  const apiKeyHeader = process.env.HIGHCHARTS_API_KEY_HEADER ?? 'x-api-key';
+
+  if (!serverUrl && !apiKey) return undefined;
+
+  return {
+    highcharts: {
+      serverUrl,
+      ...(apiKey && { headers: { [apiKeyHeader]: apiKey } }),
+    },
+  };
+}
 
 /** Minimal builder shape shared by DOCX and PPTX generators */
 interface GeneratorBuilder {
@@ -73,8 +90,10 @@ export class DocxFormatAdapter implements FormatAdapter {
     const docDefinition =
       typeof json === 'string' ? JSON.parse(json as string) : json;
     const customThemes = await this.loadCustomThemes(options);
+    const services = buildServicesFromEnv();
     return await core.generateBufferFromJson(docDefinition as any, {
       customThemes,
+      services,
     });
   }
 
@@ -85,6 +104,7 @@ export class DocxFormatAdapter implements FormatAdapter {
     const core = await import('@json-to-office/core-docx');
     const hasPlugins = plugins.length > 0;
     const pluginNames = plugins.map((p) => p.name);
+    const services = buildServicesFromEnv();
 
     if (!hasPlugins) {
       return {
@@ -94,6 +114,7 @@ export class DocxFormatAdapter implements FormatAdapter {
           const customThemes = await this.loadCustomThemes(options);
           return await core.generateBufferFromJson(docDefinition, {
             customThemes,
+            services,
           });
         },
         hasPlugins: false,
@@ -107,6 +128,7 @@ export class DocxFormatAdapter implements FormatAdapter {
       theme,
       customThemes,
       debug: process.env.DEBUG === 'true',
+      services,
     });
 
     for (const plugin of plugins) {
@@ -329,8 +351,10 @@ export class PptxFormatAdapter implements FormatAdapter {
     const docDefinition =
       typeof json === 'string' ? JSON.parse(json as string) : json;
     const customThemes = await this.loadCustomThemes(options);
+    const services = buildServicesFromEnv();
     return await core.generateBufferFromJson(docDefinition as any, {
       customThemes,
+      services,
     });
   }
 
@@ -341,6 +365,7 @@ export class PptxFormatAdapter implements FormatAdapter {
     const core = await import('@json-to-office/core-pptx');
     const hasPlugins = plugins.length > 0;
     const pluginNames = plugins.map((p) => p.name);
+    const services = buildServicesFromEnv();
 
     if (!hasPlugins) {
       return {
@@ -350,6 +375,7 @@ export class PptxFormatAdapter implements FormatAdapter {
           const customThemes = await this.loadCustomThemes(options);
           return await core.generateBufferFromJson(docDefinition, {
             customThemes,
+            services,
           });
         },
         hasPlugins: false,
@@ -363,6 +389,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       theme,
       customThemes,
       debug: process.env.DEBUG === 'true',
+      services,
     });
 
     for (const plugin of plugins) {

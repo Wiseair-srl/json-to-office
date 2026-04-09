@@ -1,5 +1,6 @@
 import { ISectionOptions } from 'docx';
 import type { ThemeName } from '../styles';
+import type { ServicesConfig } from '@json-to-office/shared';
 
 // Import types from shared-docx that core needs for its internal use
 import type {
@@ -211,4 +212,5 @@ export interface RenderContext {
   parent?: SharedComponentDefinition;
   depth: number;
   custom?: Record<string, unknown>;
+  services?: ServicesConfig;
 }

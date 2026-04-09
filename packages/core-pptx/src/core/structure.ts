@@ -11,7 +11,11 @@ import type {
   TemplateSlideDefinition,
 } from '../types';
 import { isSlideComponent } from '../types';
-import { resolveGridPosition, resolveComponentGridPosition, mergeGridConfigs } from './grid';
+import {
+  resolveGridPosition,
+  resolveComponentGridPosition,
+  mergeGridConfigs,
+} from './grid';
 import { getPptxTheme } from '../themes';
 import type { GenerationOptions } from './generator';
 
@@ -33,9 +37,14 @@ export function processPresentation(
       const effectiveGrid = mergeGridConfigs(props.grid, m.grid);
 
       // Resolve grid positions on placeholders
-      const resolvedPhs = m.placeholders?.map(ph => {
+      const resolvedPhs = m.placeholders?.map((ph) => {
         if (!ph.grid) return ph;
-        const abs = resolveGridPosition(ph.grid, effectiveGrid, slideWidth, slideHeight);
+        const abs = resolveGridPosition(
+          ph.grid,
+          effectiveGrid,
+          slideWidth,
+          slideHeight
+        );
         return {
           ...ph,
           x: ph.x ?? abs.x,
@@ -47,8 +56,13 @@ export function processPresentation(
       });
 
       // Resolve grid positions on fixed objects (unified components)
-      const resolvedObjects = m.objects?.map(obj =>
-        resolveComponentGridPosition(obj, effectiveGrid, slideWidth, slideHeight)
+      const resolvedObjects = m.objects?.map((obj) =>
+        resolveComponentGridPosition(
+          obj,
+          effectiveGrid,
+          slideWidth,
+          slideHeight
+        )
       );
 
       return { ...m, placeholders: resolvedPhs, objects: resolvedObjects };
@@ -73,7 +87,9 @@ export function processPresentation(
         layout: child.props.layout,
         hidden: child.props.hidden,
         template: child.props.template,
-        placeholders: child.props.placeholders as Record<string, any> | undefined,
+        placeholders: child.props.placeholders as
+          | Record<string, any>
+          | undefined,
       });
     }
   }
@@ -93,5 +109,6 @@ export function processPresentation(
     pageNumberFormat: props.pageNumberFormat ?? '9',
     slides,
     templates,
+    services: options?.services,
   };
 }

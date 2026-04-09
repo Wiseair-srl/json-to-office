@@ -3,7 +3,13 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig, PptxComponentInput, PipelineWarning, SlideContext } from '../types';
+import type {
+  PptxThemeConfig,
+  PptxComponentInput,
+  PipelineWarning,
+  SlideContext,
+} from '../types';
+import type { ServicesConfig } from '@json-to-office/shared';
 import { warn, W } from '../utils/warn';
 import { renderTextComponent } from './text';
 import { renderImageComponent } from './image';
@@ -25,7 +31,8 @@ export async function renderComponent(
   theme: PptxThemeConfig,
   pptx: PptxGenJS,
   warnings?: PipelineWarning[],
-  slideCtx?: SlideContext
+  slideCtx?: SlideContext,
+  services?: ServicesConfig
 ): Promise<void> {
   if (component.enabled === false) return;
 
@@ -33,25 +40,36 @@ export async function renderComponent(
   const p = props as any;
 
   switch (name) {
-  case 'text':
-    renderTextComponent(slide, p, theme, warnings, slideCtx);
-    break;
-  case 'image':
-    await renderImageComponent(slide, p, theme, warnings);
-    break;
-  case 'shape':
-    renderShapeComponent(slide, p, theme, pptx, warnings);
-    break;
-  case 'table':
-    renderTableComponent(slide, p, theme, pptx, warnings);
-    break;
-  case 'highcharts':
-    await renderHighchartsComponent(slide, p, theme, warnings);
-    break;
-  case 'chart':
-    renderChartComponent(slide, p, theme, pptx, warnings);
-    break;
-  default:
-    warn(warnings, W.UNKNOWN_COMPONENT, `Unknown PPTX component type: ${name}`, { component: name });
+    case 'text':
+      renderTextComponent(slide, p, theme, warnings, slideCtx);
+      break;
+    case 'image':
+      await renderImageComponent(slide, p, theme, warnings);
+      break;
+    case 'shape':
+      renderShapeComponent(slide, p, theme, pptx, warnings);
+      break;
+    case 'table':
+      renderTableComponent(slide, p, theme, pptx, warnings);
+      break;
+    case 'highcharts':
+      await renderHighchartsComponent(
+        slide,
+        p,
+        theme,
+        warnings,
+        services?.highcharts
+      );
+      break;
+    case 'chart':
+      renderChartComponent(slide, p, theme, pptx, warnings);
+      break;
+    default:
+      warn(
+        warnings,
+        W.UNKNOWN_COMPONENT,
+        `Unknown PPTX component type: ${name}`,
+        { component: name }
+      );
   }
 }

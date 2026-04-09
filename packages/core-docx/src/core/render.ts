@@ -57,6 +57,7 @@ import {
   initializeComponentCache,
 } from './cached-render';
 import { MemoryCache } from '../cache';
+import type { ServicesConfig } from '@json-to-office/shared';
 import {
   renderHeadingComponent,
   renderParagraphComponent,
@@ -97,7 +98,11 @@ function getAlignment(
 export async function renderDocument(
   structure: ProcessedDocument,
   layout: LayoutPlan,
-  options?: { cache?: MemoryCache; bypassCache?: boolean }
+  options?: {
+    cache?: MemoryCache;
+    bypassCache?: boolean;
+    services?: ServicesConfig;
+  }
 ): Promise<Document> {
   // Initialize component cache if provided
   if (options?.cache) {
@@ -119,6 +124,7 @@ export async function renderDocument(
     structure.theme,
     structure.themeName
   );
+  context.services = options?.services;
 
   // Initialize bookmark counter for this document (scoped to renderDocument call)
   let sectionBookmarkCounter = 0;
@@ -612,7 +618,12 @@ export async function renderComponent(
   } else if (isTocComponent(component)) {
     return renderTocComponent(component, theme, context);
   } else if (isHighchartsComponent(component)) {
-    return await renderHighchartsComponent(component, theme, themeName);
+    return await renderHighchartsComponent(
+      component,
+      theme,
+      themeName,
+      context
+    );
   } else if (isSectionComponent(component)) {
     return await renderSectionComponent(component, theme, themeName, context);
   }

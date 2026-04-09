@@ -12,6 +12,7 @@ import {
   isReportComponent,
 } from '../types';
 import { getThemeWithFallback, ThemeConfig } from '../styles';
+import type { ServicesConfig } from '@json-to-office/shared';
 import { processDocument } from './structure';
 import { applyLayout } from './layout';
 import { renderDocument } from './render';
@@ -30,6 +31,7 @@ export interface JsonGenerationOptions {
     allowUnknownFields?: boolean;
   };
   customThemes?: { [key: string]: ThemeConfig };
+  services?: ServicesConfig;
 }
 
 /**
@@ -102,7 +104,8 @@ export async function generateFromConfig(
  */
 async function generateDocumentWithCustomThemes(
   document: ReportComponentDefinition,
-  customThemes?: { [key: string]: ThemeConfig }
+  customThemes?: { [key: string]: ThemeConfig },
+  services?: ServicesConfig
 ): Promise<Document> {
   // Get theme configuration with custom theme support (theme is always a string name)
   const themeName = document.props.theme || 'minimal';
@@ -133,7 +136,8 @@ async function generateDocumentWithCustomThemes(
   const structure = await processDocument(document, theme, themeName);
   const layout = applyLayout(structure.sections, theme, themeName);
   const renderedDocument = await renderDocument(structure, layout, {
-    bypassCache: false, // Enable component caching
+    bypassCache: false,
+    services,
   });
 
   return renderedDocument;
@@ -167,7 +171,8 @@ export async function generateDocumentFromJson(
   // Generate document using custom theme-aware pipeline
   return await generateDocumentWithCustomThemes(
     reportComponent,
-    options?.customThemes
+    options?.customThemes,
+    options?.services
   );
 }
 

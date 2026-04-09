@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHighchartsComponent } from '../highcharts';
 
 const mockFetch = vi.fn();
@@ -123,10 +123,64 @@ describe('renderHighchartsComponent', () => {
     );
   });
 
-  it('uses HIGHCHARTS_SERVER_URL env var', async () => {
-    process.env.HIGHCHARTS_SERVER_URL = 'http://env-server:8080';
+  it('uses services config serverUrl', async () => {
     const slide = mockSlide();
+    await renderHighchartsComponent(
+      slide,
+      { options: { chart: { width: 600, height: 400 } } },
+      theme,
+      undefined,
+      { serverUrl: 'http://services-server:5555' }
+    );
 
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://services-server:5555/export',
+      expect.any(Object)
+    );
+  });
+
+  it('prioritizes per-component serverUrl over services config', async () => {
+    const slide = mockSlide();
+    await renderHighchartsComponent(
+      slide,
+      {
+        options: { chart: { width: 600, height: 400 } },
+        serverUrl: 'http://prop-server:7777',
+      },
+      theme,
+      undefined,
+      { serverUrl: 'http://services-server:5555' }
+    );
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://prop-server:7777/export',
+      expect.any(Object)
+    );
+  });
+
+  it('merges services headers into fetch request', async () => {
+    const slide = mockSlide();
+    await renderHighchartsComponent(
+      slide,
+      { options: { chart: { width: 600, height: 400 } } },
+      theme,
+      undefined,
+      { headers: { 'x-api-key': 'test-key-123' } }
+    );
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'x-api-key': 'test-key-123',
+        }),
+      })
+    );
+  });
+
+  it('sends only Content-Type when no services config', async () => {
+    const slide = mockSlide();
     await renderHighchartsComponent(
       slide,
       { options: { chart: { width: 600, height: 400 } } },
@@ -134,31 +188,10 @@ describe('renderHighchartsComponent', () => {
     );
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://env-server:8080/export',
-      expect.any(Object)
+      expect.any(String),
+      expect.objectContaining({
+        headers: { 'Content-Type': 'application/json' },
+      })
     );
-
-    delete process.env.HIGHCHARTS_SERVER_URL;
-  });
-
-  it('prioritizes serverUrl prop over env var', async () => {
-    process.env.HIGHCHARTS_SERVER_URL = 'http://env-server:8080';
-    const slide = mockSlide();
-
-    await renderHighchartsComponent(
-      slide,
-      {
-        options: { chart: { width: 600, height: 400 } },
-        serverUrl: 'http://prop-server:7777',
-      },
-      theme
-    );
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://prop-server:7777/export',
-      expect.any(Object)
-    );
-
-    delete process.env.HIGHCHARTS_SERVER_URL;
   });
 });
