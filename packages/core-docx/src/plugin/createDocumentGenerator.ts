@@ -4,6 +4,7 @@ import type { CustomComponent } from './createComponent';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
 import { type ThemeConfig, getThemeWithFallback } from '../styles';
 import type { GenerationWarning } from '@json-to-office/shared-docx';
+import type { ServicesConfig } from '@json-to-office/shared';
 import type {
   ExtendedReportComponent,
   DocumentGeneratorBuilder,
@@ -37,6 +38,8 @@ export interface DocumentGeneratorOptions {
   enableCache?: boolean;
   /** Enable debug logging */
   debug?: boolean;
+  /** External service configuration (e.g. Highcharts export server) */
+  services?: ServicesConfig;
 }
 
 /**
@@ -49,6 +52,7 @@ interface BuilderState {
   customThemes?: Record<string, ThemeConfig>;
   debug: boolean;
   enableCache: boolean;
+  services?: ServicesConfig;
 }
 
 /**
@@ -256,6 +260,7 @@ function createBuilderImpl<
       customThemes: state.customThemes,
       debug: state.debug,
       enableCache: state.enableCache,
+      services: state.services,
     };
 
     // Return NEW builder with expanded type
@@ -311,7 +316,9 @@ function createBuilderImpl<
         themeName
       );
       const layout = applyLayout(structure.sections, docTheme, themeName);
-      const generatedDocument = await renderDocument(structure, layout);
+      const generatedDocument = await renderDocument(structure, layout, {
+        services: state.services,
+      });
 
       return {
         document: generatedDocument,
@@ -496,6 +503,7 @@ export function createDocumentGenerator(
     customThemes: options.customThemes,
     debug: options.debug ?? false,
     enableCache: options.enableCache ?? false,
+    services: options.services,
   };
 
   return createBuilderImpl<readonly []>(initialState);

@@ -4,7 +4,11 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
-import type { ProcessedPresentation, PipelineWarning, SlideContext } from '../types';
+import type {
+  ProcessedPresentation,
+  PipelineWarning,
+  SlideContext,
+} from '../types';
 import { renderComponent } from '../components';
 import { resolveComponentGridPosition, mergeGridConfigs } from './grid';
 import { resolveColor } from '../utils/color';
@@ -43,10 +47,16 @@ export async function renderPresentation(
   };
 
   // Register template slides
-  const templateMap = new Map(processed.templates?.map(m => [m.name, m]) ?? []);
+  const templateMap = new Map(
+    processed.templates?.map((m) => [m.name, m]) ?? []
+  );
   if (processed.templates) {
     for (const templateDef of processed.templates) {
-      const templateProps = buildSlideTemplateProps(templateDef, processed.theme, warnings);
+      const templateProps = buildSlideTemplateProps(
+        templateDef,
+        processed.theme,
+        warnings
+      );
       pptx.defineSlideMaster(templateProps as any);
     }
   }
@@ -67,7 +77,13 @@ export async function renderPresentation(
     // Apply slide background
     if (slideData.background) {
       if (slideData.background.color) {
-        slide.background = { color: resolveColor(slideData.background.color, processed.theme, warnings) };
+        slide.background = {
+          color: resolveColor(
+            slideData.background.color,
+            processed.theme,
+            warnings
+          ),
+        };
       } else if (slideData.background.image) {
         if (slideData.background.image.path) {
           slide.background = { path: slideData.background.image.path };
@@ -83,16 +99,31 @@ export async function renderPresentation(
     }
 
     // Determine effective grid for this slide (template grid merged with presentation grid)
-    const templateDef = slideData.template ? templateMap.get(slideData.template) : undefined;
+    const templateDef = slideData.template
+      ? templateMap.get(slideData.template)
+      : undefined;
     if (slideData.template && !templateDef) {
-      warn(warnings, W.MISSING_TEMPLATE, `Unknown template "${slideData.template}". Available: ${[...templateMap.keys()].join(', ')}`, { slide: slideIdx });
+      warn(
+        warnings,
+        W.MISSING_TEMPLATE,
+        `Unknown template "${slideData.template}". Available: ${[...templateMap.keys()].join(', ')}`,
+        { slide: slideIdx }
+      );
     }
     const effectiveGrid = mergeGridConfigs(processed.grid, templateDef?.grid);
 
     // Render template fixed objects (grid already resolved in structure.ts)
     if (templateDef?.objects) {
       for (const obj of templateDef.objects) {
-        await renderComponent(slide, obj, processed.theme, pptx, warnings, slideCtx);
+        await renderComponent(
+          slide,
+          obj,
+          processed.theme,
+          pptx,
+          warnings,
+          slideCtx,
+          processed.services
+        );
       }
     }
 
@@ -105,24 +136,44 @@ export async function renderPresentation(
         processed.slideHeight,
         warnings
       );
-      await renderComponent(slide, resolved, processed.theme, pptx, warnings, slideCtx);
+      await renderComponent(
+        slide,
+        resolved,
+        processed.theme,
+        pptx,
+        warnings,
+        slideCtx,
+        processed.services
+      );
     }
 
     // Render placeholder content
     if (slideData.placeholders) {
       if (templateDef) {
-        const phMap = new Map(templateDef.placeholders?.map(p => [p.name, p]) ?? []);
+        const phMap = new Map(
+          templateDef.placeholders?.map((p) => [p.name, p]) ?? []
+        );
 
-        for (const [phName, component] of Object.entries(slideData.placeholders)) {
+        for (const [phName, component] of Object.entries(
+          slideData.placeholders
+        )) {
           const phDef = phMap.get(phName);
           if (!phDef) {
-            warn(warnings, W.UNKNOWN_PLACEHOLDER, `Unknown placeholder "${phName}" in template "${slideData.template}". Available: ${[...phMap.keys()].join(', ')}`, { slide: slideIdx });
+            warn(
+              warnings,
+              W.UNKNOWN_PLACEHOLDER,
+              `Unknown placeholder "${phName}" in template "${slideData.template}". Available: ${[...phMap.keys()].join(', ')}`,
+              { slide: slideIdx }
+            );
             continue;
           }
 
           const gridResolved = resolveComponentGridPosition(
-            component, effectiveGrid,
-            processed.slideWidth, processed.slideHeight, warnings
+            component,
+            effectiveGrid,
+            processed.slideWidth,
+            processed.slideHeight,
+            warnings
           );
 
           // Position from placeholder, then defaults props, then component props (most specific wins)
@@ -132,21 +183,54 @@ export async function renderPresentation(
           if (phDef.w != null) posDefaults.w = phDef.w;
           if (phDef.h != null) posDefaults.h = phDef.h;
 
-          const props = { ...posDefaults, ...(phDef.defaults?.props ?? {}), ...gridResolved.props };
-          await renderComponent(slide, { ...gridResolved, props }, processed.theme, pptx, warnings, slideCtx);
+          const props = {
+            ...posDefaults,
+            ...(phDef.defaults?.props ?? {}),
+            ...gridResolved.props,
+          };
+          await renderComponent(
+            slide,
+            { ...gridResolved, props },
+            processed.theme,
+            pptx,
+            warnings,
+            slideCtx,
+            processed.services
+          );
         }
       } else {
         // No template found — render placeholders at their own positions if available
-        for (const [phName, component] of Object.entries(slideData.placeholders)) {
-          const hasPosition = component.props.x != null || component.props.y != null || component.props.grid;
+        for (const [phName, component] of Object.entries(
+          slideData.placeholders
+        )) {
+          const hasPosition =
+            component.props.x != null ||
+            component.props.y != null ||
+            component.props.grid;
           if (hasPosition) {
             const resolved = resolveComponentGridPosition(
-              component, effectiveGrid,
-              processed.slideWidth, processed.slideHeight, warnings
+              component,
+              effectiveGrid,
+              processed.slideWidth,
+              processed.slideHeight,
+              warnings
             );
-            await renderComponent(slide, resolved, processed.theme, pptx, warnings, slideCtx);
+            await renderComponent(
+              slide,
+              resolved,
+              processed.theme,
+              pptx,
+              warnings,
+              slideCtx,
+              processed.services
+            );
           } else {
-            warn(warnings, W.PLACEHOLDER_NO_POSITION, `Placeholder "${phName}" has no template and no explicit position — skipped`, { slide: slideIdx });
+            warn(
+              warnings,
+              W.PLACEHOLDER_NO_POSITION,
+              `Placeholder "${phName}" has no template and no explicit position — skipped`,
+              { slide: slideIdx }
+            );
           }
         }
       }

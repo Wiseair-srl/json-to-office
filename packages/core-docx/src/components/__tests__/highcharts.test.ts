@@ -367,7 +367,11 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(component, createMockTheme(), TEST_THEME_NAME);
+      await renderHighchartsComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME
+      );
 
       expect(mockFetch).toHaveBeenCalledWith(
         'http://custom-server:9999/export',
@@ -375,9 +379,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       );
     });
 
-    it('should use HIGHCHARTS_SERVER_URL env var', async () => {
-      process.env.HIGHCHARTS_SERVER_URL = 'http://env-server:8080';
-
+    it('should use services config serverUrl', async () => {
       const component = {
         name: 'highcharts' as const,
         props: {
@@ -388,19 +390,26 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(component, createMockTheme(), TEST_THEME_NAME);
+      const context = {
+        services: {
+          highcharts: { serverUrl: 'http://services-server:5555' },
+        },
+      } as any;
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://env-server:8080/export',
-        expect.any(Object)
+      await renderHighchartsComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
       );
 
-      delete process.env.HIGHCHARTS_SERVER_URL;
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://services-server:5555/export',
+        expect.any(Object)
+      );
     });
 
-    it('should prioritize serverUrl prop over env var', async () => {
-      process.env.HIGHCHARTS_SERVER_URL = 'http://env-server:8080';
-
+    it('should prioritize per-component serverUrl over services config', async () => {
       const component = {
         name: 'highcharts' as const,
         props: {
@@ -412,14 +421,85 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(component, createMockTheme(), TEST_THEME_NAME);
+      const context = {
+        services: {
+          highcharts: { serverUrl: 'http://services-server:5555' },
+        },
+      } as any;
+
+      await renderHighchartsComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
+      );
 
       expect(mockFetch).toHaveBeenCalledWith(
         'http://prop-server:7777/export',
         expect.any(Object)
       );
+    });
 
-      delete process.env.HIGHCHARTS_SERVER_URL;
+    it('should merge services headers into fetch request', async () => {
+      const component = {
+        name: 'highcharts' as const,
+        props: {
+          options: {
+            chart: { width: 600, height: 400 },
+            series: [{ data: [1, 2, 3] }],
+          },
+        },
+      };
+
+      const context = {
+        services: {
+          highcharts: {
+            headers: { 'x-api-key': 'test-key-123' },
+          },
+        },
+      } as any;
+
+      await renderHighchartsComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+            'x-api-key': 'test-key-123',
+          }),
+        })
+      );
+    });
+
+    it('should send only Content-Type when no services config', async () => {
+      const component = {
+        name: 'highcharts' as const,
+        props: {
+          options: {
+            chart: { width: 600, height: 400 },
+            series: [{ data: [1, 2, 3] }],
+          },
+        },
+      };
+
+      await renderHighchartsComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
   });
 });

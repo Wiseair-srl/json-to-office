@@ -1,6 +1,7 @@
 // Types
 export type { ComponentDefinition } from './types/components';
 export type { GenerationWarning, AddWarningFunction } from './types/warnings';
+export type { ServicesConfig, HighchartsServiceConfig } from './types/services';
 
 // Schema utilities
 export {

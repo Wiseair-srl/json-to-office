@@ -2,6 +2,8 @@
  * PPTX Core Types
  */
 
+import type { ServicesConfig } from '@json-to-office/shared';
+
 export interface PptxComponentInput {
   name: string;
   id?: string;
@@ -66,6 +68,7 @@ export interface ProcessedPresentation {
   pageNumberFormat: '9' | '09';
   slides: ProcessedSlide[];
   templates?: TemplateSlideDefinition[];
+  services?: ServicesConfig;
 }
 
 export interface ProcessedSlide {
@@ -84,7 +87,9 @@ export interface ProcessedSlide {
 export interface GridConfig {
   columns?: number;
   rows?: number;
-  margin?: number | { top: number; right: number; bottom: number; left: number };
+  margin?:
+    | number
+    | { top: number; right: number; bottom: number; left: number };
   gutter?: number | { column: number; row: number };
 }
 
@@ -107,7 +112,14 @@ export interface TextStyle {
   paraSpaceAfter?: number;
 }
 
-export type StyleName = 'title' | 'subtitle' | 'heading1' | 'heading2' | 'heading3' | 'body' | 'caption';
+export type StyleName =
+  | 'title'
+  | 'subtitle'
+  | 'heading1'
+  | 'heading2'
+  | 'heading3'
+  | 'body'
+  | 'caption';
 
 export interface PptxThemeConfig {
   name: string;
@@ -136,7 +148,10 @@ export interface PptxThemeConfig {
 
 export interface PlaceholderDefinition {
   name: string;
-  x?: number; y?: number; w?: number; h?: number;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
   grid?: GridPosition;
   defaults?: PptxComponentInput;
 }
@@ -145,7 +160,14 @@ export interface TemplateSlideDefinition {
   name: string;
   background?: { color?: string; image?: { path?: string; base64?: string } };
   margin?: number | [number, number, number, number];
-  slideNumber?: { x: number; y: number; w?: number; h?: number; color?: string; fontSize?: number };
+  slideNumber?: {
+    x: number;
+    y: number;
+    w?: number;
+    h?: number;
+    color?: string;
+    fontSize?: number;
+  };
   objects?: PptxComponentInput[];
   placeholders?: PlaceholderDefinition[];
   grid?: GridConfig;
@@ -158,7 +180,7 @@ export interface SlideContext {
 }
 
 export interface PipelineWarning {
-  code: string;  // WarningCode at call sites; string here to avoid circular import
+  code: string; // WarningCode at call sites; string here to avoid circular import
   message: string;
   component?: string;
   slide?: number;

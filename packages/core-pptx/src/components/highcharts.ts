@@ -5,14 +5,14 @@
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig, PipelineWarning } from '../types';
 import type { PptxHighchartsProps } from '@json-to-office/shared-pptx';
+import type { HighchartsServiceConfig } from '@json-to-office/shared';
 import { isNodeEnvironment } from '../utils/environment';
 
 const PX_PER_INCH = 96;
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 
-function getExportServerUrl(propsUrl?: string): string {
-  const raw =
-    propsUrl || process.env.HIGHCHARTS_SERVER_URL || DEFAULT_EXPORT_SERVER_URL;
+function getExportServerUrl(propsUrl?: string, servicesUrl?: string): string {
+  const raw = propsUrl || servicesUrl || DEFAULT_EXPORT_SERVER_URL;
   return raw.startsWith('http') ? raw : `http://${raw}`;
 }
 
@@ -20,7 +20,8 @@ function getExportServerUrl(propsUrl?: string): string {
  * Generate chart via Highcharts Export Server
  */
 async function generateChart(
-  config: PptxHighchartsProps
+  config: PptxHighchartsProps,
+  servicesConfig?: HighchartsServiceConfig
 ): Promise<{ base64DataUri: string; width: number; height: number }> {
   if (!isNodeEnvironment()) {
     throw new Error(
@@ -29,11 +30,19 @@ async function generateChart(
     );
   }
 
-  const serverUrl = getExportServerUrl(config.serverUrl);
+  const serverUrl = getExportServerUrl(
+    config.serverUrl,
+    servicesConfig?.serverUrl
+  );
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...servicesConfig?.headers,
+  };
 
   const response = await fetch(`${serverUrl}/export`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       infile: config.options,
       type: 'png',
@@ -67,9 +76,10 @@ export async function renderHighchartsComponent(
   slide: PptxGenJS.Slide,
   props: PptxHighchartsProps,
   _theme: PptxThemeConfig,
-  _warnings?: PipelineWarning[]
+  _warnings?: PipelineWarning[],
+  servicesConfig?: HighchartsServiceConfig
 ): Promise<void> {
-  const chart = await generateChart(props);
+  const chart = await generateChart(props, servicesConfig);
 
   const w = props.w ?? chart.width / PX_PER_INCH;
   const h = props.h ?? chart.height / PX_PER_INCH;

@@ -6,8 +6,13 @@
 import PptxGenJS from 'pptxgenjs';
 import JSZip from 'jszip';
 import { writeFileSync } from 'fs';
-import type { PresentationComponentDefinition, PptxThemeConfig, PipelineWarning } from '../types';
+import type {
+  PresentationComponentDefinition,
+  PptxThemeConfig,
+  PipelineWarning,
+} from '../types';
 import { isPresentationComponent } from '../types';
+import type { ServicesConfig } from '@json-to-office/shared';
 import { processPresentation } from './structure';
 import { renderPresentation } from './render';
 
@@ -16,6 +21,7 @@ import { renderPresentation } from './render';
  */
 export interface GenerationOptions {
   customThemes?: Record<string, PptxThemeConfig>;
+  services?: ServicesConfig;
 }
 
 /**
@@ -132,7 +138,9 @@ async function neutralizeTableStyle(buffer: Buffer): Promise<Buffer> {
       changed = true;
     }
   }
-  return changed ? await zip.generateAsync({ type: 'nodebuffer' }) as Buffer : buffer;
+  return changed
+    ? ((await zip.generateAsync({ type: 'nodebuffer' })) as Buffer)
+    : buffer;
 }
 
 /**

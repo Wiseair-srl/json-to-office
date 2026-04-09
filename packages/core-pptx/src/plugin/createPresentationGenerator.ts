@@ -24,6 +24,7 @@ import { generatePluginPresentationSchema, exportPluginSchema } from './schema';
 import { processPresentation } from '../core/structure';
 import { renderPresentation } from '../core/render';
 import { getPptxTheme } from '../themes';
+import type { ServicesConfig } from '@json-to-office/shared';
 
 /**
  * Options for creating a presentation generator
@@ -35,6 +36,8 @@ export interface PresentationGeneratorOptions {
   customThemes?: Record<string, PptxThemeConfig>;
   /** Enable debug logging */
   debug?: boolean;
+  /** External service configuration (e.g. Highcharts export server) */
+  services?: ServicesConfig;
 }
 
 /**
@@ -46,6 +49,7 @@ interface BuilderState {
   theme?: PptxThemeConfig | string;
   customThemes?: Record<string, PptxThemeConfig>;
   debug: boolean;
+  services?: ServicesConfig;
 }
 
 /**
@@ -241,6 +245,7 @@ function createBuilderImpl<
       theme: state.theme,
       customThemes: state.customThemes,
       debug: state.debug,
+      services: state.services,
     };
 
     return createBuilderImpl<readonly [...TComponents, TNewComponent]>(
@@ -291,6 +296,7 @@ function createBuilderImpl<
       // Run the standard PPTX pipeline
       const processed = processPresentation(processedDocument, {
         customThemes: state.customThemes,
+        services: state.services,
       });
       const pptx = await renderPresentation(processed, warnings);
       const data = await pptx.write({ outputType: 'nodebuffer' });
@@ -450,6 +456,7 @@ export function createPresentationGenerator(
     theme: options.theme,
     customThemes: options.customThemes,
     debug: options.debug ?? false,
+    services: options.services,
   };
 
   return createBuilderImpl<readonly []>(initialState);

@@ -4,13 +4,18 @@
  */
 
 import { Paragraph, Table } from 'docx';
-import { ComponentDefinition, isHighchartsComponent } from '../types';
+import {
+  ComponentDefinition,
+  RenderContext,
+  isHighchartsComponent,
+} from '../types';
 import { ThemeConfig } from '../styles';
 import { createImage } from '../core/content';
 import { isNodeEnvironment } from '../utils/environment';
 
 // Import only the types we actually use from shared package
 import type { HighchartsProps } from '@json-to-office/shared-docx';
+import type { HighchartsServiceConfig } from '@json-to-office/shared';
 
 // Re-export HighchartsProps for backward compatibility
 export type { HighchartsProps } from '@json-to-office/shared-docx';
@@ -26,9 +31,8 @@ export interface ChartGenerationResult {
 
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 
-function getExportServerUrl(propsUrl?: string): string {
-  const raw =
-    propsUrl || process.env.HIGHCHARTS_SERVER_URL || DEFAULT_EXPORT_SERVER_URL;
+function getExportServerUrl(propsUrl?: string, servicesUrl?: string): string {
+  const raw = propsUrl || servicesUrl || DEFAULT_EXPORT_SERVER_URL;
   return raw.startsWith('http') ? raw : `http://${raw}`;
 }
 
@@ -36,7 +40,8 @@ function getExportServerUrl(propsUrl?: string): string {
  * Generate chart using Highcharts Export Server
  */
 async function generateChart(
-  config: HighchartsProps
+  config: HighchartsProps,
+  servicesConfig?: HighchartsServiceConfig
 ): Promise<ChartGenerationResult> {
   // Only run in Node.js environments
   if (!isNodeEnvironment()) {
@@ -46,7 +51,10 @@ async function generateChart(
     );
   }
 
-  const serverUrl = getExportServerUrl(config.serverUrl);
+  const serverUrl = getExportServerUrl(
+    config.serverUrl,
+    servicesConfig?.serverUrl
+  );
 
   const requestBody: Record<string, unknown> = {
     infile: config.options,
@@ -55,11 +63,14 @@ async function generateChart(
     scale: config.scale,
   };
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...servicesConfig?.headers,
+  };
+
   const response = await fetch(`${serverUrl}/export`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(requestBody),
   }).catch((error) => {
     throw new Error(
@@ -93,14 +104,18 @@ async function generateChart(
 export async function renderHighchartsComponent(
   component: ComponentDefinition,
   theme: ThemeConfig,
-  themeName: string
+  themeName: string,
+  context?: RenderContext
 ): Promise<(Paragraph | Table)[]> {
   if (!isHighchartsComponent(component)) return [];
 
   const config = component.props as HighchartsProps;
 
   // Generate the chart
-  const chartResult = await generateChart(config);
+  const chartResult = await generateChart(
+    config,
+    context?.services?.highcharts
+  );
 
   // If either config.width or config.height is provided, use config dimensions only
   // Otherwise fall back to chart dimensions
