@@ -15,12 +15,6 @@ ENV POOL_ACQUIRE_TIMEOUT=30000
 
 RUN npm install -g highcharts-export-server@5.1.0
 
-RUN highcharts-export-server --noLogo 1 --enableServer 0
-
-RUN cp -r /usr/local/lib/node_modules/highcharts-export-server/.cache /opt/highcharts-cache && \
-    rm -rf /usr/local/lib/node_modules/highcharts-export-server/.cache && \
-    ln -sf /tmp/.cache /usr/local/lib/node_modules/highcharts-export-server/.cache
-
 RUN mkdir -p /usr/src/app && \
     echo '{\
   "puppeteer": {\
@@ -44,6 +38,12 @@ RUN mkdir -p /usr/src/app && \
     "port": 7801\
   }\
 }' > /usr/src/app/config.json
+
+RUN highcharts-export-server --noLogo 1 --enableServer 0 --loadConfig /usr/src/app/config.json
+
+RUN cp -r /usr/local/lib/node_modules/highcharts-export-server/.cache /opt/highcharts-cache && \
+    rm -rf /usr/local/lib/node_modules/highcharts-export-server/.cache && \
+    ln -sf /tmp/.cache /usr/local/lib/node_modules/highcharts-export-server/.cache
 
 RUN useradd -m -s /bin/bash hcuser && \
     chown -R hcuser:hcuser /opt/highcharts-cache /usr/src/app
