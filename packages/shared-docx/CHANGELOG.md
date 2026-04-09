@@ -1,5 +1,12 @@
 # @json-to-office/shared-docx
 
+## 0.7.0
+
+### Patch Changes
+
+- Updated dependencies [c0bd927]
+  - @json-to-office/shared@0.7.0
+
 ## 0.6.0
 
 ### Minor Changes
