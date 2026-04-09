@@ -17,10 +17,7 @@ services:
       - key: VITE_AI_ENABLED
         value: "false"
       - key: HIGHCHARTS_SERVER_URL
-        fromService:
-          name: highcharts-export-server
-          type: web
-          property: hostport
+        value: https://highcharts-export-server-6iyx.onrender.com
     healthCheckPath: /health
 
   - type: web
@@ -34,8 +31,5 @@ services:
       - key: VITE_AI_ENABLED
         value: "false"
       - key: HIGHCHARTS_SERVER_URL
-        fromService:
-          name: highcharts-export-server
-          type: web
-          property: hostport
+        value: https://highcharts-export-server-6iyx.onrender.com
     healthCheckPath: /health
