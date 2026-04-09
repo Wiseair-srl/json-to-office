@@ -39,7 +39,9 @@ RUN mkdir -p /usr/src/app && \
   }\
 }' > /usr/src/app/config.json
 
-RUN highcharts-export-server --noLogo 1 --enableServer 0 --loadConfig /usr/src/app/config.json
+# Cache-warming: downloads Highcharts JS modules. Browser launch fails at build
+# time (no sandbox in Docker build), but the module cache is still written.
+RUN highcharts-export-server --noLogo 1 --enableServer 0 --loadConfig /usr/src/app/config.json || true
 
 RUN cp -r /usr/local/lib/node_modules/highcharts-export-server/.cache /opt/highcharts-cache && \
     rm -rf /usr/local/lib/node_modules/highcharts-export-server/.cache && \
