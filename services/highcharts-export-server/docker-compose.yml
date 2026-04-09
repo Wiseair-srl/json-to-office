@@ -1,0 +1,11 @@
+services:
+  highcharts:
+    build: .
+    ports:
+      - '7801:7801'
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:7801/health']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

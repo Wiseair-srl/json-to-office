@@ -27,9 +27,9 @@ export interface ChartGenerationResult {
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 
 function getExportServerUrl(propsUrl?: string): string {
-  return (
-    propsUrl || process.env.HIGHCHARTS_SERVER_URL || DEFAULT_EXPORT_SERVER_URL
-  );
+  const raw =
+    propsUrl || process.env.HIGHCHARTS_SERVER_URL || DEFAULT_EXPORT_SERVER_URL;
+  return raw.startsWith('http') ? raw : `http://${raw}`;
 }
 
 /**

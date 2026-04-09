@@ -1,5 +1,12 @@
 services:
   - type: web
+    name: highcharts-export-server
+    runtime: docker
+    plan: standard
+    dockerfilePath: ./services/highcharts-export-server/Dockerfile
+    healthCheckPath: /health
+
+  - type: web
     name: jto-playground-docx
     runtime: docker
     plan: starter
@@ -9,6 +16,11 @@ services:
         value: docx
       - key: VITE_AI_ENABLED
         value: "false"
+      - key: HIGHCHARTS_SERVER_URL
+        fromService:
+          name: highcharts-export-server
+          type: web
+          property: hostport
     healthCheckPath: /health
 
   - type: web
@@ -21,4 +33,9 @@ services:
         value: pptx
       - key: VITE_AI_ENABLED
         value: "false"
+      - key: HIGHCHARTS_SERVER_URL
+        fromService:
+          name: highcharts-export-server
+          type: web
+          property: hostport
     healthCheckPath: /health
