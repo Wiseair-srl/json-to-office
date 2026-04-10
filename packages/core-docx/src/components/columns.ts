@@ -20,7 +20,6 @@ import {
   isTextBoxComponent,
 } from '../types';
 import { ThemeConfig } from '../styles';
-import { resolveColumnsProps } from '../styles/utils/componentDefaults';
 import { renderComponent } from '../core/render';
 import {
   getAvailableWidthTwips,
@@ -46,10 +45,7 @@ export async function renderColumnsComponent(
   }
 
   // Standard section-based rendering (existing behavior)
-  // Resolve configuration with theme defaults
-  // Note: resolvedConfig is available for future use if needed
-  resolveColumnsProps(component.props, theme);
-
+  // Props are pre-resolved by resolveComponentTree
   const elements: (Paragraph | Table)[] = [];
 
   if (component.children) {

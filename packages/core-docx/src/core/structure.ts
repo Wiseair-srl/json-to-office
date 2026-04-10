@@ -13,6 +13,11 @@ import {
 } from '../types';
 import { ThemeConfig } from '../styles';
 import { formatDate } from '../utils/formatters';
+import {
+  resolveComponentTree,
+  resolveComponentDefaults,
+} from '../styles/utils/resolveComponentTree';
+import { mergeWithDefaults } from '../styles/utils/componentDefaults';
 
 export interface ProcessedDocument {
   metadata: DocumentMetadata;
@@ -64,25 +69,46 @@ export async function processDocument(
 ): Promise<ProcessedDocument> {
   const metadata = createDocumentMetadata(document.props);
 
-  // Create initial context
+  // Merge document-level componentDefaults on top of theme-level ones
+  // (document overrides theme)
+  const docDefaults = document.props.componentDefaults;
+  const effectiveTheme = docDefaults
+    ? {
+        ...theme,
+        componentDefaults: mergeWithDefaults(
+          docDefaults,
+          theme.componentDefaults || {}
+        ),
+      }
+    : theme;
+
+  // Create context with effective theme so section-title headings
+  // created in extractSections also see document-level defaults
   const context = createRenderContext(
     {
       metadata,
       sections: [],
-      theme,
+      theme: effectiveTheme,
       themeName,
     },
-    theme,
+    effectiveTheme,
     themeName
   );
 
+  // Resolve componentDefaults on every component before
+  // extractSections reads any props (fixes section pageBreak, table defaults, etc.)
+  const resolvedChildren = resolveComponentTree(
+    document.children || [],
+    effectiveTheme
+  );
+
   // Extract sections from components
-  const sections = await extractSections(document.children || [], context);
+  const sections = await extractSections(resolvedChildren, context);
 
   return {
     metadata,
     sections,
-    theme,
+    theme: effectiveTheme,
     themeName,
   };
 }
@@ -132,19 +158,24 @@ export async function extractSections(
           6
         ) as 1 | 2 | 3 | 4 | 5 | 6;
 
-        sectionComponents.unshift({
-          name: 'heading',
-          props: {
-            text: component.props.title,
-            level: headingLevel,
-            pageBreak: shouldPageBreak,
-            // Apply zero-spacing to prevent unwanted initial line
-            spacing: {
-              before: 0,
-              after: 0,
+        sectionComponents.unshift(
+          resolveComponentDefaults(
+            {
+              name: 'heading',
+              props: {
+                text: component.props.title,
+                level: headingLevel,
+                pageBreak: shouldPageBreak,
+                // Apply zero-spacing to prevent unwanted initial line
+                spacing: {
+                  before: 0,
+                  after: 0,
+                },
+              },
             },
-          },
-        });
+            context.fullTheme
+          )
+        );
       }
 
       sections.push({
@@ -202,18 +233,23 @@ export async function flattenComponents(
         ) as 1 | 2 | 3 | 4 | 5 | 6;
 
         // Convert section title to heading
-        flattened.push({
-          name: 'heading',
-          props: {
-            text: component.props.title,
-            level: headingLevel,
-            // Apply zero-spacing to prevent unwanted initial line
-            spacing: {
-              before: 0,
-              after: 0,
+        flattened.push(
+          resolveComponentDefaults(
+            {
+              name: 'heading',
+              props: {
+                text: component.props.title,
+                level: headingLevel,
+                // Apply zero-spacing to prevent unwanted initial line
+                spacing: {
+                  before: 0,
+                  after: 0,
+                },
+              },
             },
-          },
-        });
+            context.fullTheme
+          )
+        );
       }
       flattened.push(...(await flattenComponents(component.children, context)));
     } else {
@@ -239,8 +275,8 @@ export function createRenderContext(
       colors: theme.colors || {},
       fonts: theme.fonts
         ? Object.fromEntries(
-          Object.entries(theme.fonts).map(([key, font]) => [key, font.family])
-        )
+            Object.entries(theme.fonts).map(([key, font]) => [key, font.family])
+          )
         : {},
       spacing: { small: 120, medium: 240, large: 360, section: 480 },
     },

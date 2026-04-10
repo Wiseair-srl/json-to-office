@@ -6,7 +6,6 @@
 import { Paragraph } from 'docx';
 import { ComponentDefinition, isImageComponent } from '../types';
 import { ThemeConfig } from '../styles';
-import { resolveImageProps } from '../styles/utils/componentDefaults';
 import { createImage } from '../core/content';
 
 /**
@@ -19,8 +18,8 @@ export async function renderImageComponent(
 ): Promise<Paragraph[]> {
   if (!isImageComponent(component)) return [];
 
-  // Resolve configuration with theme defaults
-  const resolvedConfig = resolveImageProps(component.props, theme);
+  // Props are pre-resolved by resolveComponentTree
+  const resolvedConfig = component.props;
 
   // Use base64 if provided, otherwise use path
   const imageSource = resolvedConfig.base64 || resolvedConfig.path;

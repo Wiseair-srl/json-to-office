@@ -296,6 +296,7 @@ describe('components/list', () => {
     it('should handle missing config', () => {
       const component: ComponentDefinition = {
         name: 'list',
+        props: {},
       } as ComponentDefinition;
 
       const result = renderListComponent(

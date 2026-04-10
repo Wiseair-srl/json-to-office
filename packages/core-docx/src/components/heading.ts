@@ -6,10 +6,6 @@
 import { Paragraph } from 'docx';
 import { ComponentDefinition, isHeadingComponent } from '../types';
 import { ThemeConfig } from '../styles';
-import {
-  resolveHeadingProps,
-  getHeadingDefaultsForLevel,
-} from '../styles/utils/componentDefaults';
 import { createHeading } from '../core/content';
 import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
 
@@ -23,46 +19,36 @@ export function renderHeadingComponent(
 ): Paragraph[] {
   if (!isHeadingComponent(component)) return [];
 
-  // Resolve configuration with theme defaults
-  const resolvedConfig = resolveHeadingProps(component.props, theme);
-
-  // Get level-specific theme defaults and merge them
-  // Only apply level defaults if no explicit alignment was provided in the original props
-  const level = resolvedConfig.level || 1;
-  const levelDefaults = getHeadingDefaultsForLevel(theme, level);
-  const finalConfig = {
-    ...resolvedConfig,
-    // Only apply level defaults if no explicit alignment was provided in the original props
-    ...(component.props.alignment ? {} : levelDefaults),
-  };
+  // Props are pre-resolved by resolveComponentTree (componentDefaults + level-specific defaults)
+  const config = component.props;
 
   // Generate or use bookmark ID for internal linking
   // If component has id, use it; otherwise generate from heading text
   const bookmarkId =
     (component as any).id ||
-    globalBookmarkRegistry.generateId(finalConfig.text, 'heading');
+    globalBookmarkRegistry.generateId(config.text, 'heading');
 
   // Create heading with optional column break and bookmark
   const header = createHeading(
-    finalConfig.text,
-    finalConfig.level || 1,
+    config.text,
+    config.level || 1,
     theme,
     themeName,
     {
-      alignment: finalConfig.alignment,
-      spacing: finalConfig.spacing,
-      lineSpacing: finalConfig.lineSpacing,
-      columnBreak: finalConfig.columnBreak,
+      alignment: config.alignment,
+      spacing: config.spacing,
+      lineSpacing: config.lineSpacing,
+      columnBreak: config.columnBreak,
       // Local font overrides
-      fontFamily: finalConfig.font?.family,
-      fontSize: finalConfig.font?.size,
-      fontColor: finalConfig.font?.color,
-      bold: finalConfig.font?.bold,
-      italic: finalConfig.font?.italic,
-      underline: finalConfig.font?.underline,
+      fontFamily: config.font?.family,
+      fontSize: config.font?.size,
+      fontColor: config.font?.color,
+      bold: config.font?.bold,
+      italic: config.font?.italic,
+      underline: config.font?.underline,
       // Pagination control
-      keepNext: finalConfig.keepNext,
-      keepLines: finalConfig.keepLines,
+      keepNext: config.keepNext,
+      keepLines: config.keepLines,
       // Bookmark ID for internal linking
       bookmarkId: bookmarkId,
     }

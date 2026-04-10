@@ -4,9 +4,8 @@
  */
 
 import { Paragraph } from 'docx';
-import { ComponentDefinition, isListComponent } from '../types';
+import { ComponentDefinition, isListComponent, ListProps } from '../types';
 import { ThemeConfig } from '../styles';
-import { resolveListProps } from '../styles/utils/componentDefaults';
 import { createList } from '../core/content';
 import {
   globalNumberingRegistry,
@@ -18,9 +17,7 @@ import {
 /**
  * Convert simplified format to proper level configurations
  */
-function createLevelsFromSimplifiedProps(
-  props: ReturnType<typeof resolveListProps>
-): ListLevelConfig[] {
+function createLevelsFromSimplifiedProps(props: ListProps): ListLevelConfig[] {
   const levels: ListLevelConfig[] = [];
 
   // Determine format from simplified options
@@ -164,8 +161,8 @@ export function renderListComponent(
 ): Paragraph[] {
   if (!isListComponent(component)) return [];
 
-  // Resolve configuration with theme defaults
-  const resolvedConfig = resolveListProps(component.props, theme);
+  // Props are pre-resolved by resolveComponentTree
+  const resolvedConfig = component.props;
 
   // Determine the maximum level needed from items
   const maxLevel = getMaxLevelFromItems(resolvedConfig.items);

@@ -6,7 +6,6 @@
 import { Paragraph } from 'docx';
 import { ComponentDefinition, isParagraphComponent } from '../types';
 import { ThemeConfig } from '../styles';
-import { resolveParagraphProps } from '../styles/utils/componentDefaults';
 import { createText, createList } from '../core/content';
 import {
   globalNumberingRegistry,
@@ -77,8 +76,8 @@ export function renderParagraphComponent(
 ): Paragraph[] {
   if (!isParagraphComponent(component)) return [];
 
-  // Resolve configuration with theme defaults
-  const resolvedConfig = resolveParagraphProps(component.props, theme);
+  // Props are pre-resolved by resolveComponentTree
+  const resolvedConfig = component.props;
 
   // Check if text contains markdown list syntax
   const listData = parseMarkdownList(resolvedConfig.text);

@@ -354,46 +354,24 @@ export const HeadingDefinitionSchema = Type.Object(
 );
 
 // ============================================================================
-// Component Defaults Schemas
+// Component Defaults Schemas (imported from component-defaults.ts to avoid
+// circular deps: report.ts needs ComponentDefaultsSchema, but the old location
+// here imported from the components barrel which re-exports report.ts)
 // ============================================================================
 
-// Import component props schemas from components.ts
-import {
-  HeadingPropsSchema,
-  ParagraphPropsSchema,
-  ImagePropsSchema,
-  StatisticPropsSchema,
-  TablePropsSchema,
-  SectionPropsSchema,
-  ColumnsPropsSchema,
-  ListPropsSchema,
-} from './components';
+import { ComponentDefaultsSchema } from './component-defaults';
 
-// Create component defaults by making all fields optional (Type.Partial)
-export const HeadingComponentDefaultsSchema = Type.Partial(HeadingPropsSchema);
-export const ParagraphComponentDefaultsSchema =
-  Type.Partial(ParagraphPropsSchema);
-export const ImageComponentDefaultsSchema = Type.Partial(ImagePropsSchema);
-export const StatisticComponentDefaultsSchema =
-  Type.Partial(StatisticPropsSchema);
-export const TableComponentDefaultsSchema = Type.Partial(TablePropsSchema);
-export const SectionComponentDefaultsSchema = Type.Partial(SectionPropsSchema);
-export const ColumnsComponentDefaultsSchema = Type.Partial(ColumnsPropsSchema);
-export const ListComponentDefaultsSchema = Type.Partial(ListPropsSchema);
-
-export const ComponentDefaultsSchema = Type.Object(
-  {
-    heading: Type.Optional(HeadingComponentDefaultsSchema),
-    paragraph: Type.Optional(ParagraphComponentDefaultsSchema),
-    image: Type.Optional(ImageComponentDefaultsSchema),
-    statistic: Type.Optional(StatisticComponentDefaultsSchema),
-    table: Type.Optional(TableComponentDefaultsSchema),
-    section: Type.Optional(SectionComponentDefaultsSchema),
-    columns: Type.Optional(ColumnsComponentDefaultsSchema),
-    list: Type.Optional(ListComponentDefaultsSchema),
-  },
-  { additionalProperties: true } // TODO: add a way to add strict custom component defaults when the plugin/registry paradigm will be implemented
-);
+export {
+  HeadingComponentDefaultsSchema,
+  ParagraphComponentDefaultsSchema,
+  ImageComponentDefaultsSchema,
+  StatisticComponentDefaultsSchema,
+  TableComponentDefaultsSchema,
+  SectionComponentDefaultsSchema,
+  ColumnsComponentDefaultsSchema,
+  ListComponentDefaultsSchema,
+  ComponentDefaultsSchema,
+} from './component-defaults';
 
 // ============================================================================
 // Theme Config Schema
@@ -448,29 +426,17 @@ export type FontDefinition = Static<typeof FontDefinitionSchema>;
 export type Fonts = Static<typeof FontsSchema>;
 export type StyleDefinitions = Static<typeof StyleDefinitionsSchema>;
 export type HeadingDefinition = Static<typeof HeadingDefinitionSchema>;
-export type HeadingComponentDefaults = Static<
-  typeof HeadingComponentDefaultsSchema
->;
-export type ParagraphComponentDefaults = Static<
-  typeof ParagraphComponentDefaultsSchema
->;
-export type ImageComponentDefaults = Static<
-  typeof ImageComponentDefaultsSchema
->;
-export type StatisticComponentDefaults = Static<
-  typeof StatisticComponentDefaultsSchema
->;
-export type TableComponentDefaults = Static<
-  typeof TableComponentDefaultsSchema
->;
-export type SectionComponentDefaults = Static<
-  typeof SectionComponentDefaultsSchema
->;
-export type ColumnsComponentDefaults = Static<
-  typeof ColumnsComponentDefaultsSchema
->;
-export type ListComponentDefaults = Static<typeof ListComponentDefaultsSchema>;
-export type ComponentDefaults = Static<typeof ComponentDefaultsSchema>;
+export type {
+  HeadingComponentDefaults,
+  ParagraphComponentDefaults,
+  ImageComponentDefaults,
+  StatisticComponentDefaults,
+  TableComponentDefaults,
+  SectionComponentDefaults,
+  ColumnsComponentDefaults,
+  ListComponentDefaults,
+  ComponentDefaults,
+} from './component-defaults';
 
 // ============================================================================
 // Validation Function
