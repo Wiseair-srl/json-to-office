@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/shared-docx",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "DOCX-specific schemas, component registry and validation",
   "type": "module",
   "main": "dist/index.js",
