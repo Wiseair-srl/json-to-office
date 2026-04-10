@@ -3,6 +3,7 @@
  * Simplified theme configuration for presentations
  */
 import { Type, Static } from '@sinclair/typebox';
+import { PptxComponentDefaultsSchema } from './component-defaults';
 
 export const GridMarginSchema = Type.Union(
   [
@@ -136,6 +137,7 @@ export const ThemeConfigSchema = Type.Object(
       ) as Record<string, typeof TextStyleSchema>),
       { additionalProperties: false, description: 'Named text style presets' }
     )),
+    componentDefaults: Type.Optional(PptxComponentDefaultsSchema),
   },
   { additionalProperties: false, description: 'Presentation theme configuration' }
 );

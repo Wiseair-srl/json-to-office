@@ -65,6 +65,9 @@ export {
   type ComponentValidationResult,
 } from './plugin';
 
+// Deep merge utilities
+export { mergeWithDefaults } from './utils/deepMerge';
+
 // Semver utilities
 export {
   isValidSemver,

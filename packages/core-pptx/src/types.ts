@@ -3,6 +3,7 @@
  */
 
 import type { ServicesConfig } from '@json-to-office/shared';
+import type { PptxComponentDefaults } from '@json-to-office/shared-pptx';
 
 export interface PptxComponentInput {
   name: string;
@@ -26,6 +27,7 @@ export interface PresentationComponentDefinition {
     slideHeight?: number;
     rtlMode?: boolean;
     pageNumberFormat?: '9' | '09';
+    componentDefaults?: PptxComponentDefaults;
     grid?: GridConfig;
     templates?: TemplateSlideDefinition[];
   };
@@ -144,6 +146,7 @@ export interface PptxThemeConfig {
     fontColor: string;
   };
   styles?: Partial<Record<StyleName, TextStyle>>;
+  componentDefaults?: PptxComponentDefaults;
 }
 
 export interface PlaceholderDefinition {

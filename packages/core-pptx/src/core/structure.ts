@@ -18,6 +18,8 @@ import {
 } from './grid';
 import { getPptxTheme } from '../themes';
 import type { GenerationOptions } from './generator';
+import { resolveComponentTree } from '../utils/resolveComponentTree';
+import { mergeWithDefaults } from '@json-to-office/shared';
 
 export function processPresentation(
   document: PresentationComponentDefinition,
@@ -26,7 +28,21 @@ export function processPresentation(
   const { props, children = [] } = document;
 
   const themeName = props.theme ?? 'default';
-  const theme = options?.customThemes?.[themeName] ?? getPptxTheme(themeName);
+  const baseTheme =
+    options?.customThemes?.[themeName] ?? getPptxTheme(themeName);
+
+  // Merge presentation-level componentDefaults on top of theme-level ones
+  const presDefaults = props.componentDefaults;
+  const theme = presDefaults
+    ? {
+        ...baseTheme,
+        componentDefaults: mergeWithDefaults(
+          presDefaults,
+          baseTheme.componentDefaults || {}
+        ),
+      }
+    : baseTheme;
+
   const slideWidth = props.slideWidth ?? 10;
   const slideHeight = props.slideHeight ?? 7.5;
 
@@ -55,8 +71,11 @@ export function processPresentation(
         };
       });
 
-      // Resolve grid positions on fixed objects (unified components)
-      const resolvedObjects = m.objects?.map((obj) =>
+      // Resolve componentDefaults then grid positions on fixed objects
+      const defaultedObjects = m.objects
+        ? resolveComponentTree(m.objects, theme)
+        : undefined;
+      const resolvedObjects = defaultedObjects?.map((obj) =>
         resolveComponentGridPosition(
           obj,
           effectiveGrid,
@@ -80,8 +99,11 @@ export function processPresentation(
         }
       }
 
+      // Resolve componentDefaults on all slide components
+      const resolvedComponents = resolveComponentTree(slideComponents, theme);
+
       slides.push({
-        components: slideComponents,
+        components: resolvedComponents,
         background: child.props.background,
         notes: child.props.notes,
         layout: child.props.layout,
