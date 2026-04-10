@@ -14,6 +14,9 @@ import { resolveComponentGridPosition, mergeGridConfigs } from './grid';
 import { resolveColor } from '../utils/color';
 import { warn, W } from '../utils/warn';
 import { buildSlideTemplateProps } from './template';
+import { getDefaultsForType } from '../utils/componentDefaults';
+import { resolveComponentDefaults } from '../utils/resolveComponentTree';
+import { mergeWithDefaults } from '@json-to-office/shared';
 
 export async function renderPresentation(
   processed: ProcessedPresentation,
@@ -176,18 +179,20 @@ export async function renderPresentation(
             warnings
           );
 
-          // Position from placeholder, then defaults props, then component props (most specific wins)
+          // Precedence: componentDefaults < phDef position < phDef defaults < component props
+          const typeDefaults = getDefaultsForType(
+            component.name,
+            processed.theme
+          );
           const posDefaults: Record<string, any> = {};
           if (phDef.x != null) posDefaults.x = phDef.x;
           if (phDef.y != null) posDefaults.y = phDef.y;
           if (phDef.w != null) posDefaults.w = phDef.w;
           if (phDef.h != null) posDefaults.h = phDef.h;
 
-          const props = {
-            ...posDefaults,
-            ...(phDef.defaults?.props ?? {}),
-            ...gridResolved.props,
-          };
+          let props = mergeWithDefaults(posDefaults, typeDefaults);
+          props = mergeWithDefaults(phDef.defaults?.props ?? {}, props);
+          props = mergeWithDefaults(gridResolved.props, props);
           await renderComponent(
             slide,
             { ...gridResolved, props },
@@ -203,13 +208,17 @@ export async function renderPresentation(
         for (const [phName, component] of Object.entries(
           slideData.placeholders
         )) {
+          const defaulted = resolveComponentDefaults(
+            component,
+            processed.theme
+          );
           const hasPosition =
-            component.props.x != null ||
-            component.props.y != null ||
-            component.props.grid;
+            defaulted.props.x != null ||
+            defaulted.props.y != null ||
+            defaulted.props.grid;
           if (hasPosition) {
             const resolved = resolveComponentGridPosition(
-              component,
+              defaulted,
               effectiveGrid,
               processed.slideWidth,
               processed.slideHeight,

@@ -5,6 +5,7 @@
 import { Type, Static } from '@sinclair/typebox';
 import { TemplateSlideDefinitionSchema } from './template';
 import { GridConfigSchema } from '../theme';
+import { PptxComponentDefaultsSchema } from '../component-defaults';
 
 export const PresentationPropsSchema = Type.Object(
   {
@@ -47,6 +48,7 @@ export const PresentationPropsSchema = Type.Object(
         default: '9',
       })
     ),
+    componentDefaults: Type.Optional(PptxComponentDefaultsSchema),
     grid: Type.Optional(GridConfigSchema),
     templates: Type.Optional(
       Type.Array(TemplateSlideDefinitionSchema, {

@@ -37,6 +37,10 @@ export type {
   PptxComponentDefinition,
 } from './schemas/components';
 
+// Chart (not re-exported from components barrel)
+export { PptxChartPropsSchema } from './schemas/components/chart';
+export type { PptxChartProps } from './schemas/components/chart';
+
 // Component Registry
 export {
   PPTX_STANDARD_COMPONENTS_REGISTRY,
@@ -66,8 +70,37 @@ export {
   PPTX_BASE_SCHEMA_METADATA,
 } from './schemas/export';
 
+// Component Defaults
+export {
+  PptxComponentDefaultsSchema,
+  TextComponentDefaultsSchema,
+  ImageComponentDefaultsSchema,
+  ShapeComponentDefaultsSchema,
+  TableComponentDefaultsSchema,
+  HighchartsComponentDefaultsSchema,
+  ChartComponentDefaultsSchema,
+} from './schemas/component-defaults';
+export type {
+  PptxComponentDefaults,
+  TextComponentDefaults,
+  ImageComponentDefaults,
+  ShapeComponentDefaults,
+  TableComponentDefaults,
+  HighchartsComponentDefaults,
+  ChartComponentDefaults,
+} from './schemas/component-defaults';
+
 // Theme
-export { ThemeConfigSchema, ColorValueSchema, SEMANTIC_COLOR_NAMES, SEMANTIC_COLOR_ALIASES, STYLE_NAMES, StyleNameSchema, TextStyleSchema, isValidThemeConfig } from './schemas/theme';
+export {
+  ThemeConfigSchema,
+  ColorValueSchema,
+  SEMANTIC_COLOR_NAMES,
+  SEMANTIC_COLOR_ALIASES,
+  STYLE_NAMES,
+  StyleNameSchema,
+  TextStyleSchema,
+  isValidThemeConfig,
+} from './schemas/theme';
 export type { ThemeConfigJson, StyleName, TextStyle } from './schemas/theme';
 
 // Schema Generator
