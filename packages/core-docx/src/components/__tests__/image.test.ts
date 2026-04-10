@@ -382,6 +382,7 @@ describe('components/image', () => {
     it('should handle missing config', async () => {
       const component: ComponentDefinition = {
         name: 'image',
+        props: {},
       } as ComponentDefinition;
 
       // Should throw error when neither path nor base64 is provided

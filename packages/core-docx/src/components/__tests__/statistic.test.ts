@@ -301,6 +301,7 @@ describe('components/statistic', () => {
     it('should handle missing config', () => {
       const component: ComponentDefinition = {
         name: 'statistic',
+        props: {},
       } as ComponentDefinition;
 
       const result = renderStatisticComponent(component, createMockTheme());

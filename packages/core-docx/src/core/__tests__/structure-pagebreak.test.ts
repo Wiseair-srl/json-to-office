@@ -6,9 +6,12 @@
 import { describe, it, expect } from 'vitest';
 import { extractSections } from '../structure';
 import { ComponentDefinition, RenderContext } from '../../types';
+import { createMockTheme } from '../../modules/__tests__/test-helpers';
 
 describe('Structure PageBreak', () => {
-  const context: RenderContext = {};
+  const context: RenderContext = {
+    fullTheme: createMockTheme(),
+  };
 
   describe('Titleless sections', () => {
     it('should preserve pageBreak flag for titleless sections', async () => {

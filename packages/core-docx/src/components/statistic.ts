@@ -6,7 +6,6 @@
 import { Paragraph } from 'docx';
 import { ComponentDefinition, isStatisticComponent } from '../types';
 import { ThemeConfig } from '../styles';
-import { resolveStatisticProps } from '../styles/utils/componentDefaults';
 import { createStatistic } from '../core/content';
 
 /**
@@ -14,12 +13,12 @@ import { createStatistic } from '../core/content';
  */
 export function renderStatisticComponent(
   component: ComponentDefinition,
-  theme: ThemeConfig
+  _theme: ThemeConfig
 ): Paragraph[] {
   if (!isStatisticComponent(component)) return [];
 
-  // Resolve configuration with theme defaults
-  const resolvedConfig = resolveStatisticProps(component.props, theme);
+  // Props are pre-resolved by resolveComponentTree
+  const resolvedConfig = component.props;
 
   return createStatistic(
     {

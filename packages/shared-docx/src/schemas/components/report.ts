@@ -3,6 +3,7 @@
  */
 
 import { Type, Static, TSchema } from '@sinclair/typebox';
+import { ComponentDefaultsSchema } from '../component-defaults';
 
 // Create a function to generate ReportPropsSchema with recursive component reference
 export const createReportPropsSchema = (_moduleRef?: TSchema) =>
@@ -15,6 +16,7 @@ export const createReportPropsSchema = (_moduleRef?: TSchema) =>
           default: 'minimal',
         })
       ),
+      componentDefaults: Type.Optional(ComponentDefaultsSchema),
       metadata: Type.Optional(
         Type.Object(
           {
