@@ -38,7 +38,7 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
-    "prepublishOnly": "cp ../../LICENSE ."
+    "prepublishOnly": "node -e \"require('fs').copyFileSync('../../LICENSE','LICENSE')\""
   },
   "dependencies": {
     "@json-to-office/shared": "workspace:^",

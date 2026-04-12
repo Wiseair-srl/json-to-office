@@ -78,6 +78,7 @@ export default defineConfig([
       options.platform = 'node';
       options.target = 'node18';
     },
-    onSuccess: 'cp -r src/server/prompts dist/prompts',
+    onSuccess:
+      "node -e \"const fs=require('fs');fs.cpSync('src/server/prompts','dist/prompts',{recursive:true,force:true})\"",
   },
 ]);
