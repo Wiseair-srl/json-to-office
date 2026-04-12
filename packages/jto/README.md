@@ -22,8 +22,8 @@ jto pptx dev
 ### `dev`: visual playground
 
 ```bash
-jto docx dev --input ./template.json
-jto pptx dev --input ./template.json
+jto docx dev
+jto pptx dev
 ```
 
 Opens a browser-based IDE at `localhost:3000` with:
@@ -41,8 +41,8 @@ Opens a browser-based IDE at `localhost:3000` with:
 ### `generate`: render files
 
 ```bash
-jto docx generate --input ./template.json --output ./report.docx
-jto pptx generate --input ./template.json --output ./deck.pptx
+jto docx generate ./template.json -o ./report.docx
+jto pptx generate ./template.json -o ./deck.pptx
 ```
 
 Reads a JSON document definition and writes a `.docx` or `.pptx` file. Works in CI/CD pipelines, cron jobs, and scripts.
