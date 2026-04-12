@@ -3,6 +3,23 @@ import { Value } from '@sinclair/typebox/value';
 import { Context, Env, ValidationTargets, MiddlewareHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 
+/**
+ * Auto-detect raw document JSON (has `name` + `children` but no `jsonDefinition`)
+ * and wrap it so callers can POST the document tree directly.
+ */
+function autoWrapDocumentBody(value: unknown): unknown {
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    'children' in value &&
+    !('jsonDefinition' in value)
+  ) {
+    return { jsonDefinition: value };
+  }
+  return value;
+}
+
 export function tbValidator<
   T extends TSchema,
   E extends Env = Env,
@@ -19,6 +36,8 @@ export function tbValidator<
       });
     }
 
+    value = autoWrapDocumentBody(value);
+
     const isValid = Value.Check(schema, value);
 
     if (isValid) {
@@ -33,7 +52,7 @@ export function tbValidator<
         value: error.value,
       }));
 
-      const errorMessages = errors.map((e) => e.message);
+      const errorMessages = errors.map((e) => `${e.path || '/'}: ${e.message}`);
 
       throw new HTTPException(400, {
         message:
