@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsup';
-import { readFileSync } from 'fs';
+import { cpSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 const packageJson = JSON.parse(
@@ -78,7 +78,11 @@ export default defineConfig([
       options.platform = 'node';
       options.target = 'node18';
     },
-    onSuccess:
-      "node -e \"const fs=require('fs');fs.cpSync('src/server/prompts','dist/prompts',{recursive:true,force:true})\"",
+    onSuccess: async () => {
+      cpSync(join('src', 'server', 'prompts'), join('dist', 'prompts'), {
+        recursive: true,
+        force: true,
+      });
+    },
   },
 ]);
