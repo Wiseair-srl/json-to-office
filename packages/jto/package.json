@@ -34,7 +34,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "cli": "tsx src/cli.ts",
-    "prepublishOnly": "node -e \"require('fs').copyFileSync('../../LICENSE','LICENSE')\""
+    "prepublishOnly": "node ../../scripts/copy-license.cjs"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.143",
