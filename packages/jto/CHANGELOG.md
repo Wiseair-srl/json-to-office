@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.8.2
+
+### Patch Changes
+
+- a5e4e91: Fix Windows build: replace shell-escaped inline Node scripts with cross-platform path.join
+
 ## 0.8.1
 
 ### Patch Changes
