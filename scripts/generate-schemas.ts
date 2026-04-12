@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -13,13 +13,15 @@ const SHARED_PPTX = path.join(ROOT, 'packages/shared-pptx/dist/index.js');
 async function main() {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
-  const { convertToJsonSchema, exportSchemaToFile } = await import(SHARED);
+  const { convertToJsonSchema, exportSchemaToFile } = await import(
+    pathToFileURL(SHARED).href
+  );
 
   // DOCX document schema
   const {
     generateUnifiedDocumentSchema: generateDocx,
     ThemeConfigSchema: DocxThemeSchema,
-  } = await import(SHARED_DOCX);
+  } = await import(pathToFileURL(SHARED_DOCX).href);
 
   const docxSchema = generateDocx({
     includeStandardComponents: true,
@@ -57,7 +59,7 @@ async function main() {
 
   // PPTX presentation schema
   const { generateUnifiedDocumentSchema: generatePptx } = await import(
-    SHARED_PPTX
+    pathToFileURL(SHARED_PPTX).href
   );
   const pptxSchema = generatePptx({ customComponents: [] });
   const pptxJson = convertToJsonSchema(pptxSchema, {
