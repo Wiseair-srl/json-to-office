@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.8.1
+
+### Patch Changes
+
+- 2224cfd: Auto-wrap raw document JSON body and include paths in validation errors; replace shell cp with cross-platform Node.js equivalents
+
 ## 0.8.0
 
 ### Patch Changes
