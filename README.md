@@ -371,12 +371,12 @@ await pptx(
 
 ```bash
 # Start the visual playground with live preview
-jto docx dev ./my-template.json
-jto pptx dev ./my-template.json
+jto docx dev
+jto pptx dev
 
 # Generate files directly
-jto docx generate --input ./my-template.json --output ./report.docx
-jto pptx generate --input ./my-template.json --output ./deck.pptx
+jto docx generate ./my-template.json -o ./report.docx
+jto pptx generate ./my-template.json -o ./deck.pptx
 ```
 
 ### Visual playground

@@ -14,11 +14,11 @@ More templates are available in the visual playground — run `jto pptx dev` or 
 ```bash
 # With the CLI
 npm install -g @json-to-office/jto
-jto docx generate --input ./invoice.docx.json --output ./invoice.docx
-jto pptx generate --input ./pitch-deck.pptx.json --output ./deck.pptx
+jto docx generate ./invoice.docx.json -o ./invoice.docx
+jto pptx generate ./pitch-deck.pptx.json -o ./deck.pptx
 
 # Or open in the visual playground
-jto docx dev --input ./invoice.docx.json
+jto docx dev
 ```
 
 ## Render programmatically
