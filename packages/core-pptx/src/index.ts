@@ -27,6 +27,7 @@ export type {
   PptxThemeConfig,
   PipelineWarning,
   SlideContext,
+  SlideRenderContext,
 } from './types';
 
 export { isPresentationComponent, isSlideComponent } from './types';
