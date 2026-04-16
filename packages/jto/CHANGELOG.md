@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.8.3
+
+### Patch Changes
+
+- 6e45a99: fix: sanitize theme key to prevent prototype pollution and guard against undefined themes
+
 ## 0.8.2
 
 ### Patch Changes
