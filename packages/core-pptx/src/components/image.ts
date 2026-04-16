@@ -23,13 +23,16 @@ function isPrivateUrl(urlStr: string): boolean {
       hostname.startsWith('169.254.') ||
       hostname.endsWith('.local') ||
       hostname.endsWith('.internal')
-    ) return true;
+    )
+      return true;
     if (hostname.startsWith('172.')) {
       const second = parseInt(hostname.split('.')[1], 10);
       if (second >= 16 && second <= 31) return true;
     }
     return false;
-  } catch { return true; }
+  } catch {
+    return true;
+  }
 }
 
 interface ImageComponentProps {
@@ -39,7 +42,7 @@ interface ImageComponentProps {
   y?: number | string;
   w?: number | string;
   h?: number | string;
-  sizing?: { type: string; w?: number; h?: number };
+  sizing?: { type: string; w?: number | string; h?: number | string };
   rotate?: number;
   rounding?: boolean;
   shadow?: {
@@ -68,7 +71,9 @@ async function probeImageSize(
       if (!base64Data) return undefined;
       const buf = Buffer.from(base64Data, 'base64');
       const result = probe.sync(buf);
-      return result ? { width: result.width, height: result.height } : undefined;
+      return result
+        ? { width: result.width, height: result.height }
+        : undefined;
     }
 
     if (/^https?:\/\//.test(imagePath)) {
@@ -84,27 +89,56 @@ async function probeImageSize(
     const result = await probe(createReadStream(resolved));
     return result ? { width: result.width, height: result.height } : undefined;
   } catch (err) {
-    warn(warnings, W.IMAGE_PROBE_FAILED, `Image probe failed: ${err instanceof Error ? err.message : String(err)}`, { component: 'image' });
+    warn(
+      warnings,
+      W.IMAGE_PROBE_FAILED,
+      `Image probe failed: ${err instanceof Error ? err.message : String(err)}`,
+      { component: 'image' }
+    );
     return undefined;
   }
+}
+
+/**
+ * Parse a dimension value. If it ends with '%', resolve it against the given
+ * slide axis length (in inches) and return inches. Otherwise parse as a plain
+ * number (already inches).
+ */
+function resolveDimension(value: number | string, axisLength: number): number {
+  if (typeof value === 'number') return value;
+  if (value.endsWith('%')) {
+    const pct = parseFloat(value);
+    return !Number.isNaN(pct) && pct >= 0 ? (pct / 100) * axisLength : 0;
+  }
+  const n = Number(value);
+  return Number.isNaN(n) ? 0 : n;
 }
 
 export async function renderImageComponent(
   slide: PptxGenJS.Slide,
   props: ImageComponentProps,
   theme: PptxThemeConfig,
-  warnings?: PipelineWarning[]
+  warnings?: PipelineWarning[],
+  slideWidth = 10,
+  slideHeight = 7.5
 ): Promise<void> {
   const opts: Record<string, unknown> = {};
 
   // Source
+  const source = props.path || props.base64;
+  if (!source) {
+    warn(
+      warnings,
+      W.IMAGE_NO_SOURCE,
+      'Image component missing both path and base64',
+      { component: 'image' }
+    );
+    return;
+  }
   if (props.path) {
     opts.path = props.path;
-  } else if (props.base64) {
-    opts.data = props.base64;
   } else {
-    warn(warnings, W.IMAGE_NO_SOURCE, 'Image component missing both path and base64', { component: 'image' });
-    return;
+    opts.data = props.base64;
   }
 
   // Position
@@ -113,19 +147,61 @@ export async function renderImageComponent(
   if (props.w !== undefined) opts.w = props.w;
   if (props.h !== undefined) opts.h = props.h;
 
+  // Probe intrinsic dimensions only when needed (auto-calc or contain/cover)
+  const hasW = props.w !== undefined;
+  const hasH = props.h !== undefined;
+  const needsProbe =
+    (hasW !== hasH && !props.sizing) ||
+    props.sizing?.type === 'contain' ||
+    props.sizing?.type === 'cover';
+  const intrinsic = needsProbe
+    ? await probeImageSize(source, warnings)
+    : undefined;
+
+  // Auto-calculate missing dimension from intrinsic aspect ratio
+  if (hasW !== hasH && !props.sizing) {
+    if (intrinsic && intrinsic.width > 0 && intrinsic.height > 0) {
+      const aspect = intrinsic.width / intrinsic.height;
+      if (hasW && !hasH) {
+        const wInches = resolveDimension(props.w!, slideWidth);
+        opts.w = wInches;
+        opts.h = wInches / aspect;
+      } else {
+        const hInches = resolveDimension(props.h!, slideHeight);
+        opts.h = hInches;
+        opts.w = hInches * aspect;
+      }
+    }
+  }
+
   // Sizing — pptxgenjs's contain implementation produces negative srcRect
   // values when the image aspect ratio differs from the box, causing
   // stretching. We handle contain ourselves: probe intrinsic dimensions,
   // calculate fitted size, and center within the box. Cover is delegated to
   // pptxgenjs with correct intrinsic dimensions.
-  if (props.sizing && (props.sizing.type === 'contain' || props.sizing.type === 'cover')) {
-    const source = props.path || props.base64;
-    const intrinsic = source ? await probeImageSize(source, warnings) : undefined;
+  if (
+    props.sizing &&
+    (props.sizing.type === 'contain' || props.sizing.type === 'cover')
+  ) {
+    const boxW = resolveDimension(props.sizing.w ?? props.w ?? 0, slideWidth);
+    const boxH = resolveDimension(props.sizing.h ?? props.h ?? 0, slideHeight);
 
-    const boxW = Number(props.sizing.w ?? props.w);
-    const boxH = Number(props.sizing.h ?? props.h);
+    if (boxW <= 0 || boxH <= 0) {
+      warn(
+        warnings,
+        W.IMAGE_ZERO_BOX,
+        `Image sizing box resolved to zero (${boxW}x${boxH})`,
+        { component: 'image' }
+      );
+    }
 
-    if (intrinsic && !isNaN(boxW) && !isNaN(boxH)) {
+    if (
+      intrinsic &&
+      intrinsic.width > 0 &&
+      intrinsic.height > 0 &&
+      boxW > 0 &&
+      boxH > 0
+    ) {
       const imgAspect = intrinsic.width / intrinsic.height;
 
       if (props.sizing.type === 'contain') {
@@ -142,8 +218,8 @@ export async function renderImageComponent(
           fitW = boxH * imgAspect;
         }
         // Center within the box
-        const baseX = Number(props.x ?? 0);
-        const baseY = Number(props.y ?? 0);
+        const baseX = resolveDimension(props.x ?? 0, slideWidth);
+        const baseY = resolveDimension(props.y ?? 0, slideHeight);
         opts.x = baseX + (boxW - fitW) / 2;
         opts.y = baseY + (boxH - fitH) / 2;
         opts.w = fitW;
@@ -162,8 +238,8 @@ export async function renderImageComponent(
   } else if (props.sizing) {
     opts.sizing = {
       ...props.sizing,
-      w: props.sizing.w ?? props.w,
-      h: props.sizing.h ?? props.h,
+      w: resolveDimension(props.sizing.w ?? props.w ?? 0, slideWidth),
+      h: resolveDimension(props.sizing.h ?? props.h ?? 0, slideHeight),
     };
   }
 

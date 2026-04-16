@@ -182,6 +182,13 @@ export interface SlideContext {
   pageNumberFormat: '9' | '09';
 }
 
+export interface SlideRenderContext {
+  slideCtx?: SlideContext;
+  services?: ServicesConfig;
+  slideWidth: number;
+  slideHeight: number;
+}
+
 export interface PipelineWarning {
   code: string; // WarningCode at call sites; string here to avoid circular import
   message: string;

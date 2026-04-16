@@ -7,9 +7,8 @@ import type {
   PptxThemeConfig,
   PptxComponentInput,
   PipelineWarning,
-  SlideContext,
+  SlideRenderContext,
 } from '../types';
-import type { ServicesConfig } from '@json-to-office/shared';
 import { warn, W } from '../utils/warn';
 import { renderTextComponent } from './text';
 import { renderImageComponent } from './image';
@@ -31,8 +30,7 @@ export async function renderComponent(
   theme: PptxThemeConfig,
   pptx: PptxGenJS,
   warnings?: PipelineWarning[],
-  slideCtx?: SlideContext,
-  services?: ServicesConfig
+  ctx?: SlideRenderContext
 ): Promise<void> {
   if (component.enabled === false) return;
 
@@ -41,10 +39,17 @@ export async function renderComponent(
 
   switch (name) {
     case 'text':
-      renderTextComponent(slide, p, theme, warnings, slideCtx);
+      renderTextComponent(slide, p, theme, warnings, ctx?.slideCtx);
       break;
     case 'image':
-      await renderImageComponent(slide, p, theme, warnings);
+      await renderImageComponent(
+        slide,
+        p,
+        theme,
+        warnings,
+        ctx?.slideWidth,
+        ctx?.slideHeight
+      );
       break;
     case 'shape':
       renderShapeComponent(slide, p, theme, pptx, warnings);
@@ -58,7 +63,7 @@ export async function renderComponent(
         p,
         theme,
         warnings,
-        services?.highcharts
+        ctx?.services?.highcharts
       );
       break;
     case 'chart':

@@ -15,9 +15,10 @@ export const W = {
   THEME_COLOR_FALLBACK: 'THEME_COLOR_FALLBACK',
   UNKNOWN_COLOR: 'UNKNOWN_COLOR',
   GRID_POSITION_CLAMPED: 'GRID_POSITION_CLAMPED',
+  IMAGE_ZERO_BOX: 'IMAGE_ZERO_BOX',
 } as const;
 
-export type WarningCode = typeof W[keyof typeof W];
+export type WarningCode = (typeof W)[keyof typeof W];
 
 export function warn(
   warnings: PipelineWarning[] | undefined,

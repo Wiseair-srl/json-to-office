@@ -8,6 +8,7 @@ import type {
   ProcessedPresentation,
   PipelineWarning,
   SlideContext,
+  SlideRenderContext,
 } from '../types';
 import { renderComponent } from '../components';
 import { resolveComponentGridPosition, mergeGridConfigs } from './grid';
@@ -73,6 +74,12 @@ export async function renderPresentation(
       totalSlides,
       pageNumberFormat: processed.pageNumberFormat,
     };
+    const renderCtx: SlideRenderContext = {
+      slideCtx,
+      services: processed.services,
+      slideWidth: processed.slideWidth,
+      slideHeight: processed.slideHeight,
+    };
     const slide = slideData.template
       ? pptx.addSlide({ masterName: slideData.template })
       : pptx.addSlide();
@@ -124,8 +131,7 @@ export async function renderPresentation(
           processed.theme,
           pptx,
           warnings,
-          slideCtx,
-          processed.services
+          renderCtx
         );
       }
     }
@@ -145,8 +151,7 @@ export async function renderPresentation(
         processed.theme,
         pptx,
         warnings,
-        slideCtx,
-        processed.services
+        renderCtx
       );
     }
 
@@ -199,8 +204,7 @@ export async function renderPresentation(
             processed.theme,
             pptx,
             warnings,
-            slideCtx,
-            processed.services
+            renderCtx
           );
         }
       } else {
@@ -230,8 +234,7 @@ export async function renderPresentation(
               processed.theme,
               pptx,
               warnings,
-              slideCtx,
-              processed.services
+              renderCtx
             );
           } else {
             warn(
