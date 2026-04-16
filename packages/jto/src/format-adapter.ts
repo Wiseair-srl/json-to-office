@@ -3,6 +3,11 @@ import * as fs from 'fs';
 
 import type { ServicesConfig } from '@json-to-office/shared';
 
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+function safeThemeKey(name: string | undefined): string {
+  return name && !UNSAFE_KEYS.has(name) ? name : 'custom';
+}
+
 export type FormatName = 'docx' | 'pptx';
 
 function buildServicesFromEnv(): ServicesConfig | undefined {
@@ -238,17 +243,21 @@ export class DocxFormatAdapter implements FormatAdapter {
     }
 
     if (typeof options.theme === 'object' && options.theme !== null) {
-      customThemes.custom = options.theme;
+      customThemes[safeThemeKey(options.theme.name)] = options.theme;
     }
 
     if (options.themePath) {
       try {
+        let theme: any;
         if (options.themePath.endsWith('.json')) {
-          customThemes.custom = await core.loadThemeFromFile(options.themePath);
+          theme = await core.loadThemeFromFile(options.themePath);
         } else {
           const themePath = path.resolve(process.cwd(), options.themePath);
           const themeModule = await import(themePath);
-          customThemes.custom = themeModule.default || themeModule.theme;
+          theme = themeModule.default || themeModule.theme;
+        }
+        if (theme) {
+          customThemes[safeThemeKey(theme.name)] = theme;
         }
       } catch (error: any) {
         console.warn(
@@ -496,21 +505,25 @@ export class PptxFormatAdapter implements FormatAdapter {
     }
 
     if (typeof options.theme === 'object' && options.theme !== null) {
-      customThemes.custom = options.theme;
+      customThemes[safeThemeKey(options.theme.name)] = options.theme;
     }
 
     if (options.themePath) {
       try {
+        let theme: any;
         if (options.themePath.endsWith('.json')) {
           const content = fs.readFileSync(
             path.resolve(process.cwd(), options.themePath),
             'utf-8'
           );
-          customThemes.custom = JSON.parse(content);
+          theme = JSON.parse(content);
         } else {
           const themePath = path.resolve(process.cwd(), options.themePath);
           const themeModule = await import(themePath);
-          customThemes.custom = themeModule.default || themeModule.theme;
+          theme = themeModule.default || themeModule.theme;
+        }
+        if (theme) {
+          customThemes[safeThemeKey(theme.name)] = theme;
         }
       } catch (error: any) {
         console.warn(
