@@ -1,5 +1,11 @@
 # @json-to-office/core-pptx
 
+## 0.8.4
+
+### Patch Changes
+
+- 5ff0526: Skip image probe when not needed (both w/h set, no contain/cover); guard NaN/negative dimension values; warn on zero-sized sizing box; consolidate slide render context into single param
+
 ## 0.8.0
 
 ### Minor Changes
