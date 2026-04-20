@@ -1,4 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  memo,
+} from 'react';
 import { InfoIcon } from 'lucide-react';
 import { PreviewFrameMemoized } from './preview-frame';
 import { PreviewHeaderMemoized } from './preview-header';
@@ -9,6 +16,7 @@ import { useOutputStore } from '../../store/output-store-provider';
 import { useSettingsStore } from '../../store/settings-store-provider';
 import { renderDocument } from '../../lib/render';
 import { useDocumentsStore } from '../../store/documents-store-provider';
+import { useThemesStore } from '../../store/themes-store-provider';
 import { CacheMetrics } from '../cache-metrics';
 import { FORMAT, FORMAT_LABEL } from '../../lib/env';
 
@@ -69,6 +77,7 @@ export function Preview() {
     name,
     text,
     blob,
+    fonts,
     isGenerating,
     generationProgress,
     globalError,
@@ -85,6 +94,18 @@ export function Preview() {
   } = useOutputStore((state) => state);
   const activeTab = useDocumentsStore((state) => state.activeTab);
   const documentTypes = useDocumentsStore((state) => state.documentTypes);
+  // Select the raw map (stable reference until themes mutate), then memoize
+  // the transform. A selector that returns a freshly-constructed object on
+  // every call would burn through Zustand's Object.is equality and retrigger
+  // renders indefinitely.
+  const customThemesMap = useThemesStore((state) => state.customThemes);
+  const themesForServer = useMemo(() => {
+    const out: Record<string, unknown> = {};
+    for (const ct of Object.values(customThemesMap)) {
+      if (ct.valid && ct.name && ct.parsed) out[ct.name] = ct.parsed;
+    }
+    return out;
+  }, [customThemesMap]);
 
   const [iframeSrc, setIframeSrc] = useState<string | undefined>(undefined);
   const [iframeSrcDoc, setIframeSrcDoc] = useState<string | undefined>(
@@ -105,7 +126,13 @@ export function Preview() {
 
   // Core render function
   const doRender = useCallback(
-    async (docName: string, docBlob: Blob) => {
+    async (
+      docName: string,
+      docBlob: Blob,
+      docText?: string,
+      themes?: Record<string, unknown>,
+      docFonts?: Parameters<typeof renderDocument>[6]
+    ) => {
       setOutput({
         isRendering: true,
         isPreviewStale: false,
@@ -116,7 +143,11 @@ export function Preview() {
         const { status, payload } = await renderDocument(
           docName,
           docBlob,
-          renderingLibrary
+          renderingLibrary,
+          undefined,
+          docText,
+          themes,
+          docFonts
         );
 
         if (status !== 'success') {
@@ -149,9 +180,9 @@ export function Preview() {
   );
 
   // Ref to always hold latest manual-render deps so the event listener never goes stale
-  const manualRenderRef = useRef({ name, blob, doRender });
+  const manualRenderRef = useRef({ name, blob, text, doRender });
   useEffect(() => {
-    manualRenderRef.current = { name, blob, doRender };
+    manualRenderRef.current = { name, blob, text, doRender };
   });
 
   const handleManualRender = useCallback(async () => {
@@ -166,14 +197,24 @@ export function Preview() {
   // Also render if a manual Run triggered the build (pendingManualRenderRef)
   useEffect(() => {
     if (blob && name && autoReload && renderingLibrary === 'docxjs') {
-      doRender(name, blob);
+      doRender(name, blob, text, themesForServer, fonts);
     } else if (blob && name && pendingManualRenderRef.current) {
       pendingManualRenderRef.current = false;
-      doRender(name, blob);
+      doRender(name, blob, text, themesForServer, fonts);
     } else if (blob && name) {
       setOutput({ isPreviewStale: true });
     }
-  }, [blob, name, autoReload, renderingLibrary, doRender, setOutput]);
+  }, [
+    blob,
+    name,
+    text,
+    fonts,
+    themesForServer,
+    autoReload,
+    renderingLibrary,
+    doRender,
+    setOutput,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {

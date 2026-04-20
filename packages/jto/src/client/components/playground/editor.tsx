@@ -218,6 +218,7 @@ function EditorComponent() {
               | undefined,
             cacheHitRate: (result as any).cacheHitRate as string | undefined,
             warnings: (result as any).warnings as any,
+            fonts: (result as any).fonts as any,
           });
           setBuildError(result.name as string, undefined);
         }
@@ -484,6 +485,7 @@ function EditorComponent() {
               | undefined,
             cacheHitRate: (result as any).cacheHitRate as string | undefined,
             warnings: (result as any).warnings as any,
+            fonts: (result as any).fonts as any,
           });
           setBuildError(result.name as string, undefined);
         }
