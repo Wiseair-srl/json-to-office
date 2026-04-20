@@ -268,6 +268,7 @@ await generator.generateToFile(
 ### Cross-format
 
 - **Theme system**: colors, fonts, spacing, component defaults. 3 built-in themes per format (minimal, corporate, vibrant/modern), or define your own.
+- **Font system**: curated Office-safe font list plus code-side `fonts.extraEntries` option for embedding Google Fonts and custom TTF/OTF across DOCX and PPTX. Themes name fonts; code registers them. See [docs/fonts.md](docs/fonts.md).
 - **Schema validation**: full TypeBox schemas that serve as TypeScript types _and_ runtime validators. Catch errors before rendering.
 - **Plugin architecture**: create versioned custom components with `createComponent()`. Full TypeScript support, chainable API, schema generation.
 - **Template / placeholder system** (PPTX): slide templates with named placeholder regions, static + dynamic content, style inheritance.
