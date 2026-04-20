@@ -8,10 +8,21 @@ export interface GenerationWarning {
   context?: Record<string, unknown>;
 }
 
+/** One embedded font variant returned from /generate so previews can render it. */
+export interface EmbeddedFontVariant {
+  family: string;
+  weight: number;
+  italic: boolean;
+  format: 'ttf' | 'otf' | 'woff' | 'woff2' | 'eot' | 'unknown';
+  /** Base64 of the font bytes — lean enough to keep in memory per preview. */
+  data: string;
+}
+
 export type OutputState = {
   name?: string; // last success => document name
   text?: string; // last success => code used to generate the document
   blob?: Blob; // last success => generated document
+  fonts?: EmbeddedFontVariant[]; // embedded fonts for browser-preview @font-face injection
   globalError?: string; // last failed => global error message
   isGenerating?: boolean; // document generation in progress
   generationProgress?: {

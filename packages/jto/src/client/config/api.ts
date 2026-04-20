@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   validate: `${FORMAT_API}/validate`,
   preview: {
     libreoffice: `${FORMAT_API}/preview/libreoffice`,
+    libreofficeFromJson: `${FORMAT_API}/preview/libreoffice-from-json`,
   },
   cacheStats: `${FORMAT_API}/cache-stats`,
 };

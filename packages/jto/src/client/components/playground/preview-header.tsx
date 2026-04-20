@@ -13,6 +13,7 @@ import {
   Eye,
   EyeOff,
   MoreHorizontal,
+  Type as TypeIcon,
 } from 'lucide-react';
 import { Spinner } from '../ui/spinner';
 import { Button } from '../ui/button';
@@ -74,6 +75,7 @@ function PreviewHeader({
   isRendering,
   onShowCacheMetrics,
   onShowSchemas,
+  onShowFonts,
   documentText,
   warnings,
   renderingLibrary,
@@ -94,6 +96,7 @@ function PreviewHeader({
   isRendering?: boolean;
   onShowCacheMetrics?: () => void;
   onShowSchemas?: () => void;
+  onShowFonts?: () => void;
   documentText?: string;
   warnings?: GenerationWarning[] | null;
   renderingLibrary?: RenderingLibrary;
@@ -537,6 +540,12 @@ function PreviewHeader({
                 <DropdownMenuItem onClick={onShowSchemas}>
                   <FileJson className="h-4 w-4 mr-2" />
                   View JSON Schemas
+                </DropdownMenuItem>
+              )}
+              {onShowFonts && (
+                <DropdownMenuItem onClick={onShowFonts}>
+                  <TypeIcon className="h-4 w-4 mr-2" />
+                  Browse fonts
                 </DropdownMenuItem>
               )}
               {onShowCacheMetrics && (

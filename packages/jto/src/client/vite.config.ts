@@ -12,6 +12,16 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, '.'),
       '/api/services': path.resolve(__dirname, './api/services'),
+      // Node-only font modules — stubbed in the browser bundle. FontRegistry
+      // only dynamic-imports these on the server side during generate.
+      '@json-to-office/shared/fonts/cache/disk-cache': path.resolve(
+        __dirname,
+        './stubs/font-node-stubs.ts'
+      ),
+      '@json-to-office/shared/fonts/sources/file-loader': path.resolve(
+        __dirname,
+        './stubs/font-node-stubs.ts'
+      ),
     },
   },
   optimizeDeps: {
