@@ -65,6 +65,39 @@ export {
   type ComponentValidationResult,
 } from './plugin';
 
+// Font catalog + registry schemas
+export {
+  SAFE_FONTS,
+  isSafeFont,
+  FontFamilyNameSchema,
+  FontSourceSchema,
+  FontRegistryEntrySchema,
+  FontRegistrySchema,
+  type SafeFontName,
+  type FontSource,
+  type FontRegistryEntry,
+  type FontRegistryDefinition,
+} from './schemas/font-catalog';
+
+// Font runtime (collect, validate, resolve)
+export {
+  collectFontNamesFromDocx,
+  collectFontNamesFromPptx,
+  validateFontReferences,
+  FontRegistry,
+  detectFontFormat,
+  fetchGoogleFontSources,
+  POPULAR_GOOGLE_FONTS,
+  type ResolvedFont,
+  type ResolvedFontSource,
+  type FontRuntimeOpts,
+  type FontResolutionIssue,
+  type FontValidationResult,
+  type FontValidationInput,
+  type FontRegistryInput,
+  type PopularGoogleFont,
+} from './fonts';
+
 // Deep merge utilities
 export { mergeWithDefaults } from './utils/deepMerge';
 

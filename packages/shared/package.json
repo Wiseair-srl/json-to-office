@@ -36,6 +36,11 @@
       "import": "./dist/plugin/index.js",
       "default": "./dist/plugin/index.js"
     },
+    "./fonts/node": {
+      "types": "./dist/fonts/node.d.ts",
+      "import": "./dist/fonts/node.js",
+      "default": "./dist/fonts/node.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "import": "./dist/*.js",

@@ -3,6 +3,7 @@
  * Simplified theme configuration for presentations
  */
 import { Type, Static } from '@sinclair/typebox';
+import { FontFamilyNameSchema } from '@json-to-office/shared';
 import { PptxComponentDefaultsSchema } from './component-defaults';
 
 export const GridMarginSchema = Type.Union(
@@ -82,7 +83,7 @@ export const StyleNameSchema = Type.Union(
 
 export const TextStyleSchema = Type.Object({
   fontSize: Type.Optional(Type.Number()),
-  fontFace: Type.Optional(Type.String()),
+  fontFace: Type.Optional(FontFamilyNameSchema),
   fontColor: Type.Optional(ColorValueSchema),
   bold: Type.Optional(Type.Boolean()),
   italic: Type.Optional(Type.Boolean()),
@@ -119,8 +120,8 @@ export const ThemeConfigSchema = Type.Object(
     ),
     fonts: Type.Object(
       {
-        heading: Type.String({ description: 'Heading font family' }),
-        body: Type.String({ description: 'Body font family' }),
+        heading: FontFamilyNameSchema,
+        body: FontFamilyNameSchema,
       },
       { additionalProperties: false, description: 'Font families' }
     ),
