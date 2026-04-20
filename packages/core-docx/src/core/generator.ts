@@ -12,10 +12,11 @@ import {
   isReportComponent,
 } from '../types';
 import { getThemeWithFallback, ThemeConfig } from '../styles';
-import type { ServicesConfig } from '@json-to-office/shared';
+import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { processDocument } from './structure';
 import { applyLayout } from './layout';
 import { renderDocument } from './render';
+import { resolveDocumentFonts } from './fontResolution';
 
 // JSON support imports
 import { DocumentValidationResult } from '@json-to-office/shared-docx';
@@ -32,7 +33,10 @@ export interface JsonGenerationOptions {
   };
   customThemes?: { [key: string]: ThemeConfig };
   services?: ServicesConfig;
+  fonts?: FontRuntimeOpts;
 }
+
+// Font resolution shared with the plugin path — see ./fontResolution.ts
 
 /**
  * Type guard to check if input is a report component definition
@@ -105,7 +109,8 @@ export async function generateFromConfig(
 async function generateDocumentWithCustomThemes(
   document: ReportComponentDefinition,
   customThemes?: { [key: string]: ThemeConfig },
-  services?: ServicesConfig
+  services?: ServicesConfig,
+  fonts?: FontRuntimeOpts
 ): Promise<Document> {
   // Get theme configuration with custom theme support (theme is always a string name)
   const themeName = document.props.theme || 'minimal';
@@ -132,12 +137,17 @@ async function generateDocumentWithCustomThemes(
     theme = getThemeWithFallback(themeName);
   }
 
+  // Resolve fonts. Registry entries come from fonts.extraEntries (code-side
+  // registration); themes only name fonts.
+  const resolvedFonts = await resolveDocumentFonts(document, theme, fonts);
+
   // Pipeline: Structure -> Layout -> Render (with caching)
   const structure = await processDocument(document, theme, themeName);
   const layout = applyLayout(structure.sections, theme, themeName);
   const renderedDocument = await renderDocument(structure, layout, {
     bypassCache: false,
     services,
+    resolvedFonts,
   });
 
   return renderedDocument;
@@ -168,11 +178,15 @@ export async function generateDocumentFromJson(
   // Normalize JSON components (handle shorthand notations and nested structures)
   // The normalizer preserves all validated properties from TypeBox
   const [reportComponent] = normalizeDocument(componentToConvert);
-  // Generate document using custom theme-aware pipeline
+
+  // Generate document using custom theme-aware pipeline.
+  // Font registry lives on the theme, so resolution happens inside the
+  // pipeline (after theme selection).
   return await generateDocumentWithCustomThemes(
     reportComponent,
     options?.customThemes,
-    options?.services
+    options?.services,
+    options?.fonts
   );
 }
 

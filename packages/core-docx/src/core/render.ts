@@ -57,7 +57,7 @@ import {
   initializeComponentCache,
 } from './cached-render';
 import { MemoryCache } from '../cache';
-import type { ServicesConfig } from '@json-to-office/shared';
+import type { ServicesConfig, ResolvedFont } from '@json-to-office/shared';
 import {
   renderHeadingComponent,
   renderParagraphComponent,
@@ -102,6 +102,7 @@ export async function renderDocument(
     cache?: MemoryCache;
     bypassCache?: boolean;
     services?: ServicesConfig;
+    resolvedFonts?: ResolvedFont[];
   }
 ): Promise<Document> {
   // Initialize component cache if provided
@@ -233,12 +234,25 @@ export async function renderDocument(
   // Get all numbering configurations from the registry (already imported above)
   const numberingConfigs = globalNumberingRegistry.getAll();
 
+  // Build the docx FontOptions array from resolved fonts. Embedding makes the
+  // .docx self-contained: Word will render the correct typeface on any machine
+  // even if the font isn't installed.
+  const embeddableFonts = (options?.resolvedFonts ?? []).flatMap((r) =>
+    r.willEmbed
+      ? r.sources.map((s) => ({
+          name: r.family,
+          data: s.data,
+        }))
+      : []
+  );
+
   return new Document({
     styles: createWordStyles(structure.theme),
     sections,
     features: {
       updateFields: true, // Required for TOC fields to update correctly
     },
+    ...(embeddableFonts.length > 0 && { fonts: embeddableFonts }),
     // Add numbering configurations if any lists were rendered
     ...(numberingConfigs.length > 0 && {
       numbering: {

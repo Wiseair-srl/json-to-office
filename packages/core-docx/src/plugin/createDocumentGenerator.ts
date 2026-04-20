@@ -4,7 +4,8 @@ import type { CustomComponent } from './createComponent';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
 import { type ThemeConfig, getThemeWithFallback } from '../styles';
 import type { GenerationWarning } from '@json-to-office/shared-docx';
-import type { ServicesConfig } from '@json-to-office/shared';
+import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
+import { resolveDocumentFonts } from '../core/fontResolution';
 import type {
   ExtendedReportComponent,
   DocumentGeneratorBuilder,
@@ -40,6 +41,8 @@ export interface DocumentGeneratorOptions {
   debug?: boolean;
   /** External service configuration (e.g. Highcharts export server) */
   services?: ServicesConfig;
+  /** Font resolution options — extraEntries, Google Fonts config, onResolved hook. */
+  fonts?: FontRuntimeOpts;
 }
 
 /**
@@ -53,6 +56,7 @@ interface BuilderState {
   debug: boolean;
   enableCache: boolean;
   services?: ServicesConfig;
+  fonts?: FontRuntimeOpts;
 }
 
 /**
@@ -261,6 +265,7 @@ function createBuilderImpl<
       debug: state.debug,
       enableCache: state.enableCache,
       services: state.services,
+      fonts: state.fonts,
     };
 
     // Return NEW builder with expanded type
@@ -309,6 +314,13 @@ function createBuilderImpl<
       // We bypass JSON validation since we've already validated with custom schemas
       const [finalReportComponent] = normalizeDocument(processedDocument);
 
+      // Resolve fonts (reads document + resolved theme, fires onResolved).
+      const resolvedFonts = await resolveDocumentFonts(
+        finalReportComponent,
+        docTheme,
+        state.fonts
+      );
+
       // Use the document generation pipeline directly
       const structure = await processDocument(
         finalReportComponent,
@@ -318,6 +330,7 @@ function createBuilderImpl<
       const layout = applyLayout(structure.sections, docTheme, themeName);
       const generatedDocument = await renderDocument(structure, layout, {
         services: state.services,
+        resolvedFonts,
       });
 
       return {
@@ -504,6 +517,7 @@ export function createDocumentGenerator(
     debug: options.debug ?? false,
     enableCache: options.enableCache ?? false,
     services: options.services,
+    fonts: options.fonts,
   };
 
   return createBuilderImpl<readonly []>(initialState);
