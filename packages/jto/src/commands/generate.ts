@@ -11,6 +11,8 @@ import { GeneratorFactory } from '../services/generator-factory.js';
 import { PluginConfigService } from '../config/plugin-config.js';
 import { loadPlugins } from './shared.js';
 import { shortPath, formatTiming, formatError, EXIT_CODES } from './ui.js';
+import { parseFontFlag, parseFontsDir } from './font-flags.js';
+import type { FontRegistryEntry } from '@json-to-office/shared';
 
 interface GenerateOptions {
   output?: string;
@@ -21,6 +23,11 @@ interface GenerateOptions {
   themePath?: string;
   strict?: boolean;
   dryRun?: boolean;
+  strictFonts?: boolean;
+  noGoogleFonts?: boolean;
+  fontCacheDir?: string;
+  font?: string[];
+  fontsDir?: string;
 }
 
 export function createGenerateCommand(adapter: FormatAdapter): Command {
@@ -40,6 +47,28 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
       'Path to theme file (alternative to --theme)'
     )
     .option('--strict', 'Enable strict validation')
+    .option(
+      '--strict-fonts',
+      'Fail generation on unresolved fontRegistry references'
+    )
+    .option(
+      '--no-google-fonts',
+      'Disable Google Fonts HTTP fetching (offline/CI builds)'
+    )
+    .option(
+      '--font-cache-dir <path>',
+      'Directory to cache fetched Google Fonts TTFs'
+    )
+    .option(
+      '--font <name=path>',
+      'Register a font file (repeatable): <family>=<path to .ttf/.otf>',
+      (value: string, previous: string[] = []) => [...previous, value],
+      [] as string[]
+    )
+    .option(
+      '--fonts-dir <path>',
+      'Scan directory for .ttf/.otf files and auto-register by filename'
+    )
     .option('--dry-run', 'Preview without writing files')
     .action(async (input: string, options: GenerateOptions) => {
       const spinner = ora('Initializing...').start();
@@ -116,11 +145,32 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
           return;
         }
 
+        // Build font registry entries from CLI flags. --font is repeatable;
+        // --fonts-dir scans a directory and coalesces sibling files into a
+        // single entry per family.
+        const extraEntries: FontRegistryEntry[] = [];
+        for (const spec of options.font ?? []) {
+          extraEntries.push(parseFontFlag(spec));
+        }
+        if (options.fontsDir) {
+          extraEntries.push(...parseFontsDir(options.fontsDir));
+        }
+
         spinner.text = `Generating ${adapter.label}...`;
         const buffer = await factory.generate(documentDefinition, {
           theme: mergedConfig.theme,
           themePath: mergedConfig.themePath,
           validation: mergedConfig.validation,
+          fonts: {
+            strict: options.strictFonts,
+            ...(extraEntries.length > 0 && { extraEntries }),
+            googleFonts: {
+              ...(options.noGoogleFonts === true && { enabled: false }),
+              ...(options.fontCacheDir && {
+                cacheDir: resolve(process.cwd(), options.fontCacheDir),
+              }),
+            },
+          },
         });
 
         spinner.text = 'Writing output file...';
@@ -173,6 +223,11 @@ ${chalk.gray('Examples:')}
   $ jto ${adapter.name} generate doc.json --theme minimal           ${chalk.dim('# Use built-in theme')}
   $ jto ${adapter.name} generate doc.json --theme-path ./theme.json ${chalk.dim('# Use custom theme')}
   $ jto ${adapter.name} generate doc.json --dry-run                 ${chalk.dim('# Preview without writing')}
+  $ jto ${adapter.name} generate doc.json --strict-fonts            ${chalk.dim('# Fail on unresolved fonts')}
+  $ jto ${adapter.name} generate doc.json --font-cache-dir .fontcache ${chalk.dim('# Cache Google Fonts TTFs')}
+  $ jto ${adapter.name} generate doc.json --no-google-fonts         ${chalk.dim('# Offline build, skip network fetches')}
+  $ jto ${adapter.name} generate doc.json --font Inter=./fonts/Inter-Regular.ttf ${chalk.dim('# Register one TTF')}
+  $ jto ${adapter.name} generate doc.json --fonts-dir ./fonts       ${chalk.dim('# Auto-register every .ttf/.otf in ./fonts')}
 `
     );
 }
