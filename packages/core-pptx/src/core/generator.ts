@@ -12,9 +12,12 @@ import type {
   PipelineWarning,
 } from '../types';
 import { isPresentationComponent } from '../types';
-import type { ServicesConfig } from '@json-to-office/shared';
+import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { processPresentation } from './structure';
 import { renderPresentation } from './render';
+import { getPptxTheme } from '../themes/defaults';
+import { embedFontsInPptx } from '../utils/fontEmbedding';
+import { resolveDocumentFonts } from './fontResolution';
 
 /**
  * Options for the generation pipeline
@@ -22,7 +25,10 @@ import { renderPresentation } from './render';
 export interface GenerationOptions {
   customThemes?: Record<string, PptxThemeConfig>;
   services?: ServicesConfig;
+  fonts?: FontRuntimeOpts;
 }
+
+// Font resolution shared with the plugin path — see ./fontResolution.ts
 
 /**
  * Result from generateBufferWithWarnings
@@ -90,9 +96,19 @@ export async function generateBufferWithWarnings(
   }
 
   const warnings: PipelineWarning[] = [];
+  const themeName = component.props?.theme ?? 'default';
+  const resolvedTheme =
+    options?.customThemes?.[themeName] ?? getPptxTheme(themeName);
+  const resolvedFonts = await resolveDocumentFonts(
+    component,
+    resolvedTheme,
+    warnings,
+    options?.fonts
+  );
   const pptx = await generatePresentation(component, options, warnings);
   const data = await pptx.write({ outputType: 'nodebuffer' });
-  const buffer = await neutralizeTableStyle(data as Buffer);
+  let buffer = await neutralizeTableStyle(data as Buffer);
+  buffer = await embedFontsInPptx(buffer, resolvedFonts, warnings);
   return { buffer, warnings };
 }
 
