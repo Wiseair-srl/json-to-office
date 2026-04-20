@@ -2,7 +2,9 @@ import { execFile } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import type { ResolvedFont } from '@json-to-office/shared';
 import { config } from '../config/index.js';
+import { getFontStager } from './font-staging/index.js';
 
 const DEFAULT_CONVERSION_TIMEOUT_MS = 30000;
 const BINARY_PROBE_TIMEOUT_MS = 5000;
@@ -16,7 +18,8 @@ type ExecError = NodeJS.ErrnoException & {
 function executeFile(
   binary: string,
   args: string[],
-  timeoutMs: number
+  timeoutMs: number,
+  envOverrides?: Record<string, string>
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     execFile(
@@ -26,6 +29,7 @@ function executeFile(
         timeout: timeoutMs,
         maxBuffer: MAX_EXEC_BUFFER_BYTES,
         windowsHide: true,
+        env: envOverrides ? { ...process.env, ...envOverrides } : process.env,
       },
       (error, stdout, stderr) => {
         if (error) {
@@ -127,7 +131,8 @@ export class LibreOfficeConverterService {
 
   async convertToPdf(
     input: Buffer,
-    originalName: string = 'document'
+    originalName: string = 'document',
+    resolvedFonts?: ResolvedFont[]
   ): Promise<Buffer> {
     if (!input || input.length === 0) {
       throw new LibreOfficeConversionError('Input file is empty');
@@ -142,12 +147,29 @@ export class LibreOfficeConverterService {
     const inputPath = path.join(tempDir, `${outputBaseName}${ext}`);
     const pdfPath = path.join(tempDir, `${outputBaseName}.pdf`);
 
+    // Stage fonts before spawning soffice so the child process picks them up
+    // at startup. Handle is closed in the finally block regardless of outcome.
+    const stager = getFontStager();
+    const fontsToStage = (resolvedFonts ?? []).filter(
+      (r) => r.willEmbed && r.sources.length > 0
+    );
+    const stageHandle =
+      fontsToStage.length > 0
+        ? await stager.stage(fontsToStage, tempDir)
+        : null;
+
     try {
       await fs.writeFile(inputPath, input);
 
       const filterName =
         this.format === 'pptx' ? 'impress_pdf_Export' : 'writer_pdf_Export';
-      await this.runConversion(binaryPath, inputPath, tempDir, filterName);
+      await this.runConversion(
+        binaryPath,
+        inputPath,
+        tempDir,
+        filterName,
+        stageHandle?.envOverrides
+      );
 
       try {
         return await fs.readFile(pdfPath);
@@ -158,6 +180,9 @@ export class LibreOfficeConverterService {
         throw error;
       }
     } finally {
+      if (stageHandle) {
+        await stageHandle.cleanup().catch(() => {});
+      }
       await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }
   }
@@ -207,7 +232,8 @@ export class LibreOfficeConverterService {
     binaryPath: string,
     inputPath: string,
     outputDir: string,
-    filterName: string
+    filterName: string,
+    envOverrides?: Record<string, string>
   ): Promise<void> {
     const userProfilePath = path
       .join(outputDir, 'user-profile')
@@ -227,7 +253,7 @@ export class LibreOfficeConverterService {
     ];
 
     try {
-      await executeFile(binaryPath, args, this.timeoutMs);
+      await executeFile(binaryPath, args, this.timeoutMs, envOverrides);
     } catch (error) {
       const execError = error as ExecError;
       if (execError.code === 'ETIMEDOUT')
