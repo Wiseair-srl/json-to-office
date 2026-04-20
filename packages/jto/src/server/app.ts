@@ -12,6 +12,7 @@ import { healthRouter } from './routes/health.js';
 import { createFormatRouter } from './routes/format.js';
 import { discoveryRouter } from './routes/discovery.js';
 import { createAiRouter } from './routes/ai.js';
+import { fontsRouter } from './routes/fonts.js';
 
 import { requestIdMiddleware } from './middleware/hono/request-id.js';
 import { apiKeyAuthMiddleware } from './middleware/hono/auth.js';
@@ -73,6 +74,9 @@ export function createAPIApp(adapter: FormatAdapter) {
 
   // Discovery routes
   honoApp.route('/api/discovery', discoveryRouter);
+
+  // Font catalog + Google Fonts materialization
+  honoApp.route('/api/fonts', fontsRouter);
 
   // AI chat routes (disabled via AI_ENABLED=false)
   if (process.env.AI_ENABLED !== 'false') {

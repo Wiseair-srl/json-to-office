@@ -46,11 +46,19 @@ export function createFormatRouter(adapter: FormatAdapter) {
     tbValidator(LooseDocumentGenerationRequestSchema),
     async (c) => {
       const generatorService = getContainer().get('generatorService');
-      const { jsonDefinition, customThemes, options } = getValidated<{
-        jsonDefinition: any;
-        customThemes?: Record<string, any>;
-        options?: { bypassCache?: boolean; returnUrl?: boolean };
-      }>(c, 'json');
+      const { jsonDefinition, customThemes, userFonts, options } =
+        getValidated<{
+          jsonDefinition: any;
+          customThemes?: Record<string, any>;
+          userFonts?: Array<{
+            family: string;
+            weight: number;
+            italic: boolean;
+            format: 'ttf' | 'otf';
+            data: string;
+          }>;
+          options?: { bypassCache?: boolean; returnUrl?: boolean };
+        }>(c, 'json');
       const requestId = c.get('requestId');
 
       try {
@@ -62,6 +70,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
         const result = await generatorService.generate({
           jsonDefinition,
           customThemes,
+          userFonts,
           options: { ...options, bypassCache },
         });
 
@@ -73,6 +82,22 @@ export function createFormatRouter(adapter: FormatAdapter) {
             ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
             : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
+        // Flatten resolved fonts into base64 variants so the browser preview
+        // can inject matching @font-face rules. Safe/system fonts (willEmbed:
+        // false) are skipped — the browser already has them. Only emit when
+        // there's something to embed to keep the response lean.
+        const fontsPayload = (result.resolvedFonts ?? [])
+          .filter((r) => r.willEmbed && r.sources.length > 0)
+          .flatMap((r) =>
+            r.sources.map((s) => ({
+              family: r.family,
+              weight: s.weight,
+              italic: s.italic,
+              format: s.format,
+              data: s.data.toString('base64'),
+            }))
+          );
+
         return c.json({
           success: true,
           data: {
@@ -80,6 +105,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
             filename: result.filename,
             fileId: result.fileId || null,
             contentType,
+            ...(fontsPayload.length > 0 && { fonts: fontsPayload }),
           },
           cache: {
             status: result.cached ? 'HIT' : 'MISS',
@@ -188,6 +214,88 @@ export function createFormatRouter(adapter: FormatAdapter) {
         return c.body(pdfBuffer);
       } catch (error) {
         logger.error('LibreOffice preview conversion failed', {
+          error,
+          requestId,
+        });
+        if (error instanceof HTTPException) throw error;
+        if (error instanceof LibreOfficeBinaryNotFoundError) {
+          throw new HTTPException(503, {
+            message:
+              'LibreOffice is not available. Install LibreOffice or set LIBREOFFICE_PATH.',
+          });
+        }
+        if (
+          error instanceof LibreOfficeTimeoutError ||
+          error instanceof LibreOfficeConversionError ||
+          error instanceof LibreOfficeOutputNotFoundError
+        ) {
+          throw new HTTPException(500, {
+            message: 'LibreOffice preview conversion failed.',
+          });
+        }
+        throw new HTTPException(500, {
+          message: 'Internal server error during preview conversion',
+        });
+      }
+    }
+  );
+
+  // POST /preview/libreoffice-from-json
+  //
+  // Generate the document server-side and convert to PDF in one step so
+  // resolved fonts flow straight into the LibreOffice font-staging pipeline.
+  // The client sends the JSON doc instead of re-uploading the generated file.
+  router.post(
+    '/preview/libreoffice-from-json',
+    rateLimiter({
+      limit: process.env.NODE_ENV === 'production' ? 20 : 1000,
+      window: 15 * 60 * 1000,
+      keyGenerator: (c) =>
+        c.req.header('X-Real-IP') ||
+        c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
+        'anonymous',
+    }),
+    contentTypeMw,
+    tbValidator(LooseDocumentGenerationRequestSchema),
+    async (c) => {
+      const requestId = c.get('requestId');
+      const generatorService = getContainer().get('generatorService');
+      const libreOfficeService = getContainer().get(
+        'libreOfficeConverterService'
+      );
+      const { jsonDefinition, customThemes, userFonts } = getValidated<{
+        jsonDefinition: any;
+        customThemes?: Record<string, any>;
+        userFonts?: Array<{
+          family: string;
+          weight: number;
+          italic: boolean;
+          format: 'ttf' | 'otf';
+          data: string;
+        }>;
+      }>(c, 'json');
+
+      try {
+        const generated = await generatorService.generate({
+          jsonDefinition,
+          customThemes,
+          userFonts,
+          options: { bypassCache: true },
+        });
+
+        const pdfBuffer = await libreOfficeService.convertToPdf(
+          generated.buffer,
+          generated.filename,
+          generated.resolvedFonts
+        );
+
+        const pdfName = generated.filename.replace(/\.[^.]+$/i, '') + '.pdf';
+        c.header('Content-Type', 'application/pdf');
+        c.header('Content-Disposition', `inline; filename="${pdfName}"`);
+        c.header('Content-Length', String(pdfBuffer.length));
+        return c.body(pdfBuffer);
+      } catch (error) {
+        logger.error('LibreOffice (JSON) preview failed', {
           error,
           requestId,
         });
