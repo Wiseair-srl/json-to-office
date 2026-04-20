@@ -3,6 +3,8 @@ import { useOutputStore } from '../../store/output-store-provider';
 import { useSettingsStore } from '../../store/settings-store-provider';
 import { PreviewHeaderMemoized } from './preview-header';
 import { SchemaDialog } from './schema-dialog';
+import { FontPickerDialog } from './font-picker-dialog';
+import { useFontPickerStore } from '../../store/font-picker-store';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useChatStore } from '../../store/chat-store-provider';
 
@@ -42,6 +44,9 @@ export function GlobalPreviewHeader({
   const toggleChat = __AI_ENABLED__ ? useChatStore((s) => s.toggleChat) : noop;
 
   const [schemaOpen, setSchemaOpen] = React.useState(false);
+  // Font picker open state now lives in the shared store so Monaco CodeLens
+  // can open it in contextual mode from anywhere in the app.
+  const openFontPicker = useFontPickerStore((s) => s.openFor);
 
   if (!useGlobalPreviewHeader) return null;
 
@@ -80,6 +85,7 @@ export function GlobalPreviewHeader({
         isRendering={Boolean(isRendering)}
         onShowCacheMetrics={onShowCacheMetrics}
         onShowSchemas={() => setSchemaOpen(true)}
+        onShowFonts={() => openFontPicker()}
         documentText={text}
         warnings={warnings}
         renderingLibrary={renderingLibrary}
@@ -96,6 +102,7 @@ export function GlobalPreviewHeader({
         onOpenChange={setSchemaOpen}
         defaultTab={activeDocumentType === 'theme' ? 'theme' : 'document'}
       />
+      <FontPickerDialog />
     </div>
   );
 }
