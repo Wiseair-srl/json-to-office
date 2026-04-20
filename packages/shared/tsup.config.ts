@@ -9,6 +9,7 @@ export default defineConfig({
     'src/types/warnings.ts',
     'src/cache/index.ts',
     'src/plugin/index.ts',
+    'src/fonts/node.ts',
   ],
   format: ['esm'],
   dts: {

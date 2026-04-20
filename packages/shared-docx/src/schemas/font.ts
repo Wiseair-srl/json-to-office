@@ -4,6 +4,7 @@
  */
 
 import { Type } from '@sinclair/typebox';
+import { FontFamilyNameSchema } from '@json-to-office/shared';
 
 // ----------------------------------------------------------------------------
 // Shared Color Schema
@@ -74,7 +75,7 @@ export const TextFormattingPropertiesSchema = Type.Object(
  */
 export const FontDefinitionSchema = Type.Object(
   {
-    family: Type.String(),
+    family: FontFamilyNameSchema,
     ...TextFormattingPropertiesSchema.properties,
   },
   {

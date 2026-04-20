@@ -3,6 +3,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { FontFamilyNameSchema } from '@json-to-office/shared';
 import { PptxAlignmentSchema, VerticalAlignmentSchema, ShadowSchema, GridPositionSchema } from './common';
 import { StyleNameSchema } from '../theme';
 
@@ -36,7 +37,7 @@ export const TextPropsSchema = Type.Object(
     fontSize: Type.Optional(
       Type.Number({ minimum: 1, description: 'Font size in points' })
     ),
-    fontFace: Type.Optional(Type.String({ description: 'Font family name' })),
+    fontFace: Type.Optional(FontFamilyNameSchema),
     color: Type.Optional(
       Type.String({ description: 'Text color (hex without #, e.g., "FF0000")' })
     ),
