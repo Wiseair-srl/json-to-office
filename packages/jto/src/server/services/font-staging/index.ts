@@ -11,31 +11,34 @@ import { MacOSCoreTextStager } from './macos-stager';
 
 export type { FontStager, FontStageHandle } from './types';
 
-let cached: FontStager | null = null;
+const cached = new Map<NodeJS.Platform, FontStager>();
 
 export function getFontStager(
   platform: NodeJS.Platform = process.platform
 ): FontStager {
-  if (cached) return cached;
+  const hit = cached.get(platform);
+  if (hit) return hit;
+  let stager: FontStager;
   switch (platform) {
     case 'win32':
-      cached = new WindowsFontStager();
+      stager = new WindowsFontStager();
       break;
     case 'darwin':
       // LibreOffice-for-macOS uses Core Text for font enumeration and does
       // not honor FONTCONFIG_FILE reliably. Register fonts at the Core Text
       // session scope so the soffice child inherits them.
-      cached = new MacOSCoreTextStager();
+      stager = new MacOSCoreTextStager();
       break;
     case 'linux':
     case 'freebsd':
     case 'openbsd':
-      cached = new FontconfigStager();
+      stager = new FontconfigStager();
       break;
     default:
-      cached = new NoopFontStager();
+      stager = new NoopFontStager();
   }
-  return cached;
+  cached.set(platform, stager);
+  return stager;
 }
 
 export {

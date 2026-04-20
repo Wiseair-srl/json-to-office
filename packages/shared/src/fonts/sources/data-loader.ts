@@ -32,10 +32,19 @@ export function loadDataFontSource(input: DataSourceInput): ResolvedFontSource {
   }
   const data = Buffer.from(b64, 'base64');
   if (data.length === 0) throw new Error('Decoded font buffer is empty');
+  // Base64 decoding silently discards invalid characters, so garbage input
+  // yields a non-empty buffer that isn't a real font. Magic-byte check
+  // rejects the garbage before it reaches docx/pptx embedding.
+  const format = detectFontFormat(data);
+  if (format === 'unknown') {
+    throw new Error(
+      'Decoded font buffer is not a recognized format (expected ttf/otf/woff/woff2/eot)'
+    );
+  }
   return {
     data,
     weight: input.weight ?? 400,
     italic: input.italic ?? false,
-    format: detectFontFormat(data),
+    format,
   };
 }

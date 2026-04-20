@@ -20,6 +20,7 @@ import { resolveDocumentFonts } from './fontResolution';
 
 // JSON support imports
 import { DocumentValidationResult } from '@json-to-office/shared-docx';
+import type { GenerationWarning } from '@json-to-office/shared';
 import { parseJsonComponent, validateJsonComponent } from '../json/parser';
 import { normalizeDocument } from '../json/normalizer';
 import { loadJsonDefinition } from '../json/filesystem';
@@ -34,6 +35,12 @@ export interface JsonGenerationOptions {
   customThemes?: { [key: string]: ThemeConfig };
   services?: ServicesConfig;
   fonts?: FontRuntimeOpts;
+  /**
+   * Optional collector for structured warnings (font resolution, etc.).
+   * When provided, mirrors the plugin path's warning semantics; when absent,
+   * warnings fall back to `console.warn` as before.
+   */
+  warnings?: GenerationWarning[];
 }
 
 // Font resolution shared with the plugin path — see ./fontResolution.ts
@@ -110,7 +117,8 @@ async function generateDocumentWithCustomThemes(
   document: ReportComponentDefinition,
   customThemes?: { [key: string]: ThemeConfig },
   services?: ServicesConfig,
-  fonts?: FontRuntimeOpts
+  fonts?: FontRuntimeOpts,
+  warnings?: GenerationWarning[]
 ): Promise<Document> {
   // Get theme configuration with custom theme support (theme is always a string name)
   const themeName = document.props.theme || 'minimal';
@@ -138,8 +146,14 @@ async function generateDocumentWithCustomThemes(
   }
 
   // Resolve fonts. Registry entries come from fonts.extraEntries (code-side
-  // registration); themes only name fonts.
-  const resolvedFonts = await resolveDocumentFonts(document, theme, fonts);
+  // registration); themes only name fonts. Threading `warnings` keeps parity
+  // with the plugin path — absent collector falls back to console.warn.
+  const resolvedFonts = await resolveDocumentFonts(
+    document,
+    theme,
+    fonts,
+    warnings
+  );
 
   // Pipeline: Structure -> Layout -> Render (with caching)
   const structure = await processDocument(document, theme, themeName);
@@ -186,7 +200,8 @@ export async function generateDocumentFromJson(
     reportComponent,
     options?.customThemes,
     options?.services,
-    options?.fonts
+    options?.fonts,
+    options?.warnings
   );
 }
 

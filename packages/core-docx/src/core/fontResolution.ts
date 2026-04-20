@@ -9,7 +9,11 @@
  * `onResolved` side-channel consumed by the LibreOffice preview font stager.
  */
 
-import type { FontRuntimeOpts, ResolvedFont } from '@json-to-office/shared';
+import type {
+  FontRuntimeOpts,
+  ResolvedFont,
+  GenerationWarning,
+} from '@json-to-office/shared';
 import {
   collectFontNamesFromDocx,
   validateFontReferences,
@@ -25,8 +29,23 @@ import type { ReportComponentDefinition } from '../types';
 export async function resolveDocumentFonts(
   document: ReportComponentDefinition,
   theme: ThemeConfig,
-  fonts?: FontRuntimeOpts
+  fonts?: FontRuntimeOpts,
+  warnings?: GenerationWarning[]
 ): Promise<ResolvedFont[]> {
+  const emit = (code: string, message: string) => {
+    if (warnings) {
+      warnings.push({
+        component: 'fontRegistry',
+        message,
+        severity: 'warning',
+        context: { code },
+      });
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn(`[json-to-docx] ${code}: ${message}`);
+    }
+  };
+
   // Walk document + theme. The document typically names fonts only indirectly
   // via `theme: "my-theme"`, so fonts declared in the theme JSON would be
   // invisible without this second pass.
@@ -47,8 +66,7 @@ export async function resolveDocumentFonts(
       );
     }
     for (const w of validation.warnings) {
-      // eslint-disable-next-line no-console
-      console.warn(`[json-to-docx] ${w.code}: ${w.message}`);
+      emit(w.code, w.message);
     }
   }
 
@@ -62,8 +80,7 @@ export async function resolveDocumentFonts(
   const resolved = await registry.resolveMany(names);
   for (const r of resolved) {
     for (const msg of r.warnings) {
-      // eslint-disable-next-line no-console
-      console.warn(`[json-to-docx] FONT: ${msg}`);
+      emit('FONT_UNRESOLVED', msg);
     }
   }
   fonts?.onResolved?.(resolved);

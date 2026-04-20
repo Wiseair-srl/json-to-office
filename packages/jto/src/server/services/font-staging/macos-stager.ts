@@ -47,40 +47,54 @@ interface CtBindings {
 }
 
 let cachedBindings: CtBindings | null = null;
+let bindingsFailed = false;
 
-async function getCtBindings(): Promise<CtBindings> {
+async function getCtBindings(): Promise<CtBindings | null> {
   if (cachedBindings) return cachedBindings;
-  const koffi = (await import('koffi')) as unknown as {
-    default?: KoffiModule;
-  } & KoffiModule;
-  const mod = koffi.default ?? koffi;
-  const cf = mod.load(CF_FRAMEWORK);
-  const ct = mod.load(CT_FRAMEWORK);
+  if (bindingsFailed) return null;
+  try {
+    const koffi = (await import('koffi')) as unknown as {
+      default?: KoffiModule;
+    } & KoffiModule;
+    const mod = koffi.default ?? koffi;
+    const cf = mod.load(CF_FRAMEWORK);
+    const ct = mod.load(CT_FRAMEWORK);
 
-  const cfUrlCreate = cf.func(
-    'void *CFURLCreateFromFileSystemRepresentation(void *, const uint8_t *, long, bool)'
-  ) as (
-    allocator: null,
-    bytes: Buffer,
-    length: number,
-    isDir: boolean
-  ) => unknown;
-  const cfRelease = cf.func('void CFRelease(void *)') as (ref: unknown) => void;
-  const ctRegister = ct.func(
-    'bool CTFontManagerRegisterFontsForURL(void *, uint32_t, void *)'
-  ) as (url: unknown, scope: number, err: null) => boolean;
-  const ctUnregister = ct.func(
-    'bool CTFontManagerUnregisterFontsForURL(void *, uint32_t, void *)'
-  ) as (url: unknown, scope: number, err: null) => boolean;
+    const cfUrlCreate = cf.func(
+      'void *CFURLCreateFromFileSystemRepresentation(void *, const uint8_t *, long, bool)'
+    ) as (
+      allocator: null,
+      bytes: Buffer,
+      length: number,
+      isDir: boolean
+    ) => unknown;
+    const cfRelease = cf.func('void CFRelease(void *)') as (
+      ref: unknown
+    ) => void;
+    const ctRegister = ct.func(
+      'bool CTFontManagerRegisterFontsForURL(void *, uint32_t, void *)'
+    ) as (url: unknown, scope: number, err: null) => boolean;
+    const ctUnregister = ct.func(
+      'bool CTFontManagerUnregisterFontsForURL(void *, uint32_t, void *)'
+    ) as (url: unknown, scope: number, err: null) => boolean;
 
-  cachedBindings = {
-    createUrl: (pathBytes, length) =>
-      cfUrlCreate(null, pathBytes, length, false),
-    release: (ref) => cfRelease(ref),
-    register: (url) => ctRegister(url, SCOPE_SESSION, null),
-    unregister: (url) => ctUnregister(url, SCOPE_SESSION, null),
-  };
-  return cachedBindings;
+    cachedBindings = {
+      createUrl: (pathBytes, length) =>
+        cfUrlCreate(null, pathBytes, length, false),
+      release: (ref) => cfRelease(ref),
+      register: (url) => ctRegister(url, SCOPE_SESSION, null),
+      unregister: (url) => ctUnregister(url, SCOPE_SESSION, null),
+    };
+    return cachedBindings;
+  } catch (err) {
+    bindingsFailed = true;
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[font-staging] Core Text bindings unavailable (${(err as Error).message}); ` +
+        `LibreOffice preview will render with system fallback fonts.`
+    );
+    return null;
+  }
 }
 
 interface StagedFont {
@@ -117,6 +131,14 @@ export class MacOSCoreTextStager implements FontStager {
     }
 
     const bindings = await getCtBindings();
+    if (!bindings) {
+      // koffi failed to load — fonts are on disk but Core Text can't register
+      // them. LibreOffice will fall back to system fonts. Preview still works.
+      return {
+        envOverrides: { SAL_DISABLE_SKIA: '1' },
+        cleanup: async () => {},
+      };
+    }
     const registered: StagedFont[] = [];
     for (const p of stagedPaths) {
       const bytes = Buffer.from(p, 'utf8');

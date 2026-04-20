@@ -236,13 +236,16 @@ export async function renderDocument(
 
   // Build the docx FontOptions array from resolved fonts. Embedding makes the
   // .docx self-contained: Word will render the correct typeface on any machine
-  // even if the font isn't installed.
+  // even if the font isn't installed. Skip unknown-format bytes defensively —
+  // Word refuses to open a .docx that embeds garbage as a font.
   const embeddableFonts = (options?.resolvedFonts ?? []).flatMap((r) =>
     r.willEmbed
-      ? r.sources.map((s) => ({
-          name: r.family,
-          data: s.data,
-        }))
+      ? r.sources
+          .filter((s) => s.format !== 'unknown')
+          .map((s) => ({
+            name: r.family,
+            data: s.data,
+          }))
       : []
   );
 

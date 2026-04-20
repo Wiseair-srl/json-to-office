@@ -23,10 +23,16 @@ export async function loadFileFontSource(
     ? input.path
     : resolvePath(input.baseDir ?? process.cwd(), input.path);
   const data = await readFile(fullPath);
+  const format = detectFontFormat(data);
+  if (format === 'unknown') {
+    throw new Error(
+      `Font file at "${fullPath}" is not a recognized format (expected ttf/otf/woff/woff2/eot)`
+    );
+  }
   return {
     data,
     weight: input.weight ?? 400,
     italic: input.italic ?? false,
-    format: detectFontFormat(data),
+    format,
   };
 }

@@ -39,7 +39,6 @@ const buffer = await generateBufferFromJson(doc, {
         id: 'Inter',
         family: 'Inter',
         category: 'sans',
-        fallback: 'Arial',
         sources: [{ kind: 'google', family: 'Inter', weights: [400, 700] }],
       },
       {
