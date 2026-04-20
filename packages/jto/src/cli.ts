@@ -1,12 +1,17 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { DocxFormatAdapter, PptxFormatAdapter, type FormatAdapter } from './format-adapter.js';
+import {
+  DocxFormatAdapter,
+  PptxFormatAdapter,
+  type FormatAdapter,
+} from './format-adapter.js';
 import { createGenerateCommand } from './commands/generate.js';
 import { createValidateCommand } from './commands/validate.js';
 import { createSchemasCommand } from './commands/schemas.js';
 import { createDiscoverCommand } from './commands/discover.js';
 import { createInitCommand } from './commands/init.js';
 import { createDevCommand } from './commands/dev.js';
+import { createFontsCommand } from './commands/fonts.js';
 
 declare const __PACKAGE_VERSION__: string | undefined;
 const PACKAGE_VERSION =
@@ -19,6 +24,7 @@ function registerFormatCommands(parent: Command, adapter: FormatAdapter): void {
   parent.addCommand(createDiscoverCommand(adapter));
   parent.addCommand(createInitCommand(adapter));
   parent.addCommand(createDevCommand(adapter));
+  parent.addCommand(createFontsCommand(adapter));
 }
 
 const program = new Command();
@@ -49,6 +55,7 @@ ${chalk.gray('Examples:')}
   $ jto pptx validate slides.json   ${chalk.dim('# Validate PPTX JSON')}
   $ jto docx schemas                ${chalk.dim('# Export DOCX JSON schemas')}
   $ jto pptx discover               ${chalk.dim('# Discover PPTX plugins')}
+  $ jto docx fonts install Inter    ${chalk.dim('# Download a Google Font into ./fonts')}
 `
 );
 

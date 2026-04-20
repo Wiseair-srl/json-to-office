@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import type { ServicesConfig } from '@json-to-office/shared';
+import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 function safeThemeKey(name: string | undefined): string {
@@ -44,6 +44,7 @@ export interface GeneratorOptions {
     strict?: boolean;
     allowUnknownFields?: boolean;
   };
+  fonts?: FontRuntimeOpts;
 }
 
 export interface GeneratorResult {
@@ -99,6 +100,7 @@ export class DocxFormatAdapter implements FormatAdapter {
     return await core.generateBufferFromJson(docDefinition as any, {
       customThemes,
       services,
+      fonts: options.fonts,
     });
   }
 
@@ -120,6 +122,7 @@ export class DocxFormatAdapter implements FormatAdapter {
           return await core.generateBufferFromJson(docDefinition, {
             customThemes,
             services,
+            fonts: options.fonts,
           });
         },
         hasPlugins: false,
@@ -134,6 +137,7 @@ export class DocxFormatAdapter implements FormatAdapter {
       customThemes,
       debug: process.env.DEBUG === 'true',
       services,
+      fonts: options.fonts,
     });
 
     for (const plugin of plugins) {
@@ -364,6 +368,7 @@ export class PptxFormatAdapter implements FormatAdapter {
     return await core.generateBufferFromJson(docDefinition as any, {
       customThemes,
       services,
+      fonts: options.fonts,
     });
   }
 
@@ -385,6 +390,7 @@ export class PptxFormatAdapter implements FormatAdapter {
           return await core.generateBufferFromJson(docDefinition, {
             customThemes,
             services,
+            fonts: options.fonts,
           });
         },
         hasPlugins: false,
@@ -399,6 +405,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       customThemes,
       debug: process.env.DEBUG === 'true',
       services,
+      fonts: options.fonts,
     });
 
     for (const plugin of plugins) {
