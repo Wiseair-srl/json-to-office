@@ -134,13 +134,6 @@ export class FontRegistry {
       }
     }
 
-    // If nothing materialized but a fallback is defined, degrade gracefully.
-    if (sources.length === 0 && entry.fallback) {
-      warnings.push(
-        `Font "${entry.family}" has no resolvable sources; using fallback "${entry.fallback}".`
-      );
-    }
-
     return {
       family: entry.family,
       willEmbed: sources.length > 0,

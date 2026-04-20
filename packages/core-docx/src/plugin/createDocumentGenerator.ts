@@ -315,10 +315,13 @@ function createBuilderImpl<
       const [finalReportComponent] = normalizeDocument(processedDocument);
 
       // Resolve fonts (reads document + resolved theme, fires onResolved).
+      // Pass the same warnings collector so font issues surface to callers
+      // alongside component warnings instead of disappearing into stderr.
       const resolvedFonts = await resolveDocumentFonts(
         finalReportComponent,
         docTheme,
-        state.fonts
+        state.fonts,
+        warnings
       );
 
       // Use the document generation pipeline directly
