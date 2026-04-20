@@ -10,6 +10,7 @@ import {
   createThemeSchemaConfig,
 } from './json-schema-generator';
 import { schemaService } from './schema-service';
+import { registerFontCodeLens } from './monaco-fonts-codelens';
 
 let isConfigured = false;
 let completionDisposable: { dispose(): void } | null = null;
@@ -104,6 +105,10 @@ export function configureMonacoInstance(monaco: Monaco): void {
 
   // Register custom JSON completion provider that shows schema descriptions inline
   registerJsonCompletionProvider(monaco);
+
+  // Register CodeLens provider that puts a "Pick font…" action above any
+  // font-name string in the active JSON doc.
+  registerFontCodeLens(monaco);
 
   // Generate schemas for both report and theme files
   const reportSchema = createReportSchemaConfig();
