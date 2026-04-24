@@ -42,13 +42,7 @@
     "probe-image-size": "7.2.3"
   },
   "peerDependencies": {
-    "docx": "9.5.1",
-    "highcharts-export-server": "5.0.0"
-  },
-  "peerDependenciesMeta": {
-    "highcharts-export-server": {
-      "optional": true
-    }
+    "docx": "9.5.1"
   },
   "devDependencies": {
     "@types/adm-zip": "0.5.7",
