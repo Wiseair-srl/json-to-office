@@ -42,6 +42,14 @@ export const TextPropsSchema = Type.Object(
       Type.String({ description: 'Text color (hex without #, e.g., "FF0000")' })
     ),
     bold: Type.Optional(Type.Boolean({ description: 'Bold text' })),
+    fontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Per-run weight (100–900). Renderer picks the closest embedded variant via CSS font-matching and references it through a synthetic family alias. Overrides `bold` when set.',
+      })
+    ),
     italic: Type.Optional(Type.Boolean({ description: 'Italic text' })),
     underline: Type.Optional(
       Type.Union([

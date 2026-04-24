@@ -17,6 +17,7 @@ import {
 import {
   loadFileFontSource,
   FontDiskCache,
+  fetchVariableFontSource,
 } from '@json-to-office/shared/fonts/node';
 import type {
   PipelineWarning,
@@ -36,6 +37,9 @@ export async function resolveDocumentFonts(
   for (const n of collectFontNamesFromPptx(theme as unknown)) names.add(n);
   if (names.size === 0) return [];
 
+  // Validate unconditionally — strict mode must fire even when no consumer
+  // is listening via onResolved (CLI / library callers that just want
+  // build-time validation of font references).
   const validation = validateFontReferences({
     referencedNames: names,
     registeredEntries: fonts?.extraEntries,
@@ -54,9 +58,16 @@ export async function resolveDocumentFonts(
     }
   }
 
+  // Registry resolution (Google/URL/file fetches) only runs when a consumer
+  // is listening via onResolved — typically the LibreOffice preview stager.
+  // Office output never embeds bytes, so skipping fetches when nobody cares
+  // keeps library callers from paying network cost.
+  if (!fonts?.onResolved) return [];
+
   const registry = new FontRegistry({
     opts: fonts,
     fileLoader: loadFileFontSource,
+    variableLoader: fetchVariableFontSource,
     diskCache: fonts?.googleFonts?.cacheDir
       ? new FontDiskCache(fonts.googleFonts.cacheDir)
       : undefined,
@@ -69,6 +80,9 @@ export async function resolveDocumentFonts(
       });
     }
   }
-  fonts?.onResolved?.(resolved);
+  // Fire the side-channel here so callers never have to remember. The
+  // short-circuit above guarantees we only reach this point when a
+  // listener is registered.
+  fonts.onResolved(resolved);
   return resolved;
 }

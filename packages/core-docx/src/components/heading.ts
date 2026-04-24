@@ -44,6 +44,8 @@ export function renderHeadingComponent(
       fontSize: config.font?.size,
       fontColor: config.font?.color,
       bold: config.font?.bold,
+      fontWeight: (config.font as { fontWeight?: number } | undefined)
+        ?.fontWeight,
       italic: config.font?.italic,
       underline: config.font?.underline,
       // Pagination control

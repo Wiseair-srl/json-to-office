@@ -151,7 +151,7 @@ export class LibreOfficeConverterService {
     // at startup. Handle is closed in the finally block regardless of outcome.
     const stager = getFontStager();
     const fontsToStage = (resolvedFonts ?? []).filter(
-      (r) => r.willEmbed && r.sources.length > 0
+      (r) => r.sources.length > 0
     );
     const stageHandle =
       fontsToStage.length > 0
@@ -252,8 +252,45 @@ export class LibreOfficeConverterService {
       inputPath,
     ];
 
+    if (process.env.JTO_DEBUG_FONTS === '1') {
+      // eslint-disable-next-line no-console
+      console.log(
+        '[jto libreoffice-converter] spawning soffice with env overrides: ' +
+          JSON.stringify(
+            envOverrides
+              ? Object.fromEntries(
+                  Object.entries(envOverrides).map(([k, v]) => [
+                    k,
+                    k === 'JTO_FONT_PATHS'
+                      ? `<${v.split(':').length} paths>`
+                      : v,
+                  ])
+                )
+              : {}
+          )
+      );
+    }
     try {
-      await executeFile(binaryPath, args, this.timeoutMs, envOverrides);
+      const result = await executeFile(
+        binaryPath,
+        args,
+        this.timeoutMs,
+        envOverrides
+      );
+      // Surface the soffice stderr stream for debugging — that's where the
+      // [jto-font-register] macro writes its confirmation. Empty output
+      // on macOS indicates the macro never fired (macro-security block,
+      // missing Python, XCU parse error, …) and LibreOffice rendered
+      // against fallback fonts. Gated behind a flag so prod logs stay clean.
+      if (process.env.JTO_DEBUG_FONTS === '1') {
+        const stderr = result.stderr?.trim();
+        // eslint-disable-next-line no-console
+        console.log(
+          '[jto libreoffice-converter] conversion ok; stderr len=' +
+            (stderr?.length ?? 0) +
+            (stderr ? '\n' + stderr : ' (empty)')
+        );
+      }
     } catch (error) {
       const execError = error as ExecError;
       if (execError.code === 'ETIMEDOUT')

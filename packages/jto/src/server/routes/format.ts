@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { bodyLimit } from 'hono/body-limit';
 import { getContainer } from '../container/index.js';
 import {
   LooseDocumentGenerationRequestSchema,
@@ -46,19 +47,11 @@ export function createFormatRouter(adapter: FormatAdapter) {
     tbValidator(LooseDocumentGenerationRequestSchema),
     async (c) => {
       const generatorService = getContainer().get('generatorService');
-      const { jsonDefinition, customThemes, userFonts, options } =
-        getValidated<{
-          jsonDefinition: any;
-          customThemes?: Record<string, any>;
-          userFonts?: Array<{
-            family: string;
-            weight: number;
-            italic: boolean;
-            format: 'ttf' | 'otf';
-            data: string;
-          }>;
-          options?: { bypassCache?: boolean; returnUrl?: boolean };
-        }>(c, 'json');
+      const { jsonDefinition, customThemes, options } = getValidated<{
+        jsonDefinition: any;
+        customThemes?: Record<string, any>;
+        options?: { bypassCache?: boolean; returnUrl?: boolean };
+      }>(c, 'json');
       const requestId = c.get('requestId');
 
       try {
@@ -67,11 +60,31 @@ export function createFormatRouter(adapter: FormatAdapter) {
           c.req.query('bypass-cache') === 'true' ||
           options?.bypassCache === true;
 
+        // Drop `fonts.strict` from untrusted client input: a toggle that
+        // throws on unresolved refs is only meaningful for programmatic
+        // callers. Honouring it from an HTTP client would turn any
+        // non-safe font reference into a predictable 500 — DoS-adjacent
+        // and no useful UX behind it. Advisory only. Build a fresh
+        // object rather than mutating the validated request payload.
+        let sanitizedFonts: Record<string, unknown> | undefined;
+        const rawFonts = (
+          options as { fonts?: Record<string, unknown> } | undefined
+        )?.fonts;
+        if (rawFonts && 'strict' in rawFonts) {
+          sanitizedFonts = { ...rawFonts };
+          delete sanitizedFonts.strict;
+        } else if (rawFonts) {
+          sanitizedFonts = rawFonts;
+        }
+
         const result = await generatorService.generate({
           jsonDefinition,
           customThemes,
-          userFonts,
-          options: { ...options, bypassCache },
+          options: {
+            ...options,
+            ...(sanitizedFonts !== undefined && { fonts: sanitizedFonts }),
+            bypassCache,
+          },
         });
 
         const cacheService = getContainer().get('cacheService');
@@ -82,22 +95,6 @@ export function createFormatRouter(adapter: FormatAdapter) {
             ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
             : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-        // Flatten resolved fonts into base64 variants so the browser preview
-        // can inject matching @font-face rules. Safe/system fonts (willEmbed:
-        // false) are skipped — the browser already has them. Only emit when
-        // there's something to embed to keep the response lean.
-        const fontsPayload = (result.resolvedFonts ?? [])
-          .filter((r) => r.willEmbed && r.sources.length > 0)
-          .flatMap((r) =>
-            r.sources.map((s) => ({
-              family: r.family,
-              weight: s.weight,
-              italic: s.italic,
-              format: s.format,
-              data: s.data.toString('base64'),
-            }))
-          );
-
         return c.json({
           success: true,
           data: {
@@ -105,7 +102,6 @@ export function createFormatRouter(adapter: FormatAdapter) {
             filename: result.filename,
             fileId: result.fileId || null,
             contentType,
-            ...(fontsPayload.length > 0 && { fonts: fontsPayload }),
           },
           cache: {
             status: result.cached ? 'HIT' : 'MISS',
@@ -247,6 +243,14 @@ export function createFormatRouter(adapter: FormatAdapter) {
   // The client sends the JSON doc instead of re-uploading the generated file.
   router.post(
     '/preview/libreoffice-from-json',
+    bodyLimit({
+      // Doc JSON + custom themes. 2 MB covers large report fixtures; anything
+      // bigger is almost certainly an attempt to OOM the worker.
+      maxSize: 2 * 1024 * 1024,
+      onError: () => {
+        throw new HTTPException(413, { message: 'Request body too large' });
+      },
+    }),
     rateLimiter({
       limit: process.env.NODE_ENV === 'production' ? 20 : 1000,
       window: 15 * 60 * 1000,
@@ -263,23 +267,15 @@ export function createFormatRouter(adapter: FormatAdapter) {
       const libreOfficeService = getContainer().get(
         'libreOfficeConverterService'
       );
-      const { jsonDefinition, customThemes, userFonts } = getValidated<{
+      const { jsonDefinition, customThemes } = getValidated<{
         jsonDefinition: any;
         customThemes?: Record<string, any>;
-        userFonts?: Array<{
-          family: string;
-          weight: number;
-          italic: boolean;
-          format: 'ttf' | 'otf';
-          data: string;
-        }>;
       }>(c, 'json');
 
       try {
         const generated = await generatorService.generate({
           jsonDefinition,
           customThemes,
-          userFonts,
           options: { bypassCache: true },
         });
 

@@ -6,6 +6,13 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import { useToast } from '../ui/use-toast';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import {
@@ -13,7 +20,7 @@ import {
   type FontPickerContext,
 } from '../../store/font-picker-store';
 import { mutateDocumentAtPath } from '../../lib/doc-mutations';
-import { UploadsTab, type StoredUserFontView } from './font-picker/uploads-tab';
+import { WEIGHT_LABELS } from '@json-to-office/shared';
 
 interface PopularGoogleFont {
   family: string;
@@ -47,18 +54,43 @@ interface FontPickerDialogProps {
 
 const FALLBACK_CATALOG: FontCatalog = { safe: [], google: [] };
 
-/** Inject a stylesheet link for a Google Font into document.head if missing. */
-function ensureGoogleFontLoaded(family: string): void {
+/**
+ * Inject a stylesheet link for a Google Font into document.head if missing.
+ * Requests every weight the catalog advertises so the "Variants" disclosure
+ * can render each one in its own face — otherwise the browser would fall back
+ * to 400/700 and the preview would lie about what's available.
+ */
+function ensureGoogleFontLoaded(family: string, weights?: number[]): void {
   const id = `gf-${family.replace(/\s+/g, '-')}`;
-  if (document.getElementById(id)) return;
+  const existing = document.getElementById(id) as HTMLLinkElement | null;
+  const requested = new Set(
+    weights && weights.length > 0 ? weights : [400, 700]
+  );
+  // Union previously-requested weights with the new ones so a narrower
+  // follow-up request never evicts weights already fetched — the browser
+  // re-fetches the whole CSS whenever `.href` is reassigned, so only
+  // rewrite when the union actually grows.
+  const prior = new Set<number>(
+    existing?.dataset.weights
+      ?.split(',')
+      .map(Number)
+      .filter((n) => !Number.isNaN(n)) ?? []
+  );
+  const union = new Set<number>([...prior, ...requested]);
+  if (existing && union.size === prior.size) return;
+
+  const axis = [...union].sort((a, b) => a - b).join(';');
   const href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(
     family
-  )}:wght@400;700&display=swap`;
-  const link = document.createElement('link');
-  link.id = id;
-  link.rel = 'stylesheet';
+  )}:wght@${axis}&display=swap`;
+  const link = existing ?? document.createElement('link');
+  if (!existing) {
+    link.id = id;
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }
   link.href = href;
-  document.head.appendChild(link);
+  link.dataset.weights = [...union].sort((a, b) => a - b).join(',');
 }
 
 /**
@@ -179,12 +211,9 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
   const [catalog, setCatalog] = useState<FontCatalog>(FALLBACK_CATALOG);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'safe' | 'google' | 'uploads'>(
-    'safe'
-  );
+  const [activeTab, setActiveTab] = useState<'safe' | 'google'>('safe');
   const [applyingFamily, setApplyingFamily] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const [uploads, setUploads] = useState<StoredUserFontView[]>([]);
 
   const { toast } = useToast();
   const mutateTheme = useMutateActiveTheme();
@@ -219,7 +248,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
   // Preload Google Fonts in the browser for preview rendering.
   useEffect(() => {
     if (activeTab !== 'google' || catalog.google.length === 0) return;
-    for (const f of catalog.google) ensureGoogleFontLoaded(f.family);
+    for (const f of catalog.google) ensureGoogleFontLoaded(f.family, f.weights);
   }, [activeTab, catalog]);
 
   const filteredSafe = useMemo(
@@ -235,13 +264,6 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
         f.family.toLowerCase().includes(search.toLowerCase())
       ),
     [catalog.google, search]
-  );
-  const filteredUploads = useMemo(
-    () =>
-      uploads.filter((u) =>
-        u.family.toLowerCase().includes(search.toLowerCase())
-      ),
-    [uploads, search]
   );
 
   const handleCopy = useCallback(
@@ -265,7 +287,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
   const handleInsertTheme = useCallback(
     async (
       family: string,
-      source: 'safe' | 'google' | 'uploads',
+      _source: 'safe' | 'google',
       role: 'heading' | 'body'
     ) => {
       setApplyingFamily(family);
@@ -284,12 +306,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
         }
         toast({
           title: 'Font inserted',
-          description:
-            source === 'google'
-              ? `${family} set as ${role}. Preview embeds it automatically; production builds must register via fonts.extraEntries.`
-              : source === 'uploads'
-                ? `${family} set as ${role}. Font embeds from your browser upload on next generate.`
-                : `${family} set as ${role} font in "${result.name}".`,
+          description: `${family} set as ${role} font in "${result.name}".`,
         });
       } finally {
         setApplyingFamily(null);
@@ -348,9 +365,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
 
         <Tabs
           value={activeTab}
-          onValueChange={(v) =>
-            setActiveTab(v as 'safe' | 'google' | 'uploads')
-          }
+          onValueChange={(v) => setActiveTab(v as 'safe' | 'google')}
           className="flex-1 overflow-hidden flex flex-col"
         >
           <div className="flex items-center gap-2">
@@ -365,12 +380,6 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
                 Google
                 <Badge variant="secondary" className="ml-1 text-xs px-1 py-0">
                   {catalog.google.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="uploads">
-                Uploads
-                <Badge variant="secondary" className="ml-1 text-xs px-1 py-0">
-                  {uploads.length}
                 </Badge>
               </TabsTrigger>
             </TabsList>
@@ -446,57 +455,17 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
                       }
                       applying={applyingFamily === f.family}
                       disabled={!writeEnabled}
+                      extraAction={
+                        <GoogleVariantsMenu
+                          family={f.family}
+                          weights={f.weights}
+                          hasItalic={f.hasItalic}
+                        />
+                      }
                     />
                   ))}
                 </div>
               )}
-            </TabsContent>
-
-            <TabsContent value="uploads" className="m-0">
-              <UploadsTab
-                search={search}
-                filtered={filteredUploads}
-                onListChange={setUploads}
-                renderCard={(upload) => (
-                  <FontCard
-                    key={upload.id}
-                    family={upload.family}
-                    meta={
-                      <span className="text-xs">
-                        {upload.format.toUpperCase()} ·{' '}
-                        {upload.italic ? 'italic ' : ''}weight {upload.weight}
-                      </span>
-                    }
-                    previewStyle={{
-                      fontFamily: `"${upload.family}", sans-serif`,
-                      fontWeight: upload.weight,
-                      fontStyle: upload.italic ? 'italic' : 'normal',
-                    }}
-                    onCopy={() => handleCopy(upload.family)}
-                    copied={copied === upload.family}
-                    contextual={Boolean(contextual)}
-                    onUseThis={() => handleInsertContextual(upload.family)}
-                    onInsertHeading={() =>
-                      handleInsertTheme(upload.family, 'uploads', 'heading')
-                    }
-                    onInsertBody={() =>
-                      handleInsertTheme(upload.family, 'uploads', 'body')
-                    }
-                    applying={applyingFamily === upload.family}
-                    disabled={!writeEnabled}
-                    extraAction={
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={upload.onDelete}
-                        aria-label={`Delete ${upload.family}`}
-                      >
-                        Delete
-                      </Button>
-                    }
-                  />
-                )}
-              />
             </TabsContent>
           </div>
         </Tabs>
@@ -506,6 +475,57 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
 };
 
 const PANGRAM = 'The quick brown fox jumps over the lazy dog';
+
+/**
+ * Read-only variants disclosure for Google Fonts cards. Google families aren't
+ * deletable like uploads, but users still need to see which weights exist and
+ * what they look like before committing to `fontWeight: <n>` in their JSON.
+ *
+ * Requires the relevant @font-face rules to already be loaded (handled by the
+ * parent's `ensureGoogleFontLoaded(family, weights)` effect).
+ */
+const GoogleVariantsMenu: React.FC<{
+  family: string;
+  weights: number[];
+  hasItalic: boolean;
+}> = ({ family, weights, hasItalic }) => {
+  const sorted = useMemo(() => [...weights].sort((a, b) => a - b), [weights]);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" variant="ghost" aria-label="Show variants">
+          Variants
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[260px]">
+        <DropdownMenuLabel className="text-xs text-muted-foreground">
+          {sorted.length} weight{sorted.length === 1 ? '' : 's'}
+          {hasItalic ? ' · italic available' : ''}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {sorted.map((w) => {
+          const label = WEIGHT_LABELS[w] ?? String(w);
+          return (
+            <div key={w} className="flex flex-col gap-0.5 px-2 py-1.5">
+              <span
+                className="truncate"
+                style={{
+                  fontFamily: `"${family}", sans-serif`,
+                  fontWeight: w,
+                }}
+              >
+                {label}
+              </span>
+              <span className="text-xs text-muted-foreground font-mono">
+                fontWeight: {w}
+              </span>
+            </div>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 interface FontCardProps {
   family: string;

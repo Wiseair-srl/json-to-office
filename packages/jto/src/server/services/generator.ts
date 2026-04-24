@@ -7,32 +7,18 @@ import {
   collectFontNamesFromDocx,
   collectFontNamesFromPptx,
   POPULAR_GOOGLE_FONTS,
+  getUpstreamOverride,
   isSafeFont,
   type FontRegistryEntry,
   type ResolvedFont,
 } from '@json-to-office/shared';
 
 /**
- * Shape of each entry sent by the playground's Upload tab on every generate.
- * The client reads these from IndexedDB and base64-encodes the bytes; the
- * server only embeds those whose family is actually referenced by the doc.
- */
-export interface UserFontPayload {
-  family: string;
-  weight: number;
-  italic: boolean;
-  format: 'ttf' | 'otf';
-  /** Base64-encoded font bytes. */
-  data: string;
-}
-
-/**
  * Playground-only convenience: scan the document for font names that match
  * a POPULAR_GOOGLE_FONTS family and auto-build `fonts.extraEntries` so the
- * preview embeds them without the user writing registration code.
- *
- * Production consumers call the generator library directly and must register
- * their own fonts via `options.fonts.extraEntries`.
+ * LibreOffice preview stager can materialise the bytes for PDF conversion.
+ * The final .docx/.pptx does not embed them — substitution is the default
+ * export mode.
  */
 export function collectReferencedNames(
   config: unknown,
@@ -54,9 +40,85 @@ export function collectReferencedNames(
   return names;
 }
 
+/**
+ * Walk the doc tree + custom themes for `fontWeight` numeric values. Used
+ * to narrow `autoGoogleFontEntries` so cold-cache runs fetch only the
+ * weights the doc actually needs instead of 18 faces per Google family.
+ */
+export function collectReferencedWeights(
+  config: unknown,
+  customThemes: Record<string, unknown> | undefined
+): Set<number> {
+  const weights = new Set<number>();
+  const visit = (node: unknown): void => {
+    if (node == null) return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (typeof node === 'object') {
+      for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+        if (
+          k === 'fontWeight' &&
+          typeof v === 'number' &&
+          v >= 100 &&
+          v <= 900
+        ) {
+          weights.add(v);
+        } else {
+          visit(v);
+        }
+      }
+    }
+  };
+  visit(config);
+  for (const theme of Object.values(customThemes ?? {})) visit(theme);
+  return weights;
+}
+
+/**
+ * Walk the doc tree + themes for any `italic: true`. Lets the override
+ * variant filter drop italic faces entirely when the doc never uses them
+ * (Inter's override is 18 variants — dropping italic halves the instancer
+ * cost for upright-only docs).
+ */
+export function collectReferencedItalic(
+  config: unknown,
+  customThemes: Record<string, unknown> | undefined
+): boolean {
+  let found = false;
+  const visit = (node: unknown): void => {
+    if (found || node == null) return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (typeof node === 'object') {
+      for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+        if (k === 'italic' && v === true) {
+          found = true;
+          return;
+        }
+        visit(v);
+      }
+    }
+  };
+  visit(config);
+  if (!found) {
+    for (const theme of Object.values(customThemes ?? {})) {
+      visit(theme);
+      if (found) break;
+    }
+  }
+  return found;
+}
+
 export function autoGoogleFontEntries(
   names: Set<string>,
-  skipFamilies: Set<string>
+  skipFamilies: Set<string>,
+  referencedWeights?: Set<number>,
+  referencedItalic?: boolean,
+  warnings?: string[]
 ): FontRegistryEntry[] {
   const googleByLower = new Map(
     POPULAR_GOOGLE_FONTS.map((f) => [f.family.toLowerCase(), f])
@@ -67,6 +129,95 @@ export function autoGoogleFontEntries(
     if (skipFamilies.has(name.toLowerCase())) continue;
     const match = googleByLower.get(name.toLowerCase());
     if (!match) continue;
+    // Prefer an upstream override when one exists — bypasses Google's
+    // redistribution for families with known metadata defects (Inter today).
+    // Falls back to the Google Fonts CSS endpoint otherwise.
+    // Narrow the fetched weight set to what the doc actually references.
+    // Cold-cache fetches 1 file per (weight × italic) serially — Inter has
+    // 18 faces advertised — so docs that only use 400/700 shouldn't pay
+    // for all nine. When the doc references no explicit weights, fall
+    // back to 400/700 (Regular + Bold). When it does, fetch those
+    // weights (intersected with what the family advertises).
+    const wanted = (() => {
+      if (!referencedWeights || referencedWeights.size === 0) {
+        const filtered = match.weights.filter((w) => w === 400 || w === 700);
+        // Pathological catalog entries that advertise neither 400 nor
+        // 700 would otherwise return []; fall back to the family's
+        // lightest advertised weight (deterministic regardless of
+        // catalog ordering) so the Google fetcher gets something
+        // reproducible to work with.
+        if (filtered.length > 0) return filtered;
+        return match.weights.length > 0 ? [Math.min(...match.weights)] : [400];
+      }
+      const want = new Set<number>([400, ...referencedWeights]);
+      const filtered = match.weights.filter((w) => want.has(w));
+      return filtered.length > 0 ? filtered : [400];
+    })();
+    const override = getUpstreamOverride(match.family);
+    if (override) {
+      // Each override variant is already schema-shaped (kind: 'url' | 'variable'
+      // with the right field set). Forward them straight through — the
+      // registry's materializeSource switch handles both. Filter by the
+      // narrowed weight set so instancing/fetching cost scales with doc
+      // usage, not the full 9-weight catalog.
+      //
+      // The override is the source of truth for which weights exist, NOT
+      // the catalog. Rebuild the wanted set from doc-referenced weights
+      // directly so a narrow catalog (e.g. advertising only {400,700})
+      // doesn't prune out valid override variants (e.g. weight 300).
+      const overrideWantedSet = (() => {
+        if (!referencedWeights || referencedWeights.size === 0) {
+          return new Set<number>([400, 700]);
+        }
+        return new Set<number>([400, ...referencedWeights]);
+      })();
+      // Drop italic variants when the doc never requests italic. Halves the
+      // instancer/fetch cost for upright-only docs (Inter's override ships 9
+      // upright + 9 italic variants).
+      const keepItalic = referencedItalic !== false;
+      const variants = override.variants.filter(
+        (v) => overrideWantedSet.has(v.weight) && (keepItalic || !v.italic)
+      );
+      let selected = variants;
+      if (selected.length === 0) {
+        // Referenced weights are all outside this override's advertised
+        // variants. Fetching every variant is the legacy fallback; warn
+        // so a typo (e.g. `fontWeight: 250`) surfaces instead of silently
+        // inflating cold-cache cost.
+        const missing = [...overrideWantedSet]
+          .filter((w) => !override.variants.some((v) => v.weight === w))
+          .sort((a, b) => a - b);
+        warnings?.push(
+          `FONT_WEIGHT_NOT_IN_OVERRIDE: family "${match.family}" — referenced weight(s) ${missing.join(', ')} not in upstream override (has ${override.variants
+            .map((v) => v.weight)
+            .filter((w, i, a) => a.indexOf(w) === i)
+            .sort((a, b) => a - b)
+            .join(', ')}). Fetching all override variants as a fallback.`
+        );
+        selected = override.variants;
+      }
+      entries.push({
+        id: match.family,
+        family: match.family,
+        sources: selected.map((v) =>
+          v.kind === 'variable'
+            ? {
+                kind: 'variable' as const,
+                url: v.url,
+                weight: v.weight,
+                italic: v.italic ?? false,
+                ...(v.axes ? { axes: v.axes } : {}),
+              }
+            : {
+                kind: 'url' as const,
+                url: v.url,
+                weight: v.weight,
+                italic: v.italic ?? false,
+              }
+        ),
+      });
+      continue;
+    }
     entries.push({
       id: match.family,
       family: match.family,
@@ -74,52 +225,17 @@ export function autoGoogleFontEntries(
         {
           kind: 'google',
           family: match.family,
-          weights: [400, 700].filter((w) => match.weights.includes(w)),
-          // Fetch italic faces so italic runs don't render faux-italic in
-          // the LibreOffice preview PDF.
-          italics: true,
+          weights: wanted,
+          // Only request italics when the catalog advertises them. Requesting
+          // italics for a family without italic variants (e.g. Inter) makes
+          // Google return 404s that surface as `FONT_WEIGHT_UNAVAILABLE`
+          // warnings and confuse diagnostics.
+          italics: match.hasItalic,
         },
       ],
     });
   }
   return entries;
-}
-
-/**
- * Build FontRegistryEntry[] from the playground's Upload tab payloads,
- * restricted to families the doc actually references. Each variant becomes
- * a `kind: 'data'` source pointing at a base64 data URL the font resolver
- * materialises into bytes.
- */
-export function userFontEntries(
-  userFonts: UserFontPayload[] | undefined,
-  referencedNames: Set<string>
-): FontRegistryEntry[] {
-  if (!userFonts || userFonts.length === 0) return [];
-  const referencedLower = new Set(
-    [...referencedNames].map((n) => n.toLowerCase())
-  );
-  const byFamily = new Map<string, FontRegistryEntry>();
-  for (const uf of userFonts) {
-    if (!referencedLower.has(uf.family.toLowerCase())) continue;
-    const source = {
-      kind: 'data' as const,
-      data: `data:font/${uf.format};base64,${uf.data}`,
-      weight: uf.weight,
-      italic: uf.italic,
-    };
-    const existing = byFamily.get(uf.family);
-    if (existing) {
-      existing.sources.push(source);
-    } else {
-      byFamily.set(uf.family, {
-        id: uf.family,
-        family: uf.family,
-        sources: [source],
-      });
-    }
-  }
-  return [...byFamily.values()];
 }
 
 export class GeneratorService {
@@ -138,7 +254,6 @@ export class GeneratorService {
   async generate(request: {
     jsonDefinition: any;
     customThemes?: Record<string, any>;
-    userFonts?: UserFontPayload[];
     options?: Record<string, unknown>;
   }): Promise<{
     filename: string;
@@ -148,7 +263,7 @@ export class GeneratorService {
     warnings?: any[] | null;
     resolvedFonts?: ResolvedFont[];
   }> {
-    const { jsonDefinition, customThemes, userFonts, options } = request;
+    const { jsonDefinition, customThemes, options } = request;
     const config =
       typeof jsonDefinition === 'string'
         ? JSON.parse(jsonDefinition)
@@ -159,29 +274,86 @@ export class GeneratorService {
       customThemes,
       this.adapter.name as 'docx' | 'pptx'
     );
-    // User-uploaded fonts take precedence over auto-google lookup: if a user
-    // uploaded "Inter", we embed their bytes rather than fetching from Google.
-    const userEntries = userFontEntries(userFonts, referencedNames);
-    const userFamiliesLower = new Set(
-      userEntries.map((e) => e.family.toLowerCase())
+    const referencedWeights = collectReferencedWeights(config, customThemes);
+    const referencedItalic = collectReferencedItalic(config, customThemes);
+    // Caller-supplied extraEntries (e.g. playground user uploads) win over the
+    // auto-Google path. Build a skip-set of their family names so
+    // `autoGoogleFontEntries` doesn't queue a parallel Google fetch for the
+    // same family — which would race the local registration and, in the worst
+    // case, override the caller's chosen bytes.
+    const callerFonts = (options as { fonts?: Record<string, unknown> })?.fonts;
+    const callerExtraEntriesRaw = (callerFonts as { extraEntries?: unknown })
+      ?.extraEntries;
+    const callerExtraEntries: FontRegistryEntry[] = Array.isArray(
+      callerExtraEntriesRaw
+    )
+      ? (callerExtraEntriesRaw as FontRegistryEntry[])
+      : [];
+    const callerStrict =
+      typeof (callerFonts as { strict?: unknown })?.strict === 'boolean'
+        ? (callerFonts as { strict: boolean }).strict
+        : undefined;
+    const rawMode = callerFonts?.mode;
+    const fontMode: 'substitute' | 'custom' | undefined =
+      rawMode === 'substitute' || rawMode === 'custom' ? rawMode : undefined;
+    const rawSub = callerFonts?.substitution;
+    const fontSubstitution =
+      rawSub && typeof rawSub === 'object' && !Array.isArray(rawSub)
+        ? (rawSub as Record<string, string>)
+        : undefined;
+    const callerFamilies = new Set(
+      callerExtraEntries.map((e) => e.family.toLowerCase())
     );
-    const googleEntries = autoGoogleFontEntries(
-      referencedNames,
-      userFamiliesLower
-    );
-    const extraEntries = [...userEntries, ...googleEntries];
+    // In substitute mode the doc's non-safe families are rewritten to safe
+    // equivalents before font resolution runs, so an auto-Google fetch for
+    // them is wasted work and — via `bypassCache` below — would disable the
+    // server buffer cache for no benefit. Skip it.
+    const overrideWarnings: string[] = [];
+    const autoEntries =
+      fontMode === 'substitute'
+        ? []
+        : autoGoogleFontEntries(
+            referencedNames,
+            callerFamilies,
+            referencedWeights,
+            referencedItalic,
+            overrideWarnings
+          );
+    const extraEntries = [...callerExtraEntries, ...autoEntries];
+    // Surface the override so the caller can see their local file won vs a
+    // would-be Google fetch. Collected later into the `warnings` array.
+    if (callerExtraEntries.length > 0) {
+      const googleFamiliesLower = new Set(
+        POPULAR_GOOGLE_FONTS.map((f) => f.family.toLowerCase())
+      );
+      for (const e of callerExtraEntries) {
+        const lower = e.family.toLowerCase();
+        if (googleFamiliesLower.has(lower) && referencedNames.has(e.family)) {
+          overrideWarnings.push(
+            `[FONT_OVERRIDE_LOCAL] ${e.family}: caller-supplied source used; Google Fonts auto-fetch skipped for this family.`
+          );
+        }
+      }
+    }
     // Font resolution produces a side-channel (`resolvedFonts`) consumed by the
     // LibreOffice preview stager. The byte-cache can't round-trip that, so skip
     // the cache when auto-font resolution is needed — otherwise a cached buffer
     // returns without the TTFs the previewer needs.
     const bypassCache =
       options?.bypassCache === true || extraEntries.length > 0;
+    // Include font runtime selectors in the cache key so substitute vs
+    // custom runs (same config+themes) don't collide on a single buffer
+    // slot. `extraEntries` already forces bypassCache, so only need
+    // mode/substitution/strict in the key for the non-bypass path.
     const cacheKeyData = {
       config,
       customThemes:
         customThemes && Object.keys(customThemes).length > 0
           ? customThemes
           : null,
+      fontMode: fontMode ?? null,
+      fontSubstitution: fontSubstitution ?? null,
+      fontStrict: callerStrict ?? null,
     };
     const cacheKey = this.cacheService.generateCacheKey(cacheKeyData);
     const hasDynamicContent = this.cacheService.hasDynamicContent(config);
@@ -209,15 +381,28 @@ export class GeneratorService {
     let buffer: Buffer;
 
     const resolvedFonts: ResolvedFont[] = [];
-    const fontOpts =
-      extraEntries.length > 0
-        ? {
-            extraEntries,
-            onResolved: (r: ResolvedFont[]) => {
-              resolvedFonts.push(...r);
-            },
-          }
-        : undefined;
+    // Forward fonts.mode + fonts.substitution + fonts.strict from the
+    // request body so API consumers can opt into substitution, custom
+    // (as-is), or strict-validation behaviour. Embedding is no longer
+    // supported. `extraEntries` is authoritative in this flow:
+    // caller-supplied entries were merged with auto-Google entries above
+    // and are passed down unified here.
+    const needsFontOpts =
+      extraEntries.length > 0 ||
+      fontMode !== undefined ||
+      fontSubstitution !== undefined ||
+      callerStrict !== undefined;
+    const fontOpts = needsFontOpts
+      ? {
+          ...(extraEntries.length > 0 && { extraEntries }),
+          ...(fontMode && { mode: fontMode }),
+          ...(fontSubstitution && { substitution: fontSubstitution }),
+          ...(callerStrict !== undefined && { strict: callerStrict }),
+          onResolved: (r: ResolvedFont[]) => {
+            resolvedFonts.push(...r);
+          },
+        }
+      : undefined;
 
     if (registry.hasPlugins()) {
       const plugins = registry.getPlugins();
@@ -238,12 +423,37 @@ export class GeneratorService {
       bypassCache: bypassCache || hasDynamicContent,
     });
 
+    // Surface non-canonical fontWeight values (e.g. 450, 550) — the render
+    // path silently coerces these to Regular/Bold via a bold-fallback, so
+    // without a warning an author writing `fontWeight: 450` has no way to
+    // know their intermediate weight was rounded away.
+    const CANONICAL_WEIGHTS = new Set([
+      100, 200, 300, 400, 500, 600, 700, 800, 900,
+    ]);
+    const nonCanonical = [...referencedWeights].filter(
+      (w) => !CANONICAL_WEIGHTS.has(w)
+    );
+    const extraWarnings = overrideWarnings.map((message) => ({
+      component: 'fontRegistry',
+      message,
+      severity: 'info' as const,
+      context: { code: 'FONT_OVERRIDE_LOCAL' },
+    }));
+    for (const w of nonCanonical) {
+      extraWarnings.push({
+        component: 'fontRegistry',
+        message: `[FONT_NONCANONICAL_WEIGHT] fontWeight ${w} is not one of 100/200/.../900; render path rounds to Regular or Bold via bold-only fallback.`,
+        severity: 'info' as const,
+        context: { code: 'FONT_NONCANONICAL_WEIGHT' },
+      });
+    }
+
     return {
       filename: `${config.metadata?.title || this.adapter.label}${this.adapter.extension}`,
       fileId: Date.now().toString(),
       buffer,
       cached: false,
-      warnings: null,
+      warnings: extraWarnings.length > 0 ? extraWarnings : null,
       resolvedFonts,
     };
   }

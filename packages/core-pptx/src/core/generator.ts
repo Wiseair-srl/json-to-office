@@ -16,8 +16,8 @@ import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { processPresentation } from './structure';
 import { renderPresentation } from './render';
 import { getPptxTheme } from '../themes/defaults';
-import { embedFontsInPptx } from '../utils/fontEmbedding';
 import { resolveDocumentFonts } from './fontResolution';
+import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
 
 /**
  * Options for the generation pipeline
@@ -96,19 +96,59 @@ export async function generateBufferWithWarnings(
   }
 
   const warnings: PipelineWarning[] = [];
-  const themeName = component.props?.theme ?? 'default';
-  const resolvedTheme =
-    options?.customThemes?.[themeName] ?? getPptxTheme(themeName);
-  const resolvedFonts = await resolveDocumentFonts(
+  const baseThemeName = component.props?.theme ?? 'default';
+  let resolvedTheme =
+    options?.customThemes?.[baseThemeName] ?? getPptxTheme(baseThemeName);
+  // Export-mode pre-pass: substitute rewrites non-safe families in place;
+  // custom leaves refs untouched and resolution short-circuits to empty.
+  const mode = applyExportMode({
+    doc: component,
+    theme: resolvedTheme,
+    fonts: options?.fonts,
+  });
+  component = mode.doc;
+  resolvedTheme = mode.theme;
+  for (const w of mode.warnings) {
+    warnings.push({
+      code: w.code,
+      message: w.message,
+      component: 'fontRegistry',
+    });
+  }
+  // resolveDocumentFonts fires `fonts.onResolved` internally when a
+  // listener is registered (LibreOffice preview stager). The PPTX itself
+  // never embeds bytes.
+  await resolveDocumentFonts(
     component,
     resolvedTheme,
     warnings,
     options?.fonts
   );
-  const pptx = await generatePresentation(component, options, warnings);
+  // Scope the theme key by mode so any future theme-name-keyed cache in
+  // PPTX can't leak a custom-mode layout into a substitute-mode run (or
+  // vice versa). Matches the DOCX path. processPresentation re-resolves
+  // the theme from `props.theme`, so we rewrite it on the component too.
+  const themeName = scopedThemeName(baseThemeName, options?.fonts?.mode);
+  if (themeName !== baseThemeName) {
+    component = {
+      ...component,
+      props: { ...component.props, theme: themeName },
+    };
+  }
+  const effectiveOptions: GenerationOptions = {
+    ...options,
+    customThemes: {
+      ...(options?.customThemes ?? {}),
+      [themeName]: resolvedTheme,
+    },
+  };
+  const pptx = await generatePresentation(
+    component,
+    effectiveOptions,
+    warnings
+  );
   const data = await pptx.write({ outputType: 'nodebuffer' });
-  let buffer = await neutralizeTableStyle(data as Buffer);
-  buffer = await embedFontsInPptx(buffer, resolvedFonts, warnings);
+  const buffer = await neutralizeTableStyle(data as Buffer);
   return { buffer, warnings };
 }
 

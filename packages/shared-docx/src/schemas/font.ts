@@ -35,6 +35,14 @@ export const TextFormattingPropertiesSchema = Type.Object(
     size: Type.Optional(Type.Number({ minimum: 8, maximum: 72 })),
     color: Type.Optional(HexColorSchema),
     bold: Type.Optional(Type.Boolean()),
+    fontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Per-run weight (100–900). Any integer accepted; renderer picks the closest embedded variant via CSS font-matching. `bold: true` is shorthand for `fontWeight: 700`; if both are set, `fontWeight` wins.',
+      })
+    ),
     italic: Type.Optional(Type.Boolean()),
     underline: Type.Optional(Type.Boolean()),
     lineSpacing: Type.Optional(

@@ -187,6 +187,8 @@ export function renderParagraphComponent(
     fontSize: resolvedConfig.font?.size,
     fontColor: resolvedConfig.font?.color,
     bold: resolvedConfig.font?.bold,
+    fontWeight: (resolvedConfig.font as { fontWeight?: number } | undefined)
+      ?.fontWeight,
     italic: resolvedConfig.font?.italic,
     underline: resolvedConfig.font?.underline,
     // Pass outline level for TOC support

@@ -7,7 +7,7 @@
  * that reuse the same conventions pick up automatically.
  */
 
-const FONT_NAME_KEYS = new Set([
+export const FONT_NAME_KEYS = new Set([
   'family',
   'fontFace',
   'titleFontFace',
@@ -17,7 +17,7 @@ const FONT_NAME_KEYS = new Set([
   'valAxisLabelFontFace',
 ]);
 
-const THEME_FONT_KEYS = new Set(['heading', 'body', 'mono', 'light']);
+export const THEME_FONT_KEYS = new Set(['heading', 'body', 'mono', 'light']);
 
 function collect(node: unknown, out: Set<string>, parentKey?: string): void {
   if (node == null) return;
@@ -35,7 +35,11 @@ function collect(node: unknown, out: Set<string>, parentKey?: string): void {
   }
 
   if (Array.isArray(node)) {
-    for (const item of node) collect(item, out);
+    // Forward parentKey so font-name arrays (e.g. theme.fonts.heading: [...])
+    // are walked with the same context as the non-array case. Mirrors
+    // substitute.ts's rewrite walker — the two must stay in sync or
+    // substitution silently misses array-shaped references.
+    for (const item of node) collect(item, out, parentKey);
     return;
   }
 
@@ -65,16 +69,15 @@ function collect(node: unknown, out: Set<string>, parentKey?: string): void {
   }
 }
 
-/** Scan a DOCX document tree for every font family name referenced. */
-export function collectFontNamesFromDocx(doc: unknown): Set<string> {
+/** Scan an arbitrary doc tree (DOCX or PPTX) for every font family referenced. */
+export function collectFontNames(doc: unknown): Set<string> {
   const out = new Set<string>();
   collect(doc, out);
   return out;
 }
 
+/** Scan a DOCX document tree for every font family name referenced. */
+export const collectFontNamesFromDocx = collectFontNames;
+
 /** Scan a PPTX presentation tree for every font family name referenced. */
-export function collectFontNamesFromPptx(doc: unknown): Set<string> {
-  const out = new Set<string>();
-  collect(doc, out);
-  return out;
-}
+export const collectFontNamesFromPptx = collectFontNames;

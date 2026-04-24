@@ -10,7 +10,14 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
+import {
+  readFileSync,
+  statSync,
+  mkdirSync,
+  writeFileSync,
+  renameSync,
+  unlinkSync,
+} from 'node:fs';
 import { resolve, basename, extname } from 'node:path';
 import {
   SAFE_FONTS,
@@ -282,23 +289,52 @@ function createInstallCommand(): Command {
       }
 
       mkdirSync(outDir, { recursive: true });
+      // Atomic per-file writes: write to `<name>.tmp`, then rename. A crash
+      // partway through an install leaves either the previous file or the
+      // new one in place — never a half-written TTF. If any rename fails,
+      // the already-written files remain so the user isn't left worse off.
       const written: string[] = [];
+      const failures: { name: string; err: string }[] = [];
       for (const src of sources) {
         const name = filenameFor(family, src.weight, src.italic);
         const full = resolve(outDir, name);
-        writeFileSync(full, src.data);
-        written.push(name);
+        const tmp = `${full}.tmp`;
+        try {
+          writeFileSync(tmp, src.data);
+          renameSync(tmp, full);
+          written.push(name);
+        } catch (err) {
+          try {
+            unlinkSync(tmp);
+          } catch {
+            // Already gone or never created — nothing to clean up.
+          }
+          failures.push({ name, err: (err as Error).message });
+        }
       }
 
-      console.log(
-        chalk.green(`\nInstalled ${written.length} file(s) into ${outDir}:`)
-      );
-      for (const name of written) console.log(`  ${chalk.cyan(name)}`);
-      console.log(
-        chalk.dim(
-          `\nUse them with:  jto <format> generate doc.json --fonts-dir ${options.dir ?? './fonts'}`
-        )
-      );
+      if (failures.length > 0) {
+        console.error(
+          chalk.red(`\n${failures.length} file(s) failed to install:`)
+        );
+        for (const f of failures) {
+          console.error(`  ${chalk.red(f.name)}: ${f.err}`);
+        }
+      }
+      if (written.length > 0) {
+        console.log(
+          chalk.green(`\nInstalled ${written.length} file(s) into ${outDir}:`)
+        );
+        for (const name of written) console.log(`  ${chalk.cyan(name)}`);
+        console.log(
+          chalk.dim(
+            `\nUse them with:  jto <format> generate doc.json --fonts-dir ${options.dir ?? './fonts'}`
+          )
+        );
+      }
+      if (failures.length > 0) {
+        process.exit(EXIT_CODES.FAIL);
+      }
     });
 }
 

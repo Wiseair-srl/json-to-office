@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useContext } from 'react';
+import { ThemesStoreContext } from '../../store/themes-store-provider';
 import {
   SaveIcon,
   RefreshCwIcon,
@@ -51,6 +52,12 @@ import { buildWarningsDocumentJson } from '../../lib/warnings-document-builder';
 import type { GenerationWarning } from '../../store/output-store';
 import { FORMAT, FORMAT_EXT } from '../../lib/env';
 import type { RenderingLibrary } from '../../lib/types';
+import {
+  collectFontNamesFromDocx,
+  collectFontNamesFromPptx,
+  isSafeFont,
+} from '@json-to-office/shared';
+import { ExportModeDialog, type ExportFontMode } from './export-mode-dialog';
 
 const RENDERING_LIBRARIES: RenderingLibrary[] =
   FORMAT === 'docx' ? ['docxjs', 'LibreOffice'] : ['LibreOffice'];
@@ -115,18 +122,123 @@ function PreviewHeader({
   const [isCopyingStandardComponents, setIsCopyingStandardComponents] =
     useState(false);
   const { toast } = useToast();
-  const { generatePresentation } = usePresentationGenerator();
+  // The hook is format-agnostic (dispatches on FORMAT env); alias to a
+  // neutral name so DOCX call sites don't read as if they're calling a
+  // PPTX-specific generator.
+  const { generateDocument } = usePresentationGenerator();
+  const themesStore = useContext(ThemesStoreContext)!;
 
-  const handleDownload = useCallback(async () => {
+  /**
+   * Snapshot the current valid custom themes into the `{ [name]: parsed }`
+   * shape the server expects. Matches the helper in editor.tsx — without
+   * this, a Substitute-mode Download goes through with an empty themes
+   * map and the server falls back to the built-in "minimal" theme.
+   */
+  const getFreshThemeData = useCallback((): Record<string, unknown> => {
+    const out: Record<string, unknown> = {};
+    const { customThemes } = themesStore.getState();
+    Object.values(customThemes).forEach((theme: any) => {
+      if (theme.valid && theme.parsed) {
+        out[theme.name] = theme.parsed;
+      }
+    });
+    return out;
+  }, [themesStore]);
+
+  // Non-safe font references detected in the current document text.
+  // The Export-mode dialog only opens when at least one is present;
+  // safe-only docs download the already-rendered blob directly.
+  const nonSafeFonts = React.useMemo(() => {
+    if (!documentText) return [] as string[];
+    try {
+      const parsed = JSON.parse(documentText);
+      const collector =
+        FORMAT === 'pptx' ? collectFontNamesFromPptx : collectFontNamesFromDocx;
+      return [...collector(parsed)].filter((f) => !isSafeFont(f));
+    } catch {
+      return [];
+    }
+  }, [documentText]);
+
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
+  const downloadCurrentBlob = useCallback(async () => {
     if (!blob) return;
     setIsDownloading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 100)); // Brief delay for UX
+      await new Promise((resolve) => setTimeout(resolve, 100));
       download(`${name}${FORMAT_EXT}`, blob);
     } finally {
-      setTimeout(() => setIsDownloading(false), 500); // Keep loading state briefly
+      setTimeout(() => setIsDownloading(false), 500);
     }
   }, [blob, name]);
+
+  const handleDownload = useCallback(async () => {
+    if (!blob) return;
+    if (nonSafeFonts.length === 0) {
+      await downloadCurrentBlob();
+      return;
+    }
+    setExportDialogOpen(true);
+  }, [blob, nonSafeFonts.length, downloadCurrentBlob]);
+
+  const handleDownloadWithMode = useCallback(
+    async (mode: ExportFontMode) => {
+      if (!documentText) return;
+      // Force an explicit fonts.mode on download — don't rely on the
+      // cached preview blob matching the user's choice, since the server
+      // default could drift and the preview's generation didn't pin a mode.
+      setIsDownloading(true);
+      try {
+        const result = await generateDocument(
+          name,
+          documentText,
+          getFreshThemeData(),
+          undefined,
+          { bypassCache: true, fonts: { mode } }
+        );
+        // The hook always resolves with a populated `blob`; guard against a
+        // zero-byte payload (e.g. server returned success with an empty
+        // buffer) rather than an "is blob present" check that can't fail.
+        if (result.blob.size === 0) {
+          toast({
+            title: 'Export failed',
+            description: 'The server returned an empty document.',
+            variant: 'destructive',
+          });
+        } else {
+          download(`${name}${FORMAT_EXT}`, result.blob);
+          // Surface substitute swaps / custom-mode advisory so the user
+          // knows what happened to their non-safe fonts in the downloaded
+          // file. The in-page warnings panel reflects the last preview
+          // build, not this download.
+          const fontModeWarning = result.warnings?.find(
+            (w) =>
+              w.context?.code === 'FONT_MODE_SUBSTITUTED' ||
+              w.context?.code === 'FONT_MODE_CUSTOM'
+          );
+          if (fontModeWarning) {
+            toast({
+              title:
+                mode === 'substitute'
+                  ? 'Fonts substituted'
+                  : 'Non-safe fonts kept',
+              description: fontModeWarning.message,
+            });
+          }
+        }
+      } catch (err) {
+        toast({
+          title: 'Export failed',
+          description: err instanceof Error ? err.message : String(err),
+          variant: 'destructive',
+        });
+      } finally {
+        setTimeout(() => setIsDownloading(false), 500);
+      }
+    },
+    [documentText, name, generateDocument, toast, getFreshThemeData]
+  );
 
   const handleDownloadWarnings = useCallback(async () => {
     if (!warnings || warnings.length === 0) return;
@@ -146,7 +258,7 @@ function PreviewHeader({
 
       // Generate document from warnings document JSON
       // Pass empty customThemes to ensure we use built-in themes only
-      const result = await generatePresentation(
+      const result = await generateDocument(
         'warnings',
         JSON.stringify(warningsDocJson, null, 2),
         {} // Empty customThemes to avoid conflicts with user's custom themes
@@ -178,7 +290,7 @@ function PreviewHeader({
     } finally {
       setTimeout(() => setIsDownloadingWarnings(false), 500);
     }
-  }, [warnings, name, generatePresentation, toast]);
+  }, [warnings, name, generateDocument, toast]);
 
   const handleReload = useCallback(async () => {
     const iframeEl = iframeRef?.current;
@@ -642,6 +754,14 @@ function PreviewHeader({
           )}
         </div>
       </div>
+
+      {/* Export-mode dialog — only opens when non-safe fonts are referenced */}
+      <ExportModeDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        nonSafeFonts={nonSafeFonts}
+        onChoose={handleDownloadWithMode}
+      />
 
       {/* Clear cache confirmation */}
       <Dialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>

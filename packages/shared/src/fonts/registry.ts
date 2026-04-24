@@ -2,15 +2,11 @@
  * FontRegistry — merges catalog + document registry + runtime entries
  * and materializes referenced fonts into ResolvedFont records.
  *
- * Resolution rules, in order per referenced name:
+ * Resolution rules, per referenced name:
  * 1. Registry match (by family or id, case-insensitive). Runtime entries win
- *    on collision with document entries. Materialize each source:
- *       - safe   → { willEmbed: false } (no data loaded)
- *       - file   → read Buffer from disk
- *       - data   → decode base64
- *       - google → skipped at P2; warning emitted until P4 fetcher ships
- * 2. SAFE_FONTS membership → { willEmbed: false }
- * 3. Otherwise → { willEmbed: false } with FONT_UNRESOLVED warning
+ *    on collision with document entries. Materialize each source.
+ * 2. SAFE_FONTS membership → empty sources.
+ * 3. Otherwise → empty sources with FONT_UNRESOLVED warning.
  */
 
 import { isSafeFont } from '../schemas/font-catalog';
@@ -22,6 +18,8 @@ import type {
 } from './types';
 import { loadDataFontSource } from './sources/data-loader';
 import { fetchGoogleFontSources } from './sources/google-fetcher';
+import { fetchUrlFontSource } from './sources/url-fetcher';
+import { validateFontMetadata } from './sources/ttf-validate';
 import { FontMemoryCache } from './cache/memory-cache';
 
 /**
@@ -45,6 +43,30 @@ export type FontFileLoader = (input: {
   baseDir?: string;
 }) => Promise<ResolvedFontSource>;
 
+/**
+ * Minimal interface for the variable-font fetcher. `subset-font` (the
+ * harfbuzz-wasm wrapper we use for axis pinning) reaches for `fs` at
+ * init time, which crashes in the browser. Injection keeps that import
+ * behind the Node-only subpath; browser bundles never pull it in, and
+ * browser callers simply won't see `kind: 'variable'` fonts resolved
+ * (the registry warns and skips instead).
+ */
+export type FontVariableLoader = (input: {
+  url: string;
+  weight: number;
+  italic: boolean;
+  axes?: Record<string, number>;
+  fetchTimeoutMs?: number;
+  memoryCache?: {
+    get(key: string): Buffer | undefined;
+    set(key: string, value: Buffer): void;
+  };
+  diskCache?: {
+    get(key: string): Promise<Buffer | undefined>;
+    set(key: string, value: Buffer): Promise<void>;
+  };
+}) => Promise<{ source?: ResolvedFontSource; warnings?: string[] }>;
+
 export interface FontRegistryInput {
   /** Runtime options — entries come from opts.extraEntries. */
   opts?: FontRuntimeOpts;
@@ -56,6 +78,14 @@ export interface FontRegistryInput {
    * callers pass nothing; `kind: "file"` sources then warn and skip.
    */
   fileLoader?: FontFileLoader;
+  /**
+   * Optional `kind: "variable"` loader (Node only). Inject
+   * `fetchVariableFontSource` from `@json-to-office/shared/fonts/node` on
+   * Node. Browser callers pass nothing; `kind: "variable"` sources then
+   * warn and skip. Keeping this injected avoids dragging subset-font (and
+   * its `fs.promises.readFile` bootstrap) into client bundles.
+   */
+  variableLoader?: FontVariableLoader;
 }
 
 export class FontRegistry {
@@ -65,6 +95,7 @@ export class FontRegistry {
   private readonly memoryCache: FontMemoryCache;
   private readonly diskCache: FontDiskCacheLike | undefined;
   private readonly fileLoader: FontFileLoader | undefined;
+  private readonly variableLoader: FontVariableLoader | undefined;
 
   constructor(input: FontRegistryInput = {}) {
     this.opts = input.opts ?? {};
@@ -73,6 +104,7 @@ export class FontRegistry {
     this.memoryCache = new FontMemoryCache();
     this.diskCache = input.diskCache;
     this.fileLoader = input.fileLoader;
+    this.variableLoader = input.variableLoader;
 
     for (const e of this.opts.extraEntries ?? []) this.addEntry(e);
   }
@@ -100,11 +132,10 @@ export class FontRegistry {
     if (entry) {
       result = await this.materializeEntry(entry);
     } else if (isSafeFont(name)) {
-      result = { family: name, willEmbed: false, sources: [], warnings: [] };
+      result = { family: name, sources: [], warnings: [] };
     } else {
       result = {
         family: name,
-        willEmbed: false,
         sources: [],
         warnings: [
           `Font "${name}" is not registered and not in SAFE_FONTS; will rely on host fallback.`,
@@ -124,7 +155,19 @@ export class FontRegistry {
     for (const source of entry.sources) {
       try {
         const materialized = await this.materializeSource(source, warnings);
-        sources.push(...materialized);
+        for (const s of materialized) {
+          if (s.format === 'ttf' || s.format === 'otf') {
+            for (const d of validateFontMetadata(
+              s.data,
+              s.weight,
+              s.italic,
+              entry.family
+            )) {
+              warnings.push(`[FONT_METADATA_DEFECT:${d.code}] ${d.message}`);
+            }
+          }
+          sources.push(s);
+        }
       } catch (err) {
         warnings.push(
           `Font "${entry.family}" source (${source.kind}) failed: ${
@@ -136,7 +179,6 @@ export class FontRegistry {
 
     return {
       family: entry.family,
-      willEmbed: sources.length > 0,
       sources,
       warnings,
     };
@@ -193,6 +235,47 @@ export class FontRegistry {
           });
         warnings.push(...fetchWarnings);
         return fetched;
+      }
+      case 'url': {
+        const gf = this.opts.googleFonts;
+        const { source: fetched, warnings: fetchWarnings } =
+          await fetchUrlFontSource({
+            url: source.url,
+            weight: source.weight ?? 400,
+            italic: source.italic ?? false,
+            memoryCache: this.memoryCache,
+            diskCache: this.diskCache,
+            fetchTimeoutMs: gf?.fetchTimeoutMs,
+          });
+        if (fetchWarnings) warnings.push(...fetchWarnings);
+        return fetched ? [fetched] : [];
+      }
+      case 'variable': {
+        // Variable-font instancing: fetch the variable TTF once (disk-
+        // cached), then harfbuzz-pin the `wght` axis to produce a clean
+        // static for this weight. Requires a Node-injected loader because
+        // `subset-font` pulls in `fs` at init; without it, browser
+        // bundles would break. Callers on Node pass `fetchVariableFontSource`
+        // from `@json-to-office/shared/fonts/node`.
+        if (!this.variableLoader) {
+          warnings.push(
+            `kind:"variable" source for "${source.url}" requires a variableLoader (Node-only); skipping.`
+          );
+          return [];
+        }
+        const gf = this.opts.googleFonts;
+        const { source: fetched, warnings: fetchWarnings } =
+          await this.variableLoader({
+            url: source.url,
+            weight: source.weight,
+            italic: source.italic ?? false,
+            axes: source.axes,
+            memoryCache: this.memoryCache,
+            diskCache: this.diskCache,
+            fetchTimeoutMs: gf?.fetchTimeoutMs,
+          });
+        if (fetchWarnings) warnings.push(...fetchWarnings);
+        return fetched ? [fetched] : [];
       }
       default:
         // Exhaustiveness guard — new kind added to schema without handler

@@ -86,6 +86,7 @@ export const TextStyleSchema = Type.Object({
   fontFace: Type.Optional(FontFamilyNameSchema),
   fontColor: Type.Optional(ColorValueSchema),
   bold: Type.Optional(Type.Boolean()),
+  fontWeight: Type.Optional(Type.Integer({ minimum: 100, maximum: 900 })),
   italic: Type.Optional(Type.Boolean()),
   align: Type.Optional(Type.Union([
     Type.Literal('left'), Type.Literal('center'), Type.Literal('right'), Type.Literal('justify'),

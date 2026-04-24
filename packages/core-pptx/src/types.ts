@@ -107,6 +107,12 @@ export interface TextStyle {
   fontFace?: string;
   fontColor?: string;
   bold?: boolean;
+  /**
+   * Per-style weight (100–900). Overrides `bold` when set — renderer picks
+   * the closest embedded variant via CSS font-matching and emits the run
+   * under a synthetic family alias (e.g. "Inter Light" for weight 300).
+   */
+  fontWeight?: number;
   italic?: boolean;
   align?: string;
   lineSpacing?: number;

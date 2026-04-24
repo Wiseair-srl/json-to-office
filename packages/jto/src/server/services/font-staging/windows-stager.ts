@@ -12,6 +12,10 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { ResolvedFont } from '@json-to-office/shared';
+import {
+  synthesizeFamilyName,
+  rewriteFontFamilyName,
+} from '@json-to-office/shared';
 import type { FontStager, FontStageHandle } from './types';
 import { nextStagingId, safeFilenamePart } from './types';
 
@@ -58,13 +62,20 @@ export class WindowsFontStager implements FontStager {
     const stagedPaths: string[] = [];
     let serial = 0;
     for (const r of fonts) {
-      if (!r.willEmbed) continue;
+      if (r.sources.length === 0) continue;
       for (const s of r.sources) {
         serial += 1;
         const suffix = s.italic ? 'i' : 'r';
-        const name = `${safeFilenamePart(r.family)}-${s.weight}${suffix}-${id}-${serial}.ttf`;
+        // Rewrite the TTF's internal family name so GDI registers the
+        // file under the synthetic sub-family the doc references.
+        const synth = synthesizeFamilyName(r.family, s.weight, s.italic);
+        const data =
+          synth.family === r.family
+            ? s.data
+            : rewriteFontFamilyName(s.data, synth.family);
+        const name = `${safeFilenamePart(synth.family)}-${s.weight}${suffix}-${id}-${serial}.ttf`;
         const fullPath = path.join(fontsDir, name);
-        await fs.writeFile(fullPath, s.data);
+        await fs.writeFile(fullPath, data);
         stagedPaths.push(fullPath);
       }
     }

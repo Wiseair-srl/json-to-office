@@ -13,6 +13,7 @@ import { loadPlugins } from './shared.js';
 import { shortPath, formatTiming, formatError, EXIT_CODES } from './ui.js';
 import { parseFontFlag, parseFontsDir } from './font-flags.js';
 import type { FontRegistryEntry } from '@json-to-office/shared';
+import { isSafeFont } from '@json-to-office/shared';
 
 interface GenerateOptions {
   output?: string;
@@ -28,6 +29,8 @@ interface GenerateOptions {
   fontCacheDir?: string;
   font?: string[];
   fontsDir?: string;
+  fontMode?: 'substitute' | 'custom';
+  fontSubstitute?: string[];
 }
 
 export function createGenerateCommand(adapter: FormatAdapter): Command {
@@ -68,6 +71,24 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
     .option(
       '--fonts-dir <path>',
       'Scan directory for .ttf/.otf files and auto-register by filename'
+    )
+    .option(
+      '--font-mode <mode>',
+      'How to handle non-safe fonts: "custom" (default; keep refs as-is — recipient needs fonts installed) or "substitute" (rewrite to safe fonts)',
+      (value: string) => {
+        if (value !== 'substitute' && value !== 'custom') {
+          throw new Error(
+            `--font-mode must be one of: substitute, custom (got "${value}")`
+          );
+        }
+        return value;
+      }
+    )
+    .option(
+      '--font-substitute <family=safe>',
+      'When --font-mode substitute: map a non-safe family to a specific safe font (repeatable). Falls back to category defaults when omitted.',
+      (value: string, previous: string[] = []) => [...previous, value],
+      [] as string[]
     )
     .option('--dry-run', 'Preview without writing files')
     .action(async (input: string, options: GenerateOptions) => {
@@ -156,6 +177,31 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
           extraEntries.push(...parseFontsDir(options.fontsDir));
         }
 
+        // Parse --font-substitute family=safe pairs into the mapping shape
+        // FontRuntimeOpts expects.
+        const substitution: Record<string, string> = {};
+        for (const spec of options.fontSubstitute ?? []) {
+          const eq = spec.indexOf('=');
+          if (eq < 0) {
+            throw new Error(
+              `--font-substitute expects <family>=<safe-font>, got "${spec}"`
+            );
+          }
+          const from = spec.slice(0, eq).trim();
+          const to = spec.slice(eq + 1).trim();
+          if (!from || !to) {
+            throw new Error(
+              `--font-substitute expects non-empty family and safe-font, got "${spec}"`
+            );
+          }
+          if (!isSafeFont(to)) {
+            throw new Error(
+              `--font-substitute target "${to}" is not in SAFE_FONTS (got "${spec}")`
+            );
+          }
+          substitution[from] = to;
+        }
+
         spinner.text = `Generating ${adapter.label}...`;
         const buffer = await factory.generate(documentDefinition, {
           theme: mergedConfig.theme,
@@ -164,6 +210,8 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
           fonts: {
             strict: options.strictFonts,
             ...(extraEntries.length > 0 && { extraEntries }),
+            ...(options.fontMode && { mode: options.fontMode }),
+            ...(Object.keys(substitution).length > 0 && { substitution }),
             googleFonts: {
               ...(options.noGoogleFonts === true && { enabled: false }),
               ...(options.fontCacheDir && {

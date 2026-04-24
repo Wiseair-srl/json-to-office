@@ -10,3 +10,4 @@ coverage/
 .DS_Store
 *.log
 schemas/
+packages/*/package-lock.json

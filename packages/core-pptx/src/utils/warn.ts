@@ -17,7 +17,6 @@ export const W = {
   GRID_POSITION_CLAMPED: 'GRID_POSITION_CLAMPED',
   IMAGE_ZERO_BOX: 'IMAGE_ZERO_BOX',
   FONT_UNRESOLVED: 'FONT_UNRESOLVED',
-  FONT_EMBED_FAILED: 'FONT_EMBED_FAILED',
 } as const;
 
 export type WarningCode = (typeof W)[keyof typeof W];
