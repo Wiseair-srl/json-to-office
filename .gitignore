@@ -9,5 +9,5 @@ coverage/
 !.env.example
 .DS_Store
 *.log
-schemas/
+/schemas/
 packages/*/package-lock.json
