@@ -1,0 +1,6254 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Wiseair 16-9",
+    "author": "Wiseair",
+    "company": "Wiseair",
+    "theme": "wiseair",
+    "pageNumberFormat": "09",
+    "grid": {
+      "columns": 12,
+      "rows": 12,
+      "margin": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 },
+      "gutter": { "column": 0.16, "row": 0.16 }
+    },
+    "templates": [
+      {
+        "name": "SECTION_AZURE_TEMPLATE",
+        "background": { "color": "accent" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "67.69%",
+              "w": "1.4%",
+              "h": "2.49%",
+              "fill": { "color": "FFFFFF", "transparency": 85 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88%",
+              "y": "64.6%",
+              "w": "1.8%",
+              "h": "3.2%",
+              "fill": { "color": "FFFFFF", "transparency": 82 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83.5%",
+              "y": "63.56%",
+              "w": "2%",
+              "h": "3.56%",
+              "fill": { "color": "FFFFFF", "transparency": 80 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79%",
+              "y": "65.15%",
+              "w": "1.6%",
+              "h": "2.84%",
+              "fill": { "color": "FFFFFF", "transparency": 84 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "72.06%",
+              "w": "2%",
+              "h": "3.56%",
+              "fill": { "color": "FFFFFF", "transparency": 78 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "70.47%",
+              "w": "2.4%",
+              "h": "4.27%",
+              "fill": { "color": "FFFFFF", "transparency": 74 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "69.38%",
+              "w": "2.8%",
+              "h": "4.97%",
+              "fill": { "color": "FFFFFF", "transparency": 70 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "71.01%",
+              "w": "2.2%",
+              "h": "3.91%",
+              "fill": { "color": "FFFFFF", "transparency": 76 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "77%",
+              "y": "73.6%",
+              "w": "1.8%",
+              "h": "3.2%",
+              "fill": { "color": "FFFFFF", "transparency": 80 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92.5%",
+              "y": "77.38%",
+              "w": "2.8%",
+              "h": "4.97%",
+              "fill": { "color": "FFFFFF", "transparency": 65 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87.5%",
+              "y": "76.29%",
+              "w": "3.2%",
+              "h": "5.69%",
+              "fill": { "color": "FFFFFF", "transparency": 58 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "76.92%",
+              "w": "2.6%",
+              "h": "4.63%",
+              "fill": { "color": "FFFFFF", "transparency": 64 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79.5%",
+              "y": "79.51%",
+              "w": "2.2%",
+              "h": "3.91%",
+              "fill": { "color": "FFFFFF", "transparency": 72 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "82.97%",
+              "w": "2.4%",
+              "h": "4.27%",
+              "fill": { "color": "FFFFFF", "transparency": 60 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89.5%",
+              "y": "82.25%",
+              "w": "3.4%",
+              "h": "6.04%",
+              "fill": { "color": "FFFFFF", "transparency": 52 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "83.33%",
+              "w": "3%",
+              "h": "5.33%",
+              "fill": { "color": "FFFFFF", "transparency": 56 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81.5%",
+              "y": "85.47%",
+              "w": "2.4%",
+              "h": "4.27%",
+              "fill": { "color": "FFFFFF", "transparency": 66 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "88.33%",
+              "w": "3%",
+              "h": "5.33%",
+              "fill": { "color": "FFFFFF", "transparency": 50 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "88.7%",
+              "w": "3.6%",
+              "h": "6.4%",
+              "fill": { "color": "FFFFFF", "transparency": 45 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "background",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "label",
+            "grid": { "column": 0, "row": 5, "columnSpan": 7, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": { "column": 0, "row": 6, "columnSpan": 9, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 40,
+                "fontFace": "Inter Light",
+                "color": "background"
+              }
+            }
+          },
+          {
+            "name": "description",
+            "grid": { "column": 0, "row": 9, "columnSpan": 7, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#B5BBE6"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "COVER_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "w": "7.5%",
+              "h": "2.8%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "13.69%",
+              "w": "1.4%",
+              "h": "2.49%",
+              "fill": { "color": "accent", "transparency": 88 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "11.6%",
+              "w": "1.8%",
+              "h": "3.2%",
+              "fill": { "color": "accent", "transparency": 85 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "13.15%",
+              "w": "1.6%",
+              "h": "2.84%",
+              "fill": { "color": "accent", "transparency": 86 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "18.56%",
+              "w": "2%",
+              "h": "3.56%",
+              "fill": { "color": "accent", "transparency": 80 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87.5%",
+              "y": "17.47%",
+              "w": "2.4%",
+              "h": "4.27%",
+              "fill": { "color": "accent", "transparency": 78 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "19.1%",
+              "w": "1.8%",
+              "h": "3.2%",
+              "fill": { "color": "accent", "transparency": 82 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79%",
+              "y": "21.65%",
+              "w": "1.6%",
+              "h": "2.84%",
+              "fill": { "color": "accent", "transparency": 84 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "24.47%",
+              "w": "2.4%",
+              "h": "4.27%",
+              "fill": { "color": "accent", "transparency": 75 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89.5%",
+              "y": "23.88%",
+              "w": "2.8%",
+              "h": "4.97%",
+              "fill": { "color": "accent", "transparency": 70 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "24.92%",
+              "w": "2.6%",
+              "h": "4.63%",
+              "fill": { "color": "accent", "transparency": 72 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80.5%",
+              "y": "27.01%",
+              "w": "2.2%",
+              "h": "3.91%",
+              "fill": { "color": "accent", "transparency": 76 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "76.5%",
+              "y": "29.6%",
+              "w": "1.8%",
+              "h": "3.2%",
+              "fill": { "color": "accent", "transparency": 80 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "30.33%",
+              "w": "3%",
+              "h": "5.33%",
+              "fill": { "color": "accent", "transparency": 65 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "30.75%",
+              "w": "3.4%",
+              "h": "6.04%",
+              "fill": { "color": "accent", "transparency": 60 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82.5%",
+              "y": "32.38%",
+              "w": "2.8%",
+              "h": "4.97%",
+              "fill": { "color": "accent", "transparency": 65 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "78%",
+              "y": "34.97%",
+              "w": "2.4%",
+              "h": "4.27%",
+              "fill": { "color": "accent", "transparency": 70 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "74%",
+              "y": "38.06%",
+              "w": "2%",
+              "h": "3.56%",
+              "fill": { "color": "accent", "transparency": 76 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "36.75%",
+              "w": "3.4%",
+              "h": "6.04%",
+              "fill": { "color": "accent", "transparency": 55 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "37.16%",
+              "w": "3.8%",
+              "h": "6.76%",
+              "fill": { "color": "accent", "transparency": 50 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84.5%",
+              "y": "38.79%",
+              "w": "3.2%",
+              "h": "5.69%",
+              "fill": { "color": "accent", "transparency": 55 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "41.42%",
+              "w": "2.6%",
+              "h": "4.63%",
+              "fill": { "color": "accent", "transparency": 62 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "76%",
+              "y": "44.51%",
+              "w": "2.2%",
+              "h": "3.91%",
+              "fill": { "color": "accent", "transparency": 70 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "43.16%",
+              "w": "3.8%",
+              "h": "6.76%",
+              "fill": { "color": "accent", "transparency": 42 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "44.07%",
+              "w": "4.2%",
+              "h": "7.47%",
+              "fill": { "color": "accent", "transparency": 38 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82.5%",
+              "y": "46.25%",
+              "w": "3.4%",
+              "h": "6.04%",
+              "fill": { "color": "accent", "transparency": 45 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "78.5%",
+              "y": "48.83%",
+              "w": "3%",
+              "h": "5.33%",
+              "fill": { "color": "accent", "transparency": 55 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "50.29%",
+              "w": "3.2%",
+              "h": "5.69%",
+              "fill": { "color": "accent", "transparency": 48 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "50.98%",
+              "w": "4.6%",
+              "h": "8.17%",
+              "fill": { "color": "accent", "transparency": 35 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "53.16%",
+              "w": "3.8%",
+              "h": "6.76%",
+              "fill": { "color": "accent", "transparency": 40 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "56.29%",
+              "w": "3.2%",
+              "h": "5.69%",
+              "fill": { "color": "accent", "transparency": 50 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "57.61%",
+              "w": "4%",
+              "h": "7.11%",
+              "fill": { "color": "accent", "transparency": 38 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "59.2%",
+              "w": "3.6%",
+              "h": "6.4%",
+              "fill": { "color": "accent", "transparency": 42 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83%",
+              "y": "61.38%",
+              "w": "2.8%",
+              "h": "4.97%",
+              "fill": { "color": "accent", "transparency": 55 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "65.33%",
+              "w": "3%",
+              "h": "5.33%",
+              "fill": { "color": "accent", "transparency": 50 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "66.97%",
+              "w": "2.4%",
+              "h": "4.27%",
+              "fill": { "color": "accent", "transparency": 60 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "64.42%",
+              "w": "2.6%",
+              "h": "4.63%",
+              "fill": { "color": "accent", "transparency": 52 }
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "date",
+            "grid": { "column": 9, "row": 0, "columnSpan": 3, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "fontFace": "Inter Light",
+                "color": "#6E7389",
+                "align": "right"
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": { "column": 0, "row": 3, "columnSpan": 10, "rowSpan": 5 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 44,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "subtitle",
+            "grid": { "column": 0, "row": 9, "columnSpan": 7, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "CLOSING_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "w": "7.5%",
+              "h": "2.8%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "49.65%",
+              "w": "1.6%",
+              "h": "2.84%",
+              "fill": { "color": "accent", "transparency": 82 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88.5%",
+              "y": "48.06%",
+              "w": "2%",
+              "h": "3.56%",
+              "fill": { "color": "accent", "transparency": 78 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "49.6%",
+              "w": "1.8%",
+              "h": "3.2%",
+              "fill": { "color": "accent", "transparency": 80 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "95%",
+              "y": "54.51%",
+              "w": "2.2%",
+              "h": "3.91%",
+              "fill": { "color": "accent", "transparency": 74 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90.5%",
+              "y": "53.42%",
+              "w": "2.6%",
+              "h": "4.63%",
+              "fill": { "color": "accent", "transparency": 68 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "86%",
+              "y": "54.88%",
+              "w": "2.8%",
+              "h": "4.97%",
+              "fill": { "color": "accent", "transparency": 65 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81.5%",
+              "y": "57.01%",
+              "w": "2.2%",
+              "h": "3.91%",
+              "fill": { "color": "accent", "transparency": 72 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "78%",
+              "y": "59.65%",
+              "w": "1.6%",
+              "h": "2.84%",
+              "fill": { "color": "accent", "transparency": 78 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "60.33%",
+              "w": "3%",
+              "h": "5.33%",
+              "fill": { "color": "accent", "transparency": 60 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88%",
+              "y": "59.75%",
+              "w": "3.4%",
+              "h": "6.04%",
+              "fill": { "color": "accent", "transparency": 54 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83.5%",
+              "y": "62.33%",
+              "w": "3%",
+              "h": "5.33%",
+              "fill": { "color": "accent", "transparency": 58 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79.5%",
+              "y": "65.47%",
+              "w": "2.4%",
+              "h": "4.27%",
+              "fill": { "color": "accent", "transparency": 66 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "95%",
+              "y": "66.75%",
+              "w": "3.4%",
+              "h": "6.04%",
+              "fill": { "color": "accent", "transparency": 50 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "66.16%",
+              "w": "3.8%",
+              "h": "6.76%",
+              "fill": { "color": "accent", "transparency": 44 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "68.75%",
+              "w": "3.4%",
+              "h": "6.04%",
+              "fill": { "color": "accent", "transparency": 48 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "71.88%",
+              "w": "2.8%",
+              "h": "4.97%",
+              "fill": { "color": "accent", "transparency": 58 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "93%",
+              "y": "73.07%",
+              "w": "4.2%",
+              "h": "7.47%",
+              "fill": { "color": "accent", "transparency": 38 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "88%",
+              "y": "73.66%",
+              "w": "3.8%",
+              "h": "6.76%",
+              "fill": { "color": "accent", "transparency": 40 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "83.5%",
+              "y": "76.29%",
+              "w": "3.2%",
+              "h": "5.69%",
+              "fill": { "color": "accent", "transparency": 48 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "80%",
+              "y": "79.42%",
+              "w": "2.6%",
+              "h": "4.63%",
+              "fill": { "color": "accent", "transparency": 58 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "95%",
+              "y": "80.2%",
+              "w": "3.6%",
+              "h": "6.4%",
+              "fill": { "color": "accent", "transparency": 35 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "80.48%",
+              "w": "4.6%",
+              "h": "8.17%",
+              "fill": { "color": "accent", "transparency": 30 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85.5%",
+              "y": "83.16%",
+              "w": "3.8%",
+              "h": "6.76%",
+              "fill": { "color": "accent", "transparency": 38 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "86.33%",
+              "w": "3%",
+              "h": "5.33%",
+              "fill": { "color": "accent", "transparency": 50 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "heading",
+            "grid": { "row": 5, "rowSpan": 2, "column": 0, "columnSpan": 12 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 38,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "body",
+            "grid": { "row": 7, "rowSpan": 2, "column": 0, "columnSpan": 7 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0"
+              }
+            }
+          },
+          {
+            "name": "contacts",
+            "grid": { "row": 11, "rowSpan": 1, "column": 0, "columnSpan": 7 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TEXT_VISUAL_TEMPLATE",
+        "background": { "color": "background2" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "x": "50%",
+              "y": "0%",
+              "w": "50%",
+              "h": "100%",
+              "fill": { "color": "primary" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "x": "5%",
+              "y": "30.4%",
+              "w": "5%",
+              "h": "0.53%",
+              "fill": { "color": "accent" },
+              "rectRadius": 0.02
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "63%",
+              "y": "25.12%",
+              "w": "25%",
+              "h": "44.44%",
+              "fill": { "color": "accent", "transparency": 70 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "68%",
+              "y": "34%",
+              "w": "15%",
+              "h": "26.67%",
+              "fill": { "color": "background", "transparency": 90 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "number",
+            "grid": { "column": 0, "row": 2, "columnSpan": 2, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "color": "accent", "bold": true }
+            }
+          },
+          {
+            "name": "title",
+            "grid": { "column": 0, "row": 4, "columnSpan": 6, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 28, "color": "text", "lineSpacing": 34 }
+            }
+          },
+          {
+            "name": "content",
+            "grid": { "column": 0, "row": 7, "columnSpan": 6, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "THREE_COL_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": { "color": "background2", "width": 0.75 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "col1",
+            "grid": { "column": 0, "row": 3, "columnSpan": 4, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background2" },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "col2",
+            "grid": { "column": 4, "row": 3, "columnSpan": 4, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background2" },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "col3",
+            "grid": { "column": 8, "row": 3, "columnSpan": 4, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background2" },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "METRICS_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#6E7389"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "background"
+              }
+            }
+          },
+          {
+            "name": "col1",
+            "grid": { "column": 0, "row": 3, "columnSpan": 3, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "col2",
+            "grid": { "column": 3, "row": 3, "columnSpan": 3, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "col3",
+            "grid": { "column": 6, "row": 3, "columnSpan": 3, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "col4",
+            "grid": { "column": 9, "row": 3, "columnSpan": 3, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TWO_COL_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": { "color": "background2", "width": 0.75 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "leftTitle",
+            "grid": { "column": 0, "row": 3, "columnSpan": 6 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 20, "color": "text", "fontFace": "Inter" }
+            }
+          },
+          {
+            "name": "rightTitle",
+            "grid": { "column": 6, "row": 3, "columnSpan": 6 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 20, "color": "text", "fontFace": "Inter" }
+            }
+          },
+          {
+            "name": "left",
+            "grid": { "column": 0, "row": 4, "columnSpan": 6, "rowSpan": 6 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2"
+              }
+            }
+          },
+          {
+            "name": "right",
+            "grid": { "column": 6, "row": 4, "columnSpan": 6, "rowSpan": 6 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "CHART_TEMPLATE",
+        "background": { "color": "background2" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "chart",
+            "grid": { "column": 0, "row": 3, "columnSpan": 12, "rowSpan": 8 },
+            "defaults": {
+              "name": "chart",
+              "props": {
+                "dataLabelFontSize": 14,
+                "dataLabelFontFace": "Inter Light"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "QUOTE_TEMPLATE",
+        "background": { "color": "secondary" },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "“",
+              "x": "35%",
+              "y": "10.67%",
+              "w": "30%",
+              "h": "24%",
+              "fontSize": 96,
+              "fontFace": "Inter Light",
+              "color": "accent",
+              "align": "center"
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "quote",
+            "grid": { "column": 1, "row": 4, "columnSpan": 10, "rowSpan": 5 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 22,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "author_name",
+            "grid": { "column": 2, "row": 9, "columnSpan": 8, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "align": "center",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "author_title",
+            "grid": { "column": 2, "row": 10, "columnSpan": 8, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "#8B90A5",
+                "align": "center"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TIMELINE_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": { "color": "background2", "width": 0.75 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "16%",
+              "y": "45.33%",
+              "w": "68%",
+              "h": "0%",
+              "line": { "color": "accent4", "width": 2 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "13.5%",
+              "y": "40%",
+              "w": "6%",
+              "h": "10.67%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "36%",
+              "y": "40%",
+              "w": "6%",
+              "h": "10.67%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "58.5%",
+              "y": "40%",
+              "w": "6%",
+              "h": "10.67%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "81%",
+              "y": "40%",
+              "w": "6%",
+              "h": "10.67%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "step1_number",
+            "x": "13.5%",
+            "y": "40%",
+            "w": "6%",
+            "h": "10.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "step1_title",
+            "grid": { "column": 0, "row": 6, "columnSpan": 3, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "color": "text",
+                "fontFace": "Inter",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "step1_desc",
+            "grid": { "column": 0, "row": 7, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 12, "align": "center", "lineSpacing": 20 }
+            }
+          },
+          {
+            "name": "step2_number",
+            "x": "36%",
+            "y": "40%",
+            "w": "6%",
+            "h": "10.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "step2_title",
+            "grid": { "column": 3, "row": 6, "columnSpan": 3, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "color": "text",
+                "fontFace": "Inter",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "step2_desc",
+            "grid": { "column": 3, "row": 7, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 12, "align": "center", "lineSpacing": 20 }
+            }
+          },
+          {
+            "name": "step3_number",
+            "x": "58.5%",
+            "y": "40%",
+            "w": "6%",
+            "h": "10.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "step3_title",
+            "grid": { "column": 6, "row": 6, "columnSpan": 3, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "color": "text",
+                "fontFace": "Inter",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "step3_desc",
+            "grid": { "column": 6, "row": 7, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 12, "align": "center", "lineSpacing": 20 }
+            }
+          },
+          {
+            "name": "step4_number",
+            "x": "81%",
+            "y": "40%",
+            "w": "6%",
+            "h": "10.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "step4_title",
+            "grid": { "column": 9, "row": 6, "columnSpan": 3, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 15,
+                "color": "text",
+                "fontFace": "Inter",
+                "align": "center"
+              }
+            }
+          },
+          {
+            "name": "step4_desc",
+            "grid": { "column": 9, "row": 7, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 12, "align": "center", "lineSpacing": 20 }
+            }
+          }
+        ]
+      },
+      {
+        "name": "SECTION_LIGHT_TEMPLATE",
+        "background": { "color": "accent4" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "label",
+            "grid": { "column": 0, "row": 5, "columnSpan": 7, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": { "column": 0, "row": 6, "columnSpan": 9, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 40,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "description",
+            "grid": { "column": 0, "row": 9, "columnSpan": 7, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "IMG_TEXT_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "x": "0%",
+              "y": "0%",
+              "w": "50%",
+              "h": "100%",
+              "fill": { "color": "primary" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "x": "54%",
+              "y": "26.4%",
+              "w": "5%",
+              "h": "0.53%",
+              "fill": { "color": "accent" },
+              "rectRadius": 0.02
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "image",
+            "x": "3%",
+            "y": "4%",
+            "w": "44%",
+            "h": "86.67%",
+            "defaults": {
+              "name": "image",
+              "props": { "sizing": { "type": "contain" } }
+            }
+          },
+          {
+            "name": "number",
+            "x": "54%",
+            "y": "20%",
+            "w": "10%",
+            "h": "5.33%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "color": "accent", "bold": true }
+            }
+          },
+          {
+            "name": "title",
+            "x": "54%",
+            "y": "30.67%",
+            "w": "41%",
+            "h": "16%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 28, "color": "text", "lineSpacing": 34 }
+            }
+          },
+          {
+            "name": "content",
+            "x": "54%",
+            "y": "48%",
+            "w": "41%",
+            "h": "13.33%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "lineSpacing": 24
+              }
+            }
+          },
+          { "name": "stats", "x": "54%", "y": "66.67%", "w": "41%", "h": "12%" }
+        ]
+      },
+      {
+        "name": "COMPARISON_TEMPLATE",
+        "background": { "color": "background2" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "table",
+            "grid": { "column": 0, "row": 4, "columnSpan": 12, "rowSpan": 7 },
+            "defaults": {
+              "name": "table",
+              "props": { "fontSize": 13, "fontFace": "Inter Light" }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TEAM_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": { "color": "background2", "width": 0.75 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "12.2%",
+              "y": "32.89%",
+              "w": "8%",
+              "h": "14.23%",
+              "fill": { "color": "background2" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "34.7%",
+              "y": "32.89%",
+              "w": "8%",
+              "h": "14.23%",
+              "fill": { "color": "background2" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "57.2%",
+              "y": "32.89%",
+              "w": "8%",
+              "h": "14.23%",
+              "fill": { "color": "background2" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "79.7%",
+              "y": "32.89%",
+              "w": "8%",
+              "h": "14.23%",
+              "fill": { "color": "background2" }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "member1_initials",
+            "x": "12.2%",
+            "y": "32.89%",
+            "w": "8%",
+            "h": "14.23%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "color": "text2",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "member1_name",
+            "x": "5%",
+            "y": "47.33%",
+            "w": "22.5%",
+            "h": "4.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "color": "text",
+                "align": "center",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "member1_role",
+            "x": "5%",
+            "y": "52.27%",
+            "w": "22.5%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "color": "accent", "align": "center" }
+            }
+          },
+          {
+            "name": "member1_bio",
+            "x": "5%",
+            "y": "57.07%",
+            "w": "22.5%",
+            "h": "9.33%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "align": "center", "lineSpacing": 17 }
+            }
+          },
+          {
+            "name": "member2_initials",
+            "x": "34.7%",
+            "y": "32.89%",
+            "w": "8%",
+            "h": "14.23%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "color": "text2",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "member2_name",
+            "x": "27.5%",
+            "y": "47.33%",
+            "w": "22.5%",
+            "h": "4.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "color": "text",
+                "align": "center",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "member2_role",
+            "x": "27.5%",
+            "y": "52.27%",
+            "w": "22.5%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "color": "accent", "align": "center" }
+            }
+          },
+          {
+            "name": "member2_bio",
+            "x": "27.5%",
+            "y": "57.07%",
+            "w": "22.5%",
+            "h": "9.33%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "align": "center", "lineSpacing": 17 }
+            }
+          },
+          {
+            "name": "member3_initials",
+            "x": "57.2%",
+            "y": "32.89%",
+            "w": "8%",
+            "h": "14.23%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "color": "text2",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "member3_name",
+            "x": "50%",
+            "y": "47.33%",
+            "w": "22.5%",
+            "h": "4.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "color": "text",
+                "align": "center",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "member3_role",
+            "x": "50%",
+            "y": "52.27%",
+            "w": "22.5%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "color": "accent", "align": "center" }
+            }
+          },
+          {
+            "name": "member3_bio",
+            "x": "50%",
+            "y": "57.07%",
+            "w": "22.5%",
+            "h": "9.33%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "align": "center", "lineSpacing": 17 }
+            }
+          },
+          {
+            "name": "member4_initials",
+            "x": "79.7%",
+            "y": "32.89%",
+            "w": "8%",
+            "h": "14.23%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "color": "text2",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "member4_name",
+            "x": "72.5%",
+            "y": "47.33%",
+            "w": "22.5%",
+            "h": "4.67%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "color": "text",
+                "align": "center",
+                "fontFace": "Inter"
+              }
+            }
+          },
+          {
+            "name": "member4_role",
+            "x": "72.5%",
+            "y": "52.27%",
+            "w": "22.5%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "color": "accent", "align": "center" }
+            }
+          },
+          {
+            "name": "member4_bio",
+            "x": "72.5%",
+            "y": "57.07%",
+            "w": "22.5%",
+            "h": "9.33%",
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 11, "align": "center", "lineSpacing": 17 }
+            }
+          }
+        ]
+      },
+      {
+        "name": "BIG_STAT_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "label",
+            "grid": { "column": 2, "row": 3, "columnSpan": 8, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 13,
+                "fontFace": "Inter Light",
+                "color": "#6E7389",
+                "align": "center",
+                "charSpacing": 3,
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "stat",
+            "grid": { "column": 1, "row": 4, "columnSpan": 10, "rowSpan": 4 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 96,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "description",
+            "grid": { "column": 2, "row": 8, "columnSpan": 8, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0",
+                "align": "center",
+                "lineSpacing": 26
+              }
+            }
+          },
+          {
+            "name": "source",
+            "grid": { "column": 3, "row": 10, "columnSpan": 6, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 10,
+                "fontFace": "Inter Light",
+                "color": "#4A4E63",
+                "align": "center",
+                "italic": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "DASHBOARD_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": { "color": "background2", "width": 0.75 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "metric1",
+            "grid": { "column": 0, "row": 3, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background2" },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "metric2",
+            "grid": { "column": 4, "row": 3, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background2" },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "metric3",
+            "grid": { "column": 8, "row": 3, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background2" },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "chart",
+            "grid": { "column": 0, "row": 6, "columnSpan": 12, "rowSpan": 5 },
+            "defaults": {
+              "name": "chart",
+              "props": {
+                "dataLabelFontSize": 12,
+                "dataLabelFontFace": "Inter Light"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "THREE_COL_DARK_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#6E7389"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "background"
+              }
+            }
+          },
+          {
+            "name": "col1",
+            "grid": { "column": 0, "row": 3, "columnSpan": 4, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "col2",
+            "grid": { "column": 4, "row": 3, "columnSpan": 4, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "col3",
+            "grid": { "column": 8, "row": 3, "columnSpan": 4, "rowSpan": 8 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "STACKED_POINTS_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": { "color": "background2", "width": 0.75 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "7.5%",
+              "y": "32%",
+              "w": "0%",
+              "h": "42%",
+              "line": { "color": "accent4", "width": 1.5 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "5%",
+              "y": "26.22%",
+              "w": "5%",
+              "h": "8.89%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "5%",
+              "y": "46.22%",
+              "w": "5%",
+              "h": "8.89%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "5%",
+              "y": "66.22%",
+              "w": "5%",
+              "h": "8.89%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "point1_number",
+            "x": "5%",
+            "y": "26.22%",
+            "w": "5%",
+            "h": "8.89%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "point1_title",
+            "x": "12%",
+            "y": "26%",
+            "w": "83%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "text",
+                "fontFace": "Inter",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "point1_desc",
+            "x": "12%",
+            "y": "30.67%",
+            "w": "83%",
+            "h": "12%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "point2_number",
+            "x": "5%",
+            "y": "46.22%",
+            "w": "5%",
+            "h": "8.89%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "point2_title",
+            "x": "12%",
+            "y": "46%",
+            "w": "83%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "text",
+                "fontFace": "Inter",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "point2_desc",
+            "x": "12%",
+            "y": "50.67%",
+            "w": "83%",
+            "h": "12%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "point3_number",
+            "x": "5%",
+            "y": "66.22%",
+            "w": "5%",
+            "h": "8.89%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "point3_title",
+            "x": "12%",
+            "y": "66%",
+            "w": "83%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "text",
+                "fontFace": "Inter",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "point3_desc",
+            "x": "12%",
+            "y": "70.67%",
+            "w": "83%",
+            "h": "12%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "footnote",
+            "x": "12%",
+            "y": "85.33%",
+            "w": "76%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "bold": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "STACKED_POINTS_DARK_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "7.5%",
+              "y": "32%",
+              "w": "0%",
+              "h": "42%",
+              "line": { "color": "3A3F55", "width": 1.5 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "5%",
+              "y": "26.22%",
+              "w": "5%",
+              "h": "8.89%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "5%",
+              "y": "46.22%",
+              "w": "5%",
+              "h": "8.89%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "5%",
+              "y": "66.22%",
+              "w": "5%",
+              "h": "8.89%",
+              "fill": { "color": "accent" }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#6E7389"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "background"
+              }
+            }
+          },
+          {
+            "name": "point1_number",
+            "x": "5%",
+            "y": "26.22%",
+            "w": "5%",
+            "h": "8.89%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "point1_title",
+            "x": "12%",
+            "y": "26%",
+            "w": "83%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "fontFace": "Inter",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "point1_desc",
+            "x": "12%",
+            "y": "30.67%",
+            "w": "83%",
+            "h": "12%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "point2_number",
+            "x": "5%",
+            "y": "46.22%",
+            "w": "5%",
+            "h": "8.89%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "point2_title",
+            "x": "12%",
+            "y": "46%",
+            "w": "83%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "fontFace": "Inter",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "point2_desc",
+            "x": "12%",
+            "y": "50.67%",
+            "w": "83%",
+            "h": "12%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "point3_number",
+            "x": "5%",
+            "y": "66.22%",
+            "w": "5%",
+            "h": "8.89%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "align": "center",
+                "valign": "middle",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "point3_title",
+            "x": "12%",
+            "y": "66%",
+            "w": "83%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "background",
+                "fontFace": "Inter",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "point3_desc",
+            "x": "12%",
+            "y": "70.67%",
+            "w": "83%",
+            "h": "12%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "footnote",
+            "x": "12%",
+            "y": "85.33%",
+            "w": "76%",
+            "h": "4%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "bold": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "THREE_COL_NARRATIVE_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": { "color": "background2", "width": 0.75 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "col1",
+            "grid": { "column": 0, "row": 3, "columnSpan": 4, "rowSpan": 5 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background2" },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "col2",
+            "grid": { "column": 4, "row": 3, "columnSpan": 4, "rowSpan": 5 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background2" },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "col3",
+            "grid": { "column": 8, "row": 3, "columnSpan": 4, "rowSpan": 5 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background2" },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "narrative",
+            "grid": { "column": 0, "row": 8, "columnSpan": 12, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 13,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "lineSpacing": 21
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TWO_COL_NARRATIVE_TEMPLATE",
+        "background": { "color": "background" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "5%",
+              "y": "91.33%",
+              "w": "90%",
+              "h": "0%",
+              "line": { "color": "background2", "width": 0.75 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "leftTitle",
+            "grid": { "column": 0, "row": 3, "columnSpan": 6, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 20, "color": "text", "fontFace": "Inter" }
+            }
+          },
+          {
+            "name": "rightTitle",
+            "grid": { "column": 6, "row": 3, "columnSpan": 6, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 20, "color": "text", "fontFace": "Inter" }
+            }
+          },
+          {
+            "name": "left",
+            "grid": { "column": 0, "row": 4, "columnSpan": 6, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 13,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "lineSpacing": 21
+              }
+            }
+          },
+          {
+            "name": "right",
+            "grid": { "column": 6, "row": 4, "columnSpan": 6, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 13,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "lineSpacing": 21
+              }
+            }
+          },
+          {
+            "name": "narrativeLabel",
+            "grid": { "column": 0, "row": 7, "columnSpan": 4, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": { "fontSize": 18, "color": "text", "fontFace": "Inter" }
+            }
+          },
+          {
+            "name": "narrative",
+            "grid": { "column": 0, "row": 8, "columnSpan": 12, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 13,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "lineSpacing": 21
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "LOGO_GRID_TEMPLATE",
+        "background": { "color": "background2" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "x": "0%",
+              "y": "91.33%",
+              "w": "100%",
+              "h": "0.13%",
+              "fill": { "color": "accent", "transparency": 70 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "logo1",
+            "grid": { "column": 0, "row": 3, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo2",
+            "grid": { "column": 3, "row": 3, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo3",
+            "grid": { "column": 6, "row": 3, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo4",
+            "grid": { "column": 9, "row": 3, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo5",
+            "grid": { "column": 0, "row": 5, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo6",
+            "grid": { "column": 3, "row": 5, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo7",
+            "grid": { "column": 6, "row": 5, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo8",
+            "grid": { "column": 9, "row": 5, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo9",
+            "grid": { "column": 0, "row": 7, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo10",
+            "grid": { "column": 3, "row": 7, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo11",
+            "grid": { "column": 6, "row": 7, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "logo12",
+            "grid": { "column": 9, "row": 7, "columnSpan": 3, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "footnote",
+            "grid": { "column": 0, "row": 10, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "align": "center"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "FUNDRAISE_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "w": "7.5%",
+              "h": "2.8%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "x": "5%",
+              "y": "28%",
+              "w": "5%",
+              "h": "0.53%",
+              "fill": { "color": "accent" },
+              "rectRadius": 0.02
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "90%",
+              "y": "9.56%",
+              "w": "2%",
+              "h": "3.56%",
+              "fill": { "color": "accent", "transparency": 85 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "85%",
+              "y": "11.38%",
+              "w": "2.8%",
+              "h": "4.97%",
+              "fill": { "color": "accent", "transparency": 78 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "92%",
+              "y": "15.25%",
+              "w": "3.4%",
+              "h": "6.04%",
+              "fill": { "color": "accent", "transparency": 70 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "87%",
+              "y": "18.47%",
+              "w": "2.4%",
+              "h": "4.27%",
+              "fill": { "color": "accent", "transparency": 74 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "82%",
+              "y": "14.65%",
+              "w": "1.6%",
+              "h": "2.84%",
+              "fill": { "color": "accent", "transparency": 82 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "94%",
+              "y": "22.42%",
+              "w": "2.6%",
+              "h": "4.63%",
+              "fill": { "color": "accent", "transparency": 65 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "89%",
+              "y": "24.16%",
+              "w": "3.8%",
+              "h": "6.76%",
+              "fill": { "color": "accent", "transparency": 55 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "84%",
+              "y": "23.33%",
+              "w": "3%",
+              "h": "5.33%",
+              "fill": { "color": "accent", "transparency": 62 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "label",
+            "grid": { "column": 0, "row": 1, "columnSpan": 6, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 13,
+                "fontFace": "Inter Light",
+                "color": "#6E7389",
+                "charSpacing": 3,
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "amount",
+            "grid": { "column": 0, "row": 3, "columnSpan": 10, "rowSpan": 3 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 64,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "description",
+            "grid": { "column": 0, "row": 6, "columnSpan": 8, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "fontFace": "Inter Light",
+                "color": "#9A9EB0",
+                "lineSpacing": 24
+              }
+            }
+          },
+          {
+            "name": "use1",
+            "grid": { "column": 0, "row": 8, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "use2",
+            "grid": { "column": 4, "row": 8, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "use3",
+            "grid": { "column": 8, "row": 8, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "MARKET_TEMPLATE",
+        "background": { "color": "background2" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "30%",
+              "y": "21.11%",
+              "w": "40%",
+              "h": "71.1%",
+              "fill": { "color": "accent", "transparency": 96 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "35%",
+              "y": "30%",
+              "w": "30%",
+              "h": "53.33%",
+              "fill": { "color": "accent", "transparency": 94 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "x": "40%",
+              "y": "38.89%",
+              "w": "20%",
+              "h": "35.56%",
+              "fill": { "color": "accent", "transparency": 88 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "stat1",
+            "grid": { "column": 0, "row": 3, "columnSpan": 4, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 48,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "align": "center",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "stat1_label",
+            "grid": { "column": 0, "row": 5, "columnSpan": 4, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "fontFace": "Inter",
+                "color": "text",
+                "align": "center",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "stat1_desc",
+            "grid": { "column": 0, "row": 6, "columnSpan": 4, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "align": "center",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "stat2",
+            "grid": { "column": 4, "row": 3, "columnSpan": 4, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 48,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "align": "center",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "stat2_label",
+            "grid": { "column": 4, "row": 5, "columnSpan": 4, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "fontFace": "Inter",
+                "color": "text",
+                "align": "center",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "stat2_desc",
+            "grid": { "column": 4, "row": 6, "columnSpan": 4, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "align": "center",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "stat3",
+            "grid": { "column": 8, "row": 3, "columnSpan": 4, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 48,
+                "fontFace": "Inter Light",
+                "color": "accent",
+                "align": "center",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "stat3_label",
+            "grid": { "column": 8, "row": 5, "columnSpan": 4, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "fontFace": "Inter",
+                "color": "text",
+                "align": "center",
+                "bold": true
+              }
+            }
+          },
+          {
+            "name": "stat3_desc",
+            "grid": { "column": 8, "row": 6, "columnSpan": 4, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "align": "center",
+                "lineSpacing": 20
+              }
+            }
+          },
+          {
+            "name": "footnote",
+            "grid": { "column": 1, "row": 10, "columnSpan": 10, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 10,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "align": "center",
+                "italic": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "UNIT_ECONOMICS_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "#6E7389",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "#6E7389"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "background"
+              }
+            }
+          },
+          {
+            "name": "metric1",
+            "grid": { "column": 0, "row": 3, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "metric2",
+            "grid": { "column": 4, "row": 3, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "metric3",
+            "grid": { "column": 8, "row": 3, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "metric4",
+            "grid": { "column": 0, "row": 6, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "metric5",
+            "grid": { "column": 4, "row": 6, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "metric6",
+            "grid": { "column": 8, "row": 6, "columnSpan": 4, "rowSpan": 3 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "footnote",
+            "grid": { "column": 0, "row": 10, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 10,
+                "fontFace": "Inter Light",
+                "color": "#4A4E63",
+                "italic": true,
+                "align": "center"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "REVENUE_BREAKDOWN_TEMPLATE",
+        "background": { "color": "background2" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "x": "0%",
+              "y": "91.33%",
+              "w": "100%",
+              "h": "0.13%",
+              "fill": { "color": "accent", "transparency": 70 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "chart",
+            "grid": { "column": 0, "row": 3, "columnSpan": 5, "rowSpan": 8 },
+            "defaults": {
+              "name": "chart",
+              "props": {
+                "dataLabelFontSize": 14,
+                "dataLabelFontFace": "Inter Light"
+              }
+            }
+          },
+          {
+            "name": "segment1",
+            "grid": { "column": 6, "row": 3, "columnSpan": 6, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "segment2",
+            "grid": { "column": 6, "row": 5, "columnSpan": 6, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "segment3",
+            "grid": { "column": 6, "row": 7, "columnSpan": 6, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "segment4",
+            "grid": { "column": 6, "row": 9, "columnSpan": 6, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "COVER_STATS_TEMPLATE",
+        "background": { "color": "primary" },
+        "objects": [
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo-white.svg?updatedAt=1751359555877",
+              "w": "7.5%",
+              "h": "2.8%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "10%",
+              "y": "76%",
+              "w": "80%",
+              "h": "0%",
+              "line": { "color": "accent", "width": 0.5, "dashType": "dot" }
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "date",
+            "grid": { "column": 9, "row": 0, "columnSpan": 3, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "fontFace": "Inter Light",
+                "color": "#6E7389",
+                "align": "right"
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": { "column": 0, "row": 2, "columnSpan": 9, "rowSpan": 4 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 40,
+                "fontFace": "Inter Light",
+                "color": "background",
+                "valign": "bottom"
+              }
+            }
+          },
+          {
+            "name": "stats",
+            "grid": { "column": 0, "row": 6, "columnSpan": 8, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "tagline",
+            "grid": { "column": 0, "row": 7, "columnSpan": 6, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "fontFace": "Inter Light",
+                "color": "#6E7389",
+                "italic": true
+              }
+            }
+          },
+          {
+            "name": "logo1",
+            "grid": { "column": 1, "row": 9, "columnSpan": 2, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.1,
+                "align": "center",
+                "valign": "middle",
+                "fontSize": 9,
+                "fontColor": "9A9EB0"
+              }
+            }
+          },
+          {
+            "name": "logo2",
+            "grid": { "column": 3, "row": 9, "columnSpan": 2, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.1,
+                "align": "center",
+                "valign": "middle",
+                "fontSize": 9,
+                "fontColor": "9A9EB0"
+              }
+            }
+          },
+          {
+            "name": "logo3",
+            "grid": { "column": 5, "row": 9, "columnSpan": 2, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.1,
+                "align": "center",
+                "valign": "middle",
+                "fontSize": 9,
+                "fontColor": "9A9EB0"
+              }
+            }
+          },
+          {
+            "name": "logo4",
+            "grid": { "column": 7, "row": 9, "columnSpan": 2, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.1,
+                "align": "center",
+                "valign": "middle",
+                "fontSize": 9,
+                "fontColor": "9A9EB0"
+              }
+            }
+          },
+          {
+            "name": "logo5",
+            "grid": { "column": 9, "row": 9, "columnSpan": 2, "rowSpan": 2 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "2A2E42" },
+                "line": { "color": "3A3F55", "width": 0.75 },
+                "rectRadius": 0.1,
+                "align": "center",
+                "valign": "middle",
+                "fontSize": 9,
+                "fontColor": "9A9EB0"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "PRICING_TEMPLATE",
+        "background": { "color": "background2" },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "x": "0%",
+              "y": "91.33%",
+              "w": "100%",
+              "h": "0.13%",
+              "fill": { "color": "accent", "transparency": 70 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "tier1",
+            "grid": { "column": 0, "row": 4, "columnSpan": 4, "rowSpan": 7 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "tier2",
+            "grid": { "column": 4, "row": 4, "columnSpan": 4, "rowSpan": 7 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "tier2_badge",
+            "x": "40%",
+            "y": "23.5%",
+            "w": "14%",
+            "h": "3.5%",
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "accent" },
+                "rectRadius": 0.08,
+                "fontSize": 9,
+                "fontColor": "background",
+                "bold": true,
+                "align": "center",
+                "valign": "middle"
+              }
+            }
+          },
+          {
+            "name": "tier3",
+            "grid": { "column": 8, "row": 4, "columnSpan": 4, "rowSpan": 7 },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "roundRect",
+                "fill": { "color": "background" },
+                "line": { "color": "E0E2EA", "width": 0.75 },
+                "rectRadius": 0.15,
+                "align": "left",
+                "valign": "top"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "INSIGHT_TEMPLATE",
+        "background": { "color": "background2" },
+        "objects": [
+          {
+            "name": "text",
+            "props": {
+              "text": "“",
+              "x": "6%",
+              "y": "25%",
+              "w": "8%",
+              "h": "10.67%",
+              "fontSize": 72,
+              "fontFace": "Inter Light",
+              "color": "accent"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "x": "5%",
+              "y": "66%",
+              "w": "5%",
+              "h": "0.53%",
+              "fill": { "color": "accent" },
+              "rectRadius": 0.02
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "x": "0%",
+              "y": "91.33%",
+              "w": "100%",
+              "h": "0.13%",
+              "fill": { "color": "accent", "transparency": 70 }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "path": "https://ik.imagekit.io/wiseair/Brand%20assets/wiseair-logo.svg?updatedAt=1749817149276",
+              "y": "94.67%",
+              "w": "6%",
+              "h": "2.2%",
+              "grid": { "column": 0, "row": 0 }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "x": "90%",
+              "y": "94.67%",
+              "w": "5%",
+              "h": "4%",
+              "color": "text2",
+              "fontSize": 9,
+              "align": "center",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 14,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 28,
+                "fontFace": "Inter Light",
+                "color": "text"
+              }
+            }
+          },
+          {
+            "name": "quote",
+            "grid": { "column": 1, "row": 3, "columnSpan": 10, "rowSpan": 2 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 13,
+                "fontFace": "Inter Light",
+                "color": "text2",
+                "italic": true,
+                "lineSpacing": 22
+              }
+            }
+          },
+          {
+            "name": "quoteSource",
+            "grid": { "column": 1, "row": 5, "columnSpan": 10, "rowSpan": 1 },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 10,
+                "fontFace": "Inter Light",
+                "color": "accent"
+              }
+            }
+          },
+          {
+            "name": "table",
+            "grid": { "column": 0, "row": 7, "columnSpan": 12, "rowSpan": 3 },
+            "defaults": {
+              "name": "table",
+              "props": { "fontSize": 12, "fontFace": "Inter Light" }
+            }
+          }
+        ]
+      }
+    ],
+    "slideWidth": 13.333,
+    "slideHeight": 7.5
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {
+        "template": "COVER_TEMPLATE",
+        "notes": "Cover slide with mock title and subtitle.",
+        "placeholders": {
+          "date": { "name": "text", "props": { "text": "Q2 2027" } },
+          "title": {
+            "name": "text",
+            "props": { "text": "A showcase of the 16:9\nWiseair slide system" }
+          },
+          "subtitle": {
+            "name": "text",
+            "props": {
+              "text": "Mock deck illustrating every template\nDesign · Data · Narrative"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "THREE_COL_TEMPLATE",
+        "notes": "Three parallel propositions on a light background.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "THREE PILLARS" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "A simple framework, three moving parts" }
+          },
+          "col1": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "01",
+                  "fontSize": 13,
+                  "color": "accent",
+                  "bold": true,
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 10, "breakLine": true },
+                {
+                  "text": "Discover",
+                  "fontSize": 16,
+                  "fontFace": "Inter",
+                  "color": "text",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 8, "breakLine": true },
+                {
+                  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Short descriptive paragraph that sets up the column's purpose.",
+                  "fontSize": 12
+                }
+              ]
+            }
+          },
+          "col2": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "02",
+                  "fontSize": 13,
+                  "color": "accent",
+                  "bold": true,
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 10, "breakLine": true },
+                {
+                  "text": "Design",
+                  "fontSize": 16,
+                  "fontFace": "Inter",
+                  "color": "text",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 8, "breakLine": true },
+                {
+                  "text": "Duis aute irure dolor in reprehenderit. Another balanced block with equivalent weight to the first and third.",
+                  "fontSize": 12
+                }
+              ]
+            }
+          },
+          "col3": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "03",
+                  "fontSize": 13,
+                  "color": "accent",
+                  "bold": true,
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 10, "breakLine": true },
+                {
+                  "text": "Deliver",
+                  "fontSize": 16,
+                  "fontFace": "Inter",
+                  "color": "text",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 8, "breakLine": true },
+                {
+                  "text": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit.",
+                  "fontSize": 12
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "STACKED_POINTS_DARK_TEMPLATE",
+        "notes": "Three numbered narrative points on a dark background.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "WHY IT MATTERS" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Three reasons this approach wins" }
+          },
+          "point1_number": {
+            "name": "text",
+            "props": { "text": "01", "bold": false }
+          },
+          "point1_title": {
+            "name": "text",
+            "props": { "text": "First advantage framed as a headline" }
+          },
+          "point1_desc": {
+            "name": "text",
+            "props": {
+              "text": "Supporting sentence that expands on the headline with one or two concrete details and a clear takeaway."
+            }
+          },
+          "point2_number": {
+            "name": "text",
+            "props": { "text": "02", "bold": false }
+          },
+          "point2_title": {
+            "name": "text",
+            "props": { "text": "Second advantage with a distinct angle" }
+          },
+          "point2_desc": {
+            "name": "text",
+            "props": {
+              "text": "Complementary evidence or a second-order consequence that builds on the first point without repeating it."
+            }
+          },
+          "point3_number": {
+            "name": "text",
+            "props": { "text": "03", "bold": false }
+          },
+          "point3_title": {
+            "name": "text",
+            "props": { "text": "Third advantage that completes the arc" }
+          },
+          "point3_desc": {
+            "name": "text",
+            "props": {
+              "text": "Closing observation that ties the three points together into a coherent why-now argument."
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "THREE_COL_DARK_TEMPLATE",
+        "notes": "Three stacked modules on dark background.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "THE PLATFORM" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Three modules, one continuous workflow" }
+          },
+          "col1": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "01",
+                  "fontSize": 13,
+                  "color": "accent",
+                  "bold": true,
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 10, "breakLine": true },
+                {
+                  "text": "Module A",
+                  "fontSize": 18,
+                  "fontFace": "Inter",
+                  "color": "background",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 10, "breakLine": true },
+                {
+                  "text": "Brief description of the first module and the problem it solves.",
+                  "fontSize": 12,
+                  "color": "#9A9EB0"
+                }
+              ]
+            }
+          },
+          "col2": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "02",
+                  "fontSize": 13,
+                  "color": "accent",
+                  "bold": true,
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 10, "breakLine": true },
+                {
+                  "text": "Module B",
+                  "fontSize": 18,
+                  "fontFace": "Inter",
+                  "color": "background",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 10, "breakLine": true },
+                {
+                  "text": "Brief description of the second module and how it builds on the first.",
+                  "fontSize": 12,
+                  "color": "#9A9EB0"
+                }
+              ]
+            }
+          },
+          "col3": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "03",
+                  "fontSize": 13,
+                  "color": "accent",
+                  "bold": true,
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 10, "breakLine": true },
+                {
+                  "text": "Module C",
+                  "fontSize": 18,
+                  "fontFace": "Inter",
+                  "color": "background",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 10, "breakLine": true },
+                {
+                  "text": "Brief description of the third module and what it enables downstream.",
+                  "fontSize": 12,
+                  "color": "#9A9EB0"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "COMPARISON_TEMPLATE",
+        "notes": "Mock table illustrating the comparison layout.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "MARKET SIZING" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Mock TAM / SAM / SOM breakdown" }
+          },
+          "table": {
+            "name": "table",
+            "props": {
+              "color": "text2",
+              "border": { "type": "solid", "pt": 0.5, "color": "background2" },
+              "colW": [2.2, 3.2, 1.8, 1.8],
+              "rowH": [0.42, 0.5, 0.5, 0.5, 0.42],
+              "margin": [3, 6, 3, 6],
+              "borderRadius": 0.15,
+              "rows": [
+                [
+                  {
+                    "text": "TAM / SAM / SOM",
+                    "color": "background",
+                    "fill": "primary",
+                    "fontSize": 10,
+                    "fontFace": "Inter",
+                    "colspan": 2
+                  },
+                  {
+                    "text": "IN SCOPE",
+                    "color": "background",
+                    "fill": "primary",
+                    "align": "center",
+                    "fontSize": 10,
+                    "fontFace": "Inter"
+                  },
+                  {
+                    "text": "REVENUE",
+                    "color": "background",
+                    "fill": "primary",
+                    "align": "center",
+                    "fontSize": 10,
+                    "fontFace": "Inter"
+                  }
+                ],
+                [
+                  {
+                    "text": "TAM",
+                    "color": "text",
+                    "fill": "background",
+                    "fontSize": 11
+                  },
+                  {
+                    "text": "Total addressable market across all segments",
+                    "fill": "background",
+                    "fontSize": 10
+                  },
+                  {
+                    "text": "10,000",
+                    "align": "center",
+                    "fill": "background",
+                    "color": "text"
+                  },
+                  {
+                    "text": "€100M",
+                    "align": "center",
+                    "fill": "background",
+                    "color": "text2"
+                  }
+                ],
+                [
+                  {
+                    "text": "SAM",
+                    "color": "text",
+                    "fill": "background",
+                    "fontSize": 11
+                  },
+                  {
+                    "text": "Segment actively evaluating a solution",
+                    "fill": "background",
+                    "fontSize": 10
+                  },
+                  {
+                    "text": "2,000",
+                    "align": "center",
+                    "fill": "background",
+                    "color": "text"
+                  },
+                  {
+                    "text": "€20M",
+                    "align": "center",
+                    "fill": "background",
+                    "color": "accent"
+                  }
+                ],
+                [
+                  {
+                    "text": "SOM",
+                    "color": "text",
+                    "fill": "background",
+                    "fontSize": 11
+                  },
+                  {
+                    "text": "Realistic 12-month capture",
+                    "fill": "background",
+                    "fontSize": 10
+                  },
+                  {
+                    "text": "100",
+                    "align": "center",
+                    "fill": "background",
+                    "color": "text"
+                  },
+                  {
+                    "text": "€1M",
+                    "align": "center",
+                    "fill": "background",
+                    "color": "accent"
+                  }
+                ],
+                [
+                  {
+                    "text": "Source: mock data for template illustration.",
+                    "fill": "background2",
+                    "fontSize": 9,
+                    "color": "text2",
+                    "italic": true,
+                    "colspan": 4
+                  }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "DASHBOARD_TEMPLATE",
+        "notes": "KPI cards above a chart.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "PERFORMANCE" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Headline metrics and a trend" }
+          },
+          "metric1": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "€1.2M",
+                  "fontSize": 32,
+                  "color": "accent",
+                  "breakLine": true
+                },
+                {
+                  "text": "Metric one",
+                  "fontSize": 12,
+                  "color": "text2",
+                  "spaceBefore": 4
+                }
+              ]
+            }
+          },
+          "metric2": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "48%",
+                  "fontSize": 32,
+                  "color": "accent",
+                  "breakLine": true
+                },
+                {
+                  "text": "Metric two",
+                  "fontSize": 12,
+                  "color": "text2",
+                  "spaceBefore": 4
+                }
+              ]
+            }
+          },
+          "metric3": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "124",
+                  "fontSize": 32,
+                  "color": "accent",
+                  "breakLine": true
+                },
+                {
+                  "text": "Metric three",
+                  "fontSize": 12,
+                  "color": "text2",
+                  "spaceBefore": 4
+                }
+              ]
+            }
+          },
+          "chart": {
+            "name": "chart",
+            "props": {
+              "type": "bar",
+              "barDir": "col",
+              "barGrouping": "stacked",
+              "barGapWidthPct": 80,
+              "data": [
+                {
+                  "name": "Series A",
+                  "labels": ["Q1", "Q2", "Q3", "Q4"],
+                  "values": [120, 180, 240, 320]
+                },
+                {
+                  "name": "Series B",
+                  "labels": ["Q1", "Q2", "Q3", "Q4"],
+                  "values": [80, 110, 140, 170]
+                }
+              ],
+              "chartColors": ["accent", "accent2"],
+              "showLegend": true,
+              "legendPos": "b",
+              "legendFontSize": 9,
+              "legendColor": "text2",
+              "showValue": true,
+              "dataLabelPosition": "ctr",
+              "dataLabelFontSize": 9,
+              "dataLabelColor": "FFFFFF",
+              "catAxisLabelFontSize": 10,
+              "catAxisLabelColor": "text2",
+              "valAxisMinVal": 0,
+              "valAxisMaxVal": 600,
+              "valAxisMajorUnit": 200,
+              "valAxisLabelColor": "text2"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "THREE_COL_NARRATIVE_TEMPLATE",
+        "notes": "Three tiered options with a narrative summary below.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "PRICING" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Three tiers, one expansion path" }
+          },
+          "col1": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "€99",
+                  "fontSize": 28,
+                  "color": "accent",
+                  "breakLine": true
+                },
+                {
+                  "text": "/month",
+                  "fontSize": 11,
+                  "color": "text2",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 8, "breakLine": true },
+                {
+                  "text": "Starter",
+                  "fontSize": 16,
+                  "fontFace": "Inter",
+                  "color": "text",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 6, "breakLine": true },
+                {
+                  "text": "Entry tier for small teams evaluating the platform.",
+                  "fontSize": 12,
+                  "color": "text2"
+                }
+              ]
+            }
+          },
+          "col2": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "€499",
+                  "fontSize": 28,
+                  "color": "accent",
+                  "breakLine": true
+                },
+                {
+                  "text": "/month",
+                  "fontSize": 11,
+                  "color": "text2",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 8, "breakLine": true },
+                {
+                  "text": "Growth",
+                  "fontSize": 16,
+                  "fontFace": "Inter",
+                  "color": "text",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 6, "breakLine": true },
+                {
+                  "text": "Most popular tier covering the typical mid-market deployment.",
+                  "fontSize": 12,
+                  "color": "text2"
+                }
+              ]
+            }
+          },
+          "col3": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "Custom",
+                  "fontSize": 28,
+                  "color": "accent",
+                  "breakLine": true
+                },
+                {
+                  "text": "enterprise",
+                  "fontSize": 11,
+                  "color": "text2",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 8, "breakLine": true },
+                {
+                  "text": "Enterprise",
+                  "fontSize": 16,
+                  "fontFace": "Inter",
+                  "color": "text",
+                  "breakLine": true
+                },
+                { "text": "", "fontSize": 6, "breakLine": true },
+                {
+                  "text": "Custom scope, dedicated support, and bespoke integrations.",
+                  "fontSize": 12,
+                  "color": "text2"
+                }
+              ]
+            }
+          },
+          "narrative": {
+            "name": "text",
+            "props": {
+              "text": "Tiers expand naturally as customers grow. Starter validates the value, Growth captures the core of the market, and Enterprise unlocks the largest deals through custom scoping. Every upgrade is a net-new ARR step, not a replacement."
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "TWO_COL_NARRATIVE_TEMPLATE",
+        "notes": "Two contrasting columns with a shared narrative.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "BEFORE / AFTER" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "The transition in one page" }
+          },
+          "leftTitle": { "name": "text", "props": { "text": "Before" } },
+          "rightTitle": { "name": "text", "props": { "text": "After" } },
+          "left": {
+            "name": "text",
+            "props": {
+              "text": "Slow, manual workflows.\nFragmented data.\nHigh coordination cost and limited visibility across teams."
+            }
+          },
+          "right": {
+            "name": "text",
+            "props": {
+              "text": "Automated flow end-to-end.\nOne source of truth.\nDecision-ready dashboards with continuous updates.",
+              "bold": false
+            }
+          },
+          "narrativeLabel": {
+            "name": "text",
+            "props": { "text": "Why the shift" }
+          },
+          "narrative": {
+            "name": "text",
+            "props": {
+              "text": "The left column describes the prior state in neutral terms; the right column states the new state as outcomes, not features. The narrative block explains the mechanism that closes the gap and why the change is durable rather than cosmetic."
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "QUOTE_TEMPLATE",
+        "notes": "Standalone testimonial slide.",
+        "placeholders": {
+          "quote": {
+            "name": "text",
+            "props": {
+              "text": "A concise quotation that speaks to the value of the solution — short enough to read at a glance, specific enough to feel real, attributed to someone credible."
+            }
+          },
+          "author_name": {
+            "name": "text",
+            "props": { "bold": false, "text": "Jane Doe" }
+          },
+          "author_title": {
+            "name": "text",
+            "props": { "text": "Head of Operations, Example Corp" }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "LOGO_GRID_TEMPLATE",
+        "notes": "Customer logo wall with a footnote. Logos are placeholders.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "CUSTOMERS" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Trusted by teams across industries" }
+          },
+          "logo1": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client A", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo2": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client B", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo3": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client C", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo4": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client D", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo5": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client E", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo6": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client F", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo7": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client G", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo8": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client H", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo9": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client I", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo10": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client J", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo11": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client K", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "logo12": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [{ "text": "Client L", "fontSize": 12, "color": "text2" }]
+            }
+          },
+          "footnote": {
+            "name": "text",
+            "props": {
+              "text": "Representative sample  ·  Multiple sectors  ·  No single customer concentration"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "CHART_TEMPLATE",
+        "notes": "Full-width doughnut chart.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "SEGMENT MIX" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Balanced distribution across segments" }
+          },
+          "chart": {
+            "name": "chart",
+            "props": {
+              "type": "doughnut",
+              "holeSize": 55,
+              "data": [
+                {
+                  "name": "Mix",
+                  "labels": [
+                    "Segment A",
+                    "Segment B",
+                    "Segment C",
+                    "Segment D",
+                    "Segment E"
+                  ],
+                  "values": [30, 24, 18, 16, 12]
+                }
+              ],
+              "chartColors": ["0A1233", "1B2559", "2E3E80", "4A5CA8", "7080C4"],
+              "showLegend": true,
+              "legendPos": "r",
+              "legendFontSize": 11,
+              "showPercent": true,
+              "showLabel": false,
+              "showValue": false,
+              "dataLabelFontSize": 11,
+              "dataLabelColor": "background",
+              "dataLabelPosition": "outEnd"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "BIG_STAT_TEMPLATE",
+        "notes": "A single hero statistic.",
+        "placeholders": {
+          "label": { "name": "text", "props": { "text": "HEADLINE METRIC" } },
+          "stat": { "name": "text", "props": { "text": "9.4 / 10" } },
+          "description": {
+            "name": "text",
+            "props": {
+              "text": "A single hero statistic with the context a reader needs to interpret it correctly."
+            }
+          },
+          "source": {
+            "name": "text",
+            "props": { "text": "Source: mock sample, Q2 2027" }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "METRICS_TEMPLATE",
+        "notes": "Four KPI cards on a dark background.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "UNIT ECONOMICS" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Four numbers that define the business" }
+          },
+          "col1": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "72%",
+                  "fontSize": 36,
+                  "color": "background",
+                  "breakLine": true
+                },
+                {
+                  "text": "Gross Margin",
+                  "fontSize": 12,
+                  "color": "#9A9EB0",
+                  "spaceBefore": 6
+                }
+              ]
+            }
+          },
+          "col2": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "28%",
+                  "fontSize": 36,
+                  "color": "background",
+                  "breakLine": true
+                },
+                {
+                  "text": "EBITDA Margin",
+                  "fontSize": 12,
+                  "color": "#9A9EB0",
+                  "spaceBefore": 6
+                }
+              ]
+            }
+          },
+          "col3": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "6x",
+                  "fontSize": 36,
+                  "color": "background",
+                  "breakLine": true
+                },
+                {
+                  "text": "LTV / CAC",
+                  "fontSize": 12,
+                  "color": "#9A9EB0",
+                  "spaceBefore": 6
+                }
+              ]
+            }
+          },
+          "col4": {
+            "name": "shape",
+            "props": {
+              "type": "roundRect",
+              "text": [
+                {
+                  "text": "€180K",
+                  "fontSize": 36,
+                  "color": "background",
+                  "breakLine": true
+                },
+                {
+                  "text": "ARR per head",
+                  "fontSize": 12,
+                  "color": "#9A9EB0",
+                  "spaceBefore": 6
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "INSIGHT_TEMPLATE",
+        "notes": "A sourced insight paired with a defensibility table.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "INSIGHT" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "An external perspective and our moat" }
+          },
+          "quote": {
+            "name": "text",
+            "props": {
+              "text": "\"A representative third-party quote that supports the positioning on this slide — short, specific, and clearly attributable to a credible external source.\""
+            }
+          },
+          "quoteSource": {
+            "name": "text",
+            "props": { "text": "Source: Mock Industry Report 2027, p. 14" }
+          },
+          "table": {
+            "name": "table",
+            "props": {
+              "color": "text2",
+              "border": { "type": "solid", "pt": 0.5, "color": "background2" },
+              "colW": [3, 1.5, 4.5],
+              "rowH": [0.4, 0.6, 0.6, 0.6],
+              "margin": [4, 8, 4, 8],
+              "borderRadius": 0.12,
+              "rows": [
+                [
+                  {
+                    "text": "LAYER",
+                    "color": "background",
+                    "fill": "primary",
+                    "fontSize": 10,
+                    "fontFace": "Inter"
+                  },
+                  {
+                    "text": "LEVEL",
+                    "color": "background",
+                    "fill": "primary",
+                    "fontSize": 10,
+                    "fontFace": "Inter",
+                    "align": "center"
+                  },
+                  {
+                    "text": "DETAIL",
+                    "color": "background",
+                    "fill": "primary",
+                    "fontSize": 10,
+                    "fontFace": "Inter"
+                  }
+                ],
+                [
+                  {
+                    "text": "Workflow",
+                    "fill": "background",
+                    "fontSize": 11,
+                    "color": "text"
+                  },
+                  {
+                    "text": "MEDIUM",
+                    "fill": "background",
+                    "fontSize": 10,
+                    "align": "center",
+                    "color": "text2"
+                  },
+                  {
+                    "text": "Replicable in months, but real edge-case experience is hard to shortcut.",
+                    "fill": "background",
+                    "fontSize": 10
+                  }
+                ],
+                [
+                  {
+                    "text": "Data",
+                    "fill": "background",
+                    "fontSize": 11,
+                    "color": "text"
+                  },
+                  {
+                    "text": "HIGH",
+                    "fill": "background",
+                    "fontSize": 10,
+                    "align": "center",
+                    "color": "accent"
+                  },
+                  {
+                    "text": "Live dataset accrues with every deployment and cannot be bought off-the-shelf.",
+                    "fill": "background",
+                    "fontSize": 10
+                  }
+                ],
+                [
+                  {
+                    "text": "Analytics",
+                    "fill": "background",
+                    "fontSize": 11,
+                    "color": "text"
+                  },
+                  {
+                    "text": "VERY HIGH",
+                    "fill": "background",
+                    "fontSize": 10,
+                    "align": "center",
+                    "color": "22C55E"
+                  },
+                  {
+                    "text": "Specialised models built on top of the dataset produce actionable outputs no generic tool matches.",
+                    "fill": "background",
+                    "fontSize": 10
+                  }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "STACKED_POINTS_TEMPLATE",
+        "notes": "Three numbered growth levers on a light background.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "GROWTH LEVERS" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Three ways we expand from here" }
+          },
+          "point1_number": { "name": "text", "props": { "text": "01" } },
+          "point1_title": {
+            "name": "text",
+            "props": { "text": "Geographic expansion" }
+          },
+          "point1_desc": {
+            "name": "text",
+            "props": {
+              "text": "Entering an adjacent market with a very similar regulatory profile. Localization is mostly language and data-source wiring; the core product is already aligned."
+            }
+          },
+          "point2_number": { "name": "text", "props": { "text": "02" } },
+          "point2_title": {
+            "name": "text",
+            "props": { "text": "Product expansion" }
+          },
+          "point2_desc": {
+            "name": "text",
+            "props": {
+              "text": "A second module that extends the same value chain and is a natural upsell from the initial deployment."
+            }
+          },
+          "point3_number": { "name": "text", "props": { "text": "03" } },
+          "point3_title": {
+            "name": "text",
+            "props": { "text": "Channel partnerships" }
+          },
+          "point3_desc": {
+            "name": "text",
+            "props": {
+              "text": "Distribution through category-adjacent consultancies and integrators who already own the customer relationship."
+            }
+          },
+          "footnote": {
+            "name": "text",
+            "props": {
+              "bold": false,
+              "text": "Target: doubling ARR within 24 months"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "TEAM_TEMPLATE",
+        "notes": "Four-person founder/team layout.",
+        "placeholders": {
+          "section": { "name": "text", "props": { "text": "TEAM" } },
+          "heading": {
+            "name": "text",
+            "props": { "text": "Built by a small, senior team" }
+          },
+          "member1_initials": { "name": "text", "props": { "text": "AA" } },
+          "member1_name": { "name": "text", "props": { "text": "Alex Avery" } },
+          "member1_role": {
+            "name": "text",
+            "props": { "text": "Co-founder, CEO" }
+          },
+          "member1_bio": {
+            "name": "text",
+            "props": {
+              "text": "Short bio highlighting prior background and the specific expertise this person brings."
+            }
+          },
+          "member2_initials": { "name": "text", "props": { "text": "BB" } },
+          "member2_name": { "name": "text", "props": { "text": "Bea Bell" } },
+          "member2_role": {
+            "name": "text",
+            "props": { "text": "Co-founder, CTO" }
+          },
+          "member2_bio": {
+            "name": "text",
+            "props": {
+              "text": "Short bio describing technical leadership and the platform work owned by this person."
+            }
+          },
+          "member3_initials": { "name": "text", "props": { "text": "CC" } },
+          "member3_name": { "name": "text", "props": { "text": "Chris Cole" } },
+          "member3_role": {
+            "name": "text",
+            "props": { "text": "Head of GTM" }
+          },
+          "member3_bio": {
+            "name": "text",
+            "props": {
+              "text": "Short bio describing go-to-market ownership and distinctive prior experience."
+            }
+          },
+          "member4_initials": { "name": "text", "props": { "text": "DD" } },
+          "member4_name": { "name": "text", "props": { "text": "Dana Diaz" } },
+          "member4_role": {
+            "name": "text",
+            "props": { "text": "Head of Design" }
+          },
+          "member4_bio": {
+            "name": "text",
+            "props": {
+              "text": "Short bio describing design leadership and the product surface this person shapes."
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "CLOSING_TEMPLATE",
+        "notes": "Closing slide with a single call to action.",
+        "placeholders": {
+          "heading": {
+            "name": "text",
+            "props": { "text": "Thanks — let's talk" }
+          },
+          "body": {
+            "name": "text",
+            "props": { "text": "", "lineSpacing": 24 }
+          },
+          "contacts": {
+            "name": "text",
+            "props": { "text": "hello@example.com  ·  +00 123 456 7890" }
+          }
+        }
+      }
+    }
+  ]
+}
