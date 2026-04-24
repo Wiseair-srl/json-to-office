@@ -5,6 +5,7 @@
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
+import { applyFontWeight } from '../utils/fontAliasContext';
 
 /**
  * Characters that PowerPoint may render as color emoji.
@@ -23,6 +24,7 @@ interface TableCell {
   fontSize?: number;
   fontFace?: string;
   bold?: boolean;
+  fontWeight?: number;
   italic?: boolean;
   align?: string;
   valign?: string;
@@ -68,32 +70,39 @@ export function renderTableComponent(
     const lastCell = lastRow?.[0];
     bgFill = props.fill
       ? resolveColor(props.fill, theme, warnings)
-      : (typeof lastCell === 'object' && lastCell.fill)
+      : typeof lastCell === 'object' && lastCell.fill
         ? resolveColor(lastCell.fill, theme, warnings)
         : 'FFFFFF';
     const firstCell = props.rows[0]?.[0];
-    headerFill = (typeof firstCell === 'object' && firstCell.fill)
-      ? resolveColor(firstCell.fill, theme, warnings)
-      : bgFill;
+    headerFill =
+      typeof firstCell === 'object' && firstCell.fill
+        ? resolveColor(firstCell.fill, theme, warnings)
+        : bgFill;
     // Derive width from colW (actual cell widths) so shapes match the table exactly
     borderRadiusTableW = Array.isArray(props.colW)
       ? props.colW.reduce((sum, w) => sum + w, 0)
       : typeof props.colW === 'number'
         ? props.colW * (props.rows[0]?.length ?? 1) // assumes uniform column count
-        : typeof props.w === 'number' ? props.w : 5;
+        : typeof props.w === 'number'
+          ? props.w
+          : 5;
   }
 
   // Pre-compute inner border for per-cell border assignment
   const innerBorder = props.border
     ? {
-      type: props.border.type ?? 'solid',
-      pt: props.border.pt ?? 1,
-      color: resolveColor(props.border.color ?? '000000', theme, warnings),
-    }
+        type: props.border.type ?? 'solid',
+        pt: props.border.pt ?? 1,
+        color: resolveColor(props.border.color ?? '000000', theme, warnings),
+      }
     : undefined;
 
   // Helper: build per-cell border array when borderRadius is active
-  const buildBorderRadiusBorders = (rowIndex: number, colIndex: number, colCount: number) => {
+  const buildBorderRadiusBorders = (
+    rowIndex: number,
+    colIndex: number,
+    colCount: number
+  ) => {
     const isTop = rowIndex === 0;
     const isBottom = rowIndex === props.rows.length - 1;
     const isLeft = colIndex === 0;
@@ -101,10 +110,10 @@ export function renderTableComponent(
     const zeroBorder = { type: 'none', pt: 0 };
     const hInner = innerBorder ?? zeroBorder;
     return [
-      (isTop || rowIndex === 1) ? zeroBorder : hInner,   // top: outer + header-body seam
-      isRight ? zeroBorder : hInner,                       // right
-      (isBottom || rowIndex === 0) ? zeroBorder : hInner,  // bottom: outer + header-body seam
-      isLeft ? zeroBorder : hInner,                        // left
+      isTop || rowIndex === 1 ? zeroBorder : hInner, // top: outer + header-body seam
+      isRight ? zeroBorder : hInner, // right
+      isBottom || rowIndex === 0 ? zeroBorder : hInner, // bottom: outer + header-body seam
+      isLeft ? zeroBorder : hInner, // left
     ];
   };
 
@@ -116,7 +125,8 @@ export function renderTableComponent(
       // Corner cells: first/last col of header or last row — transparent
       // so background roundRect shapes show rounded corners through them.
       // All other cells: opaque fill to prevent seam artifacts.
-      const isCorner = bgFill &&
+      const isCorner =
+        bgFill &&
         (rowIndex === 0 || rowIndex === lastRowIdx) &&
         (colIndex === 0 || colIndex === lastColIdx);
 
@@ -130,14 +140,23 @@ export function renderTableComponent(
         return { text: applyTextVariationSelector(cell), options: opts };
       }
       const cellOpts: Record<string, unknown> = {};
-      if (cell.color) cellOpts.color = resolveColor(cell.color, theme, warnings);
+      if (cell.color)
+        cellOpts.color = resolveColor(cell.color, theme, warnings);
       if (bgFill) {
         const isHeader = rowIndex === 0;
         if (!isCorner) {
-          const resolvedFill = cell.fill ? resolveColor(cell.fill, theme, warnings) : (isHeader ? headerFill : bgFill);
+          const resolvedFill = cell.fill
+            ? resolveColor(cell.fill, theme, warnings)
+            : isHeader
+              ? headerFill
+              : bgFill;
           cellOpts.fill = { color: resolvedFill };
         }
-        cellOpts.border = buildBorderRadiusBorders(rowIndex, colIndex, row.length);
+        cellOpts.border = buildBorderRadiusBorders(
+          rowIndex,
+          colIndex,
+          row.length
+        );
       } else if (cell.fill) {
         cellOpts.fill = { color: resolveColor(cell.fill, theme, warnings) };
       }
@@ -145,6 +164,20 @@ export function renderTableComponent(
       if (cell.fontFace) cellOpts.fontFace = cell.fontFace;
       if (cell.bold) cellOpts.bold = true;
       if (cell.italic) cellOpts.italic = true;
+      if (cell.fontWeight != null || cell.bold === true) {
+        const w = applyFontWeight({
+          family:
+            (cellOpts.fontFace as string | undefined) ??
+            props.fontFace ??
+            theme.fonts.body,
+          fontWeight: cell.fontWeight,
+          italic: cell.italic,
+          bold: cell.bold,
+        });
+        if (w.fontFace !== undefined) cellOpts.fontFace = w.fontFace;
+        if (w.bold !== undefined) cellOpts.bold = w.bold;
+        if (w.italic !== undefined) cellOpts.italic = w.italic;
+      }
       if (cell.align) cellOpts.align = cell.align;
       if (cell.valign) cellOpts.valign = cell.valign;
       if (cell.colspan) cellOpts.colspan = cell.colspan;
@@ -177,7 +210,8 @@ export function renderTableComponent(
   }
 
   // Fill
-  if (props.fill) opts.fill = { color: resolveColor(props.fill, theme, warnings) };
+  if (props.fill)
+    opts.fill = { color: resolveColor(props.fill, theme, warnings) };
 
   // Font defaults
   opts.fontSize = props.fontSize ?? theme.defaults.fontSize;
@@ -201,46 +235,68 @@ export function renderTableComponent(
   // Background roundRect shapes — placed BEFORE the table.
   // Corner cells are transparent so these shapes show through at the corners.
   // Non-corner cells are opaque to prevent seam artifacts.
-  if (props.borderRadius && pptx && typeof props.x === 'number' && typeof props.y === 'number') {
+  if (
+    props.borderRadius &&
+    pptx &&
+    typeof props.x === 'number' &&
+    typeof props.y === 'number'
+  ) {
     let tableH: number = (props.h as number) ?? 2;
     if (typeof props.rowH === 'number') {
       tableH = props.rowH * props.rows.length;
     } else if (Array.isArray(props.rowH)) {
       tableH = props.rowH.reduce((sum, h) => sum + h, 0);
     }
-    const headerH = typeof props.rowH === 'number'
-      ? props.rowH
-      : Array.isArray(props.rowH)
-        ? props.rowH[0]
-        : 0.45;
+    const headerH =
+      typeof props.rowH === 'number'
+        ? props.rowH
+        : Array.isArray(props.rowH)
+          ? props.rowH[0]
+          : 0.45;
     const tableW = borderRadiusTableW!;
     // Suppress shape outlines completely
     const noLine = { type: 'none' };
 
     // Header roundRect (rounded top corners)
     slide.addShape(pptx.ShapeType.roundRect, {
-      x: props.x, y: props.y, w: tableW, h: headerH,
-      fill: { color: headerFill }, rectRadius: props.borderRadius, line: noLine,
+      x: props.x,
+      y: props.y,
+      w: tableW,
+      h: headerH,
+      fill: { color: headerFill },
+      rectRadius: props.borderRadius,
+      line: noLine,
     } as any);
     // Header flat rect — covers the rounded bottom corners of header
     slide.addShape(pptx.ShapeType.rect, {
       x: props.x,
       y: (props.y as number) + headerH - props.borderRadius,
-      w: tableW, h: props.borderRadius,
-      fill: { color: headerFill }, line: noLine,
+      w: tableW,
+      h: props.borderRadius,
+      fill: { color: headerFill },
+      line: noLine,
     } as any);
 
     // Body roundRect (rounded bottom corners)
     const bodyY = (props.y as number) + headerH;
     const bodyH = tableH - headerH;
     slide.addShape(pptx.ShapeType.roundRect, {
-      x: props.x, y: bodyY, w: tableW, h: bodyH,
-      fill: { color: bgFill }, rectRadius: props.borderRadius, line: noLine,
+      x: props.x,
+      y: bodyY,
+      w: tableW,
+      h: bodyH,
+      fill: { color: bgFill },
+      rectRadius: props.borderRadius,
+      line: noLine,
     } as any);
     // Body flat rect — covers the rounded top corners of body
     slide.addShape(pptx.ShapeType.rect, {
-      x: props.x, y: bodyY, w: tableW, h: props.borderRadius,
-      fill: { color: bgFill }, line: noLine,
+      x: props.x,
+      y: bodyY,
+      w: tableW,
+      h: props.borderRadius,
+      fill: { color: bgFill },
+      line: noLine,
     } as any);
   }
 
@@ -248,7 +304,12 @@ export function renderTableComponent(
   // and suppress any table-level border/outline
   if (bgFill && borderRadiusTableW !== undefined) {
     opts.w = borderRadiusTableW;
-    opts.border = [{ type: 'none' }, { type: 'none' }, { type: 'none' }, { type: 'none' }];
+    opts.border = [
+      { type: 'none' },
+      { type: 'none' },
+      { type: 'none' },
+      { type: 'none' },
+    ];
   }
 
   slide.addTable(tableRows as any, opts as any);

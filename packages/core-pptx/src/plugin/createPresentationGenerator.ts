@@ -26,7 +26,7 @@ import { renderPresentation } from '../core/render';
 import { getPptxTheme } from '../themes';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from '../core/fontResolution';
-import { embedFontsInPptx } from '../utils/fontEmbedding';
+import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
 
 /**
  * Options for creating a presentation generator
@@ -274,48 +274,81 @@ function createBuilderImpl<
       }
 
       // Resolve theme for render context
-      const themeName =
+      const baseThemeName =
         typeof state.theme === 'string'
           ? state.theme
           : internalDocument.props.theme ?? 'default';
-      const resolvedTheme =
+      let resolvedTheme =
         typeof state.theme === 'object'
           ? state.theme
-          : state.customThemes?.[themeName] ?? getPptxTheme(themeName);
+          : state.customThemes?.[baseThemeName] ?? getPptxTheme(baseThemeName);
 
       const warnings: PipelineWarning[] = [];
 
+      // Export-mode pre-pass runs BEFORE custom-component expansion so
+      // any component that reads `theme.fonts.*` during render sees the
+      // substituted names, not the original non-safe ones. Otherwise the
+      // rewritten tree would still contain pre-substitute family strings
+      // baked in by custom components.
+      const mode = applyExportMode({
+        doc: internalDocument,
+        theme: resolvedTheme,
+        fonts: state.fonts,
+      });
+      resolvedTheme = mode.theme;
+      for (const w of mode.warnings) {
+        warnings.push({
+          code: w.code,
+          message: w.message,
+          component: 'fontRegistry',
+        });
+      }
+
       // Process custom components in all slide children
-      const processedChildren = internalDocument.children
-        ? await processAllSlides(
-            internalDocument.children,
-            warnings,
-            resolvedTheme
-          )
+      const processedChildren = mode.doc.children
+        ? await processAllSlides(mode.doc.children, warnings, resolvedTheme)
         : [];
 
-      const processedDocument: PresentationComponentDefinition = {
-        ...internalDocument,
-        children: processedChildren,
-      };
+      // Scope the theme key by mode so any future theme-name-keyed cache
+      // in PPTX can't leak a custom-mode layout into a substitute-mode run
+      // (or vice versa). Matches the DOCX plugin path.
+      const themeName = scopedThemeName(baseThemeName, state.fonts?.mode);
+      const docWithScopedTheme: PresentationComponentDefinition =
+        themeName !== baseThemeName
+          ? {
+              ...mode.doc,
+              props: { ...mode.doc.props, theme: themeName },
+              children: processedChildren,
+            }
+          : { ...mode.doc, children: processedChildren };
 
-      // Resolve fonts (walks doc + theme, fires onResolved side-channel).
-      const resolvedFonts = await resolveDocumentFonts(
+      const processedDocument = docWithScopedTheme;
+
+      // resolveDocumentFonts fires `fonts.onResolved` internally when a
+      // listener is registered (LibreOffice preview stager). The PPTX
+      // itself never embeds bytes.
+      await resolveDocumentFonts(
         processedDocument,
         resolvedTheme,
         warnings,
         state.fonts
       );
 
-      // Run the standard PPTX pipeline
+      // processPresentation re-resolves the theme from `props.theme`; inject
+      // the post-substitute theme under the scoped name so substitute-mode
+      // rewrites survive into slide processing instead of being overwritten
+      // by a fresh `getPptxTheme()` lookup.
+      const effectiveCustomThemes = {
+        ...(state.customThemes ?? {}),
+        [themeName]: resolvedTheme,
+      };
       const processed = processPresentation(processedDocument, {
-        customThemes: state.customThemes,
+        customThemes: effectiveCustomThemes,
         services: state.services,
       });
       const pptx = await renderPresentation(processed, warnings);
       const data = await pptx.write({ outputType: 'nodebuffer' });
-      let buffer = await neutralizeTableStyle(data as Buffer);
-      buffer = await embedFontsInPptx(buffer, resolvedFonts, warnings);
+      const buffer = await neutralizeTableStyle(data as Buffer);
 
       return { buffer, warnings };
     } catch (error) {

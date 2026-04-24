@@ -44,6 +44,13 @@ const FontConfigSchema = Type.Object({
     Type.Number({ minimum: 0, description: 'Font size in points' })
   ),
   bold: Type.Optional(Type.Boolean({ description: 'Bold text' })),
+  fontWeight: Type.Optional(
+    Type.Integer({
+      minimum: 100,
+      maximum: 900,
+      description: 'Per-cell weight (100–900). Overrides `bold` when set.',
+    })
+  ),
   italic: Type.Optional(Type.Boolean({ description: 'Italic text' })),
   underline: Type.Optional(Type.Boolean({ description: 'Underlined text' })),
 });

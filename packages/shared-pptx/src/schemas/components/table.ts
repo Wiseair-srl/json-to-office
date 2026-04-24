@@ -15,6 +15,13 @@ const PptxTableCellSchema = Type.Union([
       fontSize: Type.Optional(Type.Number({ description: 'Font size in points' })),
       fontFace: Type.Optional(Type.String({ description: 'Font family' })),
       bold: Type.Optional(Type.Boolean({ description: 'Bold text' })),
+      fontWeight: Type.Optional(
+        Type.Integer({
+          minimum: 100,
+          maximum: 900,
+          description: 'Per-cell weight (100–900). Overrides `bold` when set.',
+        })
+      ),
       italic: Type.Optional(Type.Boolean({ description: 'Italic text' })),
       align: Type.Optional(PptxAlignmentSchema),
       valign: Type.Optional(VerticalAlignmentSchema),

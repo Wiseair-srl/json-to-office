@@ -5,6 +5,7 @@ import type { ComponentDefinition, ReportComponentDefinition } from '../types';
 import { type ThemeConfig, getThemeWithFallback } from '../styles';
 import type { GenerationWarning } from '@json-to-office/shared-docx';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
+import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
 import { resolveDocumentFonts } from '../core/fontResolution';
 import type {
   ExtendedReportComponent,
@@ -291,49 +292,62 @@ function createBuilderImpl<
       );
 
       // Resolve theme per-document: customThemes → built-in → constructor fallback
-      const themeName = internalDocument.props.theme || 'minimal';
-      const docTheme = resolveDocumentTheme(themeName);
+      const baseThemeName = internalDocument.props.theme || 'minimal';
+      const docTheme = resolveDocumentTheme(baseThemeName);
 
       // Initialize warnings collector
       const warnings: GenerationWarning[] = [];
 
+      // Export-mode pre-pass runs BEFORE custom-component expansion so
+      // components that read `theme.fonts.*` during render see the
+      // substituted names, not the original non-safe ones.
+      const mode = applyExportMode({
+        doc: internalDocument,
+        theme: docTheme,
+        fonts: state.fonts,
+      });
+      const modedTheme = mode.theme;
+      // Scope cache key by mode: substitute rewrites the theme in place, so
+      // structure/layout caches must not share slots with custom-mode runs
+      // keyed on the same themeName. Matches core/generator.ts.
+      const themeName = scopedThemeName(baseThemeName, state.fonts?.mode);
+      for (const w of mode.warnings) {
+        warnings.push({
+          component: 'fontRegistry',
+          message: w.message,
+          severity: 'warning',
+          context: { code: w.code },
+        });
+      }
+
       // Process custom components to convert them to standard components
       const processedComponents = await processDocumentComponents(
-        internalDocument.children || [],
+        mode.doc.children || [],
         warnings,
-        docTheme
+        modedTheme
       );
 
       // Create a new document definition with processed components
       const processedDocument: ReportComponentDefinition = {
-        ...internalDocument,
+        ...mode.doc,
         children: processedComponents,
       };
 
       // Normalize components (handle shorthand notations and nested structures)
       // We bypass JSON validation since we've already validated with custom schemas
-      const [finalReportComponent] = normalizeDocument(processedDocument);
+      const [modedDoc] = normalizeDocument(processedDocument);
 
-      // Resolve fonts (reads document + resolved theme, fires onResolved).
-      // Pass the same warnings collector so font issues surface to callers
-      // alongside component warnings instead of disappearing into stderr.
-      const resolvedFonts = await resolveDocumentFonts(
-        finalReportComponent,
-        docTheme,
-        state.fonts,
-        warnings
-      );
+      // Resolve fonts (reads document + resolved theme). The helper fires
+      // `fonts.onResolved` internally when a listener is registered
+      // (LibreOffice preview stager). DOCX output itself never embeds
+      // bytes; recipients rely on system-installed fonts.
+      await resolveDocumentFonts(modedDoc, modedTheme, state.fonts, warnings);
 
       // Use the document generation pipeline directly
-      const structure = await processDocument(
-        finalReportComponent,
-        docTheme,
-        themeName
-      );
-      const layout = applyLayout(structure.sections, docTheme, themeName);
+      const structure = await processDocument(modedDoc, modedTheme, themeName);
+      const layout = applyLayout(structure.sections, modedTheme, themeName);
       const generatedDocument = await renderDocument(structure, layout, {
         services: state.services,
-        resolvedFonts,
       });
 
       return {
@@ -355,7 +369,7 @@ function createBuilderImpl<
     document: ExtendedReportComponent<TComponents>
   ): Promise<BufferGenerationResult> {
     const { document: doc, warnings } = await generate(document);
-    const buffer = await Packer.toBuffer(doc);
+    const buffer = (await Packer.toBuffer(doc)) as Buffer;
     return { buffer, warnings };
   }
 
@@ -465,16 +479,26 @@ function createBuilderImpl<
       // Initialize warnings collector (not returned by this function)
       const warnings: GenerationWarning[] = [];
 
+      // Export-mode pre-pass so callers inspecting the expanded components
+      // see substituted families when fonts.mode === 'substitute', matching
+      // the `generate()` path.
+      const mode = applyExportMode({
+        doc: internalDocument,
+        theme: docTheme,
+        fonts: state.fonts,
+      });
+      const modedTheme = mode.theme;
+
       // Process custom components to convert them to standard components
       const processedComponents = await processDocumentComponents(
-        internalDocument.children || [],
+        mode.doc.children || [],
         warnings,
-        docTheme
+        modedTheme
       );
 
       // Create a new document definition with processed components
       const processedDocument: ReportComponentDefinition = {
-        ...internalDocument,
+        ...mode.doc,
         children: processedComponents,
       };
 

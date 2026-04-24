@@ -2,68 +2,13 @@ import { FORMAT } from './env';
 import { API_ENDPOINTS } from '../config/api';
 import { env } from './env';
 
-export interface EmbeddedFontVariant {
-  family: string;
-  weight: number;
-  italic: boolean;
-  format: 'ttf' | 'otf' | 'woff' | 'woff2' | 'eot' | 'unknown';
-  /** Base64-encoded bytes. */
-  data: string;
-}
-
 export type RenderPayload = {
   iframeSrc?: string;
   iframeSrcDoc?: string;
   cleanup?: () => void;
 };
 
-const FORMAT_HINT: Record<EmbeddedFontVariant['format'], string | null> = {
-  ttf: 'truetype',
-  otf: 'opentype',
-  woff: 'woff',
-  woff2: 'woff2',
-  eot: 'embedded-opentype',
-  unknown: null,
-};
-
-function mimeForFormat(f: EmbeddedFontVariant['format']): string {
-  switch (f) {
-    case 'ttf':
-      return 'font/ttf';
-    case 'otf':
-      return 'font/otf';
-    case 'woff':
-      return 'font/woff';
-    case 'woff2':
-      return 'font/woff2';
-    case 'eot':
-      return 'application/vnd.ms-fontobject';
-    default:
-      return 'application/octet-stream';
-  }
-}
-
-/**
- * Build a <style> block with one @font-face rule per variant. docx-preview
- * emits CSS that references fonts by family + weight + style, so matching
- * those descriptors on @font-face lets the browser pick the right variant.
- */
-function buildFontFaceStyle(fonts: EmbeddedFontVariant[]): string {
-  if (!fonts || fonts.length === 0) return '';
-  const rules = fonts.map((f) => {
-    const hint = FORMAT_HINT[f.format];
-    const src = `url("data:${mimeForFormat(f.format)};base64,${f.data}")${
-      hint ? ` format("${hint}")` : ''
-    }`;
-    return `@font-face{font-family:"${f.family.replace(/"/g, '\\"')}";font-weight:${f.weight};font-style:${f.italic ? 'italic' : 'normal'};src:${src};}`;
-  });
-  return `<style data-jto-embedded-fonts>${rules.join('')}</style>`;
-}
-
-async function renderDocxWithDocxJS(
-  blob: Blob,
-  fonts?: EmbeddedFontVariant[]
-): Promise<RenderPayload> {
+async function renderDocxWithDocxJS(blob: Blob): Promise<RenderPayload> {
   const docx_preview = await import('docx-preview');
 
   const bodyEl = document.createElement('body');
@@ -86,23 +31,11 @@ async function renderDocxWithDocxJS(
   overrideStyleEl.href = `${env.basePath}/css/preview/docxjs.css`;
   headEl.appendChild(overrideStyleEl);
 
-  // Inject @font-face rules built from resolvedFonts. Without this, the iframe
-  // falls back to whatever the user's machine happens to have installed and
-  // the preview disagrees with both the downloaded .docx and the LibreOffice
-  // PDF. Injected last so our declarations win on tie-break.
-  const fontStyleMarkup = buildFontFaceStyle(fonts ?? []);
-
   const htmlEl = document.createElement('html');
   htmlEl.appendChild(headEl);
   htmlEl.appendChild(bodyEl);
 
-  // Prepend into the head as raw markup so docx-preview's own styles don't
-  // replace it during re-renders.
-  const iframeSrcDoc = fontStyleMarkup
-    ? htmlEl.outerHTML.replace('<head>', `<head>${fontStyleMarkup}`)
-    : htmlEl.outerHTML;
-
-  return { iframeSrcDoc };
+  return { iframeSrcDoc: htmlEl.outerHTML };
 }
 
 async function renderWithLibreOffice(
@@ -126,13 +59,14 @@ async function renderWithLibreOffice(
     } catch (err) {
       throw new Error(`Invalid JSON document: ${(err as Error).message}`);
     }
+    const body: Record<string, unknown> = {
+      jsonDefinition,
+      customThemes: customThemes ?? {},
+    };
     response = await fetch(API_ENDPOINTS.preview.libreofficeFromJson, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonDefinition,
-        customThemes: customThemes ?? {},
-      }),
+      body: JSON.stringify(body),
     });
   } else {
     const formData = new FormData();
@@ -190,8 +124,7 @@ export async function renderDocument(
   library: RenderLibrary = FORMAT === 'docx' ? 'docxjs' : 'LibreOffice',
   _baseUrl?: string,
   jsonText?: string,
-  customThemes?: Record<string, unknown>,
-  fonts?: EmbeddedFontVariant[]
+  customThemes?: Record<string, unknown>
 ) {
   try {
     if (!blob || blob.size === 0) {
@@ -201,7 +134,7 @@ export async function renderDocument(
     let payload: RenderPayload;
 
     if (FORMAT === 'docx' && library === 'docxjs') {
-      payload = await renderDocxWithDocxJS(blob, fonts);
+      payload = await renderDocxWithDocxJS(blob);
     } else {
       payload = await renderWithLibreOffice(name, blob, jsonText, customThemes);
     }

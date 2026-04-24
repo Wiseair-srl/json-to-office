@@ -84,6 +84,23 @@ describe('collectFontNamesFromPptx', () => {
     expect(names).toEqual(new Set(['Montserrat']));
   });
 
+  it('collects font names inside arrays under font-name keys', () => {
+    // Mirrors substitute.ts's array handling: `parentKey` must propagate
+    // through arrays so font-name arrays (e.g. per-slide fontFace fallbacks)
+    // are picked up by the walker.
+    const names = collectFontNamesFromPptx({
+      name: 'pptx',
+      props: {},
+      children: [
+        {
+          name: 'slide',
+          props: { fontFace: ['Inter', 'Roboto', '  Montserrat  '] },
+        },
+      ],
+    });
+    expect(names).toEqual(new Set(['Inter', 'Roboto', 'Montserrat']));
+  });
+
   it('collects chart-specific font fields', () => {
     const names = collectFontNamesFromPptx({
       name: 'pptx',

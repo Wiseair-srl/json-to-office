@@ -26,9 +26,13 @@ export async function loadFileFontSource(
   const format = detectFontFormat(data);
   if (format === 'unknown') {
     throw new Error(
-      `Font file at "${fullPath}" is not a recognized format (expected ttf/otf/woff/woff2/eot)`
+      `Font file at "${fullPath}" is not a recognized font file (expected TTF/OTF/WOFF/WOFF2)`
     );
   }
+  // No format rejection here: bytes flow to the LibreOffice preview
+  // stager, which handles WOFF/WOFF2 natively via fontconfig on
+  // Linux/macOS. Office output never embeds these bytes — substitute/
+  // custom modes rely on recipient-side fonts.
   return {
     data,
     weight: input.weight ?? 400,

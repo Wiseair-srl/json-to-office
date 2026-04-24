@@ -89,8 +89,19 @@ export function scanFontLenses(text: string): FontLens[] {
         else if (next === 't') value += '\t';
         else if (next === 'u') {
           const hex = text.slice(pos + 2, pos + 6);
-          value += String.fromCharCode(parseInt(hex, 16));
-          pos += 6;
+          // Guard invalid hex: parseInt returns NaN, and String.fromCharCode(NaN)
+          // produces the NUL char, silently corrupting the scanned string.
+          if (/^[0-9a-fA-F]{4}$/.test(hex)) {
+            value += String.fromCharCode(parseInt(hex, 16));
+            pos += 6;
+          } else {
+            // Malformed escape (e.g. `\uZZ"` at end of string). Advance past
+            // `\u` only — never consume more than is actually there, or we'd
+            // skip past the closing quote and treat trailing JSON as string
+            // content. Emit `\u` literally so values compare intelligibly.
+            value += '\\u';
+            pos += 2;
+          }
           continue;
         } else {
           value += next ?? '';

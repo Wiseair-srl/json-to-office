@@ -81,7 +81,11 @@ function parseCssFaces(
   let m: RegExpExecArray | null;
   while ((m = faceRe.exec(css)) !== null) {
     const block = m[1];
-    const urlM = block.match(/src:\s*url\((https:\/\/[^)]+\.ttf)\)/);
+    // Pin the CDN: only accept URLs whose hostname is fonts.gstatic.com so a
+    // hijacked/mitm'd CSS response can't redirect downloads to arbitrary hosts.
+    const urlM = block.match(
+      /src:\s*url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.ttf)\)/
+    );
     if (!urlM) continue;
     const weightM = block.match(/font-weight:\s*(\d+)/);
     const italicM = block.match(/font-style:\s*italic/);
@@ -200,6 +204,9 @@ export async function fetchGoogleFontSources(
         continue;
       }
       const ab = await res.arrayBuffer();
+      // Metadata validation (weight class, name-table defects, fsType) runs
+      // centrally in FontRegistry.materializeEntry so file/data/url/google
+      // sources are all checked under one code path.
       const buf = Buffer.from(ab);
       const key = cacheKey(opts.family, need.weight, need.italic);
       opts.memoryCache?.set(key, buf);

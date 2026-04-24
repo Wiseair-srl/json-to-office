@@ -29,6 +29,28 @@ export function detectFontFormat(buf: Buffer): ResolvedFontSource['format'] {
   if (b0 === 0x77 && b1 === 0x4f && b2 === 0x46 && b3 === 0x32) return 'woff2';
   // EOT: version bytes at offset 8-11 — rougher signature
   if (buf.length >= 36 && buf[34] === 0x4c && buf[35] === 0x50) return 'eot';
+  // PostScript Type 1 (.pfb) — binary container marker byte 0x80 followed by
+  // segment type 0x01 (ASCII). Also match the text-form ASCII header
+  // "%!PS-AdobeFont". Note: .pfm (metric files) have no reliable magic and
+  // stay in 'unknown' — same treatment (rejection at the loader).
+  if (b0 === 0x80 && b1 === 0x01) return 'pfb';
+  if (
+    buf.length >= 14 &&
+    buf.slice(0, 14).toString('ascii') === '%!PS-AdobeFont'
+  ) {
+    return 'pfb';
+  }
 
   return 'unknown';
 }
+
+/**
+ * Formats we detect but cannot legally embed in an OOXML document:
+ * WOFF/WOFF2 are web-only containers; PostScript (.pfb) is explicitly
+ * disallowed by Microsoft's embedding guidance.
+ */
+export const UNEMBEDDABLE_FORMATS = new Set<ResolvedFontSource['format']>([
+  'woff',
+  'woff2',
+  'pfb',
+]);

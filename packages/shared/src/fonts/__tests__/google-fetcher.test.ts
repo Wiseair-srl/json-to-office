@@ -29,12 +29,16 @@ describe('fetchGoogleFontSources', () => {
       if (url.startsWith('https://fonts.googleapis.com/css2')) {
         return new Response(
           mockCss([
-            { weight: 400, italic: false, url: 'https://ex.com/inter-400.ttf' },
+            {
+              weight: 400,
+              italic: false,
+              url: 'https://fonts.gstatic.com/inter-400.ttf',
+            },
           ]),
           { status: 200 }
         );
       }
-      if (url === 'https://ex.com/inter-400.ttf') {
+      if (url === 'https://fonts.gstatic.com/inter-400.ttf') {
         return new Response(TTF_HEADER, { status: 200 });
       }
       throw new Error(`Unexpected URL: ${url}`);
@@ -57,10 +61,26 @@ describe('fetchGoogleFontSources', () => {
       if (url.startsWith('https://fonts.googleapis.com/css2')) {
         return new Response(
           mockCss([
-            { weight: 400, italic: false, url: 'https://ex.com/400.ttf' },
-            { weight: 400, italic: true, url: 'https://ex.com/400i.ttf' },
-            { weight: 700, italic: false, url: 'https://ex.com/700.ttf' },
-            { weight: 700, italic: true, url: 'https://ex.com/700i.ttf' },
+            {
+              weight: 400,
+              italic: false,
+              url: 'https://fonts.gstatic.com/400.ttf',
+            },
+            {
+              weight: 400,
+              italic: true,
+              url: 'https://fonts.gstatic.com/400i.ttf',
+            },
+            {
+              weight: 700,
+              italic: false,
+              url: 'https://fonts.gstatic.com/700.ttf',
+            },
+            {
+              weight: 700,
+              italic: true,
+              url: 'https://fonts.gstatic.com/700i.ttf',
+            },
           ]),
           { status: 200 }
         );
@@ -87,7 +107,11 @@ describe('fetchGoogleFontSources', () => {
       if (url.startsWith('https://fonts.googleapis.com/css2')) {
         return new Response(
           mockCss([
-            { weight: 400, italic: false, url: 'https://ex.com/400.ttf' },
+            {
+              weight: 400,
+              italic: false,
+              url: 'https://fonts.gstatic.com/400.ttf',
+            },
           ]),
           { status: 200 }
         );
@@ -123,5 +147,37 @@ describe('fetchGoogleFontSources', () => {
     });
     expect(out.sources).toEqual([]);
     expect(out.warnings.some((w) => w.includes('404'))).toBe(true);
+  });
+
+  it('skips non-gstatic URLs in the CSS body (MitM/hijacked response defense)', async () => {
+    const mockFetch = vi.fn(async (url: string) => {
+      if (url.startsWith('https://fonts.googleapis.com/css2')) {
+        // CSS points at an attacker-controlled host — must be rejected even
+        // though the CSS itself arrived over HTTPS from googleapis.
+        return new Response(
+          mockCss([
+            {
+              weight: 400,
+              italic: false,
+              url: 'https://evil.example.com/inter-400.ttf',
+            },
+          ]),
+          { status: 200 }
+        );
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+    const out = await fetchGoogleFontSources({
+      family: 'Inter',
+      weights: [400],
+      fetcher: mockFetch as unknown as typeof fetch,
+    });
+    expect(out.sources).toEqual([]);
+    // No TTF fetch attempted (only the CSS request happened).
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // Surface a "missing weight" warning — the regex simply didn't match.
+    expect(out.warnings.some((w) => w.includes('missing weight 400'))).toBe(
+      true
+    );
   });
 });

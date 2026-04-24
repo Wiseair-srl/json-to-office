@@ -77,7 +77,6 @@ export function Preview() {
     name,
     text,
     blob,
-    fonts,
     isGenerating,
     generationProgress,
     globalError,
@@ -130,8 +129,7 @@ export function Preview() {
       docName: string,
       docBlob: Blob,
       docText?: string,
-      themes?: Record<string, unknown>,
-      docFonts?: Parameters<typeof renderDocument>[6]
+      themes?: Record<string, unknown>
     ) => {
       setOutput({
         isRendering: true,
@@ -146,8 +144,7 @@ export function Preview() {
           renderingLibrary,
           undefined,
           docText,
-          themes,
-          docFonts
+          themes
         );
 
         if (status !== 'success') {
@@ -197,10 +194,10 @@ export function Preview() {
   // Also render if a manual Run triggered the build (pendingManualRenderRef)
   useEffect(() => {
     if (blob && name && autoReload && renderingLibrary === 'docxjs') {
-      doRender(name, blob, text, themesForServer, fonts);
+      doRender(name, blob, text, themesForServer);
     } else if (blob && name && pendingManualRenderRef.current) {
       pendingManualRenderRef.current = false;
-      doRender(name, blob, text, themesForServer, fonts);
+      doRender(name, blob, text, themesForServer);
     } else if (blob && name) {
       setOutput({ isPreviewStale: true });
     }
@@ -208,7 +205,6 @@ export function Preview() {
     blob,
     name,
     text,
-    fonts,
     themesForServer,
     autoReload,
     renderingLibrary,

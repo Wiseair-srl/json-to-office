@@ -17,6 +17,7 @@ import { processDocument } from './structure';
 import { applyLayout } from './layout';
 import { renderDocument } from './render';
 import { resolveDocumentFonts } from './fontResolution';
+import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
 
 // JSON support imports
 import { DocumentValidationResult } from '@json-to-office/shared-docx';
@@ -66,7 +67,8 @@ export function isReportComponentDefinition(
  * This is the main entry point for document generation
  */
 export async function generateDocument(
-  document: ReportComponentDefinition
+  document: ReportComponentDefinition,
+  options?: JsonGenerationOptions
 ): Promise<Document> {
   // Validate that the document is a report component
   if (!document || document.name !== 'docx') {
@@ -75,21 +77,20 @@ export async function generateDocument(
 
   // Handle JSON definitions (report components with $schema)
   if ('$schema' in document) {
-    return await generateDocumentFromJson(document);
+    return await generateDocumentFromJson(document, options);
   }
 
-  // Get theme configuration (theme is always a string name)
-  const themeName = document.props.theme || 'minimal';
-  const theme = getThemeWithFallback(themeName);
-
-  // Pipeline: Structure -> Layout -> Render (with caching)
-  const structure = await processDocument(document, theme, themeName);
-  const layout = applyLayout(structure.sections, theme, themeName);
-  const renderedDocument = await renderDocument(structure, layout, {
-    bypassCache: false, // Enable component caching
-  });
-
-  return renderedDocument;
+  // Route through the font-aware pipeline so `options.fonts` (mode,
+  // substitution, onResolved, strict) is honoured identically to the JSON
+  // entry point. Previously this branch bypassed export-mode + font
+  // resolution, silently ignoring `fonts.mode: 'substitute'`.
+  return await generateDocumentWithCustomThemes(
+    document,
+    options?.customThemes,
+    options?.services,
+    options?.fonts,
+    options?.warnings
+  );
 }
 
 /**
@@ -98,7 +99,8 @@ export async function generateDocument(
  */
 export async function generateFromConfig(
   props: ReportProps,
-  components: ComponentDefinition[]
+  components: ComponentDefinition[],
+  options?: JsonGenerationOptions
 ): Promise<Document> {
   const reportComponent: ReportComponentDefinition = {
     name: 'docx',
@@ -106,7 +108,7 @@ export async function generateFromConfig(
     children: components,
   };
 
-  return await generateDocument(reportComponent);
+  return await generateDocument(reportComponent, options);
 }
 
 /**
@@ -114,14 +116,17 @@ export async function generateFromConfig(
  * Extends the standard pipeline to support custom theme resolution
  */
 async function generateDocumentWithCustomThemes(
-  document: ReportComponentDefinition,
+  documentIn: ReportComponentDefinition,
   customThemes?: { [key: string]: ThemeConfig },
   services?: ServicesConfig,
   fonts?: FontRuntimeOpts,
   warnings?: GenerationWarning[]
 ): Promise<Document> {
+  // Alias so we can reassign after the export-mode pre-pass swaps doc +
+  // theme references to the rewritten versions.
+  let document = documentIn;
   // Get theme configuration with custom theme support (theme is always a string name)
-  const themeName = document.props.theme || 'minimal';
+  let themeName = document.props.theme || 'minimal';
   let theme: ThemeConfig;
 
   // Check custom themes first with case-insensitive matching, then fall back to built-in
@@ -145,15 +150,32 @@ async function generateDocumentWithCustomThemes(
     theme = getThemeWithFallback(themeName);
   }
 
-  // Resolve fonts. Registry entries come from fonts.extraEntries (code-side
-  // registration); themes only name fonts. Threading `warnings` keeps parity
-  // with the plugin path — absent collector falls back to console.warn.
-  const resolvedFonts = await resolveDocumentFonts(
-    document,
-    theme,
-    fonts,
-    warnings
-  );
+  // Export-mode pre-pass: substitute (default) rewrites non-safe families
+  // to safe equivalents; custom keeps refs as-is.
+  const mode = applyExportMode({ doc: document, theme, fonts });
+  document = mode.doc;
+  theme = mode.theme;
+  // Scope cache key by mode: substitute rewrites the theme in place, so
+  // structure/layout caches must not share slots with custom-mode runs.
+  themeName = scopedThemeName(themeName, fonts?.mode);
+  for (const w of mode.warnings) {
+    if (warnings) {
+      warnings.push({
+        component: 'fontRegistry',
+        message: w.message,
+        severity: 'warning',
+        context: { code: w.code },
+      });
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn(`[json-to-docx] [${w.code}] ${w.message}`);
+    }
+  }
+
+  // Resolve fonts for the LibreOffice preview stager (side-channel).
+  // resolveDocumentFonts fires `fonts.onResolved` internally when a
+  // listener is registered. The final DOCX never embeds bytes.
+  await resolveDocumentFonts(document, theme, fonts, warnings);
 
   // Pipeline: Structure -> Layout -> Render (with caching)
   const structure = await processDocument(document, theme, themeName);
@@ -161,7 +183,6 @@ async function generateDocumentWithCustomThemes(
   const renderedDocument = await renderDocument(structure, layout, {
     bypassCache: false,
     services,
-    resolvedFonts,
   });
 
   return renderedDocument;
@@ -222,7 +243,7 @@ export async function generateBufferFromJson(
   options?: JsonGenerationOptions
 ): Promise<Buffer> {
   const document = await generateDocumentFromJson(jsonConfig, options);
-  return await Packer.toBuffer(document);
+  return (await Packer.toBuffer(document)) as Buffer;
 }
 
 /**
@@ -258,7 +279,7 @@ export async function generateBufferFromFile(
   options?: JsonGenerationOptions
 ): Promise<Buffer> {
   const document = await generateDocumentFromFile(filePath, options);
-  return await Packer.toBuffer(document);
+  return (await Packer.toBuffer(document)) as Buffer;
 }
 
 /**

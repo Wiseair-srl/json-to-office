@@ -9,8 +9,20 @@
 import { SAFE_FONTS, isSafeFont } from '../schemas/font-catalog';
 import type { FontRegistryEntry } from '../schemas/font-catalog';
 
+/**
+ * Warning codes for font resolution + rendering.
+ *
+ * - `FONT_UNRESOLVED`         — family not in SAFE_FONTS and not registered.
+ * - `FONT_MODE_SUBSTITUTED`   — non-safe families rewritten to safe equivalents.
+ * - `FONT_MODE_CUSTOM`        — export mode "custom" — refs kept as-is.
+ */
+export type FontIssueCode =
+  | 'FONT_UNRESOLVED'
+  | 'FONT_MODE_SUBSTITUTED'
+  | 'FONT_MODE_CUSTOM';
+
 export interface FontResolutionIssue {
-  code: 'FONT_UNRESOLVED';
+  code: FontIssueCode;
   family: string;
   message: string;
 }

@@ -1,25 +1,12 @@
 import { useCallback, useRef } from 'react';
 import { FORMAT, FORMAT_LABEL } from '../lib/env';
 import { API_ENDPOINTS } from '../config/api';
-import {
-  getAllAsPayload as getAllUserFontsAsPayload,
-  type UserFontPayload,
-} from '../lib/user-fonts-storage';
 
 export interface GenerationWarning {
   component: string;
   message: string;
   severity?: 'warning' | 'info';
   context?: Record<string, unknown>;
-}
-
-export interface EmbeddedFontVariant {
-  family: string;
-  weight: number;
-  italic: boolean;
-  format: 'ttf' | 'otf' | 'woff' | 'woff2' | 'eot' | 'unknown';
-  /** Base64-encoded font bytes — used to build @font-face rules in previews. */
-  data: string;
 }
 
 export interface DocumentGenerationResult {
@@ -31,8 +18,6 @@ export interface DocumentGenerationResult {
   cacheStatus: 'HIT' | 'MISS' | 'UNKNOWN';
   cacheHitRate: string;
   warnings: GenerationWarning[];
-  /** Fonts embedded in the generated file, available for in-browser preview. */
-  fonts?: EmbeddedFontVariant[];
 }
 
 export function usePresentationGenerator() {
@@ -47,7 +32,13 @@ export function usePresentationGenerator() {
         stage: 'parsing' | 'building' | 'rendering' | 'finalizing',
         message?: string
       ) => void,
-      options?: { bypassCache?: boolean }
+      options?: {
+        bypassCache?: boolean;
+        fonts?: {
+          mode?: 'substitute' | 'custom';
+          substitution?: Record<string, string>;
+        };
+      }
     ): Promise<DocumentGenerationResult> => {
       // Cancel any previous generation
       if (abortControllerRef.current) {
@@ -77,25 +68,20 @@ export function usePresentationGenerator() {
         const requestBody: {
           jsonDefinition: unknown;
           customThemes?: { [key: string]: unknown };
-          userFonts?: UserFontPayload[];
-          options?: { bypassCache?: boolean };
+          options?: {
+            bypassCache?: boolean;
+            fonts?: {
+              mode?: 'substitute' | 'custom';
+              substitution?: Record<string, string>;
+              strict?: boolean;
+            };
+          };
         } = {
           jsonDefinition,
           options: options || {},
         };
 
         requestBody.customThemes = customThemes ?? {};
-
-        // Attach any browser-local uploaded fonts. The server only consumes
-        // those actually referenced by the doc/themes, so sending the full
-        // set is harmless — skipping the filter keeps the client simple.
-        try {
-          const userFonts = await getAllUserFontsAsPayload();
-          if (userFonts.length > 0) requestBody.userFonts = userFonts;
-        } catch (err) {
-          // IDB read failing should not block generation; log and continue.
-          console.warn('Could not load uploaded fonts from IndexedDB:', err);
-        }
 
         onProgress?.(
           'rendering',
@@ -166,7 +152,6 @@ export function usePresentationGenerator() {
           cacheStatus,
           cacheHitRate: cache.hitRate,
           warnings,
-          fonts: Array.isArray(data.fonts) ? data.fonts : undefined,
         };
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
@@ -191,6 +176,10 @@ export function usePresentationGenerator() {
 
   return {
     generatePresentation,
+    // Format-agnostic alias: the hook dispatches to API_ENDPOINTS.generate
+    // for both DOCX and PPTX, so callers on either side should prefer
+    // `generateDocument` for clarity.
+    generateDocument: generatePresentation,
     cancelGeneration,
   };
 }

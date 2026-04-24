@@ -41,6 +41,7 @@ import { normalizeUnicodeText } from '../utils/unicode';
 import { getStyleIdForLevel } from '../styles/themeToDocxAdapter';
 import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
+import { synthesizeFamilyName } from '@json-to-office/shared';
 import {
   ComponentDefinition,
   isParagraphComponent,
@@ -60,6 +61,31 @@ import {
   getAvailableWidthTwips,
   getAvailableHeightTwips,
 } from '../utils/widthUtils';
+
+/**
+ * Resolve (family, bold, italic, fontWeight) into the values the docx lib
+ * should receive. For non-RIBBI weights (anything other than 400/700),
+ * rewrite the family to the canonical sub-family name (e.g. "Inter Light")
+ * so Word / LibreOffice can resolve the matching installed face.
+ * `bold: true` without fontWeight is shorthand for weight 700.
+ */
+function applyFontWeightAlias(opts: {
+  fontFamily?: string;
+  bold?: boolean;
+  italic?: boolean;
+  fontWeight?: number;
+}): { font?: string; bold?: boolean; italics?: boolean } {
+  if (!opts.fontFamily) {
+    return { font: undefined, bold: opts.bold, italics: opts.italic };
+  }
+  const weight = opts.fontWeight ?? (opts.bold === true ? 700 : undefined);
+  const synth = synthesizeFamilyName(
+    opts.fontFamily,
+    weight,
+    opts.italic === true
+  );
+  return { font: synth.family, bold: synth.bold, italics: synth.italic };
+}
 
 export interface TextOptions {
   style?: string;
@@ -81,6 +107,12 @@ export interface TextOptions {
   fontSize?: number;
   fontColor?: string;
   bold?: boolean;
+  /**
+   * Per-run weight (100–900). Renderer picks the closest embedded variant
+   * via the font-alias registry and emits the run under a synthetic family
+   * (e.g. "Inter Light" for 300). Overrides `bold` when set.
+   */
+  fontWeight?: number;
   italic?: boolean;
   underline?: boolean;
   // Additional children to prepend (e.g., bookmarks)
@@ -231,15 +263,33 @@ export function createText(
     children.push(new ColumnBreak());
   }
 
-  // Build base text style from options
+  // Resolve the effective family so fontWeight can be aliased even when the
+  // run relies on the theme's body font (no inline `family` override). Without
+  // this, `{ font: { fontWeight: 300 } }` would fall through with no family
+  // for the alias registry to look up.
+  const hasWeightRequest = options.fontWeight != null || options.bold === true;
+  const effectiveFamily =
+    options.fontFamily ??
+    (hasWeightRequest ? resolveFontFamily(theme, 'body') : undefined);
+  const weighted = applyFontWeightAlias({
+    fontFamily: effectiveFamily,
+    bold: options.bold,
+    italic: options.italic,
+    fontWeight: options.fontWeight,
+  });
   const baseTextStyle = {
-    ...(options.fontFamily && { font: options.fontFamily }),
+    // Only emit `font` when it came from the caller or from an alias —
+    // emitting the theme body family on every run would be a behavior change.
+    ...((options.fontFamily ||
+      (weighted.font && weighted.font !== effectiveFamily)) && {
+      font: weighted.font,
+    }),
     ...(options.fontSize && { size: options.fontSize * 2 }), // Convert points to half-points
     ...(options.fontColor && {
       color: resolveColor(options.fontColor, theme),
     }),
-    ...(options.bold !== undefined && { bold: options.bold }),
-    ...(options.italic !== undefined && { italics: options.italic }),
+    ...(weighted.bold !== undefined && { bold: weighted.bold }),
+    ...(weighted.italics !== undefined && { italics: weighted.italics }),
     ...(options.underline !== undefined && {
       underline: options.underline ? { type: 'single' as const } : undefined,
     }),
@@ -428,13 +478,32 @@ export function createHeading(
   // Check if text has decorators (bold/italic markers)
   const hasDecorators = /(\*\*\*|___|(\*\*|__)|(\*|_))/.test(normalizedText);
 
+  // Headings default to theme.fonts.heading when no explicit family is given.
+  // Resolve it so fontWeight can be aliased through the same path as body runs.
+  const headingHasWeightRequest =
+    options.fontWeight != null || options.bold === true;
+  const headingEffectiveFamily =
+    options.fontFamily ??
+    (headingHasWeightRequest ? resolveFontFamily(theme, 'heading') : undefined);
+  const headingWeighted = applyFontWeightAlias({
+    fontFamily: headingEffectiveFamily,
+    bold: options.bold,
+    italic: options.italic,
+    fontWeight: options.fontWeight,
+  });
   // Build base text style from options (overrides theme style at run level)
   const baseTextStyle = {
-    ...(options.fontFamily && { font: options.fontFamily }),
+    ...((options.fontFamily ||
+      (headingWeighted.font &&
+        headingWeighted.font !== headingEffectiveFamily)) && {
+      font: headingWeighted.font,
+    }),
     ...(options.fontSize && { size: options.fontSize * 2 }), // points to half-points
     ...(options.fontColor && { color: resolveColor(options.fontColor, theme) }),
-    ...(options.bold !== undefined && { bold: options.bold }),
-    ...(options.italic !== undefined && { italics: options.italic }),
+    ...(headingWeighted.bold !== undefined && { bold: headingWeighted.bold }),
+    ...(headingWeighted.italics !== undefined && {
+      italics: headingWeighted.italics,
+    }),
     ...(options.underline !== undefined && {
       underline: options.underline ? { type: 'single' as const } : undefined,
     }),
@@ -791,6 +860,7 @@ type TableFontConfig = {
   family?: string;
   size?: number;
   bold?: boolean;
+  fontWeight?: number;
   italic?: boolean;
   underline?: boolean;
 };
@@ -1436,13 +1506,19 @@ export async function createTable(
     }
 
     // Create merged style with config overrides
+    const cellWeighted = applyFontWeightAlias({
+      fontFamily: cellDefaults.font?.family || baseCellStyle.font,
+      bold: cellDefaults.font?.bold ?? false,
+      italic: cellDefaults.font?.italic ?? false,
+      fontWeight: cellDefaults.font?.fontWeight,
+    });
     const mergedStyle = {
-      font: cellDefaults.font?.family || baseCellStyle.font,
+      font: cellWeighted.font,
       size: cellDefaults.font?.size
         ? cellDefaults.font.size * 2
         : baseCellStyle.size, // Convert to half-points
-      bold: cellDefaults.font?.bold ?? false,
-      italics: cellDefaults.font?.italic ?? false,
+      bold: cellWeighted.bold ?? false,
+      italics: cellWeighted.italics ?? false,
       underline: cellDefaults.font?.underline
         ? { type: 'single' as const }
         : undefined,
@@ -1454,15 +1530,21 @@ export async function createTable(
       if (isParagraphComponent(cell)) {
         const textComp = cell as ParagraphComponentDefinition;
         const paragraphFont = textComp.props.font;
+        const paraWeighted = applyFontWeightAlias({
+          fontFamily: paragraphFont?.family ?? mergedStyle.font,
+          bold: paragraphFont?.bold,
+          italic: paragraphFont?.italic,
+          fontWeight: paragraphFont?.fontWeight,
+        });
         const paragraphStyle = {
           ...mergedStyle,
-          ...(paragraphFont?.family && { font: paragraphFont.family }),
+          ...(paraWeighted.font && { font: paraWeighted.font }),
           ...(paragraphFont?.size && { size: paragraphFont.size * 2 }),
-          ...(paragraphFont?.bold !== undefined && {
-            bold: paragraphFont.bold,
+          ...(paraWeighted.bold !== undefined && {
+            bold: paraWeighted.bold,
           }),
-          ...(paragraphFont?.italic !== undefined && {
-            italics: paragraphFont.italic,
+          ...(paraWeighted.italics !== undefined && {
+            italics: paraWeighted.italics,
           }),
           ...(paragraphFont?.underline !== undefined && {
             underline: paragraphFont.underline

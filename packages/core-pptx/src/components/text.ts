@@ -3,8 +3,14 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig, StyleName, PipelineWarning, SlideContext } from '../types';
+import type {
+  PptxThemeConfig,
+  StyleName,
+  PipelineWarning,
+  SlideContext,
+} from '../types';
 import { resolveColor } from '../utils/color';
+import { applyFontWeight } from '../utils/fontAliasContext';
 
 interface TextComponentProps {
   text: string;
@@ -16,6 +22,7 @@ interface TextComponentProps {
   fontFace?: string;
   color?: string;
   bold?: boolean;
+  fontWeight?: number;
   italic?: boolean;
   underline?: boolean | { style?: string; color?: string };
   strike?: boolean;
@@ -44,9 +51,10 @@ interface TextComponentProps {
 
 function resolvePagePlaceholders(text: string, ctx: SlideContext): string {
   const { slideNumber, totalSlides, pageNumberFormat } = ctx;
-  const fmt = (n: number) => pageNumberFormat === '09'
-    ? String(n).padStart(String(totalSlides).length, '0')
-    : String(n);
+  const fmt = (n: number) =>
+    pageNumberFormat === '09'
+      ? String(n).padStart(String(totalSlides).length, '0')
+      : String(n);
   return text
     .replace(/\{PAGE_NUMBER\}/g, fmt(slideNumber))
     .replace(/\{PAGE_COUNT\}/g, fmt(totalSlides));
@@ -83,14 +91,33 @@ export function renderTextComponent(
 
   // Font — cascade: component props → style → theme defaults
   opts.fontSize = props.fontSize ?? style?.fontSize ?? theme.defaults.fontSize;
-  opts.fontFace = props.fontFace ?? style?.fontFace ?? (isHeadingStyle ? theme.fonts.heading : theme.fonts.body);
-  opts.color = resolveColor(props.color ?? style?.fontColor ?? theme.defaults.fontColor, theme, warnings);
+  opts.fontFace =
+    props.fontFace ??
+    style?.fontFace ??
+    (isHeadingStyle ? theme.fonts.heading : theme.fonts.body);
+  opts.color = resolveColor(
+    props.color ?? style?.fontColor ?? theme.defaults.fontColor,
+    theme,
+    warnings
+  );
 
   // Formatting
   const bold = props.bold ?? style?.bold;
   const italic = props.italic ?? style?.italic;
+  const fontWeight = props.fontWeight ?? style?.fontWeight;
   if (bold != null) opts.bold = bold;
   if (italic != null) opts.italic = italic;
+  if (fontWeight != null || bold === true) {
+    const w = applyFontWeight({
+      family: opts.fontFace as string | undefined,
+      fontWeight,
+      italic,
+      bold,
+    });
+    if (w.fontFace !== undefined) opts.fontFace = w.fontFace;
+    if (w.bold !== undefined) opts.bold = w.bold;
+    if (w.italic !== undefined) opts.italic = w.italic;
+  }
   if (props.strike) opts.strike = true;
 
   if (props.underline !== undefined) {
@@ -131,7 +158,8 @@ export function renderTextComponent(
   if (props.fill) {
     opts.fill = { color: resolveColor(props.fill.color, theme, warnings) };
     if (props.fill.transparency !== undefined) {
-      (opts.fill as Record<string, unknown>).transparency = props.fill.transparency;
+      (opts.fill as Record<string, unknown>).transparency =
+        props.fill.transparency;
     }
   }
 
@@ -155,13 +183,16 @@ export function renderTextComponent(
   if (lineSpacing !== undefined) opts.lineSpacing = lineSpacing;
   const charSpacing = props.charSpacing ?? style?.charSpacing;
   if (charSpacing !== undefined) opts.charSpacing = charSpacing;
-  if (props.paraSpaceBefore !== undefined) opts.paraSpaceBefore = props.paraSpaceBefore;
+  if (props.paraSpaceBefore !== undefined)
+    opts.paraSpaceBefore = props.paraSpaceBefore;
   const paraSpaceAfter = props.paraSpaceAfter ?? style?.paraSpaceAfter;
   if (paraSpaceAfter !== undefined) opts.paraSpaceAfter = paraSpaceAfter;
 
   // Break line handling
   if (props.breakLine) opts.breakLine = true;
 
-  const text = slideCtx ? resolvePagePlaceholders(props.text, slideCtx) : props.text;
+  const text = slideCtx
+    ? resolvePagePlaceholders(props.text, slideCtx)
+    : props.text;
   slide.addText(text, opts as any);
 }

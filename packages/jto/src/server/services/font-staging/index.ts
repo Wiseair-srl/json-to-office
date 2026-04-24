@@ -25,8 +25,12 @@ export function getFontStager(
       break;
     case 'darwin':
       // LibreOffice-for-macOS uses Core Text for font enumeration and does
-      // not honor FONTCONFIG_FILE reliably. Register fonts at the Core Text
-      // session scope so the soffice child inherits them.
+      // not honor FONTCONFIG_FILE reliably. macOS 26 further blocks
+      // Session/Persistent CT registration for unsigned callers, and
+      // Process scope only works inside the target process. We register
+      // fonts from *inside* soffice via a Python UNO macro bound to
+      // OnStartApp, seeded into a per-invocation UserInstallation profile.
+      // The user's ~/Library/Fonts is never touched. See macos-stager.ts.
       stager = new MacOSCoreTextStager();
       break;
     case 'linux':

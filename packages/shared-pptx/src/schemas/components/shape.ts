@@ -34,6 +34,7 @@ export const TextSegmentSchema = Type.Object(
     fontFace: Type.Optional(Type.String()),
     color: Type.Optional(Type.String({ description: 'Segment color (hex without # or semantic name)' })),
     bold: Type.Optional(Type.Boolean()),
+    fontWeight: Type.Optional(Type.Integer({ minimum: 100, maximum: 900 })),
     italic: Type.Optional(Type.Boolean()),
     breakLine: Type.Optional(Type.Boolean({ description: 'Insert line break after this segment' })),
     spaceBefore: Type.Optional(Type.Number({ minimum: 0, description: 'Space before paragraph in points' })),
@@ -109,6 +110,14 @@ export const ShapePropsSchema = Type.Object(
     fontColor: Type.Optional(Type.String({ description: 'Font color for shape text (hex without #)' })),
     charSpacing: Type.Optional(Type.Number({ description: 'Character spacing in points for shape text' })),
     bold: Type.Optional(Type.Boolean({ description: 'Bold shape text' })),
+    fontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Per-shape weight (100–900). Overrides `bold` when set.',
+      })
+    ),
     italic: Type.Optional(Type.Boolean({ description: 'Italic shape text' })),
     align: Type.Optional(PptxAlignmentSchema),
     valign: Type.Optional(VerticalAlignmentSchema),

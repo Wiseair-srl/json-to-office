@@ -58,12 +58,14 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
+    "update:fonts-catalog": "tsx scripts/update-google-catalog.ts",
     "prepublishOnly": "node ../../scripts/copy-license.cjs"
   },
   "dependencies": {
     "@sinclair/typebox": "0.34.38",
     "ajv": "8.17.1",
-    "ajv-formats": "3.0.1"
+    "ajv-formats": "3.0.1",
+    "subset-font": "^2.5.0"
   },
   "devDependencies": {
     "@types/node": "20.11.0",

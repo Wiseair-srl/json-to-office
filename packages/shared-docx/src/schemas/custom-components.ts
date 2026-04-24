@@ -29,6 +29,7 @@ export const TextSpaceAfterPropsSchema = Type.Object({
   fontSize: Type.Optional(Type.Number({ minimum: 1 })),
   fontFamily: Type.Optional(Type.String()),
   bold: Type.Optional(Type.Boolean()),
+  fontWeight: Type.Optional(Type.Integer({ minimum: 100, maximum: 900 })),
   italic: Type.Optional(Type.Boolean()),
   underline: Type.Optional(Type.Boolean()),
   color: Type.Optional(
