@@ -158,7 +158,7 @@ describe('converter ordering (stage → spawn → cleanup)', () => {
   });
 });
 
-describe('MacOSCoreTextStager', () => {
+describe.skipIf(process.platform !== 'darwin')('MacOSCoreTextStager', () => {
   let tempDir: string;
 
   beforeEach(async () => {
