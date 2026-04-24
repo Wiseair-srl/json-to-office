@@ -12,6 +12,5 @@ export default defineConfig({
     '@json-to-office/shared',
     '@json-to-office/shared-docx',
     'docx',
-    'highcharts-export-server',
   ],
 });
