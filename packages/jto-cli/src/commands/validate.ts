@@ -25,7 +25,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
     )
     .option(
       '-t, --type <type>',
-      'Validation type: \'document\', \'theme\', or \'auto\'',
+      "Validation type: 'document', 'theme', or 'auto'",
       'auto'
     )
     .option('-s, --schema <path>', 'Path to custom JSON schema file')
@@ -33,7 +33,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
     .option('-q, --quiet', 'Only output errors, no success messages')
     .option(
       '-f, --format <format>',
-      'Error output format: \'pretty\' or \'json\'',
+      "Error output format: 'pretty' or 'json'",
       'pretty'
     )
     .option(
@@ -79,7 +79,9 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
                   `Validation completed: ${invalidFiles}/${totalFiles} file(s) failed ${formatTiming(startTime)}`
                 );
               } else {
-                spinner.succeed(`All ${totalFiles} file(s) are valid! ${formatTiming(startTime)}`);
+                spinner.succeed(
+                  `All ${totalFiles} file(s) are valid! ${formatTiming(startTime)}`
+                );
               }
             }
 
@@ -95,9 +97,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
                   if (result.errors && result.errors.length > 0) {
                     console.log(chalk.red('  Errors:'));
                     for (const error of result.errors) {
-                      console.log(
-                        chalk.red(validator.formatError(error, 4))
-                      );
+                      console.log(chalk.red(validator.formatError(error, 4)));
                     }
                   }
 
@@ -119,7 +119,9 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
               const rows = results.map((r) => {
                 const relativePath = relative(process.cwd(), r.file);
                 const status = r.valid ? chalk.green('OK') : chalk.red('FAIL');
-                const errorCount = r.valid ? '-' : chalk.red(String(r.errors?.length || 0));
+                const errorCount = r.valid
+                  ? '-'
+                  : chalk.red(String(r.errors?.length || 0));
                 return [relativePath, status, errorCount];
               });
               console.log(createTable(['File', 'Status', 'Errors'], rows));

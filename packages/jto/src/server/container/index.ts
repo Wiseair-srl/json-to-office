@@ -1,4 +1,4 @@
-import type { FormatAdapter } from '../../format-adapter.js';
+import type { FormatAdapter } from '@json-to-office/jto-cli';
 import { GeneratorService } from '../services/generator.js';
 import { CacheService } from '../services/cache.js';
 import { LibreOfficeConverterService } from '../services/libreoffice-converter.js';
@@ -11,18 +11,24 @@ type ServiceMap = {
 
 export class Container {
   private static instance: Container;
-  private services: Map<keyof ServiceMap, ServiceMap[keyof ServiceMap]> = new Map();
+  private services: Map<keyof ServiceMap, ServiceMap[keyof ServiceMap]> =
+    new Map();
   private adapter: FormatAdapter;
 
   private constructor(adapter: FormatAdapter) {
     this.adapter = adapter;
     const cacheService = new CacheService();
     const generatorService = new GeneratorService(adapter, cacheService);
-    const libreOfficeConverterService = new LibreOfficeConverterService(adapter.name as 'docx' | 'pptx');
+    const libreOfficeConverterService = new LibreOfficeConverterService(
+      adapter.name as 'docx' | 'pptx'
+    );
 
     this.services.set('cacheService', cacheService);
     this.services.set('generatorService', generatorService);
-    this.services.set('libreOfficeConverterService', libreOfficeConverterService);
+    this.services.set(
+      'libreOfficeConverterService',
+      libreOfficeConverterService
+    );
   }
 
   public static initialize(adapter: FormatAdapter): Container {
@@ -32,7 +38,9 @@ export class Container {
 
   public static getInstance(): Container {
     if (!Container.instance) {
-      throw new Error('Container not initialized. Call Container.initialize(adapter) first.');
+      throw new Error(
+        'Container not initialized. Call Container.initialize(adapter) first.'
+      );
     }
     return Container.instance;
   }

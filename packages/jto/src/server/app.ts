@@ -6,7 +6,7 @@ import { logger as honoLogger } from 'hono/logger';
 import { timing } from 'hono/timing';
 import { config } from './config/index.js';
 import { getApiInfo } from './config/api-info.js';
-import type { FormatAdapter } from '../format-adapter.js';
+import type { FormatAdapter } from '@json-to-office/jto-cli';
 
 import { healthRouter } from './routes/health.js';
 import { createFormatRouter } from './routes/format.js';

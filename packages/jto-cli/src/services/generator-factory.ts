@@ -33,7 +33,7 @@ export class GeneratorFactory {
     hasPlugins: boolean;
     count: number;
     names: string[];
-    } {
+  } {
     return {
       hasPlugins: this.registry.hasPlugins(),
       count: this.registry.getPluginCount(),

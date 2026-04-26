@@ -15,7 +15,7 @@
 - [The problem](#the-problem)
 - [The solution](#the-solution)
 - [Architecture](#architecture)
-- [Why not X?](#why-not-x)
+- [Why not just use X?](#why-not-just-use-x)
 - [Features](#features)
 - [Full examples](#full-examples)
 - [Who it's for](#who-its-for)
@@ -101,6 +101,13 @@ jto pptx dev
 ```
 
 ![Visual Playground](docs/playground.gif)
+
+For CI / scripted pipelines that don't need the playground, install the lean [`@json-to-office/jto-cli`](packages/jto-cli) instead — same `generate`/`validate`/`schemas`/`discover`/`init`/`fonts` commands, ~16 deps vs ~70.
+
+```bash
+npm install -g @json-to-office/jto-cli
+jto-cli docx generate doc.json
+```
 
 ## The problem
 
@@ -216,24 +223,32 @@ await generator.generateToFile(
 
 **Schema generation.** The enriched schema (standard + custom components) is exportable as JSON Schema, so you get validation and IDE autocomplete even for your custom components.
 
-## Why not X?
+## Why not just use X?
 
-|                   | json-to-office                               | docx / pptxgenjs                       | Carbone                                  | Gamma                  | officegen       |
-| ----------------- | -------------------------------------------- | -------------------------------------- | ---------------------------------------- | ---------------------- | --------------- |
-| **Format**        | Declarative JSON                             | Imperative code                        | Template `.docx` + data                  | SaaS GUI               | Imperative code |
-| **Serializable**  | Yes: store, send, generate from any language | No: trapped in code                    | Partially: data is JSON, structure isn't | No: locked in platform | No              |
-| **LLM-friendly**  | Yes: LLMs emit JSON reliably                 | Fragile: no schema to constrain output | No: requires a pre-made template         | N/A                    | No              |
-| **Validation**    | Full schema validation (TypeBox)             | None                                   | None                                     | N/A                    | None            |
-| **Themes**        | Built-in theme system                        | Manual styling                         | Template-based                           | Built-in               | Manual styling  |
-| **Extensibility** | Plugin architecture with semver              | N/A                                    | N/A                                      | N/A                    | N/A             |
-| **Self-hosted**   | Yes                                          | Yes                                    | Yes                                      | No: SaaS only          | Yes             |
-| **Dependencies**  | Node.js only                                 | Node.js only                           | Node.js + LibreOffice                    | None (hosted)          | Node.js only    |
+Generating an Office document from a backend service usually means one of four things. Start from the question:
 
-**vs. docx / pptxgenjs**: These are json-to-office's own rendering backends. json-to-office is the declarative layer on top: a schema-validated JSON contract that compiles down to those libraries. It also adds abstractions they don't have: themes, a layout pipeline, a plugin architecture, a template/placeholder system (PPTX), and TypeBox schemas that serve as both TypeScript types and runtime validators from a single source of truth.
+**What should a document _be_, in a system?**
 
-**vs. Carbone**: Carbone is template-driven: design a `.docx` in Word, sprinkle `{placeholders}`, inject data. Works when structure is fixed and only data changes. When structure is dynamic (conditional sections, variable-length tables, data-driven layouts) templates become brittle. json-to-office replaces the template file with a composable component tree. No LibreOffice dependency.
+An artifact rendered once and emailed? Any tool works. An _output of your platform_ — emitted thousands of times, on demand, by services and LLMs, branded, regeneratable, auditable? Then it should behave like data: serializable, validatable, versionable, diffable. None of the four common approaches give you that.
 
-**vs. Gamma**: Gamma is a SaaS presentation tool with AI-powered design — great for one-off decks made by hand. But your data never leaves their platform, there's no API for programmatic generation, and output is tied to their format. json-to-office is infrastructure: self-hosted, schema-driven, embeddable in any pipeline, producing native `.pptx`/`.docx` files you fully own.
+|                   | json-to-office               | Imperative libs<br/>(docx, pptxgenjs, officegen, react-pdf) | Template-driven<br/>(Carbone, docxtemplater) | SaaS / AI doc tools<br/>(Gamma, Tome) | Plain Claude<br/>(direct prompt → .docx/.pptx) |
+| ----------------- | ---------------------------- | ----------------------------------------------------------- | -------------------------------------------- | ------------------------------------- | ---------------------------------------------- |
+| **Document is**   | Declarative JSON             | Code                                                        | Binary template + data                       | Hosted artifact                       | Free-form prompt                               |
+| **Serializable**  | Yes                          | No: trapped in code                                         | Partial: data is JSON, structure isn't       | No: locked in platform                | No: prompt ≠ output                            |
+| **Reproducible**  | Yes: same JSON, same bytes   | Yes                                                         | Yes                                          | No                                    | No: stochastic                                 |
+| **LLM-friendly**  | Schema-constrained output    | Fragile: no schema                                          | Needs pre-made template                      | N/A                                   | No structure, no validation                    |
+| **Validation**    | Full TypeBox schemas         | None                                                        | None                                         | N/A                                   | None                                           |
+| **Themes**        | Built-in, swappable          | Manual styling                                              | Baked into template                          | Built-in                              | Whatever the model picks                       |
+| **Extensibility** | Plugin architecture + semver | Library APIs                                                | Limited                                      | None                                  | None                                           |
+| **Self-hosted**   | Yes                          | Yes                                                         | Yes (+ LibreOffice)                          | No                                    | No (API)                                       |
+
+**vs. imperative libs.** docx and pptxgenjs are json-to-office's own rendering backends. The difference is the layer above: a schema-validated JSON contract, themes, layout pipeline, plugin architecture, and TypeBox schemas that double as TypeScript types and runtime validators. What your code emits stops being code and starts being a value — storable, sendable, replayable.
+
+**vs. template-driven.** Templates work when structure is fixed and only data changes. They break the moment structure becomes dynamic: conditional sections, variable-length tables, data-driven layouts. A `.docx` template is an opaque binary — you cannot diff it, lint it, or compose it. JSON you can.
+
+**vs. SaaS / AI doc tools.** Built for a human assembling one deck in a browser, not a backend emitting thousands of branded documents from structured inputs. No API contract, no self-hosting, no ownership of the pipeline or the artifact.
+
+**vs. Plain Claude.** Claude can emit a `.pptx` directly if you ask. Two problems: (1) output is non-deterministic — same prompt, different document, no validation, no replay; (2) it conflates _content_ with _rendering_. With a JSON layer the LLM emits a small, schema-constrained value, and rendering is deterministic code. Reliable structure, themed output, byte-for-byte regeneratable artifacts.
 
 ## Features
 
@@ -414,6 +429,7 @@ See the `[examples/](examples/)` directory for complete, runnable JSON definitio
 | `[@json-to-office/json-to-docx](packages/json-to-docx)` | DOCX generation from JSON            |
 | `[@json-to-office/json-to-pptx](packages/json-to-pptx)` | PPTX generation from JSON            |
 | `[@json-to-office/jto](packages/jto)`                   | CLI + dev server + visual playground |
+| `[@json-to-office/jto-cli](packages/jto-cli)`           | Lean CLI (no playground deps)        |
 
 Internal packages
 

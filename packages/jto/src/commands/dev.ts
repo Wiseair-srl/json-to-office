@@ -2,9 +2,12 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import boxen from 'boxen';
-import type { FormatAdapter } from '../format-adapter.js';
-import { loadConfig } from '../config/loader.js';
-import { formatError, EXIT_CODES } from './ui.js';
+import {
+  type FormatAdapter,
+  loadConfig,
+  formatError,
+  EXIT_CODES,
+} from '@json-to-office/jto-cli';
 
 interface DevOptions {
   port?: string;
@@ -26,7 +29,9 @@ export function createDevCommand(adapter: FormatAdapter): Command {
     .option('-o, --open', 'Open browser automatically')
     .option('-c, --config <path>', 'Path to config file')
     .action(async (options: DevOptions) => {
-      const spinner = ora(`Starting ${adapter.name.toUpperCase()} dev server...`).start();
+      const spinner = ora(
+        `Starting ${adapter.name.toUpperCase()} dev server...`
+      ).start();
 
       try {
         const config = await loadConfig(options.config);
@@ -36,7 +41,10 @@ export function createDevCommand(adapter: FormatAdapter): Command {
         const hostSource = dev.getOptionValueSource('host');
         if (portSource === 'cli') {
           config.server.port = parseInt(options.port!, 10);
-        } else if (config.server.port === 3003 && adapter.defaultPort !== 3003) {
+        } else if (
+          config.server.port === 3003 &&
+          adapter.defaultPort !== 3003
+        ) {
           config.server.port = adapter.defaultPort;
         }
         if (hostSource === 'cli') {
@@ -53,10 +61,10 @@ export function createDevCommand(adapter: FormatAdapter): Command {
         console.log(
           boxen(
             chalk.bold(`${adapter.name.toUpperCase()} Dev Server\n\n`) +
-            `${chalk.cyan('Local:')}   ${chalk.bold(url)}\n` +
-            `${chalk.cyan('API:')}     ${url}/api/${adapter.name}/generate\n` +
-            `${chalk.cyan('Health:')}  ${url}/health\n\n` +
-            chalk.gray('Press Ctrl+C to stop'),
+              `${chalk.cyan('Local:')}   ${chalk.bold(url)}\n` +
+              `${chalk.cyan('API:')}     ${url}/api/${adapter.name}/generate\n` +
+              `${chalk.cyan('Health:')}  ${url}/health\n\n` +
+              chalk.gray('Press Ctrl+C to stop'),
             {
               padding: 1,
               borderColor: 'green',
@@ -68,7 +76,12 @@ export function createDevCommand(adapter: FormatAdapter): Command {
         // Open browser if requested
         if (options.open) {
           const { execFile } = await import('child_process');
-          const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+          const cmd =
+            process.platform === 'darwin'
+              ? 'open'
+              : process.platform === 'win32'
+                ? 'start'
+                : 'xdg-open';
           execFile(cmd, [url]);
         }
 

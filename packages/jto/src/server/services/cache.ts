@@ -2,7 +2,7 @@ import { LRUCache } from 'lru-cache';
 import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/index.js';
-import { cacheEvents } from '../../services/cache-events.js';
+import { cacheEvents } from '@json-to-office/jto-cli';
 
 export interface CacheStats {
   hits: number;
@@ -31,7 +31,11 @@ export class CacheService {
       maxSize: maxSizeBytes,
       sizeCalculation: (value: Buffer) => value.length,
       ttl: config.cache.ttlSeconds * 1000,
-      dispose: (_value: Buffer, _key: string, reason: LRUCache.DisposeReason) => {
+      dispose: (
+        _value: Buffer,
+        _key: string,
+        reason: LRUCache.DisposeReason
+      ) => {
         if (reason === 'evict' || reason === 'delete') {
           this.stats.evictions++;
         }
@@ -64,8 +68,12 @@ export class CacheService {
   hasDynamicContent(data: unknown): boolean {
     const str = JSON.stringify(data);
     const patterns = [
-      /\{\{now\}\}/i, /\{\{date\}\}/i, /\{\{time\}\}/i,
-      /\{\{timestamp\}\}/i, /\{\{random\}\}/i, /\{\{uuid\}\}/i,
+      /\{\{now\}\}/i,
+      /\{\{date\}\}/i,
+      /\{\{time\}\}/i,
+      /\{\{timestamp\}\}/i,
+      /\{\{random\}\}/i,
+      /\{\{uuid\}\}/i,
     ];
     return patterns.some((p) => p.test(str));
   }
@@ -82,8 +90,18 @@ export class CacheService {
     return null;
   }
 
-  set(key: string, value: Buffer, documentConfig: unknown, options?: { bypassCache?: boolean }): void {
-    if (!config.features.cache || options?.bypassCache || this.hasDynamicContent(documentConfig)) return;
+  set(
+    key: string,
+    value: Buffer,
+    documentConfig: unknown,
+    options?: { bypassCache?: boolean }
+  ): void {
+    if (
+      !config.features.cache ||
+      options?.bypassCache ||
+      this.hasDynamicContent(documentConfig)
+    )
+      return;
     this.cache.set(key, value);
     this.updateStats();
   }
@@ -99,7 +117,8 @@ export class CacheService {
     return {
       ...this.stats,
       enabled: config.features.cache,
-      hitRate: total > 0 ? Math.round((this.stats.hits / total) * 100) / 100 : 0,
+      hitRate:
+        total > 0 ? Math.round((this.stats.hits / total) * 100) / 100 : 0,
     };
   }
 

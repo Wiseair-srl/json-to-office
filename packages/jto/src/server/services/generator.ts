@@ -1,8 +1,10 @@
-import type { FormatAdapter } from '../../format-adapter.js';
+import {
+  type FormatAdapter,
+  cacheEvents,
+  PluginRegistry,
+} from '@json-to-office/jto-cli';
 import { CacheService } from './cache.js';
 import { logger } from '../utils/logger.js';
-import { cacheEvents } from '../../services/cache-events.js';
-import { PluginRegistry } from '../../services/plugin-registry.js';
 import {
   collectFontNamesFromDocx,
   collectFontNamesFromPptx,

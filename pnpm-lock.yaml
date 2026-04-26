@@ -222,6 +222,9 @@ importers:
       '@json-to-office/core-pptx':
         specifier: workspace:^
         version: link:../core-pptx
+      '@json-to-office/jto-cli':
+        specifier: workspace:^
+        version: link:../jto-cli
       '@json-to-office/shared':
         specifier: workspace:^
         version: link:../shared
@@ -451,6 +454,73 @@ importers:
       typescript:
         specifier: 5.3.3
         version: 5.3.3
+
+  packages/jto-cli:
+    dependencies:
+      '@json-to-office/core-docx':
+        specifier: workspace:^
+        version: link:../core-docx
+      '@json-to-office/core-pptx':
+        specifier: workspace:^
+        version: link:../core-pptx
+      '@json-to-office/shared':
+        specifier: workspace:^
+        version: link:../shared
+      '@json-to-office/shared-docx':
+        specifier: workspace:^
+        version: link:../shared-docx
+      '@json-to-office/shared-pptx':
+        specifier: workspace:^
+        version: link:../shared-pptx
+      '@sinclair/typebox':
+        specifier: 0.34.38
+        version: 0.34.38
+      ajv:
+        specifier: 8.12.0
+        version: 8.12.0
+      ajv-formats:
+        specifier: 2.1.1
+        version: 2.1.1(ajv@8.12.0)
+      boxen:
+        specifier: ^8.0.1
+        version: 8.0.1
+      chalk:
+        specifier: 5.3.0
+        version: 5.3.0
+      cli-table3:
+        specifier: ^0.6.5
+        version: 0.6.5
+      commander:
+        specifier: 11.1.0
+        version: 11.1.0
+      cosmiconfig:
+        specifier: 9.0.0
+        version: 9.0.0(typescript@5.3.3)
+      glob:
+        specifier: ^13.0.0
+        version: 13.0.6
+      ora:
+        specifier: 8.0.1
+        version: 8.0.1
+      prompts:
+        specifier: 2.4.2
+        version: 2.4.2
+      tsx:
+        specifier: 4.20.3
+        version: 4.20.3
+    devDependencies:
+      '@types/node':
+        specifier: 20.11.0
+        version: 20.11.0
+      tsup:
+        specifier: 8.5.0
+        version: 8.5.0(jiti@2.6.1)(postcss@8.5.8)(tsx@4.20.3)(typescript@5.3.3)(yaml@2.8.3)
+      typescript:
+        specifier: 5.3.3
+        version: 5.3.3
+      vitest:
+        specifier: 1.6.1
+        version: 1.6.1(@types/node@20.11.0)(jsdom@24.1.3)(lightningcss@1.30.1)
 
   packages/shared:
     dependencies:
@@ -2507,9 +2577,6 @@ packages:
 
   ajv@8.17.1:
     resolution: {integrity: sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==}
-
-  ajv@8.18.0:
-    resolution: {integrity: sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A==}
 
   ansi-align@3.0.1:
     resolution: {integrity: sha512-IOfwwBF5iczOjp/WeY4YxyjqAFMQoZufdQWDd19SEExbVLNXqvpzSJ/M7Za4/sCPmQ0+GRquoA7bGcINcxew6w==}
@@ -6571,8 +6638,8 @@ snapshots:
   '@modelcontextprotocol/sdk@1.29.0(zod@4.3.6)':
     dependencies:
       '@hono/node-server': 1.19.12(hono@4.12.9)
-      ajv: 8.18.0
-      ajv-formats: 3.0.1(ajv@8.18.0)
+      ajv: 8.17.1
+      ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
       cors: 2.8.6
       cross-spawn: 7.0.6
@@ -7617,10 +7684,6 @@ snapshots:
     optionalDependencies:
       ajv: 8.17.1
 
-  ajv-formats@3.0.1(ajv@8.18.0):
-    optionalDependencies:
-      ajv: 8.18.0
-
   ajv@6.14.0:
     dependencies:
       fast-deep-equal: 3.1.3
@@ -7636,13 +7699,6 @@ snapshots:
       uri-js: 4.4.1
 
   ajv@8.17.1:
-    dependencies:
-      fast-deep-equal: 3.1.3
-      fast-uri: 3.1.0
-      json-schema-traverse: 1.0.0
-      require-from-string: 2.0.2
-
-  ajv@8.18.0:
     dependencies:
       fast-deep-equal: 3.1.3
       fast-uri: 3.1.0

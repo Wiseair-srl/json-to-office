@@ -31,15 +31,21 @@ export function cleanNodeOptions(debug = false): string | undefined {
     let count = 0;
     let escaped = false;
     for (let i = 0; i < str.length; i++) {
-      if (escaped) { escaped = false; continue; }
-      if (str[i] === '\\') { escaped = true; continue; }
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (str[i] === '\\') {
+        escaped = true;
+        continue;
+      }
       if (str[i] === ch) count++;
     }
     return count;
   };
 
   const dq = countUnescaped(original, '"');
-  const sq = countUnescaped(original, '\'');
+  const sq = countUnescaped(original, "'");
   if (dq % 2 === 1 || sq % 2 === 1) {
     console.warn('[WARN] Detected malformed NODE_OPTIONS. Removing.');
     return undefined;
@@ -52,12 +58,31 @@ export function cleanNodeOptions(debug = false): string | undefined {
   let escape = false;
   for (let i = 0; i < original.length; i++) {
     const ch = original[i];
-    if (escape) { current += ch; escape = false; continue; }
-    if (ch === '\\') { current += ch; escape = true; continue; }
-    if (ch === '\'' && !inDouble) { inSingle = !inSingle; current += ch; continue; }
-    if (ch === '"' && !inSingle) { inDouble = !inDouble; current += ch; continue; }
+    if (escape) {
+      current += ch;
+      escape = false;
+      continue;
+    }
+    if (ch === '\\') {
+      current += ch;
+      escape = true;
+      continue;
+    }
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      current += ch;
+      continue;
+    }
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      current += ch;
+      continue;
+    }
     if (!inSingle && !inDouble && /\s/.test(ch)) {
-      if (current) { tokens.push(current); current = ''; }
+      if (current) {
+        tokens.push(current);
+        current = '';
+      }
       continue;
     }
     current += ch;
@@ -70,7 +95,11 @@ export function cleanNodeOptions(debug = false): string | undefined {
   };
   const shouldDropToken = (tok: string) => {
     const lower = tok.toLowerCase();
-    return lower.includes('--inspect') || lower.includes('--debug') || isDebuggerRelatedValue(tok);
+    return (
+      lower.includes('--inspect') ||
+      lower.includes('--debug') ||
+      isDebuggerRelatedValue(tok)
+    );
   };
 
   const filtered: string[] = [];
@@ -81,7 +110,10 @@ export function cleanNodeOptions(debug = false): string | undefined {
     if (lower === '--require' || lower === '-r') {
       const next = tokens[i + 1];
       if (!next) continue;
-      if (isDebuggerRelatedValue(next)) { i++; continue; }
+      if (isDebuggerRelatedValue(next)) {
+        i++;
+        continue;
+      }
       filtered.push(tok, next);
       i++;
       continue;
@@ -101,7 +133,10 @@ export function cleanNodeOptions(debug = false): string | undefined {
   const cleanOptions = filtered.join(' ').trim();
 
   if (debug && cleanOptions !== original) {
-    console.log('[DEBUG] Cleaned NODE_OPTIONS:', { original, cleaned: cleanOptions || '(empty)' });
+    console.log('[DEBUG] Cleaned NODE_OPTIONS:', {
+      original,
+      cleaned: cleanOptions || '(empty)',
+    });
   }
 
   return cleanOptions || undefined;
@@ -122,7 +157,9 @@ export function removeDebuggerVars(
   vars: readonly string[] = IDE_DEBUGGER_VARS,
   _debug = false
 ): void {
-  vars.forEach((varName) => { delete process.env[varName]; });
+  vars.forEach((varName) => {
+    delete process.env[varName];
+  });
 }
 
 export function cleanDebuggerEnvironment(
@@ -164,7 +201,9 @@ export function createCleanEnv(): NodeJS.ProcessEnv {
     }
   }
 
-  IDE_DEBUGGER_VARS.forEach((varName) => { delete cleanEnv[varName]; });
+  IDE_DEBUGGER_VARS.forEach((varName) => {
+    delete cleanEnv[varName];
+  });
 
   return cleanEnv;
 }

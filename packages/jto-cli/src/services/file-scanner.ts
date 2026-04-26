@@ -8,7 +8,12 @@ export interface ScanOptions {
   additionalIgnore?: string[];
 }
 
-export type DiscoveryType = 'plugin' | 'docx-document' | 'pptx-document' | 'pptx-theme' | 'docx-theme';
+export type DiscoveryType =
+  | 'plugin'
+  | 'docx-document'
+  | 'pptx-document'
+  | 'pptx-theme'
+  | 'docx-theme';
 
 export interface FilePattern {
   type: DiscoveryType;
@@ -209,5 +214,4 @@ export class FileSystemScanner {
     const uniquePaths = new Set(paths.map((p) => path.resolve(p)));
     return Array.from(uniquePaths);
   }
-
 }

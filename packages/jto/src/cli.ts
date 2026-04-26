@@ -1,31 +1,11 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import {
-  DocxFormatAdapter,
-  PptxFormatAdapter,
-  type FormatAdapter,
-} from './format-adapter.js';
-import { createGenerateCommand } from './commands/generate.js';
-import { createValidateCommand } from './commands/validate.js';
-import { createSchemasCommand } from './commands/schemas.js';
-import { createDiscoverCommand } from './commands/discover.js';
-import { createInitCommand } from './commands/init.js';
+import { registerCoreCommands } from '@json-to-office/jto-cli';
 import { createDevCommand } from './commands/dev.js';
-import { createFontsCommand } from './commands/fonts.js';
 
 declare const __PACKAGE_VERSION__: string | undefined;
 const PACKAGE_VERSION =
   typeof __PACKAGE_VERSION__ !== 'undefined' ? __PACKAGE_VERSION__ : 'dev-mode';
-
-function registerFormatCommands(parent: Command, adapter: FormatAdapter): void {
-  parent.addCommand(createGenerateCommand(adapter));
-  parent.addCommand(createValidateCommand(adapter));
-  parent.addCommand(createSchemasCommand(adapter));
-  parent.addCommand(createDiscoverCommand(adapter));
-  parent.addCommand(createInitCommand(adapter));
-  parent.addCommand(createDevCommand(adapter));
-  parent.addCommand(createFontsCommand(adapter));
-}
 
 const program = new Command();
 
@@ -34,16 +14,9 @@ program
   .description('JSON to Office CLI - Generate .docx and .pptx from JSON')
   .version(PACKAGE_VERSION);
 
-// === DOCX subcommand ===
-const docx = new Command('docx').description('DOCX document commands');
-registerFormatCommands(docx, new DocxFormatAdapter());
-
-// === PPTX subcommand ===
-const pptx = new Command('pptx').description('PPTX presentation commands');
-registerFormatCommands(pptx, new PptxFormatAdapter());
-
-program.addCommand(docx);
-program.addCommand(pptx);
+registerCoreCommands(program, {
+  extraCommands: (adapter) => [createDevCommand(adapter)],
+});
 
 program.addHelpText(
   'after',

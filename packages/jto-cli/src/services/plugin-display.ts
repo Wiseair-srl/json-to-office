@@ -73,19 +73,25 @@ export class PluginDisplay {
     if (upstream.length > 0) {
       console.log(
         chalk.gray('  Upstream:  ') +
-          chalk.green(`${upstream.length} plugin${upstream.length !== 1 ? 's' : ''} found`)
+          chalk.green(
+            `${upstream.length} plugin${upstream.length !== 1 ? 's' : ''} found`
+          )
       );
     }
     if (current.length > 0) {
       console.log(
         chalk.gray('  Current:   ') +
-          chalk.green(`${current.length} plugin${current.length !== 1 ? 's' : ''} found`)
+          chalk.green(
+            `${current.length} plugin${current.length !== 1 ? 's' : ''} found`
+          )
       );
     }
     if (downstream.length > 0) {
       console.log(
         chalk.gray('  Downstream:') +
-          chalk.green(`${downstream.length} plugin${downstream.length !== 1 ? 's' : ''} found`)
+          chalk.green(
+            `${downstream.length} plugin${downstream.length !== 1 ? 's' : ''} found`
+          )
       );
     }
     console.log();
@@ -93,7 +99,9 @@ export class PluginDisplay {
     if (plugins.length === 0) {
       console.log(chalk.yellow('No plugins found.'));
       console.log(
-        chalk.gray('Make sure your custom components follow the *.component.ts naming convention.')
+        chalk.gray(
+          'Make sure your custom components follow the *.component.ts naming convention.'
+        )
       );
       return;
     }
@@ -106,7 +114,9 @@ export class PluginDisplay {
     console.log();
     console.log(chalk.gray('-'.repeat(50)));
     console.log(
-      chalk.bold(`Total: ${plugins.length} plugin${plugins.length !== 1 ? 's' : ''} discovered`)
+      chalk.bold(
+        `Total: ${plugins.length} plugin${plugins.length !== 1 ? 's' : ''} discovered`
+      )
     );
   }
 
@@ -145,7 +155,11 @@ export class PluginDisplay {
       }
     }
 
-    if (this.options.examples && plugin.examples && plugin.examples.length > 0) {
+    if (
+      this.options.examples &&
+      plugin.examples &&
+      plugin.examples.length > 0
+    ) {
       console.log();
       console.log(chalk.gray('   Example:'));
       const example = plugin.examples[0];
@@ -195,7 +209,9 @@ export class PluginDisplay {
     console.log();
     console.log(chalk.gray('-'.repeat(50)));
     console.log(
-      chalk.bold(`Total: ${plugins.length} plugin${plugins.length !== 1 ? 's' : ''} discovered`)
+      chalk.bold(
+        `Total: ${plugins.length} plugin${plugins.length !== 1 ? 's' : ''} discovered`
+      )
     );
   }
 }
