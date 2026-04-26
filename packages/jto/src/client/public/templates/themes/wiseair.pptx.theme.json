@@ -1,0 +1,61 @@
+{
+  "name": "wiseair",
+  "colors": {
+    "primary": "#1D2130",
+    "secondary": "#383F5D",
+    "accent": "#586CC9",
+    "background": "#FAFAFA",
+    "text": "#1D2130",
+    "text2": "#383F5D",
+    "background2": "#ECEFF2",
+    "accent4": "#D6E6FF",
+    "accent5": "#586CC9",
+    "accent6": "#383F5D"
+  },
+  "fonts": {
+    "heading": "Inter",
+    "body": "Inter"
+  },
+  "defaults": {
+    "fontSize": 16,
+    "fontColor": "#1D2130"
+  },
+  "styles": {
+    "title": {
+      "fontSize": 44,
+      "bold": false,
+      "fontColor": "primary",
+      "align": "left"
+    },
+    "subtitle": {
+      "fontSize": 24,
+      "bold": false,
+      "fontColor": "text2",
+      "align": "left"
+    },
+    "heading1": {
+      "fontSize": 32,
+      "bold": false,
+      "fontColor": "primary"
+    },
+    "heading2": {
+      "fontSize": 26,
+      "bold": false,
+      "fontColor": "secondary"
+    },
+    "heading3": {
+      "fontSize": 20,
+      "bold": false,
+      "fontColor": "text"
+    },
+    "body": {
+      "fontSize": 16,
+      "fontColor": "text"
+    },
+    "caption": {
+      "fontSize": 11,
+      "italic": true,
+      "fontColor": "text2"
+    }
+  }
+}
