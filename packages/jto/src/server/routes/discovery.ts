@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
-import { PluginDiscoveryService } from '../../services/plugin-discovery.js';
-import { PluginRegistry } from '../../services/plugin-registry.js';
+import {
+  PluginDiscoveryService,
+  PluginRegistry,
+} from '@json-to-office/jto-cli';
 import { latestVersion } from '@json-to-office/shared';
 import { logger } from '../utils/logger.js';
 import { AppEnv } from '../types/hono.js';

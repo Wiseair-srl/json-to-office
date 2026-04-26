@@ -80,50 +80,50 @@ export function createInitCommand(adapter: FormatAdapter): Command {
         const exampleDocument =
           adapter.name === 'docx'
             ? {
-              name: 'docx',
-              props: {
-                title: 'Welcome to JSON-to-Office',
-                subtitle: `Your ${adapter.label} generation project`,
-                theme: 'minimal',
-              },
-              children: [
-                {
-                  name: 'heading',
-                  props: { text: 'Welcome', level: 1 },
+                name: 'docx',
+                props: {
+                  title: 'Welcome to JSON-to-Office',
+                  subtitle: `Your ${adapter.label} generation project`,
+                  theme: 'minimal',
                 },
-                {
-                  name: 'paragraph',
-                  props: {
-                    text: 'Edit example.json to customize your document.',
+                children: [
+                  {
+                    name: 'heading',
+                    props: { text: 'Welcome', level: 1 },
                   },
-                },
-              ],
-            }
-            : {
-              name: 'pptx',
-              props: {
-                title: 'Welcome to JSON-to-Office',
-              },
-              children: [
-                {
-                  name: 'slide',
-                  props: {},
-                  children: [
-                    {
-                      name: 'text',
-                      props: {
-                        text: 'Welcome to JSON-to-Office',
-                        x: 1,
-                        y: 1,
-                        w: 8,
-                        h: 2,
-                        fontSize: 36,
-                      },
+                  {
+                    name: 'paragraph',
+                    props: {
+                      text: 'Edit example.json to customize your document.',
                     },
-                  ],
+                  },
+                ],
+              }
+            : {
+                name: 'pptx',
+                props: {
+                  title: 'Welcome to JSON-to-Office',
                 },
-              ],
-            };
+                children: [
+                  {
+                    name: 'slide',
+                    props: {},
+                    children: [
+                      {
+                        name: 'text',
+                        props: {
+                          text: 'Welcome to JSON-to-Office',
+                          x: 1,
+                          y: 1,
+                          w: 8,
+                          h: 2,
+                          fontSize: 36,
+                        },
+                      },
+                    ],
+                  },
+                ],
+              };
 
         writeFileSync(
           join(projectPath, 'example.json'),
@@ -163,8 +163,8 @@ export function createInitCommand(adapter: FormatAdapter): Command {
         console.log(
           boxen(
             chalk.bold(`${name}\n\n`) +
-            chalk.gray('Next steps:\n') +
-            nextSteps.map((s) => chalk.cyan(`  $ ${s}`)).join('\n'),
+              chalk.gray('Next steps:\n') +
+              nextSteps.map((s) => chalk.cyan(`  $ ${s}`)).join('\n'),
             {
               padding: 1,
               borderColor: 'green',

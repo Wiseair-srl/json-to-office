@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsup';
-import { cpSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 
 const packageJson = JSON.parse(
@@ -12,7 +12,7 @@ const commonExternal = [
   '@json-to-office/shared-pptx',
   '@json-to-office/core-docx',
   '@json-to-office/core-pptx',
-  '@json-to-office/jto-cli',
+  '@sinclair/typebox',
   'tsx',
   'tsx/esm/api',
   'prompts',
@@ -20,27 +20,13 @@ const commonExternal = [
   'ajv-formats',
   'cosmiconfig',
   'glob',
-  // AI deps (server-only)
-  'ai',
-  'ai-sdk-provider-claude-code',
-  // Server deps (externalized to reduce bundle size)
-  'hono',
-  '@hono/node-server',
-  '@hono/node-server/serve-static',
-  'vite',
-  'lru-cache',
-  'dotenv',
-  'mime-types',
 ];
 
 export default defineConfig([
-  // CLI entry with shebang
   {
-    entry: {
-      cli: 'src/cli.ts',
-    },
+    entry: { cli: 'src/cli.ts' },
     format: ['esm'],
-    dts: true,
+    dts: { compilerOptions: { incremental: false, composite: false } },
     splitting: false,
     sourcemap: true,
     clean: true,
@@ -50,7 +36,6 @@ export default defineConfig([
       __PACKAGE_VERSION__: JSON.stringify(packageJson.version),
     },
     external: commonExternal,
-    // Exclude client directory from server build
     esbuildOptions(options) {
       options.platform = 'node';
       options.target = 'node18';
@@ -59,13 +44,10 @@ export default defineConfig([
       js: '#!/usr/bin/env node',
     },
   },
-  // Library entry without shebang
   {
-    entry: {
-      index: 'src/index.ts',
-    },
+    entry: { index: 'src/index.ts' },
     format: ['esm'],
-    dts: true,
+    dts: { compilerOptions: { incremental: false, composite: false } },
     splitting: false,
     sourcemap: true,
     clean: false,
@@ -78,12 +60,6 @@ export default defineConfig([
     esbuildOptions(options) {
       options.platform = 'node';
       options.target = 'node18';
-    },
-    onSuccess: async () => {
-      cpSync(join('src', 'server', 'prompts'), join('dist', 'prompts'), {
-        recursive: true,
-        force: true,
-      });
     },
   },
 ]);

@@ -15,6 +15,16 @@ jto docx dev
 jto pptx dev
 ```
 
+### Lightweight install (CI / scripts, no playground)
+
+If you only need the generation/validation CLI (no React/Monaco/Vite stack), install the lean package instead — it ships the same commands except `dev`, with a fraction of the dependency footprint:
+
+```bash
+npm install -g @json-to-office/jto-cli
+jto-cli docx generate doc.json
+jto-cli pptx validate slides.json
+```
+
 ![Visual Playground](https://raw.githubusercontent.com/Wiseair-srl/json-to-office/main/docs/playground-screenshot.png)
 
 ## CLI commands

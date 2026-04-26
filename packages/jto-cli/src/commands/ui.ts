@@ -12,7 +12,9 @@ export function dimPath(absPath: string): string {
   const rel = shortPath(absPath);
   const dir = dirname(rel);
   const file = basename(rel);
-  return dir === '.' ? chalk.bold(file) : chalk.dim(dir + '/') + chalk.bold(file);
+  return dir === '.'
+    ? chalk.bold(file)
+    : chalk.dim(dir + '/') + chalk.bold(file);
 }
 
 export function createTable(headers: string[], rows: string[][]): string {

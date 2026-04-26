@@ -1,0 +1,88 @@
+{
+  "name": "@json-to-office/jto-cli",
+  "version": "0.9.0",
+  "description": "JSON to Office lightweight CLI - generate .docx and .pptx from JSON without the dev playground",
+  "type": "module",
+  "bin": {
+    "jto-cli": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./dist/cli.js": "./dist/cli.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "cli": "tsx src/cli.ts",
+    "prepublishOnly": "node ../../scripts/copy-license.cjs"
+  },
+  "dependencies": {
+    "@json-to-office/core-docx": "workspace:^",
+    "@json-to-office/core-pptx": "workspace:^",
+    "@json-to-office/shared": "workspace:^",
+    "@json-to-office/shared-docx": "workspace:^",
+    "@json-to-office/shared-pptx": "workspace:^",
+    "@sinclair/typebox": "0.34.38",
+    "ajv": "8.12.0",
+    "ajv-formats": "2.1.1",
+    "boxen": "^8.0.1",
+    "chalk": "5.3.0",
+    "cli-table3": "^0.6.5",
+    "commander": "11.1.0",
+    "cosmiconfig": "9.0.0",
+    "glob": "^13.0.0",
+    "ora": "8.0.1",
+    "prompts": "2.4.2",
+    "tsx": "4.20.3"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.0",
+    "tsup": "8.5.0",
+    "typescript": "5.3.3",
+    "vitest": "1.6.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "Paolo Barbato",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wiseair-srl/json-to-office.git",
+    "directory": "packages/jto-cli"
+  },
+  "homepage": "https://github.com/Wiseair-srl/json-to-office/tree/main/packages/jto-cli",
+  "bugs": {
+    "url": "https://github.com/Wiseair-srl/json-to-office/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "json-to-office",
+    "typescript",
+    "cli",
+    "docx",
+    "pptx",
+    "document",
+    "presentation"
+  ]
+}

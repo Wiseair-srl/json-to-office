@@ -10,8 +10,7 @@ import { tbValidator, getValidated } from '../lib/typebox-validator.js';
 import { logger } from '../utils/logger.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
 import { AppEnv } from '../types/hono.js';
-import type { FormatAdapter } from '../../format-adapter.js';
-import { PluginRegistry } from '../../services/plugin-registry.js';
+import { type FormatAdapter, PluginRegistry } from '@json-to-office/jto-cli';
 import {
   LibreOfficeBinaryNotFoundError,
   LibreOfficeConversionError,
@@ -432,9 +431,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
     try {
       const cacheService = getContainer().get('cacheService');
       cacheService.clear();
-      const { invalidateAllCaches } = await import(
-        '../../services/cache-events.js'
-      );
+      const { invalidateAllCaches } = await import('@json-to-office/jto-cli');
       invalidateAllCaches();
       return c.json({
         success: true,

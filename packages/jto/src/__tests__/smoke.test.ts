@@ -10,7 +10,13 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync } from 'child_process';
-import { mkdtempSync, existsSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  mkdtempSync,
+  existsSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -30,7 +36,10 @@ function runMayFail(args: string[]): { stdout: string; status: number } {
   try {
     return { stdout: run(args), status: 0 };
   } catch (err: any) {
-    return { stdout: (err.stdout ?? '') + (err.stderr ?? ''), status: err.status ?? 1 };
+    return {
+      stdout: (err.stdout ?? '') + (err.stderr ?? ''),
+      status: err.status ?? 1,
+    };
   }
 }
 
@@ -92,14 +101,28 @@ describe('CLI bootstrap', () => {
 
   it('shows docx subcommand help with all commands', () => {
     const { stdout } = runMayFail(['docx', '--help']);
-    for (const cmd of ['generate', 'validate', 'schemas', 'discover', 'init', 'dev']) {
+    for (const cmd of [
+      'generate',
+      'validate',
+      'schemas',
+      'discover',
+      'init',
+      'dev',
+    ]) {
       expect(stdout).toContain(cmd);
     }
   });
 
   it('shows pptx subcommand help with all commands', () => {
     const { stdout } = runMayFail(['pptx', '--help']);
-    for (const cmd of ['generate', 'validate', 'schemas', 'discover', 'init', 'dev']) {
+    for (const cmd of [
+      'generate',
+      'validate',
+      'schemas',
+      'discover',
+      'init',
+      'dev',
+    ]) {
       expect(stdout).toContain(cmd);
     }
   });
@@ -112,7 +135,13 @@ describe('docx generate', () => {
     const outPath = join(TMP, 'output.docx');
     // docx generate may hang after completion (open handles in core-docx cache),
     // so we use runMayFail which tolerates timeout after the file is written
-    const { stdout } = runMayFail(['docx', 'generate', docxFixture, '-o', outPath]);
+    const { stdout } = runMayFail([
+      'docx',
+      'generate',
+      docxFixture,
+      '-o',
+      outPath,
+    ]);
     expect(stdout).toContain('Output');
     expect(existsSync(outPath)).toBe(true);
     // DOCX/PPTX files are ZIP archives starting with PK
@@ -123,7 +152,11 @@ describe('docx generate', () => {
   });
 
   it('fails on nonexistent input', () => {
-    const { status } = runMayFail(['docx', 'generate', '/tmp/no-such-file.json']);
+    const { status } = runMayFail([
+      'docx',
+      'generate',
+      '/tmp/no-such-file.json',
+    ]);
     expect(status).not.toBe(0);
   });
 });
@@ -143,7 +176,11 @@ describe('pptx generate', () => {
   });
 
   it('fails on nonexistent input', () => {
-    const { status } = runMayFail(['pptx', 'generate', '/tmp/no-such-file.json']);
+    const { status } = runMayFail([
+      'pptx',
+      'generate',
+      '/tmp/no-such-file.json',
+    ]);
     expect(status).not.toBe(0);
   });
 });
@@ -183,7 +220,9 @@ describe('docx schemas', () => {
     expect(existsSync(join(outDir, 'theme.schema.json'))).toBe(true);
 
     // Verify they are valid JSON with a $schema property
-    const docSchema = JSON.parse(readFileSync(join(outDir, 'document.schema.json'), 'utf-8'));
+    const docSchema = JSON.parse(
+      readFileSync(join(outDir, 'document.schema.json'), 'utf-8')
+    );
     expect(docSchema).toHaveProperty('$schema');
   });
 });
@@ -245,7 +284,7 @@ describe('public API', () => {
   });
 
   it('DocxFormatAdapter has correct properties', async () => {
-    const { DocxFormatAdapter } = await import('../format-adapter.js');
+    const { DocxFormatAdapter } = await import('@json-to-office/jto-cli');
     const adapter = new DocxFormatAdapter();
     expect(adapter.name).toBe('docx');
     expect(adapter.extension).toBe('.docx');
@@ -253,7 +292,7 @@ describe('public API', () => {
   });
 
   it('PptxFormatAdapter has correct properties', async () => {
-    const { PptxFormatAdapter } = await import('../format-adapter.js');
+    const { PptxFormatAdapter } = await import('@json-to-office/jto-cli');
     const adapter = new PptxFormatAdapter();
     expect(adapter.name).toBe('pptx');
     expect(adapter.extension).toBe('.pptx');
@@ -261,7 +300,7 @@ describe('public API', () => {
   });
 
   it('createAdapter returns correct adapter for each format', async () => {
-    const { createAdapter } = await import('../format-adapter.js');
+    const { createAdapter } = await import('@json-to-office/jto-cli');
     expect(createAdapter('docx').name).toBe('docx');
     expect(createAdapter('pptx').name).toBe('pptx');
     expect(() => createAdapter('xlsx' as any)).toThrow('Unknown format');
