@@ -10,6 +10,7 @@ import { InfoIcon } from 'lucide-react';
 import { PreviewFrameMemoized } from './preview-frame';
 import { PreviewHeaderMemoized } from './preview-header';
 import { WarningsPanel } from './warnings-panel';
+import { UnavailableThemeWarning } from './unavailable-theme-warning';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Separator } from '../ui/separator';
 import { useOutputStore } from '../../store/output-store-provider';
@@ -334,6 +335,7 @@ export function Preview() {
         })()}
         {/* Warnings Panel */}
         <WarningsPanel warnings={warnings} className="mx-3 my-2" />
+        <UnavailableThemeWarning className="mx-3 my-2" />
         {/* Generation Error — centered in preview area */}
         {globalError && !isGenerating ? (
           <div className="flex-1 flex items-center justify-center p-6">
