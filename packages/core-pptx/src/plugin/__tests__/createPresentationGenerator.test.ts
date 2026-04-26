@@ -323,6 +323,74 @@ describe('createPresentationGenerator', () => {
     expect(result.buffer).toBeInstanceOf(Buffer);
   });
 
+  it('prefers customThemes[doc.props.theme] over constructor-supplied state.theme', async () => {
+    // Regression: in the playground/CLI plugin path, a default theme passed
+    // to the constructor used to shadow customThemes — so a doc with
+    // `props.theme: "wiseair"` rendered as the constructor default even
+    // though the wiseair theme was supplied. Spy via a custom component's
+    // render args to capture the theme actually used.
+    let observedTheme: any = null;
+    const spy = createComponent({
+      name: 'theme-spy' as const,
+      versions: {
+        '1.0.0': createVersion({
+          propsSchema: Type.Object({}),
+          render: async ({ theme }) => {
+            observedTheme = theme;
+            return [];
+          },
+        }),
+      },
+    });
+
+    const constructorTheme = {
+      name: 'minimal-fallback',
+      colors: {
+        primary: '#111111',
+        secondary: '#222222',
+        accent: '#333333',
+        background: '#FFFFFF',
+        text: '#000000',
+      },
+      fonts: { heading: 'Arial', body: 'Arial' },
+      defaults: { fontSize: 12, fontColor: '#000000' },
+    } as any;
+
+    const customWiseair = {
+      name: 'wiseair',
+      colors: {
+        primary: '#1D2130',
+        secondary: '#383F5D',
+        accent: '#586CC9',
+        background: '#FAFAFA',
+        text: '#1D2130',
+      },
+      fonts: { heading: 'Inter', body: 'Inter' },
+      defaults: { fontSize: 16, fontColor: '#1D2130' },
+    } as any;
+
+    const gen = createPresentationGenerator({
+      theme: constructorTheme,
+      customThemes: { wiseair: customWiseair },
+    }).addComponent(spy);
+
+    await gen.generate({
+      name: 'pptx',
+      props: { theme: 'wiseair' },
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [{ name: 'theme-spy', props: {} }],
+        },
+      ],
+    });
+
+    expect(observedTheme).not.toBeNull();
+    expect(observedTheme.colors.accent).toBe('#586CC9');
+    expect(observedTheme.colors.primary).toBe('#1D2130');
+  });
+
   it('generates and saves to file', async () => {
     const gen = createPresentationGenerator().addComponent(bannerComponent);
     const fs = await import('fs/promises');

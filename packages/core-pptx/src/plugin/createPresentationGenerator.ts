@@ -273,15 +273,20 @@ function createBuilderImpl<
         throw new Error('Top-level component must be a pptx component');
       }
 
-      // Resolve theme for render context
+      // Resolve theme: doc-level `props.theme` wins (matches non-plugin path
+      // and DOCX). A constructor-supplied `state.theme` object only acts as
+      // the fallback when the doc names a theme we can't find — otherwise a
+      // playground/CLI default theme would silently shadow customThemes
+      // entries (e.g. `props.theme: "wiseair"` rendering as `themes.minimal`).
+      const docThemeName = internalDocument.props.theme;
       const baseThemeName =
-        typeof state.theme === 'string'
-          ? state.theme
-          : internalDocument.props.theme ?? 'default';
+        docThemeName ??
+        (typeof state.theme === 'string' ? state.theme : 'default');
       let resolvedTheme =
-        typeof state.theme === 'object'
+        state.customThemes?.[baseThemeName] ??
+        (typeof state.theme === 'object' && state.theme !== null
           ? state.theme
-          : state.customThemes?.[baseThemeName] ?? getPptxTheme(baseThemeName);
+          : getPptxTheme(baseThemeName));
 
       const warnings: PipelineWarning[] = [];
 
