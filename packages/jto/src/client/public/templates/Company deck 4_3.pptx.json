@@ -1,7 +1,7 @@
 {
   "name": "pptx",
   "props": {
-    "title": "Wiseair — Template Deck",
+    "title": "Company deck 4_3",
     "author": "Wiseair",
     "company": "Wiseair",
     "theme": "wiseair",
@@ -4672,47 +4672,16 @@
               "data": [
                 {
                   "name": "Previous Year",
-                  "labels": [
-                    "Q1",
-                    "Q2",
-                    "Q3",
-                    "Q4",
-                    "Q1",
-                    "Q2"
-                  ],
-                  "values": [
-                    1,
-                    1.2,
-                    0.9,
-                    1.4,
-                    1.5,
-                    1.6
-                  ]
+                  "labels": ["Q1", "Q2", "Q3", "Q4", "Q1", "Q2"],
+                  "values": [1, 1.2, 0.9, 1.4, 1.5, 1.6]
                 },
                 {
                   "name": "Current Year",
-                  "labels": [
-                    "Q1",
-                    "Q2",
-                    "Q3",
-                    "Q4",
-                    "Q1",
-                    "Q2"
-                  ],
-                  "values": [
-                    1.4,
-                    1.75,
-                    2,
-                    2.5,
-                    2.2,
-                    2.6
-                  ]
+                  "labels": ["Q1", "Q2", "Q3", "Q4", "Q1", "Q2"],
+                  "values": [1.4, 1.75, 2, 2.5, 2.2, 2.6]
                 }
               ],
-              "chartColors": [
-                "accent4",
-                "accent"
-              ],
+              "chartColors": ["accent4", "accent"],
               "showLegend": true,
               "legendPos": "t",
               "legendFontSize": 10,
@@ -5002,19 +4971,9 @@
                 "pt": 0.5,
                 "color": "background2"
               },
-              "colW": [
-                3.5,
-                1.8,
-                1.8,
-                1.8
-              ],
+              "colW": [3.5, 1.8, 1.8, 1.8],
               "rowH": 0.45,
-              "margin": [
-                3,
-                6,
-                3,
-                6
-              ],
+              "margin": [3, 6, 3, 6],
               "borderRadius": 0.15,
               "rows": [
                 [

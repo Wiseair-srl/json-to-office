@@ -2,10 +2,9 @@
 
 Real-world JSON document definitions you can render with json-to-office.
 
-| File                                         | Format | Description                                                                        |
-| -------------------------------------------- | ------ | ---------------------------------------------------------------------------------- |
-| [invoice.docx.json](invoice.docx.json)       | DOCX   | Northvane Studio invoice with line items, payment instructions, and retainer terms |
-| [pitch-deck.pptx.json](pitch-deck.pptx.json) | PPTX   | Meridian Series B deck with grid layout, templates, decorative shapes, and charts  |
+| File                                   | Format | Description                                                                        |
+| -------------------------------------- | ------ | ---------------------------------------------------------------------------------- |
+| [invoice.docx.json](invoice.docx.json) | DOCX   | Northvane Studio invoice with line items, payment instructions, and retainer terms |
 
 More templates are available in the visual playground — run `jto pptx dev` or `jto docx dev` to browse the full gallery.
 
@@ -15,7 +14,6 @@ More templates are available in the visual playground — run `jto pptx dev` or 
 # With the CLI
 npm install -g @json-to-office/jto
 jto docx generate ./invoice.docx.json -o ./invoice.docx
-jto pptx generate ./pitch-deck.pptx.json -o ./deck.pptx
 
 # Or open in the visual playground
 jto docx dev
