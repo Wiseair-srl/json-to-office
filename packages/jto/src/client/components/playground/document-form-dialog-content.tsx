@@ -482,15 +482,14 @@ function DocumentFormDialogContent({
                                 : '📦 Project'}
                             </SelectLabel>
                             {items.map((item) => {
-                              let displayName = item.name;
-                              if (item.title) {
-                                displayName = `${item.name} - ${item.title}`;
+                              let secondary: string | undefined;
+                              if (item.title && item.title !== item.name) {
+                                secondary = item.title;
                               } else if (item.description) {
-                                const shortDesc =
+                                secondary =
                                   item.description.length > 40
                                     ? item.description.substring(0, 40) + '...'
                                     : item.description;
-                                displayName = `${item.name} - ${shortDesc}`;
                               }
 
                               return (
@@ -499,7 +498,16 @@ function DocumentFormDialogContent({
                                   key={item.path}
                                   className="pl-6"
                                 >
-                                  {displayName}
+                                  <span className="flex flex-col">
+                                    <span className="font-medium">
+                                      {item.name}
+                                    </span>
+                                    {secondary && (
+                                      <span className="text-muted-foreground text-xs">
+                                        {secondary}
+                                      </span>
+                                    )}
+                                  </span>
                                 </SelectItem>
                               );
                             })}
