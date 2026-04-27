@@ -1,0 +1,1992 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Wiseair Brand Template",
+    "author": "Wiseair S.r.l.",
+    "company": "Wiseair S.r.l.",
+    "subject": "Corporate mobility presentation template",
+    "theme": "wiseair",
+    "slideWidth": 13.333,
+    "slideHeight": 7.5,
+    "pageNumberFormat": "09",
+    "grid": {
+      "columns": 12,
+      "rows": 12,
+      "margin": {
+        "top": 0.5,
+        "right": 0.5,
+        "bottom": 0.5,
+        "left": 0.5
+      },
+      "gutter": {
+        "column": 0.16,
+        "row": 0.16
+      }
+    },
+    "templates": [
+      {
+        "name": "COVER",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "0%",
+              "y": "0%",
+              "w": "0.4%",
+              "h": "100%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "88%",
+              "y": "10%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "90.5%",
+              "y": "10%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "93%",
+              "y": "10%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "95.5%",
+              "y": "10%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent4"
+              },
+              "x": "88%",
+              "y": "12.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent4"
+              },
+              "x": "90.5%",
+              "y": "12.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "93%",
+              "y": "12.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "95.5%",
+              "y": "12.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent4"
+              },
+              "x": "88%",
+              "y": "15%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent4"
+              },
+              "x": "90.5%",
+              "y": "15%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent4"
+              },
+              "x": "93%",
+              "y": "15%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "95.5%",
+              "y": "15%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent4"
+              },
+              "x": "88%",
+              "y": "17.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent4"
+              },
+              "x": "90.5%",
+              "y": "17.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent4"
+              },
+              "x": "93%",
+              "y": "17.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent4"
+              },
+              "x": "95.5%",
+              "y": "17.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "fontFace": "Inter",
+              "fontSize": 16,
+              "bold": false,
+              "color": "primary",
+              "x": "3%",
+              "y": "92%",
+              "w": "20%",
+              "h": "4%",
+              "align": "left",
+              "valign": "middle"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "Making mobility work",
+              "fontFace": "Inter",
+              "fontSize": 9,
+              "bold": false,
+              "color": "text2",
+              "charSpacing": 4,
+              "x": "3%",
+              "y": "95.5%",
+              "w": "30%",
+              "h": "3%",
+              "align": "left",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "preTitle",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 6,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "bold": false,
+                "color": "accent",
+                "charSpacing": 4,
+                "valign": "bottom",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": {
+              "column": 0,
+              "row": 4,
+              "columnSpan": 11,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 60,
+                "bold": false,
+                "color": "primary",
+                "lineSpacing": 68,
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "subtitle",
+            "grid": {
+              "column": 0,
+              "row": 9,
+              "columnSpan": 9,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "subtitle",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "meta",
+            "grid": {
+              "column": 7,
+              "row": 11,
+              "columnSpan": 5,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "color": "text2",
+                "valign": "middle",
+                "align": "right"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "SECTION_DIVIDER",
+        "background": {
+          "color": "primary"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "0%",
+              "y": "0%",
+              "w": "0.4%",
+              "h": "100%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "88%",
+              "y": "82%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "90.5%",
+              "y": "82%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "93%",
+              "y": "82%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "95.5%",
+              "y": "82%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent5"
+              },
+              "x": "88%",
+              "y": "84.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent5"
+              },
+              "x": "90.5%",
+              "y": "84.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent5"
+              },
+              "x": "93%",
+              "y": "84.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent5"
+              },
+              "x": "95.5%",
+              "y": "84.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "fontFace": "Inter",
+              "fontSize": 14,
+              "bold": false,
+              "color": "FAFAFA",
+              "x": "3%",
+              "y": "92%",
+              "w": "20%",
+              "h": "4%",
+              "align": "left",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "ghostNumber",
+            "x": "62%",
+            "y": "10%",
+            "w": "34%",
+            "h": "55%",
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 240,
+                "bold": false,
+                "color": "2A3148",
+                "lineSpacing": 240,
+                "align": "right",
+                "valign": "top"
+              }
+            }
+          },
+          {
+            "name": "label",
+            "grid": {
+              "column": 0,
+              "row": 4,
+              "columnSpan": 6,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "bold": false,
+                "color": "accent5",
+                "charSpacing": 4,
+                "valign": "bottom",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "title",
+            "grid": {
+              "column": 0,
+              "row": 5,
+              "columnSpan": 11,
+              "rowSpan": 4
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 48,
+                "bold": false,
+                "color": "FAFAFA",
+                "lineSpacing": 56,
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "description",
+            "grid": {
+              "column": 0,
+              "row": 10,
+              "columnSpan": 9,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 16,
+                "color": "D6E6FF",
+                "lineSpacing": 24,
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "CONTENT",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "0%",
+              "y": "0%",
+              "w": "0.4%",
+              "h": "100%"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "fontFace": "Inter",
+              "fontSize": 11,
+              "bold": false,
+              "color": "primary",
+              "x": "3%",
+              "y": "94%",
+              "w": "20%",
+              "h": "4%",
+              "align": "left",
+              "valign": "middle"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "fontFace": "Inter",
+              "fontSize": 9,
+              "color": "text2",
+              "x": "85%",
+              "y": "94%",
+              "w": "8%",
+              "h": "4%",
+              "align": "right",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "bold": false,
+                "color": "accent",
+                "charSpacing": 4,
+                "valign": "bottom",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 3
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "heading1",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "rule",
+            "x": "3.7%",
+            "y": "39%",
+            "w": "3%",
+            "h": "0.3%",
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "rect",
+                "fill": {
+                  "color": "accent"
+                }
+              }
+            }
+          },
+          {
+            "name": "content",
+            "grid": {
+              "column": 0,
+              "row": 5,
+              "columnSpan": 12,
+              "rowSpan": 6
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "body",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "TWO_COLUMN",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "0%",
+              "y": "0%",
+              "w": "0.4%",
+              "h": "100%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "background2"
+              },
+              "x": "49.85%",
+              "y": "44%",
+              "w": "0.18%",
+              "h": "46%"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "fontFace": "Inter",
+              "fontSize": 11,
+              "bold": false,
+              "color": "primary",
+              "x": "3%",
+              "y": "94%",
+              "w": "20%",
+              "h": "4%",
+              "align": "left",
+              "valign": "middle"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "fontFace": "Inter",
+              "fontSize": 9,
+              "color": "text2",
+              "x": "85%",
+              "y": "94%",
+              "w": "8%",
+              "h": "4%",
+              "align": "right",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "bold": false,
+                "color": "accent",
+                "charSpacing": 4,
+                "valign": "bottom",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 3
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "heading1",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "leftTitle",
+            "grid": {
+              "column": 0,
+              "row": 5,
+              "columnSpan": 6,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "heading3",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "rightTitle",
+            "grid": {
+              "column": 6,
+              "row": 5,
+              "columnSpan": 6,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "heading3",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "left",
+            "grid": {
+              "column": 0,
+              "row": 6,
+              "columnSpan": 6,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "body",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "right",
+            "grid": {
+              "column": 6,
+              "row": 6,
+              "columnSpan": 6,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "body",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "METRICS",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "0%",
+              "y": "0%",
+              "w": "0.4%",
+              "h": "100%"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "fontFace": "Inter",
+              "fontSize": 11,
+              "bold": false,
+              "color": "primary",
+              "x": "3%",
+              "y": "94%",
+              "w": "20%",
+              "h": "4%",
+              "align": "left",
+              "valign": "middle"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "fontFace": "Inter",
+              "fontSize": 9,
+              "color": "text2",
+              "x": "85%",
+              "y": "94%",
+              "w": "8%",
+              "h": "4%",
+              "align": "right",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "bold": false,
+                "color": "accent",
+                "charSpacing": 4,
+                "valign": "bottom",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 12,
+              "rowSpan": 3
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "heading1",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "kpi1Card",
+            "grid": {
+              "column": 0,
+              "row": 6,
+              "columnSpan": 3,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "rect",
+                "fill": {
+                  "color": "background2"
+                },
+                "rectRadius": 0.05
+              }
+            }
+          },
+          {
+            "name": "kpi1Value",
+            "grid": {
+              "column": 0,
+              "row": 7,
+              "columnSpan": 3,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 48,
+                "bold": false,
+                "color": "primary",
+                "lineSpacing": 56,
+                "valign": "top",
+                "align": "left",
+                "margin": 14
+              }
+            }
+          },
+          {
+            "name": "kpi1Label",
+            "grid": {
+              "column": 0,
+              "row": 9,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 9,
+                "bold": false,
+                "color": "text2",
+                "charSpacing": 3,
+                "valign": "top",
+                "align": "left",
+                "margin": 14
+              }
+            }
+          },
+          {
+            "name": "kpi1Rule",
+            "x": "5.6%",
+            "y": "85.5%",
+            "w": "4%",
+            "h": "0.4%",
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "rect",
+                "fill": {
+                  "color": "accent"
+                }
+              }
+            }
+          },
+          {
+            "name": "kpi2Card",
+            "grid": {
+              "column": 3,
+              "row": 6,
+              "columnSpan": 3,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "rect",
+                "fill": {
+                  "color": "background2"
+                },
+                "rectRadius": 0.05
+              }
+            }
+          },
+          {
+            "name": "kpi2Value",
+            "grid": {
+              "column": 3,
+              "row": 7,
+              "columnSpan": 3,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 48,
+                "bold": false,
+                "color": "primary",
+                "lineSpacing": 56,
+                "valign": "top",
+                "align": "left",
+                "margin": 14
+              }
+            }
+          },
+          {
+            "name": "kpi2Label",
+            "grid": {
+              "column": 3,
+              "row": 9,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 9,
+                "bold": false,
+                "color": "text2",
+                "charSpacing": 3,
+                "valign": "top",
+                "align": "left",
+                "margin": 14
+              }
+            }
+          },
+          {
+            "name": "kpi2Rule",
+            "x": "29%",
+            "y": "85.5%",
+            "w": "4%",
+            "h": "0.4%",
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "rect",
+                "fill": {
+                  "color": "accent"
+                }
+              }
+            }
+          },
+          {
+            "name": "kpi3Card",
+            "grid": {
+              "column": 6,
+              "row": 6,
+              "columnSpan": 3,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "rect",
+                "fill": {
+                  "color": "background2"
+                },
+                "rectRadius": 0.05
+              }
+            }
+          },
+          {
+            "name": "kpi3Value",
+            "grid": {
+              "column": 6,
+              "row": 7,
+              "columnSpan": 3,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 48,
+                "bold": false,
+                "color": "primary",
+                "lineSpacing": 56,
+                "valign": "top",
+                "align": "left",
+                "margin": 14
+              }
+            }
+          },
+          {
+            "name": "kpi3Label",
+            "grid": {
+              "column": 6,
+              "row": 9,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 9,
+                "bold": false,
+                "color": "text2",
+                "charSpacing": 3,
+                "valign": "top",
+                "align": "left",
+                "margin": 14
+              }
+            }
+          },
+          {
+            "name": "kpi3Rule",
+            "x": "52.4%",
+            "y": "85.5%",
+            "w": "4%",
+            "h": "0.4%",
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "rect",
+                "fill": {
+                  "color": "accent"
+                }
+              }
+            }
+          },
+          {
+            "name": "kpi4Card",
+            "grid": {
+              "column": 9,
+              "row": 6,
+              "columnSpan": 3,
+              "rowSpan": 5
+            },
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "rect",
+                "fill": {
+                  "color": "background2"
+                },
+                "rectRadius": 0.05
+              }
+            }
+          },
+          {
+            "name": "kpi4Value",
+            "grid": {
+              "column": 9,
+              "row": 7,
+              "columnSpan": 3,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 48,
+                "bold": false,
+                "color": "primary",
+                "lineSpacing": 56,
+                "valign": "top",
+                "align": "left",
+                "margin": 14
+              }
+            }
+          },
+          {
+            "name": "kpi4Label",
+            "grid": {
+              "column": 9,
+              "row": 9,
+              "columnSpan": 3,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 9,
+                "bold": false,
+                "color": "text2",
+                "charSpacing": 3,
+                "valign": "top",
+                "align": "left",
+                "margin": 14
+              }
+            }
+          },
+          {
+            "name": "kpi4Rule",
+            "x": "75.8%",
+            "y": "85.5%",
+            "w": "4%",
+            "h": "0.4%",
+            "defaults": {
+              "name": "shape",
+              "props": {
+                "type": "rect",
+                "fill": {
+                  "color": "accent"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "CHART",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "0%",
+              "y": "0%",
+              "w": "0.4%",
+              "h": "100%"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "wiseair",
+              "fontFace": "Inter",
+              "fontSize": 11,
+              "bold": false,
+              "color": "primary",
+              "x": "3%",
+              "y": "94%",
+              "w": "20%",
+              "h": "4%",
+              "align": "left",
+              "valign": "middle"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER}",
+              "fontFace": "Inter",
+              "fontSize": 9,
+              "color": "text2",
+              "x": "85%",
+              "y": "94%",
+              "w": "8%",
+              "h": "4%",
+              "align": "right",
+              "valign": "middle"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "section",
+            "grid": {
+              "column": 0,
+              "row": 0,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "bold": false,
+                "color": "accent",
+                "charSpacing": 4,
+                "valign": "bottom",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 9,
+              "rowSpan": 2
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "heading2",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "subhead",
+            "grid": {
+              "column": 0,
+              "row": 3,
+              "columnSpan": 9,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "style": "caption",
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "chart",
+            "grid": {
+              "column": 0,
+              "row": 5,
+              "columnSpan": 12,
+              "rowSpan": 6
+            },
+            "defaults": {
+              "name": "chart",
+              "props": {}
+            }
+          }
+        ]
+      },
+      {
+        "name": "CLOSING",
+        "background": {
+          "color": "primary"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "0%",
+              "y": "0%",
+              "w": "0.4%",
+              "h": "100%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "82%",
+              "y": "78%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "84.5%",
+              "y": "78%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "87%",
+              "y": "78%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent"
+              },
+              "x": "89.5%",
+              "y": "78%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent5"
+              },
+              "x": "82%",
+              "y": "80.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent5"
+              },
+              "x": "84.5%",
+              "y": "80.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent5"
+              },
+              "x": "87%",
+              "y": "80.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "ellipse",
+              "fill": {
+                "color": "accent5"
+              },
+              "x": "89.5%",
+              "y": "80.5%",
+              "w": "0.6%",
+              "h": "1.07%"
+            }
+          }
+        ],
+        "placeholders": [
+          {
+            "name": "preheading",
+            "grid": {
+              "column": 0,
+              "row": 1,
+              "columnSpan": 8,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 11,
+                "bold": false,
+                "color": "accent5",
+                "charSpacing": 4,
+                "valign": "bottom",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "grid": {
+              "column": 0,
+              "row": 3,
+              "columnSpan": 11,
+              "rowSpan": 4
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 56,
+                "bold": false,
+                "color": "FAFAFA",
+                "lineSpacing": 64,
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "body",
+            "grid": {
+              "column": 0,
+              "row": 7,
+              "columnSpan": 8,
+              "rowSpan": 3
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 18,
+                "color": "D6E6FF",
+                "lineSpacing": 26,
+                "valign": "top",
+                "align": "left"
+              }
+            }
+          },
+          {
+            "name": "contacts",
+            "grid": {
+              "column": 0,
+              "row": 11,
+              "columnSpan": 12,
+              "rowSpan": 1
+            },
+            "defaults": {
+              "name": "text",
+              "props": {
+                "fontSize": 12,
+                "color": "7B8DD9",
+                "valign": "middle",
+                "align": "left"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {
+        "template": "COVER",
+        "placeholders": {
+          "preTitle": {
+            "name": "text",
+            "props": {
+              "text": "SECTION LABEL  ·  CATEGORY"
+            }
+          },
+          "title": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum dolor sit amet, consectetur."
+            }
+          },
+          "subtitle": {
+            "name": "text",
+            "props": {
+              "text": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo."
+            }
+          },
+          "meta": {
+            "name": "text",
+            "props": {
+              "text": "Location  ·  Month YYYY"
+            }
+          }
+        },
+        "notes": "Cover slide. Replace title with the deck headline, subtitle with the one-line context."
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "SECTION_DIVIDER",
+        "placeholders": {
+          "ghostNumber": {
+            "name": "text",
+            "props": {
+              "text": "01"
+            }
+          },
+          "label": {
+            "name": "text",
+            "props": {
+              "text": "CHAPTER LABEL"
+            }
+          },
+          "title": {
+            "name": "text",
+            "props": {
+              "text": "Section title goes here"
+            }
+          },
+          "description": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore."
+            }
+          }
+        },
+        "notes": "Chapter break. Use the ghost number to anchor the composition."
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "CONTENT",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "01  ·  SECTION TITLE"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum dolor sit amet"
+            }
+          },
+          "rule": {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              }
+            }
+          },
+          "content": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+            }
+          }
+        },
+        "notes": "Workhorse content slide. Two short paragraphs is the comfortable dose."
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "TWO_COLUMN",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "01  ·  SECTION TITLE"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum, dolor sit amet"
+            }
+          },
+          "leftTitle": {
+            "name": "text",
+            "props": {
+              "text": "Left column"
+            }
+          },
+          "rightTitle": {
+            "name": "text",
+            "props": {
+              "text": "Right column"
+            }
+          },
+          "left": {
+            "name": "text",
+            "props": {
+              "text": "·  Lorem ipsum dolor sit amet\n·  Consectetur adipiscing elit\n·  Sed do eiusmod tempor\n·  Incididunt ut labore et dolore\n·  Magna aliqua ut enim\n·  Ad minim veniam quis"
+            }
+          },
+          "right": {
+            "name": "text",
+            "props": {
+              "text": "·  Nostrud exercitation ullamco\n·  Laboris nisi ut aliquip\n·  Ex ea commodo consequat\n·  Duis aute irure dolor\n·  In reprehenderit voluptate\n·  Velit esse cillum dolore"
+            }
+          }
+        },
+        "notes": "Two-column comparison. Match the bullet count on both sides for visual rhythm."
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "METRICS",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "02  ·  HEADLINE METRICS"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum dolor sit amet"
+            }
+          },
+          "kpi1Card": {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "background2"
+              },
+              "rectRadius": 0.05
+            }
+          },
+          "kpi1Value": {
+            "name": "text",
+            "props": {
+              "text": "100+"
+            }
+          },
+          "kpi1Label": {
+            "name": "text",
+            "props": {
+              "text": "METRIC ONE LABEL"
+            }
+          },
+          "kpi1Rule": {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              }
+            }
+          },
+          "kpi2Card": {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "background2"
+              },
+              "rectRadius": 0.05
+            }
+          },
+          "kpi2Value": {
+            "name": "text",
+            "props": {
+              "text": "250K"
+            }
+          },
+          "kpi2Label": {
+            "name": "text",
+            "props": {
+              "text": "METRIC TWO LABEL"
+            }
+          },
+          "kpi2Rule": {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              }
+            }
+          },
+          "kpi3Card": {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "background2"
+              },
+              "rectRadius": 0.05
+            }
+          },
+          "kpi3Value": {
+            "name": "text",
+            "props": {
+              "text": "92%"
+            }
+          },
+          "kpi3Label": {
+            "name": "text",
+            "props": {
+              "text": "METRIC THREE LABEL"
+            }
+          },
+          "kpi3Rule": {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              }
+            }
+          },
+          "kpi4Card": {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "background2"
+              },
+              "rectRadius": 0.05
+            }
+          },
+          "kpi4Value": {
+            "name": "text",
+            "props": {
+              "text": "−18%"
+            }
+          },
+          "kpi4Label": {
+            "name": "text",
+            "props": {
+              "text": "METRIC FOUR LABEL"
+            }
+          },
+          "kpi4Rule": {
+            "name": "shape",
+            "props": {
+              "type": "rect",
+              "fill": {
+                "color": "accent"
+              }
+            }
+          }
+        },
+        "notes": "Headline numbers. Left-aligned to avoid the centered KPI-card cliché."
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "CHART",
+        "placeholders": {
+          "section": {
+            "name": "text",
+            "props": {
+              "text": "02  ·  HEADLINE METRICS"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum, dolor sit amet"
+            }
+          },
+          "subhead": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit (n=00)"
+            }
+          },
+          "chart": {
+            "name": "chart",
+            "props": {
+              "type": "bar",
+              "barDir": "col",
+              "barGrouping": "clustered",
+              "showLegend": true,
+              "legendPos": "b",
+              "legendFontSize": 10,
+              "legendColor": "383F5D",
+              "showTitle": false,
+              "catAxisLabelFontSize": 11,
+              "catAxisLabelColor": "383F5D",
+              "valAxisLabelColor": "383F5D",
+              "valAxisLabelFormatCode": "0\"%\"",
+              "data": [
+                {
+                  "name": "Series A",
+                  "labels": ["Lorem", "Ipsum", "Dolor", "Sit", "Amet"],
+                  "values": [62, 18, 4, 12, 4]
+                },
+                {
+                  "name": "Series B",
+                  "labels": ["Lorem", "Ipsum", "Dolor", "Sit", "Amet"],
+                  "values": [44, 23, 11, 18, 4]
+                }
+              ],
+              "chartColors": ["1D2130", "586CC9"]
+            }
+          }
+        },
+        "notes": "Use when a single chart carries the slide. The subhead clarifies units and sample."
+      }
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "CLOSING",
+        "placeholders": {
+          "preheading": {
+            "name": "text",
+            "props": {
+              "text": "GET IN TOUCH"
+            }
+          },
+          "heading": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum dolor sit amet?"
+            }
+          },
+          "body": {
+            "name": "text",
+            "props": {
+              "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+            }
+          },
+          "contacts": {
+            "name": "text",
+            "props": {
+              "text": "example.com  ·  hello@example.com  ·  City, Country"
+            }
+          }
+        },
+        "notes": "Closing mirrors the cover: same navy background and dot pattern, repositioned bottom-right."
+      }
+    }
+  ]
+}

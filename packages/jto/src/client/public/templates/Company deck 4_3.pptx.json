@@ -1,7 +1,7 @@
 {
   "name": "pptx",
   "props": {
-    "title": "Company deck 4_3",
+    "title": "Standard 4:3 starter with 16 reusable slide layouts",
     "author": "Wiseair",
     "company": "Wiseair",
     "theme": "wiseair",
@@ -1504,7 +1504,7 @@
             "grid": {
               "column": 0,
               "row": 4,
-              "columnSpan": 6,
+              "columnSpan": 5,
               "rowSpan": 3
             },
             "defaults": {
@@ -1521,7 +1521,7 @@
             "grid": {
               "column": 0,
               "row": 7,
-              "columnSpan": 6,
+              "columnSpan": 5,
               "rowSpan": 3
             },
             "defaults": {
