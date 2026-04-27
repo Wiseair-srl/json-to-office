@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 0.11.2
+
+### Patch Changes
+
+- 77e3085: Add Alternative deck and Brand template pptx samples; show template title/description on a second line in the playground document picker; allow select trigger to wrap long values.
+
 ## 0.11.0
 
 ### Minor Changes
