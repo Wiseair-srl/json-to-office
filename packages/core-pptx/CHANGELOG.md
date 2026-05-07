@@ -1,5 +1,17 @@
 # @json-to-office/core-pptx
 
+## 0.12.0
+
+### Minor Changes
+
+- c4a57aa: feat(highcharts): allow `services.highcharts.headers` to be a function of the request body, enabling per-request signing/auth derived from payload. Adds `HighchartsHeaders` and `HighchartsHeadersResolver` exports from `@json-to-office/shared`. Static-object form remains supported.
+
+### Patch Changes
+
+- Updated dependencies [c4a57aa]
+  - @json-to-office/shared@0.12.0
+  - @json-to-office/shared-pptx@0.12.0
+
 ## 0.11.1
 
 ### Patch Changes

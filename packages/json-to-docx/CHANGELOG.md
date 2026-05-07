@@ -1,5 +1,16 @@
 # @json-to-office/json-to-docx
 
+## 0.12.0
+
+### Patch Changes
+
+- c4a57aa: chore: drop highcharts-export-server peerDependency — server is only called over HTTP, no runtime import; removes install-time approve-build warning for consumers
+- Updated dependencies [c4a57aa]
+- Updated dependencies [c4a57aa]
+  - @json-to-office/core-docx@0.12.0
+  - @json-to-office/shared@0.12.0
+  - @json-to-office/shared-docx@0.12.0
+
 ## 0.9.0
 
 ### Patch Changes
