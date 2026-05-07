@@ -42,13 +42,7 @@
     "@json-to-office/shared-docx": "workspace:^"
   },
   "peerDependencies": {
-    "docx": "9.5.1",
-    "highcharts-export-server": "5.0.0"
-  },
-  "peerDependenciesMeta": {
-    "highcharts-export-server": {
-      "optional": true
-    }
+    "docx": "9.5.1"
   },
   "devDependencies": {
     "@types/node": "20.11.0",

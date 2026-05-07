@@ -26,7 +26,6 @@ export default defineConfig({
     'docx',
     'fast-xml-parser',
     'sharp',
-    'highcharts-export-server',
   ],
   onSuccess: async () => {
     console.log('📦 Copying static assets for core package...');

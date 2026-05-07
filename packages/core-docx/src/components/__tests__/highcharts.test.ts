@@ -477,6 +477,91 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       );
     });
 
+    it('should resolve headers via function called with request body', async () => {
+      const component = {
+        name: 'highcharts' as const,
+        props: {
+          options: {
+            chart: { width: 600, height: 400 },
+            series: [{ data: [1, 2, 3] }],
+          },
+          scale: 2,
+        },
+      };
+
+      const headersFn = vi.fn((body: any) => ({
+        'x-signature': `sig-${body.scale ?? 1}`,
+      }));
+
+      const context = {
+        services: { highcharts: { headers: headersFn } },
+      } as any;
+
+      await renderHighchartsComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
+      );
+
+      expect(headersFn).toHaveBeenCalledOnce();
+      expect(headersFn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          infile: expect.objectContaining({
+            chart: { width: 600, height: 400 },
+          }),
+          type: 'png',
+          b64: true,
+          scale: 2,
+        })
+      );
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+            'x-signature': 'sig-2',
+          }),
+        })
+      );
+    });
+
+    it('should await async headers function', async () => {
+      const component = {
+        name: 'highcharts' as const,
+        props: {
+          options: {
+            chart: { width: 600, height: 400 },
+            series: [{ data: [1, 2, 3] }],
+          },
+        },
+      };
+
+      const headersFn = vi
+        .fn()
+        .mockResolvedValue({ authorization: 'Bearer async-token' });
+
+      const context = {
+        services: { highcharts: { headers: headersFn } },
+      } as any;
+
+      await renderHighchartsComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            authorization: 'Bearer async-token',
+          }),
+        })
+      );
+    });
+
     it('should send only Content-Type when no services config', async () => {
       const component = {
         name: 'highcharts' as const,
