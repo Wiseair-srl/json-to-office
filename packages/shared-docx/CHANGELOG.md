@@ -1,5 +1,12 @@
 # @json-to-office/shared-docx
 
+## 0.13.0
+
+### Patch Changes
+
+- Updated dependencies [8744ad2]
+  - @json-to-office/shared@0.13.0
+
 ## 0.12.0
 
 ### Patch Changes

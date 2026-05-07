@@ -1,5 +1,21 @@
 # @json-to-office/json-to-docx
 
+## 0.13.0
+
+### Minor Changes
+
+- 755d812: feat(core-docx): surface `standardDefinition` from `generate` / `generateBuffer` / `generateFile` — the post-expansion JSON tree (custom plugins resolved) is returned alongside the document/buffer at no extra cost. Plugin `render()` previously ran twice when callers used the standalone inspection method together with a generate call, duplicating side effects (e.g. external API hits).
+
+  `getStandardComponentsDefinition` is **deprecated** and now implemented as a thin wrapper around `generate(...).standardDefinition`. Existing callers keep working; migrate by reading `standardDefinition` directly off any `generate*` result. The method will be removed in a future major.
+
+### Patch Changes
+
+- Updated dependencies [8744ad2]
+- Updated dependencies [755d812]
+  - @json-to-office/shared@0.13.0
+  - @json-to-office/core-docx@0.13.0
+  - @json-to-office/shared-docx@0.13.0
+
 ## 0.12.0
 
 ### Patch Changes
