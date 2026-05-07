@@ -145,6 +145,7 @@ export {
   validateDocument,
   cleanComponentProps,
   ComponentValidationError,
+  UnknownPreservedComponentError,
 
   // Schema utilities
   generatePluginDocumentSchema,
@@ -160,6 +161,8 @@ export {
   type RenderContext as ComponentRenderContext,
   type DocumentGenerator,
   type DocumentGeneratorOptions,
+  type GenerateOptions,
+  type GenerateFileOptions,
   type GenerationResult,
   type BufferGenerationResult,
   type FileGenerationResult,

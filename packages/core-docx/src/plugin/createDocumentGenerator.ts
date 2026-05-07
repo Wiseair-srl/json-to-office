@@ -10,6 +10,8 @@ import { resolveDocumentFonts } from '../core/fontResolution';
 import type {
   ExtendedReportComponent,
   DocumentGeneratorBuilder,
+  GenerateOptions,
+  GenerateFileOptions,
   GenerationResult,
   BufferGenerationResult,
   FileGenerationResult,
@@ -21,6 +23,7 @@ import {
   ComponentValidationError,
   DuplicateComponentError,
 } from './validation';
+import { UnknownPreservedComponentError } from '@json-to-office/shared/plugin';
 import { resolveComponentVersion } from './version-resolver';
 import { generatePluginDocumentSchema, exportPluginSchema } from './schema';
 import { processDocument } from '../core/structure';
@@ -91,27 +94,41 @@ function createBuilderImpl<
   }
 
   /**
-   * Process custom components in the document
+   * Process custom components in the document.
+   *
+   * Returns two parallel trees built in a single pass:
+   * - `standard`: fully expanded — every custom component resolved to standard primitives.
+   * - `preserved`: partially expanded — nodes whose name is in `preserveSet` are kept
+   *   verbatim (children NOT recursed); everything else is expanded the same as `standard`.
+   *
+   * `render()` always runs, even for preserved components, because the docx pipeline
+   * builds from `standard` and we still need their warnings/font registrations.
    */
   async function processDocumentComponents(
     components: ComponentDefinition[],
+    preserveSet: ReadonlySet<string> | undefined,
     warningsCollector: GenerationWarning[],
     resolvedTheme: ThemeConfig,
     depth = 0
-  ): Promise<ComponentDefinition[]> {
+  ): Promise<{
+    standard: ComponentDefinition[];
+    preserved: ComponentDefinition[];
+  }> {
     if (depth > 20) {
       throw new Error(
         'Maximum component nesting depth exceeded (20). Check for circular component references.'
       );
     }
-    const processedComponents: ComponentDefinition[] = [];
+    const standardOut: ComponentDefinition[] = [];
+    const preservedOut: ComponentDefinition[] = [];
 
     for (const componentData of components) {
       // Safe type narrowing for custom component detection
       const componentName = (componentData as { name?: string })?.name;
 
       if (!componentName) {
-        processedComponents.push(componentData);
+        standardOut.push(componentData);
+        preservedOut.push(componentData);
         continue;
       }
 
@@ -146,18 +163,21 @@ function createBuilderImpl<
             componentWithName.props
           );
 
-          // Process nested children if this is a container
+          // Process nested children if this is a container.
+          // For the standard tree we need the fully-expanded children to feed render().
           let nestedChildren: unknown[] | undefined;
           if (
             componentWithName.children &&
             Array.isArray(componentWithName.children)
           ) {
-            nestedChildren = await processDocumentComponents(
+            const nested = await processDocumentComponents(
               componentWithName.children as ComponentDefinition[],
+              preserveSet,
               warningsCollector,
               resolvedTheme,
               depth + 1
             );
+            nestedChildren = nested.standard;
           }
 
           // Create addWarning callback for this component
@@ -193,16 +213,28 @@ function createBuilderImpl<
           // Recursively process the result in case it contains more custom components
           const processedResult = await processDocumentComponents(
             resultComponents,
+            preserveSet,
             warningsCollector,
             resolvedTheme,
             depth + 1
           );
-          processedComponents.push(...processedResult);
+          standardOut.push(...processedResult.standard);
+
+          if (preserveSet && preserveSet.has(componentName)) {
+            // Keep this custom node verbatim in the preserved tree.
+            // Per spec: do NOT recurse into authored children — leave the
+            // entire subtree as the user wrote it.
+            preservedOut.push(componentData);
+          } else {
+            // Non-preserved custom: emit the recursed expansion (which itself
+            // honors preserveSet for any nested customs).
+            preservedOut.push(...processedResult.preserved);
+          }
 
           if (state.debug) {
             console.log(
               `Processed custom component '${versionLabel}':`,
-              processedResult
+              processedResult.standard
             );
           }
         } catch (error) {
@@ -223,21 +255,27 @@ function createBuilderImpl<
         ) {
           const processedNested = await processDocumentComponents(
             componentData.children,
+            preserveSet,
             warningsCollector,
             resolvedTheme,
             depth + 1
           );
-          processedComponents.push({
+          standardOut.push({
             ...componentData,
-            children: processedNested,
+            children: processedNested.standard,
+          });
+          preservedOut.push({
+            ...componentData,
+            children: processedNested.preserved,
           });
         } else {
-          processedComponents.push(componentData);
+          standardOut.push(componentData);
+          preservedOut.push(componentData);
         }
       }
     }
 
-    return processedComponents;
+    return { standard: standardOut, preserved: preservedOut };
   }
 
   /**
@@ -276,12 +314,38 @@ function createBuilderImpl<
   }
 
   /**
+   * Resolve and validate the preserve set for a per-call options object.
+   * Returns `undefined` when the caller did not opt in.
+   * Throws `UnknownPreservedComponentError` when any listed name is not registered.
+   */
+  function resolvePreserveSet(
+    options?: GenerateOptions
+  ): ReadonlySet<string> | undefined {
+    const list = options?.preserveCustomComponents;
+    if (!list || list.length === 0) {
+      return undefined;
+    }
+    const registered = new Set(state.componentNames);
+    const unknown = list.filter((n) => !registered.has(n));
+    if (unknown.length > 0) {
+      throw new UnknownPreservedComponentError(
+        unknown,
+        Array.from(state.componentNames)
+      );
+    }
+    return new Set(list);
+  }
+
+  /**
    * Generate a document
    */
   async function generate(
-    document: ExtendedReportComponent<TComponents>
-  ): Promise<GenerationResult> {
+    document: ExtendedReportComponent<TComponents>,
+    options?: GenerateOptions
+  ): Promise<GenerationResult<TComponents>> {
     try {
+      const preserveSet = resolvePreserveSet(options);
+
       // Cast to ReportComponentDefinition for internal processing
       const internalDocument = document as unknown as ReportComponentDefinition;
 
@@ -320,9 +384,11 @@ function createBuilderImpl<
         });
       }
 
-      // Process custom components to convert them to standard components
-      const processedComponents = await processDocumentComponents(
+      // Process custom components to convert them to standard components.
+      // Builds standard (fully expanded) and preserved (partial) trees in one pass.
+      const processed = await processDocumentComponents(
         mode.doc.children || [],
+        preserveSet,
         warnings,
         modedTheme
       );
@@ -330,7 +396,7 @@ function createBuilderImpl<
       // Create a new document definition with processed components
       const processedDocument: ReportComponentDefinition = {
         ...mode.doc,
-        children: processedComponents,
+        children: processed.standard,
       };
 
       // Normalize components (handle shorthand notations and nested structures)
@@ -350,10 +416,21 @@ function createBuilderImpl<
         services: state.services,
       });
 
+      // Build preservedDefinition iff the caller opted in. Reuses the same
+      // doc shell as standardDefinition but with partially-expanded children.
+      // Not normalized — preserved subtrees are meant to be "as authored".
+      const preservedDefinition = preserveSet
+        ? ({
+            ...mode.doc,
+            children: processed.preserved,
+          } as unknown as ExtendedReportComponent<TComponents>)
+        : undefined;
+
       return {
         document: generatedDocument,
         warnings: warnings.length > 0 ? warnings : null,
         standardDefinition: modedDoc,
+        preservedDefinition,
       };
     } catch (error) {
       if (state.debug) {
@@ -367,15 +444,17 @@ function createBuilderImpl<
    * Generate a document and return as buffer
    */
   async function generateBuffer(
-    document: ExtendedReportComponent<TComponents>
-  ): Promise<BufferGenerationResult> {
+    document: ExtendedReportComponent<TComponents>,
+    options?: GenerateOptions
+  ): Promise<BufferGenerationResult<TComponents>> {
     const {
       document: doc,
       warnings,
       standardDefinition,
-    } = await generate(document);
+      preservedDefinition,
+    } = await generate(document, options);
     const buffer = (await Packer.toBuffer(doc)) as Buffer;
-    return { buffer, warnings, standardDefinition };
+    return { buffer, warnings, standardDefinition, preservedDefinition };
   }
 
   /**
@@ -383,13 +462,37 @@ function createBuilderImpl<
    */
   async function generateFile(
     document: ExtendedReportComponent<TComponents>,
-    outputPath: string
-  ): Promise<FileGenerationResult> {
-    const { buffer, warnings, standardDefinition } =
-      await generateBuffer(document);
+    outputPath: string,
+    options?: GenerateFileOptions
+  ): Promise<FileGenerationResult<TComponents>> {
+    const { buffer, warnings, standardDefinition, preservedDefinition } =
+      await generateBuffer(document, options);
     const fs = await import('fs/promises');
     await fs.writeFile(outputPath, new Uint8Array(buffer));
-    return { warnings, standardDefinition };
+
+    let preservedOutputPath: string | undefined;
+    if (preservedDefinition !== undefined) {
+      const path = await import('path');
+      preservedOutputPath =
+        options?.preservedOutputPath ??
+        (() => {
+          const ext = path.extname(outputPath);
+          const base = ext ? outputPath.slice(0, -ext.length) : outputPath;
+          return `${base}-preserved.json`;
+        })();
+      await fs.writeFile(
+        preservedOutputPath,
+        JSON.stringify(preservedDefinition, null, 2),
+        'utf8'
+      );
+    }
+
+    return {
+      warnings,
+      standardDefinition,
+      preservedDefinition,
+      preservedOutputPath,
+    };
   }
 
   /**
