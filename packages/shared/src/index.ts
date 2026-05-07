@@ -57,6 +57,7 @@ export {
   resolveComponentVersion,
   DuplicateComponentError,
   ComponentValidationError,
+  UnknownPreservedComponentError,
   validateCustomComponentProps,
   isValidationSuccess,
   getValidationSummary,

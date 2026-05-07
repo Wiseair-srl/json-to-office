@@ -45,6 +45,8 @@ export {
 export {
   type DocumentGenerator,
   type DocumentGeneratorBuilder,
+  type GenerateOptions,
+  type GenerateFileOptions,
   type GenerationResult,
   type BufferGenerationResult,
   type FileGenerationResult,
@@ -65,6 +67,7 @@ export {
   cleanComponentProps,
   ComponentValidationError,
   DuplicateComponentError,
+  UnknownPreservedComponentError,
   type ValidationError,
 } from './validation';
 

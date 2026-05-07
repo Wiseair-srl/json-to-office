@@ -115,37 +115,97 @@ export type InferCustomComponents<T> = T extends { customComponents: infer M }
 // ============================================================================
 
 /**
+ * Per-call options shared by generate/generateBuffer/generateFile.
+ *
+ * `preserveCustomComponents`: list of registered custom-component names whose
+ * `{ name, props, children? }` nodes should be kept verbatim in the returned
+ * `preservedDefinition`. The DOCX output is unaffected — it always renders
+ * the fully-expanded tree.
+ */
+export interface GenerateOptions {
+  preserveCustomComponents?: string[];
+}
+
+/**
+ * Per-call options for `generateFile` only — adds a sidecar-path override.
+ */
+export interface GenerateFileOptions extends GenerateOptions {
+  /**
+   * Override path for the preserved-tree sidecar JSON.
+   * Default: `<outputPath without extension>-preserved.json`.
+   * Only used when `preserveCustomComponents` is set.
+   */
+  preservedOutputPath?: string;
+}
+
+/**
  * Result of document generation
  */
-export interface GenerationResult {
+export interface GenerationResult<
+  TCustomComponents extends readonly CustomComponent<
+    any,
+    any,
+    any
+  >[] = readonly [],
+> {
   /** The generated document */
   document: Document;
   /** Warnings collected during generation, null if no warnings */
   warnings: GenerationWarning[] | null;
   /** Post-expansion, post-normalization standard JSON tree (custom plugins resolved). */
   standardDefinition: ReportComponentDefinition;
+  /**
+   * Partially-expanded tree honoring `preserveCustomComponents`.
+   * Present iff the option was passed. Custom-component subtrees listed in
+   * the option are kept verbatim (children not recursed); others are expanded.
+   */
+  preservedDefinition?: ExtendedReportComponent<TCustomComponents>;
 }
 
 /**
  * Result of buffer generation
  */
-export interface BufferGenerationResult {
+export interface BufferGenerationResult<
+  TCustomComponents extends readonly CustomComponent<
+    any,
+    any,
+    any
+  >[] = readonly [],
+> {
   /** The generated buffer */
   buffer: Buffer;
   /** Warnings collected during generation, null if no warnings */
   warnings: GenerationWarning[] | null;
   /** Post-expansion, post-normalization standard JSON tree (custom plugins resolved). */
   standardDefinition: ReportComponentDefinition;
+  /**
+   * Partially-expanded tree honoring `preserveCustomComponents`.
+   * Present iff the option was passed.
+   */
+  preservedDefinition?: ExtendedReportComponent<TCustomComponents>;
 }
 
 /**
  * Result of file generation
  */
-export interface FileGenerationResult {
+export interface FileGenerationResult<
+  TCustomComponents extends readonly CustomComponent<
+    any,
+    any,
+    any
+  >[] = readonly [],
+> {
   /** Warnings collected during generation, null if no warnings */
   warnings: GenerationWarning[] | null;
   /** Post-expansion, post-normalization standard JSON tree (custom plugins resolved). */
   standardDefinition: ReportComponentDefinition;
+  /**
+   * Partially-expanded tree honoring `preserveCustomComponents`.
+   * Present iff the option was passed; also written as a JSON sidecar file.
+   */
+  preservedDefinition?: ExtendedReportComponent<TCustomComponents>;
+  /** Resolved path of the preserved-tree sidecar, if written. */
+  preservedOutputPath?: string;
 }
 
 /**
@@ -170,17 +230,20 @@ export interface DocumentGenerator<
   >[] = readonly [],
 > {
   generate: (
-    document: ExtendedReportComponent<TCustomComponents>
-  ) => Promise<GenerationResult>;
+    document: ExtendedReportComponent<TCustomComponents>,
+    options?: GenerateOptions
+  ) => Promise<GenerationResult<TCustomComponents>>;
 
   generateBuffer: (
-    document: ExtendedReportComponent<TCustomComponents>
-  ) => Promise<BufferGenerationResult>;
+    document: ExtendedReportComponent<TCustomComponents>,
+    options?: GenerateOptions
+  ) => Promise<BufferGenerationResult<TCustomComponents>>;
 
   generateFile: (
     document: ExtendedReportComponent<TCustomComponents>,
-    outputPath: string
-  ) => Promise<FileGenerationResult>;
+    outputPath: string,
+    options?: GenerateFileOptions
+  ) => Promise<FileGenerationResult<TCustomComponents>>;
 
   getComponentNames: () => string[];
 

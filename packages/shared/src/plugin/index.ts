@@ -13,7 +13,11 @@ export {
 export { resolveComponentVersion } from './version-resolver';
 
 // Errors
-export { DuplicateComponentError, ComponentValidationError } from './errors';
+export {
+  DuplicateComponentError,
+  ComponentValidationError,
+  UnknownPreservedComponentError,
+} from './errors';
 
 // Validation
 export {

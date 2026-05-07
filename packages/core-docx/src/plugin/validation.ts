@@ -17,6 +17,7 @@ import type { ValidationResult } from '@json-to-office/shared';
 export {
   DuplicateComponentError,
   ComponentValidationError,
+  UnknownPreservedComponentError,
 } from '@json-to-office/shared/plugin';
 
 /**
