@@ -32,8 +32,11 @@ interface GeneratorBuilder {
     valid: boolean;
     errors?: { path: string; message: string }[];
   };
-  generateBuffer(document: any): Promise<{ buffer: Buffer; warnings: any }>;
-  getStandardComponentsDefinition?: (document: any) => Promise<any>;
+  generateBuffer(document: any): Promise<{
+    buffer: Buffer;
+    warnings: any;
+    standardDefinition?: any;
+  }>;
 }
 
 export interface GeneratorOptions {
@@ -48,8 +51,10 @@ export interface GeneratorOptions {
 }
 
 export interface GeneratorResult {
-  generateBuffer: (document: any) => Promise<Buffer>;
-  getStandardComponentsDefinition?: (config: any) => Promise<any>;
+  generateBuffer: (document: any) => Promise<{
+    buffer: Buffer;
+    standardDefinition?: any;
+  }>;
   hasPlugins: boolean;
   pluginNames: string[];
 }
@@ -119,11 +124,13 @@ export class DocxFormatAdapter implements FormatAdapter {
           const docDefinition =
             typeof document === 'string' ? JSON.parse(document) : document;
           const customThemes = await this.loadCustomThemes(options);
-          return await core.generateBufferFromJson(docDefinition, {
+          const buffer = await core.generateBufferFromJson(docDefinition, {
             customThemes,
             services,
             fonts: options.fonts,
           });
+          // No plugin expansion: input JSON already is the standard definition.
+          return { buffer, standardDefinition: docDefinition };
         },
         hasPlugins: false,
         pluginNames: [],
@@ -158,12 +165,11 @@ export class DocxFormatAdapter implements FormatAdapter {
           );
         }
         const result = await generator.generateBuffer(docDefinition);
-        // generateBuffer returns BufferGenerationResult { buffer, warnings }
-        return result.buffer;
+        return {
+          buffer: result.buffer,
+          standardDefinition: result.standardDefinition,
+        };
       },
-      getStandardComponentsDefinition: generator.getStandardComponentsDefinition
-        ? (config: any) => generator.getStandardComponentsDefinition!(config)
-        : undefined,
       hasPlugins: true,
       pluginNames,
     };
@@ -387,11 +393,12 @@ export class PptxFormatAdapter implements FormatAdapter {
           const docDefinition =
             typeof document === 'string' ? JSON.parse(document) : document;
           const customThemes = await this.loadCustomThemes(options);
-          return await core.generateBufferFromJson(docDefinition, {
+          const buffer = await core.generateBufferFromJson(docDefinition, {
             customThemes,
             services,
             fonts: options.fonts,
           });
+          return { buffer, standardDefinition: docDefinition };
         },
         hasPlugins: false,
         pluginNames: [],
@@ -426,7 +433,10 @@ export class PptxFormatAdapter implements FormatAdapter {
           );
         }
         const result = await generator.generateBuffer(docDefinition);
-        return result.buffer;
+        return {
+          buffer: result.buffer,
+          standardDefinition: (result as any).standardDefinition,
+        };
       },
       hasPlugins: true,
       pluginNames,

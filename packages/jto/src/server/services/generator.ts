@@ -412,7 +412,8 @@ export class GeneratorService {
         customThemes,
         fonts: fontOpts,
       });
-      buffer = await generator.generateBuffer(config);
+      const result = await generator.generateBuffer(config);
+      buffer = result.buffer;
     } else {
       buffer = await this.adapter.generateBuffer(config, {
         customThemes,

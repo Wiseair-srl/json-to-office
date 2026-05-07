@@ -122,6 +122,8 @@ export interface GenerationResult {
   document: Document;
   /** Warnings collected during generation, null if no warnings */
   warnings: GenerationWarning[] | null;
+  /** Post-expansion, post-normalization standard JSON tree (custom plugins resolved). */
+  standardDefinition: ReportComponentDefinition;
 }
 
 /**
@@ -132,6 +134,8 @@ export interface BufferGenerationResult {
   buffer: Buffer;
   /** Warnings collected during generation, null if no warnings */
   warnings: GenerationWarning[] | null;
+  /** Post-expansion, post-normalization standard JSON tree (custom plugins resolved). */
+  standardDefinition: ReportComponentDefinition;
 }
 
 /**
@@ -140,6 +144,8 @@ export interface BufferGenerationResult {
 export interface FileGenerationResult {
   /** Warnings collected during generation, null if no warnings */
   warnings: GenerationWarning[] | null;
+  /** Post-expansion, post-normalization standard JSON tree (custom plugins resolved). */
+  standardDefinition: ReportComponentDefinition;
 }
 
 /**
@@ -191,10 +197,6 @@ export interface DocumentGenerator<
       prettyPrint?: boolean;
     }
   ) => Promise<void>;
-
-  getStandardComponentsDefinition: (
-    document: ExtendedReportComponent<TCustomComponents>
-  ) => Promise<ReportComponentDefinition>;
 }
 
 /**
