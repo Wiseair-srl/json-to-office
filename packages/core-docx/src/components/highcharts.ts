@@ -63,9 +63,14 @@ async function generateChart(
     scale: config.scale,
   };
 
+  const resolvedHeaders =
+    typeof servicesConfig?.headers === 'function'
+      ? await servicesConfig.headers(requestBody)
+      : servicesConfig?.headers;
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...servicesConfig?.headers,
+    ...resolvedHeaders,
   };
 
   const response = await fetch(`${serverUrl}/export`, {

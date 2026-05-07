@@ -35,20 +35,27 @@ async function generateChart(
     servicesConfig?.serverUrl
   );
 
+  const requestBody = {
+    infile: config.options,
+    type: 'png',
+    b64: true,
+    scale: config.scale,
+  };
+
+  const resolvedHeaders =
+    typeof servicesConfig?.headers === 'function'
+      ? await servicesConfig.headers(requestBody)
+      : servicesConfig?.headers;
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...servicesConfig?.headers,
+    ...resolvedHeaders,
   };
 
   const response = await fetch(`${serverUrl}/export`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({
-      infile: config.options,
-      type: 'png',
-      b64: true,
-      scale: config.scale,
-    }),
+    body: JSON.stringify(requestBody),
   }).catch((error) => {
     throw new Error(
       `Highcharts Export Server is not running at ${serverUrl}. ` +

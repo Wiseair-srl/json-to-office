@@ -179,6 +179,67 @@ describe('renderHighchartsComponent', () => {
     );
   });
 
+  it('resolves headers via function called with request body', async () => {
+    const slide = mockSlide();
+    const headersFn = vi.fn((body: any) => ({
+      'x-signature': `sig-${body.scale ?? 1}`,
+    }));
+
+    await renderHighchartsComponent(
+      slide,
+      {
+        options: { chart: { width: 600, height: 400 } },
+        scale: 3,
+      },
+      theme,
+      undefined,
+      { headers: headersFn }
+    );
+
+    expect(headersFn).toHaveBeenCalledOnce();
+    expect(headersFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        infile: { chart: { width: 600, height: 400 } },
+        type: 'png',
+        b64: true,
+        scale: 3,
+      })
+    );
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'x-signature': 'sig-3',
+        }),
+      })
+    );
+  });
+
+  it('awaits async headers function', async () => {
+    const slide = mockSlide();
+    const headersFn = vi
+      .fn()
+      .mockResolvedValue({ authorization: 'Bearer async-token' });
+
+    await renderHighchartsComponent(
+      slide,
+      { options: { chart: { width: 600, height: 400 } } },
+      theme,
+      undefined,
+      { headers: headersFn }
+    );
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: 'Bearer async-token',
+        }),
+      })
+    );
+  });
+
   it('sends only Content-Type when no services config', async () => {
     const slide = mockSlide();
     await renderHighchartsComponent(
