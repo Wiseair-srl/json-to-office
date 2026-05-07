@@ -12,12 +12,12 @@ export interface ValidationError {
 export interface BufferGenerationResult {
   buffer: Buffer;
   warnings: any[] | null;
+  standardDefinition?: any;
 }
 
 export interface PluginAwareGenerator {
   validate(config: any): ValidationResult;
   generateBuffer(config: any): Promise<BufferGenerationResult>;
-  getStandardComponentsDefinition(config: any): Promise<any>;
 }
 
 export function isCustomComponent(component: unknown): boolean {

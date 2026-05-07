@@ -353,6 +353,7 @@ function createBuilderImpl<
       return {
         document: generatedDocument,
         warnings: warnings.length > 0 ? warnings : null,
+        standardDefinition: modedDoc,
       };
     } catch (error) {
       if (state.debug) {
@@ -368,9 +369,13 @@ function createBuilderImpl<
   async function generateBuffer(
     document: ExtendedReportComponent<TComponents>
   ): Promise<BufferGenerationResult> {
-    const { document: doc, warnings } = await generate(document);
+    const {
+      document: doc,
+      warnings,
+      standardDefinition,
+    } = await generate(document);
     const buffer = (await Packer.toBuffer(doc)) as Buffer;
-    return { buffer, warnings };
+    return { buffer, warnings, standardDefinition };
   }
 
   /**
@@ -380,10 +385,11 @@ function createBuilderImpl<
     document: ExtendedReportComponent<TComponents>,
     outputPath: string
   ): Promise<FileGenerationResult> {
-    const { buffer, warnings } = await generateBuffer(document);
+    const { buffer, warnings, standardDefinition } =
+      await generateBuffer(document);
     const fs = await import('fs/promises');
     await fs.writeFile(outputPath, new Uint8Array(buffer));
-    return { warnings };
+    return { warnings, standardDefinition };
   }
 
   /**
@@ -456,66 +462,6 @@ function createBuilderImpl<
     );
   }
 
-  /**
-   * Get the compiled standard components definition
-   */
-  async function getStandardComponentsDefinition(
-    document: ExtendedReportComponent<TComponents>
-  ): Promise<ReportComponentDefinition> {
-    try {
-      // Cast to ReportComponentDefinition for internal processing
-      const internalDocument = document as unknown as ReportComponentDefinition;
-
-      // Validate the document first
-      validateDocument(
-        internalDocument,
-        state.components as unknown as CustomComponent<TSchema>[]
-      );
-
-      // Resolve theme for plugin component rendering
-      const themeName = internalDocument.props.theme || 'minimal';
-      const docTheme = resolveDocumentTheme(themeName);
-
-      // Initialize warnings collector (not returned by this function)
-      const warnings: GenerationWarning[] = [];
-
-      // Export-mode pre-pass so callers inspecting the expanded components
-      // see substituted families when fonts.mode === 'substitute', matching
-      // the `generate()` path.
-      const mode = applyExportMode({
-        doc: internalDocument,
-        theme: docTheme,
-        fonts: state.fonts,
-      });
-      const modedTheme = mode.theme;
-
-      // Process custom components to convert them to standard components
-      const processedComponents = await processDocumentComponents(
-        mode.doc.children || [],
-        warnings,
-        modedTheme
-      );
-
-      // Create a new document definition with processed components
-      const processedDocument: ReportComponentDefinition = {
-        ...mode.doc,
-        children: processedComponents,
-      };
-
-      // Normalize components (handle shorthand notations and nested structures)
-      // We bypass JSON validation since we've already validated with custom schemas
-      const [finalReportComponent] = normalizeDocument(processedDocument);
-
-      // Return the normalized document with all custom components resolved to standard components
-      return finalReportComponent;
-    } catch (error) {
-      if (state.debug) {
-        console.error('Error getting standard components definition:', error);
-      }
-      throw error;
-    }
-  }
-
   // Return frozen builder object
   return Object.freeze({
     addComponent,
@@ -526,7 +472,6 @@ function createBuilderImpl<
     validate,
     generateSchema,
     exportSchema: exportSchemaToFile,
-    getStandardComponentsDefinition,
   });
 }
 
