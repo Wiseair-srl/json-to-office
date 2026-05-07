@@ -1,5 +1,21 @@
 # @json-to-office/jto-cli
 
+## 1.0.0
+
+### Minor Changes
+
+- 755d812: refactor(core-docx)!: surface `standardDefinition` from `generate` / `generateBuffer` / `generateFile`; remove `getStandardComponentsDefinition`. Plugin `render()` previously ran twice when callers used both the inspection method and a generate call, duplicating side effects (e.g. external API hits). The post-expansion JSON tree is now returned alongside the document/buffer at no extra cost. Adapter `generateBuffer` returns `{ buffer, standardDefinition }`.
+
+### Patch Changes
+
+- Updated dependencies [8744ad2]
+- Updated dependencies [755d812]
+  - @json-to-office/shared@1.0.0
+  - @json-to-office/core-docx@1.0.0
+  - @json-to-office/core-pptx@1.0.0
+  - @json-to-office/shared-docx@1.0.0
+  - @json-to-office/shared-pptx@1.0.0
+
 ## 0.12.0
 
 ### Patch Changes

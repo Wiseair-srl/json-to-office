@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/core-docx",
-  "version": "0.12.0",
+  "version": "1.0.0",
   "description": "Core DOCX document generation engine",
   "type": "module",
   "main": "dist/index.js",

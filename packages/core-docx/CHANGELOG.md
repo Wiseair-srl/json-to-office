@@ -1,5 +1,21 @@
 # @json-to-office/core-docx
 
+## 1.0.0
+
+### Major Changes
+
+- 755d812: refactor(core-docx)!: surface `standardDefinition` from `generate` / `generateBuffer` / `generateFile`; remove `getStandardComponentsDefinition`. Plugin `render()` previously ran twice when callers used both the inspection method and a generate call, duplicating side effects (e.g. external API hits). The post-expansion JSON tree is now returned alongside the document/buffer at no extra cost. Adapter `generateBuffer` returns `{ buffer, standardDefinition }`.
+
+### Minor Changes
+
+- 8744ad2: feat(core-docx): per-call `preserveCustomComponents` option on `generate` / `generateBuffer` / `generateFile`. Listed component names are kept verbatim (un-expanded) in a new `preservedDefinition` field on the result; `standardDefinition` and the rendered DOCX are unchanged. `generateFile` also writes a JSON sidecar (default `<out>-preserved.json`, override via `preservedOutputPath`). Unknown names throw `UnknownPreservedComponentError` (exported from `@json-to-office/shared` and `@json-to-office/core-docx`).
+
+### Patch Changes
+
+- Updated dependencies [8744ad2]
+  - @json-to-office/shared@1.0.0
+  - @json-to-office/shared-docx@1.0.0
+
 ## 0.12.0
 
 ### Minor Changes
