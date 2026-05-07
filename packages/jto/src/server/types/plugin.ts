@@ -12,12 +12,21 @@ export interface ValidationError {
 export interface BufferGenerationResult {
   buffer: Buffer;
   warnings: any[] | null;
+  /**
+   * Post-expansion JSON tree. Optional because not every adapter surfaces it,
+   * but plugin-aware DOCX generation does.
+   */
   standardDefinition?: any;
 }
 
 export interface PluginAwareGenerator {
   validate(config: any): ValidationResult;
   generateBuffer(config: any): Promise<BufferGenerationResult>;
+  /**
+   * @deprecated Read `standardDefinition` off `generateBuffer(...)` instead.
+   * Calling both runs the generation pipeline twice.
+   */
+  getStandardComponentsDefinition?(config: any): Promise<any>;
 }
 
 export function isCustomComponent(component: unknown): boolean {

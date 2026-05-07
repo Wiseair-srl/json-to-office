@@ -335,10 +335,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
             ? JSON.parse(jsonDefinition)
             : jsonDefinition;
 
-        // If plugins are loaded, use plugin-aware generator to resolve custom components.
-        // generate path runs render() side-effects; standardDefinition is surfaced
-        // as a by-product of generateBuffer, which is the only available expansion
-        // entry point now that getStandardComponentsDefinition has been removed.
+        // If plugins are loaded, use plugin-aware generator to resolve custom components
         const registry = PluginRegistry.getInstance();
         if (registry.hasPlugins()) {
           const plugins = registry.getPlugins();
@@ -346,13 +343,15 @@ export function createFormatRouter(adapter: FormatAdapter) {
             theme: customThemes ? Object.values(customThemes)[0] : undefined,
           });
 
-          const { standardDefinition } =
-            await generatorResult.generateBuffer(config);
-          return c.json({
-            success: true,
-            data: standardDefinition ?? config,
-            meta: { timestamp: new Date().toISOString(), requestId },
-          });
+          if (generatorResult.getStandardComponentsDefinition) {
+            const standardComponents =
+              await generatorResult.getStandardComponentsDefinition(config);
+            return c.json({
+              success: true,
+              data: standardComponents,
+              meta: { timestamp: new Date().toISOString(), requestId },
+            });
+          }
         }
 
         // No plugins — config is already standard components

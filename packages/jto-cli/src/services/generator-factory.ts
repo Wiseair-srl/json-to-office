@@ -13,10 +13,7 @@ export class GeneratorFactory {
   }
 
   async createGenerator(options: GeneratorOptions = {}): Promise<{
-    generateBuffer: (document: ComponentDefinition | string) => Promise<{
-      buffer: Buffer;
-      standardDefinition?: any;
-    }>;
+    generateBuffer: (document: ComponentDefinition | string) => Promise<Buffer>;
     hasPlugins: boolean;
     pluginNames: string[];
   }> {
@@ -29,8 +26,7 @@ export class GeneratorFactory {
     options: GeneratorOptions = {}
   ): Promise<Buffer> {
     const generator = await this.createGenerator(options);
-    const { buffer } = await generator.generateBuffer(document);
-    return buffer;
+    return await generator.generateBuffer(document);
   }
 
   getPluginInfo(): {

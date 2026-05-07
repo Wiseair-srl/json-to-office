@@ -539,6 +539,19 @@ function createBuilderImpl<
   }
 
   /**
+   * @deprecated Read `standardDefinition` off `generate(...)` instead. This wrapper
+   * runs the full generation pipeline (including `render()` for every custom)
+   * just to surface the JSON tree, so calling it alongside `generate*` doubles
+   * the work. Kept for backwards compatibility; will be removed in a future major.
+   */
+  async function getStandardComponentsDefinition(
+    document: ExtendedReportComponent<TComponents>
+  ): Promise<ReportComponentDefinition> {
+    const { standardDefinition } = await generate(document);
+    return standardDefinition;
+  }
+
+  /**
    * Generate the extended JSON schema for document validation
    */
   function generateSchema(includeStandardComponents = true): TSchema {
@@ -575,6 +588,7 @@ function createBuilderImpl<
     validate,
     generateSchema,
     exportSchema: exportSchemaToFile,
+    getStandardComponentsDefinition,
   });
 }
 
