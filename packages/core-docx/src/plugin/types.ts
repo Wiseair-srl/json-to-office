@@ -260,6 +260,17 @@ export interface DocumentGenerator<
       prettyPrint?: boolean;
     }
   ) => Promise<void>;
+
+  /**
+   * @deprecated Use `generate(...).standardDefinition` instead. This is now a thin
+   * wrapper over `generate()` and runs `render()` once per call, but if you also
+   * call `generate*` you'll trigger a second pass — read `standardDefinition` off
+   * the result you already produce. Kept for backwards compatibility; will be
+   * removed in a future major.
+   */
+  getStandardComponentsDefinition: (
+    document: ExtendedReportComponent<TCustomComponents>
+  ) => Promise<ReportComponentDefinition>;
 }
 
 /**
