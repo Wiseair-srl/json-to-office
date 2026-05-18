@@ -32,7 +32,14 @@ describe('jto-cli docx generate exits promptly', () => {
   it('exits within 30s of writing the output file', async () => {
     const cliPath = path.join(packageRoot, 'dist', 'cli.js');
     if (!existsSync(cliPath)) {
-      // Tests don't auto-build the package; build is `pnpm --filter @json-to-office/jto-cli build`.
+      // In CI, dist/cli.js must exist — turbo's test task depends on ^build,
+      // so a missing artifact is a real failure, not a skip. Locally we still
+      // tolerate it (warn + return) so `pnpm test` works before `pnpm build`.
+      if (process.env.CI) {
+        throw new Error(
+          `jto-cli artifact missing at ${cliPath}; run \`pnpm --filter @json-to-office/jto-cli build\` first`
+        );
+      }
       console.warn(`Skipping: ${cliPath} not built`);
       return;
     }
