@@ -23,25 +23,36 @@ export function validateDocument(
   data: unknown,
   options?: ValidationOptions
 ): DocumentValidationResult {
-  const result = validateAgainstSchema(ComponentDefinitionSchema, data, options);
+  const result = validateAgainstSchema(
+    ComponentDefinitionSchema,
+    data,
+    options
+  );
 
   // If validation failed, use deep validation to get all detailed errors
   let finalErrors = result.errors || [];
+  let finalValid = result.valid;
   if (!result.valid && data) {
     finalErrors = comprehensiveValidateDocument(data, result.errors);
+    // If TypeBox's union check produced only generic catch-all errors and the
+    // deep validator finds nothing actionable, treat the document as valid.
+    if (finalErrors.length === 0) {
+      finalValid = true;
+    }
   }
 
   // Add document-specific metadata
   const documentResult: DocumentValidationResult = {
     ...result,
+    valid: finalValid,
     documentType: 'docx',
     errors: finalErrors, // Use the comprehensive errors
   };
 
   // Check if document has custom components
-  if (result.valid && result.data) {
-    const doc = result.data as any;
-    if (doc.children && Array.isArray(doc.children)) {
+  if (finalValid) {
+    const doc = (result.data ?? data) as any;
+    if (doc && doc.children && Array.isArray(doc.children)) {
       const hasCustom = doc.children.some(
         (c: any) => !isStandardComponentName(c.name)
       );
@@ -60,25 +71,34 @@ export function validateJsonDocument(
   options?: ValidationOptions
 ): DocumentValidationResult {
   // Use the JSON-specific schema which includes the $schema field
-  const result = validateJson(JsonComponentDefinitionSchema, jsonInput, options);
+  const result = validateJson(
+    JsonComponentDefinitionSchema,
+    jsonInput,
+    options
+  );
 
   // If validation failed, use deep validation to get all detailed errors
   let finalErrors = result.errors || [];
+  let finalValid = result.valid;
   if (!result.valid && result.parsed) {
     finalErrors = comprehensiveValidateDocument(result.parsed, result.errors);
+    if (finalErrors.length === 0) {
+      finalValid = true;
+    }
   }
 
   // Add document-specific metadata
   const documentResult: DocumentValidationResult = {
     ...result,
+    valid: finalValid,
     documentType: 'docx',
     errors: finalErrors, // Use the comprehensive errors
   };
 
   // Check for custom components
-  if (result.valid && result.data) {
-    const doc = result.data as any;
-    if (doc.children && Array.isArray(doc.children)) {
+  if (finalValid) {
+    const doc = (result.data ?? result.parsed) as any;
+    if (doc && doc.children && Array.isArray(doc.children)) {
       const hasCustom = doc.children.some(
         (c: any) => !isStandardComponentName(c.name)
       );

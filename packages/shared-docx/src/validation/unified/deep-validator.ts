@@ -6,33 +6,24 @@
 import { Value } from '@sinclair/typebox/value';
 import type { TSchema } from '@sinclair/typebox';
 import type { ValidationError } from '@json-to-office/shared';
-import {
-  ReportPropsSchema,
-  SectionPropsSchema,
-  HeadingPropsSchema,
-  ParagraphPropsSchema,
-  TablePropsSchema,
-  ImagePropsSchema,
-  ListPropsSchema,
-  StatisticPropsSchema,
-  ColumnsPropsSchema,
-} from '../../schemas/components';
+import { STANDARD_COMPONENTS_REGISTRY } from '../../schemas/component-registry';
 import { CustomComponentDefinitionSchema } from '../../schemas/custom-components';
 import { transformValueErrors } from './error-transformer';
 
-// Map of component names to their schemas
-const COMPONENT_SCHEMAS: Record<string, TSchema> = {
-  report: ReportPropsSchema,
-  section: SectionPropsSchema,
-  heading: HeadingPropsSchema,
-  paragraph: ParagraphPropsSchema,
-  table: TablePropsSchema,
-  image: ImagePropsSchema,
-  list: ListPropsSchema,
-  statistic: StatisticPropsSchema,
-  columns: ColumnsPropsSchema,
-  custom: CustomComponentDefinitionSchema,
-};
+// Map of component names to their props schemas, sourced from the registry.
+// This stays in sync as new standard components are added, so the document
+// root ('docx') and every standard child component are recognized here.
+const COMPONENT_SCHEMAS: Record<string, TSchema> = Object.fromEntries([
+  ...STANDARD_COMPONENTS_REGISTRY.map((c) => [c.name, c.propsSchema]),
+  ['custom', CustomComponentDefinitionSchema],
+]);
+
+// Root component names that may appear at the top of a document.
+const ROOT_COMPONENT_NAMES = new Set(
+  STANDARD_COMPONENTS_REGISTRY.filter((c) =>
+    Boolean(c.special?.hasSchemaField)
+  ).map((c) => c.name)
+);
 
 /**
  * Deep validate a document to collect ALL errors, not just union-level errors
@@ -57,17 +48,18 @@ export function deepValidateDocument(data: any): ValidationError[] {
       message: 'Missing required field "name"',
       code: 'required_property',
     });
-  } else if (data.name !== 'docx') {
+  } else if (!ROOT_COMPONENT_NAMES.has(data.name)) {
+    const expected = [...ROOT_COMPONENT_NAMES].map((n) => `"${n}"`).join(', ');
     allErrors.push({
       path: '/name',
-      message: `Invalid name "${data.name}". Expected "docx"`,
+      message: `Invalid name "${data.name}". Expected ${expected}`,
       code: 'invalid_value',
     });
   }
 
-  // Validate props section if present and name is docx
-  if (data.name === 'docx' && data.props) {
-    const propsErrors = validateComponentProps('docx', data.props, '/props');
+  // Validate props section if present and name is a known root
+  if (ROOT_COMPONENT_NAMES.has(data.name) && data.props) {
+    const propsErrors = validateComponentProps(data.name, data.props, '/props');
     allErrors.push(...propsErrors);
   }
 
@@ -226,33 +218,41 @@ function validateComponentProps(
 }
 
 /**
- * Combine deep validation with standard validation
+ * Combine deep validation with standard validation.
+ *
+ * Deep validation produces precise, path-aware errors. TypeBox's discriminated-
+ * union check, by contrast, often collapses any failure under the root document
+ * into a single generic "Invalid component configuration for 'docx'" message at
+ * `root` — useful as a signal that something is wrong, but actionable only via
+ * the deep-validator's output. We always strip that catch-all so it doesn't
+ * appear alongside (or, worse, instead of) the real diagnostics.
  */
 export function comprehensiveValidateDocument(
   data: any,
   existingErrors: ValidationError[] = []
 ): ValidationError[] {
-  // First, get deep validation errors
   const deepErrors = deepValidateDocument(data);
 
-  // If we got specific errors from deep validation, prefer those
-  if (deepErrors.length > 0) {
-    // Filter out any generic "invalid component configurations" errors
-    const filteredExisting = existingErrors.filter(
-      (e) =>
-        !e.message.includes('invalid module configurations') &&
-        !e.message.includes('invalid component configurations')
-    );
+  const filteredExisting = existingErrors.filter(
+    (e) => !isGenericUnionCatchAll(e)
+  );
 
-    // Combine and deduplicate
-    const allErrors = [...filteredExisting, ...deepErrors];
-    const uniqueErrors = deduplicateErrors(allErrors);
+  return deduplicateErrors([...filteredExisting, ...deepErrors]);
+}
 
-    return uniqueErrors;
-  }
-
-  // Otherwise return the existing errors
-  return existingErrors;
+/**
+ * Detect TypeBox's generic union/discriminator catch-all error at the document
+ * root. These messages name the component type ('docx') but give no actionable
+ * detail — the deep validator emits the actual path-level errors instead.
+ */
+function isGenericUnionCatchAll(error: ValidationError): boolean {
+  const atRoot = !error.path || error.path === 'root' || error.path === '/';
+  if (!atRoot) return false;
+  const msg = error.message || '';
+  return (
+    /invalid (component|module) configurations?/i.test(msg) ||
+    /invalid document structure/i.test(msg)
+  );
 }
 
 /**
