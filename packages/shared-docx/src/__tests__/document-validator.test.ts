@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validate } from '../validation/unified';
+import { isValidDocument } from '../validation/unified/document-validator';
 
 describe('validateJsonDocument: docx root recognition', () => {
   it('accepts a minimal docx document with a heading child', () => {
@@ -104,5 +105,37 @@ describe('validateJsonDocument: docx root recognition', () => {
     expect(
       nameErrors.some((e) => /Invalid name "slideshow"/.test(e.message))
     ).toBe(true);
+  });
+
+  it('rejects explicit null props on the root component', () => {
+    const json = JSON.stringify({
+      name: 'docx',
+      props: null,
+      children: [],
+    });
+
+    const result = validate.jsonDocument(json);
+
+    expect(result.valid).toBe(false);
+    expect((result.errors ?? []).some((e) => e.path.startsWith('/props'))).toBe(
+      true
+    );
+  });
+
+  it('populates `data` whenever `valid` is true (isValidDocument contract)', () => {
+    // Triggers TypeBox failure (heading is not in docx.allowedChildren) so the
+    // deep validator is the one declaring the doc valid. Even on that path,
+    // `data` must be populated so `isValidDocument` returns true.
+    const json = JSON.stringify({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [{ name: 'heading', props: { text: 'Hi', level: 1 } }],
+    });
+
+    const result = validate.jsonDocument(json);
+
+    expect(result.valid).toBe(true);
+    expect(result.data).toBeDefined();
+    expect(isValidDocument(result)).toBe(true);
   });
 });

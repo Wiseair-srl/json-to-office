@@ -41,17 +41,26 @@ export function validateDocument(
     }
   }
 
-  // Add document-specific metadata
+  // Add document-specific metadata. Keep `data` populated whenever `valid` is
+  // true so `isValidDocument()` (which requires both) stays consistent — when
+  // TypeBox failed and the deep validator cleared the doc, fall back to the
+  // original input as the data payload.
+  const resolvedData =
+    result.data ??
+    (finalValid
+      ? (data as Static<typeof ComponentDefinitionSchema>)
+      : undefined);
   const documentResult: DocumentValidationResult = {
     ...result,
     valid: finalValid,
     documentType: 'docx',
-    errors: finalErrors, // Use the comprehensive errors
+    errors: finalErrors,
+    data: resolvedData,
   };
 
   // Check if document has custom components
   if (finalValid) {
-    const doc = (result.data ?? data) as any;
+    const doc = resolvedData as any;
     if (doc && doc.children && Array.isArray(doc.children)) {
       const hasCustom = doc.children.some(
         (c: any) => !isStandardComponentName(c.name)
@@ -87,17 +96,26 @@ export function validateJsonDocument(
     }
   }
 
-  // Add document-specific metadata
+  // Add document-specific metadata. Keep `data` populated whenever `valid` is
+  // true so `isValidDocument()` (which requires both) stays consistent — when
+  // TypeBox failed and the deep validator cleared the doc, fall back to the
+  // parsed input as the data payload.
+  const resolvedData =
+    result.data ??
+    (finalValid
+      ? (result.parsed as Static<typeof ComponentDefinitionSchema>)
+      : undefined);
   const documentResult: DocumentValidationResult = {
     ...result,
     valid: finalValid,
     documentType: 'docx',
-    errors: finalErrors, // Use the comprehensive errors
+    errors: finalErrors,
+    data: resolvedData,
   };
 
   // Check for custom components
   if (finalValid) {
-    const doc = (result.data ?? result.parsed) as any;
+    const doc = resolvedData as any;
     if (doc && doc.children && Array.isArray(doc.children)) {
       const hasCustom = doc.children.some(
         (c: any) => !isStandardComponentName(c.name)
