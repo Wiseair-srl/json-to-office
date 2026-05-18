@@ -57,8 +57,10 @@ export function deepValidateDocument(data: any): ValidationError[] {
     });
   }
 
-  // Validate props section if present and name is a known root
-  if (ROOT_COMPONENT_NAMES.has(data.name) && data.props) {
+  // Validate props section when the key is present so explicit `null` (or any
+  // falsy non-object) is checked against the component's schema instead of
+  // silently passing.
+  if (ROOT_COMPONENT_NAMES.has(data.name) && 'props' in data) {
     const propsErrors = validateComponentProps(data.name, data.props, '/props');
     allErrors.push(...propsErrors);
   }
