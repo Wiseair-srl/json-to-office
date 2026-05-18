@@ -46,7 +46,8 @@ export class MemoryCache extends ComponentCacheManager {
     if (!node) {
       // Try to get component name from our mapping first, then from the key itself
       const componentName =
-        this.keyToComponentName.get(key) || this.extractComponentNameFromKey(key);
+        this.keyToComponentName.get(key) ||
+        this.extractComponentNameFromKey(key);
       this.updateMissStats(key, componentName);
       return undefined;
     }
@@ -137,7 +138,9 @@ export class MemoryCache extends ComponentCacheManager {
     this.stats.totalSize = this.currentSize;
 
     // Update component stats
-    const componentStats = this.stats.componentStats.get(node.value.componentName);
+    const componentStats = this.stats.componentStats.get(
+      node.value.componentName
+    );
     if (componentStats && componentStats.entries > 0) {
       componentStats.entries--;
     }
@@ -273,6 +276,10 @@ export class MemoryCache extends ComponentCacheManager {
       },
       (this.config.memory?.cleanupInterval || 300) * 1000
     );
+    // Opportunistic housekeeping should never keep the event loop alive — a
+    // short-lived CLI run shouldn't wait 5 minutes for the next sweep before
+    // exiting (#hang-on-exit).
+    this.cleanupTimer.unref?.();
   }
 
   /**
