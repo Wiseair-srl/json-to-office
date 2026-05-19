@@ -259,13 +259,88 @@ def analyze_slide(slide_idx: int, slide: dict, doc_grid: dict, slide_w_in: float
     return findings
 
 
+KNOWN_ASPECTS = {
+    "16:9 small":    (10.0,    5.625),
+    "16:9 standard": (13.333,  7.5),
+    "1:1 carousel":  (7.5,     7.5),
+    "4:5 vertical":  (7.5,     9.375),
+    "9:16 story":    (4.5,     8.0),
+    "4:3 legacy":    (10.0,    7.5),
+}
+
+
+def _canvas_finding(severity: str, preview: str) -> dict:
+    return {
+        "slide": 0,
+        "node_index": 0,
+        "positioning": "document",
+        "severity": severity,
+        "font_size": 0,
+        "line_spacing": 0,
+        "chars": 0,
+        "est_lines": 0,
+        "text_h_pt": 0.0,
+        "available_pt": 0.0,
+        "margin_pt": 0.0,
+        "width_pt": 0.0,
+        "preview": preview,
+    }
+
+
+def check_canvas(props: dict) -> list[dict]:
+    """Verify the document declares a known slide canvas.
+
+    The renderer (pptxgenjs) defaults to LAYOUT_4x3 (10×7.5) when slideWidth /
+    slideHeight are omitted. Content authored for 16:9 (10×5.625) on that
+    canvas leaves a ~2" white strip at the bottom — silent failure, not
+    caught by schema validation.
+    """
+    findings: list[dict] = []
+    w = props.get("slideWidth")
+    h = props.get("slideHeight")
+
+    if w is None or h is None:
+        findings.append(_canvas_finding(
+            "OVERFLOW",
+            "canvas not declared: set props.slideWidth + props.slideHeight (renderer default is 4:3, 10×7.5)",
+        ))
+        return findings
+
+    try:
+        w_f = float(w)
+        h_f = float(h)
+    except (TypeError, ValueError):
+        findings.append(_canvas_finding(
+            "OVERFLOW",
+            f"canvas values not numeric: slideWidth={w!r} slideHeight={h!r}",
+        ))
+        return findings
+
+    for name, (kw, kh) in KNOWN_ASPECTS.items():
+        if abs(w_f - kw) < 0.01 and abs(h_f - kh) < 0.01:
+            if name == "4:3 legacy":
+                findings.append(_canvas_finding(
+                    "TIGHT",
+                    f"canvas is 4:3 legacy (10×7.5) — confirm intentional; 16:9 is the modern default",
+                ))
+            return findings
+
+    findings.append(_canvas_finding(
+        "TIGHT",
+        f"canvas {w_f:g}×{h_f:g} does not match a known preset (16:9, 1:1, 4:5, 9:16)",
+    ))
+    return findings
+
+
 def analyze_doc(doc: dict) -> list[dict]:
     props = doc.get("props") or {}
     slide_w_in = float(props.get("slideWidth") or DEFAULT_SLIDE_WIDTH_IN)
     slide_h_in = float(props.get("slideHeight") or DEFAULT_SLIDE_HEIGHT_IN)
     doc_grid = props.get("grid")
 
-    findings = []
+    findings: list[dict] = []
+    findings.extend(check_canvas(props))
+
     for i, slide in enumerate(doc.get("children") or [], start=1):
         if not isinstance(slide, dict) or slide.get("name") != "slide":
             continue
@@ -308,6 +383,9 @@ def print_report(findings: list[dict]) -> tuple[list[dict], list[dict]]:
             return
         print(color(f"── {label} ──", key))
         for f in group:
+            if f["positioning"] == "document":
+                print(f"  [document]  {f['preview']}")
+                continue
             print(
                 f"  Slide {f['slide']:>2} node#{f['node_index']:<2} [{f['positioning']}]  "
                 f"text={f['text_h_pt']:>5}pt avail={f['available_pt']:>5}pt  "
