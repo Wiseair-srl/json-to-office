@@ -101,7 +101,9 @@ Hero and display sizes have a per-line character cap. Exceeding it forces a wrap
 
 If a title exceeds the cap, **scale down to the next step before rendering**. `fontSize: 80 → 72` is acceptable as long as `lineSpacing: 92 → 84` moves with it. Keep them in lockstep.
 
-## Slide format presets
+## Slide canvas — set it explicitly, every time
+
+**The renderer's default is 4:3 (10″×7.5″) — the legacy PowerPoint canvas.** If you don't declare `slideWidth` and `slideHeight` at the `pptx` root, content authored for any other format will leave a white strip on the unused side. This is a silent failure: schema validation passes, the PPTX opens fine, but the layout is broken. `preflight.py` blocks on missing canvas.
 
 Three presets cover the great majority of cases.
 
@@ -111,7 +113,7 @@ The local-templates default. Compact and convenient when the deck is consumed in
 
 ### 16:9 standard (`slideWidth: 13.333, slideHeight: 7.5`)
 
-The PowerPoint/Keynote default. Best for projection and full-screen viewing.
+The PowerPoint/Keynote widescreen default. Best for projection and full-screen viewing.
 
 ### 1:1 carousel (`slideWidth: 7.5, slideHeight: 7.5`)
 
@@ -121,7 +123,7 @@ LinkedIn carousels, Instagram. Compact horizontal space; type scale uses body=18
 
 LinkedIn portrait, Instagram feed. More vertical room for narrative.
 
-Avoid cinematic 16:10 or 21:9 unless explicitly requested.
+Avoid cinematic 16:10 or 21:9 unless explicitly requested. **Don't use the 4:3 default unless the audience explicitly asked for it** — it's the "old PowerPoint" look.
 
 ## Grid & margin presets
 

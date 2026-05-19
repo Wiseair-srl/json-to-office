@@ -59,6 +59,14 @@ Long-form headline below.
 
 11px, +0.18em letter-spacing, accent token, sometimes with a leading 24×1px rule.
 
+## Diacritics & elision apostrophes
+
+Non-English content keeps its diacritics. Italian: `à è é ì ò ù` and elision apostrophes (`L'`, `dell'`, `un'`). French: `à â ç é è ê ë î ï ô û ù ü ÿ` plus apostrophes. Spanish: `á é í ó ú ñ ü` plus the inverted `¿ ¡`. German: `ä ö ü ß`. Portuguese: `ã õ ç á é í ó ú à â ê ô`.
+
+ASCII-safe substitutions ("Perche" for "Perché", "mobilita" for "mobilità", "L ottimizzazione" for "L'ottimizzazione") are obvious to a native reader and make the deck look machine-generated. The renderer handles Unicode fine — don't strip.
+
+Italian all-caps eyebrows traditionally drop diacritics (`PERCHE`, not `PERCHÉ`) — that's a style choice, not a typo. Apply diacritics to mixed-case body and headings; drop them only in tracked uppercase labels.
+
 ## Anti-patterns
 
 - More than three typefaces in one document.
@@ -67,3 +75,4 @@ Long-form headline below.
 - Headlines at body line-height (1.5 on a 60pt headline looks limp).
 - Measure > 90 characters — eye loses the line.
 - Hex colors hardcoded into text props instead of theme tokens.
+- Missing diacritics or elision apostrophes in non-English mixed-case text.

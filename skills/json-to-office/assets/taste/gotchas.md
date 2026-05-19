@@ -22,6 +22,7 @@ Distilled from real-world failures. Scan this list before validating, and again 
 
 ## PPTX
 
+- **Canvas defaults to 4:3.** The renderer (pptxgenjs) uses `LAYOUT_4x3` (10″×7.5″) when `slideWidth`/`slideHeight` are omitted at the `pptx` root. Content authored for 16:9 then leaves a ~2-inch white strip at the bottom — a silent failure. **Always set both.** `preflight.py` blocks on missing canvas.
 - **Hex prefix.** PPTX uses bare hex (`"FFFFFF"`). **No `#`.** Theme keys (`"primary"`, `"text"`) work without `#` and are preferred.
 - **Theme name mismatch.** The `name` field in the theme file must equal `props.theme` in the document, byte-for-byte. Mismatch → silent fallback to default Office theme (blue/green). If your render looks generic, check this first.
 - **`color` vs `fontColor`.** Text components use `color`. Shape-with-text uses `fontColor`. Setting `fontColor` on a text component is silently ignored.
@@ -51,3 +52,4 @@ Skipping any of these before presenting a file leads to user-visible defects.
 - **No lorem ipsum.** Generate plausible data, names, narratives. Use the user's content faithfully when provided.
 - **Real numbers.** No "$X" placeholders. Pick concrete figures.
 - **Placeholder images** via `https://placehold.co/{W}x{H}/{bg}/{fg}?text={TEXT}` with theme-matching colors.
+- **Diacritics & elision apostrophes in non-English content.** When generating Italian, French, Spanish, German, Portuguese, etc., preserve `à è é ì ò ù ñ ç ü ö ä` and elision apostrophes (`L'`, `dell'`, `un'`, `qu'`). The renderer handles Unicode fine; stripping diacritics for ASCII safety produces obviously broken text ("Perche" instead of "Perché", "mobilita" instead of "mobilità"). Read your output back before shipping.

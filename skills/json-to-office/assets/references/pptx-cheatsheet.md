@@ -27,7 +27,17 @@ grep -A 5 '"valign"' assets/schemas/presentation.schema.json | head -20
 
 `props.theme` must equal the `name` field of the theme being applied. Mismatch → silent fallback to default Office theme.
 
-Slide dimensions are in inches. Defaults: 10 × 5.625 (16:9 small). PowerPoint default is 13.333 × 7.5; both work — pick by context.
+### `slideWidth` / `slideHeight` are MANDATORY
+
+The renderer's default is **4:3 (10×7.5)**, the legacy PowerPoint canvas. If you omit these, content authored for 16:9 leaves a ~2-inch white strip at the bottom of every slide. `preflight.py` blocks on this — set both explicitly. Picks:
+
+| Use                                  | `slideWidth` | `slideHeight` |
+| ------------------------------------ | ------------ | ------------- |
+| 16:9 small (the templates' default)  | 10           | 5.625         |
+| 16:9 widescreen (PowerPoint default) | 13.333       | 7.5           |
+| 1:1 LinkedIn carousel                | 7.5          | 7.5           |
+| 4:5 LinkedIn portrait                | 7.5          | 9.375         |
+| 9:16 story                           | 4.5          | 8             |
 
 ## Slide
 
