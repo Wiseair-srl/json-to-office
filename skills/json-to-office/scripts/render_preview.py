@@ -17,12 +17,24 @@ Degrades gracefully:
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 from _lib import die, infer_kind, load_caps, run
+
+
+def _page_sort_key(path: Path) -> tuple[int, str]:
+    """Sort `page-<n>.png` by the integer n, not lexicographically.
+
+    Padding is inconsistent across renderer paths (pdftoppm pads to the
+    width of the last page; pdf2image hardcodes `:02d`, which breaks at
+    100+). Sorting by parsed integer makes ordering correct in both.
+    """
+    m = re.search(r"page-(\d+)", path.name)
+    return (int(m.group(1)) if m else 0, path.name)
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 PREFLIGHT_SCRIPT = SKILL_ROOT / "scripts" / "preflight.py"
@@ -65,7 +77,7 @@ def render_pdf_to_pngs(soffice_bin: str, pdftoppm_kind: str, office_path: Path, 
         proc = run(["pdftoppm", "-r", "144", str(pdf_path), str(pages_prefix), "-png"])
         if proc.returncode != 0:
             die("pdftoppm failed")
-        pngs = sorted(pdf_dir.glob("page-*.png"))
+        pngs = sorted(pdf_dir.glob("page-*.png"), key=_page_sort_key)
     else:
         # pdf2image fallback
         from pdf2image import convert_from_path  # type: ignore
