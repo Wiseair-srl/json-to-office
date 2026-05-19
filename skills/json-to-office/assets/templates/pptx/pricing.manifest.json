@@ -5,53 +5,88 @@
   "slot_hints": [
     {
       "path": "children[0].children[1].props.text",
-      "label": "Slide headline",
+      "label": "Slide 1 · Top chrome",
+      "example": "FIELD STUDIO  ·  PRICING  ·  2026"
+    },
+    {
+      "path": "children[0].children[3].props.text",
+      "label": "Slide 1 · Eyebrow / label",
+      "example": "PRICING"
+    },
+    {
+      "path": "children[0].children[4].props.text",
+      "label": "Slide 1 · Headline",
       "example": "Simple, transparent plans."
     },
     {
-      "path": "children[0].children[5].props.text",
-      "label": "Tier 1 name",
+      "path": "children[0].children[8].props.text",
+      "label": "Slide 1 · Body",
       "example": "Starter"
     },
     {
-      "path": "children[0].children[6].props.text",
-      "label": "Tier 1 price",
+      "path": "children[0].children[9].props.text",
+      "label": "Slide 1 · Headline",
       "example": "$9"
     },
     {
-      "path": "children[0].children[7].props.text",
-      "label": "Tier 1 unit + features (newline-separated)",
-      "example": "per user / month\\n\\n· Up to 5 seats\\n· 10 GB storage"
-    },
-    {
-      "path": "children[0].children[8].props.text",
-      "label": "Tier 2 name",
-      "example": "Pro"
-    },
-    {
-      "path": "children[0].children[9].props.text",
-      "label": "Tier 2 price",
-      "example": "$29"
-    },
-    {
       "path": "children[0].children[10].props.text",
-      "label": "Tier 2 unit + features",
-      "example": "per user / month\\n\\n· Unlimited seats"
+      "label": "Slide 1 · Body",
+      "example": "per user / month"
     },
     {
       "path": "children[0].children[11].props.text",
-      "label": "Tier 3 name",
-      "example": "Enterprise"
-    },
-    {
-      "path": "children[0].children[12].props.text",
-      "label": "Tier 3 price",
-      "example": "Custom"
+      "label": "Slide 1 · Body",
+      "example": "Up to 5 seats ⏎ 10 GB storage ⏎ Email support"
     },
     {
       "path": "children[0].children[13].props.text",
-      "label": "Tier 3 unit + features",
-      "example": "tailored to your team\\n\\n· Everything in Pro"
+      "label": "Slide 1 · Body",
+      "example": "Pro"
+    },
+    {
+      "path": "children[0].children[14].props.text",
+      "label": "Slide 1 · Headline",
+      "example": "$29"
+    },
+    {
+      "path": "children[0].children[15].props.text",
+      "label": "Slide 1 · Body",
+      "example": "per user / month"
+    },
+    {
+      "path": "children[0].children[16].props.text",
+      "label": "Slide 1 · Body",
+      "example": "Unlimited seats ⏎ 1 TB storage ⏎ Priority support"
+    },
+    {
+      "path": "children[0].children[17].props.text",
+      "label": "Slide 1 · Body",
+      "example": "Enterprise"
+    },
+    {
+      "path": "children[0].children[18].props.text",
+      "label": "Slide 1 · Headline",
+      "example": "Custom"
+    },
+    {
+      "path": "children[0].children[19].props.text",
+      "label": "Slide 1 · Body",
+      "example": "tailored to your team"
+    },
+    {
+      "path": "children[0].children[20].props.text",
+      "label": "Slide 1 · Body",
+      "example": "Everything in Pro ⏎ Dedicated CSM ⏎ Custom SLA"
+    },
+    {
+      "path": "children[0].children[22].props.text",
+      "label": "Slide 1 · Bottom chrome",
+      "example": "01 / 01"
+    },
+    {
+      "path": "children[0].children[23].props.text",
+      "label": "Slide 1 · Bottom chrome",
+      "example": "FIELD STUDIO"
     }
   ],
   "theme_default": "minimal",

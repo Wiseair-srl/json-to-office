@@ -54,15 +54,19 @@ def load_caps() -> dict:
 
 
 def infer_kind(path: Path) -> str:
-    """Return 'docx' or 'pptx' from a file like 'foo.docx.json' / 'foo.pptx.json'."""
-    parts = path.name.lower().split(".")
-    if "pptx" in parts:
+    """Return 'docx' or 'pptx' from a file ending exactly in .docx.json / .pptx.json."""
+    name = path.name.lower()
+    is_pptx = name.endswith(".pptx.json")
+    is_docx = name.endswith(".docx.json")
+    if is_pptx and is_docx:
+        raise ValueError(f"Ambiguous filename (matches both kinds): {path.name}")
+    if is_pptx:
         return "pptx"
-    if "docx" in parts:
+    if is_docx:
         return "docx"
     raise ValueError(
         f"Cannot infer kind from filename: {path.name} "
-        "(expected .docx.json or .pptx.json)"
+        "(expected .docx.json or .pptx.json suffix)"
     )
 
 

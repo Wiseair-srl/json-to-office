@@ -27,6 +27,8 @@ grep -A 5 '"valign"' assets/schemas/presentation.schema.json | head -20
 
 `props.theme` must equal the `name` field of the theme being applied. Mismatch → silent fallback to default Office theme.
 
+`props.grid.padding` is accepted as a scalar alias for `margin` — both name the inset from the slide edges. Templates use `padding` for brevity; pass `margin` (as a number or `{top,right,bottom,left}` dict) for finer control.
+
 ### `slideWidth` / `slideHeight` are MANDATORY
 
 The renderer's default is **4:3 (10×7.5)**, the legacy PowerPoint canvas. If you omit these, content authored for 16:9 leaves a ~2-inch white strip at the bottom of every slide. `preflight.py` blocks on this — set both explicitly. Picks:

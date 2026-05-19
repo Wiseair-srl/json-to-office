@@ -25,7 +25,12 @@ def which(cmd: str) -> str | None:
 
 
 def find_monorepo_root() -> Path | None:
-    """Walk up from cwd looking for a package.json with name == 'json-to-office'."""
+    """Walk up from cwd looking for the json-to-office monorepo root.
+
+    Match either (a) root package.json with name == 'json-to-office', or
+    (b) heuristic: pnpm-workspace.yaml + packages/jto-cli both present.
+    The heuristic catches forks/renames without losing the local dev path.
+    """
     cwd = Path.cwd().resolve()
     for parent in [cwd, *cwd.parents]:
         pkg = parent / "package.json"
@@ -34,7 +39,9 @@ def find_monorepo_root() -> Path | None:
                 if json.loads(pkg.read_text()).get("name") == "json-to-office":
                     return parent
             except (json.JSONDecodeError, OSError):
-                continue
+                pass
+        if (parent / "pnpm-workspace.yaml").is_file() and (parent / "packages" / "jto-cli").is_dir():
+            return parent
     return None
 
 
