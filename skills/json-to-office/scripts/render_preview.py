@@ -120,16 +120,18 @@ def main() -> int:
     # Default output sits next to the input file — the input is always in a
     # writable location, whereas <skill_root>/.skill-out may be read-only in
     # sandboxed environments (claude.ai, packaged .skill bundles).
+    # Only fully clobber dirs we ourselves derived (i.e. no user --out).
+    # An ancestor named .skill-out elsewhere on disk is not enough — that
+    # could match unrelated user directories and let rmtree escape its scope.
+    is_skill_owned = args.out is None
     out_dir = Path(args.out).resolve() if args.out else (
         input_path.parent / ".skill-out" / input_path.stem
     )
-    # Only fully clobber dirs we own (anything beneath a .skill-out segment).
-    # User-supplied paths get artefact-level cleanup instead.
-    is_skill_owned = any(p.name == ".skill-out" for p in (out_dir, *out_dir.parents))
     if out_dir.exists():
         if is_skill_owned:
             shutil.rmtree(out_dir)
         else:
+            # User-supplied --out: clean only artefacts we produce.
             for pattern in ("out.docx", "out.pptx", "*.pdf", "page-*.png"):
                 for stale in out_dir.glob(pattern):
                     if stale.is_file():
