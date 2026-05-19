@@ -1,0 +1,18 @@
+{
+  "name": "invoice",
+  "description": "Professional services invoice. Header strip with company/invoice tag, big INVOICE word + invoice number/date, two-column From/Bill To, project description, line items table with black header, totals, payment terms footer.",
+  "when_to_use": "Invoice, bill, statement of services. When the brief says 'invoice', 'bill', 'SOW invoice', 'professional services bill'. Most slots are obvious from the example data; replace company / client / line items.",
+  "slot_hints": [
+    {
+      "path": "props.metadata.title",
+      "label": "Document metadata title",
+      "example": "Invoice #INV-2026-0387"
+    },
+    {
+      "path": "children[0]",
+      "label": "Whole document body — many slots; replace company info, line items table rows, totals. Read the file structure once and edit in place."
+    }
+  ],
+  "theme_default": "minimal",
+  "golden": "../../../references/renders/invoice/"
+}

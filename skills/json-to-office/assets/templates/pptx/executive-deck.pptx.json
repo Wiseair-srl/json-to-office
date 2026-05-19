@@ -1,0 +1,873 @@
+{
+  "name": "pptx",
+  "props": {
+    "theme": "minimal",
+    "grid": { "columns": 12, "rows": 6, "gutter": 0.2, "padding": 0.55 }
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": { "background": { "color": "background" } },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0,
+            "y": 0,
+            "w": 0.05,
+            "h": 5.625
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0.55,
+            "y": 0.55,
+            "w": 0.18,
+            "h": 0.18
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "right",
+            "x": 5,
+            "y": 0.35,
+            "w": 4.5,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0.55,
+            "y": 1.35,
+            "w": 0.25,
+            "h": 0.02
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "KEYNOTE 01",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "left",
+            "x": 0.9,
+            "y": 1.2,
+            "w": 4,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Our case\nfor the next year.",
+            "fontSize": 60,
+            "bold": true,
+            "italic": false,
+            "fontColor": "text",
+            "align": "left",
+            "lineSpacing": 64,
+            "x": 0.55,
+            "y": 1.75,
+            "w": 9,
+            "h": 2.2
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "1A1A1A" },
+            "line": { "color": "1A1A1A", "width": 0 },
+            "x": 0.55,
+            "y": 4.25,
+            "w": 1.4,
+            "h": 0.015
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Presenter Name  ·  Role  ·  Q2 2026",
+            "fontSize": 14,
+            "italic": false,
+            "bold": false,
+            "fontColor": "text2",
+            "align": "left",
+            "x": 0.55,
+            "y": 4.4,
+            "w": 7.5,
+            "h": 0.4
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "888888" },
+            "line": { "color": "888888", "width": 0 },
+            "x": 0.55,
+            "y": 5.15,
+            "w": 8.9,
+            "h": 0.008
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "01 / 05",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 0.55,
+            "y": 5.25,
+            "w": 1,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "right",
+            "x": 5,
+            "y": 5.25,
+            "w": 4.5,
+            "h": 0.25
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": { "background": { "color": "background" } },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0,
+            "y": 0,
+            "w": 0.05,
+            "h": 5.625
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "right",
+            "x": 5,
+            "y": 0.35,
+            "w": 4.5,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "01",
+            "fontSize": 180,
+            "bold": true,
+            "italic": false,
+            "fontColor": "CC785C",
+            "align": "left",
+            "x": 0.55,
+            "y": 1.4,
+            "w": 3.5,
+            "h": 2.5
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 4.2,
+            "y": 1.8,
+            "w": 0.25,
+            "h": 0.02
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "CHAPTER 01",
+            "fontSize": 10,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 4.55,
+            "y": 1.65,
+            "w": 4,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Where we are\ntoday.",
+            "fontSize": 44,
+            "bold": true,
+            "italic": false,
+            "fontColor": "text",
+            "align": "left",
+            "lineSpacing": 50,
+            "x": 4.2,
+            "y": 2.0,
+            "w": 5.5,
+            "h": 2.0
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "888888" },
+            "line": { "color": "888888", "width": 0 },
+            "x": 0.55,
+            "y": 5.15,
+            "w": 8.9,
+            "h": 0.008
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "02 / 05",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 0.55,
+            "y": 5.25,
+            "w": 1,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "right",
+            "x": 5,
+            "y": 5.25,
+            "w": 4.5,
+            "h": 0.25
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": { "background": { "color": "background" } },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0,
+            "y": 0,
+            "w": 0.05,
+            "h": 5.625
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "right",
+            "x": 5,
+            "y": 0.35,
+            "w": 4.5,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0.55,
+            "y": 1.0,
+            "w": 0.25,
+            "h": 0.02
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "THE ARGUMENT",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "left",
+            "x": 0.9,
+            "y": 0.85,
+            "w": 4,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "The new shape\nof the workflow.",
+            "fontSize": 32,
+            "bold": true,
+            "italic": false,
+            "fontColor": "text",
+            "align": "left",
+            "lineSpacing": 38,
+            "x": 0.55,
+            "y": 1.4,
+            "w": 5.5,
+            "h": 1.5
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "01",
+            "fontSize": 12,
+            "fontFace": "Courier",
+            "bold": true,
+            "fontColor": "CC785C",
+            "align": "left",
+            "x": 0.55,
+            "y": 3.1,
+            "w": 0.4,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Designers spend 40% less time on handoff once tokens live in code.",
+            "fontSize": 13,
+            "fontColor": "text",
+            "italic": false,
+            "align": "left",
+            "x": 1.0,
+            "y": 3.1,
+            "w": 5.5,
+            "h": 0.7
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "02",
+            "fontSize": 12,
+            "fontFace": "Courier",
+            "bold": true,
+            "fontColor": "CC785C",
+            "align": "left",
+            "x": 0.55,
+            "y": 3.85,
+            "w": 0.4,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Single source of truth means dev review focuses on intent, not pixels.",
+            "fontSize": 13,
+            "fontColor": "text",
+            "italic": false,
+            "align": "left",
+            "x": 1.0,
+            "y": 3.85,
+            "w": 5.5,
+            "h": 0.7
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "03",
+            "fontSize": 12,
+            "fontFace": "Courier",
+            "bold": true,
+            "fontColor": "CC785C",
+            "align": "left",
+            "x": 0.55,
+            "y": 4.6,
+            "w": 0.4,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Iterations compress from days into hours when the system holds.",
+            "fontSize": 13,
+            "fontColor": "text",
+            "italic": false,
+            "align": "left",
+            "x": 1.0,
+            "y": 4.6,
+            "w": 5.5,
+            "h": 0.5
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "F7F7F5" },
+            "line": { "color": "EEEEEE", "width": 0.5 },
+            "x": 6.5,
+            "y": 1.4,
+            "w": 3.0,
+            "h": 3.0
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Diagram",
+            "fontSize": 10,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "center",
+            "x": 6.5,
+            "y": 2.8,
+            "w": 3.0,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "888888" },
+            "line": { "color": "888888", "width": 0 },
+            "x": 0.55,
+            "y": 5.15,
+            "w": 8.9,
+            "h": 0.008
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "03 / 05",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 0.55,
+            "y": 5.25,
+            "w": 1,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "right",
+            "x": 5,
+            "y": 5.25,
+            "w": 4.5,
+            "h": 0.25
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": { "background": { "color": "background" } },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0,
+            "y": 0,
+            "w": 0.05,
+            "h": 5.625
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "right",
+            "x": 5,
+            "y": 0.35,
+            "w": 4.5,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0.55,
+            "y": 1.0,
+            "w": 0.25,
+            "h": 0.02
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "ONE NUMBER",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "left",
+            "x": 0.9,
+            "y": 0.85,
+            "w": 4,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "3.2× faster",
+            "fontSize": 110,
+            "bold": true,
+            "italic": false,
+            "fontColor": "text",
+            "align": "center",
+            "x": 0.55,
+            "y": 1.8,
+            "w": 8.9,
+            "h": 2.0
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "1A1A1A" },
+            "line": { "color": "1A1A1A", "width": 0 },
+            "x": 4.55,
+            "y": 4.0,
+            "w": 0.4,
+            "h": 0.015
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Teams shipping production work after adopting the integrated design system.",
+            "fontSize": 16,
+            "fontColor": "text",
+            "italic": true,
+            "bold": false,
+            "align": "center",
+            "x": 1.5,
+            "y": 4.15,
+            "w": 7,
+            "h": 0.6
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "SOURCE: INTERNAL STUDY, N=24 TEAMS",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "center",
+            "x": 0.55,
+            "y": 4.8,
+            "w": 8.9,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "888888" },
+            "line": { "color": "888888", "width": 0 },
+            "x": 0.55,
+            "y": 5.15,
+            "w": 8.9,
+            "h": 0.008
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "04 / 05",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 0.55,
+            "y": 5.25,
+            "w": 1,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "right",
+            "x": 5,
+            "y": 5.25,
+            "w": 4.5,
+            "h": 0.25
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": { "background": { "color": "background" } },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0,
+            "y": 0,
+            "w": 0.05,
+            "h": 5.625
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "right",
+            "x": 5,
+            "y": 0.35,
+            "w": 4.5,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0.55,
+            "y": 1.0,
+            "w": 0.25,
+            "h": 0.02
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "ASK",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "left",
+            "x": 0.9,
+            "y": 0.85,
+            "w": 4,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "What we need\nfrom you.",
+            "fontSize": 48,
+            "bold": true,
+            "italic": false,
+            "fontColor": "text",
+            "align": "left",
+            "lineSpacing": 54,
+            "x": 0.55,
+            "y": 1.4,
+            "w": 9,
+            "h": 2.0
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "HEADCOUNT",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 0.55,
+            "y": 3.5,
+            "w": 3,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "2 senior engineers, 1 designer\nQ3 starts.",
+            "fontSize": 13,
+            "fontColor": "text",
+            "italic": false,
+            "align": "left",
+            "lineSpacing": 17,
+            "x": 0.55,
+            "y": 3.8,
+            "w": 2.8,
+            "h": 0.7
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "BUDGET",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 3.6,
+            "y": 3.5,
+            "w": 3,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "$480k for tools + infra\nin H2.",
+            "fontSize": 13,
+            "fontColor": "text",
+            "italic": false,
+            "align": "left",
+            "lineSpacing": 17,
+            "x": 3.6,
+            "y": 3.8,
+            "w": 2.8,
+            "h": 0.7
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "DECISION",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 6.6,
+            "y": 3.5,
+            "w": 3,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Green-light the platform rebuild by end of month.",
+            "fontSize": 13,
+            "fontColor": "text",
+            "italic": false,
+            "align": "left",
+            "lineSpacing": 17,
+            "x": 6.6,
+            "y": 3.8,
+            "w": 2.8,
+            "h": 0.9
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "888888" },
+            "line": { "color": "888888", "width": 0 },
+            "x": 0.55,
+            "y": 5.15,
+            "w": 8.9,
+            "h": 0.008
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "05 / 05",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 0.55,
+            "y": 5.25,
+            "w": 1,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "right",
+            "x": 5,
+            "y": 5.25,
+            "w": 4.5,
+            "h": 0.25
+          }
+        }
+      ]
+    }
+  ]
+}

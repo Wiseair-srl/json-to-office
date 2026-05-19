@@ -1,0 +1,172 @@
+{
+  "name": "docx",
+  "props": {
+    "metadata": {
+      "title": "Annual Report — 2026",
+      "author": "Field Studio",
+      "description": "Long-form report with table of contents"
+    },
+    "theme": "minimal"
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "header": [
+          {
+            "name": "paragraph",
+            "props": {
+              "text": "FIELD STUDIO  ·  ANNUAL REPORT 2026",
+              "alignment": "right",
+              "font": { "family": "Courier New", "size": 8, "color": "#888888" }
+            }
+          }
+        ],
+        "footer": [
+          {
+            "name": "paragraph",
+            "props": {
+              "text": "CONFIDENTIAL",
+              "alignment": "center",
+              "font": { "family": "Courier New", "size": 8, "color": "#888888" }
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "ANNUAL REPORT  ·  2026",
+            "font": {
+              "family": "Courier New",
+              "size": 9,
+              "color": "#CC785C",
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "heading",
+          "props": { "text": "The slow practice of seeing.", "level": 1 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "A field report on craft, calm, and the work that takes time."
+          }
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+
+        {
+          "name": "toc",
+          "props": { "depth": { "from": 1, "to": 2 }, "pageBreak": true }
+        },
+
+        {
+          "name": "heading",
+          "props": {
+            "text": "Letter from the studio",
+            "level": 1,
+            "pageBreak": "before"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "This is the third year of the studio and the first year we've felt steady. The work is harder, the briefs are bigger, and the team is the smallest it has ever been by intention. What follows is a report not on growth but on shape — what we kept, what we let go, and what the year taught us about doing fewer things with more attention."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "We chose to publish this annually because long-form is the only form that lets us write past the headlines. Quarterly updates compress the past three months into bullets; this lets us pull the camera back."
+          }
+        },
+
+        {
+          "name": "heading",
+          "props": {
+            "text": "The year in numbers",
+            "level": 1,
+            "pageBreak": "before"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Numbers do not describe the work, but they do describe its shape. Revenue grew **32%** year-over-year, on **22%** more team headcount, with **fewer** open engagements at any one time. Net retention sat at **118%** — clients renewed and expanded, even as we said no to new prospects more often than ever before."
+          }
+        },
+
+        { "name": "heading", "props": { "text": "What grew", "level": 2 } },
+        {
+          "name": "list",
+          "props": {
+            "ordered": false,
+            "items": [
+              "Revenue: **$4.2M** (up from $3.2M).",
+              "Active engagements: **24** (up from 19).",
+              "Average engagement length: **5.4 months** (up from 3.8)."
+            ]
+          }
+        },
+
+        { "name": "heading", "props": { "text": "What shrank", "level": 2 } },
+        {
+          "name": "list",
+          "props": {
+            "ordered": false,
+            "items": [
+              "Number of new clients onboarded: **6** (down from 11).",
+              "Hours billed on rush work: **3%** (down from 14%).",
+              "Time-to-first-draft on net-new work: **9 days** (down from 14)."
+            ]
+          }
+        },
+
+        {
+          "name": "heading",
+          "props": { "text": "What changed", "level": 1, "pageBreak": "before" }
+        },
+
+        {
+          "name": "heading",
+          "props": { "text": "The shape of the brief", "level": 2 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Briefs in 2026 were more often shaped like questions than like deliverables. A typical 2024 brief read *\"design our marketing site\"*; a typical 2026 brief read *\"help us figure out who we are talking to, and then make a site that talks to them\"*. The change is not academic — it changes how we staff, how we price, and how we know we are done."
+          }
+        },
+
+        {
+          "name": "heading",
+          "props": { "text": "The shape of the team", "level": 2 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "We added a writer, a strategist, and an additional engineer. We did not add another designer. The 2026 team is two designers, two engineers, one writer, one strategist, and a part-time producer. We expect to hold this shape into 2027."
+          }
+        },
+
+        {
+          "name": "heading",
+          "props": {
+            "text": "Looking ahead",
+            "level": 1,
+            "pageBreak": "before"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "For 2027 we plan to publish more, build fewer things at once, and continue to be selective about new engagements. The studio's job is to do good work; everything else is in service of that."
+          }
+        }
+      ]
+    }
+  ]
+}

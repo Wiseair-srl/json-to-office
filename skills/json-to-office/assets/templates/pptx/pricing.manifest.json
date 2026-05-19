@@ -1,0 +1,59 @@
+{
+  "name": "pricing",
+  "description": "Three-tier pricing slide. Three equal cards (Starter, Pro, Enterprise) with the middle one visually elevated via a darker border. Tier name, price (big bold), unit, feature bullets.",
+  "when_to_use": "Pitch deck pricing slide. SaaS pricing comparison. When the brief says 'pricing', 'plans', 'tiers'.",
+  "slot_hints": [
+    {
+      "path": "children[0].children[1].props.text",
+      "label": "Slide headline",
+      "example": "Simple, transparent plans."
+    },
+    {
+      "path": "children[0].children[5].props.text",
+      "label": "Tier 1 name",
+      "example": "Starter"
+    },
+    {
+      "path": "children[0].children[6].props.text",
+      "label": "Tier 1 price",
+      "example": "$9"
+    },
+    {
+      "path": "children[0].children[7].props.text",
+      "label": "Tier 1 unit + features (newline-separated)",
+      "example": "per user / month\\n\\n· Up to 5 seats\\n· 10 GB storage"
+    },
+    {
+      "path": "children[0].children[8].props.text",
+      "label": "Tier 2 name",
+      "example": "Pro"
+    },
+    {
+      "path": "children[0].children[9].props.text",
+      "label": "Tier 2 price",
+      "example": "$29"
+    },
+    {
+      "path": "children[0].children[10].props.text",
+      "label": "Tier 2 unit + features",
+      "example": "per user / month\\n\\n· Unlimited seats"
+    },
+    {
+      "path": "children[0].children[11].props.text",
+      "label": "Tier 3 name",
+      "example": "Enterprise"
+    },
+    {
+      "path": "children[0].children[12].props.text",
+      "label": "Tier 3 price",
+      "example": "Custom"
+    },
+    {
+      "path": "children[0].children[13].props.text",
+      "label": "Tier 3 unit + features",
+      "example": "tailored to your team\\n\\n· Everything in Pro"
+    }
+  ],
+  "theme_default": "minimal",
+  "golden": "../../../references/renders/pricing.png"
+}

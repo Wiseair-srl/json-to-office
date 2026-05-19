@@ -1,0 +1,43 @@
+{
+  "name": "report-long",
+  "description": "Multi-page long-form report with title page, table of contents (auto-generated from heading levels 1–2), and multiple sections separated by page breaks. Each section has H1 + body + optional H2 subsections.",
+  "when_to_use": "Annual report, white paper, multi-section research document, policy brief. When the brief says 'report', 'long-form doc', 'research write-up', 'annual review'. Note: the TOC field renders empty in the file until the user opens it in Word and updates fields (standard .docx behaviour).",
+  "slot_hints": [
+    {
+      "path": "props.metadata.title",
+      "label": "Document title",
+      "example": "Annual Report — 2026"
+    },
+    {
+      "path": "children[0].props.header[0].props.text",
+      "label": "Running header",
+      "example": "Field Studio · Annual Report 2026"
+    },
+    {
+      "path": "children[0].props.footer[0].props.text",
+      "label": "Running footer",
+      "example": "Confidential"
+    },
+    {
+      "path": "children[0].children[0].props.text",
+      "label": "Eyebrow",
+      "example": "ANNUAL REPORT · 2026"
+    },
+    {
+      "path": "children[0].children[1].props.text",
+      "label": "Title",
+      "example": "The slow practice of seeing."
+    },
+    {
+      "path": "children[0].children[2].props.text",
+      "label": "Subtitle / abstract",
+      "example": "A field report on craft, calm, and the work that takes time."
+    },
+    {
+      "label": "Sections",
+      "example": "Each major section starts with a level-1 heading and `pageBreak: 'before'`. Subsections use level-2 headings. Body paragraphs and lists fill the section."
+    }
+  ],
+  "theme_default": "minimal",
+  "golden": "../../../references/renders/report-long/"
+}

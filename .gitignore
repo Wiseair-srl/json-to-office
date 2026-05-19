@@ -11,3 +11,6 @@ coverage/
 *.log
 /schemas/
 packages/*/package-lock.json
+skills/*/.skill-out/
+**/__pycache__/
+*.skill

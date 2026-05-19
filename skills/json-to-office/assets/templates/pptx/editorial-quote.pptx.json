@@ -1,0 +1,166 @@
+{
+  "name": "pptx",
+  "props": {
+    "theme": "minimal",
+    "grid": { "columns": 12, "rows": 6, "gutter": 0.2, "padding": 0.55 }
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": { "background": { "color": "background" } },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0,
+            "y": 0,
+            "w": 0.05,
+            "h": 5.625
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO  ·  QUOTE  ·  Q2 2026",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "right",
+            "x": 5,
+            "y": 0.35,
+            "w": 4.5,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "CC785C" },
+            "line": { "color": "CC785C", "width": 0 },
+            "x": 0.55,
+            "y": 1.0,
+            "w": 0.25,
+            "h": 0.02
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "ON CRAFT",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text",
+            "align": "left",
+            "x": 0.9,
+            "y": 0.85,
+            "w": 4,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "“",
+            "fontSize": 140,
+            "fontColor": "CC785C",
+            "bold": false,
+            "italic": false,
+            "align": "left",
+            "x": 0.55,
+            "y": 1.3,
+            "w": 1.5,
+            "h": 2.1
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "The shape of a thing\nis the shape of the thinking\nthat produced it.",
+            "fontSize": 36,
+            "italic": true,
+            "bold": false,
+            "fontColor": "text",
+            "align": "left",
+            "lineSpacing": 48,
+            "x": 1.8,
+            "y": 1.9,
+            "w": 7.6,
+            "h": 2.2
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "1A1A1A" },
+            "line": { "color": "1A1A1A", "width": 0 },
+            "x": 1.8,
+            "y": 4.35,
+            "w": 0.4,
+            "h": 0.015
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "ARIA CHEN — DESIGN LEAD, FIELD STUDIO",
+            "fontSize": 10,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "italic": false,
+            "bold": false,
+            "align": "left",
+            "x": 2.3,
+            "y": 4.25,
+            "w": 7,
+            "h": 0.3
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "fill": { "color": "888888" },
+            "line": { "color": "888888", "width": 0 },
+            "x": 0.55,
+            "y": 5.15,
+            "w": 8.9,
+            "h": 0.008
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "01 / 01",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "left",
+            "x": 0.55,
+            "y": 5.25,
+            "w": 1,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FIELD STUDIO",
+            "fontSize": 9,
+            "fontFace": "Courier",
+            "fontColor": "text2",
+            "align": "right",
+            "x": 5,
+            "y": 5.25,
+            "w": 4.5,
+            "h": 0.25
+          }
+        }
+      ]
+    }
+  ]
+}
