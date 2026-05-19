@@ -82,7 +82,13 @@ def parse_grid(slide_grid_decl: dict | None, doc_grid: dict) -> dict:
     )
     if "padding" in g and not margin_explicit:
         p = g["padding"]
-        g["margin"] = {"top": p, "right": p, "bottom": p, "left": p}
+        if isinstance(p, dict):
+            # Per-side dict: copy sides over, falling back to DEFAULT for any
+            # missing side so downstream `m.get(side, …)` math stays numeric.
+            defaults = DEFAULT_GRID["margin"]
+            g["margin"] = {side: p.get(side, defaults[side]) for side in defaults}
+        else:
+            g["margin"] = {"top": p, "right": p, "bottom": p, "left": p}
     # margin / gutter can be scalars (numbers) — normalise into 4-sided / 2-axis dicts.
     if isinstance(g.get("margin"), (int, float)):
         m = g["margin"]
@@ -341,10 +347,26 @@ def check_canvas(props: dict) -> list[dict]:
     return findings
 
 
+def _safe_dim(value, default: float) -> float:
+    """Parse a slide-canvas dimension; fall back to default on invalid input.
+
+    check_canvas() re-parses and emits a structured finding for non-numeric
+    values, so the silent fallback here is safe — it just prevents the
+    estimator from crashing before that finding reaches the user.
+    """
+    if value is None:
+        return default
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return default
+    return v if v > 0 else default
+
+
 def analyze_doc(doc: dict) -> list[dict]:
     props = doc.get("props") or {}
-    slide_w_in = float(props.get("slideWidth") or DEFAULT_SLIDE_WIDTH_IN)
-    slide_h_in = float(props.get("slideHeight") or DEFAULT_SLIDE_HEIGHT_IN)
+    slide_w_in = _safe_dim(props.get("slideWidth"), DEFAULT_SLIDE_WIDTH_IN)
+    slide_h_in = _safe_dim(props.get("slideHeight"), DEFAULT_SLIDE_HEIGHT_IN)
     doc_grid = props.get("grid")
 
     findings: list[dict] = []
@@ -431,10 +453,10 @@ def main() -> int:
         print(f"ERROR: not a file: {args.doc}", file=sys.stderr)
         return 2
 
-    name_lower = args.doc.name.lower()
-    if "pptx" not in name_lower:
+    name_lower = args.doc.name.lower().strip()
+    if not name_lower.endswith(".pptx.json"):
         print(
-            f"ERROR: preflight is PPTX-only; got {args.doc.name}",
+            f"ERROR: preflight is PPTX-only; expected *.pptx.json, got {args.doc.name}",
             file=sys.stderr,
         )
         return 2

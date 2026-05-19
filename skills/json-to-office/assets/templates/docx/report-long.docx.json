@@ -103,7 +103,7 @@
         {
           "name": "list",
           "props": {
-            "ordered": false,
+            "format": "bullet",
             "items": [
               "Revenue: **$4.2M** (up from $3.2M).",
               "Active engagements: **24** (up from 19).",
@@ -116,7 +116,7 @@
         {
           "name": "list",
           "props": {
-            "ordered": false,
+            "format": "bullet",
             "items": [
               "Number of new clients onboarded: **6** (down from 11).",
               "Hours billed on rush work: **3%** (down from 14%).",
