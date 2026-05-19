@@ -336,7 +336,7 @@ def check_canvas(props: dict) -> list[dict]:
             if name == "4:3 legacy":
                 findings.append(_canvas_finding(
                     "TIGHT",
-                    f"canvas is 4:3 legacy (10×7.5) — confirm intentional; 16:9 is the modern default",
+                    "canvas is 4:3 legacy (10×7.5) — confirm intentional; 16:9 is the modern default",
                 ))
             return findings
 

@@ -127,6 +127,8 @@ def main() -> int:
     out_dir = Path(args.out).resolve() if args.out else (
         input_path.parent / ".skill-out" / input_path.stem
     )
+    if out_dir.exists() and out_dir.is_file():
+        die(f"--out points at an existing file, not a directory: {out_dir}")
     if out_dir.exists():
         if is_skill_owned:
             shutil.rmtree(out_dir)
