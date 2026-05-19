@@ -1,0 +1,69 @@
+{
+  "name": "data-dashboard",
+  "description": "Single-slide KPI dashboard. Eyebrow + headline, three big-number tiles with delta lines, time-series bar chart spanning the slide width at the bottom.",
+  "when_to_use": "Quarterly business review. Board-ready metrics slide. When the brief says 'dashboard', 'KPIs', 'metrics', 'numbers slide'.",
+  "slot_hints": [
+    {
+      "path": "children[0].children[0].props.text",
+      "label": "Eyebrow",
+      "example": "Q2 PERFORMANCE"
+    },
+    {
+      "path": "children[0].children[1].props.text",
+      "label": "Headline",
+      "example": "Revenue up, churn down, NPS holding."
+    },
+    {
+      "path": "children[0].children[2].props.text",
+      "label": "KPI 1 label",
+      "example": "Revenue"
+    },
+    {
+      "path": "children[0].children[3].props.text",
+      "label": "KPI 1 value",
+      "example": "$4.2M"
+    },
+    {
+      "path": "children[0].children[4].props.text",
+      "label": "KPI 1 delta",
+      "example": "+32% QoQ"
+    },
+    {
+      "path": "children[0].children[5].props.text",
+      "label": "KPI 2 label",
+      "example": "Active customers"
+    },
+    {
+      "path": "children[0].children[6].props.text",
+      "label": "KPI 2 value",
+      "example": "1,847"
+    },
+    {
+      "path": "children[0].children[7].props.text",
+      "label": "KPI 2 delta",
+      "example": "+12% QoQ"
+    },
+    {
+      "path": "children[0].children[8].props.text",
+      "label": "KPI 3 label",
+      "example": "Net retention"
+    },
+    {
+      "path": "children[0].children[9].props.text",
+      "label": "KPI 3 value",
+      "example": "118%"
+    },
+    {
+      "path": "children[0].children[10].props.text",
+      "label": "KPI 3 delta",
+      "example": "+4 pts QoQ"
+    },
+    {
+      "path": "children[0].children[11].props.data",
+      "label": "Chart series (labels + values)",
+      "example": "[{ name, labels: [...], values: [...] }]"
+    }
+  ],
+  "theme_default": "minimal",
+  "golden": "../../../references/renders/data-dashboard.png"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "editorial-quote",
+  "description": "Full-bleed pull-quote slide. Oversized opening quotation mark, italic quote text on a generous measure, attribution line below.",
+  "when_to_use": "Pause-slide between sections of a deck. Customer testimonial. Author quote. When the brief says 'quote slide', 'pull quote', 'testimonial'.",
+  "slot_hints": [
+    {
+      "path": "children[0].children[1].props.text",
+      "label": "Quote text (use multiple spaces for line break hints)",
+      "example": "The shape of a thing is the shape of the thinking that produced it."
+    },
+    {
+      "path": "children[0].children[2].props.text",
+      "label": "Attribution",
+      "example": "— Aria Chen, Design Lead, Field Studio"
+    }
+  ],
+  "theme_default": "minimal",
+  "golden": "../../../references/renders/editorial-quote.png"
+}

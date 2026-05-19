@@ -1,0 +1,122 @@
+{
+  "name": "docx",
+  "props": {
+    "metadata": {
+      "title": "Executive Brief — Q2 2026",
+      "author": "Aria Chen",
+      "description": "One-pager executive summary"
+    },
+    "theme": "minimal"
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "header": [
+          {
+            "name": "paragraph",
+            "props": {
+              "text": "FIELD STUDIO  ·  EXECUTIVE BRIEF  ·  Q2 2026",
+              "alignment": "right",
+              "font": { "family": "Courier New", "size": 8, "color": "#888888" }
+            }
+          }
+        ],
+        "footer": [
+          {
+            "name": "paragraph",
+            "props": {
+              "text": "INTERNAL — NOT FOR DISTRIBUTION",
+              "alignment": "center",
+              "font": { "family": "Courier New", "size": 8, "color": "#888888" }
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "EXECUTIVE BRIEF",
+            "alignment": "left",
+            "font": {
+              "family": "Courier New",
+              "size": 9,
+              "color": "#CC785C",
+              "bold": true
+            },
+            "spacing": { "after": 60 }
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "The case for the platform rebuild.",
+            "level": 1
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "**TL;DR.** Our current platform is throttling delivery: every team hits the same handoff and review bottlenecks, and the cost of maintaining the legacy stack is now ~30% of engineering time. A six-month rebuild on a shared design system + token-driven workflow brings iteration speed back, reduces ongoing maintenance, and unblocks the H2 product roadmap. We recommend green-lighting by end of month."
+          }
+        },
+        {
+          "name": "heading",
+          "props": { "text": "What's broken today", "level": 2 }
+        },
+        {
+          "name": "list",
+          "props": {
+            "levels": [{ "level": 0, "format": "bullet" }],
+            "items": [
+              "**Handoff drag.** Designers spend 40% of cycle time on dev handoff because tokens live in Figma but not in code — every spec gets re-translated.",
+              "**Review focused on pixels, not intent.** Engineers can't tell whether a 2px gap is intentional or a bug, so reviews stall on minutiae.",
+              "**Maintenance debt compounds.** Three competing CSS systems (legacy SCSS, in-house tokens v1, new tokens v2) mean every component change touches three files."
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": { "text": "What we're proposing", "level": 2 }
+        },
+        {
+          "name": "list",
+          "props": {
+            "levels": [{ "level": 0, "format": "decimal" }],
+            "items": [
+              "**Unified token system in code** (Q3). Single source of truth, generated from Figma, consumed by both web and mobile.",
+              "**Component library migration** (Q3-Q4). Move 40 production components to the new system; archive legacy SCSS.",
+              "**Review-as-intent workflow** (Q4). Reviews focus on layout intent and accessibility, not pixel diffs."
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": { "text": "What we're asking for", "level": 2 }
+        },
+        {
+          "name": "list",
+          "props": {
+            "levels": [{ "level": 0, "format": "bullet" }],
+            "items": [
+              "**Headcount:** 2 senior engineers + 1 designer, Q3 starts.",
+              "**Budget:** $480k for tools, infrastructure, and contractor time across H2.",
+              "**Decision:** green-light by end of month so we can staff Q3 cleanly."
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": { "text": "What we expect to see", "level": 2 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Pilot teams using the rebuilt workflow have shipped production work **3.2× faster** (internal study, n=24 teams). Applied to our roadmap, that pulls H2 shipping milestones in by ~6 weeks and frees ~15% of engineering capacity for new product work in 2027."
+          }
+        }
+      ]
+    }
+  ]
+}

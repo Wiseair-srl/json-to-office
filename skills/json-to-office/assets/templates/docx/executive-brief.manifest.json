@@ -1,0 +1,54 @@
+{
+  "name": "executive-brief",
+  "description": "One-page executive summary doc. Header strip, eyebrow + headline, **TL;DR** paragraph, then four short sections: What's broken / What we're proposing / What we're asking for / What we expect to see. Markdown bold renders.",
+  "when_to_use": "Internal executive summary. Pre-read for a board / leadership meeting. Proposal one-pager. When the brief says 'executive brief', 'one-pager', 'TL;DR doc', 'leadership memo'.",
+  "slot_hints": [
+    {
+      "path": "props.metadata.title",
+      "label": "Document title (window title)",
+      "example": "Executive Brief — Q2 2026"
+    },
+    {
+      "path": "children[0].props.header[0].props.text",
+      "label": "Running header",
+      "example": "Field Studio · Executive Brief · Q2 2026"
+    },
+    {
+      "path": "children[0].props.footer[0].props.text",
+      "label": "Running footer",
+      "example": "Internal — Not for distribution"
+    },
+    {
+      "path": "children[0].children[1].props.text",
+      "label": "Headline",
+      "example": "The case for the platform rebuild."
+    },
+    {
+      "path": "children[0].children[2].props.text",
+      "label": "TL;DR paragraph (markdown bold supported)",
+      "example": "**TL;DR.** ..."
+    },
+    {
+      "path": "children[0].children[4].props.items",
+      "label": "What's broken bullets (markdown bold supported)",
+      "example": "[...]"
+    },
+    {
+      "path": "children[0].children[6].props.items",
+      "label": "Proposal (numbered)",
+      "example": "[...]"
+    },
+    {
+      "path": "children[0].children[8].props.items",
+      "label": "Asks",
+      "example": "[...]"
+    },
+    {
+      "path": "children[0].children[10].props.text",
+      "label": "Expected outcome paragraph",
+      "example": "..."
+    }
+  ],
+  "theme_default": "minimal",
+  "golden": "../../../references/renders/executive-brief/"
+}

@@ -1,0 +1,69 @@
+{
+  "name": "executive-deck",
+  "description": "Five-slide story arc: title cover, chapter divider, two-column argument (body + visual placeholder), big-stat moment, ask slide. Editorial / pitch tone.",
+  "when_to_use": "Board pitch, investor update, strategy proposal, internal kickoff. When the brief says 'pitch deck', 'executive summary deck', 'strategy presentation', or names a multi-slide story.",
+  "slot_hints": [
+    {
+      "path": "children[0].children[1].props.text",
+      "label": "Title slide headline",
+      "example": "Our case for the next 12 months."
+    },
+    {
+      "path": "children[0].children[2].props.text",
+      "label": "Title slide presenter line",
+      "example": "Presenter Name · Role · Q2 2026"
+    },
+    {
+      "path": "children[1].children[0].props.text",
+      "label": "Chapter number",
+      "example": "01"
+    },
+    {
+      "path": "children[1].children[1].props.text",
+      "label": "Chapter label",
+      "example": "CHAPTER 01"
+    },
+    {
+      "path": "children[1].children[2].props.text",
+      "label": "Chapter title",
+      "example": "Where we are today."
+    },
+    {
+      "path": "children[2].children[1].props.text",
+      "label": "Body slide headline",
+      "example": "The new shape of the workflow."
+    },
+    {
+      "path": "children[2].children[2].props.text",
+      "label": "Body slide bullets (numbered, separated by blank lines)",
+      "example": "01   Point one.\\n\\n02   Point two."
+    },
+    {
+      "path": "children[3].children[1].props.text",
+      "label": "Stat",
+      "example": "3.2× faster"
+    },
+    {
+      "path": "children[3].children[2].props.text",
+      "label": "Stat caption",
+      "example": "Teams shipping production work after adopting the integrated design system."
+    },
+    {
+      "path": "children[3].children[3].props.text",
+      "label": "Source line (UPPERCASE)",
+      "example": "SOURCE: INTERNAL STUDY, N=24 TEAMS"
+    },
+    {
+      "path": "children[4].children[1].props.text",
+      "label": "Ask slide headline",
+      "example": "What we need from you."
+    },
+    {
+      "path": "children[4].children[2].props.text",
+      "label": "Ask items (bulleted)",
+      "example": "·  Headcount: …\\n\\n·  Budget: …\\n\\n·  Decision: …"
+    }
+  ],
+  "theme_default": "minimal",
+  "golden": "../../../references/renders/executive-deck/"
+}

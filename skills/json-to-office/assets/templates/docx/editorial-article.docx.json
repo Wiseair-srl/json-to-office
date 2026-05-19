@@ -1,0 +1,109 @@
+{
+  "name": "docx",
+  "props": {
+    "metadata": {
+      "title": "Essay — The slow practice of seeing",
+      "author": "Aria Chen",
+      "description": "Magazine-style long-form essay"
+    },
+    "theme": "minimal"
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "footer": [
+          {
+            "name": "paragraph",
+            "props": {
+              "text": "FIELD STUDIO  ·  ESSAYS",
+              "alignment": "center",
+              "font": { "family": "Courier New", "size": 8, "color": "#888888" }
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "VOLUME 03  ·  ESSAY",
+            "alignment": "center",
+            "font": {
+              "family": "Courier New",
+              "size": 9,
+              "color": "#CC785C",
+              "bold": true
+            }
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "The slow practice of seeing.",
+            "level": 1,
+            "alignment": "center"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "By Aria Chen  ·  12 min read  ·  April 2026",
+            "alignment": "center",
+            "font": { "family": "Courier New", "size": 9, "color": "#888888" }
+          }
+        },
+        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The opening paragraph carries the weight of the whole piece. Set the scene with a concrete image — the cracked enamel of the cup, the grain in the table — and let the reader settle into the rhythm before you make any demands. The first hundred words promise the rest. Promise quietly."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Subsequent paragraphs vary in length to keep the eye engaged. A short sentence, deployed at the right moment, can do the work of three. Restraint is the posture; clarity, the pursuit. The essay form rewards the writer who knows when to step back. It punishes the writer who insists on being seen."
+          }
+        },
+
+        { "name": "heading", "props": { "text": "On rhythm", "level": 2 } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Read your draft aloud. If you stumble, the reader will stumble. Cut the stumble. Read again."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Long-form prose has its own metabolism. A page is digested differently than a tweet. Trust the page to do its work; do not panic into compression. There is room, on the page, for the slow build."
+          }
+        },
+
+        { "name": "heading", "props": { "text": "On attention", "level": 2 } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "*Attention is the rarest and purest form of generosity.* Simone Weil wrote that, and the longer one writes, the truer it becomes. Reading is also a form of attention. So is making things. So is keeping the studio. The work is always, in the end, attention given shape."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "We make essays because the form holds attention longer than the alternatives. We publish them slowly because slow publishing earns the attention it asks for. We keep the studio small because the studio's job is to do good work; everything else is in service of that."
+          }
+        },
+
+        { "name": "heading", "props": { "text": "On stopping", "level": 2 } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Know when to stop. The last sentence is often discoverable two paragraphs before you think it is. Look for it. Cut to it. Let the reader leave the page carrying the thought you wanted them to carry, not the wrap-up you felt obliged to write."
+          }
+        },
+        { "name": "paragraph", "props": { "text": "And then, stop." } }
+      ]
+    }
+  ]
+}

@@ -74,6 +74,26 @@ async function main() {
   );
   console.log('Generated schemas/presentation.schema.json');
 
+  // Mirror schemas into the skill so SKILL.md can reference them via a stable path.
+  const SKILL_SCHEMAS = path.join(ROOT, 'skills/json-to-office/assets/schemas');
+  try {
+    await fs.mkdir(SKILL_SCHEMAS, { recursive: true });
+    for (const name of [
+      'document.schema.json',
+      'presentation.schema.json',
+      'theme.schema.json',
+    ]) {
+      await fs.copyFile(
+        path.join(OUTPUT_DIR, name),
+        path.join(SKILL_SCHEMAS, name)
+      );
+    }
+    console.log('Mirrored schemas into skills/json-to-office/assets/schemas/');
+  } catch (err) {
+    // Skill dir may not exist on older branches — non-fatal
+    console.warn('Could not mirror schemas to skill:', err);
+  }
+
   console.log('Schema generation complete.');
 }
 

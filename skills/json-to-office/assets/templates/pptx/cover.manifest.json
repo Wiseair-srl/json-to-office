@@ -1,0 +1,29 @@
+{
+  "name": "cover",
+  "description": "Single-slide editorial cover / title slide. Big serif headline, short subtitle, presenter line. Uppercase tracked eyebrow at top.",
+  "when_to_use": "Opening slide of a deck. Standalone title card. When the brief says 'title slide', 'cover', 'opening slide', 'keynote opener'.",
+  "slot_hints": [
+    {
+      "path": "children[0].children[0].props.text",
+      "label": "Eyebrow (kicker)",
+      "example": "KEYNOTE"
+    },
+    {
+      "path": "children[0].children[1].props.text",
+      "label": "Title",
+      "example": "The slow practice of seeing."
+    },
+    {
+      "path": "children[0].children[2].props.text",
+      "label": "Subtitle",
+      "example": "A field report on craft, calm, and the things that take time."
+    },
+    {
+      "path": "children[0].children[3].props.text",
+      "label": "Presenter line",
+      "example": "Aria Chen  ·  Design Lead, Field Studio  ·  Q2 2026"
+    }
+  ],
+  "theme_default": "minimal",
+  "golden": "../../../references/renders/cover.png"
+}

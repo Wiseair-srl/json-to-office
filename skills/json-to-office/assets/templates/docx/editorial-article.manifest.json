@@ -1,0 +1,28 @@
+{
+  "name": "editorial-article",
+  "description": "Magazine-style long-form essay. Centered title block (volume kicker, H1, byline + read-time + date), then justified body with H2 subsections and italic emphasis (italic via *single asterisks* in text).",
+  "when_to_use": "Long-form blog post, essay, op-ed, magazine piece. When the brief says 'article', 'essay', 'blog post', 'long-form piece'.",
+  "slot_hints": [
+    {
+      "path": "children[0].children[0].props.text",
+      "label": "Volume / issue kicker",
+      "example": "VOLUME 03 · ESSAY"
+    },
+    {
+      "path": "children[0].children[1].props.text",
+      "label": "Article title",
+      "example": "The slow practice of seeing."
+    },
+    {
+      "path": "children[0].children[2].props.text",
+      "label": "Byline",
+      "example": "By Aria Chen · 12 min read · April 2026"
+    },
+    {
+      "label": "Body paragraphs and sub-headings",
+      "example": "Paragraphs alternate with level-2 sub-headings to break the essay into named movements. Use *italics* for tone shifts and quoted phrases."
+    }
+  ],
+  "theme_default": "minimal",
+  "golden": "../../../references/renders/editorial-article/"
+}
