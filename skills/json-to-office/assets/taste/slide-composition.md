@@ -47,6 +47,11 @@ Bottom row, inside safe area:
 - Left: `01 / 12` in mono, tabular-nums, 11pt, muted
 - Center: thin 1px rule line in `rule` token
 - Right: meta string ("Q2 · 2026" / company name) in sans uppercase 11pt 0.12em
+  **Same weight on both sides.** Page number and meta-string use the same weight, family, and size. Bold on one side and regular on the other is a tell — it reads as accident, not design. Default: both regular caption weight (sans 11pt, muted). If you want emphasis on the company name, drop the page number instead.
+
+## Eyebrow / section-label consistency
+
+If you use an accent bar + uppercase label as an eyebrow on one slide, use it on every slide that has a section label. Mixing styles (bar on slide 1, bare uppercase on slide 5) reads as inconsistency, not variety. Decide once per deck, then commit.
 
 ## Rules
 
