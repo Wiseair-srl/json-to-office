@@ -69,15 +69,24 @@ def default_line_height_pt(font_size: float) -> float:
 
 
 def parse_grid(slide_grid_decl: dict | None, doc_grid: dict) -> dict:
-    """Merge the doc-level grid with any slide-level override + defaults."""
+    """Merge the doc-level grid with any slide-level override + defaults.
+
+    `padding` is accepted as an alias for `margin` (the templates declare
+    `grid: { columns, rows, gutter, padding }`). Promote it once, after
+    merge, only if no explicit `margin` came from doc or slide level.
+    """
     g = {**DEFAULT_GRID, **(doc_grid or {}), **(slide_grid_decl or {})}
+    margin_explicit = (
+        (slide_grid_decl or {}).get("margin") is not None
+        or (doc_grid or {}).get("margin") is not None
+    )
+    if "padding" in g and not margin_explicit:
+        p = g["padding"]
+        g["margin"] = {"top": p, "right": p, "bottom": p, "left": p}
     # margin / gutter can be scalars (numbers) — normalise into 4-sided / 2-axis dicts.
     if isinstance(g.get("margin"), (int, float)):
         m = g["margin"]
         g["margin"] = {"top": m, "right": m, "bottom": m, "left": m}
-    elif "padding" in g and "margin" not in (slide_grid_decl or {}):
-        p = g["padding"]
-        g["margin"] = {"top": p, "right": p, "bottom": p, "left": p}
     if isinstance(g.get("gutter"), (int, float)):
         gut = g["gutter"]
         g["gutter"] = {"column": gut, "row": gut}

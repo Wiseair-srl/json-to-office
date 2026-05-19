@@ -4,64 +4,214 @@
   "when_to_use": "Board pitch, investor update, strategy proposal, internal kickoff. When the brief says 'pitch deck', 'executive summary deck', 'strategy presentation', or names a multi-slide story.",
   "slot_hints": [
     {
-      "path": "children[0].children[1].props.text",
-      "label": "Title slide headline",
-      "example": "Our case for the next 12 months."
-    },
-    {
       "path": "children[0].children[2].props.text",
-      "label": "Title slide presenter line",
-      "example": "Presenter Name · Role · Q2 2026"
+      "label": "Slide 1 · Top chrome",
+      "example": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026"
     },
     {
-      "path": "children[1].children[0].props.text",
-      "label": "Chapter number",
-      "example": "01"
+      "path": "children[0].children[4].props.text",
+      "label": "Slide 1 · Eyebrow / label",
+      "example": "KEYNOTE 01"
+    },
+    {
+      "path": "children[0].children[5].props.text",
+      "label": "Slide 1 · Display headline",
+      "example": "Our case ⏎ for the next year."
+    },
+    {
+      "path": "children[0].children[7].props.text",
+      "label": "Slide 1 · Body",
+      "example": "Presenter Name  ·  Role  ·  Q2 2026"
+    },
+    {
+      "path": "children[0].children[9].props.text",
+      "label": "Slide 1 · Bottom chrome",
+      "example": "01 / 05"
+    },
+    {
+      "path": "children[0].children[10].props.text",
+      "label": "Slide 1 · Bottom chrome",
+      "example": "FIELD STUDIO"
     },
     {
       "path": "children[1].children[1].props.text",
-      "label": "Chapter label",
-      "example": "CHAPTER 01"
+      "label": "Slide 2 · Top chrome",
+      "example": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026"
     },
     {
       "path": "children[1].children[2].props.text",
-      "label": "Chapter title",
-      "example": "Where we are today."
+      "label": "Slide 2 · Display headline",
+      "example": "01"
+    },
+    {
+      "path": "children[1].children[4].props.text",
+      "label": "Slide 2 · Eyebrow / label",
+      "example": "CHAPTER 01"
+    },
+    {
+      "path": "children[1].children[5].props.text",
+      "label": "Slide 2 · Headline",
+      "example": "Where we are ⏎ today."
+    },
+    {
+      "path": "children[1].children[7].props.text",
+      "label": "Slide 2 · Bottom chrome",
+      "example": "02 / 05"
+    },
+    {
+      "path": "children[1].children[8].props.text",
+      "label": "Slide 2 · Bottom chrome",
+      "example": "FIELD STUDIO"
     },
     {
       "path": "children[2].children[1].props.text",
-      "label": "Body slide headline",
-      "example": "The new shape of the workflow."
+      "label": "Slide 3 · Top chrome",
+      "example": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026"
     },
     {
-      "path": "children[2].children[2].props.text",
-      "label": "Body slide bullets (numbered, separated by blank lines)",
-      "example": "01   Point one.\\n\\n02   Point two."
+      "path": "children[2].children[3].props.text",
+      "label": "Slide 3 · Eyebrow / label",
+      "example": "THE ARGUMENT"
+    },
+    {
+      "path": "children[2].children[4].props.text",
+      "label": "Slide 3 · Headline",
+      "example": "The new shape ⏎ of the workflow."
+    },
+    {
+      "path": "children[2].children[5].props.text",
+      "label": "Slide 3 · Caption",
+      "example": "01"
+    },
+    {
+      "path": "children[2].children[6].props.text",
+      "label": "Slide 3 · Body",
+      "example": "Designers spend 40% less time on handoff once tokens live in code."
+    },
+    {
+      "path": "children[2].children[7].props.text",
+      "label": "Slide 3 · Caption",
+      "example": "02"
+    },
+    {
+      "path": "children[2].children[8].props.text",
+      "label": "Slide 3 · Body",
+      "example": "Single source of truth means dev review focuses on intent, not pixels."
+    },
+    {
+      "path": "children[2].children[9].props.text",
+      "label": "Slide 3 · Caption",
+      "example": "03"
+    },
+    {
+      "path": "children[2].children[10].props.text",
+      "label": "Slide 3 · Body",
+      "example": "Iterations compress from days into hours when the system holds."
+    },
+    {
+      "path": "children[2].children[12].props.text",
+      "label": "Slide 3 · Caption",
+      "example": "Diagram"
+    },
+    {
+      "path": "children[2].children[14].props.text",
+      "label": "Slide 3 · Bottom chrome",
+      "example": "03 / 05"
+    },
+    {
+      "path": "children[2].children[15].props.text",
+      "label": "Slide 3 · Bottom chrome",
+      "example": "FIELD STUDIO"
     },
     {
       "path": "children[3].children[1].props.text",
-      "label": "Stat",
-      "example": "3.2× faster"
-    },
-    {
-      "path": "children[3].children[2].props.text",
-      "label": "Stat caption",
-      "example": "Teams shipping production work after adopting the integrated design system."
+      "label": "Slide 4 · Top chrome",
+      "example": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026"
     },
     {
       "path": "children[3].children[3].props.text",
-      "label": "Source line (UPPERCASE)",
+      "label": "Slide 4 · Eyebrow / label",
+      "example": "ONE NUMBER"
+    },
+    {
+      "path": "children[3].children[4].props.text",
+      "label": "Slide 4 · Display headline",
+      "example": "3.2× faster"
+    },
+    {
+      "path": "children[3].children[6].props.text",
+      "label": "Slide 4 · Body",
+      "example": "Teams shipping production work after adopting the integrated design system."
+    },
+    {
+      "path": "children[3].children[7].props.text",
+      "label": "Slide 4 · Eyebrow / label",
       "example": "SOURCE: INTERNAL STUDY, N=24 TEAMS"
     },
     {
-      "path": "children[4].children[1].props.text",
-      "label": "Ask slide headline",
-      "example": "What we need from you."
+      "path": "children[3].children[9].props.text",
+      "label": "Slide 4 · Bottom chrome",
+      "example": "04 / 05"
     },
     {
-      "path": "children[4].children[2].props.text",
-      "label": "Ask items (bulleted)",
-      "example": "·  Headcount: …\\n\\n·  Budget: …\\n\\n·  Decision: …"
+      "path": "children[3].children[10].props.text",
+      "label": "Slide 4 · Bottom chrome",
+      "example": "FIELD STUDIO"
+    },
+    {
+      "path": "children[4].children[1].props.text",
+      "label": "Slide 5 · Top chrome",
+      "example": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026"
+    },
+    {
+      "path": "children[4].children[3].props.text",
+      "label": "Slide 5 · Eyebrow / label",
+      "example": "ASK"
+    },
+    {
+      "path": "children[4].children[4].props.text",
+      "label": "Slide 5 · Headline",
+      "example": "What we need ⏎ from you."
+    },
+    {
+      "path": "children[4].children[5].props.text",
+      "label": "Slide 5 · Eyebrow / label",
+      "example": "HEADCOUNT"
+    },
+    {
+      "path": "children[4].children[6].props.text",
+      "label": "Slide 5 · Body",
+      "example": "2 senior engineers, 1 designer ⏎ Q3 starts."
+    },
+    {
+      "path": "children[4].children[7].props.text",
+      "label": "Slide 5 · Eyebrow / label",
+      "example": "BUDGET"
+    },
+    {
+      "path": "children[4].children[8].props.text",
+      "label": "Slide 5 · Body",
+      "example": "$480k for tools + infra ⏎ in H2."
+    },
+    {
+      "path": "children[4].children[9].props.text",
+      "label": "Slide 5 · Eyebrow / label",
+      "example": "DECISION"
+    },
+    {
+      "path": "children[4].children[10].props.text",
+      "label": "Slide 5 · Body",
+      "example": "Green-light the platform rebuild by end of month."
+    },
+    {
+      "path": "children[4].children[12].props.text",
+      "label": "Slide 5 · Bottom chrome",
+      "example": "05 / 05"
+    },
+    {
+      "path": "children[4].children[13].props.text",
+      "label": "Slide 5 · Bottom chrome",
+      "example": "FIELD STUDIO"
     }
   ],
   "theme_default": "minimal",

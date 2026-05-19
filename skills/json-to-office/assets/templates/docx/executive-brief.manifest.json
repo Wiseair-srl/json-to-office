@@ -11,12 +11,17 @@
     {
       "path": "children[0].props.header[0].props.text",
       "label": "Running header",
-      "example": "Field Studio · Executive Brief · Q2 2026"
+      "example": "FIELD STUDIO  ·  EXECUTIVE BRIEF  ·  Q2 2026"
     },
     {
       "path": "children[0].props.footer[0].props.text",
       "label": "Running footer",
-      "example": "Internal — Not for distribution"
+      "example": "INTERNAL — NOT FOR DISTRIBUTION"
+    },
+    {
+      "path": "children[0].children[0].props.text",
+      "label": "Paragraph",
+      "example": "EXECUTIVE BRIEF"
     },
     {
       "path": "children[0].children[1].props.text",
@@ -25,28 +30,48 @@
     },
     {
       "path": "children[0].children[2].props.text",
-      "label": "TL;DR paragraph (markdown bold supported)",
-      "example": "**TL;DR.** ..."
+      "label": "Paragraph",
+      "example": "**TL;DR.** Our current platform is throttling delivery: every team hits the sam…"
+    },
+    {
+      "path": "children[0].children[3].props.text",
+      "label": "Heading H2",
+      "example": "What's broken today"
     },
     {
       "path": "children[0].children[4].props.items",
-      "label": "What's broken bullets (markdown bold supported)",
-      "example": "[...]"
+      "label": "List (bullet)",
+      "example": "**Handoff drag.** Designers spend 40% of cycle time on dev handoff because toke…"
+    },
+    {
+      "path": "children[0].children[5].props.text",
+      "label": "Heading H2",
+      "example": "What we're proposing"
     },
     {
       "path": "children[0].children[6].props.items",
-      "label": "Proposal (numbered)",
-      "example": "[...]"
+      "label": "List (decimal)",
+      "example": "**Unified token system in code** (Q3). Single source of truth, generated from F…"
+    },
+    {
+      "path": "children[0].children[7].props.text",
+      "label": "Heading H2",
+      "example": "What we're asking for"
     },
     {
       "path": "children[0].children[8].props.items",
-      "label": "Asks",
-      "example": "[...]"
+      "label": "List (bullet)",
+      "example": "**Headcount:** 2 senior engineers + 1 designer, Q3 starts. | **Budget:** $480k …"
+    },
+    {
+      "path": "children[0].children[9].props.text",
+      "label": "Heading H2",
+      "example": "What we expect to see"
     },
     {
       "path": "children[0].children[10].props.text",
-      "label": "Expected outcome paragraph",
-      "example": "..."
+      "label": "Paragraph",
+      "example": "Pilot teams using the rebuilt workflow have shipped production work **3.2× fast…"
     }
   ],
   "theme_default": "minimal",

@@ -123,9 +123,18 @@ def main() -> int:
     out_dir = Path(args.out).resolve() if args.out else (
         input_path.parent / ".skill-out" / input_path.stem
     )
+    # Only fully clobber dirs we own (anything beneath a .skill-out segment).
+    # User-supplied paths get artefact-level cleanup instead.
+    is_skill_owned = any(p.name == ".skill-out" for p in (out_dir, *out_dir.parents))
     if out_dir.exists():
-        shutil.rmtree(out_dir)
-    out_dir.mkdir(parents=True)
+        if is_skill_owned:
+            shutil.rmtree(out_dir)
+        else:
+            for pattern in ("out.docx", "out.pptx", "*.pdf", "page-*.png"):
+                for stale in out_dir.glob(pattern):
+                    if stale.is_file():
+                        stale.unlink()
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     office_path = out_dir / f"out.{kind}"
 
@@ -143,7 +152,7 @@ def main() -> int:
         die(f"jto-cli {kind} generate failed for {input_path.name}")
 
     if not caps["can_screenshot"]:
-        print(f"VALIDATE_ONLY")
+        print("VALIDATE_ONLY")
         print(f"OFFICE_FILE={office_path}")
         sys.stderr.write(
             "NOTE: skipped PNG generation — missing soffice/pdftoppm. "

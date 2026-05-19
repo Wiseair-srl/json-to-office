@@ -11,17 +11,17 @@
     {
       "path": "children[0].props.header[0].props.text",
       "label": "Running header",
-      "example": "Field Studio · Annual Report 2026"
+      "example": "FIELD STUDIO  ·  ANNUAL REPORT 2026"
     },
     {
       "path": "children[0].props.footer[0].props.text",
       "label": "Running footer",
-      "example": "Confidential"
+      "example": "CONFIDENTIAL"
     },
     {
       "path": "children[0].children[0].props.text",
-      "label": "Eyebrow",
-      "example": "ANNUAL REPORT · 2026"
+      "label": "Paragraph",
+      "example": "ANNUAL REPORT  ·  2026"
     },
     {
       "path": "children[0].children[1].props.text",
@@ -32,6 +32,86 @@
       "path": "children[0].children[2].props.text",
       "label": "Subtitle / abstract",
       "example": "A field report on craft, calm, and the work that takes time."
+    },
+    {
+      "path": "children[0].children[5].props.text",
+      "label": "Heading H1",
+      "example": "Letter from the studio"
+    },
+    {
+      "path": "children[0].children[6].props.text",
+      "label": "Paragraph",
+      "example": "This is the third year of the studio and the first year we've felt steady. The …"
+    },
+    {
+      "path": "children[0].children[7].props.text",
+      "label": "Paragraph",
+      "example": "We chose to publish this annually because long-form is the only form that lets …"
+    },
+    {
+      "path": "children[0].children[8].props.text",
+      "label": "Heading H1",
+      "example": "The year in numbers"
+    },
+    {
+      "path": "children[0].children[9].props.text",
+      "label": "Paragraph",
+      "example": "Numbers do not describe the work, but they do describe its shape. Revenue grew …"
+    },
+    {
+      "path": "children[0].children[10].props.text",
+      "label": "Heading H2",
+      "example": "What grew"
+    },
+    {
+      "path": "children[0].children[11].props.items",
+      "label": "List (bullet)",
+      "example": "Revenue: **$4.2M** (up from $3.2M). | Active engagements: **24** (up from 19). …"
+    },
+    {
+      "path": "children[0].children[12].props.text",
+      "label": "Heading H2",
+      "example": "What shrank"
+    },
+    {
+      "path": "children[0].children[13].props.items",
+      "label": "List (bullet)",
+      "example": "Number of new clients onboarded: **6** (down from 11). | Hours billed on rush w…"
+    },
+    {
+      "path": "children[0].children[14].props.text",
+      "label": "Heading H1",
+      "example": "What changed"
+    },
+    {
+      "path": "children[0].children[15].props.text",
+      "label": "Heading H2",
+      "example": "The shape of the brief"
+    },
+    {
+      "path": "children[0].children[16].props.text",
+      "label": "Paragraph",
+      "example": "Briefs in 2026 were more often shaped like questions than like deliverables. A …"
+    },
+    {
+      "path": "children[0].children[17].props.text",
+      "label": "Heading H2",
+      "example": "The shape of the team"
+    },
+    {
+      "path": "children[0].children[18].props.text",
+      "label": "Paragraph",
+      "example": "We added a writer, a strategist, and an additional engineer. We did not add ano…"
+    },
+    {
+      "path": "children[0].children[19].props.text",
+      "label": "Heading H1",
+      "example": "Looking ahead"
+    },
+    {
+      "path": "children[0].children[20].props.text",
+      "label": "Paragraph",
+      "example": "For 2027 we plan to publish more, build fewer things at once, and continue to b…"
     },
     {
       "label": "Sections",
