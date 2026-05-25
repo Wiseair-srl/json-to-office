@@ -144,26 +144,24 @@ const FloatingFramePropertiesSchema = Type.Object(
 // Paragraph indent schema. All values in twips (1/20 of a point) unless noted.
 // firstLineChars uses Word's char-grid model (hundredths of a character),
 // useful for CJK text where indents should align to character columns.
-const IndentSchema = Type.Object(
+// firstLine and hanging are mutually exclusive — encoded as a Union so
+// validators reject documents that set both.
+const LeftRightIndentFields = {
+  left: Type.Optional(
+    Type.Number({ description: 'Left indent in twips (1/20 of a point)' })
+  ),
+  right: Type.Optional(
+    Type.Number({ description: 'Right indent in twips (1/20 of a point)' })
+  ),
+};
+
+const IndentWithFirstLineSchema = Type.Object(
   {
-    left: Type.Optional(
-      Type.Number({ description: 'Left indent in twips (1/20 of a point)' })
-    ),
-    right: Type.Optional(
-      Type.Number({ description: 'Right indent in twips (1/20 of a point)' })
-    ),
+    ...LeftRightIndentFields,
     firstLine: Type.Optional(
       Type.Number({
         minimum: 0,
-        description:
-          'First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.',
-      })
-    ),
-    hanging: Type.Optional(
-      Type.Number({
-        minimum: 0,
-        description:
-          'Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.',
+        description: 'First-line indent in twips (1/20 of a point).',
       })
     ),
     firstLineChars: Type.Optional(
@@ -174,8 +172,33 @@ const IndentSchema = Type.Object(
     ),
   },
   {
-    description: 'Paragraph indent options',
+    description:
+      'Paragraph indent with first-line indent (twips and/or CJK char-grid).',
     additionalProperties: false,
+  }
+);
+
+const IndentWithHangingSchema = Type.Object(
+  {
+    ...LeftRightIndentFields,
+    hanging: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        description: 'Hanging indent in twips (1/20 of a point).',
+      })
+    ),
+  },
+  {
+    description: 'Paragraph indent with hanging indent.',
+    additionalProperties: false,
+  }
+);
+
+const IndentSchema = Type.Union(
+  [IndentWithFirstLineSchema, IndentWithHangingSchema],
+  {
+    description:
+      'Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.',
   }
 );
 

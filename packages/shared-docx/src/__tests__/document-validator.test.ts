@@ -122,6 +122,68 @@ describe('validateJsonDocument: docx root recognition', () => {
     );
   });
 
+  it('accepts paragraph indent with firstLine + firstLineChars', () => {
+    const json = JSON.stringify({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'paragraph',
+          props: {
+            text: 'Indented',
+            indent: { left: 720, firstLine: 360, firstLineChars: 200 },
+          },
+        },
+      ],
+    });
+
+    const result = validate.jsonDocument(json);
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('accepts paragraph indent with hanging', () => {
+    const json = JSON.stringify({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'paragraph',
+          props: {
+            text: 'Hanging indent',
+            indent: { left: 720, hanging: 360 },
+          },
+        },
+      ],
+    });
+
+    const result = validate.jsonDocument(json);
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects paragraph indent that combines firstLine and hanging', () => {
+    // firstLine and hanging are mutually exclusive. The IndentSchema union
+    // should refuse documents that set both — neither variant accepts the
+    // forbidden field.
+    const json = JSON.stringify({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'paragraph',
+          props: {
+            text: 'Conflicting',
+            indent: { firstLine: 360, hanging: 360 },
+          },
+        },
+      ],
+    });
+
+    const result = validate.jsonDocument(json);
+    expect(result.valid).toBe(false);
+  });
+
   it('populates `data` whenever `valid` is true (isValidDocument contract)', () => {
     // Triggers TypeBox failure (heading is not in docx.allowedChildren) so the
     // deep validator is the one declaring the doc valid. Even on that path,

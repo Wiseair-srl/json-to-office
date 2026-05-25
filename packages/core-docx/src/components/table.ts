@@ -145,6 +145,8 @@ export async function renderTableComponent(
           content: row[colIndex] || '',
         })),
       })),
+      // Preserve tableLook through legacy-shape conversion
+      ...(rawConfig.tableLook && { tableLook: rawConfig.tableLook }),
     };
 
     result.push(await createTable(config.columns, config, theme, themeName));

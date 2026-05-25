@@ -1012,33 +1012,53 @@
                             ]
                           },
                           "indent": {
-                            "description": "Paragraph indent options",
-                            "additionalProperties": false,
-                            "type": "object",
-                            "properties": {
-                              "left": {
-                                "description": "Left indent in twips (1/20 of a point)",
-                                "type": "number"
+                            "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                            "anyOf": [
+                              {
+                                "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                "additionalProperties": false,
+                                "type": "object",
+                                "properties": {
+                                  "left": {
+                                    "description": "Left indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "right": {
+                                    "description": "Right indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "firstLine": {
+                                    "minimum": 0,
+                                    "description": "First-line indent in twips (1/20 of a point).",
+                                    "type": "number"
+                                  },
+                                  "firstLineChars": {
+                                    "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                    "type": "number"
+                                  }
+                                }
                               },
-                              "right": {
-                                "description": "Right indent in twips (1/20 of a point)",
-                                "type": "number"
-                              },
-                              "firstLine": {
-                                "minimum": 0,
-                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                "type": "number"
-                              },
-                              "hanging": {
-                                "minimum": 0,
-                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                "type": "number"
-                              },
-                              "firstLineChars": {
-                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                "type": "number"
+                              {
+                                "description": "Paragraph indent with hanging indent.",
+                                "additionalProperties": false,
+                                "type": "object",
+                                "properties": {
+                                  "left": {
+                                    "description": "Left indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "right": {
+                                    "description": "Right indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "hanging": {
+                                    "minimum": 0,
+                                    "description": "Hanging indent in twips (1/20 of a point).",
+                                    "type": "number"
+                                  }
+                                }
                               }
-                            }
+                            ]
                           },
                           "pageBreak": {
                             "description": "Insert page break before paragraph",
@@ -2238,33 +2258,53 @@
                             ]
                           },
                           "indent": {
-                            "description": "Paragraph indent options",
-                            "additionalProperties": false,
-                            "type": "object",
-                            "properties": {
-                              "left": {
-                                "description": "Left indent in twips (1/20 of a point)",
-                                "type": "number"
+                            "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                            "anyOf": [
+                              {
+                                "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                "additionalProperties": false,
+                                "type": "object",
+                                "properties": {
+                                  "left": {
+                                    "description": "Left indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "right": {
+                                    "description": "Right indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "firstLine": {
+                                    "minimum": 0,
+                                    "description": "First-line indent in twips (1/20 of a point).",
+                                    "type": "number"
+                                  },
+                                  "firstLineChars": {
+                                    "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                    "type": "number"
+                                  }
+                                }
                               },
-                              "right": {
-                                "description": "Right indent in twips (1/20 of a point)",
-                                "type": "number"
-                              },
-                              "firstLine": {
-                                "minimum": 0,
-                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                "type": "number"
-                              },
-                              "hanging": {
-                                "minimum": 0,
-                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                "type": "number"
-                              },
-                              "firstLineChars": {
-                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                "type": "number"
+                              {
+                                "description": "Paragraph indent with hanging indent.",
+                                "additionalProperties": false,
+                                "type": "object",
+                                "properties": {
+                                  "left": {
+                                    "description": "Left indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "right": {
+                                    "description": "Right indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "hanging": {
+                                    "minimum": 0,
+                                    "description": "Hanging indent in twips (1/20 of a point).",
+                                    "type": "number"
+                                  }
+                                }
                               }
-                            }
+                            ]
                           },
                           "pageBreak": {
                             "description": "Insert page break before paragraph",
@@ -6167,33 +6207,53 @@
                                       ]
                                     },
                                     "indent": {
-                                      "description": "Paragraph indent options",
-                                      "additionalProperties": false,
-                                      "type": "object",
-                                      "properties": {
-                                        "left": {
-                                          "description": "Left indent in twips (1/20 of a point)",
-                                          "type": "number"
+                                      "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                      "anyOf": [
+                                        {
+                                          "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "left": {
+                                              "description": "Left indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "right": {
+                                              "description": "Right indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "firstLine": {
+                                              "minimum": 0,
+                                              "description": "First-line indent in twips (1/20 of a point).",
+                                              "type": "number"
+                                            },
+                                            "firstLineChars": {
+                                              "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                              "type": "number"
+                                            }
+                                          }
                                         },
-                                        "right": {
-                                          "description": "Right indent in twips (1/20 of a point)",
-                                          "type": "number"
-                                        },
-                                        "firstLine": {
-                                          "minimum": 0,
-                                          "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                          "type": "number"
-                                        },
-                                        "hanging": {
-                                          "minimum": 0,
-                                          "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                          "type": "number"
-                                        },
-                                        "firstLineChars": {
-                                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                          "type": "number"
+                                        {
+                                          "description": "Paragraph indent with hanging indent.",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "left": {
+                                              "description": "Left indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "right": {
+                                              "description": "Right indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "hanging": {
+                                              "minimum": 0,
+                                              "description": "Hanging indent in twips (1/20 of a point).",
+                                              "type": "number"
+                                            }
+                                          }
                                         }
-                                      }
+                                      ]
                                     },
                                     "pageBreak": {
                                       "description": "Insert page break before paragraph",
@@ -7471,33 +7531,53 @@
                             ]
                           },
                           "indent": {
-                            "description": "Paragraph indent options",
-                            "additionalProperties": false,
-                            "type": "object",
-                            "properties": {
-                              "left": {
-                                "description": "Left indent in twips (1/20 of a point)",
-                                "type": "number"
+                            "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                            "anyOf": [
+                              {
+                                "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                "additionalProperties": false,
+                                "type": "object",
+                                "properties": {
+                                  "left": {
+                                    "description": "Left indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "right": {
+                                    "description": "Right indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "firstLine": {
+                                    "minimum": 0,
+                                    "description": "First-line indent in twips (1/20 of a point).",
+                                    "type": "number"
+                                  },
+                                  "firstLineChars": {
+                                    "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                    "type": "number"
+                                  }
+                                }
                               },
-                              "right": {
-                                "description": "Right indent in twips (1/20 of a point)",
-                                "type": "number"
-                              },
-                              "firstLine": {
-                                "minimum": 0,
-                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                "type": "number"
-                              },
-                              "hanging": {
-                                "minimum": 0,
-                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                "type": "number"
-                              },
-                              "firstLineChars": {
-                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                "type": "number"
+                              {
+                                "description": "Paragraph indent with hanging indent.",
+                                "additionalProperties": false,
+                                "type": "object",
+                                "properties": {
+                                  "left": {
+                                    "description": "Left indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "right": {
+                                    "description": "Right indent in twips (1/20 of a point)",
+                                    "type": "number"
+                                  },
+                                  "hanging": {
+                                    "minimum": 0,
+                                    "description": "Hanging indent in twips (1/20 of a point).",
+                                    "type": "number"
+                                  }
+                                }
                               }
-                            }
+                            ]
                           },
                           "pageBreak": {
                             "description": "Insert page break before paragraph",
@@ -10947,33 +11027,53 @@
                                       ]
                                     },
                                     "indent": {
-                                      "description": "Paragraph indent options",
-                                      "additionalProperties": false,
-                                      "type": "object",
-                                      "properties": {
-                                        "left": {
-                                          "description": "Left indent in twips (1/20 of a point)",
-                                          "type": "number"
+                                      "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                      "anyOf": [
+                                        {
+                                          "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "left": {
+                                              "description": "Left indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "right": {
+                                              "description": "Right indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "firstLine": {
+                                              "minimum": 0,
+                                              "description": "First-line indent in twips (1/20 of a point).",
+                                              "type": "number"
+                                            },
+                                            "firstLineChars": {
+                                              "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                              "type": "number"
+                                            }
+                                          }
                                         },
-                                        "right": {
-                                          "description": "Right indent in twips (1/20 of a point)",
-                                          "type": "number"
-                                        },
-                                        "firstLine": {
-                                          "minimum": 0,
-                                          "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                          "type": "number"
-                                        },
-                                        "hanging": {
-                                          "minimum": 0,
-                                          "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                          "type": "number"
-                                        },
-                                        "firstLineChars": {
-                                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                          "type": "number"
+                                        {
+                                          "description": "Paragraph indent with hanging indent.",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "left": {
+                                              "description": "Left indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "right": {
+                                              "description": "Right indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "hanging": {
+                                              "minimum": 0,
+                                              "description": "Hanging indent in twips (1/20 of a point).",
+                                              "type": "number"
+                                            }
+                                          }
                                         }
-                                      }
+                                      ]
                                     },
                                     "pageBreak": {
                                       "description": "Insert page break before paragraph",
@@ -14882,33 +14982,53 @@
                                                 ]
                                               },
                                               "indent": {
-                                                "description": "Paragraph indent options",
-                                                "additionalProperties": false,
-                                                "type": "object",
-                                                "properties": {
-                                                  "left": {
-                                                    "description": "Left indent in twips (1/20 of a point)",
-                                                    "type": "number"
+                                                "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                                "anyOf": [
+                                                  {
+                                                    "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                                    "additionalProperties": false,
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "left": {
+                                                        "description": "Left indent in twips (1/20 of a point)",
+                                                        "type": "number"
+                                                      },
+                                                      "right": {
+                                                        "description": "Right indent in twips (1/20 of a point)",
+                                                        "type": "number"
+                                                      },
+                                                      "firstLine": {
+                                                        "minimum": 0,
+                                                        "description": "First-line indent in twips (1/20 of a point).",
+                                                        "type": "number"
+                                                      },
+                                                      "firstLineChars": {
+                                                        "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                        "type": "number"
+                                                      }
+                                                    }
                                                   },
-                                                  "right": {
-                                                    "description": "Right indent in twips (1/20 of a point)",
-                                                    "type": "number"
-                                                  },
-                                                  "firstLine": {
-                                                    "minimum": 0,
-                                                    "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                                    "type": "number"
-                                                  },
-                                                  "hanging": {
-                                                    "minimum": 0,
-                                                    "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                                    "type": "number"
-                                                  },
-                                                  "firstLineChars": {
-                                                    "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                                    "type": "number"
+                                                  {
+                                                    "description": "Paragraph indent with hanging indent.",
+                                                    "additionalProperties": false,
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "left": {
+                                                        "description": "Left indent in twips (1/20 of a point)",
+                                                        "type": "number"
+                                                      },
+                                                      "right": {
+                                                        "description": "Right indent in twips (1/20 of a point)",
+                                                        "type": "number"
+                                                      },
+                                                      "hanging": {
+                                                        "minimum": 0,
+                                                        "description": "Hanging indent in twips (1/20 of a point).",
+                                                        "type": "number"
+                                                      }
+                                                    }
                                                   }
-                                                }
+                                                ]
                                               },
                                               "pageBreak": {
                                                 "description": "Insert page break before paragraph",
@@ -16567,33 +16687,53 @@
                                       ]
                                     },
                                     "indent": {
-                                      "description": "Paragraph indent options",
-                                      "additionalProperties": false,
-                                      "type": "object",
-                                      "properties": {
-                                        "left": {
-                                          "description": "Left indent in twips (1/20 of a point)",
-                                          "type": "number"
+                                      "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                      "anyOf": [
+                                        {
+                                          "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "left": {
+                                              "description": "Left indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "right": {
+                                              "description": "Right indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "firstLine": {
+                                              "minimum": 0,
+                                              "description": "First-line indent in twips (1/20 of a point).",
+                                              "type": "number"
+                                            },
+                                            "firstLineChars": {
+                                              "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                              "type": "number"
+                                            }
+                                          }
                                         },
-                                        "right": {
-                                          "description": "Right indent in twips (1/20 of a point)",
-                                          "type": "number"
-                                        },
-                                        "firstLine": {
-                                          "minimum": 0,
-                                          "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                          "type": "number"
-                                        },
-                                        "hanging": {
-                                          "minimum": 0,
-                                          "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                          "type": "number"
-                                        },
-                                        "firstLineChars": {
-                                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                          "type": "number"
+                                        {
+                                          "description": "Paragraph indent with hanging indent.",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "left": {
+                                              "description": "Left indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "right": {
+                                              "description": "Right indent in twips (1/20 of a point)",
+                                              "type": "number"
+                                            },
+                                            "hanging": {
+                                              "minimum": 0,
+                                              "description": "Hanging indent in twips (1/20 of a point).",
+                                              "type": "number"
+                                            }
+                                          }
                                         }
-                                      }
+                                      ]
                                     },
                                     "pageBreak": {
                                       "description": "Insert page break before paragraph",
@@ -17703,33 +17843,53 @@
                           ]
                         },
                         "indent": {
-                          "description": "Paragraph indent options",
-                          "additionalProperties": false,
-                          "type": "object",
-                          "properties": {
-                            "left": {
-                              "description": "Left indent in twips (1/20 of a point)",
-                              "type": "number"
+                          "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                          "anyOf": [
+                            {
+                              "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "left": {
+                                  "description": "Left indent in twips (1/20 of a point)",
+                                  "type": "number"
+                                },
+                                "right": {
+                                  "description": "Right indent in twips (1/20 of a point)",
+                                  "type": "number"
+                                },
+                                "firstLine": {
+                                  "minimum": 0,
+                                  "description": "First-line indent in twips (1/20 of a point).",
+                                  "type": "number"
+                                },
+                                "firstLineChars": {
+                                  "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                  "type": "number"
+                                }
+                              }
                             },
-                            "right": {
-                              "description": "Right indent in twips (1/20 of a point)",
-                              "type": "number"
-                            },
-                            "firstLine": {
-                              "minimum": 0,
-                              "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                              "type": "number"
-                            },
-                            "hanging": {
-                              "minimum": 0,
-                              "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                              "type": "number"
-                            },
-                            "firstLineChars": {
-                              "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                              "type": "number"
+                            {
+                              "description": "Paragraph indent with hanging indent.",
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "left": {
+                                  "description": "Left indent in twips (1/20 of a point)",
+                                  "type": "number"
+                                },
+                                "right": {
+                                  "description": "Right indent in twips (1/20 of a point)",
+                                  "type": "number"
+                                },
+                                "hanging": {
+                                  "minimum": 0,
+                                  "description": "Hanging indent in twips (1/20 of a point).",
+                                  "type": "number"
+                                }
+                              }
                             }
-                          }
+                          ]
                         },
                         "pageBreak": {
                           "description": "Insert page break before paragraph",
@@ -21167,33 +21327,53 @@
                                   ]
                                 },
                                 "indent": {
-                                  "description": "Paragraph indent options",
-                                  "additionalProperties": false,
-                                  "type": "object",
-                                  "properties": {
-                                    "left": {
-                                      "description": "Left indent in twips (1/20 of a point)",
-                                      "type": "number"
+                                  "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                  "anyOf": [
+                                    {
+                                      "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "left": {
+                                          "description": "Left indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "right": {
+                                          "description": "Right indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "firstLine": {
+                                          "minimum": 0,
+                                          "description": "First-line indent in twips (1/20 of a point).",
+                                          "type": "number"
+                                        },
+                                        "firstLineChars": {
+                                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                          "type": "number"
+                                        }
+                                      }
                                     },
-                                    "right": {
-                                      "description": "Right indent in twips (1/20 of a point)",
-                                      "type": "number"
-                                    },
-                                    "firstLine": {
-                                      "minimum": 0,
-                                      "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                      "type": "number"
-                                    },
-                                    "hanging": {
-                                      "minimum": 0,
-                                      "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                      "type": "number"
-                                    },
-                                    "firstLineChars": {
-                                      "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                      "type": "number"
+                                    {
+                                      "description": "Paragraph indent with hanging indent.",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "left": {
+                                          "description": "Left indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "right": {
+                                          "description": "Right indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "hanging": {
+                                          "minimum": 0,
+                                          "description": "Hanging indent in twips (1/20 of a point).",
+                                          "type": "number"
+                                        }
+                                      }
                                     }
-                                  }
+                                  ]
                                 },
                                 "pageBreak": {
                                   "description": "Insert page break before paragraph",
@@ -24643,33 +24823,53 @@
                                             ]
                                           },
                                           "indent": {
-                                            "description": "Paragraph indent options",
-                                            "additionalProperties": false,
-                                            "type": "object",
-                                            "properties": {
-                                              "left": {
-                                                "description": "Left indent in twips (1/20 of a point)",
-                                                "type": "number"
+                                            "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                            "anyOf": [
+                                              {
+                                                "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "properties": {
+                                                  "left": {
+                                                    "description": "Left indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "right": {
+                                                    "description": "Right indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "firstLine": {
+                                                    "minimum": 0,
+                                                    "description": "First-line indent in twips (1/20 of a point).",
+                                                    "type": "number"
+                                                  },
+                                                  "firstLineChars": {
+                                                    "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                    "type": "number"
+                                                  }
+                                                }
                                               },
-                                              "right": {
-                                                "description": "Right indent in twips (1/20 of a point)",
-                                                "type": "number"
-                                              },
-                                              "firstLine": {
-                                                "minimum": 0,
-                                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                                "type": "number"
-                                              },
-                                              "hanging": {
-                                                "minimum": 0,
-                                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                                "type": "number"
-                                              },
-                                              "firstLineChars": {
-                                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                                "type": "number"
+                                              {
+                                                "description": "Paragraph indent with hanging indent.",
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "properties": {
+                                                  "left": {
+                                                    "description": "Left indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "right": {
+                                                    "description": "Right indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "hanging": {
+                                                    "minimum": 0,
+                                                    "description": "Hanging indent in twips (1/20 of a point).",
+                                                    "type": "number"
+                                                  }
+                                                }
                                               }
-                                            }
+                                            ]
                                           },
                                           "pageBreak": {
                                             "description": "Insert page break before paragraph",
@@ -28581,33 +28781,53 @@
                                                       ]
                                                     },
                                                     "indent": {
-                                                      "description": "Paragraph indent options",
-                                                      "additionalProperties": false,
-                                                      "type": "object",
-                                                      "properties": {
-                                                        "left": {
-                                                          "description": "Left indent in twips (1/20 of a point)",
-                                                          "type": "number"
+                                                      "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                                      "anyOf": [
+                                                        {
+                                                          "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                                          "additionalProperties": false,
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "left": {
+                                                              "description": "Left indent in twips (1/20 of a point)",
+                                                              "type": "number"
+                                                            },
+                                                            "right": {
+                                                              "description": "Right indent in twips (1/20 of a point)",
+                                                              "type": "number"
+                                                            },
+                                                            "firstLine": {
+                                                              "minimum": 0,
+                                                              "description": "First-line indent in twips (1/20 of a point).",
+                                                              "type": "number"
+                                                            },
+                                                            "firstLineChars": {
+                                                              "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                              "type": "number"
+                                                            }
+                                                          }
                                                         },
-                                                        "right": {
-                                                          "description": "Right indent in twips (1/20 of a point)",
-                                                          "type": "number"
-                                                        },
-                                                        "firstLine": {
-                                                          "minimum": 0,
-                                                          "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                                          "type": "number"
-                                                        },
-                                                        "hanging": {
-                                                          "minimum": 0,
-                                                          "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                                          "type": "number"
-                                                        },
-                                                        "firstLineChars": {
-                                                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                                          "type": "number"
+                                                        {
+                                                          "description": "Paragraph indent with hanging indent.",
+                                                          "additionalProperties": false,
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "left": {
+                                                              "description": "Left indent in twips (1/20 of a point)",
+                                                              "type": "number"
+                                                            },
+                                                            "right": {
+                                                              "description": "Right indent in twips (1/20 of a point)",
+                                                              "type": "number"
+                                                            },
+                                                            "hanging": {
+                                                              "minimum": 0,
+                                                              "description": "Hanging indent in twips (1/20 of a point).",
+                                                              "type": "number"
+                                                            }
+                                                          }
                                                         }
-                                                      }
+                                                      ]
                                                     },
                                                     "pageBreak": {
                                                       "description": "Insert page break before paragraph",
@@ -30266,33 +30486,53 @@
                                             ]
                                           },
                                           "indent": {
-                                            "description": "Paragraph indent options",
-                                            "additionalProperties": false,
-                                            "type": "object",
-                                            "properties": {
-                                              "left": {
-                                                "description": "Left indent in twips (1/20 of a point)",
-                                                "type": "number"
+                                            "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                            "anyOf": [
+                                              {
+                                                "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "properties": {
+                                                  "left": {
+                                                    "description": "Left indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "right": {
+                                                    "description": "Right indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "firstLine": {
+                                                    "minimum": 0,
+                                                    "description": "First-line indent in twips (1/20 of a point).",
+                                                    "type": "number"
+                                                  },
+                                                  "firstLineChars": {
+                                                    "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                    "type": "number"
+                                                  }
+                                                }
                                               },
-                                              "right": {
-                                                "description": "Right indent in twips (1/20 of a point)",
-                                                "type": "number"
-                                              },
-                                              "firstLine": {
-                                                "minimum": 0,
-                                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                                "type": "number"
-                                              },
-                                              "hanging": {
-                                                "minimum": 0,
-                                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                                "type": "number"
-                                              },
-                                              "firstLineChars": {
-                                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                                "type": "number"
+                                              {
+                                                "description": "Paragraph indent with hanging indent.",
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "properties": {
+                                                  "left": {
+                                                    "description": "Left indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "right": {
+                                                    "description": "Right indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "hanging": {
+                                                    "minimum": 0,
+                                                    "description": "Hanging indent in twips (1/20 of a point).",
+                                                    "type": "number"
+                                                  }
+                                                }
                                               }
-                                            }
+                                            ]
                                           },
                                           "pageBreak": {
                                             "description": "Insert page break before paragraph",
@@ -31407,33 +31647,53 @@
                   ]
                 },
                 "indent": {
-                  "description": "Paragraph indent options",
-                  "additionalProperties": false,
-                  "type": "object",
-                  "properties": {
-                    "left": {
-                      "description": "Left indent in twips (1/20 of a point)",
-                      "type": "number"
+                  "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                  "anyOf": [
+                    {
+                      "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "left": {
+                          "description": "Left indent in twips (1/20 of a point)",
+                          "type": "number"
+                        },
+                        "right": {
+                          "description": "Right indent in twips (1/20 of a point)",
+                          "type": "number"
+                        },
+                        "firstLine": {
+                          "minimum": 0,
+                          "description": "First-line indent in twips (1/20 of a point).",
+                          "type": "number"
+                        },
+                        "firstLineChars": {
+                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                          "type": "number"
+                        }
+                      }
                     },
-                    "right": {
-                      "description": "Right indent in twips (1/20 of a point)",
-                      "type": "number"
-                    },
-                    "firstLine": {
-                      "minimum": 0,
-                      "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                      "type": "number"
-                    },
-                    "hanging": {
-                      "minimum": 0,
-                      "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                      "type": "number"
-                    },
-                    "firstLineChars": {
-                      "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                      "type": "number"
+                    {
+                      "description": "Paragraph indent with hanging indent.",
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "left": {
+                          "description": "Left indent in twips (1/20 of a point)",
+                          "type": "number"
+                        },
+                        "right": {
+                          "description": "Right indent in twips (1/20 of a point)",
+                          "type": "number"
+                        },
+                        "hanging": {
+                          "minimum": 0,
+                          "description": "Hanging indent in twips (1/20 of a point).",
+                          "type": "number"
+                        }
+                      }
                     }
-                  }
+                  ]
                 },
                 "pageBreak": {
                   "description": "Insert page break before paragraph",
@@ -34811,33 +35071,53 @@
                   ]
                 },
                 "indent": {
-                  "description": "Paragraph indent options",
-                  "additionalProperties": false,
-                  "type": "object",
-                  "properties": {
-                    "left": {
-                      "description": "Left indent in twips (1/20 of a point)",
-                      "type": "number"
+                  "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                  "anyOf": [
+                    {
+                      "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "left": {
+                          "description": "Left indent in twips (1/20 of a point)",
+                          "type": "number"
+                        },
+                        "right": {
+                          "description": "Right indent in twips (1/20 of a point)",
+                          "type": "number"
+                        },
+                        "firstLine": {
+                          "minimum": 0,
+                          "description": "First-line indent in twips (1/20 of a point).",
+                          "type": "number"
+                        },
+                        "firstLineChars": {
+                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                          "type": "number"
+                        }
+                      }
                     },
-                    "right": {
-                      "description": "Right indent in twips (1/20 of a point)",
-                      "type": "number"
-                    },
-                    "firstLine": {
-                      "minimum": 0,
-                      "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                      "type": "number"
-                    },
-                    "hanging": {
-                      "minimum": 0,
-                      "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                      "type": "number"
-                    },
-                    "firstLineChars": {
-                      "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                      "type": "number"
+                    {
+                      "description": "Paragraph indent with hanging indent.",
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "left": {
+                          "description": "Left indent in twips (1/20 of a point)",
+                          "type": "number"
+                        },
+                        "right": {
+                          "description": "Right indent in twips (1/20 of a point)",
+                          "type": "number"
+                        },
+                        "hanging": {
+                          "minimum": 0,
+                          "description": "Hanging indent in twips (1/20 of a point).",
+                          "type": "number"
+                        }
+                      }
                     }
-                  }
+                  ]
                 },
                 "pageBreak": {
                   "description": "Insert page break before paragraph",
@@ -38272,33 +38552,53 @@
                           ]
                         },
                         "indent": {
-                          "description": "Paragraph indent options",
-                          "additionalProperties": false,
-                          "type": "object",
-                          "properties": {
-                            "left": {
-                              "description": "Left indent in twips (1/20 of a point)",
-                              "type": "number"
+                          "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                          "anyOf": [
+                            {
+                              "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "left": {
+                                  "description": "Left indent in twips (1/20 of a point)",
+                                  "type": "number"
+                                },
+                                "right": {
+                                  "description": "Right indent in twips (1/20 of a point)",
+                                  "type": "number"
+                                },
+                                "firstLine": {
+                                  "minimum": 0,
+                                  "description": "First-line indent in twips (1/20 of a point).",
+                                  "type": "number"
+                                },
+                                "firstLineChars": {
+                                  "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                  "type": "number"
+                                }
+                              }
                             },
-                            "right": {
-                              "description": "Right indent in twips (1/20 of a point)",
-                              "type": "number"
-                            },
-                            "firstLine": {
-                              "minimum": 0,
-                              "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                              "type": "number"
-                            },
-                            "hanging": {
-                              "minimum": 0,
-                              "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                              "type": "number"
-                            },
-                            "firstLineChars": {
-                              "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                              "type": "number"
+                            {
+                              "description": "Paragraph indent with hanging indent.",
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "left": {
+                                  "description": "Left indent in twips (1/20 of a point)",
+                                  "type": "number"
+                                },
+                                "right": {
+                                  "description": "Right indent in twips (1/20 of a point)",
+                                  "type": "number"
+                                },
+                                "hanging": {
+                                  "minimum": 0,
+                                  "description": "Hanging indent in twips (1/20 of a point).",
+                                  "type": "number"
+                                }
+                              }
                             }
-                          }
+                          ]
                         },
                         "pageBreak": {
                           "description": "Insert page break before paragraph",
@@ -41748,33 +42048,53 @@
                                     ]
                                   },
                                   "indent": {
-                                    "description": "Paragraph indent options",
-                                    "additionalProperties": false,
-                                    "type": "object",
-                                    "properties": {
-                                      "left": {
-                                        "description": "Left indent in twips (1/20 of a point)",
-                                        "type": "number"
+                                    "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                    "anyOf": [
+                                      {
+                                        "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "properties": {
+                                          "left": {
+                                            "description": "Left indent in twips (1/20 of a point)",
+                                            "type": "number"
+                                          },
+                                          "right": {
+                                            "description": "Right indent in twips (1/20 of a point)",
+                                            "type": "number"
+                                          },
+                                          "firstLine": {
+                                            "minimum": 0,
+                                            "description": "First-line indent in twips (1/20 of a point).",
+                                            "type": "number"
+                                          },
+                                          "firstLineChars": {
+                                            "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                            "type": "number"
+                                          }
+                                        }
                                       },
-                                      "right": {
-                                        "description": "Right indent in twips (1/20 of a point)",
-                                        "type": "number"
-                                      },
-                                      "firstLine": {
-                                        "minimum": 0,
-                                        "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                        "type": "number"
-                                      },
-                                      "hanging": {
-                                        "minimum": 0,
-                                        "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                        "type": "number"
-                                      },
-                                      "firstLineChars": {
-                                        "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                        "type": "number"
+                                      {
+                                        "description": "Paragraph indent with hanging indent.",
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "properties": {
+                                          "left": {
+                                            "description": "Left indent in twips (1/20 of a point)",
+                                            "type": "number"
+                                          },
+                                          "right": {
+                                            "description": "Right indent in twips (1/20 of a point)",
+                                            "type": "number"
+                                          },
+                                          "hanging": {
+                                            "minimum": 0,
+                                            "description": "Hanging indent in twips (1/20 of a point).",
+                                            "type": "number"
+                                          }
+                                        }
                                       }
-                                    }
+                                    ]
                                   },
                                   "pageBreak": {
                                     "description": "Insert page break before paragraph",
@@ -45677,33 +45997,53 @@
                                               ]
                                             },
                                             "indent": {
-                                              "description": "Paragraph indent options",
-                                              "additionalProperties": false,
-                                              "type": "object",
-                                              "properties": {
-                                                "left": {
-                                                  "description": "Left indent in twips (1/20 of a point)",
-                                                  "type": "number"
+                                              "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                              "anyOf": [
+                                                {
+                                                  "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                                  "additionalProperties": false,
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "left": {
+                                                      "description": "Left indent in twips (1/20 of a point)",
+                                                      "type": "number"
+                                                    },
+                                                    "right": {
+                                                      "description": "Right indent in twips (1/20 of a point)",
+                                                      "type": "number"
+                                                    },
+                                                    "firstLine": {
+                                                      "minimum": 0,
+                                                      "description": "First-line indent in twips (1/20 of a point).",
+                                                      "type": "number"
+                                                    },
+                                                    "firstLineChars": {
+                                                      "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                      "type": "number"
+                                                    }
+                                                  }
                                                 },
-                                                "right": {
-                                                  "description": "Right indent in twips (1/20 of a point)",
-                                                  "type": "number"
-                                                },
-                                                "firstLine": {
-                                                  "minimum": 0,
-                                                  "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                                  "type": "number"
-                                                },
-                                                "hanging": {
-                                                  "minimum": 0,
-                                                  "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                                  "type": "number"
-                                                },
-                                                "firstLineChars": {
-                                                  "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                                  "type": "number"
+                                                {
+                                                  "description": "Paragraph indent with hanging indent.",
+                                                  "additionalProperties": false,
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "left": {
+                                                      "description": "Left indent in twips (1/20 of a point)",
+                                                      "type": "number"
+                                                    },
+                                                    "right": {
+                                                      "description": "Right indent in twips (1/20 of a point)",
+                                                      "type": "number"
+                                                    },
+                                                    "hanging": {
+                                                      "minimum": 0,
+                                                      "description": "Hanging indent in twips (1/20 of a point).",
+                                                      "type": "number"
+                                                    }
+                                                  }
                                                 }
-                                              }
+                                              ]
                                             },
                                             "pageBreak": {
                                               "description": "Insert page break before paragraph",
@@ -47362,33 +47702,53 @@
                                     ]
                                   },
                                   "indent": {
-                                    "description": "Paragraph indent options",
-                                    "additionalProperties": false,
-                                    "type": "object",
-                                    "properties": {
-                                      "left": {
-                                        "description": "Left indent in twips (1/20 of a point)",
-                                        "type": "number"
+                                    "description": "Paragraph indent options. firstLine and hanging are mutually exclusive — pick one variant.",
+                                    "anyOf": [
+                                      {
+                                        "description": "Paragraph indent with first-line indent (twips and/or CJK char-grid).",
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "properties": {
+                                          "left": {
+                                            "description": "Left indent in twips (1/20 of a point)",
+                                            "type": "number"
+                                          },
+                                          "right": {
+                                            "description": "Right indent in twips (1/20 of a point)",
+                                            "type": "number"
+                                          },
+                                          "firstLine": {
+                                            "minimum": 0,
+                                            "description": "First-line indent in twips (1/20 of a point).",
+                                            "type": "number"
+                                          },
+                                          "firstLineChars": {
+                                            "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                            "type": "number"
+                                          }
+                                        }
                                       },
-                                      "right": {
-                                        "description": "Right indent in twips (1/20 of a point)",
-                                        "type": "number"
-                                      },
-                                      "firstLine": {
-                                        "minimum": 0,
-                                        "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
-                                        "type": "number"
-                                      },
-                                      "hanging": {
-                                        "minimum": 0,
-                                        "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
-                                        "type": "number"
-                                      },
-                                      "firstLineChars": {
-                                        "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
-                                        "type": "number"
+                                      {
+                                        "description": "Paragraph indent with hanging indent.",
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "properties": {
+                                          "left": {
+                                            "description": "Left indent in twips (1/20 of a point)",
+                                            "type": "number"
+                                          },
+                                          "right": {
+                                            "description": "Right indent in twips (1/20 of a point)",
+                                            "type": "number"
+                                          },
+                                          "hanging": {
+                                            "minimum": 0,
+                                            "description": "Hanging indent in twips (1/20 of a point).",
+                                            "type": "number"
+                                          }
+                                        }
                                       }
-                                    }
+                                    ]
                                   },
                                   "pageBreak": {
                                     "description": "Insert page break before paragraph",
