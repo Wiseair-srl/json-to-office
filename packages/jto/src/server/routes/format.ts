@@ -243,9 +243,10 @@ export function createFormatRouter(adapter: FormatAdapter) {
   router.post(
     '/preview/libreoffice-from-json',
     bodyLimit({
-      // Doc JSON + custom themes. 2 MB covers large report fixtures; anything
-      // bigger is almost certainly an attempt to OOM the worker.
-      maxSize: 2 * 1024 * 1024,
+      // Doc JSON + custom themes. 16 MB accommodates real-world docs that
+      // inline base64 image assets (logos, screenshots, chart images); the
+      // earlier 2 MB cap rejected legitimate payloads with 413.
+      maxSize: 16 * 1024 * 1024,
       onError: () => {
         throw new HTTPException(413, { message: 'Request body too large' });
       },
