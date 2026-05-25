@@ -454,17 +454,17 @@ describe('TOC Scope Integration', () => {
       expect(result).toHaveLength(2);
     });
 
-    it('should embed cachedEntries so Word shows the TOC immediately on open', () => {
-      const component: TocComponentDefinition = {
+    it('should embed auto-injected cached entries when present on the component', () => {
+      // Simulate what injectTocCachedEntries does during the structure pass:
+      // attach a private resolved list on the component.
+      const component = {
         name: 'toc',
-        props: {
-          title: 'Contents',
-          cachedEntries: [
-            { title: 'Introduction', level: 1, page: 1 },
-            { title: 'Background', level: 2, page: 2, href: 'bg' },
-          ],
-        },
-      };
+        props: { title: 'Contents' },
+        __resolvedCachedEntries: [
+          { title: 'Introduction', level: 1 },
+          { title: 'Background', level: 2 },
+        ],
+      } as unknown as TocComponentDefinition;
 
       const result = renderTocComponent(
         component,
@@ -475,21 +475,19 @@ describe('TOC Scope Integration', () => {
       const toc = result[1] as TableOfContents;
       expect(toc).toBeInstanceOf(TableOfContents);
 
-      // Serialize the TOC element and confirm the cached entry titles made it
-      // into the body XML — without this, Word renders "right-click to update".
+      // The cached titles must appear in the serialized field body so Word
+      // displays them on first open instead of "right-click to update".
       const serialized = JSON.stringify(toc);
       expect(serialized).toContain('Introduction');
       expect(serialized).toContain('Background');
     });
 
-    it('should respect beginDirty=true alongside cachedEntries', () => {
-      const component: TocComponentDefinition = {
+    it('should default beginDirty to false (no Word "update fields?" popup)', () => {
+      const component = {
         name: 'toc',
-        props: {
-          cachedEntries: [{ title: 'Only Entry', level: 1 }],
-          beginDirty: true,
-        },
-      };
+        props: {},
+        __resolvedCachedEntries: [{ title: 'Only Entry', level: 1 }],
+      } as unknown as TocComponentDefinition;
 
       const result = renderTocComponent(
         component,
@@ -497,8 +495,29 @@ describe('TOC Scope Integration', () => {
         mockContext
       );
 
-      expect(result[0]).toBeInstanceOf(TableOfContents);
-      expect(JSON.stringify(result[0])).toContain('Only Entry');
+      // The dirty bit on the begin <w:fldChar> is what triggers the popup.
+      // Serialized as `"dirty":{"key":"w:dirty","value":true}` when set;
+      // with our default, the value pair should be absent.
+      const serialized = JSON.stringify(result[0]);
+      expect(serialized).toContain('Only Entry');
+      expect(serialized).not.toContain('"key":"w:dirty","value":true');
+    });
+
+    it('should pass beginDirty=true through when user opts in', () => {
+      const component = {
+        name: 'toc',
+        props: { beginDirty: true },
+        __resolvedCachedEntries: [{ title: 'Entry', level: 1 }],
+      } as unknown as TocComponentDefinition;
+
+      const result = renderTocComponent(
+        component,
+        createMockTheme(),
+        mockContext
+      );
+
+      const serialized = JSON.stringify(result[0]);
+      expect(serialized).toContain('"key":"w:dirty","value":true');
     });
 
     it('should handle multiple TOCs in same section', async () => {

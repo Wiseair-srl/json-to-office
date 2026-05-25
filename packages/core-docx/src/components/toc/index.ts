@@ -14,6 +14,10 @@ import type { ITableOfContentsOptions } from 'docx';
 import type { TocProps } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../../styles';
 import type { RenderContext } from '../../types';
+import {
+  RESOLVED_TOC_ENTRIES_FIELD,
+  type ResolvedTocEntry,
+} from '../../utils/tocCachedEntries';
 
 export interface TocComponentDefinition {
   name: 'toc';
@@ -269,16 +273,25 @@ export function renderTocComponent(
       : { entryAndPageNumberSeparator: '\t' }), // default to tab
   };
 
-  // Pre-rendered entries make Word display the TOC immediately on open.
-  // Without them, Word shows the "right-click to update field" placeholder.
-  const cachedEntries = componentProps.cachedEntries?.length
-    ? componentProps.cachedEntries.map((entry) => ({
-        title: entry.title,
-        level: entry.level,
-        ...(entry.page !== undefined && { page: entry.page }),
-        ...(entry.href !== undefined && { href: entry.href }),
-      }))
-    : undefined;
+  // Pre-rendered entries are auto-populated by injectTocCachedEntries
+  // during the structure pass. They live on a private field so they
+  // never round-trip through the user-facing schema.
+  const resolvedEntries = (component as unknown as Record<string, unknown>)[
+    RESOLVED_TOC_ENTRIES_FIELD
+  ] as ResolvedTocEntry[] | undefined;
+
+  const cachedEntries =
+    resolvedEntries && resolvedEntries.length > 0
+      ? resolvedEntries.map((entry) => ({
+          title: entry.title,
+          level: entry.level,
+        }))
+      : undefined;
+
+  // Default beginDirty to false when we have a fresh cache. That kills
+  // the macOS Word "update fields?" popup. Users can opt back in by
+  // setting `beginDirty: true` explicitly.
+  const beginDirty = componentProps.beginDirty ?? false;
 
   // Insert TOC as a top-level block (not wrapped in a Paragraph).
   // Wrapping TableOfContents inside a Paragraph produces an empty SDT above
@@ -287,9 +300,7 @@ export function renderTocComponent(
     new TableOfContents(componentProps.title ?? 'Table of Contents', {
       ...tocOptions,
       ...(cachedEntries && { cachedEntries }),
-      ...(componentProps.beginDirty !== undefined && {
-        beginDirty: componentProps.beginDirty,
-      }),
+      beginDirty,
     })
   );
 

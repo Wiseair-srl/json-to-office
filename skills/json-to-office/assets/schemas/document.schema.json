@@ -5076,39 +5076,9 @@
                               "required": ["styleId", "level"]
                             }
                           },
-                          "cachedEntries": {
-                            "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
-                            "type": "array",
-                            "items": {
-                              "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
-                              "additionalProperties": false,
-                              "type": "object",
-                              "properties": {
-                                "title": {
-                                  "description": "Entry title text as it should appear in the cached TOC",
-                                  "type": "string"
-                                },
-                                "level": {
-                                  "minimum": 1,
-                                  "maximum": 6,
-                                  "description": "Outline level (1-6) of the entry",
-                                  "type": "number"
-                                },
-                                "page": {
-                                  "minimum": 1,
-                                  "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
-                                  "type": "number"
-                                },
-                                "href": {
-                                  "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
-                                  "type": "string"
-                                }
-                              },
-                              "required": ["title", "level"]
-                            }
-                          },
                           "beginDirty": {
-                            "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                            "default": false,
+                            "description": "When true, Word marks the TOC field as dirty and shows the \"update fields?\" prompt on open. Default false: the auto-populated cached entries render immediately with no prompt. The cache is always recomputed from the document's headings; this flag only controls the Word-side refresh dialog.",
                             "type": "boolean"
                           }
                         }
@@ -10349,39 +10319,9 @@
                               "required": ["styleId", "level"]
                             }
                           },
-                          "cachedEntries": {
-                            "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
-                            "type": "array",
-                            "items": {
-                              "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
-                              "additionalProperties": false,
-                              "type": "object",
-                              "properties": {
-                                "title": {
-                                  "description": "Entry title text as it should appear in the cached TOC",
-                                  "type": "string"
-                                },
-                                "level": {
-                                  "minimum": 1,
-                                  "maximum": 6,
-                                  "description": "Outline level (1-6) of the entry",
-                                  "type": "number"
-                                },
-                                "page": {
-                                  "minimum": 1,
-                                  "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
-                                  "type": "number"
-                                },
-                                "href": {
-                                  "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
-                                  "type": "string"
-                                }
-                              },
-                              "required": ["title", "level"]
-                            }
-                          },
                           "beginDirty": {
-                            "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                            "default": false,
+                            "description": "When true, Word marks the TOC field as dirty and shows the \"update fields?\" prompt on open. Default false: the auto-populated cached entries render immediately with no prompt. The cache is always recomputed from the document's headings; this flag only controls the Word-side refresh dialog.",
                             "type": "boolean"
                           }
                         }
@@ -13845,39 +13785,9 @@
                                         "required": ["styleId", "level"]
                                       }
                                     },
-                                    "cachedEntries": {
-                                      "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
-                                      "type": "array",
-                                      "items": {
-                                        "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
-                                        "additionalProperties": false,
-                                        "type": "object",
-                                        "properties": {
-                                          "title": {
-                                            "description": "Entry title text as it should appear in the cached TOC",
-                                            "type": "string"
-                                          },
-                                          "level": {
-                                            "minimum": 1,
-                                            "maximum": 6,
-                                            "description": "Outline level (1-6) of the entry",
-                                            "type": "number"
-                                          },
-                                          "page": {
-                                            "minimum": 1,
-                                            "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
-                                            "type": "number"
-                                          },
-                                          "href": {
-                                            "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": ["title", "level"]
-                                      }
-                                    },
                                     "beginDirty": {
-                                      "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                                      "default": false,
+                                      "description": "When true, Word marks the TOC field as dirty and shows the \"update fields?\" prompt on open. Default false: the auto-populated cached entries render immediately with no prompt. The cache is always recomputed from the document's headings; this flag only controls the Word-side refresh dialog.",
                                       "type": "boolean"
                                     }
                                   }
@@ -24145,39 +24055,9 @@
                                     "required": ["styleId", "level"]
                                   }
                                 },
-                                "cachedEntries": {
-                                  "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
-                                  "type": "array",
-                                  "items": {
-                                    "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
-                                    "additionalProperties": false,
-                                    "type": "object",
-                                    "properties": {
-                                      "title": {
-                                        "description": "Entry title text as it should appear in the cached TOC",
-                                        "type": "string"
-                                      },
-                                      "level": {
-                                        "minimum": 1,
-                                        "maximum": 6,
-                                        "description": "Outline level (1-6) of the entry",
-                                        "type": "number"
-                                      },
-                                      "page": {
-                                        "minimum": 1,
-                                        "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
-                                        "type": "number"
-                                      },
-                                      "href": {
-                                        "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["title", "level"]
-                                  }
-                                },
                                 "beginDirty": {
-                                  "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                                  "default": false,
+                                  "description": "When true, Word marks the TOC field as dirty and shows the \"update fields?\" prompt on open. Default false: the auto-populated cached entries render immediately with no prompt. The cache is always recomputed from the document's headings; this flag only controls the Word-side refresh dialog.",
                                   "type": "boolean"
                                 }
                               }
@@ -27641,39 +27521,9 @@
                                               "required": ["styleId", "level"]
                                             }
                                           },
-                                          "cachedEntries": {
-                                            "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
-                                            "type": "array",
-                                            "items": {
-                                              "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
-                                              "additionalProperties": false,
-                                              "type": "object",
-                                              "properties": {
-                                                "title": {
-                                                  "description": "Entry title text as it should appear in the cached TOC",
-                                                  "type": "string"
-                                                },
-                                                "level": {
-                                                  "minimum": 1,
-                                                  "maximum": 6,
-                                                  "description": "Outline level (1-6) of the entry",
-                                                  "type": "number"
-                                                },
-                                                "page": {
-                                                  "minimum": 1,
-                                                  "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
-                                                  "type": "number"
-                                                },
-                                                "href": {
-                                                  "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
-                                                  "type": "string"
-                                                }
-                                              },
-                                              "required": ["title", "level"]
-                                            }
-                                          },
                                           "beginDirty": {
-                                            "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                                            "default": false,
+                                            "description": "When true, Word marks the TOC field as dirty and shows the \"update fields?\" prompt on open. Default false: the auto-populated cached entries render immediately with no prompt. The cache is always recomputed from the document's headings; this flag only controls the Word-side refresh dialog.",
                                             "type": "boolean"
                                           }
                                         }
@@ -34465,39 +34315,9 @@
                     "required": ["styleId", "level"]
                   }
                 },
-                "cachedEntries": {
-                  "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
-                  "type": "array",
-                  "items": {
-                    "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
-                    "additionalProperties": false,
-                    "type": "object",
-                    "properties": {
-                      "title": {
-                        "description": "Entry title text as it should appear in the cached TOC",
-                        "type": "string"
-                      },
-                      "level": {
-                        "minimum": 1,
-                        "maximum": 6,
-                        "description": "Outline level (1-6) of the entry",
-                        "type": "number"
-                      },
-                      "page": {
-                        "minimum": 1,
-                        "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
-                        "type": "number"
-                      },
-                      "href": {
-                        "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["title", "level"]
-                  }
-                },
                 "beginDirty": {
-                  "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                  "default": false,
+                  "description": "When true, Word marks the TOC field as dirty and shows the \"update fields?\" prompt on open. Default false: the auto-populated cached entries render immediately with no prompt. The cache is always recomputed from the document's headings; this flag only controls the Word-side refresh dialog.",
                   "type": "boolean"
                 }
               }
@@ -41370,39 +41190,9 @@
                             "required": ["styleId", "level"]
                           }
                         },
-                        "cachedEntries": {
-                          "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
-                          "type": "array",
-                          "items": {
-                            "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
-                            "additionalProperties": false,
-                            "type": "object",
-                            "properties": {
-                              "title": {
-                                "description": "Entry title text as it should appear in the cached TOC",
-                                "type": "string"
-                              },
-                              "level": {
-                                "minimum": 1,
-                                "maximum": 6,
-                                "description": "Outline level (1-6) of the entry",
-                                "type": "number"
-                              },
-                              "page": {
-                                "minimum": 1,
-                                "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
-                                "type": "number"
-                              },
-                              "href": {
-                                "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
-                                "type": "string"
-                              }
-                            },
-                            "required": ["title", "level"]
-                          }
-                        },
                         "beginDirty": {
-                          "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                          "default": false,
+                          "description": "When true, Word marks the TOC field as dirty and shows the \"update fields?\" prompt on open. Default false: the auto-populated cached entries render immediately with no prompt. The cache is always recomputed from the document's headings; this flag only controls the Word-side refresh dialog.",
                           "type": "boolean"
                         }
                       }
@@ -44866,39 +44656,9 @@
                                       "required": ["styleId", "level"]
                                     }
                                   },
-                                  "cachedEntries": {
-                                    "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
-                                    "type": "array",
-                                    "items": {
-                                      "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
-                                      "additionalProperties": false,
-                                      "type": "object",
-                                      "properties": {
-                                        "title": {
-                                          "description": "Entry title text as it should appear in the cached TOC",
-                                          "type": "string"
-                                        },
-                                        "level": {
-                                          "minimum": 1,
-                                          "maximum": 6,
-                                          "description": "Outline level (1-6) of the entry",
-                                          "type": "number"
-                                        },
-                                        "page": {
-                                          "minimum": 1,
-                                          "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
-                                          "type": "number"
-                                        },
-                                        "href": {
-                                          "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
-                                          "type": "string"
-                                        }
-                                      },
-                                      "required": ["title", "level"]
-                                    }
-                                  },
                                   "beginDirty": {
-                                    "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                                    "default": false,
+                                    "description": "When true, Word marks the TOC field as dirty and shows the \"update fields?\" prompt on open. Default false: the auto-populated cached entries render immediately with no prompt. The cache is always recomputed from the document's headings; this flag only controls the Word-side refresh dialog.",
                                     "type": "boolean"
                                   }
                                 }

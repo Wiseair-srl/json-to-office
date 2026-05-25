@@ -18,6 +18,7 @@ import {
   resolveComponentDefaults,
 } from '../styles/utils/resolveComponentTree';
 import { mergeWithDefaults } from '../styles/utils/componentDefaults';
+import { injectTocCachedEntries } from '../utils/tocCachedEntries';
 
 export interface ProcessedDocument {
   metadata: DocumentMetadata;
@@ -104,6 +105,11 @@ export async function processDocument(
 
   // Extract sections from components
   const sections = await extractSections(resolvedChildren, context);
+
+  // Auto-populate TOC cached entries from the headings in scope. Doing
+  // this before render means Word displays the TOC body immediately on
+  // open and skips the "update fields?" popup.
+  injectTocCachedEntries(sections, effectiveTheme);
 
   return {
     metadata,
