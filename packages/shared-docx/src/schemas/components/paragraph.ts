@@ -141,6 +141,44 @@ const FloatingFramePropertiesSchema = Type.Object(
   }
 );
 
+// Paragraph indent schema. All values in twips (1/20 of a point) unless noted.
+// firstLineChars uses Word's char-grid model (hundredths of a character),
+// useful for CJK text where indents should align to character columns.
+const IndentSchema = Type.Object(
+  {
+    left: Type.Optional(
+      Type.Number({ description: 'Left indent in twips (1/20 of a point)' })
+    ),
+    right: Type.Optional(
+      Type.Number({ description: 'Right indent in twips (1/20 of a point)' })
+    ),
+    firstLine: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        description:
+          'First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.',
+      })
+    ),
+    hanging: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        description:
+          'Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.',
+      })
+    ),
+    firstLineChars: Type.Optional(
+      Type.Number({
+        description:
+          'First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.',
+      })
+    ),
+  },
+  {
+    description: 'Paragraph indent options',
+    additionalProperties: false,
+  }
+);
+
 // Alignment type schema (paragraph-level, not font-level)
 const AlignmentSchema = Type.Union(
   [
@@ -170,6 +208,7 @@ export const ParagraphPropsSchema = Type.Object(
     spacing: Type.Optional(SpacingSchema),
     // Paragraph alignment (moved from font to config level)
     alignment: Type.Optional(AlignmentSchema),
+    indent: Type.Optional(IndentSchema),
     pageBreak: Type.Optional(
       Type.Boolean({
         description: 'Insert page break before paragraph',

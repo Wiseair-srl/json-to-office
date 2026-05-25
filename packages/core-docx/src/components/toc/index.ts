@@ -186,10 +186,10 @@ export function renderTocComponent(
         Object.prototype.hasOwnProperty.call(theme.styles, styleId);
       const styleDisplayName = isCustomStyle
         ? styleId
-          .replace(/([A-Z])/g, ' $1')
-          .replace(/[-_]+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/[-_]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
         : styleId; // If it's not a custom style key, assume it's already a display name
 
       stylesWithLevels.push(
@@ -262,18 +262,35 @@ export function renderTocComponent(
     // Boolean: true = "\t" (tab, default), false = " " (space)
     ...(componentProps.numberSeparator !== undefined
       ? {
-        entryAndPageNumberSeparator: componentProps.numberSeparator
-          ? '\t'
-          : ' ',
-      }
+          entryAndPageNumberSeparator: componentProps.numberSeparator
+            ? '\t'
+            : ' ',
+        }
       : { entryAndPageNumberSeparator: '\t' }), // default to tab
   };
+
+  // Pre-rendered entries make Word display the TOC immediately on open.
+  // Without them, Word shows the "right-click to update field" placeholder.
+  const cachedEntries = componentProps.cachedEntries?.length
+    ? componentProps.cachedEntries.map((entry) => ({
+        title: entry.title,
+        level: entry.level,
+        ...(entry.page !== undefined && { page: entry.page }),
+        ...(entry.href !== undefined && { href: entry.href }),
+      }))
+    : undefined;
 
   // Insert TOC as a top-level block (not wrapped in a Paragraph).
   // Wrapping TableOfContents inside a Paragraph produces an empty SDT above
   // the actual entries in Word. Adding directly avoids that artifact.
   paragraphs.push(
-    new TableOfContents(componentProps.title ?? 'Table of Contents', tocOptions)
+    new TableOfContents(componentProps.title ?? 'Table of Contents', {
+      ...tocOptions,
+      ...(cachedEntries && { cachedEntries }),
+      ...(componentProps.beginDirty !== undefined && {
+        beginDirty: componentProps.beginDirty,
+      }),
+    })
   );
 
   // Do not append an extra empty paragraph after TOC to avoid

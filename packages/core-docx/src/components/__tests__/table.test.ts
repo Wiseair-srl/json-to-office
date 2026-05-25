@@ -231,6 +231,35 @@ describe('components/table', () => {
       expect(result[0]).toBeInstanceOf(Table);
     });
 
+    it('should forward tableLook flags into the table properties XML', async () => {
+      const baseConfig = createTableConfig(['H1', 'H2'], [['A', 'B']]);
+      const component: ComponentDefinition = {
+        name: 'table',
+        props: {
+          ...baseConfig,
+          tableLook: {
+            firstRow: true,
+            lastRow: false,
+            bandedRows: true,
+            bandedColumns: false,
+          },
+        },
+      };
+
+      const result = await renderTableComponent(
+        component,
+        {} as ThemeConfig,
+        'minimal'
+      );
+      expect(result[0]).toBeInstanceOf(Table);
+
+      const serialized = JSON.stringify(result[0]);
+      expect(serialized).toContain('firstRow');
+      // bandedRows → noHBand:false (banding enabled); bandedColumns false → noVBand:true
+      expect(serialized).toContain('noHBand');
+      expect(serialized).toContain('noVBand');
+    });
+
     it('should handle complex data types in cells', async () => {
       const component: ComponentDefinition = {
         name: 'table',

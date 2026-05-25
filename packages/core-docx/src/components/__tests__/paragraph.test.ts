@@ -381,6 +381,33 @@ describe('components/text', () => {
       });
     });
 
+    it('should forward indent (twips + firstLineChars) into the paragraph XML', () => {
+      const component: ComponentDefinition = {
+        name: 'paragraph',
+        props: {
+          text: 'Indented body text',
+          indent: {
+            left: 720, // 0.5"
+            firstLine: 360,
+            firstLineChars: 200, // 2 chars (CJK)
+          },
+        },
+      };
+
+      const result = renderParagraphComponent(
+        component,
+        createMockTheme(),
+        'minimal'
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(Paragraph);
+
+      const serialized = JSON.stringify(result[0]);
+      expect(serialized).toContain('firstLineChars');
+      expect(serialized).toContain('firstLine');
+      expect(serialized).toContain('720');
+    });
+
     it('should handle floating text without wrap config', () => {
       const component: ComponentDefinition = {
         name: 'paragraph',

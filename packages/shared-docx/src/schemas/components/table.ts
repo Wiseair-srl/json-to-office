@@ -139,6 +139,37 @@ const PaddingSchema = Type.Union([
   }),
 ]);
 
+// Conditional formatting flags (Word "Table Look"). When the table style or
+// theme defines style variants for header rows, banded rows, etc., these
+// toggles tell Word which variants to apply. All optional, all default off.
+const TableLookSchema = Type.Object(
+  {
+    firstRow: Type.Optional(
+      Type.Boolean({ description: 'Emphasize the first (header) row' })
+    ),
+    lastRow: Type.Optional(
+      Type.Boolean({ description: 'Emphasize the last (total) row' })
+    ),
+    firstColumn: Type.Optional(
+      Type.Boolean({ description: 'Emphasize the first column' })
+    ),
+    lastColumn: Type.Optional(
+      Type.Boolean({ description: 'Emphasize the last column' })
+    ),
+    bandedRows: Type.Optional(
+      Type.Boolean({ description: 'Alternate row shading (zebra striping)' })
+    ),
+    bandedColumns: Type.Optional(
+      Type.Boolean({ description: 'Alternate column shading' })
+    ),
+  },
+  {
+    description:
+      'Word "Table Look" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.',
+    additionalProperties: false,
+  }
+);
+
 // Cell defaults configuration
 const CellDefaultsSchema = Type.Object({
   color: Type.Optional(HexColorSchema),
@@ -243,6 +274,7 @@ export function createTablePropsSchema(componentRef: TSchema): TSchema {
           default: true,
         })
       ),
+      tableLook: Type.Optional(TableLookSchema),
     },
     {
       description: 'Table component props with column-based structure',

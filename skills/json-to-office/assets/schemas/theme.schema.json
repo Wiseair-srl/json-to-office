@@ -13222,6 +13222,35 @@
                 }
               ]
             },
+            "indent": {
+              "description": "Paragraph indent options",
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "left": {
+                  "description": "Left indent in twips (1/20 of a point)",
+                  "type": "number"
+                },
+                "right": {
+                  "description": "Right indent in twips (1/20 of a point)",
+                  "type": "number"
+                },
+                "firstLine": {
+                  "minimum": 0,
+                  "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                  "type": "number"
+                },
+                "hanging": {
+                  "minimum": 0,
+                  "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                  "type": "number"
+                },
+                "firstLineChars": {
+                  "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                  "type": "number"
+                }
+              }
+            },
             "pageBreak": {
               "description": "Insert page break before paragraph",
               "type": "boolean"
@@ -15047,6 +15076,37 @@
               "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
               "default": true,
               "type": "boolean"
+            },
+            "tableLook": {
+              "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "firstRow": {
+                  "description": "Emphasize the first (header) row",
+                  "type": "boolean"
+                },
+                "lastRow": {
+                  "description": "Emphasize the last (total) row",
+                  "type": "boolean"
+                },
+                "firstColumn": {
+                  "description": "Emphasize the first column",
+                  "type": "boolean"
+                },
+                "lastColumn": {
+                  "description": "Emphasize the last column",
+                  "type": "boolean"
+                },
+                "bandedRows": {
+                  "description": "Alternate row shading (zebra striping)",
+                  "type": "boolean"
+                },
+                "bandedColumns": {
+                  "description": "Alternate column shading",
+                  "type": "boolean"
+                }
+              }
             }
           }
         },

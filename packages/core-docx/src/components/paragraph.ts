@@ -201,6 +201,8 @@ export function renderParagraphComponent(
     keepLines: resolvedConfig.keepLines,
     // Pass bookmark ID for internal linking
     bookmarkId: resolvedConfig.id,
+    // Pass paragraph indent (twips, plus CJK firstLineChars)
+    indent: resolvedConfig.indent,
   });
 
   return [text];

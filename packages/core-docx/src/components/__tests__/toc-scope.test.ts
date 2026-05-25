@@ -454,6 +454,53 @@ describe('TOC Scope Integration', () => {
       expect(result).toHaveLength(2);
     });
 
+    it('should embed cachedEntries so Word shows the TOC immediately on open', () => {
+      const component: TocComponentDefinition = {
+        name: 'toc',
+        props: {
+          title: 'Contents',
+          cachedEntries: [
+            { title: 'Introduction', level: 1, page: 1 },
+            { title: 'Background', level: 2, page: 2, href: 'bg' },
+          ],
+        },
+      };
+
+      const result = renderTocComponent(
+        component,
+        createMockTheme(),
+        mockContext
+      );
+
+      const toc = result[1] as TableOfContents;
+      expect(toc).toBeInstanceOf(TableOfContents);
+
+      // Serialize the TOC element and confirm the cached entry titles made it
+      // into the body XML — without this, Word renders "right-click to update".
+      const serialized = JSON.stringify(toc);
+      expect(serialized).toContain('Introduction');
+      expect(serialized).toContain('Background');
+    });
+
+    it('should respect beginDirty=true alongside cachedEntries', () => {
+      const component: TocComponentDefinition = {
+        name: 'toc',
+        props: {
+          cachedEntries: [{ title: 'Only Entry', level: 1 }],
+          beginDirty: true,
+        },
+      };
+
+      const result = renderTocComponent(
+        component,
+        createMockTheme(),
+        mockContext
+      );
+
+      expect(result[0]).toBeInstanceOf(TableOfContents);
+      expect(JSON.stringify(result[0])).toContain('Only Entry');
+    });
+
     it('should handle multiple TOCs in same section', async () => {
       const sectionWithMultipleTocs: SectionComponentDefinition = {
         name: 'section',

@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  docx: 9.5.1
+  docx: 9.7.0
   typescript: 5.3.3
   eslint: 8.56.0
   prettier: 3.2.4
@@ -93,8 +93,8 @@ importers:
         specifier: 3.6.0
         version: 3.6.0
       docx:
-        specifier: 9.5.1
-        version: 9.5.1
+        specifier: 9.7.0
+        version: 9.7.0
       probe-image-size:
         specifier: 7.2.3
         version: 7.2.3
@@ -164,8 +164,8 @@ importers:
         specifier: workspace:^
         version: link:../shared-docx
       docx:
-        specifier: 9.5.1
-        version: 9.5.1
+        specifier: 9.7.0
+        version: 9.7.0
     devDependencies:
       '@types/node':
         specifier: 20.11.0
@@ -550,8 +550,8 @@ importers:
         specifier: 0.34.38
         version: 0.34.38
       docx:
-        specifier: 9.5.1
-        version: 9.5.1
+        specifier: 9.7.0
+        version: 9.7.0
     devDependencies:
       '@types/node':
         specifier: 20.11.0
@@ -2377,8 +2377,8 @@ packages:
   '@types/node@20.11.0':
     resolution: {integrity: sha512-o9bjXmDNcF7GbM4CNQpmi+TutCgap/K3w1JyKgxAjqx41zp9qlIAVFi0IhCNsJcXolEqLWhbFbEeL0PvYm4pcQ==}
 
-  '@types/node@24.12.0':
-    resolution: {integrity: sha512-GYDxsZi3ChgmckRT9HPU0WEhKLP08ev/Yfcq2AstjrDASOYCSXeyjDsHg4v5t4jOj7cyDX3vmprafKlWIG9MXQ==}
+  '@types/node@25.9.1':
+    resolution: {integrity: sha512-xfrlY7UD5rMJk3ZVJP8BNzS28J36YJg+xp+LPXV1TdWxr8uMH5A860QNxYDGQe/ylDSgjxE52Q9VnO7p75tJxg==}
 
   '@types/probe-image-size@7.2.4':
     resolution: {integrity: sha512-HVqYj3L+D+S/6qpQRv5qMxrD/5pglzZuhP7ZIqgVSZ+Ck4z1TCFkNIRG8WesFueQTqWFTSgkkAl6f8lwxFPQSw==}
@@ -3027,8 +3027,8 @@ packages:
   docx-preview@0.3.3:
     resolution: {integrity: sha512-vg0bjmp5Q/hWYgalvVsnOOdqKlSBvgzdbrqX8pKw4KuTH8FkX2FIs21w10HZdx6ZhApmMbgfae+lOXjdCSsc8A==}
 
-  docx@9.5.1:
-    resolution: {integrity: sha512-ABDI7JEirFD2+bHhOBlsGZxaG1UgZb2M/QMKhLSDGgVNhxDesTCDcP+qoDnDGjZ4EOXTRfUjUgwHVuZ6VSTfWQ==}
+  docx@9.7.0:
+    resolution: {integrity: sha512-saDn+8rAtW9nPlWxDs31Kbb/hL+AhHQN2gktHkWwkj59u9htUXtpVMN1Z+cSoLGCAaeYpW7Qe9F5sU3aPdiy9w==}
     engines: {node: '>=10'}
 
   dom-helpers@5.2.1:
@@ -5030,8 +5030,8 @@ packages:
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
 
-  undici-types@7.16.0:
-    resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
+  undici-types@7.24.6:
+    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
   unified@11.0.5:
     resolution: {integrity: sha512-xKvGhPWw3k84Qjh8bI3ZeJjqnyadK+GEFtazSfZv/rKeTkTjOJho6mFqh2SM96iIcZokxiOpg78GazTSg8+KHA==}
@@ -7061,9 +7061,9 @@ snapshots:
     dependencies:
       undici-types: 5.26.5
 
-  '@types/node@24.12.0':
+  '@types/node@25.9.1':
     dependencies:
-      undici-types: 7.16.0
+      undici-types: 7.24.6
 
   '@types/probe-image-size@7.2.4':
     dependencies:
@@ -7718,9 +7718,9 @@ snapshots:
     dependencies:
       jszip: 3.10.1
 
-  docx@9.5.1:
+  docx@9.7.0:
     dependencies:
-      '@types/node': 24.12.0
+      '@types/node': 25.9.1
       hash.js: 1.1.7
       jszip: 3.10.1
       nanoid: 5.1.6
@@ -10125,7 +10125,7 @@ snapshots:
 
   undici-types@5.26.5: {}
 
-  undici-types@7.16.0: {}
+  undici-types@7.24.6: {}
 
   unified@11.0.5:
     dependencies:

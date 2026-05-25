@@ -144,6 +144,15 @@ export interface TextOptions {
   keepNext?: boolean;
   // Keep all lines of paragraph together
   keepLines?: boolean;
+  // Paragraph indent. left/right/firstLine/hanging in twips (1/20 pt);
+  // firstLineChars in hundredths of a character (CJK-friendly).
+  indent?: {
+    left?: number;
+    right?: number;
+    firstLine?: number;
+    hanging?: number;
+    firstLineChars?: number;
+  };
 }
 
 export interface ImageOptions {
@@ -340,6 +349,7 @@ export function createText(
     ...(frameOptions && { frame: frameOptions }),
     ...(options.keepNext !== undefined && { keepNext: options.keepNext }),
     ...(options.keepLines !== undefined && { keepLines: options.keepLines }),
+    ...(options.indent && { indent: options.indent }),
   });
 }
 
@@ -929,6 +939,15 @@ type HideBorders =
       insideVertical?: boolean;
     };
 
+type TableLook = {
+  firstRow?: boolean;
+  lastRow?: boolean;
+  firstColumn?: boolean;
+  lastColumn?: boolean;
+  bandedRows?: boolean;
+  bandedColumns?: boolean;
+};
+
 type TableConfig = {
   borderColor?: BorderColor;
   borderSize?: BorderSize;
@@ -950,6 +969,7 @@ type TableConfig = {
   keepInOnePage?: boolean;
   keepNext?: boolean;
   repeatHeaderOnPageBreak?: boolean;
+  tableLook?: TableLook;
 };
 
 export async function createTable(
@@ -2022,7 +2042,26 @@ export async function createTable(
     layout: TableLayoutType.FIXED,
     columnWidths: columnWidths,
     rows: [headerRow, ...dataRows],
+    ...(tableConfig.tableLook && {
+      tableLook: toDocxTableLook(tableConfig.tableLook),
+    }),
   });
+}
+
+/**
+ * Map our user-facing tableLook config to docx's ITableLookOptions.
+ * Note the inversion: docx expects `noHBand` / `noVBand` (negated banding),
+ * we expose the positive `bandedRows` / `bandedColumns` for clarity.
+ */
+function toDocxTableLook(look: TableLook) {
+  return {
+    ...(look.firstRow !== undefined && { firstRow: look.firstRow }),
+    ...(look.lastRow !== undefined && { lastRow: look.lastRow }),
+    ...(look.firstColumn !== undefined && { firstColumn: look.firstColumn }),
+    ...(look.lastColumn !== undefined && { lastColumn: look.lastColumn }),
+    ...(look.bandedRows !== undefined && { noHBand: !look.bandedRows }),
+    ...(look.bandedColumns !== undefined && { noVBand: !look.bandedColumns }),
+  };
 }
 
 /**

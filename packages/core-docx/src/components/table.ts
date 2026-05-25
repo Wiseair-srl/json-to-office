@@ -61,6 +61,15 @@ type CellDefaults = {
   height?: number;
 };
 
+type TableLook = {
+  firstRow?: boolean;
+  lastRow?: boolean;
+  firstColumn?: boolean;
+  lastColumn?: boolean;
+  bandedRows?: boolean;
+  bandedColumns?: boolean;
+};
+
 type TableConfig = {
   borderColor?: BorderColor;
   borderSize?: BorderSize;
@@ -81,6 +90,7 @@ type TableConfig = {
   keepInOnePage?: boolean;
   keepNext?: boolean;
   repeatHeaderOnPageBreak?: boolean;
+  tableLook?: TableLook;
 };
 
 /**

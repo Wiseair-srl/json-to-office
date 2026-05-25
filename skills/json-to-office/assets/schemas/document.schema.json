@@ -1011,6 +1011,35 @@
                               }
                             ]
                           },
+                          "indent": {
+                            "description": "Paragraph indent options",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "left": {
+                                "description": "Left indent in twips (1/20 of a point)",
+                                "type": "number"
+                              },
+                              "right": {
+                                "description": "Right indent in twips (1/20 of a point)",
+                                "type": "number"
+                              },
+                              "firstLine": {
+                                "minimum": 0,
+                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                "type": "number"
+                              },
+                              "hanging": {
+                                "minimum": 0,
+                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                "type": "number"
+                              },
+                              "firstLineChars": {
+                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                "type": "number"
+                              }
+                            }
+                          },
                           "pageBreak": {
                             "description": "Insert page break before paragraph",
                             "type": "boolean"
@@ -2207,6 +2236,35 @@
                                 "type": "string"
                               }
                             ]
+                          },
+                          "indent": {
+                            "description": "Paragraph indent options",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "left": {
+                                "description": "Left indent in twips (1/20 of a point)",
+                                "type": "number"
+                              },
+                              "right": {
+                                "description": "Right indent in twips (1/20 of a point)",
+                                "type": "number"
+                              },
+                              "firstLine": {
+                                "minimum": 0,
+                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                "type": "number"
+                              },
+                              "hanging": {
+                                "minimum": 0,
+                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                "type": "number"
+                              },
+                              "firstLineChars": {
+                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                "type": "number"
+                              }
+                            }
                           },
                           "pageBreak": {
                             "description": "Insert page break before paragraph",
@@ -4092,6 +4150,37 @@
                             "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                             "default": true,
                             "type": "boolean"
+                          },
+                          "tableLook": {
+                            "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "firstRow": {
+                                "description": "Emphasize the first (header) row",
+                                "type": "boolean"
+                              },
+                              "lastRow": {
+                                "description": "Emphasize the last (total) row",
+                                "type": "boolean"
+                              },
+                              "firstColumn": {
+                                "description": "Emphasize the first column",
+                                "type": "boolean"
+                              },
+                              "lastColumn": {
+                                "description": "Emphasize the last column",
+                                "type": "boolean"
+                              },
+                              "bandedRows": {
+                                "description": "Alternate row shading (zebra striping)",
+                                "type": "boolean"
+                              },
+                              "bandedColumns": {
+                                "description": "Alternate column shading",
+                                "type": "boolean"
+                              }
+                            }
                           }
                         },
                         "required": ["columns"]
@@ -4946,6 +5035,41 @@
                               },
                               "required": ["styleId", "level"]
                             }
+                          },
+                          "cachedEntries": {
+                            "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
+                            "type": "array",
+                            "items": {
+                              "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "title": {
+                                  "description": "Entry title text as it should appear in the cached TOC",
+                                  "type": "string"
+                                },
+                                "level": {
+                                  "minimum": 1,
+                                  "maximum": 6,
+                                  "description": "Outline level (1-6) of the entry",
+                                  "type": "number"
+                                },
+                                "page": {
+                                  "minimum": 1,
+                                  "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
+                                  "type": "number"
+                                },
+                                "href": {
+                                  "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["title", "level"]
+                            }
+                          },
+                          "beginDirty": {
+                            "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                            "type": "boolean"
                           }
                         }
                       }
@@ -6041,6 +6165,35 @@
                                           "type": "string"
                                         }
                                       ]
+                                    },
+                                    "indent": {
+                                      "description": "Paragraph indent options",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "left": {
+                                          "description": "Left indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "right": {
+                                          "description": "Right indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "firstLine": {
+                                          "minimum": 0,
+                                          "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                          "type": "number"
+                                        },
+                                        "hanging": {
+                                          "minimum": 0,
+                                          "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                          "type": "number"
+                                        },
+                                        "firstLineChars": {
+                                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                          "type": "number"
+                                        }
+                                      }
                                     },
                                     "pageBreak": {
                                       "description": "Insert page break before paragraph",
@@ -7317,6 +7470,35 @@
                               }
                             ]
                           },
+                          "indent": {
+                            "description": "Paragraph indent options",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "left": {
+                                "description": "Left indent in twips (1/20 of a point)",
+                                "type": "number"
+                              },
+                              "right": {
+                                "description": "Right indent in twips (1/20 of a point)",
+                                "type": "number"
+                              },
+                              "firstLine": {
+                                "minimum": 0,
+                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                "type": "number"
+                              },
+                              "hanging": {
+                                "minimum": 0,
+                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                "type": "number"
+                              },
+                              "firstLineChars": {
+                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                "type": "number"
+                              }
+                            }
+                          },
                           "pageBreak": {
                             "description": "Insert page break before paragraph",
                             "type": "boolean"
@@ -9201,6 +9383,37 @@
                             "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                             "default": true,
                             "type": "boolean"
+                          },
+                          "tableLook": {
+                            "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "firstRow": {
+                                "description": "Emphasize the first (header) row",
+                                "type": "boolean"
+                              },
+                              "lastRow": {
+                                "description": "Emphasize the last (total) row",
+                                "type": "boolean"
+                              },
+                              "firstColumn": {
+                                "description": "Emphasize the first column",
+                                "type": "boolean"
+                              },
+                              "lastColumn": {
+                                "description": "Emphasize the last column",
+                                "type": "boolean"
+                              },
+                              "bandedRows": {
+                                "description": "Alternate row shading (zebra striping)",
+                                "type": "boolean"
+                              },
+                              "bandedColumns": {
+                                "description": "Alternate column shading",
+                                "type": "boolean"
+                              }
+                            }
                           }
                         },
                         "required": ["columns"]
@@ -10055,6 +10268,41 @@
                               },
                               "required": ["styleId", "level"]
                             }
+                          },
+                          "cachedEntries": {
+                            "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
+                            "type": "array",
+                            "items": {
+                              "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "title": {
+                                  "description": "Entry title text as it should appear in the cached TOC",
+                                  "type": "string"
+                                },
+                                "level": {
+                                  "minimum": 1,
+                                  "maximum": 6,
+                                  "description": "Outline level (1-6) of the entry",
+                                  "type": "number"
+                                },
+                                "page": {
+                                  "minimum": 1,
+                                  "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
+                                  "type": "number"
+                                },
+                                "href": {
+                                  "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["title", "level"]
+                            }
+                          },
+                          "beginDirty": {
+                            "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                            "type": "boolean"
                           }
                         }
                       }
@@ -10697,6 +10945,35 @@
                                           "type": "string"
                                         }
                                       ]
+                                    },
+                                    "indent": {
+                                      "description": "Paragraph indent options",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "left": {
+                                          "description": "Left indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "right": {
+                                          "description": "Right indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "firstLine": {
+                                          "minimum": 0,
+                                          "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                          "type": "number"
+                                        },
+                                        "hanging": {
+                                          "minimum": 0,
+                                          "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                          "type": "number"
+                                        },
+                                        "firstLineChars": {
+                                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                          "type": "number"
+                                        }
+                                      }
                                     },
                                     "pageBreak": {
                                       "description": "Insert page break before paragraph",
@@ -12582,6 +12859,37 @@
                                       "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                                       "default": true,
                                       "type": "boolean"
+                                    },
+                                    "tableLook": {
+                                      "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "firstRow": {
+                                          "description": "Emphasize the first (header) row",
+                                          "type": "boolean"
+                                        },
+                                        "lastRow": {
+                                          "description": "Emphasize the last (total) row",
+                                          "type": "boolean"
+                                        },
+                                        "firstColumn": {
+                                          "description": "Emphasize the first column",
+                                          "type": "boolean"
+                                        },
+                                        "lastColumn": {
+                                          "description": "Emphasize the last column",
+                                          "type": "boolean"
+                                        },
+                                        "bandedRows": {
+                                          "description": "Alternate row shading (zebra striping)",
+                                          "type": "boolean"
+                                        },
+                                        "bandedColumns": {
+                                          "description": "Alternate column shading",
+                                          "type": "boolean"
+                                        }
+                                      }
                                     }
                                   },
                                   "required": ["columns"]
@@ -13436,6 +13744,41 @@
                                         },
                                         "required": ["styleId", "level"]
                                       }
+                                    },
+                                    "cachedEntries": {
+                                      "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
+                                      "type": "array",
+                                      "items": {
+                                        "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "properties": {
+                                          "title": {
+                                            "description": "Entry title text as it should appear in the cached TOC",
+                                            "type": "string"
+                                          },
+                                          "level": {
+                                            "minimum": 1,
+                                            "maximum": 6,
+                                            "description": "Outline level (1-6) of the entry",
+                                            "type": "number"
+                                          },
+                                          "page": {
+                                            "minimum": 1,
+                                            "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
+                                            "type": "number"
+                                          },
+                                          "href": {
+                                            "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["title", "level"]
+                                      }
+                                    },
+                                    "beginDirty": {
+                                      "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                                      "type": "boolean"
                                     }
                                   }
                                 }
@@ -14537,6 +14880,35 @@
                                                     "type": "string"
                                                   }
                                                 ]
+                                              },
+                                              "indent": {
+                                                "description": "Paragraph indent options",
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "properties": {
+                                                  "left": {
+                                                    "description": "Left indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "right": {
+                                                    "description": "Right indent in twips (1/20 of a point)",
+                                                    "type": "number"
+                                                  },
+                                                  "firstLine": {
+                                                    "minimum": 0,
+                                                    "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                                    "type": "number"
+                                                  },
+                                                  "hanging": {
+                                                    "minimum": 0,
+                                                    "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                                    "type": "number"
+                                                  },
+                                                  "firstLineChars": {
+                                                    "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                    "type": "number"
+                                                  }
+                                                }
                                               },
                                               "pageBreak": {
                                                 "description": "Insert page break before paragraph",
@@ -16194,6 +16566,35 @@
                                         }
                                       ]
                                     },
+                                    "indent": {
+                                      "description": "Paragraph indent options",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "left": {
+                                          "description": "Left indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "right": {
+                                          "description": "Right indent in twips (1/20 of a point)",
+                                          "type": "number"
+                                        },
+                                        "firstLine": {
+                                          "minimum": 0,
+                                          "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                          "type": "number"
+                                        },
+                                        "hanging": {
+                                          "minimum": 0,
+                                          "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                          "type": "number"
+                                        },
+                                        "firstLineChars": {
+                                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                          "type": "number"
+                                        }
+                                      }
+                                    },
                                     "pageBreak": {
                                       "description": "Insert page break before paragraph",
                                       "type": "boolean"
@@ -17300,6 +17701,35 @@
                               "type": "string"
                             }
                           ]
+                        },
+                        "indent": {
+                          "description": "Paragraph indent options",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "left": {
+                              "description": "Left indent in twips (1/20 of a point)",
+                              "type": "number"
+                            },
+                            "right": {
+                              "description": "Right indent in twips (1/20 of a point)",
+                              "type": "number"
+                            },
+                            "firstLine": {
+                              "minimum": 0,
+                              "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                              "type": "number"
+                            },
+                            "hanging": {
+                              "minimum": 0,
+                              "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                              "type": "number"
+                            },
+                            "firstLineChars": {
+                              "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                              "type": "number"
+                            }
+                          }
                         },
                         "pageBreak": {
                           "description": "Insert page break before paragraph",
@@ -19126,6 +19556,37 @@
                           "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                           "default": true,
                           "type": "boolean"
+                        },
+                        "tableLook": {
+                          "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "firstRow": {
+                              "description": "Emphasize the first (header) row",
+                              "type": "boolean"
+                            },
+                            "lastRow": {
+                              "description": "Emphasize the last (total) row",
+                              "type": "boolean"
+                            },
+                            "firstColumn": {
+                              "description": "Emphasize the first column",
+                              "type": "boolean"
+                            },
+                            "lastColumn": {
+                              "description": "Emphasize the last column",
+                              "type": "boolean"
+                            },
+                            "bandedRows": {
+                              "description": "Alternate row shading (zebra striping)",
+                              "type": "boolean"
+                            },
+                            "bandedColumns": {
+                              "description": "Alternate column shading",
+                              "type": "boolean"
+                            }
+                          }
                         }
                       }
                     },
@@ -20704,6 +21165,35 @@
                                       "type": "string"
                                     }
                                   ]
+                                },
+                                "indent": {
+                                  "description": "Paragraph indent options",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "left": {
+                                      "description": "Left indent in twips (1/20 of a point)",
+                                      "type": "number"
+                                    },
+                                    "right": {
+                                      "description": "Right indent in twips (1/20 of a point)",
+                                      "type": "number"
+                                    },
+                                    "firstLine": {
+                                      "minimum": 0,
+                                      "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                      "type": "number"
+                                    },
+                                    "hanging": {
+                                      "minimum": 0,
+                                      "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                      "type": "number"
+                                    },
+                                    "firstLineChars": {
+                                      "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                      "type": "number"
+                                    }
+                                  }
                                 },
                                 "pageBreak": {
                                   "description": "Insert page break before paragraph",
@@ -22589,6 +23079,37 @@
                                   "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                                   "default": true,
                                   "type": "boolean"
+                                },
+                                "tableLook": {
+                                  "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "firstRow": {
+                                      "description": "Emphasize the first (header) row",
+                                      "type": "boolean"
+                                    },
+                                    "lastRow": {
+                                      "description": "Emphasize the last (total) row",
+                                      "type": "boolean"
+                                    },
+                                    "firstColumn": {
+                                      "description": "Emphasize the first column",
+                                      "type": "boolean"
+                                    },
+                                    "lastColumn": {
+                                      "description": "Emphasize the last column",
+                                      "type": "boolean"
+                                    },
+                                    "bandedRows": {
+                                      "description": "Alternate row shading (zebra striping)",
+                                      "type": "boolean"
+                                    },
+                                    "bandedColumns": {
+                                      "description": "Alternate column shading",
+                                      "type": "boolean"
+                                    }
+                                  }
                                 }
                               },
                               "required": ["columns"]
@@ -23443,6 +23964,41 @@
                                     },
                                     "required": ["styleId", "level"]
                                   }
+                                },
+                                "cachedEntries": {
+                                  "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
+                                  "type": "array",
+                                  "items": {
+                                    "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "description": "Entry title text as it should appear in the cached TOC",
+                                        "type": "string"
+                                      },
+                                      "level": {
+                                        "minimum": 1,
+                                        "maximum": 6,
+                                        "description": "Outline level (1-6) of the entry",
+                                        "type": "number"
+                                      },
+                                      "page": {
+                                        "minimum": 1,
+                                        "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
+                                        "type": "number"
+                                      },
+                                      "href": {
+                                        "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": ["title", "level"]
+                                  }
+                                },
+                                "beginDirty": {
+                                  "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                                  "type": "boolean"
                                 }
                               }
                             }
@@ -24085,6 +24641,35 @@
                                                 "type": "string"
                                               }
                                             ]
+                                          },
+                                          "indent": {
+                                            "description": "Paragraph indent options",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "left": {
+                                                "description": "Left indent in twips (1/20 of a point)",
+                                                "type": "number"
+                                              },
+                                              "right": {
+                                                "description": "Right indent in twips (1/20 of a point)",
+                                                "type": "number"
+                                              },
+                                              "firstLine": {
+                                                "minimum": 0,
+                                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                                "type": "number"
+                                              },
+                                              "hanging": {
+                                                "minimum": 0,
+                                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                                "type": "number"
+                                              },
+                                              "firstLineChars": {
+                                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                "type": "number"
+                                              }
+                                            }
                                           },
                                           "pageBreak": {
                                             "description": "Insert page break before paragraph",
@@ -25970,6 +26555,37 @@
                                             "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                                             "default": true,
                                             "type": "boolean"
+                                          },
+                                          "tableLook": {
+                                            "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "firstRow": {
+                                                "description": "Emphasize the first (header) row",
+                                                "type": "boolean"
+                                              },
+                                              "lastRow": {
+                                                "description": "Emphasize the last (total) row",
+                                                "type": "boolean"
+                                              },
+                                              "firstColumn": {
+                                                "description": "Emphasize the first column",
+                                                "type": "boolean"
+                                              },
+                                              "lastColumn": {
+                                                "description": "Emphasize the last column",
+                                                "type": "boolean"
+                                              },
+                                              "bandedRows": {
+                                                "description": "Alternate row shading (zebra striping)",
+                                                "type": "boolean"
+                                              },
+                                              "bandedColumns": {
+                                                "description": "Alternate column shading",
+                                                "type": "boolean"
+                                              }
+                                            }
                                           }
                                         },
                                         "required": ["columns"]
@@ -26824,6 +27440,41 @@
                                               },
                                               "required": ["styleId", "level"]
                                             }
+                                          },
+                                          "cachedEntries": {
+                                            "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
+                                            "type": "array",
+                                            "items": {
+                                              "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "properties": {
+                                                "title": {
+                                                  "description": "Entry title text as it should appear in the cached TOC",
+                                                  "type": "string"
+                                                },
+                                                "level": {
+                                                  "minimum": 1,
+                                                  "maximum": 6,
+                                                  "description": "Outline level (1-6) of the entry",
+                                                  "type": "number"
+                                                },
+                                                "page": {
+                                                  "minimum": 1,
+                                                  "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
+                                                  "type": "number"
+                                                },
+                                                "href": {
+                                                  "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": ["title", "level"]
+                                            }
+                                          },
+                                          "beginDirty": {
+                                            "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                                            "type": "boolean"
                                           }
                                         }
                                       }
@@ -27928,6 +28579,35 @@
                                                           "type": "string"
                                                         }
                                                       ]
+                                                    },
+                                                    "indent": {
+                                                      "description": "Paragraph indent options",
+                                                      "additionalProperties": false,
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "left": {
+                                                          "description": "Left indent in twips (1/20 of a point)",
+                                                          "type": "number"
+                                                        },
+                                                        "right": {
+                                                          "description": "Right indent in twips (1/20 of a point)",
+                                                          "type": "number"
+                                                        },
+                                                        "firstLine": {
+                                                          "minimum": 0,
+                                                          "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                                          "type": "number"
+                                                        },
+                                                        "hanging": {
+                                                          "minimum": 0,
+                                                          "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                                          "type": "number"
+                                                        },
+                                                        "firstLineChars": {
+                                                          "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                          "type": "number"
+                                                        }
+                                                      }
                                                     },
                                                     "pageBreak": {
                                                       "description": "Insert page break before paragraph",
@@ -29585,6 +30265,35 @@
                                               }
                                             ]
                                           },
+                                          "indent": {
+                                            "description": "Paragraph indent options",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "left": {
+                                                "description": "Left indent in twips (1/20 of a point)",
+                                                "type": "number"
+                                              },
+                                              "right": {
+                                                "description": "Right indent in twips (1/20 of a point)",
+                                                "type": "number"
+                                              },
+                                              "firstLine": {
+                                                "minimum": 0,
+                                                "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                                "type": "number"
+                                              },
+                                              "hanging": {
+                                                "minimum": 0,
+                                                "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                                "type": "number"
+                                              },
+                                              "firstLineChars": {
+                                                "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                "type": "number"
+                                              }
+                                            }
+                                          },
                                           "pageBreak": {
                                             "description": "Insert page break before paragraph",
                                             "type": "boolean"
@@ -30696,6 +31405,35 @@
                       "type": "string"
                     }
                   ]
+                },
+                "indent": {
+                  "description": "Paragraph indent options",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "left": {
+                      "description": "Left indent in twips (1/20 of a point)",
+                      "type": "number"
+                    },
+                    "right": {
+                      "description": "Right indent in twips (1/20 of a point)",
+                      "type": "number"
+                    },
+                    "firstLine": {
+                      "minimum": 0,
+                      "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                      "type": "number"
+                    },
+                    "hanging": {
+                      "minimum": 0,
+                      "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                      "type": "number"
+                    },
+                    "firstLineChars": {
+                      "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                      "type": "number"
+                    }
+                  }
                 },
                 "pageBreak": {
                   "description": "Insert page break before paragraph",
@@ -32581,6 +33319,37 @@
                   "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                   "default": true,
                   "type": "boolean"
+                },
+                "tableLook": {
+                  "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "firstRow": {
+                      "description": "Emphasize the first (header) row",
+                      "type": "boolean"
+                    },
+                    "lastRow": {
+                      "description": "Emphasize the last (total) row",
+                      "type": "boolean"
+                    },
+                    "firstColumn": {
+                      "description": "Emphasize the first column",
+                      "type": "boolean"
+                    },
+                    "lastColumn": {
+                      "description": "Emphasize the last column",
+                      "type": "boolean"
+                    },
+                    "bandedRows": {
+                      "description": "Alternate row shading (zebra striping)",
+                      "type": "boolean"
+                    },
+                    "bandedColumns": {
+                      "description": "Alternate column shading",
+                      "type": "boolean"
+                    }
+                  }
                 }
               },
               "required": ["columns"]
@@ -33435,6 +34204,41 @@
                     },
                     "required": ["styleId", "level"]
                   }
+                },
+                "cachedEntries": {
+                  "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
+                  "type": "array",
+                  "items": {
+                    "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
+                    "additionalProperties": false,
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "description": "Entry title text as it should appear in the cached TOC",
+                        "type": "string"
+                      },
+                      "level": {
+                        "minimum": 1,
+                        "maximum": 6,
+                        "description": "Outline level (1-6) of the entry",
+                        "type": "number"
+                      },
+                      "page": {
+                        "minimum": 1,
+                        "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
+                        "type": "number"
+                      },
+                      "href": {
+                        "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["title", "level"]
+                  }
+                },
+                "beginDirty": {
+                  "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                  "type": "boolean"
                 }
               }
             }
@@ -34005,6 +34809,35 @@
                       "type": "string"
                     }
                   ]
+                },
+                "indent": {
+                  "description": "Paragraph indent options",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "left": {
+                      "description": "Left indent in twips (1/20 of a point)",
+                      "type": "number"
+                    },
+                    "right": {
+                      "description": "Right indent in twips (1/20 of a point)",
+                      "type": "number"
+                    },
+                    "firstLine": {
+                      "minimum": 0,
+                      "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                      "type": "number"
+                    },
+                    "hanging": {
+                      "minimum": 0,
+                      "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                      "type": "number"
+                    },
+                    "firstLineChars": {
+                      "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                      "type": "number"
+                    }
+                  }
                 },
                 "pageBreak": {
                   "description": "Insert page break before paragraph",
@@ -35831,6 +36664,37 @@
                   "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                   "default": true,
                   "type": "boolean"
+                },
+                "tableLook": {
+                  "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "firstRow": {
+                      "description": "Emphasize the first (header) row",
+                      "type": "boolean"
+                    },
+                    "lastRow": {
+                      "description": "Emphasize the last (total) row",
+                      "type": "boolean"
+                    },
+                    "firstColumn": {
+                      "description": "Emphasize the first column",
+                      "type": "boolean"
+                    },
+                    "lastColumn": {
+                      "description": "Emphasize the last column",
+                      "type": "boolean"
+                    },
+                    "bandedRows": {
+                      "description": "Alternate row shading (zebra striping)",
+                      "type": "boolean"
+                    },
+                    "bandedColumns": {
+                      "description": "Alternate column shading",
+                      "type": "boolean"
+                    }
+                  }
                 }
               }
             },
@@ -37406,6 +38270,35 @@
                               "type": "string"
                             }
                           ]
+                        },
+                        "indent": {
+                          "description": "Paragraph indent options",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "left": {
+                              "description": "Left indent in twips (1/20 of a point)",
+                              "type": "number"
+                            },
+                            "right": {
+                              "description": "Right indent in twips (1/20 of a point)",
+                              "type": "number"
+                            },
+                            "firstLine": {
+                              "minimum": 0,
+                              "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                              "type": "number"
+                            },
+                            "hanging": {
+                              "minimum": 0,
+                              "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                              "type": "number"
+                            },
+                            "firstLineChars": {
+                              "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                              "type": "number"
+                            }
+                          }
                         },
                         "pageBreak": {
                           "description": "Insert page break before paragraph",
@@ -39291,6 +40184,37 @@
                           "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                           "default": true,
                           "type": "boolean"
+                        },
+                        "tableLook": {
+                          "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "firstRow": {
+                              "description": "Emphasize the first (header) row",
+                              "type": "boolean"
+                            },
+                            "lastRow": {
+                              "description": "Emphasize the last (total) row",
+                              "type": "boolean"
+                            },
+                            "firstColumn": {
+                              "description": "Emphasize the first column",
+                              "type": "boolean"
+                            },
+                            "lastColumn": {
+                              "description": "Emphasize the last column",
+                              "type": "boolean"
+                            },
+                            "bandedRows": {
+                              "description": "Alternate row shading (zebra striping)",
+                              "type": "boolean"
+                            },
+                            "bandedColumns": {
+                              "description": "Alternate column shading",
+                              "type": "boolean"
+                            }
+                          }
                         }
                       },
                       "required": ["columns"]
@@ -40145,6 +41069,41 @@
                             },
                             "required": ["styleId", "level"]
                           }
+                        },
+                        "cachedEntries": {
+                          "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
+                          "type": "array",
+                          "items": {
+                            "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "title": {
+                                "description": "Entry title text as it should appear in the cached TOC",
+                                "type": "string"
+                              },
+                              "level": {
+                                "minimum": 1,
+                                "maximum": 6,
+                                "description": "Outline level (1-6) of the entry",
+                                "type": "number"
+                              },
+                              "page": {
+                                "minimum": 1,
+                                "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
+                                "type": "number"
+                              },
+                              "href": {
+                                "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
+                                "type": "string"
+                              }
+                            },
+                            "required": ["title", "level"]
+                          }
+                        },
+                        "beginDirty": {
+                          "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                          "type": "boolean"
                         }
                       }
                     }
@@ -40787,6 +41746,35 @@
                                         "type": "string"
                                       }
                                     ]
+                                  },
+                                  "indent": {
+                                    "description": "Paragraph indent options",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "left": {
+                                        "description": "Left indent in twips (1/20 of a point)",
+                                        "type": "number"
+                                      },
+                                      "right": {
+                                        "description": "Right indent in twips (1/20 of a point)",
+                                        "type": "number"
+                                      },
+                                      "firstLine": {
+                                        "minimum": 0,
+                                        "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                        "type": "number"
+                                      },
+                                      "hanging": {
+                                        "minimum": 0,
+                                        "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                        "type": "number"
+                                      },
+                                      "firstLineChars": {
+                                        "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                        "type": "number"
+                                      }
+                                    }
                                   },
                                   "pageBreak": {
                                     "description": "Insert page break before paragraph",
@@ -42672,6 +43660,37 @@
                                     "description": "Repeat the header row on each page when the table spans multiple pages. Defaults to false.",
                                     "default": true,
                                     "type": "boolean"
+                                  },
+                                  "tableLook": {
+                                    "description": "Word \"Table Look\" flags for conditional formatting (banded rows, header/total row emphasis, etc.). Requires a table style that defines the corresponding variants.",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "firstRow": {
+                                        "description": "Emphasize the first (header) row",
+                                        "type": "boolean"
+                                      },
+                                      "lastRow": {
+                                        "description": "Emphasize the last (total) row",
+                                        "type": "boolean"
+                                      },
+                                      "firstColumn": {
+                                        "description": "Emphasize the first column",
+                                        "type": "boolean"
+                                      },
+                                      "lastColumn": {
+                                        "description": "Emphasize the last column",
+                                        "type": "boolean"
+                                      },
+                                      "bandedRows": {
+                                        "description": "Alternate row shading (zebra striping)",
+                                        "type": "boolean"
+                                      },
+                                      "bandedColumns": {
+                                        "description": "Alternate column shading",
+                                        "type": "boolean"
+                                      }
+                                    }
                                   }
                                 },
                                 "required": ["columns"]
@@ -43526,6 +44545,41 @@
                                       },
                                       "required": ["styleId", "level"]
                                     }
+                                  },
+                                  "cachedEntries": {
+                                    "description": "Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the \"right-click to update field\" placeholder. Word still recomputes the real TOC when the user updates fields.",
+                                    "type": "array",
+                                    "items": {
+                                      "description": "Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the \"right-click to update field\" placeholder.",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "title": {
+                                          "description": "Entry title text as it should appear in the cached TOC",
+                                          "type": "string"
+                                        },
+                                        "level": {
+                                          "minimum": 1,
+                                          "maximum": 6,
+                                          "description": "Outline level (1-6) of the entry",
+                                          "type": "number"
+                                        },
+                                        "page": {
+                                          "minimum": 1,
+                                          "description": "Page number to show for the entry. Omit to leave blank until Word updates the field.",
+                                          "type": "number"
+                                        },
+                                        "href": {
+                                          "description": "Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["title", "level"]
+                                    }
+                                  },
+                                  "beginDirty": {
+                                    "description": "Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).",
+                                    "type": "boolean"
                                   }
                                 }
                               }
@@ -44621,6 +45675,35 @@
                                                   "type": "string"
                                                 }
                                               ]
+                                            },
+                                            "indent": {
+                                              "description": "Paragraph indent options",
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "properties": {
+                                                "left": {
+                                                  "description": "Left indent in twips (1/20 of a point)",
+                                                  "type": "number"
+                                                },
+                                                "right": {
+                                                  "description": "Right indent in twips (1/20 of a point)",
+                                                  "type": "number"
+                                                },
+                                                "firstLine": {
+                                                  "minimum": 0,
+                                                  "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                                  "type": "number"
+                                                },
+                                                "hanging": {
+                                                  "minimum": 0,
+                                                  "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                                  "type": "number"
+                                                },
+                                                "firstLineChars": {
+                                                  "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                                  "type": "number"
+                                                }
+                                              }
                                             },
                                             "pageBreak": {
                                               "description": "Insert page break before paragraph",
@@ -46277,6 +47360,35 @@
                                         "type": "string"
                                       }
                                     ]
+                                  },
+                                  "indent": {
+                                    "description": "Paragraph indent options",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "left": {
+                                        "description": "Left indent in twips (1/20 of a point)",
+                                        "type": "number"
+                                      },
+                                      "right": {
+                                        "description": "Right indent in twips (1/20 of a point)",
+                                        "type": "number"
+                                      },
+                                      "firstLine": {
+                                        "minimum": 0,
+                                        "description": "First-line indent in twips (1/20 of a point). Mutually exclusive with hanging.",
+                                        "type": "number"
+                                      },
+                                      "hanging": {
+                                        "minimum": 0,
+                                        "description": "Hanging indent in twips (1/20 of a point). Mutually exclusive with firstLine.",
+                                        "type": "number"
+                                      },
+                                      "firstLineChars": {
+                                        "description": "First-line indent in hundredths of a character (e.g. 200 = 2 characters). CJK-friendly companion to firstLine; takes precedence when both are set.",
+                                        "type": "number"
+                                      }
+                                    }
                                   },
                                   "pageBreak": {
                                     "description": "Insert page break before paragraph",

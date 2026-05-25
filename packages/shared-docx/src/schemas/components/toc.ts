@@ -31,6 +31,37 @@ export const TocStyleMappingSchema = Type.Object(
   }
 );
 
+export const TocCachedEntrySchema = Type.Object(
+  {
+    title: Type.String({
+      description: 'Entry title text as it should appear in the cached TOC',
+    }),
+    level: Type.Number({
+      minimum: 1,
+      maximum: 6,
+      description: 'Outline level (1-6) of the entry',
+    }),
+    page: Type.Optional(
+      Type.Number({
+        minimum: 1,
+        description:
+          'Page number to show for the entry. Omit to leave blank until Word updates the field.',
+      })
+    ),
+    href: Type.Optional(
+      Type.String({
+        description:
+          'Optional bookmark or hyperlink target name (no leading #) used when the entry is clicked.',
+      })
+    ),
+  },
+  {
+    description:
+      'Pre-rendered Table of Contents entry. Supplying cachedEntries makes Word display the TOC immediately on open instead of the "right-click to update field" placeholder.',
+    additionalProperties: false,
+  }
+);
+
 export const TocDepthRangeSchema = Type.Object(
   {
     from: Type.Optional(
@@ -155,6 +186,18 @@ export const TocPropsSchema = Type.Object(
       Type.Array(TocStyleMappingSchema, {
         description:
           'Custom style mappings for TOC entries. Maps custom theme styles to TOC levels.',
+      })
+    ),
+    cachedEntries: Type.Optional(
+      Type.Array(TocCachedEntrySchema, {
+        description:
+          'Pre-rendered TOC entries. When supplied, Word displays the cached list immediately on first open instead of showing the "right-click to update field" placeholder. Word still recomputes the real TOC when the user updates fields.',
+      })
+    ),
+    beginDirty: Type.Optional(
+      Type.Boolean({
+        description:
+          'Mark the TOC field as dirty so Word prompts to update it on open. Only meaningful when cachedEntries are supplied; defaults to false (silent display).',
       })
     ),
   },
