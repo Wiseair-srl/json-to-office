@@ -18,10 +18,15 @@ import { SectionPropsSchema } from './components/section';
 import { ColumnsPropsSchema } from './components/columns';
 import { ListPropsSchema } from './components/list';
 
-// Create component defaults by making all fields optional (Type.Partial)
-export const HeadingComponentDefaultsSchema = Type.Partial(HeadingPropsSchema);
-export const ParagraphComponentDefaultsSchema =
-  Type.Partial(ParagraphPropsSchema);
+// Create component defaults by making all fields optional (Type.Partial).
+// `revision` (tracked-change segments) is per-instance data and must never
+// be a shared default — it would silently replace every component's text.
+export const HeadingComponentDefaultsSchema = Type.Partial(
+  Type.Omit(HeadingPropsSchema, ['revision'])
+);
+export const ParagraphComponentDefaultsSchema = Type.Partial(
+  Type.Omit(ParagraphPropsSchema, ['revision'])
+);
 export const ImageComponentDefaultsSchema = Type.Partial(ImagePropsSchema);
 export const StatisticComponentDefaultsSchema =
   Type.Partial(StatisticPropsSchema);

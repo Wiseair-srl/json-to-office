@@ -824,6 +824,57 @@
                           "keepLines": {
                             "description": "Keep all lines of heading together on same page",
                             "type": "boolean"
+                          },
+                          "revision": {
+                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "author": {
+                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                "type": "string"
+                              },
+                              "date": {
+                                "format": "date-time",
+                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                "type": "string"
+                              },
+                              "segments": {
+                                "minItems": 1,
+                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                "type": "array",
+                                "items": {
+                                  "description": "A contiguous run of text sharing one revision state",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                      "anyOf": [
+                                        {
+                                          "const": "equal",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "insert",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "delete",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "text": {
+                                      "description": "Literal text of this segment (rendered without markdown)",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["type", "text"]
+                                }
+                              }
+                            },
+                            "required": ["segments"]
                           }
                         },
                         "required": ["text"]
@@ -1208,6 +1259,57 @@
                           "id": {
                             "description": "Unique identifier for internal linking (bookmark anchor)",
                             "type": "string"
+                          },
+                          "revision": {
+                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "author": {
+                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                "type": "string"
+                              },
+                              "date": {
+                                "format": "date-time",
+                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                "type": "string"
+                              },
+                              "segments": {
+                                "minItems": 1,
+                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                "type": "array",
+                                "items": {
+                                  "description": "A contiguous run of text sharing one revision state",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                      "anyOf": [
+                                        {
+                                          "const": "equal",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "insert",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "delete",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "text": {
+                                      "description": "Literal text of this segment (rendered without markdown)",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["type", "text"]
+                                }
+                              }
+                            },
+                            "required": ["segments"]
                           }
                         },
                         "required": ["text"]
@@ -2021,6 +2123,57 @@
                           "keepLines": {
                             "description": "Keep all lines of heading together on same page",
                             "type": "boolean"
+                          },
+                          "revision": {
+                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "author": {
+                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                "type": "string"
+                              },
+                              "date": {
+                                "format": "date-time",
+                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                "type": "string"
+                              },
+                              "segments": {
+                                "minItems": 1,
+                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                "type": "array",
+                                "items": {
+                                  "description": "A contiguous run of text sharing one revision state",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                      "anyOf": [
+                                        {
+                                          "const": "equal",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "insert",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "delete",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "text": {
+                                      "description": "Literal text of this segment (rendered without markdown)",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["type", "text"]
+                                }
+                              }
+                            },
+                            "required": ["segments"]
                           }
                         },
                         "required": ["text"]
@@ -2405,6 +2558,57 @@
                           "id": {
                             "description": "Unique identifier for internal linking (bookmark anchor)",
                             "type": "string"
+                          },
+                          "revision": {
+                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "author": {
+                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                "type": "string"
+                              },
+                              "date": {
+                                "format": "date-time",
+                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                "type": "string"
+                              },
+                              "segments": {
+                                "minItems": 1,
+                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                "type": "array",
+                                "items": {
+                                  "description": "A contiguous run of text sharing one revision state",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                      "anyOf": [
+                                        {
+                                          "const": "equal",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "insert",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "delete",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "text": {
+                                      "description": "Literal text of this segment (rendered without markdown)",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["type", "text"]
+                                }
+                              }
+                            },
+                            "required": ["segments"]
                           }
                         },
                         "required": ["text"]
@@ -4140,6 +4344,57 @@
                                       "maximum": 8,
                                       "description": "Nesting level for this item",
                                       "type": "number"
+                                    },
+                                    "revision": {
+                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "author": {
+                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                          "type": "string"
+                                        },
+                                        "date": {
+                                          "format": "date-time",
+                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                          "type": "string"
+                                        },
+                                        "segments": {
+                                          "minItems": 1,
+                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                          "type": "array",
+                                          "items": {
+                                            "description": "A contiguous run of text sharing one revision state",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                "anyOf": [
+                                                  {
+                                                    "const": "equal",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "insert",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "delete",
+                                                    "type": "string"
+                                                  }
+                                                ]
+                                              },
+                                              "text": {
+                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": ["type", "text"]
+                                          }
+                                        }
+                                      },
+                                      "required": ["segments"]
                                     }
                                   },
                                   "required": ["text"]
@@ -5855,6 +6110,57 @@
                                     "keepLines": {
                                       "description": "Keep all lines of heading together on same page",
                                       "type": "boolean"
+                                    },
+                                    "revision": {
+                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "author": {
+                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                          "type": "string"
+                                        },
+                                        "date": {
+                                          "format": "date-time",
+                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                          "type": "string"
+                                        },
+                                        "segments": {
+                                          "minItems": 1,
+                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                          "type": "array",
+                                          "items": {
+                                            "description": "A contiguous run of text sharing one revision state",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                "anyOf": [
+                                                  {
+                                                    "const": "equal",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "insert",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "delete",
+                                                    "type": "string"
+                                                  }
+                                                ]
+                                              },
+                                              "text": {
+                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": ["type", "text"]
+                                          }
+                                        }
+                                      },
+                                      "required": ["segments"]
                                     }
                                   },
                                   "required": ["text"]
@@ -6239,6 +6545,57 @@
                                     "id": {
                                       "description": "Unique identifier for internal linking (bookmark anchor)",
                                       "type": "string"
+                                    },
+                                    "revision": {
+                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "author": {
+                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                          "type": "string"
+                                        },
+                                        "date": {
+                                          "format": "date-time",
+                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                          "type": "string"
+                                        },
+                                        "segments": {
+                                          "minItems": 1,
+                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                          "type": "array",
+                                          "items": {
+                                            "description": "A contiguous run of text sharing one revision state",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                "anyOf": [
+                                                  {
+                                                    "const": "equal",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "insert",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "delete",
+                                                    "type": "string"
+                                                  }
+                                                ]
+                                              },
+                                              "text": {
+                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": ["type", "text"]
+                                          }
+                                        }
+                                      },
+                                      "required": ["segments"]
                                     }
                                   },
                                   "required": ["text"]
@@ -7130,6 +7487,57 @@
                           "keepLines": {
                             "description": "Keep all lines of heading together on same page",
                             "type": "boolean"
+                          },
+                          "revision": {
+                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "author": {
+                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                "type": "string"
+                              },
+                              "date": {
+                                "format": "date-time",
+                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                "type": "string"
+                              },
+                              "segments": {
+                                "minItems": 1,
+                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                "type": "array",
+                                "items": {
+                                  "description": "A contiguous run of text sharing one revision state",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                      "anyOf": [
+                                        {
+                                          "const": "equal",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "insert",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "delete",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "text": {
+                                      "description": "Literal text of this segment (rendered without markdown)",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["type", "text"]
+                                }
+                              }
+                            },
+                            "required": ["segments"]
                           }
                         },
                         "required": ["text"]
@@ -7514,6 +7922,57 @@
                           "id": {
                             "description": "Unique identifier for internal linking (bookmark anchor)",
                             "type": "string"
+                          },
+                          "revision": {
+                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "author": {
+                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                "type": "string"
+                              },
+                              "date": {
+                                "format": "date-time",
+                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                "type": "string"
+                              },
+                              "segments": {
+                                "minItems": 1,
+                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                "type": "array",
+                                "items": {
+                                  "description": "A contiguous run of text sharing one revision state",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                      "anyOf": [
+                                        {
+                                          "const": "equal",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "insert",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "delete",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "text": {
+                                      "description": "Literal text of this segment (rendered without markdown)",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["type", "text"]
+                                }
+                              }
+                            },
+                            "required": ["segments"]
                           }
                         },
                         "required": ["text"]
@@ -9249,6 +9708,57 @@
                                       "maximum": 8,
                                       "description": "Nesting level for this item",
                                       "type": "number"
+                                    },
+                                    "revision": {
+                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "author": {
+                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                          "type": "string"
+                                        },
+                                        "date": {
+                                          "format": "date-time",
+                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                          "type": "string"
+                                        },
+                                        "segments": {
+                                          "minItems": 1,
+                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                          "type": "array",
+                                          "items": {
+                                            "description": "A contiguous run of text sharing one revision state",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                "anyOf": [
+                                                  {
+                                                    "const": "equal",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "insert",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "delete",
+                                                    "type": "string"
+                                                  }
+                                                ]
+                                              },
+                                              "text": {
+                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": ["type", "text"]
+                                          }
+                                        }
+                                      },
+                                      "required": ["segments"]
                                     }
                                   },
                                   "required": ["text"]
@@ -10511,6 +11021,57 @@
                                     "keepLines": {
                                       "description": "Keep all lines of heading together on same page",
                                       "type": "boolean"
+                                    },
+                                    "revision": {
+                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "author": {
+                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                          "type": "string"
+                                        },
+                                        "date": {
+                                          "format": "date-time",
+                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                          "type": "string"
+                                        },
+                                        "segments": {
+                                          "minItems": 1,
+                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                          "type": "array",
+                                          "items": {
+                                            "description": "A contiguous run of text sharing one revision state",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                "anyOf": [
+                                                  {
+                                                    "const": "equal",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "insert",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "delete",
+                                                    "type": "string"
+                                                  }
+                                                ]
+                                              },
+                                              "text": {
+                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": ["type", "text"]
+                                          }
+                                        }
+                                      },
+                                      "required": ["segments"]
                                     }
                                   },
                                   "required": ["text"]
@@ -10895,6 +11456,57 @@
                                     "id": {
                                       "description": "Unique identifier for internal linking (bookmark anchor)",
                                       "type": "string"
+                                    },
+                                    "revision": {
+                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "author": {
+                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                          "type": "string"
+                                        },
+                                        "date": {
+                                          "format": "date-time",
+                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                          "type": "string"
+                                        },
+                                        "segments": {
+                                          "minItems": 1,
+                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                          "type": "array",
+                                          "items": {
+                                            "description": "A contiguous run of text sharing one revision state",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                "anyOf": [
+                                                  {
+                                                    "const": "equal",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "insert",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "delete",
+                                                    "type": "string"
+                                                  }
+                                                ]
+                                              },
+                                              "text": {
+                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": ["type", "text"]
+                                          }
+                                        }
+                                      },
+                                      "required": ["segments"]
                                     }
                                   },
                                   "required": ["text"]
@@ -12630,6 +13242,60 @@
                                                 "maximum": 8,
                                                 "description": "Nesting level for this item",
                                                 "type": "number"
+                                              },
+                                              "revision": {
+                                                "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "properties": {
+                                                  "author": {
+                                                    "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                    "type": "string"
+                                                  },
+                                                  "date": {
+                                                    "format": "date-time",
+                                                    "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                    "type": "string"
+                                                  },
+                                                  "segments": {
+                                                    "minItems": 1,
+                                                    "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                    "type": "array",
+                                                    "items": {
+                                                      "description": "A contiguous run of text sharing one revision state",
+                                                      "additionalProperties": false,
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                          "anyOf": [
+                                                            {
+                                                              "const": "equal",
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "const": "insert",
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "const": "delete",
+                                                              "type": "string"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "text": {
+                                                          "description": "Literal text of this segment (rendered without markdown)",
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "type",
+                                                        "text"
+                                                      ]
+                                                    }
+                                                  }
+                                                },
+                                                "required": ["segments"]
                                               }
                                             },
                                             "required": ["text"]
@@ -14348,6 +15014,60 @@
                                               "keepLines": {
                                                 "description": "Keep all lines of heading together on same page",
                                                 "type": "boolean"
+                                              },
+                                              "revision": {
+                                                "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "properties": {
+                                                  "author": {
+                                                    "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                    "type": "string"
+                                                  },
+                                                  "date": {
+                                                    "format": "date-time",
+                                                    "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                    "type": "string"
+                                                  },
+                                                  "segments": {
+                                                    "minItems": 1,
+                                                    "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                    "type": "array",
+                                                    "items": {
+                                                      "description": "A contiguous run of text sharing one revision state",
+                                                      "additionalProperties": false,
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                          "anyOf": [
+                                                            {
+                                                              "const": "equal",
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "const": "insert",
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "const": "delete",
+                                                              "type": "string"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "text": {
+                                                          "description": "Literal text of this segment (rendered without markdown)",
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "type",
+                                                        "text"
+                                                      ]
+                                                    }
+                                                  }
+                                                },
+                                                "required": ["segments"]
                                               }
                                             },
                                             "required": ["text"]
@@ -14735,6 +15455,60 @@
                                               "id": {
                                                 "description": "Unique identifier for internal linking (bookmark anchor)",
                                                 "type": "string"
+                                              },
+                                              "revision": {
+                                                "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "properties": {
+                                                  "author": {
+                                                    "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                    "type": "string"
+                                                  },
+                                                  "date": {
+                                                    "format": "date-time",
+                                                    "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                    "type": "string"
+                                                  },
+                                                  "segments": {
+                                                    "minItems": 1,
+                                                    "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                    "type": "array",
+                                                    "items": {
+                                                      "description": "A contiguous run of text sharing one revision state",
+                                                      "additionalProperties": false,
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                          "anyOf": [
+                                                            {
+                                                              "const": "equal",
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "const": "insert",
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "const": "delete",
+                                                              "type": "string"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "text": {
+                                                          "description": "Literal text of this segment (rendered without markdown)",
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "type",
+                                                        "text"
+                                                      ]
+                                                    }
+                                                  }
+                                                },
+                                                "required": ["segments"]
                                               }
                                             },
                                             "required": ["text"]
@@ -16007,6 +16781,57 @@
                                     "keepLines": {
                                       "description": "Keep all lines of heading together on same page",
                                       "type": "boolean"
+                                    },
+                                    "revision": {
+                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "author": {
+                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                          "type": "string"
+                                        },
+                                        "date": {
+                                          "format": "date-time",
+                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                          "type": "string"
+                                        },
+                                        "segments": {
+                                          "minItems": 1,
+                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                          "type": "array",
+                                          "items": {
+                                            "description": "A contiguous run of text sharing one revision state",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                "anyOf": [
+                                                  {
+                                                    "const": "equal",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "insert",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "delete",
+                                                    "type": "string"
+                                                  }
+                                                ]
+                                              },
+                                              "text": {
+                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": ["type", "text"]
+                                          }
+                                        }
+                                      },
+                                      "required": ["segments"]
                                     }
                                   },
                                   "required": ["text"]
@@ -16391,6 +17216,57 @@
                                     "id": {
                                       "description": "Unique identifier for internal linking (bookmark anchor)",
                                       "type": "string"
+                                    },
+                                    "revision": {
+                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "properties": {
+                                        "author": {
+                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                          "type": "string"
+                                        },
+                                        "date": {
+                                          "format": "date-time",
+                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                          "type": "string"
+                                        },
+                                        "segments": {
+                                          "minItems": 1,
+                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                          "type": "array",
+                                          "items": {
+                                            "description": "A contiguous run of text sharing one revision state",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                "anyOf": [
+                                                  {
+                                                    "const": "equal",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "insert",
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "const": "delete",
+                                                    "type": "string"
+                                                  }
+                                                ]
+                                              },
+                                              "text": {
+                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": ["type", "text"]
+                                          }
+                                        }
+                                      },
+                                      "required": ["segments"]
                                     }
                                   },
                                   "required": ["text"]
@@ -19375,6 +20251,57 @@
                                     "maximum": 8,
                                     "description": "Nesting level for this item",
                                     "type": "number"
+                                  },
+                                  "revision": {
+                                    "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "author": {
+                                        "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                        "type": "string"
+                                      },
+                                      "date": {
+                                        "format": "date-time",
+                                        "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                        "type": "string"
+                                      },
+                                      "segments": {
+                                        "minItems": 1,
+                                        "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                        "type": "array",
+                                        "items": {
+                                          "description": "A contiguous run of text sharing one revision state",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                              "anyOf": [
+                                                {
+                                                  "const": "equal",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "insert",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "delete",
+                                                  "type": "string"
+                                                }
+                                              ]
+                                            },
+                                            "text": {
+                                              "description": "Literal text of this segment (rendered without markdown)",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["type", "text"]
+                                        }
+                                      }
+                                    },
+                                    "required": ["segments"]
                                   }
                                 },
                                 "required": ["text"]
@@ -20034,6 +20961,10 @@
                     }
                   }
                 },
+                "trackRevisions": {
+                  "description": "Open the document in track-changes mode: Word marks any further edits as revisions. Set automatically on redline documents produced by the diff engine",
+                  "type": "boolean"
+                },
                 "metadata": {
                   "description": "Document metadata (title, author, company, dates, etc.)",
                   "additionalProperties": false,
@@ -20518,6 +21449,57 @@
                                 "keepLines": {
                                   "description": "Keep all lines of heading together on same page",
                                   "type": "boolean"
+                                },
+                                "revision": {
+                                  "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "author": {
+                                      "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                      "type": "string"
+                                    },
+                                    "date": {
+                                      "format": "date-time",
+                                      "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                      "type": "string"
+                                    },
+                                    "segments": {
+                                      "minItems": 1,
+                                      "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                      "type": "array",
+                                      "items": {
+                                        "description": "A contiguous run of text sharing one revision state",
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                            "anyOf": [
+                                              {
+                                                "const": "equal",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "insert",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "delete",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
+                                          "text": {
+                                            "description": "Literal text of this segment (rendered without markdown)",
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["type", "text"]
+                                      }
+                                    }
+                                  },
+                                  "required": ["segments"]
                                 }
                               },
                               "required": ["text"]
@@ -20902,6 +21884,57 @@
                                 "id": {
                                   "description": "Unique identifier for internal linking (bookmark anchor)",
                                   "type": "string"
+                                },
+                                "revision": {
+                                  "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "author": {
+                                      "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                      "type": "string"
+                                    },
+                                    "date": {
+                                      "format": "date-time",
+                                      "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                      "type": "string"
+                                    },
+                                    "segments": {
+                                      "minItems": 1,
+                                      "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                      "type": "array",
+                                      "items": {
+                                        "description": "A contiguous run of text sharing one revision state",
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                            "anyOf": [
+                                              {
+                                                "const": "equal",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "insert",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "delete",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
+                                          "text": {
+                                            "description": "Literal text of this segment (rendered without markdown)",
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["type", "text"]
+                                      }
+                                    }
+                                  },
+                                  "required": ["segments"]
                                 }
                               },
                               "required": ["text"]
@@ -22637,6 +23670,57 @@
                                             "maximum": 8,
                                             "description": "Nesting level for this item",
                                             "type": "number"
+                                          },
+                                          "revision": {
+                                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "author": {
+                                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                "type": "string"
+                                              },
+                                              "date": {
+                                                "format": "date-time",
+                                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                "type": "string"
+                                              },
+                                              "segments": {
+                                                "minItems": 1,
+                                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                "type": "array",
+                                                "items": {
+                                                  "description": "A contiguous run of text sharing one revision state",
+                                                  "additionalProperties": false,
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                      "anyOf": [
+                                                        {
+                                                          "const": "equal",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "insert",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "delete",
+                                                          "type": "string"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "text": {
+                                                      "description": "Literal text of this segment (rendered without markdown)",
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "required": ["type", "text"]
+                                                }
+                                              }
+                                            },
+                                            "required": ["segments"]
                                           }
                                         },
                                         "required": ["text"]
@@ -23899,6 +24983,57 @@
                                           "keepLines": {
                                             "description": "Keep all lines of heading together on same page",
                                             "type": "boolean"
+                                          },
+                                          "revision": {
+                                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "author": {
+                                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                "type": "string"
+                                              },
+                                              "date": {
+                                                "format": "date-time",
+                                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                "type": "string"
+                                              },
+                                              "segments": {
+                                                "minItems": 1,
+                                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                "type": "array",
+                                                "items": {
+                                                  "description": "A contiguous run of text sharing one revision state",
+                                                  "additionalProperties": false,
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                      "anyOf": [
+                                                        {
+                                                          "const": "equal",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "insert",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "delete",
+                                                          "type": "string"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "text": {
+                                                      "description": "Literal text of this segment (rendered without markdown)",
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "required": ["type", "text"]
+                                                }
+                                              }
+                                            },
+                                            "required": ["segments"]
                                           }
                                         },
                                         "required": ["text"]
@@ -24283,6 +25418,57 @@
                                           "id": {
                                             "description": "Unique identifier for internal linking (bookmark anchor)",
                                             "type": "string"
+                                          },
+                                          "revision": {
+                                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "author": {
+                                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                "type": "string"
+                                              },
+                                              "date": {
+                                                "format": "date-time",
+                                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                "type": "string"
+                                              },
+                                              "segments": {
+                                                "minItems": 1,
+                                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                "type": "array",
+                                                "items": {
+                                                  "description": "A contiguous run of text sharing one revision state",
+                                                  "additionalProperties": false,
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                      "anyOf": [
+                                                        {
+                                                          "const": "equal",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "insert",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "delete",
+                                                          "type": "string"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "text": {
+                                                      "description": "Literal text of this segment (rendered without markdown)",
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "required": ["type", "text"]
+                                                }
+                                              }
+                                            },
+                                            "required": ["segments"]
                                           }
                                         },
                                         "required": ["text"]
@@ -26018,6 +27204,60 @@
                                                       "maximum": 8,
                                                       "description": "Nesting level for this item",
                                                       "type": "number"
+                                                    },
+                                                    "revision": {
+                                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                                      "additionalProperties": false,
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "author": {
+                                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                          "type": "string"
+                                                        },
+                                                        "date": {
+                                                          "format": "date-time",
+                                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                          "type": "string"
+                                                        },
+                                                        "segments": {
+                                                          "minItems": 1,
+                                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                          "type": "array",
+                                                          "items": {
+                                                            "description": "A contiguous run of text sharing one revision state",
+                                                            "additionalProperties": false,
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "type": {
+                                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                                "anyOf": [
+                                                                  {
+                                                                    "const": "equal",
+                                                                    "type": "string"
+                                                                  },
+                                                                  {
+                                                                    "const": "insert",
+                                                                    "type": "string"
+                                                                  },
+                                                                  {
+                                                                    "const": "delete",
+                                                                    "type": "string"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "text": {
+                                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "type",
+                                                              "text"
+                                                            ]
+                                                          }
+                                                        }
+                                                      },
+                                                      "required": ["segments"]
                                                     }
                                                   },
                                                   "required": ["text"]
@@ -27739,6 +28979,60 @@
                                                     "keepLines": {
                                                       "description": "Keep all lines of heading together on same page",
                                                       "type": "boolean"
+                                                    },
+                                                    "revision": {
+                                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                                      "additionalProperties": false,
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "author": {
+                                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                          "type": "string"
+                                                        },
+                                                        "date": {
+                                                          "format": "date-time",
+                                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                          "type": "string"
+                                                        },
+                                                        "segments": {
+                                                          "minItems": 1,
+                                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                          "type": "array",
+                                                          "items": {
+                                                            "description": "A contiguous run of text sharing one revision state",
+                                                            "additionalProperties": false,
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "type": {
+                                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                                "anyOf": [
+                                                                  {
+                                                                    "const": "equal",
+                                                                    "type": "string"
+                                                                  },
+                                                                  {
+                                                                    "const": "insert",
+                                                                    "type": "string"
+                                                                  },
+                                                                  {
+                                                                    "const": "delete",
+                                                                    "type": "string"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "text": {
+                                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "type",
+                                                              "text"
+                                                            ]
+                                                          }
+                                                        }
+                                                      },
+                                                      "required": ["segments"]
                                                     }
                                                   },
                                                   "required": ["text"]
@@ -28126,6 +29420,60 @@
                                                     "id": {
                                                       "description": "Unique identifier for internal linking (bookmark anchor)",
                                                       "type": "string"
+                                                    },
+                                                    "revision": {
+                                                      "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                                      "additionalProperties": false,
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "author": {
+                                                          "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                          "type": "string"
+                                                        },
+                                                        "date": {
+                                                          "format": "date-time",
+                                                          "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                          "type": "string"
+                                                        },
+                                                        "segments": {
+                                                          "minItems": 1,
+                                                          "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                          "type": "array",
+                                                          "items": {
+                                                            "description": "A contiguous run of text sharing one revision state",
+                                                            "additionalProperties": false,
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "type": {
+                                                                "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                                "anyOf": [
+                                                                  {
+                                                                    "const": "equal",
+                                                                    "type": "string"
+                                                                  },
+                                                                  {
+                                                                    "const": "insert",
+                                                                    "type": "string"
+                                                                  },
+                                                                  {
+                                                                    "const": "delete",
+                                                                    "type": "string"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "text": {
+                                                                "description": "Literal text of this segment (rendered without markdown)",
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "type",
+                                                              "text"
+                                                            ]
+                                                          }
+                                                        }
+                                                      },
+                                                      "required": ["segments"]
                                                     }
                                                   },
                                                   "required": ["text"]
@@ -29398,6 +30746,57 @@
                                           "keepLines": {
                                             "description": "Keep all lines of heading together on same page",
                                             "type": "boolean"
+                                          },
+                                          "revision": {
+                                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "author": {
+                                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                "type": "string"
+                                              },
+                                              "date": {
+                                                "format": "date-time",
+                                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                "type": "string"
+                                              },
+                                              "segments": {
+                                                "minItems": 1,
+                                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                "type": "array",
+                                                "items": {
+                                                  "description": "A contiguous run of text sharing one revision state",
+                                                  "additionalProperties": false,
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                      "anyOf": [
+                                                        {
+                                                          "const": "equal",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "insert",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "delete",
+                                                          "type": "string"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "text": {
+                                                      "description": "Literal text of this segment (rendered without markdown)",
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "required": ["type", "text"]
+                                                }
+                                              }
+                                            },
+                                            "required": ["segments"]
                                           }
                                         },
                                         "required": ["text"]
@@ -29782,6 +31181,57 @@
                                           "id": {
                                             "description": "Unique identifier for internal linking (bookmark anchor)",
                                             "type": "string"
+                                          },
+                                          "revision": {
+                                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "properties": {
+                                              "author": {
+                                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                "type": "string"
+                                              },
+                                              "date": {
+                                                "format": "date-time",
+                                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                "type": "string"
+                                              },
+                                              "segments": {
+                                                "minItems": 1,
+                                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                "type": "array",
+                                                "items": {
+                                                  "description": "A contiguous run of text sharing one revision state",
+                                                  "additionalProperties": false,
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                      "anyOf": [
+                                                        {
+                                                          "const": "equal",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "insert",
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "const": "delete",
+                                                          "type": "string"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "text": {
+                                                      "description": "Literal text of this segment (rendered without markdown)",
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "required": ["type", "text"]
+                                                }
+                                              }
+                                            },
+                                            "required": ["segments"]
                                           }
                                         },
                                         "required": ["text"]
@@ -30510,6 +31960,57 @@
                 "keepLines": {
                   "description": "Keep all lines of heading together on same page",
                   "type": "boolean"
+                },
+                "revision": {
+                  "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "author": {
+                      "description": "Revision author shown in Word (default: \"json-to-office\")",
+                      "type": "string"
+                    },
+                    "date": {
+                      "format": "date-time",
+                      "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                      "type": "string"
+                    },
+                    "segments": {
+                      "minItems": 1,
+                      "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                      "type": "array",
+                      "items": {
+                        "description": "A contiguous run of text sharing one revision state",
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                            "anyOf": [
+                              {
+                                "const": "equal",
+                                "type": "string"
+                              },
+                              {
+                                "const": "insert",
+                                "type": "string"
+                              },
+                              {
+                                "const": "delete",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "text": {
+                            "description": "Literal text of this segment (rendered without markdown)",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["type", "text"]
+                      }
+                    }
+                  },
+                  "required": ["segments"]
                 }
               },
               "required": ["text"]
@@ -30894,6 +32395,57 @@
                 "id": {
                   "description": "Unique identifier for internal linking (bookmark anchor)",
                   "type": "string"
+                },
+                "revision": {
+                  "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "author": {
+                      "description": "Revision author shown in Word (default: \"json-to-office\")",
+                      "type": "string"
+                    },
+                    "date": {
+                      "format": "date-time",
+                      "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                      "type": "string"
+                    },
+                    "segments": {
+                      "minItems": 1,
+                      "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                      "type": "array",
+                      "items": {
+                        "description": "A contiguous run of text sharing one revision state",
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                            "anyOf": [
+                              {
+                                "const": "equal",
+                                "type": "string"
+                              },
+                              {
+                                "const": "insert",
+                                "type": "string"
+                              },
+                              {
+                                "const": "delete",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "text": {
+                            "description": "Literal text of this segment (rendered without markdown)",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["type", "text"]
+                      }
+                    }
+                  },
+                  "required": ["segments"]
                 }
               },
               "required": ["text"]
@@ -32629,6 +34181,57 @@
                             "maximum": 8,
                             "description": "Nesting level for this item",
                             "type": "number"
+                          },
+                          "revision": {
+                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "author": {
+                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                "type": "string"
+                              },
+                              "date": {
+                                "format": "date-time",
+                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                "type": "string"
+                              },
+                              "segments": {
+                                "minItems": 1,
+                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                "type": "array",
+                                "items": {
+                                  "description": "A contiguous run of text sharing one revision state",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                      "anyOf": [
+                                        {
+                                          "const": "equal",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "insert",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "delete",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "text": {
+                                      "description": "Literal text of this segment (rendered without markdown)",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["type", "text"]
+                                }
+                              }
+                            },
+                            "required": ["segments"]
                           }
                         },
                         "required": ["text"]
@@ -36080,6 +37683,57 @@
                             "maximum": 8,
                             "description": "Nesting level for this item",
                             "type": "number"
+                          },
+                          "revision": {
+                            "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                              "author": {
+                                "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                "type": "string"
+                              },
+                              "date": {
+                                "format": "date-time",
+                                "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                "type": "string"
+                              },
+                              "segments": {
+                                "minItems": 1,
+                                "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                "type": "array",
+                                "items": {
+                                  "description": "A contiguous run of text sharing one revision state",
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                      "anyOf": [
+                                        {
+                                          "const": "equal",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "insert",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "delete",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "text": {
+                                      "description": "Literal text of this segment (rendered without markdown)",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["type", "text"]
+                                }
+                              }
+                            },
+                            "required": ["segments"]
                           }
                         },
                         "required": ["text"]
@@ -36739,6 +38393,10 @@
             }
           }
         },
+        "trackRevisions": {
+          "description": "Open the document in track-changes mode: Word marks any further edits as revisions. Set automatically on redline documents produced by the diff engine",
+          "type": "boolean"
+        },
         "metadata": {
           "description": "Document metadata (title, author, company, dates, etc.)",
           "additionalProperties": false,
@@ -37220,6 +38878,57 @@
                         "keepLines": {
                           "description": "Keep all lines of heading together on same page",
                           "type": "boolean"
+                        },
+                        "revision": {
+                          "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "author": {
+                              "description": "Revision author shown in Word (default: \"json-to-office\")",
+                              "type": "string"
+                            },
+                            "date": {
+                              "format": "date-time",
+                              "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                              "type": "string"
+                            },
+                            "segments": {
+                              "minItems": 1,
+                              "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                              "type": "array",
+                              "items": {
+                                "description": "A contiguous run of text sharing one revision state",
+                                "additionalProperties": false,
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                    "anyOf": [
+                                      {
+                                        "const": "equal",
+                                        "type": "string"
+                                      },
+                                      {
+                                        "const": "insert",
+                                        "type": "string"
+                                      },
+                                      {
+                                        "const": "delete",
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "text": {
+                                    "description": "Literal text of this segment (rendered without markdown)",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["type", "text"]
+                              }
+                            }
+                          },
+                          "required": ["segments"]
                         }
                       },
                       "required": ["text"]
@@ -37604,6 +39313,57 @@
                         "id": {
                           "description": "Unique identifier for internal linking (bookmark anchor)",
                           "type": "string"
+                        },
+                        "revision": {
+                          "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "author": {
+                              "description": "Revision author shown in Word (default: \"json-to-office\")",
+                              "type": "string"
+                            },
+                            "date": {
+                              "format": "date-time",
+                              "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                              "type": "string"
+                            },
+                            "segments": {
+                              "minItems": 1,
+                              "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                              "type": "array",
+                              "items": {
+                                "description": "A contiguous run of text sharing one revision state",
+                                "additionalProperties": false,
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                    "anyOf": [
+                                      {
+                                        "const": "equal",
+                                        "type": "string"
+                                      },
+                                      {
+                                        "const": "insert",
+                                        "type": "string"
+                                      },
+                                      {
+                                        "const": "delete",
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "text": {
+                                    "description": "Literal text of this segment (rendered without markdown)",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["type", "text"]
+                              }
+                            }
+                          },
+                          "required": ["segments"]
                         }
                       },
                       "required": ["text"]
@@ -39339,6 +41099,57 @@
                                     "maximum": 8,
                                     "description": "Nesting level for this item",
                                     "type": "number"
+                                  },
+                                  "revision": {
+                                    "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "author": {
+                                        "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                        "type": "string"
+                                      },
+                                      "date": {
+                                        "format": "date-time",
+                                        "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                        "type": "string"
+                                      },
+                                      "segments": {
+                                        "minItems": 1,
+                                        "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                        "type": "array",
+                                        "items": {
+                                          "description": "A contiguous run of text sharing one revision state",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                              "anyOf": [
+                                                {
+                                                  "const": "equal",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "insert",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "delete",
+                                                  "type": "string"
+                                                }
+                                              ]
+                                            },
+                                            "text": {
+                                              "description": "Literal text of this segment (rendered without markdown)",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["type", "text"]
+                                        }
+                                      }
+                                    },
+                                    "required": ["segments"]
                                   }
                                 },
                                 "required": ["text"]
@@ -40601,6 +42412,57 @@
                                   "keepLines": {
                                     "description": "Keep all lines of heading together on same page",
                                     "type": "boolean"
+                                  },
+                                  "revision": {
+                                    "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "author": {
+                                        "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                        "type": "string"
+                                      },
+                                      "date": {
+                                        "format": "date-time",
+                                        "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                        "type": "string"
+                                      },
+                                      "segments": {
+                                        "minItems": 1,
+                                        "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                        "type": "array",
+                                        "items": {
+                                          "description": "A contiguous run of text sharing one revision state",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                              "anyOf": [
+                                                {
+                                                  "const": "equal",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "insert",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "delete",
+                                                  "type": "string"
+                                                }
+                                              ]
+                                            },
+                                            "text": {
+                                              "description": "Literal text of this segment (rendered without markdown)",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["type", "text"]
+                                        }
+                                      }
+                                    },
+                                    "required": ["segments"]
                                   }
                                 },
                                 "required": ["text"]
@@ -40985,6 +42847,57 @@
                                   "id": {
                                     "description": "Unique identifier for internal linking (bookmark anchor)",
                                     "type": "string"
+                                  },
+                                  "revision": {
+                                    "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "author": {
+                                        "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                        "type": "string"
+                                      },
+                                      "date": {
+                                        "format": "date-time",
+                                        "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                        "type": "string"
+                                      },
+                                      "segments": {
+                                        "minItems": 1,
+                                        "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                        "type": "array",
+                                        "items": {
+                                          "description": "A contiguous run of text sharing one revision state",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                              "anyOf": [
+                                                {
+                                                  "const": "equal",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "insert",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "delete",
+                                                  "type": "string"
+                                                }
+                                              ]
+                                            },
+                                            "text": {
+                                              "description": "Literal text of this segment (rendered without markdown)",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["type", "text"]
+                                        }
+                                      }
+                                    },
+                                    "required": ["segments"]
                                   }
                                 },
                                 "required": ["text"]
@@ -42720,6 +44633,57 @@
                                               "maximum": 8,
                                               "description": "Nesting level for this item",
                                               "type": "number"
+                                            },
+                                            "revision": {
+                                              "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "properties": {
+                                                "author": {
+                                                  "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                  "type": "string"
+                                                },
+                                                "date": {
+                                                  "format": "date-time",
+                                                  "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                  "type": "string"
+                                                },
+                                                "segments": {
+                                                  "minItems": 1,
+                                                  "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                  "type": "array",
+                                                  "items": {
+                                                    "description": "A contiguous run of text sharing one revision state",
+                                                    "additionalProperties": false,
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "type": {
+                                                        "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                        "anyOf": [
+                                                          {
+                                                            "const": "equal",
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "const": "insert",
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "const": "delete",
+                                                            "type": "string"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "text": {
+                                                        "description": "Literal text of this segment (rendered without markdown)",
+                                                        "type": "string"
+                                                      }
+                                                    },
+                                                    "required": ["type", "text"]
+                                                  }
+                                                }
+                                              },
+                                              "required": ["segments"]
                                             }
                                           },
                                           "required": ["text"]
@@ -44435,6 +46399,57 @@
                                             "keepLines": {
                                               "description": "Keep all lines of heading together on same page",
                                               "type": "boolean"
+                                            },
+                                            "revision": {
+                                              "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "properties": {
+                                                "author": {
+                                                  "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                  "type": "string"
+                                                },
+                                                "date": {
+                                                  "format": "date-time",
+                                                  "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                  "type": "string"
+                                                },
+                                                "segments": {
+                                                  "minItems": 1,
+                                                  "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                  "type": "array",
+                                                  "items": {
+                                                    "description": "A contiguous run of text sharing one revision state",
+                                                    "additionalProperties": false,
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "type": {
+                                                        "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                        "anyOf": [
+                                                          {
+                                                            "const": "equal",
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "const": "insert",
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "const": "delete",
+                                                            "type": "string"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "text": {
+                                                        "description": "Literal text of this segment (rendered without markdown)",
+                                                        "type": "string"
+                                                      }
+                                                    },
+                                                    "required": ["type", "text"]
+                                                  }
+                                                }
+                                              },
+                                              "required": ["segments"]
                                             }
                                           },
                                           "required": ["text"]
@@ -44819,6 +46834,57 @@
                                             "id": {
                                               "description": "Unique identifier for internal linking (bookmark anchor)",
                                               "type": "string"
+                                            },
+                                            "revision": {
+                                              "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "properties": {
+                                                "author": {
+                                                  "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                                  "type": "string"
+                                                },
+                                                "date": {
+                                                  "format": "date-time",
+                                                  "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                                  "type": "string"
+                                                },
+                                                "segments": {
+                                                  "minItems": 1,
+                                                  "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                                  "type": "array",
+                                                  "items": {
+                                                    "description": "A contiguous run of text sharing one revision state",
+                                                    "additionalProperties": false,
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "type": {
+                                                        "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                                        "anyOf": [
+                                                          {
+                                                            "const": "equal",
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "const": "insert",
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "const": "delete",
+                                                            "type": "string"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "text": {
+                                                        "description": "Literal text of this segment (rendered without markdown)",
+                                                        "type": "string"
+                                                      }
+                                                    },
+                                                    "required": ["type", "text"]
+                                                  }
+                                                }
+                                              },
+                                              "required": ["segments"]
                                             }
                                           },
                                           "required": ["text"]
@@ -46091,6 +48157,57 @@
                                   "keepLines": {
                                     "description": "Keep all lines of heading together on same page",
                                     "type": "boolean"
+                                  },
+                                  "revision": {
+                                    "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "author": {
+                                        "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                        "type": "string"
+                                      },
+                                      "date": {
+                                        "format": "date-time",
+                                        "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                        "type": "string"
+                                      },
+                                      "segments": {
+                                        "minItems": 1,
+                                        "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                        "type": "array",
+                                        "items": {
+                                          "description": "A contiguous run of text sharing one revision state",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                              "anyOf": [
+                                                {
+                                                  "const": "equal",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "insert",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "delete",
+                                                  "type": "string"
+                                                }
+                                              ]
+                                            },
+                                            "text": {
+                                              "description": "Literal text of this segment (rendered without markdown)",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["type", "text"]
+                                        }
+                                      }
+                                    },
+                                    "required": ["segments"]
                                   }
                                 },
                                 "required": ["text"]
@@ -46475,6 +48592,57 @@
                                   "id": {
                                     "description": "Unique identifier for internal linking (bookmark anchor)",
                                     "type": "string"
+                                  },
+                                  "revision": {
+                                    "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "properties": {
+                                      "author": {
+                                        "description": "Revision author shown in Word (default: \"json-to-office\")",
+                                        "type": "string"
+                                      },
+                                      "date": {
+                                        "format": "date-time",
+                                        "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                                        "type": "string"
+                                      },
+                                      "segments": {
+                                        "minItems": 1,
+                                        "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                                        "type": "array",
+                                        "items": {
+                                          "description": "A contiguous run of text sharing one revision state",
+                                          "additionalProperties": false,
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                              "anyOf": [
+                                                {
+                                                  "const": "equal",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "insert",
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "const": "delete",
+                                                  "type": "string"
+                                                }
+                                              ]
+                                            },
+                                            "text": {
+                                              "description": "Literal text of this segment (rendered without markdown)",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["type", "text"]
+                                        }
+                                      }
+                                    },
+                                    "required": ["segments"]
                                   }
                                 },
                                 "required": ["text"]

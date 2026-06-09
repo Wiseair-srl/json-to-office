@@ -5,6 +5,7 @@ import {
   type FormatAdapter,
 } from './format-adapter.js';
 import { createGenerateCommand } from './commands/generate.js';
+import { createDiffCommand } from './commands/diff.js';
 import { createValidateCommand } from './commands/validate.js';
 import { createSchemasCommand } from './commands/schemas.js';
 import { createDiscoverCommand } from './commands/discover.js';
@@ -26,6 +27,10 @@ function registerFormatCommands(
   extras?: (adapter: FormatAdapter) => Command[]
 ): void {
   parent.addCommand(createGenerateCommand(adapter));
+  // Tracked-change redlines are DOCX-only (no PPTX visual diff yet)
+  if (adapter.name === 'docx') {
+    parent.addCommand(createDiffCommand(adapter));
+  }
   parent.addCommand(createValidateCommand(adapter));
   parent.addCommand(createSchemasCommand(adapter));
   parent.addCommand(createDiscoverCommand(adapter));

@@ -24,6 +24,8 @@ export interface ProcessedDocument {
   sections: ProcessedSection[];
   theme: ThemeConfig;
   themeName: string;
+  /** Open the generated document in track-changes mode */
+  trackRevisions?: boolean;
 }
 
 export interface DocumentMetadata {
@@ -110,6 +112,7 @@ export async function processDocument(
     sections,
     theme: effectiveTheme,
     themeName,
+    trackRevisions: document.props.trackRevisions,
   };
 }
 
