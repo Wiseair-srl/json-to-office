@@ -18,6 +18,7 @@ export const API_ENDPOINTS = {
   },
   generate: `${FORMAT_API}/generate`,
   validate: `${FORMAT_API}/validate`,
+  diff: `${FORMAT_API}/diff`,
   preview: {
     libreoffice: `${FORMAT_API}/preview/libreoffice`,
     libreofficeFromJson: `${FORMAT_API}/preview/libreoffice-from-json`,

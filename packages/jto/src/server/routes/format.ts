@@ -5,6 +5,7 @@ import { getContainer } from '../container/index.js';
 import {
   LooseDocumentGenerationRequestSchema,
   LooseDocumentValidationRequestSchema,
+  LooseDocumentDiffRequestSchema,
 } from '../schemas/loose.js';
 import { tbValidator, getValidated } from '../lib/typebox-validator.js';
 import { logger } from '../utils/logger.js';
@@ -160,6 +161,121 @@ export function createFormatRouter(adapter: FormatAdapter) {
       }
     }
   );
+
+  // POST /diff (DOCX only)
+  //
+  // Compare two document definitions into a tracked-change redline: returns
+  // the renderable redline JSON plus a summary. The client previews and
+  // downloads the redline through the normal generate/preview pipeline.
+  if (adapter.name === 'docx') {
+    router.post(
+      '/diff',
+      bodyLimit({
+        // Two full documents per request — same cap rationale as
+        // /preview/libreoffice-from-json, doubled.
+        maxSize: 32 * 1024 * 1024,
+        onError: () => {
+          throw new HTTPException(413, { message: 'Request body too large' });
+        },
+      }),
+      rateLimiter({
+        limit: process.env.NODE_ENV === 'production' ? 30 : 1000,
+        window: 15 * 60 * 1000,
+        keyGenerator: (c) =>
+          c.req.header('X-Real-IP') ||
+          c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
+          'anonymous',
+      }),
+      contentTypeMw,
+      tbValidator(LooseDocumentDiffRequestSchema),
+      async (c) => {
+        const { oldDefinition, newDefinition, options } = getValidated<{
+          oldDefinition: string | object;
+          newDefinition: string | object;
+          options?: { author?: string; date?: string };
+        }>(c, 'json');
+        const requestId = c.get('requestId');
+
+        const parseDef = (label: string, def: string | object): object => {
+          if (typeof def !== 'string') return def;
+          try {
+            return JSON.parse(def);
+          } catch {
+            throw new HTTPException(400, {
+              message: `${label} document is not valid JSON`,
+            });
+          }
+        };
+
+        try {
+          const oldDoc = parseDef('Old', oldDefinition);
+          const newDoc = parseDef('New', newDefinition);
+
+          // The adapter's validateDocument is a no-op stub; use the real
+          // TypeBox document validation from shared-docx (same as the CLI)
+          const sharedDocx = await import('@json-to-office/shared-docx');
+          for (const [label, doc] of [
+            ['Old', oldDoc],
+            ['New', newDoc],
+          ] as const) {
+            const result = sharedDocx.validate.jsonDocument(
+              JSON.stringify(doc)
+            );
+            if (!result.valid) {
+              return c.json(
+                {
+                  success: false,
+                  error: `${label} document failed validation`,
+                  errors: (result.errors || []).slice(0, 20),
+                  meta: { timestamp: new Date().toISOString(), requestId },
+                },
+                400
+              );
+            }
+          }
+
+          // Validate and canonicalize the revision date (invalid values
+          // would fail RevisionSchema and OOXML ST_DateTime downstream)
+          const revisionDate = options?.date
+            ? new Date(options.date)
+            : new Date();
+          if (isNaN(revisionDate.getTime())) {
+            throw new HTTPException(400, {
+              message: `Invalid date: "${options?.date}" (expected ISO 8601)`,
+            });
+          }
+
+          const { diffDocuments } = sharedDocx;
+          const { document, summary } = diffDocuments(
+            oldDoc as Parameters<typeof diffDocuments>[0],
+            newDoc as Parameters<typeof diffDocuments>[1],
+            {
+              author: options?.author || 'playground',
+              date: revisionDate.toISOString(),
+            }
+          );
+
+          return c.json({
+            success: true,
+            data: { document, summary },
+            meta: { timestamp: new Date().toISOString(), requestId },
+          });
+        } catch (error) {
+          if (error instanceof HTTPException) throw error;
+          logger.error('Document diff failed', { error, requestId });
+          if (
+            error instanceof Error &&
+            error.message.includes('top-level component')
+          ) {
+            throw new HTTPException(400, { message: error.message });
+          }
+          throw new HTTPException(500, {
+            message: 'Internal server error during document diff',
+          });
+        }
+      }
+    );
+  }
 
   // POST /preview/libreoffice
   router.post(

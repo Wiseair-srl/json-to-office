@@ -40,6 +40,8 @@ import { processTextWithPlaceholders } from '../utils/placeholderProcessor';
 import { normalizeUnicodeText } from '../utils/unicode';
 import { getStyleIdForLevel } from '../styles/themeToDocxAdapter';
 import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
+import { createRevisionRuns } from '../utils/revisionUtils';
+import type { Revision } from '@json-to-office/shared-docx';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import { synthesizeFamilyName } from '@json-to-office/shared';
 import {
@@ -144,6 +146,9 @@ export interface TextOptions {
   keepNext?: boolean;
   // Keep all lines of paragraph together
   keepLines?: boolean;
+  // Tracked-change segments: when present, text is rendered from these
+  // (as native Word revisions) instead of the plain content string
+  revision?: Revision;
 }
 
 export interface ImageOptions {
@@ -256,6 +261,7 @@ export function createText(
     | ExternalHyperlink
     | InternalHyperlink
     | Bookmark
+    | import('../utils/revisionUtils').RevisionRun
   )[] = [];
 
   // Add column break if requested
@@ -295,31 +301,53 @@ export function createText(
     }),
   };
 
-  // Add text content - parseTextWithDecorators handles both decorators and newlines
-  const textRuns = parseTextWithDecorators(normalizedContent, baseTextStyle, {
-    boldColor: options.boldColor,
-    enableHyperlinks: true,
-  });
-
-  // If bookmarkId is provided, wrap text runs in a bookmark
-  if (options.bookmarkId) {
-    // Register bookmark
-    globalBookmarkRegistry.register(
-      options.bookmarkId,
-      normalizedContent,
-      'paragraph'
-    );
-
-    // Wrap text runs in bookmark
-    children.push(
-      new Bookmark({
-        id: options.bookmarkId,
-        children: textRuns as TextRun[],
-      })
-    );
+  if (options.revision) {
+    // Tracked changes: render revision segments as native w:ins/w:del runs
+    // (literal text, no markdown parsing). Bookmarks are preserved so
+    // internal hyperlinks targeting this paragraph keep working.
+    const revisionRuns = createRevisionRuns(options.revision, baseTextStyle);
+    if (options.bookmarkId) {
+      globalBookmarkRegistry.register(
+        options.bookmarkId,
+        normalizedContent,
+        'paragraph'
+      );
+      children.push(
+        new Bookmark({
+          id: options.bookmarkId,
+          children: revisionRuns as TextRun[],
+        })
+      );
+    } else {
+      children.push(...revisionRuns);
+    }
   } else {
-    // No bookmark, add text runs directly
-    children.push(...textRuns);
+    // Add text content - parseTextWithDecorators handles both decorators and newlines
+    const textRuns = parseTextWithDecorators(normalizedContent, baseTextStyle, {
+      boldColor: options.boldColor,
+      enableHyperlinks: true,
+    });
+
+    // If bookmarkId is provided, wrap text runs in a bookmark
+    if (options.bookmarkId) {
+      // Register bookmark
+      globalBookmarkRegistry.register(
+        options.bookmarkId,
+        normalizedContent,
+        'paragraph'
+      );
+
+      // Wrap text runs in bookmark
+      children.push(
+        new Bookmark({
+          id: options.bookmarkId,
+          children: textRuns as TextRun[],
+        })
+      );
+    } else {
+      // No bookmark, add text runs directly
+      children.push(...textRuns);
+    }
   }
 
   // Build frame options for floating text
@@ -509,8 +537,26 @@ export function createHeading(
     }),
   };
 
-  // Create bookmark if bookmarkId is provided
-  if (options.bookmarkId) {
+  if (options.revision) {
+    // Tracked changes: revision segments replace text rendering. The TOC
+    // bookmark is preserved so TOC links and cross-references keep working.
+    const revisionRuns = createRevisionRuns(options.revision, baseTextStyle);
+    if (options.bookmarkId) {
+      globalBookmarkRegistry.register(
+        options.bookmarkId,
+        normalizedText,
+        'heading'
+      );
+      children.push(
+        new Bookmark({
+          id: options.bookmarkId,
+          children: revisionRuns as TextRun[],
+        })
+      );
+    } else {
+      children.push(...revisionRuns);
+    }
+  } else if (options.bookmarkId) {
     // Register bookmark
     globalBookmarkRegistry.register(
       options.bookmarkId,
@@ -789,7 +835,7 @@ export function createStatistic(
  * Create a list of items using proper docx numbering
  */
 export function createList(
-  items: (string | { text: string; level?: number })[],
+  items: (string | { text: string; level?: number; revision?: Revision })[],
   _theme: ThemeConfig,
   _themeName: string,
   options: ListOptions = {}
@@ -804,20 +850,25 @@ export function createList(
     // Handle both string and object items
     const itemText = typeof item === 'string' ? item : item.text;
     const itemLevel = typeof item === 'object' ? item.level || 0 : 0;
+    const itemRevision = typeof item === 'object' ? item.revision : undefined;
 
-    if (!itemText.trim()) {
-      return; // Skip empty items
+    // Skip empty items — unless they carry revision data (a fully deleted
+    // item has empty new text but must still render its w:del runs)
+    if (!itemText.trim() && !itemRevision) {
+      return;
     }
 
     // Parse rich text decorators for each item
     // Don't pass font/size/color - let list items inherit from Normal paragraph style
-    const textRuns = parseTextWithDecorators(
-      itemText,
-      {},
-      {
-        enableHyperlinks: true,
-      }
-    );
+    const textRuns = itemRevision
+      ? createRevisionRuns(itemRevision, {})
+      : parseTextWithDecorators(
+          itemText,
+          {},
+          {
+            enableHyperlinks: true,
+          }
+        );
 
     // Calculate spacing for this item (convert points to twips)
     const spacing: { before?: number; after?: number } = {};

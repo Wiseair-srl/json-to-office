@@ -8,6 +8,7 @@ import {
   JustifiedAlignmentSchema,
   IndentSchema,
 } from './common';
+import { RevisionSchema } from './revision';
 
 /**
  * Level format options for docx numbering
@@ -139,6 +140,7 @@ export const ListPropsSchema = Type.Object(
               description: 'Nesting level for this item',
             })
           ),
+          revision: Type.Optional(RevisionSchema),
         }),
       ]),
       {

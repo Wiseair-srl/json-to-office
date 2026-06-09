@@ -53,6 +53,8 @@ export function renderHeadingComponent(
       keepLines: config.keepLines,
       // Bookmark ID for internal linking
       bookmarkId: bookmarkId,
+      // Tracked-change segments (rendered as native Word revisions)
+      revision: config.revision,
     }
   );
 

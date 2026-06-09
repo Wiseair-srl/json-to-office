@@ -2,6 +2,20 @@
 export const SHARED_DOCX_VERSION = '1.0.0';
 
 // ============================================================================
+// Document diff (tracked-change redlines)
+// ============================================================================
+
+export { diffDocuments, diffWords, stripMarkdown } from './diff';
+export type {
+  DiffDocumentsOptions,
+  DiffDocumentsResult,
+  DiffSummary,
+  UntrackedChange,
+  DiffSegment,
+  JsonNode,
+} from './diff';
+
+// ============================================================================
 // Format-agnostic re-exports from @json-to-office/shared
 // ============================================================================
 
@@ -211,6 +225,8 @@ export {
   TablePropsSchema,
   ListPropsSchema,
   TocPropsSchema,
+  RevisionSchema,
+  RevisionSegmentSchema,
   StandardComponentDefinitionSchema,
   ComponentDefinitionSchema,
 } from './schemas/components';
@@ -229,6 +245,8 @@ export type {
   TableProps,
   ListProps,
   TocProps,
+  Revision,
+  RevisionSegment,
   Alignment,
   JustifiedAlignment,
   HeadingLevel,

@@ -1,0 +1,47 @@
+{
+  "name": "docx",
+  "props": {
+    "theme": "minimal",
+    "metadata": { "title": "Service Agreement", "author": "Wiseair" }
+  },
+  "children": [
+    { "name": "heading", "props": { "text": "Service Agreement", "level": 1 } },
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "This Service Agreement is entered into by Wiseair S.r.l. and the Client as of January 1, 2026."
+      }
+    },
+    { "name": "heading", "props": { "text": "1. Fees", "level": 2 } },
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "The Client shall pay a fee equal to 10% of monthly revenue, invoiced quarterly with payment due within 60 days."
+      }
+    },
+    { "name": "heading", "props": { "text": "2. Deliverables", "level": 2 } },
+    {
+      "name": "list",
+      "props": {
+        "items": [
+          "Monthly air quality report",
+          "Quarterly executive summary",
+          "Annual sustainability audit"
+        ]
+      }
+    },
+    { "name": "heading", "props": { "text": "3. Termination", "level": 2 } },
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "Either party may terminate this agreement with 30 days written notice."
+      }
+    },
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "Upon termination, all outstanding fees become immediately payable."
+      }
+    }
+  ]
+}

@@ -2,9 +2,11 @@
 
 Real-world JSON document definitions you can render with json-to-office.
 
-| File                                   | Format | Description                                                                        |
-| -------------------------------------- | ------ | ---------------------------------------------------------------------------------- |
-| [invoice.docx.json](invoice.docx.json) | DOCX   | Northvane Studio invoice with line items, payment instructions, and retainer terms |
+| File                                           | Format | Description                                                                        |
+| ---------------------------------------------- | ------ | ---------------------------------------------------------------------------------- |
+| [invoice.docx.json](invoice.docx.json)         | DOCX   | Northvane Studio invoice with line items, payment instructions, and retainer terms |
+| [contract-v1.docx.json](contract-v1.docx.json) | DOCX   | Service agreement (base version) — diff it against v2 for a tracked-change redline |
+| [contract-v2.docx.json](contract-v2.docx.json) | DOCX   | Service agreement (revised version) for `jto docx diff`                            |
 
 More templates are available in the visual playground — run `jto pptx dev` or `jto docx dev` to browse the full gallery.
 
@@ -14,6 +16,9 @@ More templates are available in the visual playground — run `jto pptx dev` or 
 # With the CLI
 npm install -g @json-to-office/jto
 jto docx generate ./invoice.docx.json -o ./invoice.docx
+
+# Diff two versions into a redline with native Word tracked changes
+jto docx diff ./contract-v1.docx.json ./contract-v2.docx.json -o ./redline.docx
 
 # Or open in the visual playground
 jto docx dev
