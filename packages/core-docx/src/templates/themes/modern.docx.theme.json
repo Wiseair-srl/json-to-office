@@ -21,7 +21,7 @@
   "fonts": {
     "heading": { "family": "Helvetica", "size": 28 },
     "body": { "family": "Helvetica", "size": 11 },
-    "mono": { "family": "SF Mono", "size": 10 },
+    "mono": { "family": "Menlo", "size": 10 },
     "light": { "family": "Helvetica", "size": 28 }
   },
   "page": {
