@@ -201,8 +201,6 @@ export function createDiffCommand(adapter: FormatAdapter): Command {
               );
             }
           }
-
-          process.exit(EXIT_CODES.OK);
         } catch (error: any) {
           if (spinner) spinner.fail('Diff failed');
           if (isJsonFormat) {
@@ -214,6 +212,7 @@ export function createDiffCommand(adapter: FormatAdapter): Command {
           }
           process.exit(EXIT_CODES.FAIL);
         }
+        process.exit(EXIT_CODES.OK);
       }
     )
     .addHelpText(

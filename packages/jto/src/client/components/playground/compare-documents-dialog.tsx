@@ -85,6 +85,14 @@ export const CompareDocumentsDialog: React.FC<CompareDocumentsDialogProps> = ({
   const [summary, setSummary] = useState<DiffSummary | null>(null);
   const [redlineDocument, setRedlineDocument] = useState<unknown>(null);
 
+  // A computed diff is only valid for the inputs it was run with: changing
+  // base/revised/author discards it (the footer falls back to Compare).
+  const resetResult = () => {
+    setError(null);
+    setSummary(null);
+    setRedlineDocument(null);
+  };
+
   // Sensible defaults each time the dialog opens: revised = active tab,
   // base = the first other document. Deliberately keyed on `open` only —
   // re-running on store changes would clobber the user's selection.
@@ -180,7 +188,13 @@ export const CompareDocumentsDialog: React.FC<CompareDocumentsDialogProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="diff-base">Base (old)</Label>
-              <Select value={baseName} onValueChange={setBaseName}>
+              <Select
+                value={baseName}
+                onValueChange={(value) => {
+                  setBaseName(value);
+                  resetResult();
+                }}
+              >
                 <SelectTrigger id="diff-base">
                   <SelectValue placeholder="Select document" />
                 </SelectTrigger>
@@ -195,7 +209,13 @@ export const CompareDocumentsDialog: React.FC<CompareDocumentsDialogProps> = ({
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="diff-revised">Revised (new)</Label>
-              <Select value={revisedName} onValueChange={setRevisedName}>
+              <Select
+                value={revisedName}
+                onValueChange={(value) => {
+                  setRevisedName(value);
+                  resetResult();
+                }}
+              >
                 <SelectTrigger id="diff-revised">
                   <SelectValue placeholder="Select document" />
                 </SelectTrigger>
@@ -215,7 +235,10 @@ export const CompareDocumentsDialog: React.FC<CompareDocumentsDialogProps> = ({
             <Input
               id="diff-author"
               value={author}
-              onChange={(e) => setAuthor(e.target.value)}
+              onChange={(e) => {
+                setAuthor(e.target.value);
+                resetResult();
+              }}
               placeholder="playground"
             />
           </div>
