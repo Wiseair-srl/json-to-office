@@ -78,6 +78,9 @@ interface DiffContext {
   summary: DiffSummary;
 }
 
+// Key-order sensitive: props objects with the same entries in a different
+// order compare unequal. Acceptable — inputs are machine-generated and a
+// false "changed" only adds a spurious untracked summary entry.
 function deepEqual(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -356,6 +359,17 @@ function diffTextComponent(
   ctx.summary.tracked.modified++;
   const segments = diffWords(oldText, newText);
   notePlaceholdersInChanges(segments, path, newNode.name, ctx);
+  // Revision segments render literally, so markdown anywhere in a modified
+  // block — including its unchanged portions — is flattened to plain text
+  if (rawText(oldNode) !== oldText || rawText(newNode) !== newText) {
+    ctx.summary.untracked.push({
+      path,
+      kind: 'modified',
+      component: newNode.name,
+      detail:
+        'inline formatting or links flattened to plain text in the redline (revision segments render literally)',
+    });
+  }
   return {
     ...newNode,
     props: {

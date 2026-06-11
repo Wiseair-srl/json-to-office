@@ -66,6 +66,24 @@ describe('diffDocuments', () => {
     expect(allText).not.toContain('**');
   });
 
+  it('markdown in a modified block is reported as flattened', () => {
+    const { summary } = diffDocuments(
+      doc([para('grew **30%** fast')]),
+      doc([para('grew **32%** fast')])
+    );
+    expect(summary.untracked.some((u) => u.detail.includes('flattened'))).toBe(
+      true
+    );
+  });
+
+  it('plain-text modification reports no flattening', () => {
+    const { summary } = diffDocuments(
+      doc([para('grew 30% fast')]),
+      doc([para('grew 32% fast')])
+    );
+    expect(summary.untracked).toEqual([]);
+  });
+
   it('inserted paragraph becomes a fully tracked insertion', () => {
     const { document, summary } = diffDocuments(
       doc([para('one')]),
