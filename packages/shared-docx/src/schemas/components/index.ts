@@ -8,6 +8,7 @@
 export * from './common';
 
 // Individual component schemas
+export * from './revision';
 export * from './report';
 export * from './section';
 export * from './columns';

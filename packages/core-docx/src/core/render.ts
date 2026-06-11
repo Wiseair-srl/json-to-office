@@ -116,6 +116,10 @@ export async function renderDocument(
   const { globalNumberingRegistry } = await import('../utils/numberingConfig');
   globalNumberingRegistry.clear();
 
+  // Revision ids (w:ins/w:del) are deliberately NOT reset here: the counter
+  // is process-wide so concurrent renders draw from disjoint id sets
+  // (intra-document uniqueness is the OOXML invariant; see revisionUtils.ts)
+
   const sections: ISectionOptions[] = [];
 
   // Render all layout sections
@@ -238,6 +242,8 @@ export async function renderDocument(
     sections,
     features: {
       updateFields: true, // Required for TOC fields to update correctly
+      // Word opens the document in review mode (further edits are tracked)
+      ...(structure.trackRevisions && { trackRevisions: true }),
     },
     // Add numbering configurations if any lists were rendered
     ...(numberingConfigs.length > 0 && {

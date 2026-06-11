@@ -10,6 +10,7 @@ import {
   SpacingSchema,
   LineSpacingSchema,
 } from './common';
+import { RevisionSchema } from './revision';
 
 export const HeadingPropsSchema = Type.Object(
   {
@@ -50,6 +51,7 @@ export const HeadingPropsSchema = Type.Object(
         description: 'Keep all lines of heading together on same page',
       })
     ),
+    revision: Type.Optional(RevisionSchema),
   },
   {
     description: 'Heading component props',

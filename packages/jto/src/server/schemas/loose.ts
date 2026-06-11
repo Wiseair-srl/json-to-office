@@ -63,3 +63,30 @@ export const LooseDocumentValidationRequestSchema = Type.Object(
   },
   { additionalProperties: true }
 );
+
+/**
+ * Diff request: two DOCX definitions to compare into a tracked-change
+ * redline. Strict validation of both documents happens in the handler.
+ */
+export const LooseDocumentDiffRequestSchema = Type.Object(
+  {
+    oldDefinition: Type.Union([
+      Type.String(),
+      Type.Object({}, { additionalProperties: true }),
+    ]),
+    newDefinition: Type.Union([
+      Type.String(),
+      Type.Object({}, { additionalProperties: true }),
+    ]),
+    options: Type.Optional(
+      Type.Object(
+        {
+          author: Type.Optional(Type.String({ maxLength: 128 })),
+          date: Type.Optional(Type.String({ maxLength: 64 })),
+        },
+        { additionalProperties: false }
+      )
+    ),
+  },
+  { additionalProperties: true }
+);

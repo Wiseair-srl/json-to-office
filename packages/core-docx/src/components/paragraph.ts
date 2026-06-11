@@ -79,8 +79,12 @@ export function renderParagraphComponent(
   // Props are pre-resolved by resolveComponentTree
   const resolvedConfig = component.props;
 
-  // Check if text contains markdown list syntax
-  const listData = parseMarkdownList(resolvedConfig.text);
+  // Check if text contains markdown list syntax.
+  // Revision paragraphs always render as plain text: their segments carry
+  // literal text and cannot be re-split into list items.
+  const listData = resolvedConfig.revision
+    ? null
+    : parseMarkdownList(resolvedConfig.text);
 
   if (listData) {
     // Text is a markdown list - render as proper docx list
@@ -201,6 +205,8 @@ export function renderParagraphComponent(
     keepLines: resolvedConfig.keepLines,
     // Pass bookmark ID for internal linking
     bookmarkId: resolvedConfig.id,
+    // Tracked-change segments (rendered as native Word revisions)
+    revision: resolvedConfig.revision,
   });
 
   return [text];

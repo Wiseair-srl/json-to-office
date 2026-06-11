@@ -9,6 +9,7 @@ import {
 } from 'react';
 import {
   FilePlusIcon,
+  GitCompareArrows,
   PaletteIcon,
   Plus,
   Sparkles,
@@ -17,6 +18,8 @@ import {
   PanelLeftOpen,
   Info,
 } from 'lucide-react';
+import { CompareDocumentsDialog } from './compare-documents-dialog';
+import { FORMAT } from '../../lib/env';
 import { DocumentFormDialogContentMemoized } from './document-form-dialog-content';
 import { DocumentMenuItemMemoized } from './document-menu-item';
 import { PluginSelector } from './plugin-selector';
@@ -95,6 +98,7 @@ function DocumentSidebarComponent({
   const selectedPlugins = usePluginsStore((state) => state.selectedPlugins);
   const isApplyingPlugins = usePluginsStore((state) => state.isApplyingPlugins);
   const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
+  const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(['current-docs', 'current-themes'])
   );
@@ -334,37 +338,64 @@ function DocumentSidebarComponent({
                 {!isCollapsed && <FilePlusIcon className="size-3" />}
                 {!isCollapsed && <span>Active Documents</span>}
               </div>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
+              <div className="flex items-center gap-0.5">
+                {FORMAT === 'docx' && !isCollapsed && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Button
-                        className={cn(
-                          'p-0 flex-shrink-0',
-                          isCollapsed
-                            ? 'mx-auto h-8 w-8 rounded border border-dashed border-sidebar-foreground/20 hover:border-sidebar-foreground/40'
-                            : 'h-6 w-6'
-                        )}
+                        className="h-6 w-6 p-0 flex-shrink-0"
                         variant="ghost"
                         size="icon"
+                        aria-label="Compare documents"
+                        disabled={reportDocuments.length < 2}
+                        onClick={() => setCompareDialogOpen(true)}
                       >
-                        <Plus className={isCollapsed ? 'size-3.5' : 'size-4'} />
+                        <GitCompareArrows className="size-4" />
                       </Button>
-                    </DialogTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side={isCollapsed ? 'right' : 'bottom'}>
-                    <span className="text-xs">New Document</span>
-                  </TooltipContent>
-                </Tooltip>
-                <DialogContent className="sm:max-w-[525px]">
-                  <DocumentFormDialogContentMemoized
-                    mode="create"
-                    shouldReset={!dialogOpen}
-                    postSubmit={closeDialog}
-                    discoveredDocuments={discoveryData?.documents || []}
-                  />
-                </DialogContent>
-              </Dialog>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <span className="text-xs">
+                        {reportDocuments.length < 2
+                          ? 'Compare needs two documents'
+                          : 'Compare documents (redline)'}
+                      </span>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DialogTrigger asChild>
+                        <Button
+                          className={cn(
+                            'p-0 flex-shrink-0',
+                            isCollapsed
+                              ? 'mx-auto h-8 w-8 rounded border border-dashed border-sidebar-foreground/20 hover:border-sidebar-foreground/40'
+                              : 'h-6 w-6'
+                          )}
+                          variant="ghost"
+                          size="icon"
+                        >
+                          <Plus
+                            className={isCollapsed ? 'size-3.5' : 'size-4'}
+                          />
+                        </Button>
+                      </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side={isCollapsed ? 'right' : 'bottom'}>
+                      <span className="text-xs">New Document</span>
+                    </TooltipContent>
+                  </Tooltip>
+                  <DialogContent className="sm:max-w-[525px]">
+                    <DocumentFormDialogContentMemoized
+                      mode="create"
+                      shouldReset={!dialogOpen}
+                      postSubmit={closeDialog}
+                      discoveredDocuments={discoveryData?.documents || []}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
             </SidebarGroupLabel>
             {isCollapsed ? (
               /* Collapsed: show icon badges for each doc */
@@ -803,6 +834,10 @@ function DocumentSidebarComponent({
         open={schemaDialogOpen}
         onOpenChange={setSchemaDialogOpen}
         defaultTab={activeDocumentType === 'theme' ? 'theme' : 'document'}
+      />
+      <CompareDocumentsDialog
+        open={compareDialogOpen}
+        onOpenChange={setCompareDialogOpen}
       />
     </>
   );

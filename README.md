@@ -280,6 +280,16 @@ An artifact rendered once and emailed? Any tool works. An _output of your platfo
 | highcharts | Server-side chart rendering                                                       |
 | slide      | Grid-based positioning, backgrounds, templates                                    |
 
+### Document diff (DOCX)
+
+Because documents are data, two versions diff like data — and the result opens in Word as native tracked changes:
+
+```bash
+jto docx diff contract-v1.json contract-v2.json -o redline.docx
+```
+
+Every text edit becomes a real Word revision (accept/reject, author, timestamp) and the file opens in review mode. Word-level diff on paragraphs, headings, and list items; structural changes (tables, images, charts) are replaced and reported in the CLI summary. Programmatic API: `diffDocuments(oldDoc, newDoc)` from `@json-to-office/json-to-docx`; HTTP API: `POST /api/docx/diff`. In the visual playground (`jto docx dev`), use the **Compare** button in the sidebar to diff two documents and open the redline with live preview. Try it with [examples/contract-v1.docx.json](examples/contract-v1.docx.json) and [contract-v2.docx.json](examples/contract-v2.docx.json).
+
 ### Cross-format
 
 - **Theme system**: colors, fonts, spacing, component defaults. 3 built-in themes per format (minimal, corporate, vibrant/modern), or define your own.

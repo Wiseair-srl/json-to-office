@@ -13,6 +13,7 @@ import {
   CachedComponent,
 } from '../cache';
 import { renderComponent } from './render';
+import { componentHasRevision } from '../utils/revisionUtils';
 import { createHash } from 'crypto';
 
 // Global component cache instance
@@ -93,7 +94,12 @@ export async function renderComponentWithCache(
   //   can produce stale references to non-existent bookmarks on re-render.
   // - 'section' generates unique bookmarks internally; caching would duplicate
   //   bookmark IDs across sections/documents.
-  const forceBypassForType = component.name === 'toc' || component.name === 'section';
+  // - revision-bearing components embed document-scoped w:ins/w:del ids from
+  //   a per-render counter; caching would leak ids across documents.
+  const forceBypassForType =
+    component.name === 'toc' ||
+    component.name === 'section' ||
+    componentHasRevision(component);
 
   // Initialize cache if needed
   if (!componentCache) {
@@ -181,13 +187,22 @@ export async function warmComponentCache(
     context: RenderContext;
   }>
 ): Promise<void> {
-  if (!componentCache || !componentCache.getConfig().performance.enableWarming) {
+  if (
+    !componentCache ||
+    !componentCache.getConfig().performance.enableWarming
+  ) {
     return;
   }
 
   const warmingPromises = components.map(
     async ({ component, theme, themeName, context }) => {
-      await renderComponentWithCache(component, theme, themeName, context, false);
+      await renderComponentWithCache(
+        component,
+        theme,
+        themeName,
+        context,
+        false
+      );
     }
   );
 

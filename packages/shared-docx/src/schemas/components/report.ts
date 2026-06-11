@@ -17,6 +17,12 @@ export const createReportPropsSchema = (_moduleRef?: TSchema) =>
         })
       ),
       componentDefaults: Type.Optional(ComponentDefaultsSchema),
+      trackRevisions: Type.Optional(
+        Type.Boolean({
+          description:
+            'Open the document in track-changes mode: Word marks any further edits as revisions. Set automatically on redline documents produced by the diff engine',
+        })
+      ),
       metadata: Type.Optional(
         Type.Object(
           {

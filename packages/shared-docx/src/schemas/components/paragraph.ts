@@ -5,6 +5,7 @@
 import { Type, Static } from '@sinclair/typebox';
 import { SpacingSchema } from './common';
 import { FontDefinitionSchema } from '../font';
+import { RevisionSchema } from './revision';
 
 // Frame wrapping type schema
 const FrameWrapTypeSchema = Type.Union(
@@ -196,6 +197,7 @@ export const ParagraphPropsSchema = Type.Object(
         description: 'Unique identifier for internal linking (bookmark anchor)',
       })
     ),
+    revision: Type.Optional(RevisionSchema),
   },
   {
     description:
