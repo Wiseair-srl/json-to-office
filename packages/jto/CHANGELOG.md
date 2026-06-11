@@ -1,5 +1,30 @@
 # @json-to-office/jto
 
+## 0.14.0
+
+### Minor Changes
+
+- afe9789: feat(docx): tracked-change document diff
+
+  Diff two docx JSON definitions into a redline rendered as native Word tracked
+  changes (accept/reject, author, timestamp; opens in review mode).
+
+  - New `revision` prop on `paragraph`/`heading`/`list` items and a
+    `trackRevisions` root prop, rendered as `w:ins`/`w:del`.
+  - `diffDocuments(oldDoc, newDoc)` (word-level diff, block alignment, fidelity
+    summary), re-exported from `@json-to-office/json-to-docx`.
+  - CLI: `jto docx diff <old> <new> -o redline.docx`.
+  - Playground: `POST /api/docx/diff` endpoint and a Compare dialog that opens
+    the redline as a normal document with live preview.
+
+### Patch Changes
+
+- Updated dependencies [afe9789]
+- Updated dependencies [8916aaa]
+  - @json-to-office/shared-docx@0.14.0
+  - @json-to-office/core-docx@0.14.0
+  - @json-to-office/jto-cli@0.14.0
+
 ## 0.13.0
 
 ### Patch Changes

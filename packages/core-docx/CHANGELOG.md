@@ -1,5 +1,31 @@
 # @json-to-office/core-docx
 
+## 0.14.0
+
+### Minor Changes
+
+- afe9789: feat(docx): tracked-change document diff
+
+  Diff two docx JSON definitions into a redline rendered as native Word tracked
+  changes (accept/reject, author, timestamp; opens in review mode).
+
+  - New `revision` prop on `paragraph`/`heading`/`list` items and a
+    `trackRevisions` root prop, rendered as `w:ins`/`w:del`.
+  - `diffDocuments(oldDoc, newDoc)` (word-level diff, block alignment, fidelity
+    summary), re-exported from `@json-to-office/json-to-docx`.
+  - CLI: `jto docx diff <old> <new> -o redline.docx`.
+  - Playground: `POST /api/docx/diff` endpoint and a Compare dialog that opens
+    the redline as a normal document with live preview.
+
+### Patch Changes
+
+- 8916aaa: fix(docx): built-in minimal/modern themes used "SF Mono" for the mono font,
+  which is not a SAFE_FONTS entry — every render logged FONT_UNRESOLVED and fell
+  back to a host font. Switched to Menlo (safe, closest match) so built-in
+  themes render warning-free out of the box.
+- Updated dependencies [afe9789]
+  - @json-to-office/shared-docx@0.14.0
+
 ## 0.13.0
 
 ### Minor Changes
