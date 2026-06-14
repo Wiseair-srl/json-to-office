@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@json-to-office/shared": "workspace:^",
+    "@json-to-office/shared-pptx": "workspace:^",
     "@sinclair/typebox": "0.34.38",
     "docx": "9.5.1"
   },

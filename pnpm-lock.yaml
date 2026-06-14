@@ -546,6 +546,9 @@ importers:
       '@json-to-office/shared':
         specifier: workspace:^
         version: link:../shared
+      '@json-to-office/shared-pptx':
+        specifier: workspace:^
+        version: link:../shared-pptx
       '@sinclair/typebox':
         specifier: 0.34.38
         version: 0.34.38
