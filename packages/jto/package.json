@@ -21,8 +21,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup && vite build --config src/client/vite.config.ts",
-    "build:server": "tsup",
+    "build": "rm -rf dist && tsup && vite build --config src/client/vite.config.ts",
+    "build:server": "rm -rf dist && tsup",
     "build:client": "vite build --config src/client/vite.config.ts",
     "dev": "tsup --watch",
     "clean": "rm -rf dist",

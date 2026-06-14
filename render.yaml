@@ -1,9 +1,14 @@
 services:
+  # Combined render server: Highcharts Export Server (charts) + pptx rasterizer
+  # (docx `visual` components). Serves /export and /rasterize from one instance.
+  # NOTE: renamed from `highcharts-export-server` — Render assigns a new
+  # *.onrender.com URL on first deploy of the renamed service. Confirm the
+  # actual URL in the dashboard and update the two URLs below if it differs.
   - type: web
-    name: highcharts-export-server
+    name: jto-render-server
     runtime: docker
     plan: standard
-    dockerfilePath: ./services/highcharts-export-server/Dockerfile
+    dockerfilePath: ./services/jto-render-server/Dockerfile
     healthCheckPath: /health
 
   - type: web
@@ -16,8 +21,11 @@ services:
         value: docx
       - key: VITE_AI_ENABLED
         value: "false"
+      # Both chart export and visual rasterization are served by jto-render-server.
       - key: HIGHCHARTS_SERVER_URL
-        value: https://highcharts-export-server-6iyx.onrender.com
+        value: https://jto-render-server.onrender.com
+      - key: JTO_PPTX_RASTERIZER_URL
+        value: https://jto-render-server.onrender.com
     healthCheckPath: /health
 
   - type: web
@@ -31,5 +39,7 @@ services:
       - key: VITE_AI_ENABLED
         value: "false"
       - key: HIGHCHARTS_SERVER_URL
-        value: https://highcharts-export-server-6iyx.onrender.com
+        value: https://jto-render-server.onrender.com
+      - key: JTO_PPTX_RASTERIZER_URL
+        value: https://jto-render-server.onrender.com
     healthCheckPath: /health
