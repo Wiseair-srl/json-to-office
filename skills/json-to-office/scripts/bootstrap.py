@@ -17,7 +17,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _lib import SKILL_ROOT, get_caps_path
+from _lib import JTO_CLI_VERSION, SKILL_ROOT, get_caps_path
 
 
 def which(cmd: str) -> str | None:
@@ -80,7 +80,7 @@ def probe_jto_bin(monorepo: Path | None) -> tuple[str | None, list[str]]:
         return ("jto-cli", ["jto-cli"])
     # Via npx (downloads on first call, then cached)
     if which("npx"):
-        return ("npx", ["npx", "--yes", "@json-to-office/jto-cli@latest"])
+        return ("npx", ["npx", "--yes", f"@json-to-office/jto-cli@{JTO_CLI_VERSION}"])
     return (None, [])
 
 
@@ -134,6 +134,7 @@ def main() -> int:
         "has_pnpm": which("pnpm") is not None,
         "jto_kind": jto_kind,
         "jto_argv": jto_argv,
+        "jto_cli_version": JTO_CLI_VERSION,
         "soffice": soffice,
         "pdftoppm": pdftoppm,
         "can_render": bool(jto_kind),
@@ -154,9 +155,10 @@ def main() -> int:
         )
     elif jto_kind == "npx":
         print(
-            "\nNOTE: jto-cli will be fetched via `npx --yes @json-to-office/jto-cli@latest` "
-            "on first invocation. Expect a 60-120 second wait while npm resolves and "
-            "downloads the package. Subsequent calls reuse the npx cache.",
+            f"\nNOTE: jto-cli will be fetched via `npx --yes "
+            f"@json-to-office/jto-cli@{JTO_CLI_VERSION}` on first invocation. "
+            "Expect a 60-120 second wait while npm resolves and downloads the "
+            "package. Subsequent calls reuse the npx cache.",
             file=sys.stderr,
         )
 
