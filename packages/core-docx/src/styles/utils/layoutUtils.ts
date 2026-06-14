@@ -1,7 +1,51 @@
 import { BorderStyle } from 'docx';
+import { LineSpacing } from '@json-to-office/shared-docx';
 import { ThemeConfig } from '../index';
 import { resolveColor } from './colorUtils';
-import { resolveTheme, resolveFontFamily } from './styleHelpers';
+import {
+  resolveTheme,
+  resolveFontFamily,
+  convertLineSpacing,
+  pointsToTwips,
+} from './styleHelpers';
+
+/**
+ * Subset of a theme StyleProperties entry relevant to paragraph spacing.
+ */
+interface TableParagraphStyle {
+  spacing?: { before?: number; after?: number };
+  lineSpacing?: LineSpacing;
+}
+
+/**
+ * Resolve the paragraph spacing for a table cell/header wrapper paragraph.
+ *
+ * Table cells render as a single wrapper paragraph. Historically that paragraph
+ * inherited the `normal` style, dragging body-prose rhythm (8–10pt after-spacing
+ * + 1.4–1.5x line) into every row and inflating row height regardless of font
+ * size, padding, or the cell `height` prop. Tables should be dense by default:
+ * no extra paragraph spacing, single line. Vertical breathing room is the job of
+ * cell padding, not paragraph spacing.
+ *
+ * Themes may override per context via `styles.tableCell` / `styles.tableHeader`
+ * (standard StyleProperties: `spacing.before/after` in points, `lineSpacing`).
+ */
+const resolveTableParagraphSpacing = (style?: TableParagraphStyle) => {
+  const lineSpacing =
+    convertLineSpacing(style?.lineSpacing) ??
+    convertLineSpacing({ type: 'single' });
+  return {
+    before:
+      style?.spacing?.before !== undefined
+        ? pointsToTwips(style.spacing.before)
+        : 0,
+    after:
+      style?.spacing?.after !== undefined
+        ? pointsToTwips(style.spacing.after)
+        : 0,
+    ...lineSpacing,
+  };
+};
 
 /**
  * Standard page sizes in twips (1/20 of a point, 1/1440 of an inch)
@@ -35,9 +79,14 @@ export const getTableStyle = (theme?: ThemeConfig, themeName?: string) => {
   const themeConfig = resolveTheme(theme, themeName);
 
   if (themeConfig && themeConfig.styles?.normal) {
-    // Use normal style for both header and cell since tableHeader/tableCell styles are removed
+    // Use normal style for run-level header/cell defaults (font, size, color).
+    // Paragraph spacing is resolved separately so table rows stay dense and do
+    // not inherit `normal`'s body-prose after-spacing/line height.
     const normalStyle = themeConfig.styles.normal;
+    const styles = themeConfig.styles as Record<string, TableParagraphStyle>;
     return {
+      cellParagraph: resolveTableParagraphSpacing(styles.tableCell),
+      headerParagraph: resolveTableParagraphSpacing(styles.tableHeader),
       tableHeader: {
         fill: resolveColor(
           themeConfig.colors?.primary || '#000000',
@@ -101,6 +150,8 @@ export const getTableStyle = (theme?: ThemeConfig, themeName?: string) => {
 
   // This shouldn't happen with minimal themes
   return {
+    cellParagraph: resolveTableParagraphSpacing(),
+    headerParagraph: resolveTableParagraphSpacing(),
     tableHeader: {
       fill: '000000',
       color: 'FFFFFF',
