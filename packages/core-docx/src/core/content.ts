@@ -1767,6 +1767,7 @@ export async function createTable(
           children: [
             new Paragraph({
               ...(tableConfig.keepInOnePage && { keepNext: true }),
+              spacing: tableStyle.headerParagraph,
               alignment: getAlignment(horizontalAlignment),
               children: cellChildren,
             }),
@@ -1878,6 +1879,7 @@ export async function createTable(
                     (isLastRow && tableConfig.keepNext)
                       ? { keepNext: true }
                       : {}),
+                    spacing: tableStyle.cellParagraph,
                     alignment: AlignmentType.LEFT,
                     children: [],
                   }),
@@ -1961,6 +1963,7 @@ export async function createTable(
                   (isLastRow && tableConfig.keepNext)
                     ? { keepNext: true }
                     : {}),
+                  spacing: tableStyle.cellParagraph,
                   alignment: getAlignment(horizontalAlignment),
                   children: cellChildren,
                 }),
