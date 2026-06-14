@@ -11,6 +11,14 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 BOOTSTRAP_PATH = SKILL_ROOT / "scripts" / "bootstrap.py"
 
+# Hosted render service backing the `highcharts` and docx `visual` components.
+# Both render out-of-process: the CLI offloads chart export (POST /export) and
+# pptx-slide rasterization (POST /rasterize) to a service, then embeds the
+# returned PNG. This instance backs both, so the render loop works where no
+# service is otherwise configured. Env contract lives in the CLI:
+# packages/jto-cli/src/format-adapter.ts.
+RENDER_SERVER_URL = "https://jto-render-server.onrender.com"
+
 
 def _candidate_caps_paths() -> list[Path]:
     """Ordered list of locations to try for caps.json.
@@ -68,6 +76,41 @@ def infer_kind(path: Path) -> str:
         f"Cannot infer kind from filename: {path.name} "
         "(expected .docx.json or .pptx.json suffix)"
     )
+
+
+def has_local_rasterizer(caps: dict) -> bool:
+    """True when the CLI can rasterize `visual` components in-process.
+
+    The in-process rasterizer needs LibreOffice (`soffice`) AND the real
+    `pdftoppm` binary. The `pdf2image` Python fallback used for screenshots does
+    NOT satisfy it — the CLI shells out to `pdftoppm` directly. `bootstrap.py`
+    resolves both with the same candidate search the CLI uses (env overrides,
+    macOS app-bundle, Windows defaults, PATH), so a resolved path counts here too.
+    """
+    return bool(caps.get("soffice")) and caps.get("pdftoppm") not in (None, "pdf2image")
+
+
+def render_env(caps: dict, kind: str) -> dict:
+    """Environment for `jto-cli generate`, wiring the out-of-process renderers.
+
+    - HIGHCHARTS_SERVER_URL is always defaulted: there is no local fallback for
+      chart rendering, so `highcharts` needs a server in both docx and pptx.
+    - JTO_PPTX_RASTERIZER_URL is defaulted only for `kind == "docx"` AND only
+      when no local rasterizer is present (see `has_local_rasterizer`). The var
+      is docx-only — `visual` lives in core-docx, and the pptx adapter never
+      reads it — so setting it for a pptx render would be inert and misleading.
+      With local LibreOffice + pdftoppm the CLI's in-process path is faster and
+      keeps document content on the machine; the hosted instance is the fallback.
+
+    Both use setdefault semantics: a user-supplied env var always wins, so the
+    public instance is overridable and can be opted out of. Only relevant to the
+    `generate` step — chart/visual rendering happens there, not at validate time.
+    """
+    env = os.environ.copy()
+    env.setdefault("HIGHCHARTS_SERVER_URL", RENDER_SERVER_URL)
+    if kind == "docx" and not has_local_rasterizer(caps):
+        env.setdefault("JTO_PPTX_RASTERIZER_URL", RENDER_SERVER_URL)
+    return env
 
 
 def run(argv: list[str], **kw) -> subprocess.CompletedProcess:
