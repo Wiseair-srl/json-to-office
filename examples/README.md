@@ -2,13 +2,16 @@
 
 Real-world JSON document definitions you can render with json-to-office.
 
-| File                                           | Format | Description                                                                        |
-| ---------------------------------------------- | ------ | ---------------------------------------------------------------------------------- |
-| [invoice.docx.json](invoice.docx.json)         | DOCX   | Northvane Studio invoice with line items, payment instructions, and retainer terms |
-| [contract-v1.docx.json](contract-v1.docx.json) | DOCX   | Service agreement (base version) — diff it against v2 for a tracked-change redline |
-| [contract-v2.docx.json](contract-v2.docx.json) | DOCX   | Service agreement (revised version) for `jto docx diff`                            |
+| File                                                         | Format | Description                                                                                                                         |
+| ------------------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [invoice.docx.json](invoice.docx.json)                       | DOCX   | Northvane Studio invoice with line items, payment instructions, and retainer terms                                                  |
+| [contract-v1.docx.json](contract-v1.docx.json)               | DOCX   | Service agreement (base version) — diff it against v2 for a tracked-change redline                                                  |
+| [contract-v2.docx.json](contract-v2.docx.json)               | DOCX   | Service agreement (revised version) for `jto docx diff`                                                                             |
+| [visual-infographic.docx.json](visual-infographic.docx.json) | DOCX   | `visual` component — a free-canvas chevron infographic authored as a pptx slide and embedded as a PNG (needs LibreOffice + poppler) |
 
 More templates are available in the visual playground — run `jto pptx dev` or `jto docx dev` to browse the full gallery.
+
+> **Note** — `visual` components rasterize a pptx slide to PNG at build time, which requires **LibreOffice** (`soffice`) and **poppler** (`pdftoppm`) on the host. The `jto` CLI wires this up automatically; point at a remote rasterizer with `JTO_PPTX_RASTERIZER_URL` instead.
 
 ## Render an example
 

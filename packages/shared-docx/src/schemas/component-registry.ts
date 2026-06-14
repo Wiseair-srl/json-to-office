@@ -31,6 +31,7 @@ import { TablePropsSchema, createTablePropsSchema } from './components/table';
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
 import { HighchartsPropsSchema } from './components/highcharts';
+import { VisualPropsSchema } from './components/visual';
 
 /**
  * Component definition with metadata
@@ -108,6 +109,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'list',
         'toc',
         'highcharts',
+        'visual',
         'columns',
         'text-box',
       ],
@@ -128,6 +130,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'list',
         'toc',
         'highcharts',
+        'visual',
         'text-box',
       ],
       category: 'layout',
@@ -211,6 +214,14 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       category: 'content',
       description:
         'Chart component powered by Highcharts - render line, bar, pie, heatmap, and more with rich options.',
+    },
+    {
+      name: 'visual',
+      propsSchema: VisualPropsSchema,
+      hasChildren: false,
+      category: 'content',
+      description:
+        'Free-canvas graphic authored as a single pptx slide and embedded as a rasterized PNG. Use for infographics, diagrams and layered compositions that the document flow cannot express.',
     },
   ] as const;
 

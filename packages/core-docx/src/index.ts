@@ -65,6 +65,7 @@ export {
   isTableComponent,
   isListComponent,
   isHighchartsComponent,
+  isVisualComponent,
 } from './types/index';
 
 // Export core-specific types only

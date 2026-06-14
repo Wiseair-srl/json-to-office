@@ -15,6 +15,7 @@ import type {
   ColumnsPropsSchema,
   ImagePropsSchema,
   HighchartsPropsSchema,
+  VisualPropsSchema,
   StatisticPropsSchema,
   TablePropsSchema,
   ListPropsSchema,
@@ -131,6 +132,18 @@ export interface HighchartsComponent {
 }
 
 /**
+ * Visual component with literal name discriminator.
+ * A pptx-rendered free-canvas graphic embedded as a rasterized image.
+ */
+export interface VisualComponent {
+  name: 'visual';
+  id?: string;
+  /** When false, this component is filtered out and not rendered. Defaults to true */
+  enabled?: boolean;
+  props: Static<typeof VisualPropsSchema>;
+}
+
+/**
  * Text Box component with literal name discriminator
  * Container for child components with floating positioning
  */
@@ -196,6 +209,7 @@ export type StandardComponentDefinition =
   | TextBoxComponent
   | ImageComponent
   | HighchartsComponent
+  | VisualComponent
   | StatisticComponent
   | TableComponent
   | ListComponent
@@ -218,6 +232,7 @@ export const STANDARD_COMPONENTS = [
   'table',
   'text-box',
   'toc',
+  'visual',
 ] as const satisfies readonly StandardComponentDefinition['name'][];
 
 /**
@@ -340,6 +355,12 @@ export function isHighchartsComponent(
   component: ComponentDefinition
 ): component is HighchartsComponent {
   return component.name === 'highcharts';
+}
+
+export function isVisualComponent(
+  component: ComponentDefinition
+): component is VisualComponent {
+  return component.name === 'visual';
 }
 
 export function isTextSpaceAfterComponent(

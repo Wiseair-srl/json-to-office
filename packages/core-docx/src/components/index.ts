@@ -15,6 +15,7 @@ export { renderColumnsComponent } from './columns';
 export { renderStatisticComponent } from './statistic';
 export { renderTocComponent } from './toc';
 export { renderHighchartsComponent } from './highcharts';
+export { renderVisualComponent } from './visual';
 
 // Export custom components
 export { textSpaceAfterComponent } from './text-space-after';

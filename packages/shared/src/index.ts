@@ -6,6 +6,12 @@ export type {
   HighchartsServiceConfig,
   HighchartsHeaders,
   HighchartsHeadersResolver,
+  PptxServiceConfig,
+  PptxServiceHeaders,
+  PptxServiceHeadersResolver,
+  PptxRasterizeRequest,
+  PptxRasterizeResult,
+  PptxRasterizer,
 } from './types/services';
 
 // Schema utilities

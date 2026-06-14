@@ -377,6 +377,11 @@ export const COMPONENT_METADATA: Record<
     description:
       'Charts powered by Highcharts (line, bar, pie, heatmap, etc.) with rich configuration',
   },
+  visual: {
+    title: 'Visual Component',
+    description:
+      'Free-canvas graphic authored as a single pptx slide and embedded as a rasterized PNG',
+  },
 };
 
 /**

@@ -16,6 +16,7 @@ import {
   resolveColumnsProps,
   resolveListProps,
   resolveHighchartsProps,
+  resolveVisualProps,
   resolveCustomComponentProps,
   getHeadingDefaultsForLevel,
 } from './componentDefaults';
@@ -51,6 +52,7 @@ const RESOLVER_MAP: Record<string, Resolver> = {
   columns: resolveColumnsProps,
   list: resolveListProps,
   highcharts: resolveHighchartsProps,
+  visual: resolveVisualProps,
 };
 
 /**

@@ -24,6 +24,7 @@ export * from './components/heading';
 export * from './components/paragraph';
 export * from './components/image';
 export * from './components/highcharts';
+export * from './components/visual';
 export * from './components/statistic';
 export * from './components/table';
 export * from './components/list';
