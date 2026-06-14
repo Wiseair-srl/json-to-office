@@ -32,9 +32,11 @@ const PIXELS_PER_INCH = 96;
 /**
  * Build a single-slide pptx presentation component definition from visual props.
  * The shape mirrors a normal `.pptx.json` document so the pptx engine renders
- * it unchanged.
+ * it unchanged. Exported for reuse by the `flattenVisuals` transform.
  */
-function buildPresentation(props: VisualProps): Record<string, unknown> {
+export function buildVisualPresentation(
+  props: VisualProps
+): Record<string, unknown> {
   const { canvas, elements } = props;
 
   const presentationProps: Record<string, unknown> = {
@@ -56,6 +58,36 @@ function buildPresentation(props: VisualProps): Record<string, unknown> {
         children: elements ?? [],
       },
     ],
+  };
+}
+
+/**
+ * Default rendered width (px) for a visual: its physical canvas inches, so a
+ * 6×4 canvas prints 6×4 unless `width` overrides.
+ */
+export function defaultVisualWidthPx(props: VisualProps): number {
+  return Math.round(props.canvas.width * PIXELS_PER_INCH);
+}
+
+/**
+ * Map visual props to the `image` props they desugar to (used by the
+ * `flattenVisuals` transform to produce a portable, service-free document).
+ */
+export function visualToImageProps(
+  props: VisualProps,
+  base64DataUri: string
+): Record<string, unknown> {
+  return {
+    base64: base64DataUri,
+    width: props.width ?? defaultVisualWidthPx(props),
+    ...(props.height !== undefined && { height: props.height }),
+    alignment: props.alignment ?? 'center',
+    ...(props.caption !== undefined && { caption: props.caption }),
+    ...(props.alt !== undefined && { alt: props.alt }),
+    ...(props.spacing !== undefined && { spacing: props.spacing }),
+    ...(props.floating !== undefined && { floating: props.floating }),
+    ...(props.keepNext !== undefined && { keepNext: props.keepNext }),
+    ...(props.keepLines !== undefined && { keepLines: props.keepLines }),
   };
 }
 
@@ -141,7 +173,7 @@ export async function renderVisualComponent(
   const props = component.props as VisualProps;
   const serviceConfig = context?.services?.pptx;
 
-  const presentation = buildPresentation(props);
+  const presentation = buildVisualPresentation(props);
   const dpi = props.dpi ?? serviceConfig?.dpi ?? DEFAULT_DPI;
 
   const result = await rasterize(
@@ -154,8 +186,7 @@ export async function renderVisualComponent(
   // Default the rendered size to the canvas physical inches so a 6×4 canvas
   // prints 6×4; an explicit width/height (px or %) overrides. Height is left
   // unset by default so aspect ratio is preserved from the PNG.
-  const renderWidth =
-    props.width ?? Math.round(props.canvas.width * PIXELS_PER_INCH);
+  const renderWidth = props.width ?? defaultVisualWidthPx(props);
 
   return await createImage(result.base64DataUri, theme, themeName, {
     caption: props.caption,

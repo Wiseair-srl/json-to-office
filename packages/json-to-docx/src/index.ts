@@ -14,6 +14,8 @@ export {
   generateDocumentFromFile,
   validateJsonSchema,
   saveDocument,
+  flattenVisuals,
+  type FlattenVisualsOptions,
 } from '@json-to-office/core-docx';
 
 // Re-export shared-docx schemas and types
