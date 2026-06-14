@@ -13,6 +13,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { PptxSlideContentSchema } from '@json-to-office/shared-pptx';
 import {
   AlignmentSchema,
   SpacingSchema,
@@ -71,24 +72,12 @@ export const VisualCanvasSchema = Type.Object(
 );
 
 /**
- * A single pptx slide content element (text, shape, image, table, chart, ...).
- *
- * Loosely typed on purpose: deep validation happens in the pptx engine when the
- * rasterizer builds the slide, so authoring stays unblocked and shared-docx
- * stays decoupled from shared-pptx. Each element must at least carry a `name`.
+ * A single pptx slide content element (text, image, shape, table, highcharts,
+ * chart). This is the real PPTX slide-content union from `@json-to-office/shared-pptx`,
+ * so every element is fully validated against its component's props — same
+ * authoring fidelity as a standalone `.pptx.json`.
  */
-export const VisualElementSchema = Type.Object(
-  {
-    name: Type.String({
-      description:
-        'pptx component name (e.g. "text", "shape", "image", "table", "chart", "highcharts")',
-    }),
-  },
-  {
-    description: 'A pptx slide content element',
-    additionalProperties: true,
-  }
-);
+export const VisualElementSchema = PptxSlideContentSchema;
 
 export const VisualPropsSchema = Type.Object(
   {
@@ -96,9 +85,9 @@ export const VisualPropsSchema = Type.Object(
     canvas: VisualCanvasSchema,
     // pptx slide content elements, absolutely positioned on the canvas
     elements: Type.Optional(
-      Type.Array(VisualElementSchema, {
+      Type.Array(PptxSlideContentSchema, {
         description:
-          'pptx slide content elements (positioned with x/y/w/h in inches)',
+          'pptx slide content elements (text, image, shape, table, highcharts, chart), positioned with x/y/w/h in inches',
       })
     ),
 

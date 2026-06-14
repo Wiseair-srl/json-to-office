@@ -22,6 +22,11 @@ published engine packages stay pure JS — no binary dependency.
 - New `visual` standard component (`canvas` + pptx `elements`, plus
   image-style placement props: `width`, `alignment`, `caption`, `spacing`,
   `floating`). Allowed inside `section` and `columns`.
+- First-class validation: `elements` are validated against the real PPTX
+  slide-content union (`PptxSlideContentSchema`, new in
+  `@json-to-office/shared-pptx`) — same authoring fidelity as a standalone
+  `.pptx.json`, with full Monaco autocomplete. Hoisted into a single
+  `PptxSlideContent` JSON-Schema definition (no per-use inlining).
 - New `services.pptx` config (`PptxServiceConfig`): inject an in-process
   `render` callback or an HTTP `serverUrl`; per-component `dpi`/`serverUrl`
   overrides.

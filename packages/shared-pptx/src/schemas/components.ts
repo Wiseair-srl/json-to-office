@@ -18,5 +18,9 @@ export * from './components/highcharts';
 export {
   PptxStandardComponentDefinitionSchema,
   PptxComponentDefinitionSchema,
+  PptxSlideContentSchema,
 } from './component-union';
-export type { PptxComponentDefinition } from './component-union';
+export type {
+  PptxComponentDefinition,
+  PptxSlideContent,
+} from './component-union';

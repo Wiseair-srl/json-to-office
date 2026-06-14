@@ -17,6 +17,7 @@ export {
   PptxHighchartsPropsSchema,
   PptxStandardComponentDefinitionSchema,
   PptxComponentDefinitionSchema,
+  PptxSlideContentSchema,
 } from './schemas/components';
 
 export type {
@@ -35,6 +36,7 @@ export type {
   PptxTableProps,
   PptxHighchartsProps,
   PptxComponentDefinition,
+  PptxSlideContent,
 } from './schemas/components';
 
 // Chart (not re-exported from components barrel)
