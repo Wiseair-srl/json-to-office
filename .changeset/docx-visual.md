@@ -40,4 +40,9 @@ published engine packages stay pure JS — no binary dependency.
   configured.
 - `POST /api/pptx/rasterize` on the `jto` server: `{ presentation, dpi }` →
   `{ base64DataUri, width, height }`, the HTTP backend for `services.pptx.serverUrl`.
+- `jto-render-server` — a standalone combined server (`packages/jto/dist/render-server.js`)
+  that serves `POST /rasterize` and reverse-proxies everything else to a
+  co-located Highcharts Export Server, so one Render instance backs both
+  `services.highcharts` and `services.pptx`. Deployed via the renamed
+  `services/jto-render-server` image (Chromium + LibreOffice + poppler).
 - Example: `examples/visual-infographic.docx.json`.

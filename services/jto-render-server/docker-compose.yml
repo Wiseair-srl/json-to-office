@@ -1,0 +1,16 @@
+# Local build/run of the combined render server. Build context is the repo
+# root because the Dockerfile builds the monorepo (packages/, scripts/).
+#   docker compose -f services/jto-render-server/docker-compose.yml up --build
+services:
+  jto-render-server:
+    build:
+      context: ../..
+      dockerfile: services/jto-render-server/Dockerfile
+    ports:
+      - '10000:10000'
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:10000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

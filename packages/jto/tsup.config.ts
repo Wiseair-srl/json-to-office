@@ -43,7 +43,9 @@ export default defineConfig([
     dts: true,
     splitting: false,
     sourcemap: true,
-    clean: true,
+    // Cleaning is done once by the build script (rm -rf dist) to avoid a race
+    // between this config and the parallel library config wiping its output.
+    clean: false,
     shims: true,
     minify: false,
     define: {
@@ -63,6 +65,8 @@ export default defineConfig([
   {
     entry: {
       index: 'src/index.ts',
+      // Standalone combined render server (highcharts proxy + pptx rasterizer)
+      'render-server': 'src/render-server.ts',
     },
     format: ['esm'],
     dts: true,
