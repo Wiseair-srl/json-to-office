@@ -11,6 +11,12 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 BOOTSTRAP_PATH = SKILL_ROOT / "scripts" / "bootstrap.py"
 
+# Single source of truth for the jto CLI version, used by this skill's npx
+# fallback (bootstrap.py) and read by the dependent Wiseair skills
+# (quote-carousel, blog-cover) via scripts/jto_argv.py. Bump here only, then
+# re-run bootstrap.py to refresh caps.json.
+JTO_CLI_VERSION = "0.16.0"
+
 # Hosted render service backing the `highcharts` and docx `visual` components.
 # Both render out-of-process: the CLI offloads chart export (POST /export) and
 # pptx-slide rasterization (POST /rasterize) to a service, then embeds the

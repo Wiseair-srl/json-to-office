@@ -168,6 +168,23 @@ If `render_preview.py` prints `VALIDATE_ONLY` first, you're in the degraded path
 
 If anything looks wrong, edit the JSON and re-run `render_preview.py`. **Max 3 iterations** — past that, you're overfitting noise. If issues remain after 3 rounds, ship and tell the user what's still off.
 
+### 8.5. Capture what you learned
+
+If the render loop surfaced a non-obvious fix (a silent failure, a prop
+confusion, a layout trick that took more than one iteration to land), turn it
+into a one-line gotcha in the format used by `assets/taste/gotchas.md`:
+symptom, cause, fix. Then:
+
+- Skill folder writable (repo checkout, local dev): append it to
+  `assets/taste/gotchas.md` directly.
+- Skill folder read-only (claude.ai install): include the proposed line in the
+  step-9 report under a "Gotcha candidate" label, so it can be folded into the
+  skill at the next republish.
+
+One line per lesson, and only for real failure modes. Skip it when the
+iteration was pure content tweaking: the file earns its keep only if every
+entry is a lesson the templates and taste rules didn't already encode.
+
 ### 9. Report
 
 Tell the user:
@@ -175,6 +192,7 @@ Tell the user:
 - The final `OFFICE_FILE=` path
 - 1-2 sentences on what you did (template used, theme chosen, anything notable)
 - If `VALIDATE_ONLY` mode was used: a one-line note that pixel-perfection couldn't be verified in this environment
+- Any "Gotcha candidate" line from step 8.5, clearly labeled
 
 ## Schema cheat-sheet
 
@@ -213,5 +231,11 @@ This skill drives the `@json-to-office` family:
 - `@json-to-office/core-pptx` — PPTX rendering engine
 - `@json-to-office/jto-cli` — CLI used by the scripts in this skill
 - `@json-to-office/json-to-docx`, `@json-to-office/json-to-pptx` — programmatic API wrappers
+
+The CLI version is pinned in `scripts/_lib.py` (`JTO_CLI_VERSION`) and applied
+by `bootstrap.py`'s npx fallback. That constant is the single source of truth
+for this skill and for the dependent skills (`quote-carousel`, `blog-cover`),
+which resolve their CLI through `scripts/jto_argv.py`. To upgrade: bump the
+constant, re-run `bootstrap.py`, and republish this skill before the dependents.
 
 Online playground (when working interactively, optional): https://docx.json-to-office.com · https://pptx.json-to-office.com
