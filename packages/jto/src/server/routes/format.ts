@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { Type } from '@sinclair/typebox';
 import { HTTPException } from 'hono/http-exception';
 import { bodyLimit } from 'hono/body-limit';
 import { getContainer } from '../container/index.js';
@@ -11,13 +12,40 @@ import { tbValidator, getValidated } from '../lib/typebox-validator.js';
 import { logger } from '../utils/logger.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
 import { AppEnv } from '../types/hono.js';
-import { type FormatAdapter, PluginRegistry } from '@json-to-office/jto-cli';
+import {
+  type FormatAdapter,
+  PluginRegistry,
+  createLibreOfficePptxRasterizer,
+} from '@json-to-office/jto-cli';
+import type { PptxRasterizer } from '@json-to-office/shared';
 import {
   LibreOfficeBinaryNotFoundError,
   LibreOfficeConversionError,
   LibreOfficeOutputNotFoundError,
   LibreOfficeTimeoutError,
 } from '../services/libreoffice-converter.js';
+
+/**
+ * Request body for POST /rasterize: a single-slide pptx presentation plus an
+ * optional DPI. `presentation` is validated loosely (the pptx engine performs
+ * deep validation when it builds the slide).
+ */
+const RasterizeRequestSchema = Type.Object(
+  {
+    presentation: Type.Object({}, { additionalProperties: true }),
+    dpi: Type.Optional(Type.Number({ minimum: 36, maximum: 600 })),
+  },
+  { additionalProperties: false }
+);
+
+// One rasterizer per process — shares the on-disk content-addressed cache.
+let sharedRasterizer: PptxRasterizer | undefined;
+function getRasterizer(): PptxRasterizer {
+  if (!sharedRasterizer) {
+    sharedRasterizer = createLibreOfficePptxRasterizer();
+  }
+  return sharedRasterizer;
+}
 
 export function createFormatRouter(adapter: FormatAdapter) {
   const router = new Hono<AppEnv>();
@@ -560,6 +588,63 @@ export function createFormatRouter(adapter: FormatAdapter) {
       throw new HTTPException(500, { message: 'Failed to clear cache' });
     }
   });
+
+  // POST /rasterize — render a single-slide pptx presentation to a PNG.
+  // Backs the docx `visual` component when it is configured with
+  // `services.pptx.serverUrl` instead of an in-process renderer.
+  router.post(
+    '/rasterize',
+    rateLimiter({
+      limit: process.env.NODE_ENV === 'production' ? 10 : 1000,
+      window: 15 * 60 * 1000,
+      keyGenerator: (c) =>
+        c.req.header('X-Real-IP') ||
+        c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
+        'anonymous',
+    }),
+    bodyLimit({
+      maxSize: 32 * 1024 * 1024,
+      onError: () => {
+        throw new HTTPException(413, { message: 'Request body too large' });
+      },
+    }),
+    contentTypeMw,
+    tbValidator(RasterizeRequestSchema),
+    async (c) => {
+      const { presentation, dpi } = getValidated<{
+        presentation: unknown;
+        dpi?: number;
+      }>(c, 'json');
+      const requestId = c.get('requestId');
+
+      try {
+        const result = await getRasterizer()({
+          presentation,
+          dpi: dpi ?? 200,
+        });
+        return c.json(result);
+      } catch (error) {
+        logger.error('Visual rasterization failed', { error, requestId });
+        if (error instanceof Error) {
+          const msg = error.message.toLowerCase();
+          // Missing soffice/pdftoppm → the service can't fulfil the request.
+          if (
+            msg.includes('not found') ||
+            msg.includes('rasterization needs')
+          ) {
+            throw new HTTPException(503, { message: error.message });
+          }
+          if (msg.includes('invalid') || msg.includes('validation')) {
+            throw new HTTPException(400, { message: error.message });
+          }
+        }
+        if (error instanceof HTTPException) throw error;
+        throw new HTTPException(500, {
+          message: 'Internal server error during rasterization',
+        });
+      }
+    }
+  );
 
   return router;
 }

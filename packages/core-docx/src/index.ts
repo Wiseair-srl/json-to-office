@@ -20,6 +20,12 @@ export {
   DocumentGenerator as CoreDocumentGenerator,
 } from './core/generator';
 
+// Visual flattening (desugar `visual` → `image` for portable, service-free docs)
+export {
+  flattenVisuals,
+  type FlattenVisualsOptions,
+} from './core/flattenVisuals';
+
 // Cache API (general purpose caching, not specific to custom components)
 export {
   MemoryCache,
