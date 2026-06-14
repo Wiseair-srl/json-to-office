@@ -24,6 +24,27 @@ def which(cmd: str) -> str | None:
     return shutil.which(cmd)
 
 
+def resolve_binary(candidates: list[str]) -> str | None:
+    """First candidate runnable as an explicit file path or a PATH-resolved name.
+
+    Mirrors the CLI's rasterizer resolver
+    (packages/jto-cli/src/pptx-rasterizer.ts: sofficeCandidates / pdftoppmCandidates)
+    so the skill's capability probe agrees with what the CLI will actually find —
+    otherwise a macOS box with LibreOffice.app off PATH looks rasterizer-less and
+    the skill needlessly routes visuals to the hosted service.
+    """
+    for cand in candidates:
+        if not cand:
+            continue
+        p = Path(cand)
+        if p.is_file() and os.access(cand, os.X_OK):
+            return cand
+        found = shutil.which(cand)
+        if found:
+            return found
+    return None
+
+
 def find_monorepo_root() -> Path | None:
     """Walk up from cwd looking for the json-to-office monorepo root.
 
@@ -64,9 +85,17 @@ def probe_jto_bin(monorepo: Path | None) -> tuple[str | None, list[str]]:
 
 
 def probe_pdftoppm() -> str | None:
-    if which("pdftoppm"):
-        return "pdftoppm"
-    # Python fallback
+    candidates: list[str] = []
+    configured = os.environ.get("PDFTOPPM_PATH", "").strip()
+    if configured:
+        candidates.append(configured)
+    candidates.append("pdftoppm")
+    resolved = resolve_binary(candidates)
+    if resolved:
+        return resolved
+    # Python fallback — screenshot step only. The CLI's in-process visual
+    # rasterizer needs the real binary, so this does NOT enable local
+    # rasterization (has_local_rasterizer treats "pdf2image" as absent).
     try:
         import pdf2image  # noqa: F401
 
@@ -76,10 +105,17 @@ def probe_pdftoppm() -> str | None:
 
 
 def probe_soffice() -> str | None:
-    for candidate in ("soffice", "libreoffice"):
-        if which(candidate):
-            return candidate
-    return None
+    candidates: list[str] = []
+    configured = os.environ.get("LIBREOFFICE_PATH", "").strip()
+    if configured:
+        candidates.append(configured)
+    if sys.platform == "darwin":
+        candidates.append("/Applications/LibreOffice.app/Contents/MacOS/soffice")
+    elif sys.platform == "win32":
+        candidates.append(r"C:\Program Files\LibreOffice\program\soffice.exe")
+        candidates.append(r"C:\Program Files (x86)\LibreOffice\program\soffice.exe")
+    candidates += ["soffice", "libreoffice"]
+    return resolve_binary(candidates)
 
 
 def main() -> int:

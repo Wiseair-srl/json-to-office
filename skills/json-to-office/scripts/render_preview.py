@@ -17,13 +17,14 @@ Degrades gracefully:
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-from _lib import die, infer_kind, load_caps, run
+from _lib import RENDER_SERVER_URL, die, infer_kind, load_caps, render_env, run
 
 
 def _page_sort_key(path: Path) -> tuple[int, str]:
@@ -73,8 +74,10 @@ def render_pdf_to_pngs(soffice_bin: str, pdftoppm_kind: str, office_path: Path, 
         die(f"expected pdf at {pdf_path}, soffice did not produce it")
 
     pages_prefix = pdf_dir / "page"
-    if pdftoppm_kind == "pdftoppm":
-        proc = run(["pdftoppm", "-r", "144", str(pdf_path), str(pages_prefix), "-png"])
+    # pdftoppm_kind is the resolved binary path/name from caps (or "pdf2image"
+    # for the Python fallback). Invoke whatever was resolved, not a bare name.
+    if pdftoppm_kind != "pdf2image":
+        proc = run([pdftoppm_kind, "-r", "144", str(pdf_path), str(pages_prefix), "-png"])
         if proc.returncode != 0:
             die("pdftoppm failed")
         pngs = sorted(pdf_dir.glob("page-*.png"), key=_page_sort_key)
@@ -163,7 +166,25 @@ def main() -> int:
         str(office_path),
         "--no-google-fonts",
     ]
-    proc = run(gen_argv)
+    # Wire the out-of-process renderers for `highcharts` / `visual` components.
+    # render_env defaults the service URLs to the hosted instance unless the user
+    # overrode them (or, for docx visuals, a local rasterizer exists). The pptx
+    # rasterizer URL is docx-only, so it's gated on `kind` inside render_env.
+    env = render_env(caps, kind)
+    remote = []
+    if env.get("HIGHCHARTS_SERVER_URL") == RENDER_SERVER_URL and "HIGHCHARTS_SERVER_URL" not in os.environ:
+        remote.append("highcharts charts")
+    if env.get("JTO_PPTX_RASTERIZER_URL") == RENDER_SERVER_URL and "JTO_PPTX_RASTERIZER_URL" not in os.environ:
+        remote.append("docx visuals")
+    if remote:
+        sys.stderr.write(
+            f"NOTE: {' and '.join(remote)} render via the hosted service "
+            f"{RENDER_SERVER_URL} (only when the document uses them). The first "
+            "call after the instance is idle can take ~30-60s (cold start), and "
+            "the relevant document content is sent to that service. Override with "
+            "HIGHCHARTS_SERVER_URL / JTO_PPTX_RASTERIZER_URL.\n"
+        )
+    proc = run(gen_argv, env=env)
     if proc.returncode != 0 or not office_path.is_file():
         die(f"jto-cli {kind} generate failed for {input_path.name}")
 

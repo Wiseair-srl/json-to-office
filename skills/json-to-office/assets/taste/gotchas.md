@@ -19,6 +19,9 @@ Distilled from real-world failures. Scan this list before validating, and again 
 - **Cell color vs fill.** `color` on a cell is the **text** color. `backgroundColor` is the fill. To make a dark header bar with white text, set `backgroundColor` + `font.color` on **each column's `header` object** directly — not on `headerCellDefaults`, which is silently overridden by column-level `cellDefaults`.
 - **Cover-page paragraph defaults.** The theme's `normal` style silently inflates paragraph heights via `spacing` and `lineSpacing`. On cover pages override both: `lineSpacing: "single"`, `spacing: { before: 0, after: 0 }`.
 - **Hex prefix.** DOCX uses `#`. PPTX doesn't. This is **opposite** between formats.
+- **`visual` needs a rasterization service.** A docx `visual` renders by rasterizing a pptx canvas to a PNG. `render_preview.py` auto-wires the service; if neither a local LibreOffice + `pdftoppm` pair nor a reachable server is available, generation **errors out** — it does not silently drop the graphic.
+- **`visual` units & placement.** `canvas.width`/`height` and element `x`/`y`/`w`/`h` are in **inches** (the rest of DOCX is twips/points). The canvas has **no grid** — position elements absolutely; `grid` placement inside a `visual` misbehaves.
+- **Colors inside `visual.elements` are PPTX-style.** The canvas is rendered by the pptx engine, so element hex is **bare (no `#`)** even though the surrounding DOCX uses `#`. Shape text uses `fontColor`, text uses `color`. Theme names (`"primary"`) work in both — prefer them.
 
 ## PPTX
 

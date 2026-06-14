@@ -73,7 +73,7 @@ Only `section` is allowed as a direct child of `docx`. All visible content lives
     ]
   },
   "children": [
-    /* heading | paragraph | image | table | list | columns | statistic | toc | highcharts | text-box */
+    /* heading | paragraph | image | visual | table | list | columns | statistic | toc | highcharts | text-box */
   ]
 }
 ```
@@ -163,6 +163,62 @@ Only `section` is allowed as a direct child of `docx`. All visible content lives
 - `widthRelativeTo`: `"page"` for full-bleed; `"margin"` (default) otherwise.
 - `floating`: floats over/behind content. Essential for cover backgrounds.
 - `path` accepts public URLs or absolute local paths.
+
+### `visual` (free-canvas pptx graphic → embedded PNG)
+
+For infographics, diagrams, hero compositions, layered/overlapping art — anything the docx flow layout can't express. You author a single **pptx canvas** plus its `elements`; the renderer rasterizes the canvas to a PNG and embeds it like an `image` (the component desugars to `image`). Requires a rasterization service — `render_preview.py` wires one automatically (see SKILL.md → "Rendering services").
+
+```json
+{
+  "name": "visual",
+  "props": {
+    "canvas": {
+      "width": 6.5,
+      "height": 3.2,
+      "background": { "color": "background" }
+    },
+    "elements": [
+      {
+        "name": "shape",
+        "props": {
+          "type": "rect",
+          "x": 0,
+          "y": 0,
+          "w": 6.5,
+          "h": 3.2,
+          "fill": { "color": "primary" }
+        }
+      },
+      {
+        "name": "text",
+        "props": {
+          "text": "73%",
+          "x": 0.4,
+          "y": 0.8,
+          "w": 3,
+          "h": 1.4,
+          "fontSize": 54,
+          "color": "background",
+          "bold": true
+        }
+      }
+    ],
+    "dpi": 200,
+    "width": "100%",
+    "alignment": "center",
+    "caption": "Figure 1",
+    "spacing": { "after": 14 }
+  }
+}
+```
+
+- **`canvas.width`/`height` are INCHES** — they set the aspect ratio and the default physical size of the embedded image. (Unlike the rest of DOCX, which uses twips/points.)
+- **`elements` are PPTX slide-content** (`text`, `shape`, `image`, `table`, `chart`, `highcharts`) — author them exactly as in a `.pptx.json` slide; see `pptx-cheatsheet.md`.
+- **Position elements absolutely with `x`/`y`/`w`/`h` in inches** (or `%`). The canvas declares **no grid** — don't use `grid` placement inside a `visual`.
+- **Colors inside `elements` follow PPTX rules** (bare hex, no `#`); shape text uses `fontColor`, text uses `color`. Prefer theme names (`"primary"`, `"text"`) — they sidestep the #/no-# trap and stay themeable.
+- **Placement props mirror `image`:** `width` (default = canvas physical size; override with `"80%"` or a pixel number), `height`, `alignment`, `caption`, `spacing`, `floating`, `alt`, `keepNext`, `keepLines`.
+- **`dpi`:** raster resolution, default 200, range 36–600. Higher = sharper but larger.
+- **When to use:** prefer `visual` over `image` when the graphic is data-driven/themeable (it swaps with the theme), and over `text-box` when shapes overlap or layer. For a plain external picture, use `image`.
 
 ### `table` (column-oriented)
 

@@ -33,6 +33,8 @@ It writes `<skill>/.skill-out/caps.json` with the runtime's capabilities. Two pa
 - **Full loop**: `can_screenshot: true` — you have Node, LibreOffice, pdftoppm. Validate → render → Read PNGs → iterate.
 - **Validate-only**: `can_screenshot: false` — render the office file but skip the visual loop. Warn the user that pixel-perfection isn't verifiable.
 
+> **Rendering services (charts & visuals).** `highcharts` charts and docx `visual` graphics render out-of-process. `render_preview.py` auto-wires them to the hosted instance `https://jto-render-server.onrender.com` — always for charts (no local fallback exists), and for visuals only when local LibreOffice + `pdftoppm` aren't found (otherwise visuals rasterize locally, which is faster and keeps content on-machine). The first call after the instance is idle can be slow (cold start), and the relevant content is sent to that service when used. Point at your own server, or opt out, via the `HIGHCHARTS_SERVER_URL` / `JTO_PPTX_RASTERIZER_URL` env vars (a value you set always wins).
+
 ### 2. Pick a template, don't author from scratch
 
 The first move is **always** to pick a starting template. Read template manifests:
@@ -115,7 +117,7 @@ Slot user-provided content into the template. Hard rules:
 - **Use the grid for PPTX.** Slides declare `props.grid: { columns: 12, rows: 6 }`. Components position via `grid: { column, row, columnSpan, rowSpan }`. Don't pixel-place.
 - **One idea per slide.** If a slide has >40 words of body text, split it.
 - **Tabular figures on numerics.** Tables, stats, chart axes — never let numbers slide into italic serif.
-- **Don't invent component names.** If the schema doesn't list it, it doesn't exist. Use what's there (`heading`, `paragraph`, `columns`, `table`, `list`, `statistic`, `text-box`, `toc`, `image`, `highcharts` for DOCX; `text`, `chart`, `table`, `shape`, `image`, `highcharts` for PPTX).
+- **Don't invent component names.** If the schema doesn't list it, it doesn't exist. Use what's there (`heading`, `paragraph`, `columns`, `table`, `list`, `statistic`, `text-box`, `toc`, `image`, `visual`, `highcharts` for DOCX; `text`, `chart`, `table`, `shape`, `image`, `highcharts` for PPTX).
 
 ### 6. Validate
 
@@ -178,7 +180,7 @@ Tell the user:
 
 DOCX root: `{ "name": "docx", "props": { "theme": "minimal", ... }, "children": [...] }`
 
-DOCX components (`name` values): `section`, `heading`, `paragraph`, `columns`, `list`, `table`, `statistic`, `text-box`, `toc`, `image`, `highcharts`.
+DOCX components (`name` values): `section`, `heading`, `paragraph`, `columns`, `list`, `table`, `statistic`, `text-box`, `toc`, `image`, `visual`, `highcharts`. `visual` embeds a free-canvas pptx graphic (infographic / diagram / hero art) as a rasterized PNG — see the cheat-sheet.
 
 PPTX root: `{ "name": "pptx", "props": { "theme": "default", "grid": { "columns": 12, "rows": 6 }, ... }, "children": [...] }`
 
