@@ -96,9 +96,15 @@ export async function renderComponentWithCache(
   //   bookmark IDs across sections/documents.
   // - revision-bearing components embed document-scoped w:ins/w:del ids from
   //   a per-render counter; caching would leak ids across documents.
+  // - 'visual' rasterizes via the injected services.pptx (an in-process render
+  //   fn or an HTTP serverUrl) which is NOT part of the cache key; caching by
+  //   props alone could serve a stale image when the rasterizer differs across
+  //   renders. The rasterizer keeps its own content-addressed disk cache, so an
+  //   identical visual is still cheap to re-resolve.
   const forceBypassForType =
     component.name === 'toc' ||
     component.name === 'section' ||
+    component.name === 'visual' ||
     componentHasRevision(component);
 
   // Initialize cache if needed

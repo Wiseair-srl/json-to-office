@@ -97,13 +97,78 @@ async function resolveBinary(
   );
 }
 
-/** Read width/height (big-endian uint32) from a PNG IHDR chunk. */
-function readPngSize(png: Buffer): { width: number; height: number } {
-  // 8-byte signature, then IHDR: length(4) + "IHDR"(4) + width(4) + height(4)
-  if (png.length < 24 || png.toString('ascii', 12, 16) !== 'IHDR') {
-    return { width: 0, height: 0 };
+// Memoize resolved binary paths per process — they don't change at runtime, so
+// re-probing (spawning `--version` for every cache-miss rasterize) is wasted
+// work. A failed resolution is NOT cached, so a later call retries.
+let sofficePromise: Promise<string> | undefined;
+let pdftoppmPromise: Promise<string> | undefined;
+function resolveSoffice(): Promise<string> {
+  if (!sofficePromise) {
+    sofficePromise = resolveBinary(
+      sofficeCandidates(),
+      'LibreOffice (soffice)',
+      'Install LibreOffice or set LIBREOFFICE_PATH.'
+    ).catch((error) => {
+      sofficePromise = undefined;
+      throw error;
+    });
   }
-  return { width: png.readUInt32BE(16), height: png.readUInt32BE(20) };
+  return sofficePromise;
+}
+function resolvePdftoppm(): Promise<string> {
+  if (!pdftoppmPromise) {
+    pdftoppmPromise = resolveBinary(
+      pdftoppmCandidates(),
+      'pdftoppm (poppler)',
+      'Install poppler-utils or set PDFTOPPM_PATH.'
+    ).catch((error) => {
+      pdftoppmPromise = undefined;
+      throw error;
+    });
+  }
+  return pdftoppmPromise;
+}
+
+const PNG_SIGNATURE = Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+]);
+
+/**
+ * Validate a PNG buffer and read its width/height from the IHDR chunk. Returns
+ * null for anything that isn't a complete PNG (empty/truncated/corrupt) so the
+ * caller can re-render or error rather than emit a 0×0 / broken image. pdftoppm
+ * always outputs PNG, so a PNG-only check is sufficient here.
+ */
+function parsePngSize(png: Buffer): { width: number; height: number } | null {
+  // 8-byte signature, then IHDR: length(4) + "IHDR"(4) + width(4) + height(4)
+  if (png.length < 24) return null;
+  if (!png.subarray(0, 8).equals(PNG_SIGNATURE)) return null;
+  if (png.toString('ascii', 12, 16) !== 'IHDR') return null;
+  const width = png.readUInt32BE(16);
+  const height = png.readUInt32BE(20);
+  if (width <= 0 || height <= 0) return null;
+  return { width, height };
+}
+
+let tmpCounter = 0;
+/**
+ * Write the cache file atomically (temp file + rename) so a concurrent reader
+ * never observes a half-written PNG. Best-effort: failures are swallowed (the
+ * cache is an optimization), but a partial temp file is cleaned up.
+ */
+async function writeCacheAtomic(
+  cacheDir: string,
+  cachePath: string,
+  png: Buffer
+): Promise<void> {
+  const tmp = `${cachePath}.tmp-${process.pid}-${tmpCounter++}`;
+  try {
+    await fs.mkdir(cacheDir, { recursive: true });
+    await fs.writeFile(tmp, png);
+    await fs.rename(tmp, cachePath);
+  } catch {
+    await fs.rm(tmp, { force: true }).catch(() => {});
+  }
 }
 
 function cacheKey(request: PptxRasterizeRequest): string {
@@ -138,11 +203,13 @@ export function createLibreOfficePptxRasterizer(options?: {
     const cachePath = cacheDir ? path.join(cacheDir, `${key}.png`) : null;
 
     if (cachePath) {
-      try {
-        const cached = await fs.readFile(cachePath);
-        return { base64DataUri: toDataUri(cached), ...readPngSize(cached) };
-      } catch {
-        // cache miss — fall through to render
+      const cached = await fs.readFile(cachePath).catch(() => null);
+      if (cached) {
+        const size = parsePngSize(cached);
+        if (size) return { base64DataUri: toDataUri(cached), ...size };
+        // Corrupt/partial cache file (e.g. a killed prior render) — discard it
+        // and re-render rather than embed a broken image.
+        await fs.rm(cachePath, { force: true }).catch(() => {});
       }
     }
 
@@ -153,16 +220,8 @@ export function createLibreOfficePptxRasterizer(options?: {
     );
 
     const [soffice, pdftoppm] = await Promise.all([
-      resolveBinary(
-        sofficeCandidates(),
-        'LibreOffice (soffice)',
-        'Install LibreOffice or set LIBREOFFICE_PATH.'
-      ),
-      resolveBinary(
-        pdftoppmCandidates(),
-        'pdftoppm (poppler)',
-        'Install poppler-utils or set PDFTOPPM_PATH.'
-      ),
+      resolveSoffice(),
+      resolvePdftoppm(),
     ]);
 
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-visual-'));
@@ -199,13 +258,18 @@ export function createLibreOfficePptxRasterizer(options?: {
       );
 
       const png = await fs.readFile(`${pngPrefix}.png`);
-
-      if (cachePath) {
-        await fs.mkdir(cacheDir!, { recursive: true }).catch(() => {});
-        await fs.writeFile(cachePath, png).catch(() => {});
+      const size = parsePngSize(png);
+      if (!size) {
+        throw new Error(
+          'Rasterization produced an invalid PNG (empty or truncated output from pdftoppm).'
+        );
       }
 
-      return { base64DataUri: toDataUri(png), ...readPngSize(png) };
+      if (cachePath) {
+        await writeCacheAtomic(cacheDir!, cachePath, png);
+      }
+
+      return { base64DataUri: toDataUri(png), ...size };
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }

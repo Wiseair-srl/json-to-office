@@ -276,7 +276,6 @@ export {
   VisualPropsSchema,
   VisualCanvasSchema,
   VisualCanvasBackgroundSchema,
-  VisualElementSchema,
 } from './schemas/components/visual';
 export type { VisualProps, VisualCanvas } from './schemas/components/visual';
 

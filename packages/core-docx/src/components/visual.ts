@@ -15,17 +15,19 @@ import {
   isVisualComponent,
 } from '../types';
 import { ThemeConfig } from '../styles';
-import { createImage } from '../core/content';
+import { createImage, type ImageOptions } from '../core/content';
 import { isNodeEnvironment } from '../utils/environment';
+import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 import type { VisualProps } from '@json-to-office/shared-docx';
-import type {
-  PptxServiceConfig,
-  PptxRasterizeResult,
+import {
+  clampVisualDpi,
+  DEFAULT_VISUAL_DPI,
+  type PptxServiceConfig,
+  type PptxRasterizeResult,
 } from '@json-to-office/shared';
 
 const DEFAULT_RASTERIZE_SERVER_URL = 'http://localhost:7802';
-const DEFAULT_DPI = 200;
 /** 1 inch = 96 CSS pixels — used to size the embedded image at its physical canvas size. */
 const PIXELS_PER_INCH = 96;
 
@@ -70,6 +72,25 @@ export function defaultVisualWidthPx(props: VisualProps): number {
 }
 
 /**
+ * Shared image-placement options derived from a visual's props. Used by BOTH
+ * the render-time createImage call and the flatten transform so the two
+ * desugaring paths can't drift (width default, alignment default, caption,
+ * spacing, floating, keepNext/keepLines all live here once).
+ */
+export function visualToImageOptions(props: VisualProps): ImageOptions {
+  return {
+    width: props.width ?? defaultVisualWidthPx(props),
+    ...(props.height !== undefined && { height: props.height }),
+    alignment: props.alignment ?? 'center',
+    ...(props.caption !== undefined && { caption: props.caption }),
+    ...(props.spacing !== undefined && { spacing: props.spacing }),
+    ...(props.floating !== undefined && { floating: props.floating }),
+    ...(props.keepNext !== undefined && { keepNext: props.keepNext }),
+    ...(props.keepLines !== undefined && { keepLines: props.keepLines }),
+  };
+}
+
+/**
  * Map visual props to the `image` props they desugar to (used by the
  * `flattenVisuals` transform to produce a portable, service-free document).
  */
@@ -79,21 +100,9 @@ export function visualToImageProps(
 ): Record<string, unknown> {
   return {
     base64: base64DataUri,
-    width: props.width ?? defaultVisualWidthPx(props),
-    ...(props.height !== undefined && { height: props.height }),
-    alignment: props.alignment ?? 'center',
-    ...(props.caption !== undefined && { caption: props.caption }),
+    ...visualToImageOptions(props),
     ...(props.alt !== undefined && { alt: props.alt }),
-    ...(props.spacing !== undefined && { spacing: props.spacing }),
-    ...(props.floating !== undefined && { floating: props.floating }),
-    ...(props.keepNext !== undefined && { keepNext: props.keepNext }),
-    ...(props.keepLines !== undefined && { keepLines: props.keepLines }),
   };
-}
-
-function getServerUrl(propsUrl?: string, servicesUrl?: string): string {
-  const raw = propsUrl || servicesUrl || DEFAULT_RASTERIZE_SERVER_URL;
-  return raw.startsWith('http') ? raw : `http://${raw}`;
 }
 
 /**
@@ -118,39 +127,32 @@ async function rasterize(
     return serviceConfig.render({ presentation, dpi });
   }
 
-  const serverUrl = getServerUrl(propsServerUrl, serviceConfig?.serverUrl);
+  const serverUrl = resolveServiceUrl(
+    propsServerUrl,
+    serviceConfig?.serverUrl,
+    DEFAULT_RASTERIZE_SERVER_URL
+  );
 
-  const requestBody = { presentation, dpi };
-
-  const resolvedHeaders =
-    typeof serviceConfig?.headers === 'function'
-      ? await serviceConfig.headers(requestBody)
-      : serviceConfig?.headers;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...resolvedHeaders,
-  };
-
-  const response = await fetch(`${serverUrl}/rasterize`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(requestBody),
-  }).catch((error) => {
-    throw new Error(
-      `PPTX rasterization service is not reachable at ${serverUrl}. ` +
-        'Configure services.pptx with a `render` callback or a running `serverUrl`.\n' +
-        `Cause: ${error instanceof Error ? error.message : String(error)}`
-    );
+  const response = await postJsonToService({
+    url: serverUrl,
+    path: '/rasterize',
+    body: { presentation, dpi },
+    headers: serviceConfig?.headers,
+    serviceLabel: 'PPTX rasterization service',
+    onUnreachable: (url, cause) =>
+      `PPTX rasterization service is not reachable at ${url}. ` +
+      'Configure services.pptx with a `render` callback or a running `serverUrl`.\n' +
+      `Cause: ${cause}`,
   });
 
-  if (!response.ok) {
+  let result: PptxRasterizeResult;
+  try {
+    result = (await response.json()) as PptxRasterizeResult;
+  } catch {
     throw new Error(
-      `PPTX rasterization service returned ${response.status}: ${response.statusText}`
+      'PPTX rasterization service returned a non-JSON response (expected { base64DataUri, width, height }).'
     );
   }
-
-  const result = (await response.json()) as PptxRasterizeResult;
   if (!result?.base64DataUri) {
     throw new Error(
       'PPTX rasterization service returned a malformed response (missing base64DataUri).'
@@ -174,7 +176,9 @@ export async function renderVisualComponent(
   const serviceConfig = context?.services?.pptx;
 
   const presentation = buildVisualPresentation(props);
-  const dpi = props.dpi ?? serviceConfig?.dpi ?? DEFAULT_DPI;
+  const dpi = clampVisualDpi(
+    props.dpi ?? serviceConfig?.dpi ?? DEFAULT_VISUAL_DPI
+  );
 
   const result = await rasterize(
     presentation,
@@ -183,19 +187,13 @@ export async function renderVisualComponent(
     serviceConfig
   );
 
-  // Default the rendered size to the canvas physical inches so a 6×4 canvas
-  // prints 6×4; an explicit width/height (px or %) overrides. Height is left
-  // unset by default so aspect ratio is preserved from the PNG.
-  const renderWidth = props.width ?? defaultVisualWidthPx(props);
-
-  return await createImage(result.base64DataUri, theme, themeName, {
-    caption: props.caption,
-    width: renderWidth,
-    height: props.height,
-    alignment: props.alignment ?? 'center',
-    spacing: props.spacing,
-    floating: props.floating,
-    keepNext: props.keepNext,
-    keepLines: props.keepLines,
-  });
+  // Size and placement options are derived once in visualToImageOptions (shared
+  // with the flatten transform): default width = canvas physical inches; height
+  // left unset so aspect ratio is preserved from the PNG.
+  return await createImage(
+    result.base64DataUri,
+    theme,
+    themeName,
+    visualToImageOptions(props)
+  );
 }

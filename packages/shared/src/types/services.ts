@@ -2,6 +2,26 @@
  * Service configuration types for external integrations (e.g. Highcharts export server)
  */
 
+// ============================================================================
+// Visual rasterization policy — single source of truth for DPI bounds shared
+// by the visual schema, the in-process rasterizer, the flatten transform, and
+// both HTTP /rasterize surfaces. Keep these in sync in one place.
+// ============================================================================
+
+/** Default raster resolution when a `visual` does not specify one. */
+export const DEFAULT_VISUAL_DPI = 200;
+/** Minimum accepted raster resolution. */
+export const MIN_VISUAL_DPI = 36;
+/** Maximum accepted raster resolution (bounds bitmap size / DoS surface). */
+export const MAX_VISUAL_DPI = 600;
+
+/** Clamp an arbitrary dpi to [MIN_VISUAL_DPI, MAX_VISUAL_DPI]; non-finite → default. */
+export function clampVisualDpi(dpi: unknown): number {
+  if (typeof dpi !== 'number' || !Number.isFinite(dpi))
+    return DEFAULT_VISUAL_DPI;
+  return Math.min(MAX_VISUAL_DPI, Math.max(MIN_VISUAL_DPI, Math.round(dpi)));
+}
+
 export type HighchartsHeaders = Record<string, string>;
 
 export type HighchartsHeadersResolver = (

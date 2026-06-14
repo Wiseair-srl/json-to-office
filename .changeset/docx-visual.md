@@ -46,3 +46,17 @@ published engine packages stay pure JS — no binary dependency.
   `services.highcharts` and `services.pptx`. Deployed via the renamed
   `services/jto-render-server` image (Chromium + LibreOffice + poppler).
 - Example: `examples/visual-infographic.docx.json`.
+
+Robustness:
+
+- Visuals render and flatten in every position — section/column children,
+  section headers/footers, and table cells/headers — not just top-level
+  children. `flattenVisuals` rasterizes with bounded concurrency and skips
+  disabled visuals.
+- DPI policy is centralized (`DEFAULT/MIN/MAX_VISUAL_DPI`, range 36–600) and
+  enforced everywhere; the public `/rasterize` shares one validated handler
+  (body-size limit, rate limit, dpi clamp) with the in-app route.
+- The combined server's `/health` reflects the highcharts upstream's readiness;
+  proxy and rasterize fetches have timeouts; the entrypoint supervises (restarts)
+  highcharts. The rasterizer cache writes atomically and validates PNGs (no
+  truncated/0×0 images), and binary resolution is memoized.

@@ -13,6 +13,11 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import {
+  MIN_VISUAL_DPI,
+  MAX_VISUAL_DPI,
+  DEFAULT_VISUAL_DPI,
+} from '@json-to-office/shared';
 import { PptxSlideContentSchema } from '@json-to-office/shared-pptx';
 import {
   AlignmentSchema,
@@ -71,13 +76,11 @@ export const VisualCanvasSchema = Type.Object(
   }
 );
 
-/**
- * A single pptx slide content element (text, image, shape, table, highcharts,
- * chart). This is the real PPTX slide-content union from `@json-to-office/shared-pptx`,
- * so every element is fully validated against its component's props — same
- * authoring fidelity as a standalone `.pptx.json`.
- */
-export const VisualElementSchema = PptxSlideContentSchema;
+// A single pptx slide content element (text, image, shape, table, highcharts,
+// chart) is validated against the real PPTX slide-content union
+// (`PptxSlideContentSchema` from @json-to-office/shared-pptx) — same authoring
+// fidelity as a standalone `.pptx.json`. Used directly as the `elements` item
+// schema below.
 
 export const VisualPropsSchema = Type.Object(
   {
@@ -94,9 +97,10 @@ export const VisualPropsSchema = Type.Object(
     // ── rasterization ──
     dpi: Type.Optional(
       Type.Number({
-        minimum: 36,
-        description:
-          'Raster resolution in DPI (default 200). Higher = sharper + larger.',
+        minimum: MIN_VISUAL_DPI,
+        maximum: MAX_VISUAL_DPI,
+        default: DEFAULT_VISUAL_DPI,
+        description: `Raster resolution in DPI (default ${DEFAULT_VISUAL_DPI}, range ${MIN_VISUAL_DPI}-${MAX_VISUAL_DPI}). Higher = sharper + larger.`,
       })
     ),
     serverUrl: Type.Optional(

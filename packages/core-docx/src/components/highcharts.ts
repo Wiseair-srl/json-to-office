@@ -12,6 +12,7 @@ import {
 import { ThemeConfig } from '../styles';
 import { createImage } from '../core/content';
 import { isNodeEnvironment } from '../utils/environment';
+import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 // Import only the types we actually use from shared package
 import type { HighchartsProps } from '@json-to-office/shared-docx';
@@ -31,11 +32,6 @@ export interface ChartGenerationResult {
 
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 
-function getExportServerUrl(propsUrl?: string, servicesUrl?: string): string {
-  const raw = propsUrl || servicesUrl || DEFAULT_EXPORT_SERVER_URL;
-  return raw.startsWith('http') ? raw : `http://${raw}`;
-}
-
 /**
  * Generate chart using Highcharts Export Server
  */
@@ -51,9 +47,10 @@ async function generateChart(
     );
   }
 
-  const serverUrl = getExportServerUrl(
+  const serverUrl = resolveServiceUrl(
     config.serverUrl,
-    servicesConfig?.serverUrl
+    servicesConfig?.serverUrl,
+    DEFAULT_EXPORT_SERVER_URL
   );
 
   const requestBody: Record<string, unknown> = {
@@ -63,33 +60,17 @@ async function generateChart(
     scale: config.scale,
   };
 
-  const resolvedHeaders =
-    typeof servicesConfig?.headers === 'function'
-      ? await servicesConfig.headers(requestBody)
-      : servicesConfig?.headers;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...resolvedHeaders,
-  };
-
-  const response = await fetch(`${serverUrl}/export`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(requestBody),
-  }).catch((error) => {
-    throw new Error(
-      `Highcharts Export Server is not running at ${serverUrl}. ` +
-        'Start it with: npx highcharts-export-server --enableServer true\n' +
-        `Cause: ${error instanceof Error ? error.message : String(error)}`
-    );
+  const response = await postJsonToService({
+    url: serverUrl,
+    path: '/export',
+    body: requestBody,
+    headers: servicesConfig?.headers,
+    serviceLabel: 'Highcharts export server',
+    onUnreachable: (url, cause) =>
+      `Highcharts Export Server is not running at ${url}. ` +
+      'Start it with: npx highcharts-export-server --enableServer true\n' +
+      `Cause: ${cause}`,
   });
-
-  if (!response.ok) {
-    throw new Error(
-      `Highcharts export server returned ${response.status}: ${response.statusText}`
-    );
-  }
 
   const base64Data = await response.text();
   const base64DataUri = `data:image/png;base64,${base64Data}`;

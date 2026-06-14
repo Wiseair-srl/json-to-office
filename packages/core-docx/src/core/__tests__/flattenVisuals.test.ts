@@ -94,4 +94,114 @@ describe('flattenVisuals', () => {
     expect(out).toEqual(doc);
     expect(rasterize).not.toHaveBeenCalled();
   });
+
+  const visualNode = (id: string) => ({
+    name: 'visual',
+    id,
+    props: { canvas: { width: 4, height: 2 }, elements: [] },
+  });
+
+  it('flattens visuals nested in a table cell and column header', async () => {
+    const rasterize = fakeRasterizer();
+    const doc = {
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'section',
+          props: {},
+          children: [
+            {
+              name: 'table',
+              props: {
+                columns: [
+                  {
+                    header: { content: visualNode('h1') },
+                    cells: [
+                      { content: visualNode('c1') },
+                      { content: 'plain' },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const out: any = await flattenVisuals(doc, { rasterize });
+    const col = out.children[0].children[0].props.columns[0];
+    expect(col.header.content.name).toBe('image');
+    expect(col.header.content.id).toBe('h1');
+    expect(col.cells[0].content.name).toBe('image');
+    expect(col.cells[1].content).toBe('plain');
+    expect(rasterize).toHaveBeenCalledTimes(2);
+  });
+
+  it('flattens visuals in a section header/footer', async () => {
+    const rasterize = fakeRasterizer();
+    const doc = {
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'section',
+          props: {
+            header: [visualNode('hdr')],
+            footer: [{ name: 'paragraph', props: { text: 'p' } }],
+          },
+          children: [],
+        },
+      ],
+    };
+    const out: any = await flattenVisuals(doc, { rasterize });
+    expect(out.children[0].props.header[0].name).toBe('image');
+    expect(out.children[0].props.header[0].id).toBe('hdr');
+    expect(out.children[0].props.footer[0].name).toBe('paragraph');
+    expect(rasterize).toHaveBeenCalledOnce();
+  });
+
+  it('does not rasterize a disabled visual (left as-is)', async () => {
+    const rasterize = fakeRasterizer();
+    const doc = {
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'section',
+          props: {},
+          children: [{ ...visualNode('d1'), enabled: false }],
+        },
+      ],
+    };
+    const out: any = await flattenVisuals(doc, { rasterize });
+    expect(out.children[0].children[0].name).toBe('visual');
+    expect(rasterize).not.toHaveBeenCalled();
+  });
+
+  it('clamps an out-of-range dpi before calling the rasterizer', async () => {
+    const rasterize = fakeRasterizer();
+    const doc = {
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'section',
+          props: {},
+          children: [
+            {
+              name: 'visual',
+              props: {
+                canvas: { width: 4, height: 2 },
+                elements: [],
+                dpi: 5000,
+              },
+            },
+          ],
+        },
+      ],
+    };
+    await flattenVisuals(doc, { rasterize });
+    expect(rasterize.mock.calls[0][0].dpi).toBe(600); // MAX_VISUAL_DPI
+  });
 });

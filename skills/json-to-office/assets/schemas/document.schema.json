@@ -5371,7 +5371,9 @@
                           },
                           "dpi": {
                             "minimum": 36,
-                            "description": "Raster resolution in DPI (default 200). Higher = sharper + larger.",
+                            "maximum": 600,
+                            "default": 200,
+                            "description": "Raster resolution in DPI (default 200, range 36-600). Higher = sharper + larger.",
                             "type": "number"
                           },
                           "serverUrl": {
@@ -11198,7 +11200,9 @@
                           },
                           "dpi": {
                             "minimum": 36,
-                            "description": "Raster resolution in DPI (default 200). Higher = sharper + larger.",
+                            "maximum": 600,
+                            "default": 200,
+                            "description": "Raster resolution in DPI (default 200, range 36-600). Higher = sharper + larger.",
                             "type": "number"
                           },
                           "serverUrl": {
@@ -15198,7 +15202,9 @@
                                     },
                                     "dpi": {
                                       "minimum": 36,
-                                      "description": "Raster resolution in DPI (default 200). Higher = sharper + larger.",
+                                      "maximum": 600,
+                                      "default": 200,
+                                      "description": "Raster resolution in DPI (default 200, range 36-600). Higher = sharper + larger.",
                                       "type": "number"
                                     },
                                     "serverUrl": {
@@ -26086,7 +26092,9 @@
                                 },
                                 "dpi": {
                                   "minimum": 36,
-                                  "description": "Raster resolution in DPI (default 200). Higher = sharper + larger.",
+                                  "maximum": 600,
+                                  "default": 200,
+                                  "description": "Raster resolution in DPI (default 200, range 36-600). Higher = sharper + larger.",
                                   "type": "number"
                                 },
                                 "serverUrl": {
@@ -30089,7 +30097,9 @@
                                           },
                                           "dpi": {
                                             "minimum": 36,
-                                            "description": "Raster resolution in DPI (default 200). Higher = sharper + larger.",
+                                            "maximum": 600,
+                                            "default": 200,
+                                            "description": "Raster resolution in DPI (default 200, range 36-600). Higher = sharper + larger.",
                                             "type": "number"
                                           },
                                           "serverUrl": {
@@ -37523,7 +37533,9 @@
                 },
                 "dpi": {
                   "minimum": 36,
-                  "description": "Raster resolution in DPI (default 200). Higher = sharper + larger.",
+                  "maximum": 600,
+                  "default": 200,
+                  "description": "Raster resolution in DPI (default 200, range 36-600). Higher = sharper + larger.",
                   "type": "number"
                 },
                 "serverUrl": {
@@ -47174,7 +47186,9 @@
                         },
                         "dpi": {
                           "minimum": 36,
-                          "description": "Raster resolution in DPI (default 200). Higher = sharper + larger.",
+                          "maximum": 600,
+                          "default": 200,
+                          "description": "Raster resolution in DPI (default 200, range 36-600). Higher = sharper + larger.",
                           "type": "number"
                         },
                         "serverUrl": {
@@ -51171,7 +51185,9 @@
                                   },
                                   "dpi": {
                                     "minimum": 36,
-                                    "description": "Raster resolution in DPI (default 200). Higher = sharper + larger.",
+                                    "maximum": 600,
+                                    "default": 200,
+                                    "description": "Raster resolution in DPI (default 200, range 36-600). Higher = sharper + larger.",
                                     "type": "number"
                                   },
                                   "serverUrl": {
