@@ -266,7 +266,7 @@ async function renderHeaderFooterComponents(
   components: ComponentDefinition[] | undefined,
   theme: ThemeConfig,
   themeName: string,
-  _context: RenderContext
+  context: RenderContext
 ): Promise<(Paragraph | Table)[]> {
   if (!components || components.length === 0) {
     return [];
@@ -466,6 +466,15 @@ async function renderHeaderFooterComponents(
       // This ensures cellDefaults, padding, borders, and all table features work correctly
       const tables = await renderTableComponent(component, theme, themeName);
       elements.push(...tables);
+    } else if (isVisualComponent(component)) {
+      // A visual desugars to an image; needs the rasterization service from context.
+      const visualEls = await renderVisualComponent(
+        component,
+        theme,
+        themeName,
+        context
+      );
+      elements.push(...visualEls);
     }
     // Other component types can be added here as needed
   }

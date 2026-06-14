@@ -13,6 +13,12 @@ export type {
   PptxRasterizeResult,
   PptxRasterizer,
 } from './types/services';
+export {
+  DEFAULT_VISUAL_DPI,
+  MIN_VISUAL_DPI,
+  MAX_VISUAL_DPI,
+  clampVisualDpi,
+} from './types/services';
 
 // Schema utilities
 export {
