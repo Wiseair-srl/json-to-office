@@ -271,6 +271,15 @@ export {
 export { HighchartsPropsSchema } from './schemas/components/highcharts';
 export type { HighchartsProps } from './schemas/components/highcharts';
 
+// Visual component schema (standard component — pptx-rendered graphic)
+export {
+  VisualPropsSchema,
+  VisualCanvasSchema,
+  VisualCanvasBackgroundSchema,
+  VisualElementSchema,
+} from './schemas/components/visual';
+export type { VisualProps, VisualCanvas } from './schemas/components/visual';
+
 // Custom component schemas
 export {
   TextSpaceAfterPropsSchema,
@@ -323,6 +332,7 @@ export {
   type TextBoxComponent,
   type ImageComponent,
   type HighchartsComponent,
+  type VisualComponent,
   type StatisticComponent,
   type TableComponent,
   type ListComponent,
@@ -336,6 +346,7 @@ export {
   isTextBoxComponent,
   isImageComponent,
   isHighchartsComponent,
+  isVisualComponent,
   isStatisticComponent,
   isTableComponent,
   isListComponent,

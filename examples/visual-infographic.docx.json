@@ -1,0 +1,163 @@
+{
+  "name": "docx",
+  "props": {
+    "metadata": {
+      "title": "Q2 Operating Review",
+      "author": "Meridian Industries",
+      "description": "Report with an embedded pptx-rendered visual"
+    },
+    "theme": "minimal"
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {},
+      "children": [
+        {
+          "name": "heading",
+          "props": { "level": 1, "text": "How a brief becomes a document" }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "DOCX is a flow layout, so an absolutely-positioned composition like the one below cannot be expressed with paragraphs and tables. The `visual` component authors it as a single pptx slide on a free canvas, then embeds the rasterized PNG inline — the rest of the page keeps flowing normally."
+          }
+        },
+        {
+          "name": "visual",
+          "props": {
+            "alignment": "center",
+            "caption": "**Figure 1.** Authored as a pptx slide, embedded as an image.",
+            "canvas": {
+              "width": 7.2,
+              "height": 2.6,
+              "background": { "color": "F4F8FF" }
+            },
+            "elements": [
+              {
+                "name": "shape",
+                "props": {
+                  "type": "chevron",
+                  "x": 0.3,
+                  "y": 0.7,
+                  "w": 2.0,
+                  "h": 1.2,
+                  "fill": { "color": "BBD3FF" }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "chevron",
+                  "x": 1.9,
+                  "y": 0.7,
+                  "w": 2.0,
+                  "h": 1.2,
+                  "fill": { "color": "6FA1F2" }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "chevron",
+                  "x": 3.5,
+                  "y": 0.7,
+                  "w": 2.0,
+                  "h": 1.2,
+                  "fill": { "color": "2E6BD6" }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "chevron",
+                  "x": 5.1,
+                  "y": 0.7,
+                  "w": 2.0,
+                  "h": 1.2,
+                  "fill": { "color": "13367F" }
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "Brief",
+                  "x": 0.4,
+                  "y": 1.05,
+                  "w": 1.4,
+                  "h": 0.5,
+                  "fontSize": 14,
+                  "bold": true,
+                  "color": "0B2E63",
+                  "align": "center"
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "JSON",
+                  "x": 2.0,
+                  "y": 1.05,
+                  "w": 1.4,
+                  "h": 0.5,
+                  "fontSize": 14,
+                  "bold": true,
+                  "color": "0B2E63",
+                  "align": "center"
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "Render",
+                  "x": 3.6,
+                  "y": 1.05,
+                  "w": 1.4,
+                  "h": 0.5,
+                  "fontSize": 14,
+                  "bold": true,
+                  "color": "FFFFFF",
+                  "align": "center"
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "Document",
+                  "x": 4.9,
+                  "y": 1.08,
+                  "w": 1.55,
+                  "h": 0.5,
+                  "fontSize": 13,
+                  "bold": true,
+                  "color": "FFFFFF",
+                  "align": "center"
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "Same data in, pixel-perfect document out",
+                  "x": 0.3,
+                  "y": 2.1,
+                  "w": 6.6,
+                  "h": 0.4,
+                  "fontSize": 11,
+                  "italic": true,
+                  "color": "44557A",
+                  "align": "center"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Because the visual is plain JSON, it is diffable, themeable, and regenerated deterministically on every build — no opaque binary asset to manage."
+          }
+        }
+      ]
+    }
+  ]
+}

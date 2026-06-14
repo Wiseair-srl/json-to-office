@@ -1,7 +1,12 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
+import type {
+  ServicesConfig,
+  FontRuntimeOpts,
+  PptxRasterizer,
+} from '@json-to-office/shared';
+import { createLibreOfficePptxRasterizer } from './pptx-rasterizer.js';
 
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 function safeThemeKey(name: string | undefined): string {
@@ -22,6 +27,33 @@ function buildServicesFromEnv(): ServicesConfig | undefined {
       serverUrl,
       ...(apiKey && { headers: { [apiKeyHeader]: apiKey } }),
     },
+  };
+}
+
+// Lazily-constructed LibreOffice rasterizer, shared across docx generations.
+// Constructing it is cheap (no binaries touched); it only spawns LibreOffice
+// when a document actually contains a `visual` component.
+let cachedRasterizer: PptxRasterizer | undefined;
+function getPptxRasterizer(): PptxRasterizer {
+  if (!cachedRasterizer) {
+    cachedRasterizer = createLibreOfficePptxRasterizer();
+  }
+  return cachedRasterizer;
+}
+
+/**
+ * Services for docx generation: highcharts (from env) plus the pptx rasterizer
+ * that backs `visual` components. An explicit HIGHCHARTS-style override is not
+ * needed for pptx — a running rasterization server can be pointed at via
+ * `services.pptx.serverUrl`, but the default is the in-process LibreOffice
+ * renderer.
+ */
+function buildDocxServices(): ServicesConfig {
+  const base = buildServicesFromEnv() ?? {};
+  const serverUrl = process.env.JTO_PPTX_RASTERIZER_URL?.trim();
+  return {
+    ...base,
+    pptx: serverUrl ? { serverUrl } : { render: getPptxRasterizer() },
   };
 }
 
@@ -98,7 +130,7 @@ export class DocxFormatAdapter implements FormatAdapter {
     const docDefinition =
       typeof json === 'string' ? JSON.parse(json as string) : json;
     const customThemes = await this.loadCustomThemes(options);
-    const services = buildServicesFromEnv();
+    const services = buildDocxServices();
     return await core.generateBufferFromJson(docDefinition as any, {
       customThemes,
       services,
@@ -113,7 +145,7 @@ export class DocxFormatAdapter implements FormatAdapter {
     const core = await import('@json-to-office/core-docx');
     const hasPlugins = plugins.length > 0;
     const pluginNames = plugins.map((p) => p.name);
-    const services = buildServicesFromEnv();
+    const services = buildDocxServices();
 
     if (!hasPlugins) {
       return {

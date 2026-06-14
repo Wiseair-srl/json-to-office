@@ -12,6 +12,7 @@ import type {
   ParagraphComponent,
   ImageComponent,
   HighchartsComponent,
+  VisualComponent,
   StatisticComponent,
   TableComponent,
   ListComponent,
@@ -25,6 +26,7 @@ import type {
   ParagraphProps as SharedParagraphProps,
   ColumnsProps as SharedColumnsProps,
   ImageProps as SharedImageProps,
+  VisualProps as SharedVisualProps,
   StatisticProps as SharedStatisticProps,
   TableProps as SharedTableProps,
   ListProps as SharedListProps,
@@ -46,6 +48,7 @@ export {
   isListComponent,
   isTocComponent,
   isHighchartsComponent,
+  isVisualComponent,
 } from '@json-to-office/shared-docx';
 
 // Re-export component definitions for internal use (type aliases for clarity)
@@ -59,6 +62,7 @@ export type HeadingComponentDefinition = HeadingComponent;
 export type ParagraphComponentDefinition = ParagraphComponent;
 export type ColumnsComponentDefinition = ColumnsComponent;
 export type ImageComponentDefinition = ImageComponent;
+export type VisualComponentDefinition = VisualComponent;
 export type TextBoxComponentDefinition = TextBoxComponent;
 export type StatisticComponentDefinition = StatisticComponent;
 export type TableComponentDefinition = TableComponent;
@@ -75,6 +79,7 @@ export type StandardComponentDefinition =
   | TextBoxComponent
   | ImageComponent
   | HighchartsComponent
+  | VisualComponent
   | StatisticComponent
   | TableComponent
   | ListComponent
@@ -87,6 +92,7 @@ export type HeadingProps = SharedHeadingProps;
 export type ParagraphProps = SharedParagraphProps;
 export type ColumnsProps = SharedColumnsProps;
 export type ImageProps = SharedImageProps;
+export type VisualProps = SharedVisualProps;
 export type TextBoxProps = SharedTextBoxProps;
 export type StatisticProps = SharedStatisticProps;
 export type TableProps = SharedTableProps;

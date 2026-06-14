@@ -239,6 +239,18 @@ export function resolveHighchartsProps(
 }
 
 /**
+ * Resolve visual component props with theme defaults.
+ * The visual is rasterized by the pptx engine, so there are no docx-side theme
+ * defaults to apply — return props as-is (mirrors highcharts).
+ */
+export function resolveVisualProps(
+  props: import('@json-to-office/shared-docx').VisualProps,
+  _theme: ThemeConfig
+): import('@json-to-office/shared-docx').VisualProps {
+  return props;
+}
+
+/**
  * Get default configuration for custom components
  */
 export function getCustomComponentDefaults(

@@ -17,6 +17,7 @@ export * from './paragraph';
 export * from './text-box';
 export * from './image';
 export * from './highcharts';
+export * from './visual';
 export * from './statistic';
 export * from './table';
 export * from './list';

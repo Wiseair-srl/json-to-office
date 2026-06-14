@@ -34,6 +34,7 @@ import {
   isParagraphComponent,
   isColumnsComponent,
   isImageComponent,
+  isVisualComponent,
   isTextBoxComponent,
   isStatisticComponent,
   isTableComponent,
@@ -69,6 +70,7 @@ import {
   renderStatisticComponent,
   renderTocComponent,
   renderHighchartsComponent,
+  renderVisualComponent,
   renderTextBoxComponent,
 } from '../components';
 import { createHeaderElement, createFooterElement } from './content';
@@ -630,6 +632,8 @@ export async function renderComponent(
       themeName,
       context
     );
+  } else if (isVisualComponent(component)) {
+    return await renderVisualComponent(component, theme, themeName, context);
   } else if (isSectionComponent(component)) {
     return await renderSectionComponent(component, theme, themeName, context);
   }
