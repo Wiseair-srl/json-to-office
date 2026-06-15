@@ -141,3 +141,72 @@ describe('plugin generation validation', () => {
     expect(buffer.length).toBeGreaterThan(0);
   });
 });
+
+// A custom component whose render() emits a standard `statistic` node. The
+// emitted props are parameterised so each test can make them valid or invalid.
+// These nodes never exist in the input document, so the pre-expansion gate
+// cannot see them — only the render-boundary check does.
+function statBoxComponent(emittedProps: Record<string, unknown>) {
+  return createComponent({
+    name: 'stat-box',
+    versions: {
+      '1.0.0': createVersion({
+        propsSchema: Type.Object({}, { additionalProperties: false }),
+        description: 'Emits a standard statistic',
+        render: async (): Promise<ComponentDefinition[]> => [
+          { name: 'statistic', props: emittedProps },
+        ],
+      }),
+    },
+  });
+}
+
+describe('plugin render-output validation', () => {
+  it('throws when a custom render() emits an invalid standard component', async () => {
+    // `statistic` requires `number`/`description`; emit a bad extra prop instead.
+    const gen = createDocumentGenerator({ theme: testTheme }).addComponent(
+      statBoxComponent({ number: '42', description: 'Users', color: 'text' })
+    );
+    await expect(
+      gen.generateBuffer(docWith([{ name: 'stat-box', props: {} }]) as any)
+    ).rejects.toBeInstanceOf(ComponentValidationError);
+  });
+
+  it('attributes the error to the emitting component', async () => {
+    const gen = createDocumentGenerator({ theme: testTheme }).addComponent(
+      statBoxComponent({ number: '42', description: 'Users', color: 'text' })
+    );
+    try {
+      await gen.generateBuffer(
+        docWith([{ name: 'stat-box', props: {} }]) as any
+      );
+      throw new Error('expected generation to throw');
+    } catch (e) {
+      expect(e).toBeInstanceOf(ComponentValidationError);
+      expect((e as ComponentValidationError).message).toContain(
+        "custom component 'stat-box' emitted invalid output"
+      );
+    }
+  });
+
+  it('accepts a custom render() that emits a valid standard component', async () => {
+    const gen = createDocumentGenerator({ theme: testTheme }).addComponent(
+      statBoxComponent({ number: '42', description: 'Active Users' })
+    );
+    const { buffer } = await gen.generateBuffer(
+      docWith([{ name: 'stat-box', props: {} }]) as any
+    );
+    expect(buffer.length).toBeGreaterThan(0);
+  });
+
+  it('validation.enabled=false lets invalid render output through', async () => {
+    const gen = createDocumentGenerator({ theme: testTheme }).addComponent(
+      statBoxComponent({ number: '42', description: 'Users', color: 'text' })
+    );
+    const { buffer } = await gen.generateBuffer(
+      docWith([{ name: 'stat-box', props: {} }]) as any,
+      { validation: { enabled: false } }
+    );
+    expect(buffer.length).toBeGreaterThan(0);
+  });
+});

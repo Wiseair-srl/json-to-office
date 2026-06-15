@@ -117,6 +117,9 @@ function createBuilderImpl<
     preserveSet: ReadonlySet<string> | undefined,
     warningsCollector: GenerationWarning[],
     resolvedTheme: ThemeConfig,
+    validateEmitted:
+      | ((emitted: ComponentDefinition[], componentLabel: string) => void)
+      | undefined,
     depth = 0
   ): Promise<{
     standard: ComponentDefinition[];
@@ -183,6 +186,7 @@ function createBuilderImpl<
               preserveSet,
               warningsCollector,
               resolvedTheme,
+              validateEmitted,
               depth + 1
             );
             nestedChildren = nested.standard;
@@ -218,12 +222,22 @@ function createBuilderImpl<
             Array.isArray(result) ? result : [result]
           ) as ComponentDefinition[];
 
+          // Validate the standard tree this render() emitted, applying the same
+          // schema gate authored standard components pass through up front. The
+          // pre-expansion pass never saw these nodes, so without this an invalid
+          // prop produced by a plugin would ride through into standardDefinition
+          // and only surface when that output is validated separately.
+          if (validateEmitted) {
+            validateEmitted(resultComponents, versionLabel);
+          }
+
           // Recursively process the result in case it contains more custom components
           const processedResult = await processDocumentComponents(
             resultComponents,
             preserveSet,
             warningsCollector,
             resolvedTheme,
+            validateEmitted,
             depth + 1
           );
           standardOut.push(...processedResult.standard);
@@ -266,6 +280,7 @@ function createBuilderImpl<
             preserveSet,
             warningsCollector,
             resolvedTheme,
+            validateEmitted,
             depth + 1
           );
           standardOut.push({
@@ -381,6 +396,34 @@ function createBuilderImpl<
         }
       }
 
+      // Re-apply the same gate to the tree each custom component's render()
+      // emits. The pre-expansion pass above only saw authored nodes, so a
+      // standard component produced by a plugin would otherwise reach
+      // standardDefinition unchecked. We validate the emitted nodes in their
+      // pre-normalization form — exactly how authored nodes are validated —
+      // by reusing the already-validated document props as a wrapper, so the
+      // only new errors come from the emitted children. Undefined when
+      // validation is disabled, which short-circuits the boundary check.
+      const validateEmitted =
+        vOpts.enabled === false
+          ? undefined
+          : (emitted: ComponentDefinition[], componentLabel: string) => {
+              const result = validateDocument(
+                { ...internalDocument, children: emitted },
+                state.components as unknown as CustomComponent<TSchema>[],
+                { allowUnknownFields: vOpts.allowUnknownFields }
+              );
+              if (!result.valid) {
+                throw new ComponentValidationError(
+                  (result.errors ?? []).map((e) => ({
+                    path: e.path ?? '',
+                    message: `custom component '${componentLabel}' emitted invalid output — ${e.message}`,
+                  })),
+                  emitted
+                );
+              }
+            };
+
       // Resolve theme per-document: customThemes → built-in → constructor fallback
       const baseThemeName = internalDocument.props.theme || 'minimal';
       const docTheme = resolveDocumentTheme(baseThemeName);
@@ -416,7 +459,8 @@ function createBuilderImpl<
         mode.doc.children || [],
         preserveSet,
         warnings,
-        modedTheme
+        modedTheme,
+        validateEmitted
       );
 
       // Create a new document definition with processed components

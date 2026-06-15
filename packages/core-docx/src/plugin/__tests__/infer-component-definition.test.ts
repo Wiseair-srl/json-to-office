@@ -318,7 +318,7 @@ describe('createComponent with TComponentDefinition type parameter', () => {
           render: async ({ props }) => [
             {
               name: 'statistic',
-              props: { value: String(props.value), label: props.label },
+              props: { number: String(props.value), description: props.label },
             },
           ],
         },
