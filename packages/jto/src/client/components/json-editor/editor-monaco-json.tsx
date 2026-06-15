@@ -13,6 +13,10 @@ import {
   getSelectionContext,
   createContextSnippet,
 } from '../../lib/monaco-selection-utils';
+import {
+  installLongStringCollapser,
+  type CollapseController,
+} from '../../lib/monaco-collapse-strings';
 import { ValidationPanel, ValidationStatusBar } from './validation-panel';
 
 interface EditorMonacoJsonProps {
@@ -46,11 +50,36 @@ function EditorMonacoJson({
   const [isValidationPanelMinimized, setIsValidationPanelMinimized] =
     useState(false);
   const decorationIdsRef = useRef<string[]>([]);
+  const collapseRef = useRef<CollapseController | null>(null);
+  // The full text we last wrote to the store. When the controlled `value` prop
+  // echoes this back, we must NOT let Monaco replace the (collapsed) model with
+  // it — that would expand every chip and jump the cursor on each save.
+  const lastSavedRef = useRef<string | null>(null);
+  // The value actually handed to <Editor>: updated only on genuine external
+  // changes (document switch, AI apply), never on our own save echoes.
+  const [editorValue, setEditorValue] = useState<string | undefined>(
+    value ?? defaultValue
+  );
   const { registerEditor, unregisterEditor, setActiveEditor } =
     useEditorRefsStore();
 
   const debouncedSaveDocumentRef = useRef(
     debounce(saveDocument, saveDocumentDebounceWait)
+  );
+
+  // Collapse newly-pasted long strings after typing settles (skips the string
+  // under the cursor so it never yanks text mid-edit).
+  const debouncedCollapseNewRef = useRef(
+    debounce(() => {
+      const editorInstance = editorRef.current;
+      const controller = collapseRef.current;
+      if (!editorInstance || !controller) return;
+      const position = editorInstance.getPosition();
+      const model = editorInstance.getModel();
+      const cursorOffset =
+        position && model ? model.getOffsetAt(position) : undefined;
+      controller.collapseNew(cursorOffset);
+    }, 600)
   );
 
   // Setup Monaco editor for JSON with schema validation
@@ -60,6 +89,15 @@ function EditorMonacoJson({
   const handleEditorWillMount = useCallback((_monaco: Monaco) => {
     console.debug('Setting up Monaco for JSON editor');
   }, []);
+
+  // Reconstruct the full document (collapsed sentinels → original values) before persisting.
+  const toStorageValue = useCallback(
+    (modelText: string) =>
+      collapseRef.current
+        ? collapseRef.current.toStorageValue(modelText)
+        : modelText,
+    []
+  );
 
   function handleEditorDidMount(
     editor: editor.IStandaloneCodeEditor,
@@ -79,6 +117,10 @@ function EditorMonacoJson({
       monaco.editor.setModelLanguage(model, 'json');
       console.debug('Model language set to JSON for:', model.uri.toString());
     }
+
+    // Collapse very long string values (base64, big blobs, …) into clickable chips
+    collapseRef.current = installLongStringCollapser(editor, monaco);
+    collapseRef.current.recollapse();
 
     // Add context menu action for AI assistant
     editor.addAction({
@@ -126,14 +168,20 @@ function EditorMonacoJson({
 
     // Cmd+S => save command
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      const currentValue = editor.getValue();
-      if (currentValue) saveDocument(name, currentValue);
+      const currentValue = toStorageValue(editor.getValue());
+      if (currentValue) {
+        lastSavedRef.current = currentValue;
+        saveDocument(name, currentValue);
+      }
     });
 
     // Cmd+W => close command
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyW, () => {
-      const currentValue = editor.getValue();
-      if (currentValue) saveDocument(name, currentValue);
+      const currentValue = toStorageValue(editor.getValue());
+      if (currentValue) {
+        lastSavedRef.current = currentValue;
+        saveDocument(name, currentValue);
+      }
       closeDocument(name);
     });
 
@@ -152,7 +200,21 @@ function EditorMonacoJson({
     // Convert Monaco's native JSON validation markers to our error format
     console.debug('Monaco validation markers:', markers);
 
-    const errors: JsonEditorError[] = markers.map((marker) => ({
+    // Drop markers that fall inside a collapsed sentinel — the user is seeing a
+    // chip, not the real value, so a complaint about it would be confusing.
+    const visibleMarkers = collapseRef.current
+      ? markers.filter(
+          (marker) =>
+            !collapseRef.current!.isRangeCollapsed({
+              startLineNumber: marker.startLineNumber,
+              startColumn: marker.startColumn,
+              endLineNumber: marker.endLineNumber,
+              endColumn: marker.endColumn,
+            })
+        )
+      : markers;
+
+    const errors: JsonEditorError[] = visibleMarkers.map((marker) => ({
       path: '', // Monaco doesn't provide JSON path, but we don't need it for display
       message: marker.message,
       code:
@@ -189,13 +251,40 @@ function EditorMonacoJson({
   // Flush debounced saveDocument on unmount and unregister editor
   useEffect(() => {
     const debouncedSaveDocument = debouncedSaveDocumentRef?.current;
+    const debouncedCollapseNew = debouncedCollapseNewRef?.current;
     return () => {
       debouncedSaveDocument?.flush();
+      debouncedCollapseNew?.cancel();
+      collapseRef.current?.dispose();
+      collapseRef.current = null;
       // Decorations cleanup handled by Monaco
       unregisterEditor(name);
       console.debug(`EditorWillUnMount: (name: ${name})`);
     };
   }, [name, unregisterEditor]);
+
+  // Detect genuine external content changes. Our own save echoes (value ===
+  // lastSaved) are ignored, so Monaco never sees a value change for them and
+  // leaves the collapsed model untouched.
+  useEffect(() => {
+    if (value === undefined) return;
+    if (value === lastSavedRef.current) return;
+    setEditorValue(value);
+  }, [value]);
+
+  // When an external change actually lands, Monaco replaces the model — re-run
+  // the collapse pass on the new text. Skip the first run: the initial collapse
+  // happens in handleEditorDidMount.
+  const didMountValueEffectRef = useRef(false);
+  useEffect(() => {
+    if (!didMountValueEffectRef.current) {
+      didMountValueEffectRef.current = true;
+      return;
+    }
+    if (!collapseRef.current) return;
+    const handle = setTimeout(() => collapseRef.current?.recollapse(), 0);
+    return () => clearTimeout(handle);
+  }, [editorValue]);
 
   // Handle error click - navigate to error in editor
   const handleErrorClick = useCallback((error: JsonEditorError) => {
@@ -259,14 +348,20 @@ function EditorMonacoJson({
           defaultLanguage="json"
           theme={`vs-${resolvedTheme}`}
           defaultPath={name.endsWith('.json') ? name : `${name}.json`}
-          value={value ?? defaultValue}
+          value={editorValue}
           beforeMount={handleEditorWillMount}
           onMount={handleEditorDidMount}
           onValidate={handleEditorValidation}
           onChange={(value) => {
+            // Ignore our own collapse/expand edits — they don't change the
+            // real document and saving the sentinel would lose data.
+            if (collapseRef.current?.isApplyingEdits()) return;
             if (value) {
               bumpEditSequence();
-              debouncedSaveDocumentRef.current(name, value);
+              const storage = toStorageValue(value);
+              lastSavedRef.current = storage;
+              debouncedSaveDocumentRef.current(name, storage);
+              debouncedCollapseNewRef.current();
             }
           }}
           options={{
