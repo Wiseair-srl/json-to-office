@@ -39,6 +39,18 @@ export interface ValidationOptions {
   jsonString?: string;
   /** Maximum number of errors to collect */
   maxErrors?: number;
+  /**
+   * When true, unknown/extra properties are stripped before validation instead
+   * of being rejected by additionalProperties:false. Escape hatch for callers
+   * migrating onto strict schemas.
+   */
+  allowUnknownFields?: boolean;
+  /**
+   * Names of registered plugin components. They are not flagged as unknown and
+   * their props are not checked against a standard schema here — the plugin
+   * layer validates custom props version-aware separately.
+   */
+  knownCustomNames?: Set<string>;
 }
 
 /**

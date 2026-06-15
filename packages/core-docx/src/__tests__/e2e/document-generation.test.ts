@@ -4,7 +4,10 @@ import {
   generateDocumentFromJson,
 } from '../../core/generator';
 import { Packer } from 'docx';
-import type { ComponentDefinition, ReportComponentDefinition } from '../../types';
+import type {
+  ComponentDefinition,
+  ReportComponentDefinition,
+} from '../../types';
 
 describe('E2E: Document Generation', () => {
   describe('Complete Document Generation', () => {
@@ -240,8 +243,8 @@ describe('E2E: Document Generation', () => {
       const jsonDefinition: ReportComponentDefinition = {
         name: 'docx',
         props: {
-          title: 'JSON Document',
           theme: 'minimal',
+          metadata: { title: 'JSON Document' },
         },
         children: [
           {
@@ -260,10 +263,15 @@ describe('E2E: Document Generation', () => {
           {
             name: 'table',
             props: {
-              headers: ['Column A', 'Column B'],
-              rows: [
-                ['A1', 'B1'],
-                ['A2', 'B2'],
+              columns: [
+                {
+                  header: { content: 'Column A' },
+                  cells: [{ content: 'A1' }, { content: 'A2' }],
+                },
+                {
+                  header: { content: 'Column B' },
+                  cells: [{ content: 'B1' }, { content: 'B2' }],
+                },
               ],
             },
           },

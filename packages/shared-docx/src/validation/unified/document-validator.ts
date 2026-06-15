@@ -33,7 +33,10 @@ export function validateDocument(
   let finalErrors = result.errors || [];
   let finalValid = result.valid;
   if (!result.valid && data) {
-    finalErrors = comprehensiveValidateDocument(data, result.errors);
+    finalErrors = comprehensiveValidateDocument(data, result.errors, {
+      allowUnknownFields: options?.allowUnknownFields,
+      knownCustomNames: options?.knownCustomNames,
+    });
     // If TypeBox's union check produced only generic catch-all errors and the
     // deep validator finds nothing actionable, treat the document as valid.
     if (finalErrors.length === 0) {
@@ -90,7 +93,10 @@ export function validateJsonDocument(
   let finalErrors = result.errors || [];
   let finalValid = result.valid;
   if (!result.valid && result.parsed) {
-    finalErrors = comprehensiveValidateDocument(result.parsed, result.errors);
+    finalErrors = comprehensiveValidateDocument(result.parsed, result.errors, {
+      allowUnknownFields: options?.allowUnknownFields,
+      knownCustomNames: options?.knownCustomNames,
+    });
     if (finalErrors.length === 0) {
       finalValid = true;
     }

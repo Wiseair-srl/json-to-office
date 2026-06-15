@@ -105,7 +105,6 @@ describe('core/generator', () => {
         name: 'docx',
         $schema: 'https://example.com/schema',
         props: {
-          title: 'JSON Document',
           theme: 'minimal',
         },
         children: [
@@ -153,7 +152,6 @@ describe('core/generator', () => {
       const jsonDef: ReportComponentDefinition = {
         name: 'docx',
         props: {
-          title: 'Test Document',
           theme: 'minimal',
         },
         children: [
@@ -181,7 +179,6 @@ describe('core/generator', () => {
       const jsonWithMetadata: ReportComponentDefinition = {
         name: 'docx',
         props: {
-          title: 'Document with Metadata',
           theme: 'minimal',
           metadata: {
             title: 'JSON Document',

@@ -46,28 +46,40 @@ export const TextFormattingPropertiesSchema = Type.Object(
     italic: Type.Optional(Type.Boolean()),
     underline: Type.Optional(Type.Boolean()),
     lineSpacing: Type.Optional(
-      Type.Object({
-        type: Type.Union([
-          Type.Literal('single'),
-          Type.Literal('atLeast'),
-          Type.Literal('exactly'),
-          Type.Literal('double'),
-          Type.Literal('multiple'),
-        ]),
-        value: Type.Optional(Type.Number({ minimum: 0 })),
-      })
+      Type.Object(
+        {
+          type: Type.Union([
+            Type.Literal('single'),
+            Type.Literal('atLeast'),
+            Type.Literal('exactly'),
+            Type.Literal('double'),
+            Type.Literal('multiple'),
+          ]),
+          value: Type.Optional(Type.Number({ minimum: 0 })),
+        },
+        { additionalProperties: false }
+      )
     ),
     spacing: Type.Optional(
-      Type.Object({
-        before: Type.Optional(Type.Number({ minimum: 0 })),
-        after: Type.Optional(Type.Number({ minimum: 0 })),
-      })
+      Type.Object(
+        {
+          before: Type.Optional(Type.Number({ minimum: 0 })),
+          after: Type.Optional(Type.Number({ minimum: 0 })),
+        },
+        { additionalProperties: false }
+      )
     ),
     characterSpacing: Type.Optional(
-      Type.Object({
-        type: Type.Union([Type.Literal('condensed'), Type.Literal('expanded')]),
-        value: Type.Number(),
-      })
+      Type.Object(
+        {
+          type: Type.Union([
+            Type.Literal('condensed'),
+            Type.Literal('expanded'),
+          ]),
+          value: Type.Number(),
+        },
+        { additionalProperties: false }
+      )
     ),
   },
   { additionalProperties: false }

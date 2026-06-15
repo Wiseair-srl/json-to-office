@@ -27,34 +27,44 @@ export {
 export function validateComponentProps<TPropsSchema extends TSchema>(
   schema: { propsSchema: TPropsSchema },
   props: unknown,
-  componentName?: string
+  componentName?: string,
+  opts?: { clean?: boolean; applyDefaults?: boolean }
 ): ComponentValidationResult<TPropsSchema> {
+  // `clean` defaults to true so the render path (getValidatedProps) keeps
+  // normalizing props (strip unknown + apply defaults). The validation path
+  // passes `clean: false` to reject unknown keys instead of silently dropping
+  // them — strict unless the caller opts into allowUnknownFields.
   return validateCustomComponentProps<TPropsSchema>(schema.propsSchema, props, {
-    clean: true,
-    applyDefaults: true,
+    clean: opts?.clean ?? true,
+    applyDefaults: opts?.applyDefaults ?? true,
     componentName,
   });
 }
 
 /**
- * Validate document and all custom components (version-aware)
+ * Validate document and all custom components (version-aware).
+ *
+ * Standard components (paragraph, section, …) are validated against their
+ * schemas via the unified validator, which is told the registered custom names
+ * so it neither rejects them as unknown nor checks them against a standard
+ * schema. Custom component props are then validated version-aware below. Errors
+ * from both passes are merged so a single call reports the whole document.
  */
 export function validateDocument(
   document: ReportComponentDefinition,
-  customComponents: CustomComponent<any, any, any>[]
+  customComponents: CustomComponent<any, any, any>[],
+  options?: { allowUnknownFields?: boolean }
 ): ValidationResult & { success: boolean } {
-  // First validate the document structure
+  const knownCustomNames = new Set(customComponents.map((c) => c.name));
+
+  // Validate the standard-component structure (custom components deferred).
   const documentResult = validateDocumentUnified(document, {
-    clean: true,
-    applyDefaults: true,
+    knownCustomNames,
+    allowUnknownFields: options?.allowUnknownFields,
   });
 
-  if (!documentResult.valid) {
-    return { ...documentResult, success: false };
-  }
-
-  // Then validate each custom component if present
-  const errors: ValidationError[] = [];
+  // Collect standard-structure errors, then append custom-component errors.
+  const errors: ValidationError[] = [...(documentResult.errors || [])];
 
   function validateComponents(components: any[], pathPrefix = 'children') {
     components.forEach((componentData, index) => {
@@ -74,7 +84,9 @@ export function validateDocument(
       const validation = validateComponentProps(
         versionEntry,
         componentData.props,
-        customComponent.name
+        customComponent.name,
+        // Reject unknown custom props unless the caller allows them.
+        { clean: options?.allowUnknownFields === true }
       );
 
       if (!validation.valid && validation.errors) {

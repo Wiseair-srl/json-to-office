@@ -82,6 +82,7 @@ const FloatingFramePropertiesSchema = Type.Object(
         {
           description:
             'Horizontal positioning (use either align or offset, not both)',
+          additionalProperties: false,
         }
       )
     ),
@@ -106,6 +107,7 @@ const FloatingFramePropertiesSchema = Type.Object(
         {
           description:
             'Vertical positioning (use either align or offset, not both)',
+          additionalProperties: false,
         }
       )
     ),
@@ -116,6 +118,7 @@ const FloatingFramePropertiesSchema = Type.Object(
         },
         {
           description: 'Text wrapping configuration',
+          additionalProperties: false,
         }
       )
     ),
@@ -139,6 +142,7 @@ const FloatingFramePropertiesSchema = Type.Object(
   },
   {
     description: 'Floating text frame properties',
+    additionalProperties: false,
   }
 );
 

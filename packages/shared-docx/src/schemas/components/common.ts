@@ -93,7 +93,7 @@ export const MarginsSchema = Type.Object(
     left: Type.Optional(Type.Number({ minimum: 0 })),
     right: Type.Optional(Type.Number({ minimum: 0 })),
   },
-  { description: 'Margin configuration' }
+  { description: 'Margin configuration', additionalProperties: false }
 );
 
 export const BorderSchema = Type.Object(
@@ -110,7 +110,7 @@ export const BorderSchema = Type.Object(
     width: Type.Optional(Type.Number({ minimum: 0 })),
     color: Type.Optional(HexColorSchema),
   },
-  { description: 'Border configuration' }
+  { description: 'Border configuration', additionalProperties: false }
 );
 
 export const LineSpacingSchema = Type.Object(
@@ -124,7 +124,7 @@ export const LineSpacingSchema = Type.Object(
     ]),
     value: Type.Optional(Type.Number({ minimum: 0 })),
   },
-  { description: 'Line spacing configuration' }
+  { description: 'Line spacing configuration', additionalProperties: false }
 );
 
 export const IndentSchema = Type.Object(
@@ -132,7 +132,7 @@ export const IndentSchema = Type.Object(
     left: Type.Optional(Type.Number({ minimum: 0 })),
     hanging: Type.Optional(Type.Number({ minimum: 0 })),
   },
-  { description: 'Indentation configuration' }
+  { description: 'Indentation configuration', additionalProperties: false }
 );
 
 // ============================================================================
@@ -240,6 +240,7 @@ export const FloatingPropertiesSchema = Type.Object(
         {
           description:
             'Horizontal positioning (use either align or offset, not both)',
+          additionalProperties: false,
         }
       )
     ),
@@ -264,6 +265,7 @@ export const FloatingPropertiesSchema = Type.Object(
         {
           description:
             'Vertical positioning (use either align or offset, not both)',
+          additionalProperties: false,
         }
       )
     ),
@@ -314,12 +316,14 @@ export const FloatingPropertiesSchema = Type.Object(
               },
               {
                 description: 'Distance from text margins',
+                additionalProperties: false,
               }
             )
           ),
         },
         {
           description: 'Text wrapping configuration',
+          additionalProperties: false,
         }
       )
     ),
@@ -362,6 +366,7 @@ export const FloatingPropertiesSchema = Type.Object(
   },
   {
     description: 'Floating element properties',
+    additionalProperties: false,
   }
 );
 
@@ -393,7 +398,10 @@ export const NumberingSchema = Type.Object(
     ),
     separator: Type.Optional(Type.String()),
   },
-  { description: 'Numbering configuration for lists' }
+  {
+    description: 'Numbering configuration for lists',
+    additionalProperties: false,
+  }
 );
 
 // ============================================================================

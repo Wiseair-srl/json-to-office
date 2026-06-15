@@ -26,9 +26,28 @@ const ROOT_COMPONENT_NAMES = new Set(
 );
 
 /**
+ * Options that tune deep validation.
+ *
+ * `knownCustomNames` — names of registered plugin components. The deep
+ * validator neither flags these as "unknown component" nor validates their
+ * props here; the plugin layer validates custom props version-aware separately.
+ *
+ * `allowUnknownFields` — when true, unknown properties are stripped before the
+ * per-component check instead of being rejected. The escape hatch for callers
+ * migrating onto strict schemas.
+ */
+export interface DeepValidateOptions {
+  knownCustomNames?: Set<string>;
+  allowUnknownFields?: boolean;
+}
+
+/**
  * Deep validate a document to collect ALL errors, not just union-level errors
  */
-export function deepValidateDocument(data: any): ValidationError[] {
+export function deepValidateDocument(
+  data: any,
+  opts: DeepValidateOptions = {}
+): ValidationError[] {
   const allErrors: ValidationError[] = [];
 
   // Validate the document structure
@@ -61,7 +80,12 @@ export function deepValidateDocument(data: any): ValidationError[] {
   // falsy non-object) is checked against the component's schema instead of
   // silently passing.
   if (ROOT_COMPONENT_NAMES.has(data.name) && 'props' in data) {
-    const propsErrors = validateComponentProps(data.name, data.props, '/props');
+    const propsErrors = validateComponentProps(
+      data.name,
+      data.props,
+      '/props',
+      opts
+    );
     allErrors.push(...propsErrors);
   }
 
@@ -102,21 +126,30 @@ export function deepValidateDocument(data: any): ValidationError[] {
         return;
       }
 
-      // Validate component props based on name
-      if (child.props) {
-        const componentErrors = validateComponentProps(
-          child.name,
-          child.props,
-          `${childPath}/props`
+      // Registered plugin components are validated version-aware by the plugin
+      // layer; skip them here so they are neither flagged as unknown nor
+      // checked against a standard schema.
+      if (opts.knownCustomNames?.has(child.name)) {
+        return;
+      }
+
+      // Validate props against the component's schema. When props is omitted,
+      // validate an empty object so the schema decides whether props are
+      // required (e.g. `section` needs none; `heading` requires text+level)
+      // rather than assuming every component requires a props field.
+      if (child.props != null) {
+        allErrors.push(
+          ...validateComponentProps(
+            child.name,
+            child.props,
+            `${childPath}/props`,
+            opts
+          )
         );
-        allErrors.push(...componentErrors);
       } else if (child.name !== 'custom') {
-        // Most components require props
-        allErrors.push({
-          path: `${childPath}/props`,
-          message: 'Component missing required field "props"',
-          code: 'required_property',
-        });
+        allErrors.push(
+          ...validateComponentProps(child.name, {}, `${childPath}/props`, opts)
+        );
       }
 
       // Special handling for section components (recursive)
@@ -146,22 +179,26 @@ export function deepValidateDocument(data: any): ValidationError[] {
                 message: 'Nested component missing required field "name"',
                 code: 'required_property',
               });
-            } else {
-              if (nestedChild.props) {
-                const nestedErrors = validateComponentProps(
+            } else if (opts.knownCustomNames?.has(nestedChild.name)) {
+              // Registered plugin component — validated separately.
+            } else if (nestedChild.props != null) {
+              allErrors.push(
+                ...validateComponentProps(
                   nestedChild.name,
                   nestedChild.props,
-                  `${nestedChildPath}/props`
-                );
-                allErrors.push(...nestedErrors);
-              } else if (nestedChild.name !== 'custom') {
-                // Most components require props
-                allErrors.push({
-                  path: `${nestedChildPath}/props`,
-                  message: 'Component missing required field "props"',
-                  code: 'required_property',
-                });
-              }
+                  `${nestedChildPath}/props`,
+                  opts
+                )
+              );
+            } else if (nestedChild.name !== 'custom') {
+              allErrors.push(
+                ...validateComponentProps(
+                  nestedChild.name,
+                  {},
+                  `${nestedChildPath}/props`,
+                  opts
+                )
+              );
             }
           });
         }
@@ -178,7 +215,8 @@ export function deepValidateDocument(data: any): ValidationError[] {
 function validateComponentProps(
   componentName: string,
   props: any,
-  basePath: string
+  basePath: string,
+  opts: DeepValidateOptions = {}
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -194,9 +232,16 @@ function validateComponentProps(
     return errors;
   }
 
+  // When unknown fields are explicitly allowed, strip them before checking so
+  // additionalProperties:false no longer rejects — required/typed fields are
+  // still enforced.
+  const toCheck = opts.allowUnknownFields
+    ? Value.Clean(schema, Value.Clone(props))
+    : props;
+
   // Use TypeBox to validate against the specific schema
-  if (!Value.Check(schema, props)) {
-    const valueErrors = [...Value.Errors(schema, props)];
+  if (!Value.Check(schema, toCheck)) {
+    const valueErrors = [...Value.Errors(schema, toCheck)];
     const transformedErrors = transformValueErrors(valueErrors, {
       maxErrors: 100,
     });
@@ -231,9 +276,10 @@ function validateComponentProps(
  */
 export function comprehensiveValidateDocument(
   data: any,
-  existingErrors: ValidationError[] = []
+  existingErrors: ValidationError[] = [],
+  opts: DeepValidateOptions = {}
 ): ValidationError[] {
-  const deepErrors = deepValidateDocument(data);
+  const deepErrors = deepValidateDocument(data, opts);
 
   const filteredExisting = existingErrors.filter(
     (e) => !isGenericUnionCatchAll(e)
