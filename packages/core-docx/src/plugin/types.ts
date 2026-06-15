@@ -122,8 +122,24 @@ export type InferCustomComponents<T> = T extends { customComponents: infer M }
  * `preservedDefinition`. The DOCX output is unaffected — it always renders
  * the fully-expanded tree.
  */
+/**
+ * Validation behavior for the generation entry points.
+ *
+ * `enabled` (default true) runs the plugin-aware validator before building and
+ * throws `ComponentValidationError` on errors, rather than emitting a corrupt
+ * or incomplete document. `allowUnknownFields` strips unknown properties
+ * instead of rejecting them under strict (additionalProperties:false) schemas —
+ * an escape hatch for migration.
+ */
+export interface GenerationValidationOptions {
+  enabled?: boolean;
+  allowUnknownFields?: boolean;
+}
+
 export interface GenerateOptions {
   preserveCustomComponents?: string[];
+  /** Override the generator's validation behavior for this call. */
+  validation?: GenerationValidationOptions;
 }
 
 /**

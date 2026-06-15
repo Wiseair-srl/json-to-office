@@ -74,64 +74,76 @@ export const TextBoxPropsSchema = Type.Object(
               {
                 top: Type.Optional(
                   // Reuse border schema semantics: style/width/color
-                  Type.Object({
-                    style: Type.Optional(
-                      Type.Union([
-                        Type.Literal('solid'),
-                        Type.Literal('dashed'),
-                        Type.Literal('dotted'),
-                        Type.Literal('double'),
-                        Type.Literal('none'),
-                      ])
-                    ),
-                    width: Type.Optional(Type.Number({ minimum: 0 })),
-                    color: Type.Optional(HexColorSchema),
-                  })
+                  Type.Object(
+                    {
+                      style: Type.Optional(
+                        Type.Union([
+                          Type.Literal('solid'),
+                          Type.Literal('dashed'),
+                          Type.Literal('dotted'),
+                          Type.Literal('double'),
+                          Type.Literal('none'),
+                        ])
+                      ),
+                      width: Type.Optional(Type.Number({ minimum: 0 })),
+                      color: Type.Optional(HexColorSchema),
+                    },
+                    { additionalProperties: false }
+                  )
                 ),
                 right: Type.Optional(
-                  Type.Object({
-                    style: Type.Optional(
-                      Type.Union([
-                        Type.Literal('solid'),
-                        Type.Literal('dashed'),
-                        Type.Literal('dotted'),
-                        Type.Literal('double'),
-                        Type.Literal('none'),
-                      ])
-                    ),
-                    width: Type.Optional(Type.Number({ minimum: 0 })),
-                    color: Type.Optional(HexColorSchema),
-                  })
+                  Type.Object(
+                    {
+                      style: Type.Optional(
+                        Type.Union([
+                          Type.Literal('solid'),
+                          Type.Literal('dashed'),
+                          Type.Literal('dotted'),
+                          Type.Literal('double'),
+                          Type.Literal('none'),
+                        ])
+                      ),
+                      width: Type.Optional(Type.Number({ minimum: 0 })),
+                      color: Type.Optional(HexColorSchema),
+                    },
+                    { additionalProperties: false }
+                  )
                 ),
                 bottom: Type.Optional(
-                  Type.Object({
-                    style: Type.Optional(
-                      Type.Union([
-                        Type.Literal('solid'),
-                        Type.Literal('dashed'),
-                        Type.Literal('dotted'),
-                        Type.Literal('double'),
-                        Type.Literal('none'),
-                      ])
-                    ),
-                    width: Type.Optional(Type.Number({ minimum: 0 })),
-                    color: Type.Optional(HexColorSchema),
-                  })
+                  Type.Object(
+                    {
+                      style: Type.Optional(
+                        Type.Union([
+                          Type.Literal('solid'),
+                          Type.Literal('dashed'),
+                          Type.Literal('dotted'),
+                          Type.Literal('double'),
+                          Type.Literal('none'),
+                        ])
+                      ),
+                      width: Type.Optional(Type.Number({ minimum: 0 })),
+                      color: Type.Optional(HexColorSchema),
+                    },
+                    { additionalProperties: false }
+                  )
                 ),
                 left: Type.Optional(
-                  Type.Object({
-                    style: Type.Optional(
-                      Type.Union([
-                        Type.Literal('solid'),
-                        Type.Literal('dashed'),
-                        Type.Literal('dotted'),
-                        Type.Literal('double'),
-                        Type.Literal('none'),
-                      ])
-                    ),
-                    width: Type.Optional(Type.Number({ minimum: 0 })),
-                    color: Type.Optional(HexColorSchema),
-                  })
+                  Type.Object(
+                    {
+                      style: Type.Optional(
+                        Type.Union([
+                          Type.Literal('solid'),
+                          Type.Literal('dashed'),
+                          Type.Literal('dotted'),
+                          Type.Literal('double'),
+                          Type.Literal('none'),
+                        ])
+                      ),
+                      width: Type.Optional(Type.Number({ minimum: 0 })),
+                      color: Type.Optional(HexColorSchema),
+                    },
+                    { additionalProperties: false }
+                  )
                 ),
               },
               { additionalProperties: false }

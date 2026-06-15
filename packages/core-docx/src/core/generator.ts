@@ -22,7 +22,11 @@ import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
 // JSON support imports
 import { DocumentValidationResult } from '@json-to-office/shared-docx';
 import type { GenerationWarning } from '@json-to-office/shared';
-import { parseJsonComponent, validateJsonComponent } from '../json/parser';
+import {
+  validateJsonComponent,
+  JsonParsingError,
+  JsonValidationError,
+} from '../json/parser';
 import { normalizeDocument } from '../json/normalizer';
 import { loadJsonDefinition } from '../json/filesystem';
 
@@ -30,8 +34,19 @@ import { loadJsonDefinition } from '../json/filesystem';
 export interface JsonGenerationOptions {
   outputPath?: string;
   validation?: {
-    strict?: boolean;
+    /**
+     * Validate the document against the schema before building, throwing on
+     * errors. Defaults to `true` — invalid props are surfaced rather than
+     * silently dropped into a corrupt/incomplete document.
+     */
+    enabled?: boolean;
+    /**
+     * When true, unknown/extra properties are stripped instead of rejected by
+     * strict (additionalProperties:false) schemas. Escape hatch for migration.
+     */
     allowUnknownFields?: boolean;
+    /** @deprecated No longer consulted; retained for back-compat. */
+    strict?: boolean;
   };
   customThemes?: { [key: string]: ThemeConfig };
   services?: ServicesConfig;
@@ -196,11 +211,38 @@ export async function generateDocumentFromJson(
   jsonConfig: string | ComponentDefinition | ReportComponentDefinition,
   options?: JsonGenerationOptions
 ): Promise<Document> {
-  // Handle string input
+  // Validate before building unless the caller opted out. This runs the same
+  // plugin-unaware validator the public playground uses, so the object/buffer
+  // entry point is as strict as the playground — malformed props throw instead
+  // of being silently dropped into the document.
+  const validation = options?.validation;
+  if (validation?.enabled !== false) {
+    const result = validateJsonComponent(jsonConfig, {
+      allowUnknownFields: validation?.allowUnknownFields,
+    });
+    if (!result.valid) {
+      throw new JsonValidationError(
+        'Document validation failed',
+        result.errors
+      );
+    }
+  }
+
+  // Resolve to an object for the build pipeline.
   let componentToConvert: ComponentDefinition | ReportComponentDefinition;
   if (typeof jsonConfig === 'string') {
-    // Parse and validate - parseJsonComponent returns ComponentDefinition
-    const parsed = parseJsonComponent(jsonConfig) as ComponentDefinition;
+    let parsed: ComponentDefinition;
+    try {
+      parsed = JSON.parse(jsonConfig) as ComponentDefinition;
+    } catch (error) {
+      throw new JsonParsingError('Invalid JSON syntax', [
+        {
+          path: '',
+          message: error instanceof Error ? error.message : 'Invalid JSON',
+          code: 'JSON_PARSE_ERROR',
+        },
+      ]);
+    }
     if (!isReportComponent(parsed)) {
       throw new Error('Parsed JSON must be a docx component');
     }

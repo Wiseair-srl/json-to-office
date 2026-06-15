@@ -147,6 +147,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -181,6 +182,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -194,6 +196,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -253,6 +256,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -287,6 +291,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -300,6 +305,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -359,6 +365,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -393,6 +400,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -406,6 +414,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -465,6 +474,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -499,6 +509,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -512,6 +523,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -677,6 +689,7 @@
             "type": "boolean"
           },
           "lineSpacing": {
+            "additionalProperties": false,
             "type": "object",
             "properties": {
               "type": {
@@ -711,6 +724,7 @@
             "required": ["type"]
           },
           "spacing": {
+            "additionalProperties": false,
             "type": "object",
             "properties": {
               "before": {
@@ -724,6 +738,7 @@
             }
           },
           "characterSpacing": {
+            "additionalProperties": false,
             "type": "object",
             "properties": {
               "type": {
@@ -1338,6 +1353,7 @@
           },
           "indent": {
             "description": "Indentation configuration",
+            "additionalProperties": false,
             "type": "object",
             "properties": {
               "left": {
@@ -1405,6 +1421,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -1439,6 +1456,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -1452,6 +1470,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -2066,6 +2085,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -2130,6 +2150,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -2164,6 +2185,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -2177,6 +2199,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -2791,6 +2814,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -2855,6 +2879,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -2889,6 +2914,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -2902,6 +2928,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -3516,6 +3543,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -3580,6 +3608,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -3614,6 +3643,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -3627,6 +3657,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -4241,6 +4272,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -4305,6 +4337,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -4339,6 +4372,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -4352,6 +4386,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -4966,6 +5001,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -5030,6 +5066,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -5064,6 +5101,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -5077,6 +5115,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -5691,6 +5730,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -5755,6 +5795,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -5789,6 +5830,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -5802,6 +5844,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -6416,6 +6459,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -6480,6 +6524,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -6514,6 +6559,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -6527,6 +6573,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -7141,6 +7188,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -7205,6 +7253,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -7239,6 +7288,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -7252,6 +7302,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -7866,6 +7917,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -7930,6 +7982,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -7964,6 +8017,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -7977,6 +8031,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -8686,6 +8741,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -8750,6 +8806,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -8784,6 +8841,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -8797,6 +8855,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -9506,6 +9565,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -9570,6 +9630,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -9604,6 +9665,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -9617,6 +9679,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -10326,6 +10389,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -10390,6 +10454,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -10424,6 +10489,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -10437,6 +10503,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -11146,6 +11213,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -11210,6 +11278,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -11244,6 +11313,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -11257,6 +11327,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -11966,6 +12037,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -12030,6 +12102,7 @@
               "type": "boolean"
             },
             "lineSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -12064,6 +12137,7 @@
               "required": ["type"]
             },
             "spacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "before": {
@@ -12077,6 +12151,7 @@
               }
             },
             "characterSpacing": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "type": {
@@ -12786,6 +12861,7 @@
             },
             "indent": {
               "description": "Indentation configuration",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "left": {
@@ -12886,6 +12962,7 @@
                   "type": "boolean"
                 },
                 "lineSpacing": {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "type": {
@@ -12920,6 +12997,7 @@
                   "required": ["type"]
                 },
                 "spacing": {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "before": {
@@ -12933,6 +13011,7 @@
                   }
                 },
                 "characterSpacing": {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "type": {
@@ -13001,6 +13080,7 @@
                 },
                 {
                   "description": "Line spacing configuration",
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "type": {
@@ -13109,6 +13189,7 @@
                   "type": "boolean"
                 },
                 "lineSpacing": {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "type": {
@@ -13143,6 +13224,7 @@
                   "required": ["type"]
                 },
                 "spacing": {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "before": {
@@ -13156,6 +13238,7 @@
                   }
                 },
                 "characterSpacing": {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "type": {
@@ -13232,10 +13315,12 @@
             },
             "floating": {
               "description": "Floating text frame properties",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "horizontalPosition": {
                   "description": "Horizontal positioning (use either align or offset, not both)",
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "relative": {
@@ -13297,6 +13382,7 @@
                 },
                 "verticalPosition": {
                   "description": "Vertical positioning (use either align or offset, not both)",
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "relative": {
@@ -13358,6 +13444,7 @@
                 },
                 "wrap": {
                   "description": "Text wrapping configuration",
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "type": {
@@ -13538,10 +13625,12 @@
             },
             "floating": {
               "description": "Floating element properties",
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "horizontalPosition": {
                   "description": "Horizontal positioning (use either align or offset, not both)",
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "relative": {
@@ -13611,6 +13700,7 @@
                 },
                 "verticalPosition": {
                   "description": "Vertical positioning (use either align or offset, not both)",
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "relative": {
@@ -13680,6 +13770,7 @@
                 },
                 "wrap": {
                   "description": "Text wrapping configuration",
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "type": {
@@ -13734,6 +13825,7 @@
                     },
                     "margins": {
                       "description": "Distance from text margins",
+                      "additionalProperties": false,
                       "type": "object",
                       "properties": {
                         "top": {
@@ -13944,6 +14036,7 @@
         },
         "table": {
           "description": "Table component props with column-based structure",
+          "additionalProperties": false,
           "type": "object",
           "properties": {
             "borderColor": {
@@ -13953,6 +14046,7 @@
                   "type": "string"
                 },
                 {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "bottom": {
@@ -13983,6 +14077,7 @@
                   "type": "number"
                 },
                 {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "bottom": {
@@ -14017,6 +14112,7 @@
                 },
                 {
                   "description": "Selectively hide specific borders",
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "bottom": {
@@ -14048,6 +14144,7 @@
               ]
             },
             "cellDefaults": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "color": {
@@ -14099,6 +14196,7 @@
                   ]
                 },
                 "font": {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "family": {
@@ -14137,6 +14235,7 @@
                       "type": "string"
                     },
                     {
+                      "additionalProperties": false,
                       "type": "object",
                       "properties": {
                         "bottom": {
@@ -14167,6 +14266,7 @@
                       "type": "number"
                     },
                     {
+                      "additionalProperties": false,
                       "type": "object",
                       "properties": {
                         "bottom": {
@@ -14201,6 +14301,7 @@
                       "type": "number"
                     },
                     {
+                      "additionalProperties": false,
                       "type": "object",
                       "properties": {
                         "bottom": {
@@ -14235,6 +14336,7 @@
               }
             },
             "headerCellDefaults": {
+              "additionalProperties": false,
               "type": "object",
               "properties": {
                 "color": {
@@ -14286,6 +14388,7 @@
                   ]
                 },
                 "font": {
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "family": {
@@ -14324,6 +14427,7 @@
                       "type": "string"
                     },
                     {
+                      "additionalProperties": false,
                       "type": "object",
                       "properties": {
                         "bottom": {
@@ -14354,6 +14458,7 @@
                       "type": "number"
                     },
                     {
+                      "additionalProperties": false,
                       "type": "object",
                       "properties": {
                         "bottom": {
@@ -14388,6 +14493,7 @@
                       "type": "number"
                     },
                     {
+                      "additionalProperties": false,
                       "type": "object",
                       "properties": {
                         "bottom": {
@@ -14432,6 +14538,7 @@
               "minItems": 1,
               "type": "array",
               "items": {
+                "additionalProperties": false,
                 "type": "object",
                 "properties": {
                   "width": {
@@ -14449,6 +14556,7 @@
                     ]
                   },
                   "cellDefaults": {
+                    "additionalProperties": false,
                     "type": "object",
                     "properties": {
                       "color": {
@@ -14500,6 +14608,7 @@
                         ]
                       },
                       "font": {
+                        "additionalProperties": false,
                         "type": "object",
                         "properties": {
                           "family": {
@@ -14538,6 +14647,7 @@
                             "type": "string"
                           },
                           {
+                            "additionalProperties": false,
                             "type": "object",
                             "properties": {
                               "bottom": {
@@ -14568,6 +14678,7 @@
                             "type": "number"
                           },
                           {
+                            "additionalProperties": false,
                             "type": "object",
                             "properties": {
                               "bottom": {
@@ -14602,6 +14713,7 @@
                             "type": "number"
                           },
                           {
+                            "additionalProperties": false,
                             "type": "object",
                             "properties": {
                               "bottom": {
@@ -14636,6 +14748,7 @@
                     }
                   },
                   "header": {
+                    "additionalProperties": false,
                     "type": "object",
                     "properties": {
                       "color": {
@@ -14687,6 +14800,7 @@
                         ]
                       },
                       "font": {
+                        "additionalProperties": false,
                         "type": "object",
                         "properties": {
                           "family": {
@@ -14725,6 +14839,7 @@
                             "type": "string"
                           },
                           {
+                            "additionalProperties": false,
                             "type": "object",
                             "properties": {
                               "bottom": {
@@ -14755,6 +14870,7 @@
                             "type": "number"
                           },
                           {
+                            "additionalProperties": false,
                             "type": "object",
                             "properties": {
                               "bottom": {
@@ -14789,6 +14905,7 @@
                             "type": "number"
                           },
                           {
+                            "additionalProperties": false,
                             "type": "object",
                             "properties": {
                               "bottom": {
@@ -14835,6 +14952,7 @@
                   "cells": {
                     "type": "array",
                     "items": {
+                      "additionalProperties": false,
                       "type": "object",
                       "properties": {
                         "color": {
@@ -14886,6 +15004,7 @@
                           ]
                         },
                         "font": {
+                          "additionalProperties": false,
                           "type": "object",
                           "properties": {
                             "family": {
@@ -14924,6 +15043,7 @@
                               "type": "string"
                             },
                             {
+                              "additionalProperties": false,
                               "type": "object",
                               "properties": {
                                 "bottom": {
@@ -14954,6 +15074,7 @@
                               "type": "number"
                             },
                             {
+                              "additionalProperties": false,
                               "type": "object",
                               "properties": {
                                 "bottom": {
@@ -14988,6 +15109,7 @@
                               "type": "number"
                             },
                             {
+                              "additionalProperties": false,
                               "type": "object",
                               "properties": {
                                 "bottom": {
@@ -15286,6 +15408,7 @@
                     "type": "string"
                   },
                   {
+                    "additionalProperties": false,
                     "type": "object",
                     "properties": {
                       "text": {
@@ -15296,6 +15419,57 @@
                         "maximum": 8,
                         "description": "Nesting level for this item",
                         "type": "number"
+                      },
+                      "revision": {
+                        "description": "Tracked-change data: renders the component text as native Word revisions (accept/reject in Word)",
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "author": {
+                            "description": "Revision author shown in Word (default: \"json-to-office\")",
+                            "type": "string"
+                          },
+                          "date": {
+                            "format": "date-time",
+                            "description": "Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output",
+                            "type": "string"
+                          },
+                          "segments": {
+                            "minItems": 1,
+                            "description": "Ordered text segments; concatenating equal+insert segments yields the new text, equal+delete the old text",
+                            "type": "array",
+                            "items": {
+                              "description": "A contiguous run of text sharing one revision state",
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "description": "Segment kind: 'equal' renders as normal text, 'insert' as a tracked insertion, 'delete' as a tracked deletion",
+                                  "anyOf": [
+                                    {
+                                      "const": "equal",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "insert",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "delete",
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "text": {
+                                  "description": "Literal text of this segment (rendered without markdown)",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["type", "text"]
+                            }
+                          }
+                        },
+                        "required": ["segments"]
                       }
                     },
                     "required": ["text"]
@@ -15314,6 +15488,7 @@
               "type": "array",
               "items": {
                 "description": "Configuration for a single list level",
+                "additionalProperties": false,
                 "type": "object",
                 "properties": {
                   "level": {
@@ -15598,6 +15773,7 @@
                   },
                   "indent": {
                     "description": "Indentation configuration",
+                    "additionalProperties": false,
                     "type": "object",
                     "properties": {
                       "left": {
@@ -15937,6 +16113,7 @@
                 },
                 {
                   "description": "Indentation configuration",
+                  "additionalProperties": false,
                   "type": "object",
                   "properties": {
                     "left": {

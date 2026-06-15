@@ -123,6 +123,7 @@ export const ListLevelPropsSchema = Type.Object(
   },
   {
     description: 'Configuration for a single list level',
+    additionalProperties: false,
   }
 );
 
@@ -131,17 +132,20 @@ export const ListPropsSchema = Type.Object(
     items: Type.Array(
       Type.Union([
         Type.String(),
-        Type.Object({
-          text: Type.String(),
-          level: Type.Optional(
-            Type.Number({
-              minimum: 0,
-              maximum: 8,
-              description: 'Nesting level for this item',
-            })
-          ),
-          revision: Type.Optional(RevisionSchema),
-        }),
+        Type.Object(
+          {
+            text: Type.String(),
+            level: Type.Optional(
+              Type.Number({
+                minimum: 0,
+                maximum: 8,
+                description: 'Nesting level for this item',
+              })
+            ),
+            revision: Type.Optional(RevisionSchema),
+          },
+          { additionalProperties: false }
+        ),
       ]),
       {
         description: 'List items (required)',

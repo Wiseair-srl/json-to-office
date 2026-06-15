@@ -16,6 +16,7 @@ import type {
   BufferGenerationResult,
   FileGenerationResult,
   ValidationResult,
+  GenerationValidationOptions,
 } from './types';
 import {
   validateDocument,
@@ -47,6 +48,12 @@ export interface DocumentGeneratorOptions {
   services?: ServicesConfig;
   /** Font resolution options — extraEntries, Google Fonts config, onResolved hook. */
   fonts?: FontRuntimeOpts;
+  /**
+   * Default validation behavior for every generate/generateBuffer/generateFile
+   * call. Per-call `options.validation` overrides these. Validation is on by
+   * default; pass `{ enabled: false }` to opt out.
+   */
+  validation?: GenerationValidationOptions;
 }
 
 /**
@@ -61,6 +68,7 @@ interface BuilderState {
   enableCache: boolean;
   services?: ServicesConfig;
   fonts?: FontRuntimeOpts;
+  validation?: GenerationValidationOptions;
 }
 
 /**
@@ -349,11 +357,29 @@ function createBuilderImpl<
       // Cast to ReportComponentDefinition for internal processing
       const internalDocument = document as unknown as ReportComponentDefinition;
 
-      // Validate the document first
-      validateDocument(
-        internalDocument,
-        state.components as unknown as CustomComponent<TSchema>[]
-      );
+      // Validate the document first (plugin-aware), unless disabled. Throwing
+      // here stops a malformed document from silently building into a corrupt
+      // or incomplete DOCX.
+      const vOpts: GenerationValidationOptions = {
+        ...state.validation,
+        ...options?.validation,
+      };
+      if (vOpts.enabled !== false) {
+        const result = validateDocument(
+          internalDocument,
+          state.components as unknown as CustomComponent<TSchema>[],
+          { allowUnknownFields: vOpts.allowUnknownFields }
+        );
+        if (!result.valid) {
+          throw new ComponentValidationError(
+            (result.errors ?? []).map((e) => ({
+              path: e.path ?? '',
+              message: e.message,
+            })),
+            internalDocument
+          );
+        }
+      }
 
       // Resolve theme per-document: customThemes → built-in → constructor fallback
       const baseThemeName = internalDocument.props.theme || 'minimal';
@@ -511,21 +537,21 @@ function createBuilderImpl<
     try {
       // Cast to ReportComponentDefinition for internal validation
       const internalDocument = document as unknown as ReportComponentDefinition;
-      validateDocument(
+      const result = validateDocument(
         internalDocument,
         state.components as unknown as CustomComponent<TSchema>[]
       );
-      return { valid: true };
-    } catch (error) {
-      if (error instanceof ComponentValidationError) {
-        return {
-          valid: false,
-          errors: error.errors.map((e) => ({
-            path: e.path,
-            message: e.message,
-          })),
-        };
+      if (result.valid) {
+        return { valid: true };
       }
+      return {
+        valid: false,
+        errors: (result.errors ?? []).map((e) => ({
+          path: e.path ?? '',
+          message: e.message,
+        })),
+      };
+    } catch (error) {
       return {
         valid: false,
         errors: [
@@ -607,6 +633,7 @@ export function createDocumentGenerator(
     enableCache: options.enableCache ?? false,
     services: options.services,
     fonts: options.fonts,
+    validation: options.validation,
   };
 
   return createBuilderImpl<readonly []>(initialState);

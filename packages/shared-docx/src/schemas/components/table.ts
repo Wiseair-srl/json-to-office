@@ -38,40 +38,46 @@ const VerticalAlignmentSchema = Type.Union(
 );
 
 // Font configuration schema
-const FontConfigSchema = Type.Object({
-  family: Type.Optional(Type.String({ description: 'Font family name' })),
-  size: Type.Optional(
-    Type.Number({ minimum: 0, description: 'Font size in points' })
-  ),
-  bold: Type.Optional(Type.Boolean({ description: 'Bold text' })),
-  fontWeight: Type.Optional(
-    Type.Integer({
-      minimum: 100,
-      maximum: 900,
-      description: 'Per-cell weight (100–900). Overrides `bold` when set.',
-    })
-  ),
-  italic: Type.Optional(Type.Boolean({ description: 'Italic text' })),
-  underline: Type.Optional(Type.Boolean({ description: 'Underlined text' })),
-});
+const FontConfigSchema = Type.Object(
+  {
+    family: Type.Optional(Type.String({ description: 'Font family name' })),
+    size: Type.Optional(
+      Type.Number({ minimum: 0, description: 'Font size in points' })
+    ),
+    bold: Type.Optional(Type.Boolean({ description: 'Bold text' })),
+    fontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description: 'Per-cell weight (100–900). Overrides `bold` when set.',
+      })
+    ),
+    italic: Type.Optional(Type.Boolean({ description: 'Italic text' })),
+    underline: Type.Optional(Type.Boolean({ description: 'Underlined text' })),
+  },
+  { additionalProperties: false }
+);
 
 // Border color - can be a single string or an object with sides
 const BorderColorSchema = Type.Union([
   Type.String({ description: 'Border color for all sides (hex without #)' }),
-  Type.Object({
-    bottom: Type.Optional(
-      Type.String({ description: 'Bottom border color (hex without #)' })
-    ),
-    top: Type.Optional(
-      Type.String({ description: 'Top border color (hex without #)' })
-    ),
-    right: Type.Optional(
-      Type.String({ description: 'Right border color (hex without #)' })
-    ),
-    left: Type.Optional(
-      Type.String({ description: 'Left border color (hex without #)' })
-    ),
-  }),
+  Type.Object(
+    {
+      bottom: Type.Optional(
+        Type.String({ description: 'Bottom border color (hex without #)' })
+      ),
+      top: Type.Optional(
+        Type.String({ description: 'Top border color (hex without #)' })
+      ),
+      right: Type.Optional(
+        Type.String({ description: 'Right border color (hex without #)' })
+      ),
+      left: Type.Optional(
+        Type.String({ description: 'Left border color (hex without #)' })
+      ),
+    },
+    { additionalProperties: false }
+  ),
 ]);
 
 // Border size - can be a single number or an object with sides
@@ -80,20 +86,23 @@ const BorderSizeSchema = Type.Union([
     minimum: 0,
     description: 'Border size for all sides in points',
   }),
-  Type.Object({
-    bottom: Type.Optional(
-      Type.Number({ minimum: 0, description: 'Bottom border size in points' })
-    ),
-    top: Type.Optional(
-      Type.Number({ minimum: 0, description: 'Top border size in points' })
-    ),
-    right: Type.Optional(
-      Type.Number({ minimum: 0, description: 'Right border size in points' })
-    ),
-    left: Type.Optional(
-      Type.Number({ minimum: 0, description: 'Left border size in points' })
-    ),
-  }),
+  Type.Object(
+    {
+      bottom: Type.Optional(
+        Type.Number({ minimum: 0, description: 'Bottom border size in points' })
+      ),
+      top: Type.Optional(
+        Type.Number({ minimum: 0, description: 'Top border size in points' })
+      ),
+      right: Type.Optional(
+        Type.Number({ minimum: 0, description: 'Right border size in points' })
+      ),
+      left: Type.Optional(
+        Type.Number({ minimum: 0, description: 'Left border size in points' })
+      ),
+    },
+    { additionalProperties: false }
+  ),
 ]);
 
 // Hide borders - can be a boolean or an object with sides
@@ -116,43 +125,52 @@ const HideBordersSchema = Type.Union([
         Type.Boolean({ description: 'Hide vertical borders between columns' })
       ),
     },
-    { description: 'Selectively hide specific borders' }
+    {
+      description: 'Selectively hide specific borders',
+      additionalProperties: false,
+    }
   ),
 ]);
 
 // Padding - can be a single number or an object with sides
 const PaddingSchema = Type.Union([
   Type.Number({ minimum: 0, description: 'Padding for all sides in points' }),
-  Type.Object({
-    bottom: Type.Optional(
-      Type.Number({ minimum: 0, description: 'Bottom padding in points' })
-    ),
-    top: Type.Optional(
-      Type.Number({ minimum: 0, description: 'Top padding in points' })
-    ),
-    right: Type.Optional(
-      Type.Number({ minimum: 0, description: 'Right padding in points' })
-    ),
-    left: Type.Optional(
-      Type.Number({ minimum: 0, description: 'Left padding in points' })
-    ),
-  }),
+  Type.Object(
+    {
+      bottom: Type.Optional(
+        Type.Number({ minimum: 0, description: 'Bottom padding in points' })
+      ),
+      top: Type.Optional(
+        Type.Number({ minimum: 0, description: 'Top padding in points' })
+      ),
+      right: Type.Optional(
+        Type.Number({ minimum: 0, description: 'Right padding in points' })
+      ),
+      left: Type.Optional(
+        Type.Number({ minimum: 0, description: 'Left padding in points' })
+      ),
+    },
+    { additionalProperties: false }
+  ),
 ]);
 
 // Cell defaults configuration
-const CellDefaultsSchema = Type.Object({
-  color: Type.Optional(HexColorSchema),
-  backgroundColor: Type.Optional(HexColorOrTransparentSchema),
-  horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
-  verticalAlignment: Type.Optional(VerticalAlignmentSchema),
-  font: Type.Optional(FontConfigSchema),
-  borderColor: Type.Optional(BorderColorSchema),
-  borderSize: Type.Optional(BorderSizeSchema),
-  padding: Type.Optional(PaddingSchema),
-  height: Type.Optional(
-    Type.Number({ minimum: 0, description: 'Cell height in points' })
-  ),
-});
+const CellDefaultsSchema = Type.Object(
+  {
+    color: Type.Optional(HexColorSchema),
+    backgroundColor: Type.Optional(HexColorOrTransparentSchema),
+    horizontalAlignment: Type.Optional(HorizontalAlignmentSchema),
+    verticalAlignment: Type.Optional(VerticalAlignmentSchema),
+    font: Type.Optional(FontConfigSchema),
+    borderColor: Type.Optional(BorderColorSchema),
+    borderSize: Type.Optional(BorderSizeSchema),
+    padding: Type.Optional(PaddingSchema),
+    height: Type.Optional(
+      Type.Number({ minimum: 0, description: 'Cell height in points' })
+    ),
+  },
+  { additionalProperties: false }
+);
 
 /**
  * Build TablePropsSchema with a given cell-content type.
@@ -176,35 +194,44 @@ export function createTablePropsSchema(componentRef: TSchema): TSchema {
     ),
   };
 
-  const headerSchema = Type.Object({
-    ...cellFields,
-    content: Type.Optional(cellContent),
-  });
+  const headerSchema = Type.Object(
+    {
+      ...cellFields,
+      content: Type.Optional(cellContent),
+    },
+    { additionalProperties: false }
+  );
 
-  const cellSchema = Type.Object({
-    ...cellFields,
-    content: Type.Optional(cellContent),
-  });
+  const cellSchema = Type.Object(
+    {
+      ...cellFields,
+      content: Type.Optional(cellContent),
+    },
+    { additionalProperties: false }
+  );
 
-  const columnSchema = Type.Object({
-    width: Type.Optional(
-      Type.Union([
-        Type.Number({
-          minimum: 0,
-          description:
-            'Column width in points. When set on some columns, remaining columns will automatically share the leftover table space equally. Leave undefined to distribute space evenly among unspecified columns.',
-        }),
-        Type.String({
-          pattern: '^\\d+(\\.\\d+)?%$',
-          description:
-            'Column width as percentage of available width (e.g., "40%")',
-        }),
-      ])
-    ),
-    cellDefaults: Type.Optional(CellDefaultsSchema),
-    header: Type.Optional(headerSchema),
-    cells: Type.Optional(Type.Array(cellSchema)),
-  });
+  const columnSchema = Type.Object(
+    {
+      width: Type.Optional(
+        Type.Union([
+          Type.Number({
+            minimum: 0,
+            description:
+              'Column width in points. When set on some columns, remaining columns will automatically share the leftover table space equally. Leave undefined to distribute space evenly among unspecified columns.',
+          }),
+          Type.String({
+            pattern: '^\\d+(\\.\\d+)?%$',
+            description:
+              'Column width as percentage of available width (e.g., "40%")',
+          }),
+        ])
+      ),
+      cellDefaults: Type.Optional(CellDefaultsSchema),
+      header: Type.Optional(headerSchema),
+      cells: Type.Optional(Type.Array(cellSchema)),
+    },
+    { additionalProperties: false }
+  );
 
   return Type.Object(
     {
@@ -246,6 +273,7 @@ export function createTablePropsSchema(componentRef: TSchema): TSchema {
     },
     {
       description: 'Table component props with column-based structure',
+      additionalProperties: false,
     }
   );
 }
