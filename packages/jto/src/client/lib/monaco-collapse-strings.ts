@@ -216,6 +216,17 @@ export function installLongStringCollapser(
   const makeSentinel = (id: number) =>
     `${SENTINEL_PREFIX}${id}${SENTINEL_SUFFIX}`;
 
+  /** Expand any collapsed sentinels in `text` back to their original middles. */
+  function reconstruct(text: string): string {
+    if (tracked.size === 0) return text;
+    let out = text;
+    for (const t of tracked.values()) {
+      if (t.expanded) continue; // already full text in the model
+      out = out.split(makeSentinel(t.id)).join(t.middle);
+    }
+    return out;
+  }
+
   function collapsedDecoration(
     middleLen: number
   ): editor.IModelDecorationOptions {
@@ -403,6 +414,42 @@ export function installLongStringCollapser(
     })
   );
 
+  // Copy/cut must yield the REAL value, not the hidden `§jtoc:<id>§` sentinel
+  // (it lives in the model text — CSS only hides it). Intercept in the capture
+  // phase so we run before Monaco's own clipboard handler, then fully take over
+  // (set the reconstructed text, and for cut delete the selection ourselves).
+  const handleClipboard = (e: ClipboardEvent) => {
+    if (tracked.size === 0) return;
+    const model = editorInstance.getModel();
+    const selection = editorInstance.getSelection();
+    if (!model || !selection || selection.isEmpty()) return;
+    const selected = model.getValueInRange(selection);
+    if (!selected.includes(SENTINEL_PREFIX)) return;
+    const reconstructed = reconstruct(selected);
+    if (reconstructed === selected) return;
+    e.clipboardData?.setData('text/plain', reconstructed);
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (e.type === 'cut') {
+      // Real content change — leave `applying` unset so the edit is persisted.
+      editorInstance.executeEdits('jto-collapse-cut', [
+        { range: selection, text: '' },
+      ]);
+    }
+  };
+
+  const domNode = editorInstance.getDomNode();
+  if (domNode) {
+    domNode.addEventListener('copy', handleClipboard, true);
+    domNode.addEventListener('cut', handleClipboard, true);
+    disposables.push({
+      dispose() {
+        domNode.removeEventListener('copy', handleClipboard, true);
+        domNode.removeEventListener('cut', handleClipboard, true);
+      },
+    });
+  }
+
   return {
     recollapse() {
       const model = editorInstance.getModel();
@@ -458,13 +505,7 @@ export function installLongStringCollapser(
     },
 
     toStorageValue(modelText: string): string {
-      if (tracked.size === 0) return modelText;
-      let out = modelText;
-      for (const t of tracked.values()) {
-        if (t.expanded) continue; // already full text in the model
-        out = out.split(makeSentinel(t.id)).join(t.middle);
-      }
-      return out;
+      return reconstruct(modelText);
     },
 
     isApplyingEdits() {

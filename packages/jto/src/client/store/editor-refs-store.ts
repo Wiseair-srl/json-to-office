@@ -11,6 +11,13 @@ export interface EditorReference {
   editor: MonacoEditorType.IStandaloneCodeEditor;
   monaco: Monaco;
   documentName: string;
+  /**
+   * Reconstruct the full document text from the live model text, expanding any
+   * collapsed long-string sentinels (`§jtoc:<id>§`) back to their real values.
+   * Any consumer that reads `editor.getValue()` for persistence or rendering
+   * MUST pipe it through this, or sentinels leak into the output.
+   */
+  toStorageValue: (modelText: string) => string;
 }
 
 interface EditorRefsState {
@@ -22,7 +29,8 @@ interface EditorRefsActions {
   registerEditor: (
     documentName: string,
     editor: MonacoEditorType.IStandaloneCodeEditor,
-    monaco: Monaco
+    monaco: Monaco,
+    toStorageValue?: (modelText: string) => string
   ) => void;
   unregisterEditor: (documentName: string) => void;
   setActiveEditor: (documentName: string | null) => void;
@@ -36,10 +44,15 @@ export const useEditorRefsStore = create<EditorRefsStore>((set, get) => ({
   editors: new Map(),
   activeEditorName: null,
 
-  registerEditor: (documentName, editor, monaco) => {
+  registerEditor: (documentName, editor, monaco, toStorageValue) => {
     set((state) => {
       const newEditors = new Map(state.editors);
-      newEditors.set(documentName, { editor, monaco, documentName });
+      newEditors.set(documentName, {
+        editor,
+        monaco,
+        documentName,
+        toStorageValue: toStorageValue ?? ((text) => text),
+      });
       return { editors: newEditors };
     });
   },
