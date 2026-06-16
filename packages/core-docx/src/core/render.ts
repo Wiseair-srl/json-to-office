@@ -47,8 +47,6 @@ import {
 } from '../types';
 import { ThemeConfig } from '../styles';
 import { createWordStyles } from '../styles/themeToDocxAdapter';
-import { parseTextWithDecorators } from '../utils/textParser';
-import { resolveColor } from '../styles/utils/colorUtils';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import { getPageSetup } from '../styles/utils/layoutUtils';
 import { ProcessedDocument, createRenderContext } from './structure';
@@ -73,7 +71,11 @@ import {
   renderVisualComponent,
   renderTextBoxComponent,
 } from '../components';
-import { createHeaderElement, createFooterElement } from './content';
+import {
+  createText,
+  createHeaderElement,
+  createFooterElement,
+} from './content';
 import { mapFloatingOptions } from '../utils/docxImagePositioning';
 
 /**
@@ -282,37 +284,38 @@ async function renderHeaderFooterComponents(
   for (const component of activeComponents) {
     if (isParagraphComponent(component)) {
       const textComp = component as ParagraphComponentDefinition;
+      const font = textComp.props.font;
 
-      // Use theme's normal style for header/footer text since header/footer styles are removed
+      // Header/footer text has no dedicated style, so unspecified font
+      // properties resolve against the theme's Normal style.
       const normalStyle = getNormalStyle(theme);
 
-      // Create text style using theme's normal styling
-      const textStyle = {
-        font:
-          textComp.props.font?.family ||
-          resolveFontFamily(theme, normalStyle.font) ||
-          getThemeFonts(theme).body.family,
-        size:
-          ((textComp.props.font?.size ?? normalStyle.size ?? 11) as number) * 2, // Convert to half-points
-        bold: textComp.props.font?.bold ?? false,
-        italics: textComp.props.font?.italic ?? false,
-        color:
-          (textComp.props.font?.color &&
-            resolveColor(textComp.props.font.color, theme)) ||
-          (normalStyle.color && resolveColor(normalStyle.color, theme)) ||
-          getThemeColors(theme).textPrimary,
-      } as const;
-
-      // Use parseTextWithDecorators to support rich text formatting
-      const textRuns = parseTextWithDecorators(textComp.props.text, textStyle);
-
+      // Render through the shared paragraph primitive (same as body
+      // paragraphs) so headers/footers honor lineSpacing, spacing
+      // (before/after) and the full font set instead of silently dropping
+      // them. When the component omits lineSpacing/spacing, createText leaves
+      // them unset and the Normal style supplies the baseline.
       elements.push(
-        new Paragraph({
-          children: textRuns,
-          alignment: textComp.props.alignment
-            ? getAlignment(textComp.props.alignment)
-            : undefined,
+        createText(textComp.props.text, theme, themeName, {
           style: 'Normal',
+          alignment: textComp.props.alignment,
+          // Resolve explicit run styling against the Normal style, preserving
+          // prior header/footer rendering for these properties.
+          fontFamily:
+            font?.family ||
+            resolveFontFamily(theme, normalStyle.font) ||
+            getThemeFonts(theme).body.family,
+          fontSize: (font?.size ?? normalStyle.size ?? 11) as number,
+          // Pass the raw color/token; createText resolves it. Fall back to the
+          // Normal style color, then the theme's primary text color.
+          fontColor: font?.color || normalStyle.color || 'textPrimary',
+          bold: font?.bold ?? false,
+          italic: font?.italic ?? false,
+          underline: font?.underline,
+          fontWeight: (font as { fontWeight?: number } | undefined)?.fontWeight,
+          boldColor: textComp.props.boldColor,
+          spacing: textComp.props.spacing,
+          lineSpacing: font?.lineSpacing,
         })
       );
     } else if (isImageComponent(component)) {
