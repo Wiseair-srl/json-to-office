@@ -833,7 +833,9 @@ function EditorComponent() {
         const hasPendingDiff =
           documentsStore.getState().pendingDiffs[editorRef.documentName];
         if (!hasPendingDiff) {
-          const liveText = editorRef.editor.getValue();
+          const liveText = editorRef.toStorageValue(
+            editorRef.editor.getValue()
+          );
           documentsStore
             .getState()
             .saveDocument(editorRef.documentName, liveText);
@@ -848,7 +850,7 @@ function EditorComponent() {
         if (allDtypes[doc.name] === 'application/json+theme') {
           const ref = useEditorRefsStore.getState().getEditor(doc.name);
           if (ref) {
-            const liveText = ref.editor.getValue();
+            const liveText = ref.toStorageValue(ref.editor.getValue());
             const existing = themesStore.getState().customThemes[doc.name];
             if (!existing || existing.content !== liveText) {
               themesStore.getState().updateTheme(doc.name, liveText);
@@ -899,7 +901,7 @@ function EditorComponent() {
           const doc = pending
             ? { ...freshDoc, text: pending.modified }
             : ref
-              ? { ...freshDoc, text: ref.editor.getValue() }
+              ? { ...freshDoc, text: ref.toStorageValue(ref.editor.getValue()) }
               : freshDoc;
           getDocumentVersionRef.current(doc.name);
           // Bypass cache only when a theme was updated during this flush

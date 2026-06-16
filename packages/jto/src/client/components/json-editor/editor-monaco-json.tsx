@@ -107,8 +107,9 @@ function EditorMonacoJson({
     editorRef.current = editor;
     monacoRef.current = monaco;
 
-    // Register editor in the refs store
-    registerEditor(name, editor, monaco);
+    // Register editor in the refs store. Pass the sentinel reconstructor so any
+    // consumer reading live text (preview/build) expands collapsed strings.
+    registerEditor(name, editor, monaco, toStorageValue);
     setActiveEditor(name);
 
     // Ensure the model's language is set to JSON for schema validation
