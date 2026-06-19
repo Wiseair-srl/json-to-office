@@ -295,11 +295,17 @@ export function resolveImageSource(props: {
   base64?: string;
   path?: string;
 }): string | undefined {
-  if (props.svg && props.svg.trim()) {
+  const hasValue = (v?: string): v is string =>
+    typeof v === 'string' && v.trim().length > 0;
+  if (hasValue(props.svg)) {
     const encoded = Buffer.from(props.svg, 'utf-8').toString('base64');
     return `data:image/svg+xml;base64,${encoded}`;
   }
-  return props.base64 || props.path;
+  // Blank base64/path count as absent (matching the source-conflict validator),
+  // so a whitespace-only value can't shadow a real later source.
+  if (hasValue(props.base64)) return props.base64;
+  if (hasValue(props.path)) return props.path;
+  return undefined;
 }
 
 /**

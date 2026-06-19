@@ -81,6 +81,33 @@ describe('renderImageComponent — sources', () => {
     expect(warnings.length).toBeGreaterThan(0);
   });
 
+  it('ignores a blank base64 and falls through to a valid path', async () => {
+    const slide = mockSlide();
+    await renderImageComponent(
+      slide,
+      { base64: '   ', path: 'https://example.com/x.png', w: 4, h: 2 },
+      theme
+    );
+
+    const opts = slide.addImage.mock.calls[0][0];
+    expect(opts.path).toBe('https://example.com/x.png');
+    expect(opts.data).toBeUndefined();
+  });
+
+  it('warns and skips when all sources are blank', async () => {
+    const slide = mockSlide();
+    const warnings: any[] = [];
+    await renderImageComponent(
+      slide,
+      { svg: '  ', base64: '', path: '   ', w: 4, h: 2 },
+      theme,
+      warnings
+    );
+
+    expect(slide.addImage).not.toHaveBeenCalled();
+    expect(warnings.length).toBeGreaterThan(0);
+  });
+
   it('auto-calculates missing height from the svg viewBox aspect ratio', async () => {
     const slide = mockSlide();
     // viewBox 200x100 → aspect 2; width 4in → height 2in
