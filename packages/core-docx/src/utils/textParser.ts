@@ -33,6 +33,14 @@ export interface TextStyle {
       | 'wavyDouble';
     color?: string;
   }; // docx library expects an object or undefined, not boolean
+  // Proofing language (BCP-47) for the run, e.g. { value: 'fr-FR' }
+  language?: {
+    value?: string;
+    eastAsia?: string;
+    bidirectional?: string;
+  };
+  // Disable spell/grammar checking for the run
+  noProof?: boolean;
 }
 
 export interface TextDecoratorOptions {
@@ -198,6 +206,10 @@ function createTextRunsWithNewlines(
           ...(runStyle.bold !== undefined && { bold: runStyle.bold }),
           ...(runStyle.italics !== undefined && { italics: runStyle.italics }),
           ...(baseStyle.underline && { underline: baseStyle.underline }),
+          ...(baseStyle.language && { language: baseStyle.language }),
+          ...(baseStyle.noProof !== undefined && {
+            noProof: baseStyle.noProof,
+          }),
           ...(needsLineBreak && { break: 1 }),
         })
       );

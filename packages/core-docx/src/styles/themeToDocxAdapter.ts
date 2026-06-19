@@ -179,14 +179,14 @@ function convertAlignment(
   alignment: string
 ): (typeof AlignmentType)[keyof typeof AlignmentType] {
   switch (alignment) {
-  case 'center':
-    return AlignmentType.CENTER;
-  case 'right':
-    return AlignmentType.RIGHT;
-  case 'justify':
-    return AlignmentType.JUSTIFIED;
-  default:
-    return AlignmentType.LEFT;
+    case 'center':
+      return AlignmentType.CENTER;
+    case 'right':
+      return AlignmentType.RIGHT;
+    case 'justify':
+      return AlignmentType.JUSTIFIED;
+    default:
+      return AlignmentType.LEFT;
   }
 }
 
@@ -260,8 +260,8 @@ function convertParagraphProperties(
     }),
     ...(styleProps?.borders &&
       theme && {
-      border: convertBorders(styleProps.borders, theme),
-    }),
+        border: convertBorders(styleProps.borders, theme),
+      }),
     ...(styleProps?.indent && {
       indent: {
         ...(styleProps.indent.left !== undefined && {
@@ -294,11 +294,11 @@ function convertBorders(
   const mapSide = (side?: ThemeBorderDefinition) =>
     side
       ? {
-        style: side.style,
-        size: side.size,
-        color: resolveColor(side.color, theme),
-        ...(side.space !== undefined ? { space: side.space } : {}),
-      }
+          style: side.style,
+          size: side.size,
+          color: resolveColor(side.color, theme),
+          ...(side.space !== undefined ? { space: side.space } : {}),
+        }
       : undefined;
 
   const top = mapSide(borders.top);
@@ -309,11 +309,11 @@ function convertBorders(
   const anyDefined = top || bottom || left || right;
   return anyDefined
     ? {
-      ...(top && { top }),
-      ...(bottom && { bottom }),
-      ...(left && { left }),
-      ...(right && { right }),
-    }
+        ...(top && { top }),
+        ...(bottom && { bottom }),
+        ...(left && { left }),
+        ...(right && { right }),
+      }
     : undefined;
 }
 
@@ -333,7 +333,8 @@ export interface WordStyleDefinition {
  * @returns IStylesOptions for docx Document
  */
 export function createWordStyles(
-  themeNameOrObject: string | ThemeConfig = 'minimal'
+  themeNameOrObject: string | ThemeConfig = 'minimal',
+  language?: string
 ): IStylesOptions {
   const theme: ThemeConfig =
     typeof themeNameOrObject === 'string'
@@ -882,6 +883,18 @@ export function createWordStyles(
 
   return {
     paragraphStyles: paragraphStyles as WordStyleDefinition[], // Cast needed due to docx typing
+    // Document-default proofing language (w:docDefaults/w:rPrDefault). Runs that
+    // don't set their own w:lang inherit this, so Word spell-checks the whole
+    // document in the requested language unless a component overrides it.
+    ...(language && {
+      default: {
+        document: {
+          run: {
+            language: { value: language },
+          },
+        },
+      },
+    }),
   };
 }
 

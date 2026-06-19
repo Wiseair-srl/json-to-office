@@ -1,0 +1,57 @@
+{
+  "name": "docx",
+  "props": {
+    "theme": "minimal",
+    "language": "en-US",
+    "metadata": {
+      "title": "Language Handling Test",
+      "author": "Wiseair"
+    }
+  },
+  "children": [
+    {
+      "name": "heading",
+      "props": { "text": "Language Test", "level": 1 }
+    },
+
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "This paragraph inherits the document default language (en-US). Word will spell-check it as US English."
+      }
+    },
+
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "Ce paragraphe est en français et doit être corrigé selon les règles françaises.",
+        "language": "fr-FR"
+      }
+    },
+
+    {
+      "name": "heading",
+      "props": {
+        "text": "Überschrift auf Deutsch",
+        "level": 2,
+        "language": "de-DE"
+      }
+    },
+
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "const noProof = true; // technical snippet — exclude from spell/grammar check",
+        "noProof": true,
+        "font": { "family": "Courier New" }
+      }
+    },
+
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "Back to the document default (en-US) — no local override here."
+      }
+    }
+  ]
+}

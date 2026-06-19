@@ -243,7 +243,7 @@ export async function renderDocument(
   const numberingConfigs = globalNumberingRegistry.getAll();
 
   return new Document({
-    styles: createWordStyles(structure.theme),
+    styles: createWordStyles(structure.theme, structure.language),
     sections,
     features: {
       updateFields: true, // Required for TOC fields to update correctly

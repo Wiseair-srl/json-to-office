@@ -128,6 +128,7 @@ export function processPresentation(
     slideWidth,
     slideHeight,
     rtlMode: props.rtlMode ?? false,
+    language: props.language,
     pageNumberFormat: props.pageNumberFormat ?? '9',
     slides,
     templates,

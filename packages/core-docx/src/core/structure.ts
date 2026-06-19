@@ -26,6 +26,8 @@ export interface ProcessedDocument {
   themeName: string;
   /** Open the generated document in track-changes mode */
   trackRevisions?: boolean;
+  /** Default document language (BCP-47) applied to docDefaults proofing */
+  language?: string;
 }
 
 export interface DocumentMetadata {
@@ -113,6 +115,7 @@ export async function processDocument(
     theme: effectiveTheme,
     themeName,
     trackRevisions: document.props.trackRevisions,
+    language: document.props.language,
   };
 }
 

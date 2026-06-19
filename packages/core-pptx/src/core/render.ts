@@ -73,6 +73,7 @@ export async function renderPresentation(
       slideNumber: slideIdx + 1,
       totalSlides,
       pageNumberFormat: processed.pageNumberFormat,
+      language: processed.language,
     };
     const renderCtx: SlideRenderContext = {
       slideCtx,

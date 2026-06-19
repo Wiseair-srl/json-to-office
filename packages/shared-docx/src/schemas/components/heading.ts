@@ -3,7 +3,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { FontDefinitionSchema } from '../font';
+import { FontDefinitionSchema, LanguageSchema, NoProofSchema } from '../font';
 import {
   HeadingLevelSchema,
   JustifiedAlignmentSchema,
@@ -21,6 +21,10 @@ export const HeadingPropsSchema = Type.Object(
     // Local font override: allows customizing family/size/color/bold/italic/underline
     // without modifying theme styles. Supports partial overrides.
     font: Type.Optional(Type.Partial(FontDefinitionSchema)),
+    // Local language override (BCP-47). Falls back to the document default when omitted.
+    language: Type.Optional(LanguageSchema),
+    // Disable spell/grammar checking for this heading's text
+    noProof: Type.Optional(NoProofSchema),
     alignment: Type.Optional(JustifiedAlignmentSchema),
     spacing: Type.Optional(SpacingSchema),
     lineSpacing: Type.Optional(

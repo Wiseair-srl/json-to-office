@@ -736,6 +736,22 @@
                               }
                             }
                           },
+                          "language": {
+                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                            "examples": [
+                              "en-US",
+                              "fr-FR",
+                              "de-DE",
+                              "it-IT",
+                              "es-ES"
+                            ],
+                            "type": "string"
+                          },
+                          "noProof": {
+                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                            "type": "boolean"
+                          },
                           "alignment": {
                             "description": "Text alignment options including justify",
                             "anyOf": [
@@ -1036,6 +1052,22 @@
                           },
                           "themeStyle": {
                             "type": "string"
+                          },
+                          "language": {
+                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                            "examples": [
+                              "en-US",
+                              "fr-FR",
+                              "de-DE",
+                              "it-IT",
+                              "es-ES"
+                            ],
+                            "type": "string"
+                          },
+                          "noProof": {
+                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                            "type": "boolean"
                           },
                           "boldColor": {
                             "type": "string"
@@ -2055,6 +2087,22 @@
                               }
                             }
                           },
+                          "language": {
+                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                            "examples": [
+                              "en-US",
+                              "fr-FR",
+                              "de-DE",
+                              "it-IT",
+                              "es-ES"
+                            ],
+                            "type": "string"
+                          },
+                          "noProof": {
+                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                            "type": "boolean"
+                          },
                           "alignment": {
                             "description": "Text alignment options including justify",
                             "anyOf": [
@@ -2355,6 +2403,22 @@
                           },
                           "themeStyle": {
                             "type": "string"
+                          },
+                          "language": {
+                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                            "examples": [
+                              "en-US",
+                              "fr-FR",
+                              "de-DE",
+                              "it-IT",
+                              "es-ES"
+                            ],
+                            "type": "string"
+                          },
+                          "noProof": {
+                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                            "type": "boolean"
                           },
                           "boldColor": {
                             "type": "string"
@@ -5339,6 +5403,23 @@
                           },
                           "scale": {
                             "type": "number"
+                          },
+                          "resources": {
+                            "type": "object",
+                            "properties": {
+                              "css": {
+                                "type": "string"
+                              },
+                              "js": {
+                                "type": "string"
+                              },
+                              "files": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
                           },
                           "serverUrl": {
                             "description": "Highcharts Export Server URL (default: http://localhost:7801)",
@@ -6575,6 +6656,22 @@
                                         }
                                       }
                                     },
+                                    "language": {
+                                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                      "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                      "examples": [
+                                        "en-US",
+                                        "fr-FR",
+                                        "de-DE",
+                                        "it-IT",
+                                        "es-ES"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "noProof": {
+                                      "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                      "type": "boolean"
+                                    },
                                     "alignment": {
                                       "description": "Text alignment options including justify",
                                       "anyOf": [
@@ -6875,6 +6972,22 @@
                                     },
                                     "themeStyle": {
                                       "type": "string"
+                                    },
+                                    "language": {
+                                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                      "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                      "examples": [
+                                        "en-US",
+                                        "fr-FR",
+                                        "de-DE",
+                                        "it-IT",
+                                        "es-ES"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "noProof": {
+                                      "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                      "type": "boolean"
                                     },
                                     "boldColor": {
                                       "type": "string"
@@ -7972,6 +8085,22 @@
                               }
                             }
                           },
+                          "language": {
+                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                            "examples": [
+                              "en-US",
+                              "fr-FR",
+                              "de-DE",
+                              "it-IT",
+                              "es-ES"
+                            ],
+                            "type": "string"
+                          },
+                          "noProof": {
+                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                            "type": "boolean"
+                          },
                           "alignment": {
                             "description": "Text alignment options including justify",
                             "anyOf": [
@@ -8272,6 +8401,22 @@
                           },
                           "themeStyle": {
                             "type": "string"
+                          },
+                          "language": {
+                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                            "examples": [
+                              "en-US",
+                              "fr-FR",
+                              "de-DE",
+                              "it-IT",
+                              "es-ES"
+                            ],
+                            "type": "string"
+                          },
+                          "noProof": {
+                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                            "type": "boolean"
                           },
                           "boldColor": {
                             "type": "string"
@@ -11257,6 +11402,23 @@
                           "scale": {
                             "type": "number"
                           },
+                          "resources": {
+                            "type": "object",
+                            "properties": {
+                              "css": {
+                                "type": "string"
+                              },
+                              "js": {
+                                "type": "string"
+                              },
+                              "files": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
                           "serverUrl": {
                             "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                             "type": "string"
@@ -12030,6 +12192,22 @@
                                         }
                                       }
                                     },
+                                    "language": {
+                                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                      "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                      "examples": [
+                                        "en-US",
+                                        "fr-FR",
+                                        "de-DE",
+                                        "it-IT",
+                                        "es-ES"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "noProof": {
+                                      "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                      "type": "boolean"
+                                    },
                                     "alignment": {
                                       "description": "Text alignment options including justify",
                                       "anyOf": [
@@ -12330,6 +12508,22 @@
                                     },
                                     "themeStyle": {
                                       "type": "string"
+                                    },
+                                    "language": {
+                                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                      "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                      "examples": [
+                                        "en-US",
+                                        "fr-FR",
+                                        "de-DE",
+                                        "it-IT",
+                                        "es-ES"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "noProof": {
+                                      "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                      "type": "boolean"
                                     },
                                     "boldColor": {
                                       "type": "string"
@@ -15318,6 +15512,23 @@
                                     "scale": {
                                       "type": "number"
                                     },
+                                    "resources": {
+                                      "type": "object",
+                                      "properties": {
+                                        "css": {
+                                          "type": "string"
+                                        },
+                                        "js": {
+                                          "type": "string"
+                                        },
+                                        "files": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
                                     "serverUrl": {
                                       "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                                       "type": "string"
@@ -16556,6 +16767,22 @@
                                                   }
                                                 }
                                               },
+                                              "language": {
+                                                "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                                "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                                "examples": [
+                                                  "en-US",
+                                                  "fr-FR",
+                                                  "de-DE",
+                                                  "it-IT",
+                                                  "es-ES"
+                                                ],
+                                                "type": "string"
+                                              },
+                                              "noProof": {
+                                                "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                                "type": "boolean"
+                                              },
                                               "alignment": {
                                                 "description": "Text alignment options including justify",
                                                 "anyOf": [
@@ -16862,6 +17089,22 @@
                                               },
                                               "themeStyle": {
                                                 "type": "string"
+                                              },
+                                              "language": {
+                                                "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                                "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                                "examples": [
+                                                  "en-US",
+                                                  "fr-FR",
+                                                  "de-DE",
+                                                  "it-IT",
+                                                  "es-ES"
+                                                ],
+                                                "type": "string"
+                                              },
+                                              "noProof": {
+                                                "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                                "type": "boolean"
                                               },
                                               "boldColor": {
                                                 "type": "string"
@@ -18352,6 +18595,22 @@
                                         }
                                       }
                                     },
+                                    "language": {
+                                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                      "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                      "examples": [
+                                        "en-US",
+                                        "fr-FR",
+                                        "de-DE",
+                                        "it-IT",
+                                        "es-ES"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "noProof": {
+                                      "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                      "type": "boolean"
+                                    },
                                     "alignment": {
                                       "description": "Text alignment options including justify",
                                       "anyOf": [
@@ -18652,6 +18911,22 @@
                                     },
                                     "themeStyle": {
                                       "type": "string"
+                                    },
+                                    "language": {
+                                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                      "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                      "examples": [
+                                        "en-US",
+                                        "fr-FR",
+                                        "de-DE",
+                                        "it-IT",
+                                        "es-ES"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "noProof": {
+                                      "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                      "type": "boolean"
                                     },
                                     "boldColor": {
                                       "type": "string"
@@ -19601,6 +19876,22 @@
                             }
                           }
                         },
+                        "language": {
+                          "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                          "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                          "examples": [
+                            "en-US",
+                            "fr-FR",
+                            "de-DE",
+                            "it-IT",
+                            "es-ES"
+                          ],
+                          "type": "string"
+                        },
+                        "noProof": {
+                          "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                          "type": "boolean"
+                        },
                         "alignment": {
                           "description": "Text alignment options including justify",
                           "anyOf": [
@@ -19830,6 +20121,22 @@
                         },
                         "themeStyle": {
                           "type": "string"
+                        },
+                        "language": {
+                          "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                          "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                          "examples": [
+                            "en-US",
+                            "fr-FR",
+                            "de-DE",
+                            "it-IT",
+                            "es-ES"
+                          ],
+                          "type": "string"
+                        },
+                        "noProof": {
+                          "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                          "type": "boolean"
                         },
                         "boldColor": {
                           "type": "string"
@@ -22703,6 +23010,12 @@
                     }
                   }
                 },
+                "language": {
+                  "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                  "description": "Default document language (BCP-47 tag, e.g. \"en-US\"). Sets Word's default proofing/spell-check language; individual components can override it locally.",
+                  "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+                  "type": "string"
+                },
                 "trackRevisions": {
                   "description": "Open the document in track-changes mode: Word marks any further edits as revisions. Set automatically on redline documents produced by the diff engine",
                   "type": "boolean"
@@ -23094,6 +23407,22 @@
                                     }
                                   }
                                 },
+                                "language": {
+                                  "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                  "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                  "examples": [
+                                    "en-US",
+                                    "fr-FR",
+                                    "de-DE",
+                                    "it-IT",
+                                    "es-ES"
+                                  ],
+                                  "type": "string"
+                                },
+                                "noProof": {
+                                  "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                  "type": "boolean"
+                                },
                                 "alignment": {
                                   "description": "Text alignment options including justify",
                                   "anyOf": [
@@ -23394,6 +23723,22 @@
                                 },
                                 "themeStyle": {
                                   "type": "string"
+                                },
+                                "language": {
+                                  "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                  "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                  "examples": [
+                                    "en-US",
+                                    "fr-FR",
+                                    "de-DE",
+                                    "it-IT",
+                                    "es-ES"
+                                  ],
+                                  "type": "string"
+                                },
+                                "noProof": {
+                                  "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                  "type": "boolean"
                                 },
                                 "boldColor": {
                                   "type": "string"
@@ -26379,6 +26724,23 @@
                                 "scale": {
                                   "type": "number"
                                 },
+                                "resources": {
+                                  "type": "object",
+                                  "properties": {
+                                    "css": {
+                                      "type": "string"
+                                    },
+                                    "js": {
+                                      "type": "string"
+                                    },
+                                    "files": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
                                 "serverUrl": {
                                   "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                                   "type": "string"
@@ -27152,6 +27514,22 @@
                                               }
                                             }
                                           },
+                                          "language": {
+                                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                            "examples": [
+                                              "en-US",
+                                              "fr-FR",
+                                              "de-DE",
+                                              "it-IT",
+                                              "es-ES"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "noProof": {
+                                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                            "type": "boolean"
+                                          },
                                           "alignment": {
                                             "description": "Text alignment options including justify",
                                             "anyOf": [
@@ -27452,6 +27830,22 @@
                                           },
                                           "themeStyle": {
                                             "type": "string"
+                                          },
+                                          "language": {
+                                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                            "examples": [
+                                              "en-US",
+                                              "fr-FR",
+                                              "de-DE",
+                                              "it-IT",
+                                              "es-ES"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "noProof": {
+                                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                            "type": "boolean"
                                           },
                                           "boldColor": {
                                             "type": "string"
@@ -30443,6 +30837,23 @@
                                           "scale": {
                                             "type": "number"
                                           },
+                                          "resources": {
+                                            "type": "object",
+                                            "properties": {
+                                              "css": {
+                                                "type": "string"
+                                              },
+                                              "js": {
+                                                "type": "string"
+                                              },
+                                              "files": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              }
+                                            }
+                                          },
                                           "serverUrl": {
                                             "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                                             "type": "string"
@@ -31681,6 +32092,22 @@
                                                         }
                                                       }
                                                     },
+                                                    "language": {
+                                                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                                      "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                                      "examples": [
+                                                        "en-US",
+                                                        "fr-FR",
+                                                        "de-DE",
+                                                        "it-IT",
+                                                        "es-ES"
+                                                      ],
+                                                      "type": "string"
+                                                    },
+                                                    "noProof": {
+                                                      "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                                      "type": "boolean"
+                                                    },
                                                     "alignment": {
                                                       "description": "Text alignment options including justify",
                                                       "anyOf": [
@@ -31987,6 +32414,22 @@
                                                     },
                                                     "themeStyle": {
                                                       "type": "string"
+                                                    },
+                                                    "language": {
+                                                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                                      "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                                      "examples": [
+                                                        "en-US",
+                                                        "fr-FR",
+                                                        "de-DE",
+                                                        "it-IT",
+                                                        "es-ES"
+                                                      ],
+                                                      "type": "string"
+                                                    },
+                                                    "noProof": {
+                                                      "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                                      "type": "boolean"
                                                     },
                                                     "boldColor": {
                                                       "type": "string"
@@ -33477,6 +33920,22 @@
                                               }
                                             }
                                           },
+                                          "language": {
+                                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                            "examples": [
+                                              "en-US",
+                                              "fr-FR",
+                                              "de-DE",
+                                              "it-IT",
+                                              "es-ES"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "noProof": {
+                                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                            "type": "boolean"
+                                          },
                                           "alignment": {
                                             "description": "Text alignment options including justify",
                                             "anyOf": [
@@ -33777,6 +34236,22 @@
                                           },
                                           "themeStyle": {
                                             "type": "string"
+                                          },
+                                          "language": {
+                                            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                            "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                            "examples": [
+                                              "en-US",
+                                              "fr-FR",
+                                              "de-DE",
+                                              "it-IT",
+                                              "es-ES"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "noProof": {
+                                            "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                            "type": "boolean"
                                           },
                                           "boldColor": {
                                             "type": "string"
@@ -34711,6 +35186,16 @@
                     }
                   }
                 },
+                "language": {
+                  "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                  "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                  "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+                  "type": "string"
+                },
+                "noProof": {
+                  "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                  "type": "boolean"
+                },
                 "alignment": {
                   "description": "Text alignment options including justify",
                   "anyOf": [
@@ -35011,6 +35496,16 @@
                 },
                 "themeStyle": {
                   "type": "string"
+                },
+                "language": {
+                  "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                  "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                  "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+                  "type": "string"
+                },
+                "noProof": {
+                  "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                  "type": "boolean"
                 },
                 "boldColor": {
                   "type": "string"
@@ -37996,6 +38491,23 @@
                 "scale": {
                   "type": "number"
                 },
+                "resources": {
+                  "type": "object",
+                  "properties": {
+                    "css": {
+                      "type": "string"
+                    },
+                    "js": {
+                      "type": "string"
+                    },
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
                 "serverUrl": {
                   "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                   "type": "string"
@@ -38667,6 +39179,12 @@
                   "description": "Strikethrough text",
                   "type": "boolean"
                 },
+                "language": {
+                  "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                  "description": "Language tag (BCP-47, e.g. \"en-US\", \"fr-FR\") for spell-checking this text. Overrides the presentation default.",
+                  "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+                  "type": "string"
+                },
                 "align": {
                   "description": "Horizontal alignment options",
                   "anyOf": [
@@ -39016,11 +39534,15 @@
               "type": "object",
               "properties": {
                 "path": {
-                  "description": "Image file path or URL (mutually exclusive with base64)",
+                  "description": "Image file path or URL (mutually exclusive with base64 and svg)",
                   "type": "string"
                 },
                 "base64": {
-                  "description": "Base64-encoded image data in data URI format (mutually exclusive with path)",
+                  "description": "Base64-encoded image data in data URI format (mutually exclusive with path and svg)",
+                  "type": "string"
+                },
+                "svg": {
+                  "description": "Raw inline SVG markup, e.g. \"<svg xmlns=\\\"http://www.w3.org/2000/svg\\\" viewBox=\\\"0 0 24 24\\\">...</svg>\" (mutually exclusive with path and base64). Wrapped into an image/svg+xml data URI and embedded as a vector (PowerPoint 2016+); intrinsic size taken from the SVG viewBox/width/height when w/h omitted.",
                   "type": "string"
                 },
                 "x": {
@@ -40223,6 +40745,23 @@
                   "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                   "type": "string"
                 },
+                "resources": {
+                  "type": "object",
+                  "properties": {
+                    "css": {
+                      "type": "string"
+                    },
+                    "js": {
+                      "type": "string"
+                    },
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
                 "x": {
                   "anyOf": [
                     {
@@ -40987,6 +41526,16 @@
                     }
                   }
                 },
+                "language": {
+                  "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                  "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                  "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+                  "type": "string"
+                },
+                "noProof": {
+                  "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                  "type": "boolean"
+                },
                 "alignment": {
                   "description": "Text alignment options including justify",
                   "anyOf": [
@@ -41216,6 +41765,16 @@
                 },
                 "themeStyle": {
                   "type": "string"
+                },
+                "language": {
+                  "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                  "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                  "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+                  "type": "string"
+                },
+                "noProof": {
+                  "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                  "type": "boolean"
                 },
                 "boldColor": {
                   "type": "string"
@@ -44089,6 +44648,12 @@
             }
           }
         },
+        "language": {
+          "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+          "description": "Default document language (BCP-47 tag, e.g. \"en-US\"). Sets Word's default proofing/spell-check language; individual components can override it locally.",
+          "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+          "type": "string"
+        },
         "trackRevisions": {
           "description": "Open the document in track-changes mode: Word marks any further edits as revisions. Set automatically on redline documents produced by the diff engine",
           "type": "boolean"
@@ -44477,6 +45042,22 @@
                             }
                           }
                         },
+                        "language": {
+                          "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                          "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                          "examples": [
+                            "en-US",
+                            "fr-FR",
+                            "de-DE",
+                            "it-IT",
+                            "es-ES"
+                          ],
+                          "type": "string"
+                        },
+                        "noProof": {
+                          "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                          "type": "boolean"
+                        },
                         "alignment": {
                           "description": "Text alignment options including justify",
                           "anyOf": [
@@ -44777,6 +45358,22 @@
                         },
                         "themeStyle": {
                           "type": "string"
+                        },
+                        "language": {
+                          "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                          "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                          "examples": [
+                            "en-US",
+                            "fr-FR",
+                            "de-DE",
+                            "it-IT",
+                            "es-ES"
+                          ],
+                          "type": "string"
+                        },
+                        "noProof": {
+                          "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                          "type": "boolean"
                         },
                         "boldColor": {
                           "type": "string"
@@ -47762,6 +48359,23 @@
                         "scale": {
                           "type": "number"
                         },
+                        "resources": {
+                          "type": "object",
+                          "properties": {
+                            "css": {
+                              "type": "string"
+                            },
+                            "js": {
+                              "type": "string"
+                            },
+                            "files": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
                         "serverUrl": {
                           "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                           "type": "string"
@@ -48535,6 +49149,22 @@
                                       }
                                     }
                                   },
+                                  "language": {
+                                    "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                    "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                    "examples": [
+                                      "en-US",
+                                      "fr-FR",
+                                      "de-DE",
+                                      "it-IT",
+                                      "es-ES"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "noProof": {
+                                    "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                    "type": "boolean"
+                                  },
                                   "alignment": {
                                     "description": "Text alignment options including justify",
                                     "anyOf": [
@@ -48835,6 +49465,22 @@
                                   },
                                   "themeStyle": {
                                     "type": "string"
+                                  },
+                                  "language": {
+                                    "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                    "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                    "examples": [
+                                      "en-US",
+                                      "fr-FR",
+                                      "de-DE",
+                                      "it-IT",
+                                      "es-ES"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "noProof": {
+                                    "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                    "type": "boolean"
                                   },
                                   "boldColor": {
                                     "type": "string"
@@ -51820,6 +52466,23 @@
                                   "scale": {
                                     "type": "number"
                                   },
+                                  "resources": {
+                                    "type": "object",
+                                    "properties": {
+                                      "css": {
+                                        "type": "string"
+                                      },
+                                      "js": {
+                                        "type": "string"
+                                      },
+                                      "files": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
                                   "serverUrl": {
                                     "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                                     "type": "string"
@@ -53055,6 +53718,22 @@
                                                 }
                                               }
                                             },
+                                            "language": {
+                                              "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                              "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                              "examples": [
+                                                "en-US",
+                                                "fr-FR",
+                                                "de-DE",
+                                                "it-IT",
+                                                "es-ES"
+                                              ],
+                                              "type": "string"
+                                            },
+                                            "noProof": {
+                                              "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                              "type": "boolean"
+                                            },
                                             "alignment": {
                                               "description": "Text alignment options including justify",
                                               "anyOf": [
@@ -53355,6 +54034,22 @@
                                             },
                                             "themeStyle": {
                                               "type": "string"
+                                            },
+                                            "language": {
+                                              "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                              "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                              "examples": [
+                                                "en-US",
+                                                "fr-FR",
+                                                "de-DE",
+                                                "it-IT",
+                                                "es-ES"
+                                              ],
+                                              "type": "string"
+                                            },
+                                            "noProof": {
+                                              "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                              "type": "boolean"
                                             },
                                             "boldColor": {
                                               "type": "string"
@@ -54842,6 +55537,22 @@
                                       }
                                     }
                                   },
+                                  "language": {
+                                    "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                    "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                    "examples": [
+                                      "en-US",
+                                      "fr-FR",
+                                      "de-DE",
+                                      "it-IT",
+                                      "es-ES"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "noProof": {
+                                    "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                    "type": "boolean"
+                                  },
                                   "alignment": {
                                     "description": "Text alignment options including justify",
                                     "anyOf": [
@@ -55142,6 +55853,22 @@
                                   },
                                   "themeStyle": {
                                     "type": "string"
+                                  },
+                                  "language": {
+                                    "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                    "description": "BCP-47 language tag for spell/grammar checking (e.g. \"en-US\", \"fr-FR\", \"de-DE\")",
+                                    "examples": [
+                                      "en-US",
+                                      "fr-FR",
+                                      "de-DE",
+                                      "it-IT",
+                                      "es-ES"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "noProof": {
+                                    "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
+                                    "type": "boolean"
                                   },
                                   "boldColor": {
                                     "type": "string"
