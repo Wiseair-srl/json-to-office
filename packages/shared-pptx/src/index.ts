@@ -116,6 +116,12 @@ export type {
 // Types
 export type { ReportComponent } from './types/components';
 
+// Image source conflict detection (path/base64/svg mutual exclusivity)
+export {
+  collectImageSourceConflicts,
+  presentImageSources,
+} from './validation/image-source-conflicts';
+
 // Re-export shared validation utilities for convenience
 export {
   transformValueError,

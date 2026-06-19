@@ -8,6 +8,7 @@ import {
   type ComponentValidationResult,
 } from '@json-to-office/shared/plugin';
 import type { ValidationError } from '@json-to-office/shared';
+import { collectImageSourceConflicts } from '@json-to-office/shared-pptx';
 
 // Re-export errors from shared
 export {
@@ -34,13 +35,21 @@ export function validateComponentProps<TPropsSchema extends TSchema>(
 
 /**
  * Validate presentation and all custom components (version-aware).
- * PPTX has no structural document validation — only custom component props are checked.
+ *
+ * Custom component props are checked version-aware. In addition, a structural
+ * pass rejects image components that set more than one mutually-exclusive source
+ * (`path`/`base64`/`svg`) — matching core-docx behavior so a multi-source payload
+ * is a hard error rather than being silently resolved by runtime precedence.
  */
 export function validatePresentation(
   document: PresentationComponentDefinition,
   customComponents: CustomComponent<any, any, any>[]
 ): { valid: boolean; errors: ValidationError[] } {
   const errors: ValidationError[] = [];
+
+  // Structural rule the per-component schema can't express: image sources are
+  // mutually exclusive. Runs unconditionally over the whole tree.
+  errors.push(...collectImageSourceConflicts(document));
 
   function validateComponents(components: any[], pathPrefix = 'children') {
     components.forEach((componentData, index) => {
