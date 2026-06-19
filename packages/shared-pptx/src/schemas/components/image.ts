@@ -9,37 +9,56 @@ export const PptxImagePropsSchema = Type.Object(
   {
     path: Type.Optional(
       Type.String({
-        description: 'Image file path or URL (mutually exclusive with base64)',
+        description:
+          'Image file path or URL (mutually exclusive with base64 and svg)',
       })
     ),
     base64: Type.Optional(
       Type.String({
         description:
-          'Base64-encoded image data in data URI format (mutually exclusive with path)',
+          'Base64-encoded image data in data URI format (mutually exclusive with path and svg)',
+      })
+    ),
+    svg: Type.Optional(
+      Type.String({
+        description:
+          'Raw inline SVG markup, e.g. "<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 24 24\\">...</svg>" (mutually exclusive with path and base64). Wrapped into an image/svg+xml data URI and embedded as a vector (PowerPoint 2016+); intrinsic size taken from the SVG viewBox/width/height when w/h omitted.',
       })
     ),
     x: Type.Optional(
       Type.Union([
         Type.Number({ description: 'X position in inches' }),
-        Type.String({ pattern: '^\\d+(\\.\\d+)?%$', description: 'X as percentage' }),
+        Type.String({
+          pattern: '^\\d+(\\.\\d+)?%$',
+          description: 'X as percentage',
+        }),
       ])
     ),
     y: Type.Optional(
       Type.Union([
         Type.Number({ description: 'Y position in inches' }),
-        Type.String({ pattern: '^\\d+(\\.\\d+)?%$', description: 'Y as percentage' }),
+        Type.String({
+          pattern: '^\\d+(\\.\\d+)?%$',
+          description: 'Y as percentage',
+        }),
       ])
     ),
     w: Type.Optional(
       Type.Union([
         Type.Number({ description: 'Width in inches' }),
-        Type.String({ pattern: '^\\d+(\\.\\d+)?%$', description: 'Width as percentage' }),
+        Type.String({
+          pattern: '^\\d+(\\.\\d+)?%$',
+          description: 'Width as percentage',
+        }),
       ])
     ),
     h: Type.Optional(
       Type.Union([
         Type.Number({ description: 'Height in inches' }),
-        Type.String({ pattern: '^\\d+(\\.\\d+)?%$', description: 'Height as percentage' }),
+        Type.String({
+          pattern: '^\\d+(\\.\\d+)?%$',
+          description: 'Height as percentage',
+        }),
       ])
     ),
     sizing: Type.Optional(
@@ -53,8 +72,12 @@ export const PptxImagePropsSchema = Type.Object(
             ],
             { description: 'Image sizing strategy' }
           ),
-          w: Type.Optional(Type.Number({ description: 'Target width in inches' })),
-          h: Type.Optional(Type.Number({ description: 'Target height in inches' })),
+          w: Type.Optional(
+            Type.Number({ description: 'Target width in inches' })
+          ),
+          h: Type.Optional(
+            Type.Number({ description: 'Target height in inches' })
+          ),
         },
         { description: 'Image sizing options', additionalProperties: false }
       )
@@ -70,8 +93,12 @@ export const PptxImagePropsSchema = Type.Object(
       Type.Object(
         {
           url: Type.Optional(Type.String({ description: 'Hyperlink URL' })),
-          slide: Type.Optional(Type.Number({ description: 'Slide number to link to' })),
-          tooltip: Type.Optional(Type.String({ description: 'Hyperlink tooltip' })),
+          slide: Type.Optional(
+            Type.Number({ description: 'Slide number to link to' })
+          ),
+          tooltip: Type.Optional(
+            Type.String({ description: 'Hyperlink tooltip' })
+          ),
         },
         { additionalProperties: false }
       )

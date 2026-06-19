@@ -7,6 +7,7 @@ import probe from 'probe-image-size';
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
+import { resolveImageSource } from '../utils/imageSource';
 import { warn, W } from '../utils/warn';
 
 /** Block requests to private/loopback/link-local hosts. */
@@ -38,6 +39,7 @@ function isPrivateUrl(urlStr: string): boolean {
 interface ImageComponentProps {
   path?: string;
   base64?: string;
+  svg?: string;
   x?: number | string;
   y?: number | string;
   w?: number | string;
@@ -124,21 +126,22 @@ export async function renderImageComponent(
 ): Promise<void> {
   const opts: Record<string, unknown> = {};
 
-  // Source
-  const source = props.path || props.base64;
+  // Source — precedence svg > base64 > path (raw SVG wrapped into a data URI).
+  const source = resolveImageSource(props);
   if (!source) {
     warn(
       warnings,
       W.IMAGE_NO_SOURCE,
-      'Image component missing both path and base64',
+      'Image component missing path, base64, and svg',
       { component: 'image' }
     );
     return;
   }
-  if (props.path) {
-    opts.path = props.path;
+  // pptxgenjs routes data URIs through `data` and file paths/URLs through `path`.
+  if (source.startsWith('data:')) {
+    opts.data = source;
   } else {
-    opts.data = props.base64;
+    opts.path = source;
   }
 
   // Position
