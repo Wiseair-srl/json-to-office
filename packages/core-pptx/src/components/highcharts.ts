@@ -40,6 +40,9 @@ async function generateChart(
     type: 'png',
     b64: true,
     scale: config.scale,
+    // Forward resources verbatim only when present so the payload stays
+    // byte-identical to before for callers that omit it.
+    ...(config.resources ? { resources: config.resources } : {}),
   };
 
   const resolvedHeaders =

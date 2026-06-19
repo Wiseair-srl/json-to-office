@@ -23,8 +23,22 @@ export const HighchartsPropsSchema = Type.Object({
   ]),
   // Optional scale factor for export
   scale: Type.Optional(Type.Number()),
+  // Optional resources forwarded verbatim to the export server (CSS/JS/files).
+  // Notably enables @font-face rules so charts render in custom fonts.
+  resources: Type.Optional(
+    Type.Object({
+      css: Type.Optional(Type.String()),
+      js: Type.Optional(Type.String()),
+      files: Type.Optional(Type.Array(Type.String())),
+    })
+  ),
   // Optional Highcharts Export Server URL override
-  serverUrl: Type.Optional(Type.String({ description: 'Highcharts Export Server URL (default: http://localhost:7801)' })),
+  serverUrl: Type.Optional(
+    Type.String({
+      description:
+        'Highcharts Export Server URL (default: http://localhost:7801)',
+    })
+  ),
   // Optional width for rendering (overrides chart width)
   width: Type.Optional(
     Type.Union(
