@@ -290,6 +290,102 @@ describe('createPresentationGenerator', () => {
     expect(result.errors!.length).toBeGreaterThan(0);
   });
 
+  it('rejects an image that sets more than one source (path/base64/svg)', () => {
+    const gen = createPresentationGenerator();
+
+    const result = gen.validate({
+      name: 'pptx',
+      props: {},
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [
+            {
+              name: 'image',
+              props: {
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>',
+                path: 'https://example.com/x.png',
+              },
+            } as any,
+          ],
+        },
+      ],
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors!.some((e) => /only one source/.test(e.message))).toBe(
+      true
+    );
+  });
+
+  it('detects multi-source image conflicts nested in a table cell', () => {
+    const gen = createPresentationGenerator();
+
+    const result = gen.validate({
+      name: 'pptx',
+      props: {},
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [
+            {
+              name: 'table',
+              props: {
+                rows: [
+                  [
+                    {
+                      children: [
+                        {
+                          name: 'image',
+                          props: {
+                            base64: 'data:image/png;base64,AAAA',
+                            path: 'https://example.com/x.png',
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                ],
+              },
+            } as any,
+          ],
+        },
+      ],
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors!.some((e) => /only one source/.test(e.message))).toBe(
+      true
+    );
+  });
+
+  it('accepts an image with a single source', () => {
+    const gen = createPresentationGenerator();
+
+    const result = gen.validate({
+      name: 'pptx',
+      props: {},
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [
+            {
+              name: 'image',
+              props: {
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>',
+              },
+            } as any,
+          ],
+        },
+      ],
+    });
+
+    expect(result.valid).toBe(true);
+  });
+
   it('generates a schema', () => {
     const gen = createPresentationGenerator().addComponent(bannerComponent);
     const schema = gen.generateSchema();

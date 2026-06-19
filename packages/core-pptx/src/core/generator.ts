@@ -18,6 +18,7 @@ import { renderPresentation } from './render';
 import { getPptxTheme } from '../themes/defaults';
 import { resolveDocumentFonts } from './fontResolution';
 import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
+import { collectImageSourceConflicts } from '@json-to-office/shared-pptx';
 
 /**
  * Options for the generation pipeline
@@ -59,6 +60,19 @@ export async function generatePresentation(
 ): Promise<PptxGenJS> {
   if (!document || document.name !== 'pptx') {
     throw new Error('Top-level component must be a pptx component');
+  }
+
+  // Structural rule the per-component schema can't express: image sources
+  // (path/base64/svg) are mutually exclusive. Reject multi-source payloads
+  // before rendering so they can't be silently resolved by runtime precedence.
+  // Matches core-docx, which fails generation on the same conflict.
+  const sourceConflicts = collectImageSourceConflicts(document);
+  if (sourceConflicts.length > 0) {
+    throw new Error(
+      `Document validation failed:\n${sourceConflicts
+        .map((e) => `  - ${e.path}: ${e.message}`)
+        .join('\n')}`
+    );
   }
 
   const processed = processPresentation(document, options);
