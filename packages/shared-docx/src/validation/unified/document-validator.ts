@@ -9,7 +9,10 @@ import {
   StandardComponentDefinitionSchema,
 } from '../../schemas/components';
 import { extractStandardComponentNames } from '@json-to-office/shared';
-import { comprehensiveValidateDocument } from './deep-validator';
+import {
+  comprehensiveValidateDocument,
+  collectImageSourceConflicts,
+} from './deep-validator';
 
 // JsonComponentDefinitionSchema is just an alias for ComponentDefinitionSchema
 const JsonComponentDefinitionSchema = ComponentDefinitionSchema;
@@ -42,6 +45,15 @@ export function validateDocument(
     if (finalErrors.length === 0) {
       finalValid = true;
     }
+  }
+
+  // Image source mutual-exclusivity is a semantic rule the structural schema
+  // cannot express, so it runs unconditionally — a multi-source image passes
+  // the TypeBox check above.
+  const sourceConflicts = collectImageSourceConflicts(data);
+  if (sourceConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...sourceConflicts];
+    finalValid = false;
   }
 
   // Add document-specific metadata. Keep `data` populated whenever `valid` is
@@ -100,6 +112,13 @@ export function validateJsonDocument(
     if (finalErrors.length === 0) {
       finalValid = true;
     }
+  }
+
+  // Image source mutual-exclusivity (see validateDocument) — runs always.
+  const sourceConflicts = collectImageSourceConflicts(result.parsed);
+  if (sourceConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...sourceConflicts];
+    finalValid = false;
   }
 
   // Add document-specific metadata. Keep `data` populated whenever `valid` is

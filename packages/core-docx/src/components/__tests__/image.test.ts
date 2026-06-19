@@ -385,11 +385,11 @@ describe('components/image', () => {
         props: {},
       } as ComponentDefinition;
 
-      // Should throw error when neither path nor base64 is provided
+      // Should throw error when no image source is provided
       await expect(
         renderImageComponent(component, createMockTheme())
       ).rejects.toThrow(
-        'Image component requires either "path" or "base64" property'
+        'Image component requires one of "path", "base64", or "svg" property'
       );
     });
 
@@ -401,11 +401,11 @@ describe('components/image', () => {
         },
       };
 
-      // Should throw error when path is empty and base64 is not provided
+      // Should throw error when path is empty and no other source is provided
       await expect(
         renderImageComponent(component, createMockTheme())
       ).rejects.toThrow(
-        'Image component requires either "path" or "base64" property'
+        'Image component requires one of "path", "base64", or "svg" property'
       );
     });
 

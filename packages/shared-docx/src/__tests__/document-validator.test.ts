@@ -139,3 +139,74 @@ describe('validateJsonDocument: docx root recognition', () => {
     expect(isValidDocument(result)).toBe(true);
   });
 });
+
+describe('image source mutual exclusivity', () => {
+  const doc = (imageProps: Record<string, unknown>) => ({
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [{ name: 'image', props: imageProps }],
+  });
+
+  it('accepts a single inline svg source', () => {
+    const result = validate.document(doc({ svg: '<svg/>', width: 100 }));
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects svg + base64 together', () => {
+    const result = validate.document(
+      doc({ svg: '<svg/>', base64: 'data:image/png;base64,AAAA' })
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors?.some((e) => e.code === 'mutually_exclusive')).toBe(
+      true
+    );
+  });
+
+  it('rejects path + base64 together', () => {
+    const result = validate.document(
+      doc({ path: 'a.png', base64: 'data:image/png;base64,AAAA' })
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors?.some((e) => e.code === 'mutually_exclusive')).toBe(
+      true
+    );
+  });
+
+  it('treats a whitespace-only source as absent (path wins, no conflict)', () => {
+    const result = validate.document(doc({ path: 'a.png', svg: '   ' }));
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('detects conflicts on images nested in a table cell', () => {
+    const result = validate.document({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'table',
+          props: {
+            columns: [
+              {
+                header: { content: 'X' },
+                cells: [
+                  {
+                    content: {
+                      name: 'image',
+                      props: { path: 'a.png', svg: '<svg/>' },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors?.some((e) => e.code === 'mutually_exclusive')).toBe(
+      true
+    );
+  });
+});

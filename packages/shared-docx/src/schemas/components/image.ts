@@ -14,13 +14,19 @@ export const ImagePropsSchema = Type.Object(
     path: Type.Optional(
       Type.String({
         description:
-          'Image source URL or file path (mutually exclusive with base64)',
+          'Image source URL or file path (mutually exclusive with base64 and svg)',
       })
     ),
     base64: Type.Optional(
       Type.String({
         description:
-          'Base64-encoded image data in data URI format (e.g., "data:image/png;base64,iVBORw0KGgo...") (mutually exclusive with path)',
+          'Base64-encoded image data in data URI format (e.g., "data:image/png;base64,iVBORw0KGgo...") (mutually exclusive with path and svg)',
+      })
+    ),
+    svg: Type.Optional(
+      Type.String({
+        description:
+          'Raw inline SVG markup, e.g. "<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 24 24\\">...</svg>" (mutually exclusive with path and base64). Renders as a vector image (Word 2016+); intrinsic size taken from the SVG viewBox/width/height when width/height omitted.',
       })
     ),
     alt: Type.Optional(

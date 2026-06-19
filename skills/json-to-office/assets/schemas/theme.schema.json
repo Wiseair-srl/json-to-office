@@ -13515,11 +13515,15 @@
           "type": "object",
           "properties": {
             "path": {
-              "description": "Image source URL or file path (mutually exclusive with base64)",
+              "description": "Image source URL or file path (mutually exclusive with base64 and svg)",
               "type": "string"
             },
             "base64": {
-              "description": "Base64-encoded image data in data URI format (e.g., \"data:image/png;base64,iVBORw0KGgo...\") (mutually exclusive with path)",
+              "description": "Base64-encoded image data in data URI format (e.g., \"data:image/png;base64,iVBORw0KGgo...\") (mutually exclusive with path and svg)",
+              "type": "string"
+            },
+            "svg": {
+              "description": "Raw inline SVG markup, e.g. \"<svg xmlns=\\\"http://www.w3.org/2000/svg\\\" viewBox=\\\"0 0 24 24\\\">...</svg>\" (mutually exclusive with path and base64). Renders as a vector image (Word 2016+); intrinsic size taken from the SVG viewBox/width/height when width/height omitted.",
               "type": "string"
             },
             "alt": {

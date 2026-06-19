@@ -31,6 +31,7 @@ import {
   parseDimensionValue,
   detectImageType,
   createTypedImageRun,
+  resolveImageSource,
 } from '../utils/imageUtils';
 import { ThemeConfig } from '../styles';
 import { getTableStyle } from '../styles';
@@ -1614,11 +1615,11 @@ export async function createTable(
       } else if (isImageComponent(cell)) {
         const imageComp = cell as ImageComponentDefinition;
         try {
-          // Get image source (base64 or path)
-          const imageSource = imageComp.props.base64 || imageComp.props.path;
+          // Get image source (svg, base64, or path)
+          const imageSource = resolveImageSource(imageComp.props);
           if (!imageSource) {
             throw new Error(
-              'Image component requires either "path" or "base64" property'
+              'Image component requires one of "path", "base64", or "svg" property'
             );
           }
 
@@ -1658,8 +1659,9 @@ export async function createTable(
           cellChildren = [imageRun];
         } catch (error) {
           // Fallback for missing images
-          const imageSource =
-            imageComp.props.base64 || imageComp.props.path || 'unknown';
+          const imageSource = imageComp.props.svg?.trim()
+            ? 'inline-svg'
+            : imageComp.props.base64 || imageComp.props.path || 'unknown';
           cellChildren = [
             new TextRun({
               text: `[IMAGE: ${imageSource.substring(0, 50)}${imageSource.length > 50 ? '...' : ''}]`,
@@ -2351,12 +2353,11 @@ export async function createHeaderFooterTable(
                 } else if (isImageComponent(cell)) {
                   const imageComp = cell as ImageComponentDefinition;
                   try {
-                    // Get image source (base64 or path)
-                    const imageSource =
-                      imageComp.props.base64 || imageComp.props.path;
+                    // Get image source (svg, base64, or path)
+                    const imageSource = resolveImageSource(imageComp.props);
                     if (!imageSource) {
                       throw new Error(
-                        'Image component requires either "path" or "base64" property'
+                        'Image component requires one of "path", "base64", or "svg" property'
                       );
                     }
 
@@ -2399,10 +2400,11 @@ export async function createHeaderFooterTable(
                     paragraphChildren = [imageRun];
                   } catch (error) {
                     // Fallback for missing images
-                    const imageSource =
-                      imageComp.props.base64 ||
-                      imageComp.props.path ||
-                      'unknown';
+                    const imageSource = imageComp.props.svg?.trim()
+                      ? 'inline-svg'
+                      : imageComp.props.base64 ||
+                        imageComp.props.path ||
+                        'unknown';
                     paragraphChildren = [
                       new TextRun({
                         text: `[IMAGE: ${imageSource.substring(0, 50)}${imageSource.length > 50 ? '...' : ''}]`,
