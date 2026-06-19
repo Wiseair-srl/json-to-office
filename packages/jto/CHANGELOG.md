@@ -1,5 +1,17 @@
 # @json-to-office/jto
 
+## 0.18.0
+
+### Patch Changes
+
+- Updated dependencies [a079015]
+- Updated dependencies [71faefc]
+  - @json-to-office/core-docx@0.18.0
+  - @json-to-office/shared-docx@0.18.0
+  - @json-to-office/core-pptx@0.18.0
+  - @json-to-office/shared-pptx@0.18.0
+  - @json-to-office/jto-cli@0.18.0
+
 ## 0.17.2
 
 ### Patch Changes
