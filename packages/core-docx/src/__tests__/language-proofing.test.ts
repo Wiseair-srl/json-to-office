@@ -83,4 +83,70 @@ describe('language & proofing', () => {
     const xml = await readZipEntry(buf, 'word/document.xml');
     expect(xml).toMatch(/<w:noProof\s*\/>/);
   });
+
+  it('wraps document-level noProofWords in no-proof runs, whole-word', async () => {
+    const buf = await generateBufferFromJson({
+      name: 'docx',
+      props: { theme: 'minimal', noProofWords: ['Wiseair', 'json-to-office'] },
+      children: [
+        {
+          name: 'paragraph',
+          props: { text: 'Built with json-to-office at Wiseair today.' },
+        },
+      ],
+    } as any);
+    const xml = await readZipEntry(buf, 'word/document.xml');
+    // The two known words are emitted as their own no-proof runs.
+    expect(xml).toMatch(
+      /<w:r><w:rPr><w:noProof\s*\/><\/w:rPr><w:t[^>]*>json-to-office<\/w:t><\/w:r>/
+    );
+    expect(xml).toMatch(
+      /<w:r><w:rPr><w:noProof\s*\/><\/w:rPr><w:t[^>]*>Wiseair<\/w:t><\/w:r>/
+    );
+    // Surrounding text is a separate run with no noProof.
+    expect(xml).toMatch(/<w:t[^>]*>Built with <\/w:t>/);
+  });
+
+  it('matches noProofWords case-insensitively but only as whole words', async () => {
+    const buf = await generateBufferFromJson({
+      name: 'docx',
+      props: { theme: 'minimal', noProofWords: ['pptx'] },
+      children: [
+        {
+          name: 'paragraph',
+          // "PPTX" should match (case-insensitive); "pptxgenjs" should NOT.
+          props: { text: 'Use PPTX, not pptxgenjs.' },
+        },
+      ],
+    } as any);
+    const xml = await readZipEntry(buf, 'word/document.xml');
+    expect(xml).toMatch(
+      /<w:r><w:rPr><w:noProof\s*\/><\/w:rPr><w:t[^>]*>PPTX<\/w:t><\/w:r>/
+    );
+    // pptxgenjs must remain in a normal (proofed) run — no noProof wrapper.
+    expect(xml).not.toMatch(/<w:noProof\s*\/><\/w:rPr><w:t[^>]*>pptxgenjs/);
+  });
+
+  it('merges component-level noProofWords with the document list', async () => {
+    const buf = await generateBufferFromJson({
+      name: 'docx',
+      props: { theme: 'minimal', noProofWords: ['Wiseair'] },
+      children: [
+        {
+          name: 'paragraph',
+          props: {
+            text: 'Wiseair and Filaferro.',
+            noProofWords: ['Filaferro'],
+          },
+        },
+      ],
+    } as any);
+    const xml = await readZipEntry(buf, 'word/document.xml');
+    expect(xml).toMatch(
+      /<w:r><w:rPr><w:noProof\s*\/><\/w:rPr><w:t[^>]*>Wiseair<\/w:t><\/w:r>/
+    );
+    expect(xml).toMatch(
+      /<w:r><w:rPr><w:noProof\s*\/><\/w:rPr><w:t[^>]*>Filaferro<\/w:t><\/w:r>/
+    );
+  });
 });

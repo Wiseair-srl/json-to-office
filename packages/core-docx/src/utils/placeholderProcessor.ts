@@ -9,7 +9,11 @@ import {
   ExternalHyperlink,
   InternalHyperlink,
 } from 'docx';
-import { parseTextWithDecorators, TextStyle } from './textParser';
+import {
+  parseTextWithDecorators,
+  splitByNoProofWords,
+  TextStyle,
+} from './textParser';
 import { normalizeUnicodeText } from './unicode';
 
 // Type alias for elements that can appear in a paragraph
@@ -135,7 +139,8 @@ export function processPlaceholders(
 export function processTextWithPlaceholders(
   text: string,
   baseStyle: TextStyle = {},
-  context: PlaceholderContext = {}
+  context: PlaceholderContext = {},
+  noProofWords?: string[]
 ): ParagraphChild[] {
   const normalizedText = normalizeUnicodeText(text);
   // Use a more sophisticated approach to handle both decorators and placeholders
@@ -151,7 +156,9 @@ export function processTextWithPlaceholders(
     if (match.index > lastIndex) {
       const beforeText = normalizedText.substring(lastIndex, match.index);
       if (beforeText) {
-        result.push(...createTextRunsWithNewlines(beforeText, baseStyle));
+        result.push(
+          ...createTextRunsWithNewlines(beforeText, baseStyle, noProofWords)
+        );
       }
     }
 
@@ -168,12 +175,18 @@ export function processTextWithPlaceholders(
           result.push(placeholderResult);
         } else if (typeof placeholderResult === 'string') {
           result.push(
-            ...createTextRunsWithNewlines(placeholderResult, baseStyle)
+            ...createTextRunsWithNewlines(
+              placeholderResult,
+              baseStyle,
+              noProofWords
+            )
           );
         }
       } else {
         // Unknown placeholder - keep as text
-        result.push(...createTextRunsWithNewlines(match[0], baseStyle));
+        result.push(
+          ...createTextRunsWithNewlines(match[0], baseStyle, noProofWords)
+        );
       }
     } else {
       // This is a decorator match - determine the style
@@ -219,13 +232,17 @@ export function processTextWithPlaceholders(
   if (lastIndex < normalizedText.length) {
     const remainingText = normalizedText.substring(lastIndex);
     if (remainingText) {
-      result.push(...createTextRunsWithNewlines(remainingText, baseStyle));
+      result.push(
+        ...createTextRunsWithNewlines(remainingText, baseStyle, noProofWords)
+      );
     }
   }
 
   // If no matches were found, return text runs with newlines
   if (result.length === 0 && normalizedText) {
-    result.push(...createTextRunsWithNewlines(normalizedText, baseStyle));
+    result.push(
+      ...createTextRunsWithNewlines(normalizedText, baseStyle, noProofWords)
+    );
   }
 
   return result;
@@ -236,7 +253,8 @@ export function processTextWithPlaceholders(
  */
 function createTextRunsWithNewlines(
   text: string,
-  baseStyle: TextStyle
+  baseStyle: TextStyle,
+  noProofWords?: string[]
 ): TextRun[] {
   const runs: TextRun[] = [];
   const lines = text.split('\n');
@@ -246,22 +264,36 @@ function createTextRunsWithNewlines(
     const needsLineBreak = lineIndex > 0;
 
     if (line || needsLineBreak) {
-      runs.push(
-        new TextRun({
-          text: line,
-          font: baseStyle.font,
-          size: baseStyle.size,
-          color: baseStyle.color,
-          bold: baseStyle.bold,
-          italics: baseStyle.italics,
-          underline: baseStyle.underline,
-          ...(baseStyle.language && { language: baseStyle.language }),
-          ...(baseStyle.noProof !== undefined && {
-            noProof: baseStyle.noProof,
-          }),
-          break: needsLineBreak ? 1 : undefined,
-        })
+      const commonProps = {
+        font: baseStyle.font,
+        size: baseStyle.size,
+        color: baseStyle.color,
+        bold: baseStyle.bold,
+        italics: baseStyle.italics,
+        underline: baseStyle.underline,
+        ...(baseStyle.language && { language: baseStyle.language }),
+      };
+      const wholeRunNoProof = baseStyle.noProof === true;
+      const wordsForLine = wholeRunNoProof ? undefined : noProofWords;
+
+      let firstSegment = true;
+      const lineRuns = splitByNoProofWords(
+        line,
+        (segment, matched) => {
+          const run = new TextRun({
+            text: segment,
+            ...commonProps,
+            ...((matched || baseStyle.noProof !== undefined) && {
+              noProof: matched || wholeRunNoProof,
+            }),
+            break: needsLineBreak && firstSegment ? 1 : undefined,
+          });
+          firstSegment = false;
+          return run;
+        },
+        wordsForLine
       );
+      runs.push(...lineRuns);
     }
   }
 

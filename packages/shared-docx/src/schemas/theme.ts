@@ -407,6 +407,15 @@ export const ThemeConfigSchema = Type.Object(
     page: PageSchema,
     styles: Type.Optional(StyleDefinitionsSchema),
     componentDefaults: Type.Optional(ComponentDefaultsSchema),
+    // House-style "known words" allowlist (whole-word, case-insensitive) that
+    // should never be flagged as misspelled. The document's `noProofWords` is
+    // merged on top of this at render time.
+    noProofWords: Type.Optional(
+      Type.Array(Type.String({ minLength: 1 }), {
+        description:
+          'Words that should never be flagged as misspelled (whole-word, case-insensitive).',
+      })
+    ),
   },
   {
     additionalProperties: false,

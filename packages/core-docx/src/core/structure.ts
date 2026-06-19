@@ -76,15 +76,32 @@ export async function processDocument(
   // Merge document-level componentDefaults on top of theme-level ones
   // (document overrides theme)
   const docDefaults = document.props.componentDefaults;
-  const effectiveTheme = docDefaults
-    ? {
-        ...theme,
-        componentDefaults: mergeWithDefaults(
-          docDefaults,
-          theme.componentDefaults || {}
-        ),
-      }
-    : theme;
+  const mergedComponentDefaults = docDefaults
+    ? mergeWithDefaults(docDefaults, theme.componentDefaults || {})
+    : undefined;
+
+  // Fold the document's known-words allowlist into the theme object so it
+  // reaches every text primitive (createText/createHeading) without threading
+  // a new parameter through the whole render tree. Document words are added to
+  // any house-style words the theme already defines.
+  const docNoProofWords = document.props.noProofWords;
+  const mergedNoProofWords =
+    docNoProofWords || theme.noProofWords
+      ? Array.from(
+          new Set([...(theme.noProofWords || []), ...(docNoProofWords || [])])
+        )
+      : undefined;
+
+  const effectiveTheme =
+    mergedComponentDefaults || mergedNoProofWords
+      ? {
+          ...theme,
+          ...(mergedComponentDefaults && {
+            componentDefaults: mergedComponentDefaults,
+          }),
+          ...(mergedNoProofWords && { noProofWords: mergedNoProofWords }),
+        }
+      : theme;
 
   // Create context with effective theme so section-title headings
   // created in extractSections also see document-level defaults

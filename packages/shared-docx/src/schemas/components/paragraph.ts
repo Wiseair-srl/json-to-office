@@ -4,7 +4,12 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { SpacingSchema } from './common';
-import { FontDefinitionSchema, LanguageSchema, NoProofSchema } from '../font';
+import {
+  FontDefinitionSchema,
+  LanguageSchema,
+  NoProofSchema,
+  NoProofWordsSchema,
+} from '../font';
 import { RevisionSchema } from './revision';
 
 // Frame wrapping type schema
@@ -173,6 +178,8 @@ export const ParagraphPropsSchema = Type.Object(
     language: Type.Optional(LanguageSchema),
     // Disable spell/grammar checking for this paragraph's text
     noProof: Type.Optional(NoProofSchema),
+    // Known-words allowlist for this paragraph (merged with the document list)
+    noProofWords: Type.Optional(NoProofWordsSchema),
     // Rich-text decoration color for bold segments (kept as top-level behavior option)
     boldColor: Type.Optional(Type.String()),
     // Paragraph spacing (in points) — limited paragraph-level option allowed

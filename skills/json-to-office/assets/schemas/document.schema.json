@@ -752,6 +752,15 @@
                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                             "type": "boolean"
                           },
+                          "noProofWords": {
+                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                            "examples": [["Wiseair", "json-to-office", "pptx"]],
+                            "type": "array",
+                            "items": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
                           "alignment": {
                             "description": "Text alignment options including justify",
                             "anyOf": [
@@ -1068,6 +1077,15 @@
                           "noProof": {
                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                             "type": "boolean"
+                          },
+                          "noProofWords": {
+                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                            "examples": [["Wiseair", "json-to-office", "pptx"]],
+                            "type": "array",
+                            "items": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
                           },
                           "boldColor": {
                             "type": "string"
@@ -2103,6 +2121,15 @@
                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                             "type": "boolean"
                           },
+                          "noProofWords": {
+                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                            "examples": [["Wiseair", "json-to-office", "pptx"]],
+                            "type": "array",
+                            "items": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
                           "alignment": {
                             "description": "Text alignment options including justify",
                             "anyOf": [
@@ -2419,6 +2446,15 @@
                           "noProof": {
                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                             "type": "boolean"
+                          },
+                          "noProofWords": {
+                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                            "examples": [["Wiseair", "json-to-office", "pptx"]],
+                            "type": "array",
+                            "items": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
                           },
                           "boldColor": {
                             "type": "string"
@@ -6672,6 +6708,17 @@
                                       "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                       "type": "boolean"
                                     },
+                                    "noProofWords": {
+                                      "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                      "examples": [
+                                        ["Wiseair", "json-to-office", "pptx"]
+                                      ],
+                                      "type": "array",
+                                      "items": {
+                                        "minLength": 1,
+                                        "type": "string"
+                                      }
+                                    },
                                     "alignment": {
                                       "description": "Text alignment options including justify",
                                       "anyOf": [
@@ -6988,6 +7035,17 @@
                                     "noProof": {
                                       "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                       "type": "boolean"
+                                    },
+                                    "noProofWords": {
+                                      "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                      "examples": [
+                                        ["Wiseair", "json-to-office", "pptx"]
+                                      ],
+                                      "type": "array",
+                                      "items": {
+                                        "minLength": 1,
+                                        "type": "string"
+                                      }
                                     },
                                     "boldColor": {
                                       "type": "string"
@@ -8101,6 +8159,15 @@
                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                             "type": "boolean"
                           },
+                          "noProofWords": {
+                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                            "examples": [["Wiseair", "json-to-office", "pptx"]],
+                            "type": "array",
+                            "items": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
                           "alignment": {
                             "description": "Text alignment options including justify",
                             "anyOf": [
@@ -8417,6 +8484,15 @@
                           "noProof": {
                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                             "type": "boolean"
+                          },
+                          "noProofWords": {
+                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                            "examples": [["Wiseair", "json-to-office", "pptx"]],
+                            "type": "array",
+                            "items": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
                           },
                           "boldColor": {
                             "type": "string"
@@ -12208,6 +12284,17 @@
                                       "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                       "type": "boolean"
                                     },
+                                    "noProofWords": {
+                                      "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                      "examples": [
+                                        ["Wiseair", "json-to-office", "pptx"]
+                                      ],
+                                      "type": "array",
+                                      "items": {
+                                        "minLength": 1,
+                                        "type": "string"
+                                      }
+                                    },
                                     "alignment": {
                                       "description": "Text alignment options including justify",
                                       "anyOf": [
@@ -12524,6 +12611,17 @@
                                     "noProof": {
                                       "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                       "type": "boolean"
+                                    },
+                                    "noProofWords": {
+                                      "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                      "examples": [
+                                        ["Wiseair", "json-to-office", "pptx"]
+                                      ],
+                                      "type": "array",
+                                      "items": {
+                                        "minLength": 1,
+                                        "type": "string"
+                                      }
                                     },
                                     "boldColor": {
                                       "type": "string"
@@ -16783,6 +16881,21 @@
                                                 "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                                 "type": "boolean"
                                               },
+                                              "noProofWords": {
+                                                "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                                "examples": [
+                                                  [
+                                                    "Wiseair",
+                                                    "json-to-office",
+                                                    "pptx"
+                                                  ]
+                                                ],
+                                                "type": "array",
+                                                "items": {
+                                                  "minLength": 1,
+                                                  "type": "string"
+                                                }
+                                              },
                                               "alignment": {
                                                 "description": "Text alignment options including justify",
                                                 "anyOf": [
@@ -17105,6 +17218,21 @@
                                               "noProof": {
                                                 "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                                 "type": "boolean"
+                                              },
+                                              "noProofWords": {
+                                                "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                                "examples": [
+                                                  [
+                                                    "Wiseair",
+                                                    "json-to-office",
+                                                    "pptx"
+                                                  ]
+                                                ],
+                                                "type": "array",
+                                                "items": {
+                                                  "minLength": 1,
+                                                  "type": "string"
+                                                }
                                               },
                                               "boldColor": {
                                                 "type": "string"
@@ -18611,6 +18739,17 @@
                                       "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                       "type": "boolean"
                                     },
+                                    "noProofWords": {
+                                      "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                      "examples": [
+                                        ["Wiseair", "json-to-office", "pptx"]
+                                      ],
+                                      "type": "array",
+                                      "items": {
+                                        "minLength": 1,
+                                        "type": "string"
+                                      }
+                                    },
                                     "alignment": {
                                       "description": "Text alignment options including justify",
                                       "anyOf": [
@@ -18927,6 +19066,17 @@
                                     "noProof": {
                                       "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                       "type": "boolean"
+                                    },
+                                    "noProofWords": {
+                                      "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                      "examples": [
+                                        ["Wiseair", "json-to-office", "pptx"]
+                                      ],
+                                      "type": "array",
+                                      "items": {
+                                        "minLength": 1,
+                                        "type": "string"
+                                      }
                                     },
                                     "boldColor": {
                                       "type": "string"
@@ -19892,6 +20042,15 @@
                           "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                           "type": "boolean"
                         },
+                        "noProofWords": {
+                          "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                          "examples": [["Wiseair", "json-to-office", "pptx"]],
+                          "type": "array",
+                          "items": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        },
                         "alignment": {
                           "description": "Text alignment options including justify",
                           "anyOf": [
@@ -20137,6 +20296,15 @@
                         "noProof": {
                           "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                           "type": "boolean"
+                        },
+                        "noProofWords": {
+                          "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                          "examples": [["Wiseair", "json-to-office", "pptx"]],
+                          "type": "array",
+                          "items": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
                         },
                         "boldColor": {
                           "type": "string"
@@ -23016,6 +23184,15 @@
                   "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
                   "type": "string"
                 },
+                "noProofWords": {
+                  "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                  "examples": [["Wiseair", "json-to-office", "pptx"]],
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
                 "trackRevisions": {
                   "description": "Open the document in track-changes mode: Word marks any further edits as revisions. Set automatically on redline documents produced by the diff engine",
                   "type": "boolean"
@@ -23423,6 +23600,17 @@
                                   "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                   "type": "boolean"
                                 },
+                                "noProofWords": {
+                                  "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                  "examples": [
+                                    ["Wiseair", "json-to-office", "pptx"]
+                                  ],
+                                  "type": "array",
+                                  "items": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  }
+                                },
                                 "alignment": {
                                   "description": "Text alignment options including justify",
                                   "anyOf": [
@@ -23739,6 +23927,17 @@
                                 "noProof": {
                                   "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                   "type": "boolean"
+                                },
+                                "noProofWords": {
+                                  "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                  "examples": [
+                                    ["Wiseair", "json-to-office", "pptx"]
+                                  ],
+                                  "type": "array",
+                                  "items": {
+                                    "minLength": 1,
+                                    "type": "string"
+                                  }
                                 },
                                 "boldColor": {
                                   "type": "string"
@@ -27530,6 +27729,21 @@
                                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                             "type": "boolean"
                                           },
+                                          "noProofWords": {
+                                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                            "examples": [
+                                              [
+                                                "Wiseair",
+                                                "json-to-office",
+                                                "pptx"
+                                              ]
+                                            ],
+                                            "type": "array",
+                                            "items": {
+                                              "minLength": 1,
+                                              "type": "string"
+                                            }
+                                          },
                                           "alignment": {
                                             "description": "Text alignment options including justify",
                                             "anyOf": [
@@ -27846,6 +28060,21 @@
                                           "noProof": {
                                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                             "type": "boolean"
+                                          },
+                                          "noProofWords": {
+                                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                            "examples": [
+                                              [
+                                                "Wiseair",
+                                                "json-to-office",
+                                                "pptx"
+                                              ]
+                                            ],
+                                            "type": "array",
+                                            "items": {
+                                              "minLength": 1,
+                                              "type": "string"
+                                            }
                                           },
                                           "boldColor": {
                                             "type": "string"
@@ -32108,6 +32337,21 @@
                                                       "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                                       "type": "boolean"
                                                     },
+                                                    "noProofWords": {
+                                                      "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                                      "examples": [
+                                                        [
+                                                          "Wiseair",
+                                                          "json-to-office",
+                                                          "pptx"
+                                                        ]
+                                                      ],
+                                                      "type": "array",
+                                                      "items": {
+                                                        "minLength": 1,
+                                                        "type": "string"
+                                                      }
+                                                    },
                                                     "alignment": {
                                                       "description": "Text alignment options including justify",
                                                       "anyOf": [
@@ -32430,6 +32674,21 @@
                                                     "noProof": {
                                                       "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                                       "type": "boolean"
+                                                    },
+                                                    "noProofWords": {
+                                                      "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                                      "examples": [
+                                                        [
+                                                          "Wiseair",
+                                                          "json-to-office",
+                                                          "pptx"
+                                                        ]
+                                                      ],
+                                                      "type": "array",
+                                                      "items": {
+                                                        "minLength": 1,
+                                                        "type": "string"
+                                                      }
                                                     },
                                                     "boldColor": {
                                                       "type": "string"
@@ -33936,6 +34195,21 @@
                                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                             "type": "boolean"
                                           },
+                                          "noProofWords": {
+                                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                            "examples": [
+                                              [
+                                                "Wiseair",
+                                                "json-to-office",
+                                                "pptx"
+                                              ]
+                                            ],
+                                            "type": "array",
+                                            "items": {
+                                              "minLength": 1,
+                                              "type": "string"
+                                            }
+                                          },
                                           "alignment": {
                                             "description": "Text alignment options including justify",
                                             "anyOf": [
@@ -34252,6 +34526,21 @@
                                           "noProof": {
                                             "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                             "type": "boolean"
+                                          },
+                                          "noProofWords": {
+                                            "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                            "examples": [
+                                              [
+                                                "Wiseair",
+                                                "json-to-office",
+                                                "pptx"
+                                              ]
+                                            ],
+                                            "type": "array",
+                                            "items": {
+                                              "minLength": 1,
+                                              "type": "string"
+                                            }
                                           },
                                           "boldColor": {
                                             "type": "string"
@@ -35196,6 +35485,15 @@
                   "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                   "type": "boolean"
                 },
+                "noProofWords": {
+                  "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                  "examples": [["Wiseair", "json-to-office", "pptx"]],
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
                 "alignment": {
                   "description": "Text alignment options including justify",
                   "anyOf": [
@@ -35506,6 +35804,15 @@
                 "noProof": {
                   "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                   "type": "boolean"
+                },
+                "noProofWords": {
+                  "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                  "examples": [["Wiseair", "json-to-office", "pptx"]],
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
                 },
                 "boldColor": {
                   "type": "string"
@@ -41536,6 +41843,15 @@
                   "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                   "type": "boolean"
                 },
+                "noProofWords": {
+                  "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                  "examples": [["Wiseair", "json-to-office", "pptx"]],
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
                 "alignment": {
                   "description": "Text alignment options including justify",
                   "anyOf": [
@@ -41775,6 +42091,15 @@
                 "noProof": {
                   "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                   "type": "boolean"
+                },
+                "noProofWords": {
+                  "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                  "examples": [["Wiseair", "json-to-office", "pptx"]],
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
                 },
                 "boldColor": {
                   "type": "string"
@@ -44654,6 +44979,15 @@
           "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
           "type": "string"
         },
+        "noProofWords": {
+          "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+          "examples": [["Wiseair", "json-to-office", "pptx"]],
+          "type": "array",
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
         "trackRevisions": {
           "description": "Open the document in track-changes mode: Word marks any further edits as revisions. Set automatically on redline documents produced by the diff engine",
           "type": "boolean"
@@ -45058,6 +45392,15 @@
                           "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                           "type": "boolean"
                         },
+                        "noProofWords": {
+                          "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                          "examples": [["Wiseair", "json-to-office", "pptx"]],
+                          "type": "array",
+                          "items": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        },
                         "alignment": {
                           "description": "Text alignment options including justify",
                           "anyOf": [
@@ -45374,6 +45717,15 @@
                         "noProof": {
                           "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                           "type": "boolean"
+                        },
+                        "noProofWords": {
+                          "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                          "examples": [["Wiseair", "json-to-office", "pptx"]],
+                          "type": "array",
+                          "items": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
                         },
                         "boldColor": {
                           "type": "string"
@@ -49165,6 +49517,17 @@
                                     "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                     "type": "boolean"
                                   },
+                                  "noProofWords": {
+                                    "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                    "examples": [
+                                      ["Wiseair", "json-to-office", "pptx"]
+                                    ],
+                                    "type": "array",
+                                    "items": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    }
+                                  },
                                   "alignment": {
                                     "description": "Text alignment options including justify",
                                     "anyOf": [
@@ -49481,6 +49844,17 @@
                                   "noProof": {
                                     "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                     "type": "boolean"
+                                  },
+                                  "noProofWords": {
+                                    "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                    "examples": [
+                                      ["Wiseair", "json-to-office", "pptx"]
+                                    ],
+                                    "type": "array",
+                                    "items": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    }
                                   },
                                   "boldColor": {
                                     "type": "string"
@@ -53734,6 +54108,21 @@
                                               "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                               "type": "boolean"
                                             },
+                                            "noProofWords": {
+                                              "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                              "examples": [
+                                                [
+                                                  "Wiseair",
+                                                  "json-to-office",
+                                                  "pptx"
+                                                ]
+                                              ],
+                                              "type": "array",
+                                              "items": {
+                                                "minLength": 1,
+                                                "type": "string"
+                                              }
+                                            },
                                             "alignment": {
                                               "description": "Text alignment options including justify",
                                               "anyOf": [
@@ -54050,6 +54439,21 @@
                                             "noProof": {
                                               "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                               "type": "boolean"
+                                            },
+                                            "noProofWords": {
+                                              "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                              "examples": [
+                                                [
+                                                  "Wiseair",
+                                                  "json-to-office",
+                                                  "pptx"
+                                                ]
+                                              ],
+                                              "type": "array",
+                                              "items": {
+                                                "minLength": 1,
+                                                "type": "string"
+                                              }
                                             },
                                             "boldColor": {
                                               "type": "string"
@@ -55553,6 +55957,17 @@
                                     "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                     "type": "boolean"
                                   },
+                                  "noProofWords": {
+                                    "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                    "examples": [
+                                      ["Wiseair", "json-to-office", "pptx"]
+                                    ],
+                                    "type": "array",
+                                    "items": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    }
+                                  },
                                   "alignment": {
                                     "description": "Text alignment options including justify",
                                     "anyOf": [
@@ -55869,6 +56284,17 @@
                                   "noProof": {
                                     "description": "Disable spell/grammar checking for this text (e.g. code snippets or identifiers)",
                                     "type": "boolean"
+                                  },
+                                  "noProofWords": {
+                                    "description": "Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.",
+                                    "examples": [
+                                      ["Wiseair", "json-to-office", "pptx"]
+                                    ],
+                                    "type": "array",
+                                    "items": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    }
                                   },
                                   "boldColor": {
                                     "type": "string"

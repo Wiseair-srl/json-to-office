@@ -3,6 +3,7 @@
   "props": {
     "theme": "minimal",
     "language": "en-US",
+    "noProofWords": ["Wiseair", "json-to-office", "pptx"],
     "metadata": {
       "title": "Language Handling Test",
       "author": "Wiseair"
@@ -18,6 +19,21 @@
       "name": "paragraph",
       "props": {
         "text": "This paragraph inherits the document default language (en-US). Word will spell-check it as US English."
+      }
+    },
+
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "Built with json-to-office at Wiseair; the rest of this sentence is still spell-checked, but pptx and Wiseair are not flagged."
+      }
+    },
+
+    {
+      "name": "paragraph",
+      "props": {
+        "text": "Local additions also work: Filaferro stays clean here only.",
+        "noProofWords": ["Filaferro"]
       }
     },
 

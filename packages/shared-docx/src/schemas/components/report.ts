@@ -4,6 +4,7 @@
 
 import { Type, Static, TSchema } from '@sinclair/typebox';
 import { ComponentDefaultsSchema } from '../component-defaults';
+import { NoProofWordsSchema } from '../font';
 
 // Create a function to generate ReportPropsSchema with recursive component reference
 export const createReportPropsSchema = (_moduleRef?: TSchema) =>
@@ -25,6 +26,7 @@ export const createReportPropsSchema = (_moduleRef?: TSchema) =>
           examples: ['en-US', 'fr-FR', 'de-DE', 'it-IT', 'es-ES'],
         })
       ),
+      noProofWords: Type.Optional(NoProofWordsSchema),
       trackRevisions: Type.Optional(
         Type.Boolean({
           description:
