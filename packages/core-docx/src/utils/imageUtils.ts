@@ -283,6 +283,26 @@ export async function downloadImageFromUrl(
 }
 
 /**
+ * Resolve the effective image source string from image component props.
+ * Precedence: raw inline `svg` markup (wrapped into an svg data URI) > `base64`
+ * data URI > `path` (file/URL). Returns undefined when no source is provided.
+ *
+ * Raw SVG is encoded as a base64 svg+xml data URI so it flows through the same
+ * pipeline as any other source (getImageBuffer / detectImageType / dimensions).
+ */
+export function resolveImageSource(props: {
+  svg?: string;
+  base64?: string;
+  path?: string;
+}): string | undefined {
+  if (props.svg && props.svg.trim()) {
+    const encoded = Buffer.from(props.svg, 'utf-8').toString('base64');
+    return `data:image/svg+xml;base64,${encoded}`;
+  }
+  return props.base64 || props.path;
+}
+
+/**
  * Get image buffer from base64 data URI, URL, or local file
  */
 export async function getImageBuffer(

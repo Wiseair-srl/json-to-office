@@ -21,6 +21,7 @@ import {
   parseWidthValue,
   detectImageType,
   createTypedImageRun,
+  resolveImageSource,
 } from '../utils/imageUtils';
 import {
   getThemeColors,
@@ -320,14 +321,14 @@ async function renderHeaderFooterComponents(
       );
     } else if (isImageComponent(component)) {
       const imageComp = component as ImageComponentDefinition;
-      // Get image source (base64 or path)
-      let imageSource = imageComp.props.base64 || imageComp.props.path;
+      // Get image source (svg, base64, or path)
+      let imageSource = resolveImageSource(imageComp.props);
       if (!imageSource) {
         elements.push(
           new Paragraph({
             children: [
               new TextRun({
-                text: '[IMAGE: Missing path or base64 property]',
+                text: '[IMAGE: Missing path, base64, or svg property]',
                 font: getThemeFonts(theme).body.family,
                 size: 20,
                 bold: true,
@@ -444,16 +445,19 @@ async function renderHeaderFooterComponents(
           })
         );
       } catch (error) {
-        // Fallback for missing images - log error for debugging
+        // Fallback for missing images - log error for debugging.
+        // Use the resolved source (svg/base64/path), truncated so an inline
+        // data URI doesn't dump into the log or the placeholder text.
+        const sourcePreview = imageSource.substring(0, 50);
         console.error(
-          `[Header/Footer Image Error] Failed to render image: ${imageComp.props.path?.substring(0, 50)}...`,
+          `[Header/Footer Image Error] Failed to render image: ${sourcePreview}...`,
           error instanceof Error ? error.message : error
         );
         elements.push(
           new Paragraph({
             children: [
               new TextRun({
-                text: `[IMAGE: ${imageComp.props.path}]`,
+                text: `[IMAGE: ${sourcePreview}]`,
                 font: getThemeFonts(theme).body.family,
                 size: 20,
                 color: getThemeColors(theme).secondary,

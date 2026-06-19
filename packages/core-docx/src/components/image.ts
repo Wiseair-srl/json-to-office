@@ -7,6 +7,7 @@ import { Paragraph } from 'docx';
 import { ComponentDefinition, isImageComponent } from '../types';
 import { ThemeConfig } from '../styles';
 import { createImage } from '../core/content';
+import { resolveImageSource } from '../utils/imageUtils';
 
 /**
  * Render image component
@@ -21,12 +22,12 @@ export async function renderImageComponent(
   // Props are pre-resolved by resolveComponentTree
   const resolvedConfig = component.props;
 
-  // Use base64 if provided, otherwise use path
-  const imageSource = resolvedConfig.base64 || resolvedConfig.path;
+  // Resolve source: inline svg > base64 > path
+  const imageSource = resolveImageSource(resolvedConfig);
 
   if (!imageSource) {
     throw new Error(
-      'Image component requires either "path" or "base64" property'
+      'Image component requires one of "path", "base64", or "svg" property'
     );
   }
 
