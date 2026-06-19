@@ -1,5 +1,14 @@
 # @json-to-office/json-to-pptx
 
+## 0.18.0
+
+### Patch Changes
+
+- Updated dependencies [a079015]
+- Updated dependencies [71faefc]
+  - @json-to-office/core-pptx@0.18.0
+  - @json-to-office/shared-pptx@0.18.0
+
 ## 0.16.0
 
 ### Patch Changes
