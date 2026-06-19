@@ -255,4 +255,41 @@ describe('renderHighchartsComponent', () => {
       })
     );
   });
+
+  it('forwards resources verbatim to the export server when present', async () => {
+    const slide = mockSlide();
+    const resources = {
+      css: "@font-face { font-family: 'Manrope'; src: url('https://cdn.example/manrope.woff2') format('woff2'); }",
+      js: 'console.log("ready")',
+      files: ['https://cdn.example/extra.css'],
+    };
+
+    await renderHighchartsComponent(
+      slide,
+      {
+        options: {
+          chart: { width: 600, height: 400, style: { fontFamily: 'Manrope' } },
+        },
+        resources,
+      },
+      theme
+    );
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    // Forwarded verbatim, untransformed.
+    expect(body.resources).toEqual(resources);
+  });
+
+  it('omits resources from the request body when not provided', async () => {
+    const slide = mockSlide();
+    await renderHighchartsComponent(
+      slide,
+      { options: { chart: { width: 600, height: 400 } } },
+      theme
+    );
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    // Backward compatible: no resources key sent.
+    expect('resources' in body).toBe(false);
+  });
 });
