@@ -3,7 +3,12 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { FontDefinitionSchema, LanguageSchema, NoProofSchema } from '../font';
+import {
+  FontDefinitionSchema,
+  LanguageSchema,
+  NoProofSchema,
+  NoProofWordsSchema,
+} from '../font';
 import {
   HeadingLevelSchema,
   JustifiedAlignmentSchema,
@@ -25,6 +30,8 @@ export const HeadingPropsSchema = Type.Object(
     language: Type.Optional(LanguageSchema),
     // Disable spell/grammar checking for this heading's text
     noProof: Type.Optional(NoProofSchema),
+    // Known-words allowlist for this heading (merged with the document list)
+    noProofWords: Type.Optional(NoProofWordsSchema),
     alignment: Type.Optional(JustifiedAlignmentSchema),
     spacing: Type.Optional(SpacingSchema),
     lineSpacing: Type.Optional(

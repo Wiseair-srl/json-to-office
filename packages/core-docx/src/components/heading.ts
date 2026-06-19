@@ -48,9 +48,10 @@ export function renderHeadingComponent(
         ?.fontWeight,
       italic: config.font?.italic,
       underline: config.font?.underline,
-      // Proofing: local language override + no-proof toggle
+      // Proofing: local language override + no-proof toggle + known-words list
       language: config.language,
       noProof: config.noProof,
+      noProofWords: config.noProofWords,
       // Pagination control
       keepNext: config.keepNext,
       keepLines: config.keepLines,

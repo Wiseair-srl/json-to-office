@@ -47,6 +47,20 @@ export const NoProofSchema = Type.Boolean({
     'Disable spell/grammar checking for this text (e.g. code snippets or identifiers)',
 });
 
+/**
+ * A "known words" allowlist: every whole-word, case-insensitive occurrence of
+ * these terms is wrapped in a no-proof run so Word never flags them, while the
+ * surrounding text is still spell-checked. Acts as a portable, document-embedded
+ * stand-in for a custom dictionary (Word's real dictionaries can't be shipped
+ * inside a .docx). Set on the document to apply everywhere; a component's list
+ * is merged with (added to) the document list.
+ */
+export const NoProofWordsSchema = Type.Array(Type.String({ minLength: 1 }), {
+  description:
+    'Words that should never be flagged as misspelled (whole-word, case-insensitive). E.g. brand names or technical terms.',
+  examples: [['Wiseair', 'json-to-office', 'pptx']],
+});
+
 // ----------------------------------------------------------------------------
 // Shared Text Formatting Properties
 // ----------------------------------------------------------------------------

@@ -47,6 +47,67 @@ export interface TextDecoratorOptions {
   boldColor?: string;
   placeholderContext?: PlaceholderContext;
   enableHyperlinks?: boolean;
+  /**
+   * "Known words" allowlist: each whole-word, case-insensitive occurrence is
+   * emitted as its own no-proof run so Word never flags it, while surrounding
+   * text stays spell-checked.
+   */
+  noProofWords?: string[];
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Build a matcher for the known-words allowlist, or null when there's nothing
+ * to match. Matches each word as a whole token (no letter/number directly
+ * adjacent on either side) so "Wiseair" doesn't match inside "Wiseairy", while
+ * internal punctuation like "json-to-office" is matched literally.
+ */
+export function buildNoProofWordsRegex(noProofWords?: string[]): RegExp | null {
+  const words = (noProofWords || []).filter((w) => w && w.trim().length > 0);
+  if (words.length === 0) return null;
+  // Longest first so alternation prefers the most specific match.
+  const escaped = words
+    .slice()
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp);
+  return new RegExp(
+    `(?<![\\p{L}\\p{N}])(?:${escaped.join('|')})(?![\\p{L}\\p{N}])`,
+    'giu'
+  );
+}
+
+/**
+ * Split a plain string into TextRuns, marking every known-word occurrence as a
+ * no-proof run via `makeRun`. When there are no known words, returns a single
+ * run for the whole text.
+ */
+export function splitByNoProofWords(
+  text: string,
+  makeRun: (segment: string, noProof: boolean) => TextRun,
+  noProofWords?: string[]
+): TextRun[] {
+  const regex = buildNoProofWordsRegex(noProofWords);
+  if (!regex || !text) return [makeRun(text, false)];
+
+  const runs: TextRun[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      runs.push(makeRun(text.slice(lastIndex, match.index), false));
+    }
+    runs.push(makeRun(match[0], true));
+    lastIndex = match.index + match[0].length;
+    // Guard against zero-length matches (shouldn't happen, but be safe).
+    if (regex.lastIndex === match.index) regex.lastIndex++;
+  }
+  if (lastIndex < text.length) {
+    runs.push(makeRun(text.slice(lastIndex), false));
+  }
+  return runs.length > 0 ? runs : [makeRun(text, false)];
 }
 
 /**
@@ -83,7 +144,8 @@ export function parseTextWithDecorators(
     return processTextWithPlaceholders(
       normalizedText,
       baseStyle,
-      options.placeholderContext || {}
+      options.placeholderContext || {},
+      options.noProofWords
     );
   }
 
@@ -192,27 +254,47 @@ function createTextRunsWithNewlines(
         italics: overrideStyle?.italics ?? baseStyle.italics,
       };
 
-      runs.push(
-        new TextRun({
-          text: line,
-          ...(baseStyle.font && { font: baseStyle.font }),
-          ...(baseStyle.size && { size: baseStyle.size }),
-          ...(baseStyle.color && {
-            color:
-              runStyle.bold && options.boldColor
-                ? options.boldColor
-                : baseStyle.color,
-          }),
-          ...(runStyle.bold !== undefined && { bold: runStyle.bold }),
-          ...(runStyle.italics !== undefined && { italics: runStyle.italics }),
-          ...(baseStyle.underline && { underline: baseStyle.underline }),
-          ...(baseStyle.language && { language: baseStyle.language }),
-          ...(baseStyle.noProof !== undefined && {
-            noProof: baseStyle.noProof,
-          }),
-          ...(needsLineBreak && { break: 1 }),
-        })
+      // Properties shared by every run produced for this line.
+      const commonProps = {
+        ...(baseStyle.font && { font: baseStyle.font }),
+        ...(baseStyle.size && { size: baseStyle.size }),
+        ...(baseStyle.color && {
+          color:
+            runStyle.bold && options.boldColor
+              ? options.boldColor
+              : baseStyle.color,
+        }),
+        ...(runStyle.bold !== undefined && { bold: runStyle.bold }),
+        ...(runStyle.italics !== undefined && { italics: runStyle.italics }),
+        ...(baseStyle.underline && { underline: baseStyle.underline }),
+        ...(baseStyle.language && { language: baseStyle.language }),
+      };
+
+      // When the whole run is already no-proof, there's nothing to single out,
+      // so skip word splitting and emit one run for the line.
+      const wholeRunNoProof = baseStyle.noProof === true;
+      const wordsForLine = wholeRunNoProof ? undefined : options.noProofWords;
+
+      // The line break belongs only on the first run of the line.
+      let firstSegment = true;
+      const lineRuns = splitByNoProofWords(
+        line,
+        (segment, matched) => {
+          const segNoProof = matched || wholeRunNoProof;
+          const run = new TextRun({
+            text: segment,
+            ...commonProps,
+            ...((matched || baseStyle.noProof !== undefined) && {
+              noProof: segNoProof,
+            }),
+            ...(needsLineBreak && firstSegment && { break: 1 }),
+          });
+          firstSegment = false;
+          return run;
+        },
+        wordsForLine
       );
+      runs.push(...lineRuns);
     }
   }
 

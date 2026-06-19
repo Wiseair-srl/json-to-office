@@ -36,7 +36,10 @@ import {
 import { ThemeConfig } from '../styles';
 import { getTableStyle } from '../styles';
 import { getThemeColors, getThemeFonts } from '../themes/defaults';
-import { parseTextWithDecorators } from '../utils/textParser';
+import {
+  parseTextWithDecorators,
+  splitByNoProofWords,
+} from '../utils/textParser';
 import { processTextWithPlaceholders } from '../utils/placeholderProcessor';
 import { normalizeUnicodeText } from '../utils/unicode';
 import { getStyleIdForLevel } from '../styles/themeToDocxAdapter';
@@ -90,6 +93,19 @@ function applyFontWeightAlias(opts: {
   return { font: synth.family, bold: synth.bold, italics: synth.italic };
 }
 
+/**
+ * Combine the document-level known-words allowlist (carried on the theme) with
+ * any component-level list, de-duplicated. Returns undefined when empty.
+ */
+function resolveNoProofWords(
+  theme: ThemeConfig,
+  optionWords?: string[]
+): string[] | undefined {
+  const themeWords = theme.noProofWords;
+  const merged = [...(themeWords || []), ...(optionWords || [])];
+  return merged.length > 0 ? Array.from(new Set(merged)) : undefined;
+}
+
 export interface TextOptions {
   style?: string;
   alignment?: 'left' | 'center' | 'right' | 'justify';
@@ -123,6 +139,9 @@ export interface TextOptions {
   language?: string;
   // Disable spell/grammar checking for these runs
   noProof?: boolean;
+  // Known-words allowlist: whole-word occurrences are emitted as no-proof runs.
+  // Merged with any document-level list carried on the theme.
+  noProofWords?: string[];
   // Additional children to prepend (e.g., bookmarks)
   prependChildren?: any[];
   // Outline level for TOC
@@ -336,6 +355,7 @@ export function createText(
     const textRuns = parseTextWithDecorators(normalizedContent, baseTextStyle, {
       boldColor: options.boldColor,
       enableHyperlinks: true,
+      noProofWords: resolveNoProofWords(theme, options.noProofWords),
     });
 
     // If bookmarkId is provided, wrap text runs in a bookmark
@@ -550,6 +570,22 @@ export function createHeading(
     ...(options.noProof !== undefined && { noProof: options.noProof }),
   };
 
+  // Known-words allowlist (document + component) and a run builder that marks
+  // matched words as no-proof. Used by the simple (no-decorator) heading paths;
+  // the decorator paths route through parseTextWithDecorators instead.
+  const headingNoProofWords = resolveNoProofWords(theme, options.noProofWords);
+  const makeHeadingRuns = (value: string): TextRun[] =>
+    splitByNoProofWords(
+      value,
+      (segment, matched) =>
+        new TextRun({
+          text: segment,
+          ...baseTextStyle,
+          ...(matched && { noProof: true }),
+        }),
+      headingNoProofWords
+    );
+
   if (options.revision) {
     // Tracked changes: revision segments replace text rendering. The TOC
     // bookmark is preserved so TOC links and cross-references keep working.
@@ -585,13 +621,12 @@ export function createHeading(
       const textRuns = parseTextWithDecorators(normalizedText, baseTextStyle, {
         boldColor: options.boldColor,
         enableHyperlinks: true,
+        noProofWords: headingNoProofWords,
       });
       headingTextChildren.push(...textRuns);
     } else {
-      // For simple headings, add single text run
-      headingTextChildren.push(
-        new TextRun({ text: normalizedText, ...baseTextStyle })
-      );
+      // For simple headings, add single text run (split on known words)
+      headingTextChildren.push(...makeHeadingRuns(normalizedText));
     }
 
     // Wrap in bookmark
@@ -608,11 +643,12 @@ export function createHeading(
       const textRuns = parseTextWithDecorators(normalizedText, baseTextStyle, {
         boldColor: options.boldColor,
         enableHyperlinks: true,
+        noProofWords: headingNoProofWords,
       });
       children.push(...textRuns);
     } else {
-      // For simple headings, add single text run
-      children.push(new TextRun({ text: normalizedText, ...baseTextStyle }));
+      // For simple headings, add single text run (split on known words)
+      children.push(...makeHeadingRuns(normalizedText));
     }
   }
 
