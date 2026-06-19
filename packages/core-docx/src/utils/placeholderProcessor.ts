@@ -255,6 +255,10 @@ function createTextRunsWithNewlines(
           bold: baseStyle.bold,
           italics: baseStyle.italics,
           underline: baseStyle.underline,
+          ...(baseStyle.language && { language: baseStyle.language }),
+          ...(baseStyle.noProof !== undefined && {
+            noProof: baseStyle.noProof,
+          }),
           break: needsLineBreak ? 1 : undefined,
         })
       );

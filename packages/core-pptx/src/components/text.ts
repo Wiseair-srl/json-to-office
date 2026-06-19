@@ -26,6 +26,7 @@ interface TextComponentProps {
   italic?: boolean;
   underline?: boolean | { style?: string; color?: string };
   strike?: boolean;
+  language?: string;
   align?: string;
   valign?: string;
   breakLine?: boolean;
@@ -119,6 +120,11 @@ export function renderTextComponent(
     if (w.italic !== undefined) opts.italic = w.italic;
   }
   if (props.strike) opts.strike = true;
+
+  // Proofing language: component override → presentation default. When neither
+  // is set, pptxgenjs falls back to its own 'en-US' default.
+  const lang = props.language ?? slideCtx?.language;
+  if (lang) opts.lang = lang;
 
   if (props.underline !== undefined) {
     if (typeof props.underline === 'boolean') {

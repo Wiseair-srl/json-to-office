@@ -195,6 +195,9 @@ export function renderParagraphComponent(
       ?.fontWeight,
     italic: resolvedConfig.font?.italic,
     underline: resolvedConfig.font?.underline,
+    // Proofing: local language override + no-proof toggle
+    language: resolvedConfig.language,
+    noProof: resolvedConfig.noProof,
     // Pass outline level for TOC support
     outlineLevel: outlineLevel,
     // Pass floating positioning properties

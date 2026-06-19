@@ -23,6 +23,31 @@ export const HexColorOrTransparentSchema = Type.String({
 });
 
 // ----------------------------------------------------------------------------
+// Shared Language / Proofing Schemas
+// ----------------------------------------------------------------------------
+
+/**
+ * BCP-47 / IETF language tag used by Word for spell- and grammar-checking
+ * (e.g. "en-US", "fr-FR", "de-DE"). Set on the document to change the default
+ * proofing language, or on a component to override it for that text only.
+ */
+export const LanguageSchema = Type.String({
+  pattern: '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$',
+  description:
+    'BCP-47 language tag for spell/grammar checking (e.g. "en-US", "fr-FR", "de-DE")',
+  examples: ['en-US', 'fr-FR', 'de-DE', 'it-IT', 'es-ES'],
+});
+
+/**
+ * Disable spell/grammar checking ("do not proof") for the text, e.g. code
+ * snippets, identifiers, or product names Word would otherwise flag.
+ */
+export const NoProofSchema = Type.Boolean({
+  description:
+    'Disable spell/grammar checking for this text (e.g. code snippets or identifiers)',
+});
+
+// ----------------------------------------------------------------------------
 // Shared Text Formatting Properties
 // ----------------------------------------------------------------------------
 

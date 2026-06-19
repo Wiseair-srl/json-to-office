@@ -118,6 +118,11 @@ export interface TextOptions {
   fontWeight?: number;
   italic?: boolean;
   underline?: boolean;
+  // Per-run language (BCP-47) for spell/grammar checking. Overrides the
+  // document default for these runs.
+  language?: string;
+  // Disable spell/grammar checking for these runs
+  noProof?: boolean;
   // Additional children to prepend (e.g., bookmarks)
   prependChildren?: any[];
   // Outline level for TOC
@@ -300,6 +305,10 @@ export function createText(
     ...(options.underline !== undefined && {
       underline: options.underline ? { type: 'single' as const } : undefined,
     }),
+    // Proofing: per-run language and/or no-proof. Omitting language lets the
+    // run inherit the document default set on docDefaults.
+    ...(options.language && { language: { value: options.language } }),
+    ...(options.noProof !== undefined && { noProof: options.noProof }),
   };
 
   if (options.revision) {
@@ -536,6 +545,9 @@ export function createHeading(
     ...(options.underline !== undefined && {
       underline: options.underline ? { type: 'single' as const } : undefined,
     }),
+    // Proofing: per-run language and/or no-proof (see createText).
+    ...(options.language && { language: { value: options.language } }),
+    ...(options.noProof !== undefined && { noProof: options.noProof }),
   };
 
   if (options.revision) {

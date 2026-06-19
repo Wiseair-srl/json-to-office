@@ -4,7 +4,7 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { SpacingSchema } from './common';
-import { FontDefinitionSchema } from '../font';
+import { FontDefinitionSchema, LanguageSchema, NoProofSchema } from '../font';
 import { RevisionSchema } from './revision';
 
 // Frame wrapping type schema
@@ -169,6 +169,10 @@ export const ParagraphPropsSchema = Type.Object(
     font: Type.Optional(Type.Partial(FontDefinitionSchema)),
     // Optional reference to a named style from theme.styles (e.g., 'heading1', 'normal')
     themeStyle: Type.Optional(Type.String()),
+    // Local language override (BCP-47). Falls back to the document default when omitted.
+    language: Type.Optional(LanguageSchema),
+    // Disable spell/grammar checking for this paragraph's text
+    noProof: Type.Optional(NoProofSchema),
     // Rich-text decoration color for bold segments (kept as top-level behavior option)
     boldColor: Type.Optional(Type.String()),
     // Paragraph spacing (in points) — limited paragraph-level option allowed

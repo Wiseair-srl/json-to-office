@@ -17,6 +17,14 @@ export const createReportPropsSchema = (_moduleRef?: TSchema) =>
         })
       ),
       componentDefaults: Type.Optional(ComponentDefaultsSchema),
+      language: Type.Optional(
+        Type.String({
+          pattern: '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$',
+          description:
+            'Default document language (BCP-47 tag, e.g. "en-US"). Sets Word\'s default proofing/spell-check language; individual components can override it locally.',
+          examples: ['en-US', 'fr-FR', 'de-DE', 'it-IT', 'es-ES'],
+        })
+      ),
       trackRevisions: Type.Optional(
         Type.Boolean({
           description:

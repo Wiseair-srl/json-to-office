@@ -48,6 +48,9 @@ export function renderHeadingComponent(
         ?.fontWeight,
       italic: config.font?.italic,
       underline: config.font?.underline,
+      // Proofing: local language override + no-proof toggle
+      language: config.language,
+      noProof: config.noProof,
       // Pagination control
       keepNext: config.keepNext,
       keepLines: config.keepLines,

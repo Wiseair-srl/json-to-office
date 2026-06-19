@@ -26,6 +26,7 @@ export interface PresentationComponentDefinition {
     slideWidth?: number;
     slideHeight?: number;
     rtlMode?: boolean;
+    language?: string;
     pageNumberFormat?: '9' | '09';
     componentDefaults?: PptxComponentDefaults;
     grid?: GridConfig;
@@ -67,6 +68,8 @@ export interface ProcessedPresentation {
   slideWidth: number;
   slideHeight: number;
   rtlMode: boolean;
+  /** Default presentation language (BCP-47) for spell-checking */
+  language?: string;
   pageNumberFormat: '9' | '09';
   slides: ProcessedSlide[];
   templates?: TemplateSlideDefinition[];
@@ -186,6 +189,8 @@ export interface SlideContext {
   slideNumber: number;
   totalSlides: number;
   pageNumberFormat: '9' | '09';
+  /** Default presentation language (BCP-47); text runs inherit it unless overridden */
+  language?: string;
 }
 
 export interface SlideRenderContext {

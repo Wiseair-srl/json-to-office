@@ -42,9 +42,18 @@ export const PresentationPropsSchema = Type.Object(
     rtlMode: Type.Optional(
       Type.Boolean({ description: 'Right-to-left text direction' })
     ),
+    language: Type.Optional(
+      Type.String({
+        pattern: '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$',
+        description:
+          'Default presentation language (BCP-47 tag, e.g. "en-US"). Sets the spell-check language for all text; individual text components can override it.',
+        examples: ['en-US', 'fr-FR', 'de-DE', 'it-IT', 'es-ES'],
+      })
+    ),
     pageNumberFormat: Type.Optional(
       Type.Union([Type.Literal('9'), Type.Literal('09')], {
-        description: 'Format for {PAGE_NUMBER} placeholders: "9" = bare number (default), "09" = zero-padded',
+        description:
+          'Format for {PAGE_NUMBER} placeholders: "9" = bare number (default), "09" = zero-padded',
         default: '9',
       })
     ),

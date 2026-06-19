@@ -4,7 +4,12 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { FontFamilyNameSchema } from '@json-to-office/shared';
-import { PptxAlignmentSchema, VerticalAlignmentSchema, ShadowSchema, GridPositionSchema } from './common';
+import {
+  PptxAlignmentSchema,
+  VerticalAlignmentSchema,
+  ShadowSchema,
+  GridPositionSchema,
+} from './common';
 import { StyleNameSchema } from '../theme';
 
 export const TextPropsSchema = Type.Object(
@@ -13,25 +18,37 @@ export const TextPropsSchema = Type.Object(
     x: Type.Optional(
       Type.Union([
         Type.Number({ description: 'X position in inches' }),
-        Type.String({ pattern: '^\\d+(\\.\\d+)?%$', description: 'X as percentage' }),
+        Type.String({
+          pattern: '^\\d+(\\.\\d+)?%$',
+          description: 'X as percentage',
+        }),
       ])
     ),
     y: Type.Optional(
       Type.Union([
         Type.Number({ description: 'Y position in inches' }),
-        Type.String({ pattern: '^\\d+(\\.\\d+)?%$', description: 'Y as percentage' }),
+        Type.String({
+          pattern: '^\\d+(\\.\\d+)?%$',
+          description: 'Y as percentage',
+        }),
       ])
     ),
     w: Type.Optional(
       Type.Union([
         Type.Number({ description: 'Width in inches' }),
-        Type.String({ pattern: '^\\d+(\\.\\d+)?%$', description: 'Width as percentage' }),
+        Type.String({
+          pattern: '^\\d+(\\.\\d+)?%$',
+          description: 'Width as percentage',
+        }),
       ])
     ),
     h: Type.Optional(
       Type.Union([
         Type.Number({ description: 'Height in inches' }),
-        Type.String({ pattern: '^\\d+(\\.\\d+)?%$', description: 'Height as percentage' }),
+        Type.String({
+          pattern: '^\\d+(\\.\\d+)?%$',
+          description: 'Height as percentage',
+        }),
       ])
     ),
     fontSize: Type.Optional(
@@ -64,13 +81,23 @@ export const TextPropsSchema = Type.Object(
                 Type.Literal('dotted'),
               ])
             ),
-            color: Type.Optional(Type.String({ description: 'Underline color (hex)' })),
+            color: Type.Optional(
+              Type.String({ description: 'Underline color (hex)' })
+            ),
           },
           { additionalProperties: false }
         ),
       ])
     ),
     strike: Type.Optional(Type.Boolean({ description: 'Strikethrough text' })),
+    language: Type.Optional(
+      Type.String({
+        pattern: '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$',
+        description:
+          'Language tag (BCP-47, e.g. "en-US", "fr-FR") for spell-checking this text. Overrides the presentation default.',
+        examples: ['en-US', 'fr-FR', 'de-DE', 'it-IT', 'es-ES'],
+      })
+    ),
     align: Type.Optional(PptxAlignmentSchema),
     valign: Type.Optional(VerticalAlignmentSchema),
     breakLine: Type.Optional(
@@ -84,8 +111,12 @@ export const TextPropsSchema = Type.Object(
             type: Type.Optional(
               Type.Union([Type.Literal('bullet'), Type.Literal('number')])
             ),
-            style: Type.Optional(Type.String({ description: 'Bullet character or style' })),
-            startAt: Type.Optional(Type.Number({ description: 'Starting number for numbered lists' })),
+            style: Type.Optional(
+              Type.String({ description: 'Bullet character or style' })
+            ),
+            startAt: Type.Optional(
+              Type.Number({ description: 'Starting number for numbered lists' })
+            ),
           },
           { additionalProperties: false }
         ),
@@ -101,14 +132,20 @@ export const TextPropsSchema = Type.Object(
         }),
       ])
     ),
-    rotate: Type.Optional(Type.Number({ description: 'Rotation angle in degrees' })),
+    rotate: Type.Optional(
+      Type.Number({ description: 'Rotation angle in degrees' })
+    ),
     shadow: Type.Optional(ShadowSchema),
     fill: Type.Optional(
       Type.Object(
         {
           color: Type.String({ description: 'Fill color (hex without #)' }),
           transparency: Type.Optional(
-            Type.Number({ minimum: 0, maximum: 100, description: 'Fill transparency (0-100)' })
+            Type.Number({
+              minimum: 0,
+              maximum: 100,
+              description: 'Fill transparency (0-100)',
+            })
           ),
         },
         { additionalProperties: false }
@@ -118,16 +155,31 @@ export const TextPropsSchema = Type.Object(
       Type.Object(
         {
           url: Type.Optional(Type.String({ description: 'Hyperlink URL' })),
-          slide: Type.Optional(Type.Number({ description: 'Slide number to link to' })),
-          tooltip: Type.Optional(Type.String({ description: 'Hyperlink tooltip' })),
+          slide: Type.Optional(
+            Type.Number({ description: 'Slide number to link to' })
+          ),
+          tooltip: Type.Optional(
+            Type.String({ description: 'Hyperlink tooltip' })
+          ),
         },
         { additionalProperties: false }
       )
     ),
-    lineSpacing: Type.Optional(Type.Number({ description: 'Line spacing in points' })),
-    charSpacing: Type.Optional(Type.Number({ description: 'Character spacing in points (positive = wider, negative = tighter)' })),
-    paraSpaceBefore: Type.Optional(Type.Number({ description: 'Space before paragraph in points' })),
-    paraSpaceAfter: Type.Optional(Type.Number({ description: 'Space after paragraph in points' })),
+    lineSpacing: Type.Optional(
+      Type.Number({ description: 'Line spacing in points' })
+    ),
+    charSpacing: Type.Optional(
+      Type.Number({
+        description:
+          'Character spacing in points (positive = wider, negative = tighter)',
+      })
+    ),
+    paraSpaceBefore: Type.Optional(
+      Type.Number({ description: 'Space before paragraph in points' })
+    ),
+    paraSpaceAfter: Type.Optional(
+      Type.Number({ description: 'Space after paragraph in points' })
+    ),
     grid: Type.Optional(GridPositionSchema),
     style: Type.Optional(StyleNameSchema),
   },

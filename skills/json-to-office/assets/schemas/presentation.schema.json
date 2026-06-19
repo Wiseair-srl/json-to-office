@@ -356,6 +356,18 @@
                         "description": "Strikethrough text",
                         "type": "boolean"
                       },
+                      "language": {
+                        "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                        "description": "Language tag (BCP-47, e.g. \"en-US\", \"fr-FR\") for spell-checking this text. Overrides the presentation default.",
+                        "examples": [
+                          "en-US",
+                          "fr-FR",
+                          "de-DE",
+                          "it-IT",
+                          "es-ES"
+                        ],
+                        "type": "string"
+                      },
                       "align": {
                         "description": "Horizontal alignment options",
                         "anyOf": [
@@ -705,11 +717,15 @@
                     "type": "object",
                     "properties": {
                       "path": {
-                        "description": "Image file path or URL (mutually exclusive with base64)",
+                        "description": "Image file path or URL (mutually exclusive with base64 and svg)",
                         "type": "string"
                       },
                       "base64": {
-                        "description": "Base64-encoded image data in data URI format (mutually exclusive with path)",
+                        "description": "Base64-encoded image data in data URI format (mutually exclusive with path and svg)",
+                        "type": "string"
+                      },
+                      "svg": {
+                        "description": "Raw inline SVG markup, e.g. \"<svg xmlns=\\\"http://www.w3.org/2000/svg\\\" viewBox=\\\"0 0 24 24\\\">...</svg>\" (mutually exclusive with path and base64). Wrapped into an image/svg+xml data URI and embedded as a vector (PowerPoint 2016+); intrinsic size taken from the SVG viewBox/width/height when w/h omitted.",
                         "type": "string"
                       },
                       "x": {
@@ -1912,6 +1928,23 @@
                         "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                         "type": "string"
                       },
+                      "resources": {
+                        "type": "object",
+                        "properties": {
+                          "css": {
+                            "type": "string"
+                          },
+                          "js": {
+                            "type": "string"
+                          },
+                          "files": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
                       "x": {
                         "anyOf": [
                           {
@@ -2531,6 +2564,12 @@
               "description": "Right-to-left text direction",
               "type": "boolean"
             },
+            "language": {
+              "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+              "description": "Default presentation language (BCP-47 tag, e.g. \"en-US\"). Sets the spell-check language for all text; individual text components can override it.",
+              "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+              "type": "string"
+            },
             "pageNumberFormat": {
               "description": "Format for {PAGE_NUMBER} placeholders: \"9\" = bare number (default), \"09\" = zero-padded",
               "default": "9",
@@ -2685,6 +2724,12 @@
                     "strike": {
                       "description": "Strikethrough text",
                       "type": "boolean"
+                    },
+                    "language": {
+                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                      "description": "Language tag (BCP-47, e.g. \"en-US\", \"fr-FR\") for spell-checking this text. Overrides the presentation default.",
+                      "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+                      "type": "string"
                     },
                     "align": {
                       "description": "Horizontal alignment options",
@@ -3015,11 +3060,15 @@
                   "type": "object",
                   "properties": {
                     "path": {
-                      "description": "Image file path or URL (mutually exclusive with base64)",
+                      "description": "Image file path or URL (mutually exclusive with base64 and svg)",
                       "type": "string"
                     },
                     "base64": {
-                      "description": "Base64-encoded image data in data URI format (mutually exclusive with path)",
+                      "description": "Base64-encoded image data in data URI format (mutually exclusive with path and svg)",
+                      "type": "string"
+                    },
+                    "svg": {
+                      "description": "Raw inline SVG markup, e.g. \"<svg xmlns=\\\"http://www.w3.org/2000/svg\\\" viewBox=\\\"0 0 24 24\\\">...</svg>\" (mutually exclusive with path and base64). Wrapped into an image/svg+xml data URI and embedded as a vector (PowerPoint 2016+); intrinsic size taken from the SVG viewBox/width/height when w/h omitted.",
                       "type": "string"
                     },
                     "x": {
@@ -4163,6 +4212,23 @@
                       "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                       "type": "string"
                     },
+                    "resources": {
+                      "type": "object",
+                      "properties": {
+                        "css": {
+                          "type": "string"
+                        },
+                        "js": {
+                          "type": "string"
+                        },
+                        "files": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
                     "x": {
                       "anyOf": [
                         {
@@ -5200,6 +5266,18 @@
                                   "description": "Strikethrough text",
                                   "type": "boolean"
                                 },
+                                "language": {
+                                  "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                  "description": "Language tag (BCP-47, e.g. \"en-US\", \"fr-FR\") for spell-checking this text. Overrides the presentation default.",
+                                  "examples": [
+                                    "en-US",
+                                    "fr-FR",
+                                    "de-DE",
+                                    "it-IT",
+                                    "es-ES"
+                                  ],
+                                  "type": "string"
+                                },
                                 "align": {
                                   "description": "Horizontal alignment options",
                                   "anyOf": [
@@ -5549,11 +5627,15 @@
                               "type": "object",
                               "properties": {
                                 "path": {
-                                  "description": "Image file path or URL (mutually exclusive with base64)",
+                                  "description": "Image file path or URL (mutually exclusive with base64 and svg)",
                                   "type": "string"
                                 },
                                 "base64": {
-                                  "description": "Base64-encoded image data in data URI format (mutually exclusive with path)",
+                                  "description": "Base64-encoded image data in data URI format (mutually exclusive with path and svg)",
+                                  "type": "string"
+                                },
+                                "svg": {
+                                  "description": "Raw inline SVG markup, e.g. \"<svg xmlns=\\\"http://www.w3.org/2000/svg\\\" viewBox=\\\"0 0 24 24\\\">...</svg>\" (mutually exclusive with path and base64). Wrapped into an image/svg+xml data URI and embedded as a vector (PowerPoint 2016+); intrinsic size taken from the SVG viewBox/width/height when w/h omitted.",
                                   "type": "string"
                                 },
                                 "x": {
@@ -7223,6 +7305,23 @@
                                   "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                                   "type": "string"
                                 },
+                                "resources": {
+                                  "type": "object",
+                                  "properties": {
+                                    "css": {
+                                      "type": "string"
+                                    },
+                                    "js": {
+                                      "type": "string"
+                                    },
+                                    "files": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
                                 "x": {
                                   "anyOf": [
                                     {
@@ -7554,6 +7653,18 @@
                                     "strike": {
                                       "description": "Strikethrough text",
                                       "type": "boolean"
+                                    },
+                                    "language": {
+                                      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                                      "description": "Language tag (BCP-47, e.g. \"en-US\", \"fr-FR\") for spell-checking this text. Overrides the presentation default.",
+                                      "examples": [
+                                        "en-US",
+                                        "fr-FR",
+                                        "de-DE",
+                                        "it-IT",
+                                        "es-ES"
+                                      ],
+                                      "type": "string"
                                     },
                                     "align": {
                                       "description": "Horizontal alignment options",
@@ -7895,11 +8006,15 @@
                                   "type": "object",
                                   "properties": {
                                     "path": {
-                                      "description": "Image file path or URL (mutually exclusive with base64)",
+                                      "description": "Image file path or URL (mutually exclusive with base64 and svg)",
                                       "type": "string"
                                     },
                                     "base64": {
-                                      "description": "Base64-encoded image data in data URI format (mutually exclusive with path)",
+                                      "description": "Base64-encoded image data in data URI format (mutually exclusive with path and svg)",
+                                      "type": "string"
+                                    },
+                                    "svg": {
+                                      "description": "Raw inline SVG markup, e.g. \"<svg xmlns=\\\"http://www.w3.org/2000/svg\\\" viewBox=\\\"0 0 24 24\\\">...</svg>\" (mutually exclusive with path and base64). Wrapped into an image/svg+xml data URI and embedded as a vector (PowerPoint 2016+); intrinsic size taken from the SVG viewBox/width/height when w/h omitted.",
                                       "type": "string"
                                     },
                                     "x": {
@@ -9534,6 +9649,23 @@
                                       "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                                       "type": "string"
                                     },
+                                    "resources": {
+                                      "type": "object",
+                                      "properties": {
+                                        "css": {
+                                          "type": "string"
+                                        },
+                                        "js": {
+                                          "type": "string"
+                                        },
+                                        "files": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
                                     "x": {
                                       "anyOf": [
                                         {
@@ -10060,6 +10192,18 @@
                               "description": "Strikethrough text",
                               "type": "boolean"
                             },
+                            "language": {
+                              "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                              "description": "Language tag (BCP-47, e.g. \"en-US\", \"fr-FR\") for spell-checking this text. Overrides the presentation default.",
+                              "examples": [
+                                "en-US",
+                                "fr-FR",
+                                "de-DE",
+                                "it-IT",
+                                "es-ES"
+                              ],
+                              "type": "string"
+                            },
                             "align": {
                               "description": "Horizontal alignment options",
                               "anyOf": [
@@ -10409,11 +10553,15 @@
                           "type": "object",
                           "properties": {
                             "path": {
-                              "description": "Image file path or URL (mutually exclusive with base64)",
+                              "description": "Image file path or URL (mutually exclusive with base64 and svg)",
                               "type": "string"
                             },
                             "base64": {
-                              "description": "Base64-encoded image data in data URI format (mutually exclusive with path)",
+                              "description": "Base64-encoded image data in data URI format (mutually exclusive with path and svg)",
+                              "type": "string"
+                            },
+                            "svg": {
+                              "description": "Raw inline SVG markup, e.g. \"<svg xmlns=\\\"http://www.w3.org/2000/svg\\\" viewBox=\\\"0 0 24 24\\\">...</svg>\" (mutually exclusive with path and base64). Wrapped into an image/svg+xml data URI and embedded as a vector (PowerPoint 2016+); intrinsic size taken from the SVG viewBox/width/height when w/h omitted.",
                               "type": "string"
                             },
                             "x": {
@@ -11616,6 +11764,23 @@
                               "description": "Highcharts Export Server URL (default: http://localhost:7801)",
                               "type": "string"
                             },
+                            "resources": {
+                              "type": "object",
+                              "properties": {
+                                "css": {
+                                  "type": "string"
+                                },
+                                "js": {
+                                  "type": "string"
+                                },
+                                "files": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
                             "x": {
                               "anyOf": [
                                 {
@@ -12326,6 +12491,12 @@
               "description": "Strikethrough text",
               "type": "boolean"
             },
+            "language": {
+              "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+              "description": "Language tag (BCP-47, e.g. \"en-US\", \"fr-FR\") for spell-checking this text. Overrides the presentation default.",
+              "examples": ["en-US", "fr-FR", "de-DE", "it-IT", "es-ES"],
+              "type": "string"
+            },
             "align": {
               "description": "Horizontal alignment options",
               "anyOf": [
@@ -12675,11 +12846,15 @@
           "type": "object",
           "properties": {
             "path": {
-              "description": "Image file path or URL (mutually exclusive with base64)",
+              "description": "Image file path or URL (mutually exclusive with base64 and svg)",
               "type": "string"
             },
             "base64": {
-              "description": "Base64-encoded image data in data URI format (mutually exclusive with path)",
+              "description": "Base64-encoded image data in data URI format (mutually exclusive with path and svg)",
+              "type": "string"
+            },
+            "svg": {
+              "description": "Raw inline SVG markup, e.g. \"<svg xmlns=\\\"http://www.w3.org/2000/svg\\\" viewBox=\\\"0 0 24 24\\\">...</svg>\" (mutually exclusive with path and base64). Wrapped into an image/svg+xml data URI and embedded as a vector (PowerPoint 2016+); intrinsic size taken from the SVG viewBox/width/height when w/h omitted.",
               "type": "string"
             },
             "x": {
@@ -13881,6 +14056,23 @@
             "serverUrl": {
               "description": "Highcharts Export Server URL (default: http://localhost:7801)",
               "type": "string"
+            },
+            "resources": {
+              "type": "object",
+              "properties": {
+                "css": {
+                  "type": "string"
+                },
+                "js": {
+                  "type": "string"
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
             },
             "x": {
               "anyOf": [
