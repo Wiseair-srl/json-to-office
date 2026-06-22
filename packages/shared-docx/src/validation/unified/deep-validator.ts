@@ -147,7 +147,8 @@ export function deepValidateDocument(
     allErrors.push(...propsErrors);
   }
 
-  // Validate children array
+  // Validate the children array. The root component requires one; nested
+  // containers may legitimately omit it.
   if (!data.children) {
     allErrors.push({
       path: '/children',
@@ -160,111 +161,174 @@ export function deepValidateDocument(
       message: 'Field "children" must be an array',
       code: 'invalid_type',
     });
-  } else {
-    // Validate each child component
-    data.children.forEach((child: any, index: number) => {
-      const childPath = `/children/${index}`;
+  }
 
-      if (!child || typeof child !== 'object') {
-        allErrors.push({
+  // Deep-validate the props of every component anywhere in the tree.
+  //
+  // The earlier implementation only re-validated the root's direct children
+  // and one level of `section` children. Two whole-tree blind spots followed:
+  //   1. component props nested inside `text-box`/`columns` children — the
+  //      content of every container lives in the shared `children` field, so
+  //      anything below the first level went unchecked; and
+  //   2. the `header`/`footer` paragraph regions, which the section schema
+  //      types loosely as an array of `Type.Any()` (or the `'linkToPrevious'`
+  //      literal) — so their entries' props are never checked by the
+  //      per-section validation.
+  // The in-editor (Monaco) validator runs the generated JSON Schema over the
+  // entire document, so it flags both. This walk brings the CLI to parity.
+  walkComponentTree(data, '', opts, allErrors);
+
+  return allErrors;
+}
+
+/**
+ * Recursively validate the props of every component nested under `node`.
+ *
+ * Walks two kinds of child position to any depth:
+ *  - the `children` array — the universal container field shared by `docx`,
+ *    `section`, `columns` and `text-box` (added by the component registry), so
+ *    a bad prop inside a `text-box` or `columns` child is caught however deeply
+ *    it is nested; and
+ *  - the `header` / `footer` paragraph regions under `props` — typed only
+ *    loosely on the section schema (an array of `Type.Any()`, or the
+ *    `'linkToPrevious'` literal, which is skipped), so their entries are not
+ *    deep-checked by the parent's per-component validation.
+ *
+ * The node's own props are NOT validated here — the caller validates the root
+ * props, and every entry is validated as it is visited. `table` and `list`
+ * nest their components inside their own recursive props schemas, so those are
+ * already covered by `validateComponentProps` and are intentionally not
+ * re-walked here.
+ */
+function walkComponentTree(
+  node: any,
+  path: string,
+  opts: DeepValidateOptions,
+  errors: ValidationError[]
+): void {
+  if (!node || typeof node !== 'object') return;
+
+  // `strictStructure` controls whether a malformed entry (not an object, or
+  // missing `name`) is reported here. It is ON for positions the per-component
+  // schema leaves unchecked — the `children` array (a sibling field, never seen
+  // by props validation) and the `header`/`footer` regions (typed `Type.Any()`
+  // on the static section schema) — so the walk is their only structural
+  // checker and must match the whole-tree schema the editor runs. It is OFF for
+  // `table` cell content, whose structure the table's own props schema already
+  // validates; there the walk only adds the prop-constraint errors the loose
+  // cell-content ref misses, so reporting structure too would double-report.
+  const validateEntry = (
+    child: any,
+    childPath: string,
+    strictStructure: boolean
+  ): void => {
+    if (!child || typeof child !== 'object') {
+      if (strictStructure) {
+        errors.push({
           path: childPath,
           message: 'Component must be an object',
           code: 'invalid_type',
         });
-        return;
       }
-
-      // Check component name
-      if (!child.name) {
-        allErrors.push({
+      return;
+    }
+    if (typeof child.name !== 'string' || child.name.length === 0) {
+      if (strictStructure) {
+        errors.push({
           path: `${childPath}/name`,
           message: 'Component missing required field "name"',
           code: 'required_property',
         });
-        return;
       }
+      return;
+    }
 
-      // Registered plugin components are validated version-aware by the plugin
-      // layer; skip them here so they are neither flagged as unknown nor
-      // checked against a standard schema.
-      if (opts.knownCustomNames?.has(child.name)) {
-        return;
+    // Registered plugin components are validated version-aware by the plugin
+    // layer; skip their props and subtree so they are neither double-validated
+    // nor misreported as unknown.
+    if (opts.knownCustomNames?.has(child.name)) return;
+
+    // Validate props against the component's schema. When props is omitted,
+    // validate an empty object so the schema decides whether props are
+    // required (e.g. `section` needs none; `heading` requires text+level).
+    if (child.props != null) {
+      errors.push(
+        ...validateComponentProps(
+          child.name,
+          child.props,
+          `${childPath}/props`,
+          opts
+        )
+      );
+    } else if (child.name !== 'custom') {
+      errors.push(
+        ...validateComponentProps(child.name, {}, `${childPath}/props`, opts)
+      );
+    }
+
+    // Recurse so arbitrarily nested containers are covered.
+    walkComponentTree(child, childPath, opts, errors);
+  };
+
+  // header/footer entries are validated strictly: the static section schema
+  // types them as `Type.Any()`, so the editor's whole-tree schema (where they
+  // resolve to the component union) is stricter than the per-component check —
+  // the walk closes that gap, flagging non-component entries too. A bare
+  // `'linkToPrevious'` value is not an array, so it is skipped here.
+  for (const region of ['header', 'footer'] as const) {
+    const entries = node.props?.[region];
+    if (Array.isArray(entries)) {
+      entries.forEach((child: any, i: number) =>
+        validateEntry(child, `${path}/props/${region}/${i}`, true)
+      );
+    }
+  }
+
+  // `table` nests its cell content under `props` (not the shared `children`
+  // field), and the static table schema types that content loosely — the
+  // cell-content ref accepts any props object, just like the `Type.Any()`
+  // header/footer above. So a bad prop deep in a cell (e.g. `font.size` over the
+  // cap) slips past the per-component table check; walk each content component
+  // so its props are validated against the real schema. Structural problems
+  // with a cell are already reported by the table's own props validation, hence
+  // the lenient (`false`) entry check to avoid double-reporting.
+  if (node.name === 'table' && Array.isArray(node.props?.columns)) {
+    node.props.columns.forEach((col: any, c: number) => {
+      if (!col || typeof col !== 'object') return;
+      const base = `${path}/props/columns/${c}`;
+      const headerContent = col.header?.content;
+      if (headerContent && typeof headerContent === 'object') {
+        validateEntry(headerContent, `${base}/header/content`, false);
       }
-
-      // Validate props against the component's schema. When props is omitted,
-      // validate an empty object so the schema decides whether props are
-      // required (e.g. `section` needs none; `heading` requires text+level)
-      // rather than assuming every component requires a props field.
-      if (child.props != null) {
-        allErrors.push(
-          ...validateComponentProps(
-            child.name,
-            child.props,
-            `${childPath}/props`,
-            opts
-          )
-        );
-      } else if (child.name !== 'custom') {
-        allErrors.push(
-          ...validateComponentProps(child.name, {}, `${childPath}/props`, opts)
-        );
-      }
-
-      // Special handling for section components (recursive)
-      if (child.name === 'section' && child.children) {
-        if (!Array.isArray(child.children)) {
-          allErrors.push({
-            path: `${childPath}/children`,
-            message: 'Section children must be an array',
-            code: 'invalid_type',
-          });
-        } else {
-          // Recursively validate nested components
-          child.children.forEach((nestedChild: any, nestedIndex: number) => {
-            const nestedChildPath = `${childPath}/children/${nestedIndex}`;
-            if (!nestedChild || typeof nestedChild !== 'object') {
-              allErrors.push({
-                path: nestedChildPath,
-                message: 'Nested component must be an object',
-                code: 'invalid_type',
-              });
-              return;
-            }
-
-            if (!nestedChild.name) {
-              allErrors.push({
-                path: `${nestedChildPath}/name`,
-                message: 'Nested component missing required field "name"',
-                code: 'required_property',
-              });
-            } else if (opts.knownCustomNames?.has(nestedChild.name)) {
-              // Registered plugin component — validated separately.
-            } else if (nestedChild.props != null) {
-              allErrors.push(
-                ...validateComponentProps(
-                  nestedChild.name,
-                  nestedChild.props,
-                  `${nestedChildPath}/props`,
-                  opts
-                )
-              );
-            } else if (nestedChild.name !== 'custom') {
-              allErrors.push(
-                ...validateComponentProps(
-                  nestedChild.name,
-                  {},
-                  `${nestedChildPath}/props`,
-                  opts
-                )
-              );
-            }
-          });
-        }
+      if (Array.isArray(col.cells)) {
+        col.cells.forEach((cell: any, r: number) => {
+          const content = cell?.content;
+          if (content && typeof content === 'object') {
+            validateEntry(content, `${base}/cells/${r}/content`, false);
+          }
+        });
       }
     });
   }
 
-  return allErrors;
+  if (Array.isArray(node.children)) {
+    node.children.forEach((child: any, i: number) =>
+      validateEntry(child, `${path}/children/${i}`, true)
+    );
+  } else if (node.children != null && path !== '') {
+    // `children` is present but not an array on a nested container. The root's
+    // `children` is already checked by deepValidateDocument (skipped here via
+    // `path !== ''` so it is not reported twice); this branch covers every
+    // deeper container (`section`/`columns`/`text-box`) the old one-level walk
+    // never reached. Without it a malformed subtree slips through as valid:
+    // TypeBox reports only a generic catch-all (which we strip), so an empty
+    // error set would otherwise flip the document back to `valid`.
+    errors.push({
+      path: `${path}/children`,
+      message: 'Field "children" must be an array',
+      code: 'invalid_type',
+    });
+  }
 }
 
 /**
@@ -281,9 +345,11 @@ function validateComponentProps(
   // Get the schema for this component
   const schema = COMPONENT_SCHEMAS[componentName];
   if (!schema) {
-    // Unknown component type
+    // Unknown component type. `basePath` always ends in `/props`; anchor the
+    // swap to the end so a nested region path like `…/props/header/0/props`
+    // becomes `…/props/header/0/name` rather than mangling an earlier `/props`.
     errors.push({
-      path: basePath.replace('/props', '/name'),
+      path: basePath.replace(/\/props$/, '/name'),
       message: `Unknown component "${componentName}"`,
       code: 'unknown_component',
     });

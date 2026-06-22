@@ -1,0 +1,11 @@
+---
+'@json-to-office/shared-docx': patch
+---
+
+fix(docx): validate component props in every nested container and in header/footer regions
+
+The CLI/library document validator (`validate.jsonDocument` / `validate.document`) only re-validated the root's direct children and one level of `section` children. Component props nested inside `text-box`/`columns` children (any depth) and inside section `header`/`footer` regions — which the section schema types loosely as an array of `Type.Any()` (or the `'linkToPrevious'` literal) — were never deep-checked. As a result a document could pass `jto docx validate` (even `--strict`) while still violating the schema (e.g. `boldColor` placed inside `font`, `font.size` above the 72 pt cap, a scalar `characterSpacing`), whereas the in-editor (Monaco) validator — which runs the generated JSON Schema over the whole tree — flagged all of them.
+
+The deep validator now walks the entire component tree: every container's shared `children` field to any depth, the `header`/`footer` paragraph regions under `props`, and the component content nested inside `table` cells and column headers. A non-array `children` on any nested container (`section`/`columns`/`text-box`) is now reported at its own path too — previously only a `section`'s was, so a deeper malformed subtree could slip through as valid. `header`/`footer` entries are also checked for component structure (not just props), matching the editor's whole-tree schema, which resolves those regions to the component union even though the static section schema types them as `Type.Any()`. No schema or rule changed — only validation coverage.
+
+This closes the table-cell gap as well: the static cell-content schema types cell `props` as `additionalProperties: true`, so a capped prop deep in a `table` cell (e.g. `font.size` over the cap) used to pass the CLI while the editor's recursive schema rejected it; the walk now re-validates each cell/header content component against its real schema, to any nesting depth (e.g. a table inside a table cell). `list` props (including item formatting) were already covered by the list's own props schema. The CLI and the playground now report the same errors at the same paths.
