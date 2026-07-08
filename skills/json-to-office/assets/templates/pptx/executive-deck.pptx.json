@@ -1,22 +1,59 @@
 {
   "name": "pptx",
   "props": {
-    "theme": "minimal",
+    "theme": {
+      "name": "editorial",
+      "colors": {
+        "primary": "#1A1A1A",
+        "secondary": "#444444",
+        "accent": "#CC785C",
+        "background": "#FFFFFF",
+        "text": "#1A1A1A",
+        "text2": "#888888",
+        "background2": "#F7F7F5",
+        "accent4": "#BBBBBB",
+        "accent5": "#EFEFEF",
+        "accent6": "#888888"
+      },
+      "fonts": {
+        "heading": "Helvetica",
+        "body": "Helvetica"
+      },
+      "defaults": {
+        "fontSize": 18,
+        "fontColor": "#1A1A1A"
+      }
+    },
     "slideWidth": 10,
     "slideHeight": 5.625,
-    "grid": { "columns": 12, "rows": 6, "gutter": 0.2, "padding": 0.55 }
+    "grid": {
+      "columns": 12,
+      "rows": 6,
+      "gutter": 0.2,
+      "margin": 0.55
+    }
   },
   "children": [
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "Title slide. State the ask of the meeting in one sentence before advancing — the deck argues for next year's plan."
+      },
       "children": [
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0,
             "y": 0,
             "w": 0.05,
@@ -27,8 +64,13 @@
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0.55,
             "y": 0.55,
             "w": 0.18,
@@ -41,20 +83,25 @@
             "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "right",
             "x": 5,
             "y": 0.35,
             "w": 4.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0.55,
             "y": 1.35,
             "w": 0.25,
@@ -67,12 +114,12 @@
             "text": "KEYNOTE 01",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "left",
             "x": 0.9,
             "y": 1.2,
             "w": 4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -82,21 +129,26 @@
             "fontSize": 60,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "lineSpacing": 64,
             "x": 0.55,
             "y": 1.75,
             "w": 9,
-            "h": 2.2
+            "h": 2.2,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "1A1A1A" },
-            "line": { "color": "1A1A1A", "width": 0 },
+            "fill": {
+              "color": "text"
+            },
+            "line": {
+              "color": "text",
+              "width": 0
+            },
             "x": 0.55,
             "y": 4.25,
             "w": 1.4,
@@ -110,20 +162,25 @@
             "fontSize": 14,
             "italic": false,
             "bold": false,
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 4.4,
             "w": 7.5,
-            "h": 0.4
+            "h": 0.4,
+            "color": "text2"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "888888" },
-            "line": { "color": "888888", "width": 0 },
+            "fill": {
+              "color": "text2"
+            },
+            "line": {
+              "color": "text2",
+              "width": 0
+            },
             "x": 0.55,
             "y": 5.15,
             "w": 8.9,
@@ -136,12 +193,12 @@
             "text": "01 / 05",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 5.25,
             "w": 1,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -150,26 +207,36 @@
             "text": "FIELD STUDIO",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "right",
             "x": 5,
             "y": 5.25,
             "w": 4.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         }
       ]
     },
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "Chapter divider. Signpost only: announce the section ('where we are today') and move on within ten seconds."
+      },
       "children": [
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0,
             "y": 0,
             "w": 0.05,
@@ -182,12 +249,12 @@
             "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "right",
             "x": 5,
             "y": 0.35,
             "w": 4.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -197,20 +264,25 @@
             "fontSize": 180,
             "bold": true,
             "italic": false,
-            "fontColor": "CC785C",
             "align": "left",
             "x": 0.55,
             "y": 1.4,
             "w": 3.5,
-            "h": 2.5
+            "h": 2.5,
+            "color": "accent"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 4.2,
             "y": 1.8,
             "w": 0.25,
@@ -223,12 +295,12 @@
             "text": "CHAPTER 01",
             "fontSize": 10,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 4.55,
             "y": 1.65,
             "w": 4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text2"
           }
         },
         {
@@ -238,21 +310,26 @@
             "fontSize": 44,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "lineSpacing": 50,
             "x": 4.2,
             "y": 2.0,
             "w": 5.5,
-            "h": 2.0
+            "h": 2.0,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "888888" },
-            "line": { "color": "888888", "width": 0 },
+            "fill": {
+              "color": "text2"
+            },
+            "line": {
+              "color": "text2",
+              "width": 0
+            },
             "x": 0.55,
             "y": 5.15,
             "w": 8.9,
@@ -265,12 +342,12 @@
             "text": "02 / 05",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 5.25,
             "w": 1,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -279,26 +356,36 @@
             "text": "FIELD STUDIO",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "right",
             "x": 5,
             "y": 5.25,
             "w": 4.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         }
       ]
     },
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "Core argument. Walk the numbered points top to bottom; each is one claim with one supporting line. Don't read them verbatim — paraphrase and point."
+      },
       "children": [
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0,
             "y": 0,
             "w": 0.05,
@@ -311,20 +398,25 @@
             "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "right",
             "x": 5,
             "y": 0.35,
             "w": 4.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0.55,
             "y": 1.0,
             "w": 0.25,
@@ -337,12 +429,12 @@
             "text": "THE ARGUMENT",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "left",
             "x": 0.9,
             "y": 0.85,
             "w": 4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -352,13 +444,13 @@
             "fontSize": 32,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "lineSpacing": 38,
             "x": 0.55,
             "y": 1.4,
             "w": 5.5,
-            "h": 1.5
+            "h": 1.5,
+            "color": "text"
           }
         },
         {
@@ -368,12 +460,12 @@
             "fontSize": 12,
             "fontFace": "Courier",
             "bold": true,
-            "fontColor": "CC785C",
             "align": "left",
             "x": 0.55,
             "y": 3.1,
             "w": 0.4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "accent"
           }
         },
         {
@@ -381,13 +473,13 @@
           "props": {
             "text": "Designers spend 40% less time on handoff once tokens live in code.",
             "fontSize": 13,
-            "fontColor": "text",
             "italic": false,
             "align": "left",
             "x": 1.0,
             "y": 3.1,
             "w": 5.5,
-            "h": 0.7
+            "h": 0.7,
+            "color": "text"
           }
         },
         {
@@ -397,12 +489,12 @@
             "fontSize": 12,
             "fontFace": "Courier",
             "bold": true,
-            "fontColor": "CC785C",
             "align": "left",
             "x": 0.55,
             "y": 3.85,
             "w": 0.4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "accent"
           }
         },
         {
@@ -410,13 +502,13 @@
           "props": {
             "text": "Single source of truth means dev review focuses on intent, not pixels.",
             "fontSize": 13,
-            "fontColor": "text",
             "italic": false,
             "align": "left",
             "x": 1.0,
             "y": 3.85,
             "w": 5.5,
-            "h": 0.7
+            "h": 0.7,
+            "color": "text"
           }
         },
         {
@@ -426,12 +518,12 @@
             "fontSize": 12,
             "fontFace": "Courier",
             "bold": true,
-            "fontColor": "CC785C",
             "align": "left",
             "x": 0.55,
             "y": 4.6,
             "w": 0.4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "accent"
           }
         },
         {
@@ -439,21 +531,26 @@
           "props": {
             "text": "Iterations compress from days into hours when the system holds.",
             "fontSize": 13,
-            "fontColor": "text",
             "italic": false,
             "align": "left",
             "x": 1.0,
             "y": 4.6,
             "w": 5.5,
-            "h": 0.5
+            "h": 0.5,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "F7F7F5" },
-            "line": { "color": "EEEEEE", "width": 0.5 },
+            "fill": {
+              "color": "background2"
+            },
+            "line": {
+              "color": "accent5",
+              "width": 0.5
+            },
             "x": 6.5,
             "y": 1.4,
             "w": 3.0,
@@ -466,20 +563,25 @@
             "text": "Diagram",
             "fontSize": 10,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "center",
             "x": 6.5,
             "y": 2.8,
             "w": 3.0,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text2"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "888888" },
-            "line": { "color": "888888", "width": 0 },
+            "fill": {
+              "color": "text2"
+            },
+            "line": {
+              "color": "text2",
+              "width": 0
+            },
             "x": 0.55,
             "y": 5.15,
             "w": 8.9,
@@ -492,12 +594,12 @@
             "text": "03 / 05",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 5.25,
             "w": 1,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -506,26 +608,36 @@
             "text": "FIELD STUDIO",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "right",
             "x": 5,
             "y": 5.25,
             "w": 4.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         }
       ]
     },
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "Proof point. One stat carries the slide: 3.2× faster. Give the source (internal study, 24 teams) out loud to preempt the credibility question."
+      },
       "children": [
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0,
             "y": 0,
             "w": 0.05,
@@ -538,20 +650,25 @@
             "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "right",
             "x": 5,
             "y": 0.35,
             "w": 4.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0.55,
             "y": 1.0,
             "w": 0.25,
@@ -564,12 +681,12 @@
             "text": "ONE NUMBER",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "left",
             "x": 0.9,
             "y": 0.85,
             "w": 4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -579,20 +696,25 @@
             "fontSize": 110,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "center",
             "x": 0.55,
             "y": 1.8,
             "w": 8.9,
-            "h": 2.0
+            "h": 2.0,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "1A1A1A" },
-            "line": { "color": "1A1A1A", "width": 0 },
+            "fill": {
+              "color": "text"
+            },
+            "line": {
+              "color": "text",
+              "width": 0
+            },
             "x": 4.55,
             "y": 4.0,
             "w": 0.4,
@@ -604,14 +726,14 @@
           "props": {
             "text": "Teams shipping production work after adopting the integrated design system.",
             "fontSize": 16,
-            "fontColor": "text",
             "italic": true,
             "bold": false,
             "align": "center",
             "x": 1.5,
             "y": 4.15,
             "w": 7,
-            "h": 0.6
+            "h": 0.6,
+            "color": "text"
           }
         },
         {
@@ -620,20 +742,25 @@
             "text": "SOURCE: INTERNAL STUDY, N=24 TEAMS",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "center",
             "x": 0.55,
             "y": 4.8,
             "w": 8.9,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "888888" },
-            "line": { "color": "888888", "width": 0 },
+            "fill": {
+              "color": "text2"
+            },
+            "line": {
+              "color": "text2",
+              "width": 0
+            },
             "x": 0.55,
             "y": 5.15,
             "w": 8.9,
@@ -646,12 +773,12 @@
             "text": "04 / 05",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 5.25,
             "w": 1,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -660,26 +787,36 @@
             "text": "FIELD STUDIO",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "right",
             "x": 5,
             "y": 5.25,
             "w": 4.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         }
       ]
     },
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "The ask. Three concrete requests: green-light by end of month, 2 engineers + 1 designer, Q3 start. End here and take questions."
+      },
       "children": [
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0,
             "y": 0,
             "w": 0.05,
@@ -692,20 +829,25 @@
             "text": "FIELD STUDIO  ·  KEYNOTE  ·  Q2 2026",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "right",
             "x": 5,
             "y": 0.35,
             "w": 4.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0.55,
             "y": 1.0,
             "w": 0.25,
@@ -718,12 +860,12 @@
             "text": "ASK",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "left",
             "x": 0.9,
             "y": 0.85,
             "w": 4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -733,13 +875,13 @@
             "fontSize": 48,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "lineSpacing": 54,
             "x": 0.55,
             "y": 1.4,
             "w": 9,
-            "h": 2.0
+            "h": 2.0,
+            "color": "text"
           }
         },
         {
@@ -748,12 +890,12 @@
             "text": "HEADCOUNT",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 3.5,
             "w": 3,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -761,14 +903,14 @@
           "props": {
             "text": "2 senior engineers, 1 designer\nQ3 starts.",
             "fontSize": 13,
-            "fontColor": "text",
             "italic": false,
             "align": "left",
             "lineSpacing": 17,
             "x": 0.55,
             "y": 3.8,
             "w": 2.8,
-            "h": 0.7
+            "h": 0.7,
+            "color": "text"
           }
         },
         {
@@ -777,12 +919,12 @@
             "text": "BUDGET",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 3.6,
             "y": 3.5,
             "w": 3,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -790,14 +932,14 @@
           "props": {
             "text": "$480k for tools + infra\nin H2.",
             "fontSize": 13,
-            "fontColor": "text",
             "italic": false,
             "align": "left",
             "lineSpacing": 17,
             "x": 3.6,
             "y": 3.8,
             "w": 2.8,
-            "h": 0.7
+            "h": 0.7,
+            "color": "text"
           }
         },
         {
@@ -806,12 +948,12 @@
             "text": "DECISION",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 6.6,
             "y": 3.5,
             "w": 3,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -819,22 +961,27 @@
           "props": {
             "text": "Green-light the platform rebuild by end of month.",
             "fontSize": 13,
-            "fontColor": "text",
             "italic": false,
             "align": "left",
             "lineSpacing": 17,
             "x": 6.6,
             "y": 3.8,
             "w": 2.8,
-            "h": 0.9
+            "h": 0.9,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "888888" },
-            "line": { "color": "888888", "width": 0 },
+            "fill": {
+              "color": "text2"
+            },
+            "line": {
+              "color": "text2",
+              "width": 0
+            },
             "x": 0.55,
             "y": 5.15,
             "w": 8.9,
@@ -847,12 +994,12 @@
             "text": "05 / 05",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 5.25,
             "w": 1,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -861,12 +1008,12 @@
             "text": "FIELD STUDIO",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "right",
             "x": 5,
             "y": 5.25,
             "w": 4.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         }
       ]
