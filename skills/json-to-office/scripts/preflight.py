@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
-"""Pre-flight overflow check for json-to-office PPTX JSON.
+"""Pre-flight overflow check for json-to-office PPTX (and DOCX) JSON.
 
-Estimates whether each `text` component (or text-bearing `shape`) will fit its
-allocated box before any actual render. Catches the most common PPTX failure
+PPTX: estimates whether each `text` component (or text-bearing `shape`) will
+fit its allocated box before any actual render — resolving `style:`-based font
+sizes through the theme's style table. Catches the most common PPTX failure
 mode — text overflowing its placeholder — deterministically and in
 milliseconds.
+
+DOCX: deterministic layout checks only — currently, table column widths that
+overshoot the usable page width (a schema-valid, silently-spilling mistake).
 
 Usage:
   python3 preflight.py deck.pptx.json
   python3 preflight.py deck.pptx.json --strict
   python3 preflight.py deck.pptx.json --json
+  python3 preflight.py report.docx.json
 
 Exit codes:
   0  no OVERFLOW (and no TIGHT in --strict)
@@ -47,6 +52,46 @@ CHAR_WIDTH_FACTOR = 0.50
 
 # Fragile-fit threshold in pt (renderer rounding).
 SAFETY_BUFFER_PT = 8
+
+# Built-in theme style table (mirrors core-pptx DEFAULT_STYLES — all three
+# built-in themes share it). Used to resolve the real font size of
+# `style:`-based text; before this table existed, styled text was assumed to
+# be 14pt and `style: "heading1"` (28pt) could overflow a box preflight had
+# just cleared.
+BUILTIN_STYLES = {
+    "title": {"fontSize": 36},
+    "subtitle": {"fontSize": 20},
+    "heading1": {"fontSize": 28},
+    "heading2": {"fontSize": 22},
+    "heading3": {"fontSize": 18},
+    "body": {"fontSize": 14},
+    "caption": {"fontSize": 10},
+}
+
+# Renderer default when neither an explicit fontSize nor a style applies
+# (core-pptx theme `defaults.fontSize`).
+BUILTIN_DEFAULT_FONT_SIZE = 18.0
+
+
+def theme_context(doc_props: dict) -> dict:
+    """Build a {styles, default_font_size} context from the document theme.
+
+    `props.theme` is a built-in name (all built-ins share BUILTIN_STYLES) or
+    an inline theme object whose `styles`/`defaults` override the built-ins.
+    """
+    styles = {k: dict(v) for k, v in BUILTIN_STYLES.items()}
+    default_font_size = BUILTIN_DEFAULT_FONT_SIZE
+    theme = (doc_props or {}).get("theme")
+    if isinstance(theme, dict):
+        for name, style in (theme.get("styles") or {}).items():
+            if isinstance(style, dict):
+                styles.setdefault(name, {}).update(style)
+        defaults = theme.get("defaults") or {}
+        try:
+            default_font_size = float(defaults.get("fontSize", default_font_size))
+        except (TypeError, ValueError):
+            pass
+    return {"styles": styles, "default_font_size": default_font_size}
 
 def default_line_height_pt(font_size: float) -> float:
     """Renderer-aligned default lineSpacing when none is specified.
@@ -176,9 +221,16 @@ def estimate_text_height_pt(
     return text_h
 
 
-def resolve_font_and_line(props: dict) -> tuple[float, float]:
-    font_size = float(props.get("fontSize") or 14)
+def resolve_font_and_line(props: dict, theme_ctx: dict) -> tuple[float, float]:
+    """Resolve the effective font size: explicit prop → theme style → theme default."""
+    style = theme_ctx["styles"].get(props.get("style") or "", {})
+    font_size = props.get("fontSize")
+    if font_size is None:
+        font_size = style.get("fontSize", theme_ctx["default_font_size"])
+    font_size = float(font_size)
     line_spacing = props.get("lineSpacing")
+    if line_spacing is None:
+        line_spacing = style.get("lineSpacing")
     if line_spacing is None:
         line_spacing = default_line_height_pt(font_size)
     return font_size, float(line_spacing)
@@ -208,7 +260,7 @@ def walk_text_nodes(component: dict):
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def analyze_slide(slide_idx: int, slide: dict, doc_grid: dict, slide_w_in: float, slide_h_in: float) -> list[dict]:
+def analyze_slide(slide_idx: int, slide: dict, doc_grid: dict, slide_w_in: float, slide_h_in: float, theme_ctx: dict) -> list[dict]:
     findings = []
     slide_props = slide.get("props") or {}
     slide_grid_override = slide_props.get("grid")
@@ -220,7 +272,7 @@ def analyze_slide(slide_idx: int, slide: dict, doc_grid: dict, slide_w_in: float
         if not text:
             continue
 
-        font_size, line_spacing = resolve_font_and_line(props)
+        font_size, line_spacing = resolve_font_and_line(props, theme_ctx)
         para_before = float(props.get("paraSpaceBefore", 0))
         para_after = float(props.get("paraSpaceAfter", 0))
 
@@ -368,6 +420,7 @@ def analyze_doc(doc: dict) -> list[dict]:
     slide_w_in = _safe_dim(props.get("slideWidth"), DEFAULT_SLIDE_WIDTH_IN)
     slide_h_in = _safe_dim(props.get("slideHeight"), DEFAULT_SLIDE_HEIGHT_IN)
     doc_grid = props.get("grid")
+    theme_ctx = theme_context(props)
 
     findings: list[dict] = []
     findings.extend(check_canvas(props))
@@ -375,7 +428,68 @@ def analyze_doc(doc: dict) -> list[dict]:
     for i, slide in enumerate(doc.get("children") or [], start=1):
         if not isinstance(slide, dict) or slide.get("name") != "slide":
             continue
-        findings.extend(analyze_slide(i, slide, doc_grid, slide_w_in, slide_h_in))
+        findings.extend(analyze_slide(i, slide, doc_grid, slide_w_in, slide_h_in, theme_ctx))
+    return findings
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DOCX checks (table column widths)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Usable text width for A4 with 1-inch margins (the docx default page setup):
+# 595pt page − 2×72pt ≈ 451pt. Custom page setups can differ; the check warns
+# only on clear overshoot.
+DOCX_USABLE_WIDTH_PT = 451.0
+
+
+def analyze_docx_tables(doc: dict) -> list[dict]:
+    """Flag DOCX tables whose fixed column widths overshoot the usable page width.
+
+    Column widths are points (or percentage strings, which are checked to sum
+    to ≤ 100%). Overshoot renders as a silent right-edge spill — schema-valid,
+    invisible until the PDF preview.
+    """
+    findings: list[dict] = []
+
+    def check_table(node, path):
+        cols = (node.get("props") or {}).get("columns")
+        if not isinstance(cols, list):
+            return
+        pt_sum = 0.0
+        pct_sum = 0.0
+        for c in cols:
+            w = c.get("width") if isinstance(c, dict) else None
+            if isinstance(w, (int, float)):
+                pt_sum += float(w)
+            elif isinstance(w, str) and w.strip().endswith("%"):
+                try:
+                    pct_sum += float(w.strip()[:-1])
+                except ValueError:
+                    pass
+        if pt_sum > DOCX_USABLE_WIDTH_PT:
+            findings.append(_canvas_finding(
+                "OVERFLOW",
+                f"table at {path}: column widths sum to {pt_sum:g}pt > "
+                f"~{DOCX_USABLE_WIDTH_PT:g}pt usable (A4, 1in margins) — "
+                "content will spill off the right edge",
+            ))
+        elif pct_sum > 100.0:
+            findings.append(_canvas_finding(
+                "OVERFLOW",
+                f"table at {path}: percentage widths sum to {pct_sum:g}% > 100%",
+            ))
+
+    def walk(node, path):
+        if isinstance(node, list):
+            for i, v in enumerate(node):
+                walk(v, f"{path}/{i}")
+        elif isinstance(node, dict):
+            if node.get("name") == "table":
+                check_table(node, path)
+            for key, v in node.items():
+                walk(v, f"{path}/{key}")
+
+    walk(doc, "")
     return findings
 
 
@@ -454,9 +568,11 @@ def main() -> int:
         return 2
 
     name_lower = args.doc.name.lower().strip()
-    if not name_lower.endswith(".pptx.json"):
+    is_pptx = name_lower.endswith(".pptx.json")
+    is_docx = name_lower.endswith(".docx.json")
+    if not is_pptx and not is_docx:
         print(
-            f"ERROR: preflight is PPTX-only; expected *.pptx.json, got {args.doc.name}",
+            f"ERROR: expected *.pptx.json or *.docx.json, got {args.doc.name}",
             file=sys.stderr,
         )
         return 2
@@ -467,7 +583,9 @@ def main() -> int:
         print(f"ERROR: invalid JSON in {args.doc}: {e}", file=sys.stderr)
         return 2
 
-    findings = analyze_doc(doc)
+    # DOCX gets deterministic layout checks only (flowing text can't overflow
+    # a page the way a fixed slide box can); PPTX gets the full fit analysis.
+    findings = analyze_doc(doc) if is_pptx else analyze_docx_tables(doc)
 
     if args.json:
         print(json.dumps(findings, indent=2))

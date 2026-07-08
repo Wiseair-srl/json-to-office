@@ -15,7 +15,7 @@ BOOTSTRAP_PATH = SKILL_ROOT / "scripts" / "bootstrap.py"
 # fallback (bootstrap.py) and read by the dependent Wiseair skills
 # (quote-carousel, blog-cover) via scripts/jto_argv.py. Bump here only, then
 # re-run bootstrap.py to refresh caps.json.
-JTO_CLI_VERSION = "0.19.0"
+JTO_CLI_VERSION = "0.20.0"
 
 # Hosted render service backing the `highcharts` and docx `visual` components.
 # Both render out-of-process: the CLI offloads chart export (POST /export) and

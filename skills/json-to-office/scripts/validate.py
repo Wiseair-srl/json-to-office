@@ -34,7 +34,9 @@ def main() -> int:
     argv = [*caps["jto_argv"], kind, "validate", str(input_path)]
     proc = run(argv)
     if proc.returncode == 0:
-        print(proc.stdout or f"OK: {input_path.name} is valid {kind} JSON.")
+        # The CLI's success output can be whitespace-only (spinner artifacts);
+        # strip so success never prints as silence.
+        print((proc.stdout or "").strip() or f"OK: {input_path.name} is valid {kind} JSON.")
     return proc.returncode
 
 
