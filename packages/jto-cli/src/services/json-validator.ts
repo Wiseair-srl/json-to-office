@@ -139,36 +139,39 @@ export class JsonValidator {
     strict?: boolean
   ): Promise<ValidateFileResult> {
     try {
-      if (this.format === 'docx') {
-        const { validate, validateStrict } = await import(
-          '@json-to-office/shared-docx'
-        );
-        const validator = strict ? validateStrict : validate;
-        const result = validator.jsonDocument(jsonString);
-        return {
-          file: filePath,
-          valid: result.valid,
-          type: 'document',
-          errors: result.errors?.map((e: any) => ({
-            ...e,
-            code: e.code || 'VALIDATION_ERROR',
-          })),
-          warnings: result.warnings?.map((e: any) => ({
-            ...e,
-            code: e.code || 'WARNING',
-          })),
-        };
-      } else {
-        // PPTX - basic validation
-        return {
-          file: filePath,
-          valid: true,
-          type: 'document',
-        };
-      }
-    } catch {
-      // Fallback if validation module not available
-      return { file: filePath, valid: true, type: 'document' };
+      const { validate, validateStrict } =
+        this.format === 'docx'
+          ? await import('@json-to-office/shared-docx')
+          : await import('@json-to-office/shared-pptx');
+      const validator = strict ? validateStrict : validate;
+      const result = validator.jsonDocument(jsonString);
+      return {
+        file: filePath,
+        valid: result.valid,
+        type: 'document',
+        errors: result.errors?.map((e: any) => ({
+          ...e,
+          code: e.code || 'VALIDATION_ERROR',
+        })),
+        warnings: (result as any).warnings?.map((e: any) => ({
+          ...e,
+          code: e.code || 'WARNING',
+        })),
+      };
+    } catch (error: any) {
+      // A missing/broken validation module must not silently pass the file.
+      return {
+        file: filePath,
+        valid: false,
+        type: 'document',
+        errors: [
+          {
+            path: 'root',
+            message: `Validation module unavailable: ${error?.message ?? error}`,
+            code: 'validator_error',
+          },
+        ],
+      };
     }
   }
 
@@ -179,26 +182,35 @@ export class JsonValidator {
     strict?: boolean
   ): Promise<ValidateFileResult> {
     try {
-      if (this.format === 'docx') {
-        const { validate, validateStrict } = await import(
-          '@json-to-office/shared-docx'
-        );
-        const validator = strict ? validateStrict : validate;
-        const result = validator.jsonTheme(jsonString);
-        return {
-          file: filePath,
-          valid: result.valid,
-          type: 'theme',
-          errors: result.errors?.map((e: any) => ({
-            ...e,
-            code: e.code || 'VALIDATION_ERROR',
-          })),
-        };
-      } else {
-        return { file: filePath, valid: true, type: 'theme' };
-      }
-    } catch {
-      return { file: filePath, valid: true, type: 'theme' };
+      const { validate, validateStrict } =
+        this.format === 'docx'
+          ? await import('@json-to-office/shared-docx')
+          : await import('@json-to-office/shared-pptx');
+      const validator = strict ? validateStrict : validate;
+      const result = validator.jsonTheme(jsonString);
+      return {
+        file: filePath,
+        valid: result.valid,
+        type: 'theme',
+        errors: result.errors?.map((e: any) => ({
+          ...e,
+          code: e.code || 'VALIDATION_ERROR',
+        })),
+      };
+    } catch (error: any) {
+      // A missing/broken validation module must not silently pass the file.
+      return {
+        file: filePath,
+        valid: false,
+        type: 'theme',
+        errors: [
+          {
+            path: 'root',
+            message: `Validation module unavailable: ${error?.message ?? error}`,
+            code: 'validator_error',
+          },
+        ],
+      };
     }
   }
 

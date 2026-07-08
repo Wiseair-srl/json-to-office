@@ -122,6 +122,23 @@ export {
   presentImageSources,
 } from './validation/image-source-conflicts';
 
+// Unified validation facade (deep, path-aware validation of whole presentations
+// and themes) — the API the CLI's `pptx validate` consumes.
+export {
+  validate,
+  validateStrict,
+  validatePresentationDocument,
+  validateJsonPresentationDocument,
+  validatePptxTheme,
+  validateJsonPptxTheme,
+  deepValidatePresentation,
+  comprehensiveValidatePresentation,
+} from './validation/unified';
+export type {
+  PptxValidationResult,
+  DeepValidateOptions,
+} from './validation/unified';
+
 // Re-export shared validation utilities for convenience
 export {
   transformValueError,
