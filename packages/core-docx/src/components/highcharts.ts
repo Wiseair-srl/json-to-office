@@ -88,6 +88,32 @@ async function generateChart(
 }
 
 /**
+ * When the Highcharts config sets no top-level `colors`, series render in the
+ * Highcharts default palette (blue-first) and ignore the document theme. Inject
+ * the theme's primary/secondary/accent as series colors so charts follow the
+ * theme by default. Explicit `colors` always wins.
+ */
+function withThemeColors(
+  config: HighchartsProps,
+  theme: ThemeConfig
+): HighchartsProps {
+  const options = config.options as Record<string, unknown> | undefined;
+  if (!options || options.colors || !theme?.colors) return config;
+  const palette = [
+    theme.colors.primary,
+    theme.colors.secondary,
+    theme.colors.accent,
+  ]
+    .filter((c): c is string => typeof c === 'string' && c.length > 0)
+    .map((c) => (c.startsWith('#') ? c : `#${c}`));
+  if (palette.length === 0) return config;
+  return {
+    ...config,
+    options: { ...options, colors: palette },
+  } as HighchartsProps;
+}
+
+/**
  * Render highcharts component
  */
 export async function renderHighchartsComponent(
@@ -98,7 +124,7 @@ export async function renderHighchartsComponent(
 ): Promise<(Paragraph | Table)[]> {
   if (!isHighchartsComponent(component)) return [];
 
-  const config = component.props as HighchartsProps;
+  const config = withThemeColors(component.props as HighchartsProps, theme);
 
   // Generate the chart
   const chartResult = await generateChart(

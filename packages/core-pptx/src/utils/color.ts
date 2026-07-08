@@ -10,7 +10,7 @@ import { warn, W } from './warn';
 
 // Build identity entries from the shared source of truth, then add aliases
 const SEMANTIC_TO_THEME_KEY: Record<string, keyof PptxThemeConfig['colors']> = {
-  ...Object.fromEntries(SEMANTIC_COLOR_NAMES.map(n => [n, n])),
+  ...Object.fromEntries(SEMANTIC_COLOR_NAMES.map((n) => [n, n])),
   // Aliases (PowerPoint XML compat)
   accent1: 'primary',
   accent2: 'secondary',
@@ -22,17 +22,42 @@ const SEMANTIC_TO_THEME_KEY: Record<string, keyof PptxThemeConfig['colors']> = {
 };
 
 /**
+ * Default series-color tokens for charts. Shared by the native `chart`
+ * component and the `highcharts` component so both palettes stay in sync
+ * with the active theme when the author sets no explicit colors.
+ */
+export const DEFAULT_CHART_THEME_COLORS = [
+  'primary',
+  'secondary',
+  'accent',
+  'accent4',
+  'accent5',
+  'accent6',
+];
+
+/**
  * Resolve a color value to bare hex (no '#' prefix).
  * Accepts hex colors (with or without '#') or semantic theme color names.
  */
-export function resolveColor(color: string, theme: PptxThemeConfig, warnings?: PipelineWarning[]): string {
+export function resolveColor(
+  color: string,
+  theme: PptxThemeConfig,
+  warnings?: PipelineWarning[]
+): string {
   const themeKey = SEMANTIC_TO_THEME_KEY[color];
   if (themeKey) {
     const resolved = theme.colors[themeKey];
-    if (resolved) return resolved.startsWith('#') ? resolved.slice(1) : resolved;
+    if (resolved)
+      return resolved.startsWith('#') ? resolved.slice(1) : resolved;
     // Fall back to primary for unset optional colors
-    warn(warnings, W.THEME_COLOR_FALLBACK, `Theme color "${themeKey}" not defined, falling back to primary`);
-    return theme.colors.primary.startsWith('#') ? theme.colors.primary.slice(1) : theme.colors.primary;
+    warn(
+      warnings,
+      W.THEME_COLOR_FALLBACK,
+      `Theme color "${themeKey}" not defined, falling back to primary`
+    );
+    return theme.colors.primary.startsWith('#')
+      ? theme.colors.primary.slice(1)
+      : theme.colors.primary;
   }
   // Not a semantic name — treat as literal hex
   const bare = color.startsWith('#') ? color.slice(1) : color;
@@ -41,7 +66,11 @@ export function resolveColor(color: string, theme: PptxThemeConfig, warnings?: P
     return bare[0] + bare[0] + bare[1] + bare[1] + bare[2] + bare[2];
   }
   if (!/^[0-9A-Fa-f]{6}$/.test(bare)) {
-    warn(warnings, W.UNKNOWN_COLOR, `Unknown color value: "${color}", treating as literal`);
+    warn(
+      warnings,
+      W.UNKNOWN_COLOR,
+      `Unknown color value: "${color}", treating as literal`
+    );
   }
   return bare;
 }
