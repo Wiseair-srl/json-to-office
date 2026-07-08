@@ -348,6 +348,47 @@ describe('clean documents and options', () => {
   });
 });
 
+describe('inline document theme', () => {
+  const inlineTheme = {
+    name: 'editorial',
+    colors: {
+      primary: '#1A1A1A',
+      secondary: '#444444',
+      accent: '#CC785C',
+      background: '#FFFFFF',
+      text: '#1A1A1A',
+    },
+    fonts: { heading: 'Arial', body: 'Arial' },
+    defaults: { fontSize: 18, fontColor: '#1A1A1A' },
+  };
+
+  it('accepts a document with an inline theme object', () => {
+    const result = validate.document(
+      deck([slide([{ name: 'text', props: { text: 'Hi' } }])], {
+        theme: inlineTheme,
+      })
+    );
+
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects an invalid inline theme object', () => {
+    const result = validate.document(
+      deck([slide([{ name: 'text', props: { text: 'Hi' } }])], {
+        theme: { name: 'broken', colors: 'red' },
+      })
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        path: expect.stringContaining('/props/theme'),
+      })
+    );
+  });
+});
+
 describe('theme validation', () => {
   it('accepts a minimal valid theme', () => {
     const result = validate.theme({
