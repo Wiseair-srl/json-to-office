@@ -18,7 +18,11 @@
             "props": {
               "text": "FIELD STUDIO  ·  ANNUAL REPORT 2026",
               "alignment": "right",
-              "font": { "family": "Courier New", "size": 8, "color": "#888888" }
+              "font": {
+                "family": "Courier New",
+                "size": 8,
+                "color": "#888888"
+              }
             }
           }
         ],
@@ -28,7 +32,11 @@
             "props": {
               "text": "CONFIDENTIAL",
               "alignment": "center",
-              "font": { "family": "Courier New", "size": 8, "color": "#888888" }
+              "font": {
+                "family": "Courier New",
+                "size": 8,
+                "color": "#888888"
+              }
             }
           }
         ]
@@ -48,7 +56,10 @@
         },
         {
           "name": "heading",
-          "props": { "text": "The slow practice of seeing.", "level": 1 }
+          "props": {
+            "text": "The slow practice of seeing.",
+            "level": 1
+          }
         },
         {
           "name": "paragraph",
@@ -56,19 +67,28 @@
             "text": "A field report on craft, calm, and the work that takes time."
           }
         },
-        { "name": "paragraph", "props": { "text": "" } },
-
+        {
+          "name": "paragraph",
+          "props": {
+            "text": ""
+          }
+        },
         {
           "name": "toc",
-          "props": { "depth": { "from": 1, "to": 2 }, "pageBreak": true }
+          "props": {
+            "depth": {
+              "from": 1,
+              "to": 2
+            },
+            "pageBreak": true
+          }
         },
-
         {
           "name": "heading",
           "props": {
             "text": "Letter from the studio",
             "level": 1,
-            "pageBreak": "before"
+            "pageBreak": true
           }
         },
         {
@@ -83,13 +103,12 @@
             "text": "We chose to publish this annually because long-form is the only form that lets us write past the headlines. Quarterly updates compress the past three months into bullets; this lets us pull the camera back."
           }
         },
-
         {
           "name": "heading",
           "props": {
             "text": "The year in numbers",
             "level": 1,
-            "pageBreak": "before"
+            "pageBreak": true
           }
         },
         {
@@ -98,8 +117,13 @@
             "text": "Numbers do not describe the work, but they do describe its shape. Revenue grew **32%** year-over-year, on **22%** more team headcount, with **fewer** open engagements at any one time. Net retention sat at **118%** — clients renewed and expanded, even as we said no to new prospects more often than ever before."
           }
         },
-
-        { "name": "heading", "props": { "text": "What grew", "level": 2 } },
+        {
+          "name": "heading",
+          "props": {
+            "text": "What grew",
+            "level": 2
+          }
+        },
         {
           "name": "list",
           "props": {
@@ -111,8 +135,13 @@
             ]
           }
         },
-
-        { "name": "heading", "props": { "text": "What shrank", "level": 2 } },
+        {
+          "name": "heading",
+          "props": {
+            "text": "What shrank",
+            "level": 2
+          }
+        },
         {
           "name": "list",
           "props": {
@@ -124,15 +153,20 @@
             ]
           }
         },
-
         {
           "name": "heading",
-          "props": { "text": "What changed", "level": 1, "pageBreak": "before" }
+          "props": {
+            "text": "What changed",
+            "level": 1,
+            "pageBreak": true
+          }
         },
-
         {
           "name": "heading",
-          "props": { "text": "The shape of the brief", "level": 2 }
+          "props": {
+            "text": "The shape of the brief",
+            "level": 2
+          }
         },
         {
           "name": "paragraph",
@@ -140,10 +174,12 @@
             "text": "Briefs in 2026 were more often shaped like questions than like deliverables. A typical 2024 brief read *\"design our marketing site\"*; a typical 2026 brief read *\"help us figure out who we are talking to, and then make a site that talks to them\"*. The change is not academic — it changes how we staff, how we price, and how we know we are done."
           }
         },
-
         {
           "name": "heading",
-          "props": { "text": "The shape of the team", "level": 2 }
+          "props": {
+            "text": "The shape of the team",
+            "level": 2
+          }
         },
         {
           "name": "paragraph",
@@ -151,13 +187,12 @@
             "text": "We added a writer, a strategist, and an additional engineer. We did not add another designer. The 2026 team is two designers, two engineers, one writer, one strategist, and a part-time producer. We expect to hold this shape into 2027."
           }
         },
-
         {
           "name": "heading",
           "props": {
             "text": "Looking ahead",
             "level": 1,
-            "pageBreak": "before"
+            "pageBreak": true
           }
         },
         {

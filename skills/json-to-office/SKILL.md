@@ -125,7 +125,7 @@ Slot user-provided content into the template. Hard rules:
 python3 <skill>/scripts/validate.py decks/our-pricing.pptx.json
 ```
 
-Fix any errors before rendering. If the validator warns about a known false-negative on the root component (`docx` / `pptx`), it's a library bug — the script downgrades it to a warning automatically.
+Fix any errors before rendering. Validation is deep for both formats: every component's props are checked with JSON-pointer paths, so an unknown component name or a dead prop anywhere in the tree is an error, not a silent drop.
 
 ### 6.5. Pre-flight (PPTX)
 
@@ -171,6 +171,8 @@ python3 <skill>/scripts/render_preview.py decks/our-pricing.pptx.json --fonts-di
 - Chart sins (default colors, jagged axes, illegible labels)
 
 If `render_preview.py` prints `VALIDATE_ONLY` first, you're in the degraded path — skip the visual inspection, warn the user.
+
+**If you started from a template**, also open its golden render under `references/renders/` alongside your fresh PNGs — chrome, accents, and hierarchy should match; divergence means a slot-fill broke something.
 
 ### 8. Iterate
 
@@ -244,6 +246,9 @@ The CLI version is pinned in `scripts/_lib.py` (`JTO_CLI_VERSION`) and applied
 by `bootstrap.py`'s npx fallback. That constant is the single source of truth
 for this skill and for the dependent skills (`quote-carousel`, `blog-cover`),
 which resolve their CLI through `scripts/jto_argv.py`. To upgrade: bump the
-constant, re-run `bootstrap.py`, and republish this skill before the dependents.
+constant, re-run `bootstrap.py`, run `python3 scripts/check_templates.py` (renders
+every bundled template with the pinned CLI and compares against the goldens in
+`references/renders/` — a pin bump must not ship if it drifts), and republish
+this skill before the dependents.
 
 Online playground (when working interactively, optional): https://docx.json-to-office.com · https://pptx.json-to-office.com

@@ -15,7 +15,7 @@ Distilled from real-world failures. Scan this list before validating, and again 
 - **`characterSpacing` shape.** Requires both `type` (`"expanded"` or `"condensed"`) and `value`. `{ "value": N }` alone fails validation.
 - **Top-level paragraph `border`.** Not supported at the paragraph root. Only valid inside a `text-box`. For a horizontal rule, use a borderless single-row table or a unicode line.
 - **Section header/footer disappearance.** After the first section, omitting `header`/`footer` makes them disappear silently. Use `"header": "linkToPrevious"` / `"footer": "linkToPrevious"`.
-- **Table column-width overflow.** Sum of column widths must be ≤ available page width (≈451pt for A4 with 1-inch margins). Otherwise the right-most column spills off the page. The validator may now warn; render still produces a broken document.
+- **Table column-width overflow.** Sum of column widths must be ≤ available page width (≈451pt for A4 with 1-inch margins). Otherwise the right-most column spills off the page. `preflight.py` on a `.docx.json` now blocks on this; render still produces a broken document if you skip it.
 - **Cell color vs fill.** `color` on a cell is the **text** color. `backgroundColor` is the fill. To make a dark header bar with white text, set `backgroundColor` + `font.color` on **each column's `header` object** directly — not on `headerCellDefaults`, which is silently overridden by column-level `cellDefaults`.
 - **Cover-page paragraph defaults.** The theme's `normal` style silently inflates paragraph heights via `spacing` and `lineSpacing`. On cover pages override both: `lineSpacing: "single"`, `spacing: { before: 0, after: 0 }`.
 - **Hex prefix.** DOCX uses `#`. PPTX doesn't. This is **opposite** between formats.
@@ -26,9 +26,9 @@ Distilled from real-world failures. Scan this list before validating, and again 
 ## PPTX
 
 - **Canvas defaults to 4:3.** The renderer (pptxgenjs) uses `LAYOUT_4x3` (10″×7.5″) when `slideWidth`/`slideHeight` are omitted at the `pptx` root. Content authored for 16:9 then leaves a ~2-inch white strip at the bottom — a silent failure. **Always set both.** `preflight.py` blocks on missing canvas.
-- **Hex prefix.** PPTX uses bare hex (`"FFFFFF"`). **No `#`.** Theme keys (`"primary"`, `"text"`) work without `#` and are preferred.
+- **Hex prefix.** PPTX convention is bare hex (`"FFFFFF"`). Since CLI 0.19 a stray `#` is stripped rather than rendering black, but stay bare for consistency. Theme keys (`"primary"`, `"text"`) are preferred over raw hex.
 - **Theme name mismatch.** The `name` field in the theme file must equal `props.theme` in the document, byte-for-byte. Mismatch → silent fallback to default Office theme (blue/green). If your render looks generic, check this first.
-- **`color` vs `fontColor`.** Text components use `color`. Shape-with-text uses `fontColor`. Setting `fontColor` on a text component is silently ignored.
+- **`color` vs `fontColor`.** Text components use `color`. Shape-with-text uses `fontColor`. Since CLI 0.20 validation rejects `fontColor` on a text component (older CLIs silently ignored it — every pre-2.4.0 template shipped with that bug).
 - **No `transparency` on text.** Text components don't accept `transparency`. Fake fading by setting `color` to a value close to the background.
 - **Grid OR absolute, never both.** A node with both `grid` and `x/y/w/h` produces unpredictable layout.
 - **`fontSize` override needs `lineSpacing` override.** When you override `fontSize` from a theme style, override `lineSpacing` too. The placeholder height assumes the style's original line height; otherwise text overflows or floats.

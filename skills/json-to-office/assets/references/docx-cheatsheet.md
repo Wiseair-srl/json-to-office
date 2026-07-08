@@ -308,12 +308,20 @@ DOCX tables are **column-oriented** (PPTX tables are row-oriented — opposite).
 {
   "name": "statistic",
   "props": {
-    "value": "3.2×",
-    "label": "Faster shipping cadence",
-    "font": { "size": 48, "color": "primary" }
+    "number": "3.2×",
+    "description": "Faster shipping cadence",
+    "trend": "up",
+    "trendValue": "+32% QoQ",
+    "size": "large",
+    "alignment": "left"
   }
 }
 ```
+
+`number` + `description` are required. Optional: `unit`, `format`, `trend`
+(`up`/`down`/`neutral`), `trendValue`, `alignment`, `spacing`, `size`
+(`small`/`medium`/`large`). There is no `value`, `label`, or `font` prop —
+sizing comes from `size`.
 
 ### `text-box` (floating positioned content)
 
