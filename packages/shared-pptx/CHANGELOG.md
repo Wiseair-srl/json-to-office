@@ -1,5 +1,17 @@
 # @json-to-office/shared-pptx
 
+## 0.20.0
+
+### Minor Changes
+
+- bc15ebf: feat(pptx): real validation for `pptx validate` — deep, path-aware checking of whole presentations
+
+  `jto pptx validate` previously returned valid unconditionally: unknown component names, dead props (e.g. `fontColor` on `text`), and malformed trees all passed. shared-pptx now ships a unified validation facade (`validate` / `validateStrict`) mirroring shared-docx: a deep walk validates every component's props against its registry schema with precise JSON-pointer paths, enforces container narrowing (`pptx` → `slide` → content), rejects children on leaf components and unknown top-level fields, validates slide `placeholders` values, checks image source mutual exclusivity, and validates themes against `ThemeConfigSchema`. The CLI wires both `pptx` document and theme validation to it, and a missing/broken validation module now reports an error instead of silently passing the file.
+
+- de4d21c: feat(pptx): `props.theme` accepts an inline theme config object
+
+  A presentation can now embed its theme directly (`props.theme: { name, colors, fonts, defaults, ... }`) instead of naming a built-in or `--theme-path` theme, keeping the document fully self-contained. Both generators normalize the inline object to a named customThemes entry, so font-mode scoping and name-keyed theme re-resolution work unchanged. Validation checks the inline object against `ThemeConfigSchema`.
+
 ## 0.19.0
 
 ### Minor Changes
