@@ -266,11 +266,29 @@ function createBuilderImpl<
     document: ExtendedPresentationComponent<TComponents>
   ): Promise<BufferGenerationResult> {
     try {
-      const internalDocument =
+      let internalDocument =
         document as unknown as PresentationComponentDefinition;
 
       if (!internalDocument || internalDocument.name !== 'pptx') {
         throw new Error('Top-level component must be a pptx component');
+      }
+
+      // An inline theme object (self-contained document) is normalized to a
+      // name + resolved theme so font-mode scoping and the name-keyed
+      // customThemes re-resolution below work unchanged.
+      let inlineTheme: PptxThemeConfig | undefined;
+      if (
+        typeof internalDocument.props.theme === 'object' &&
+        internalDocument.props.theme !== null
+      ) {
+        inlineTheme = internalDocument.props.theme as PptxThemeConfig;
+        internalDocument = {
+          ...internalDocument,
+          props: {
+            ...internalDocument.props,
+            theme: inlineTheme.name || 'inline-theme',
+          },
+        };
       }
 
       // Resolve theme: doc-level `props.theme` wins (matches non-plugin path
@@ -278,11 +296,12 @@ function createBuilderImpl<
       // the fallback when the doc names a theme we can't find — otherwise a
       // playground/CLI default theme would silently shadow customThemes
       // entries (e.g. `props.theme: "wiseair"` rendering as `themes.minimal`).
-      const docThemeName = internalDocument.props.theme;
+      const docThemeName = internalDocument.props.theme as string | undefined;
       const baseThemeName =
         docThemeName ??
         (typeof state.theme === 'string' ? state.theme : 'default');
       let resolvedTheme =
+        inlineTheme ??
         state.customThemes?.[baseThemeName] ??
         (typeof state.theme === 'object' && state.theme !== null
           ? state.theme

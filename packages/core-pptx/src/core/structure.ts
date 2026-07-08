@@ -5,6 +5,7 @@
 
 import type {
   PptxComponentInput,
+  PptxThemeConfig,
   PresentationComponentDefinition,
   ProcessedPresentation,
   ProcessedSlide,
@@ -27,9 +28,13 @@ export function processPresentation(
 ): ProcessedPresentation {
   const { props, children = [] } = document;
 
-  const themeName = props.theme ?? 'default';
+  // `theme` is a name to resolve, or an inline theme config object embedded in
+  // the document itself (self-contained documents-as-data).
   const baseTheme =
-    options?.customThemes?.[themeName] ?? getPptxTheme(themeName);
+    typeof props.theme === 'object' && props.theme !== null
+      ? (props.theme as PptxThemeConfig)
+      : options?.customThemes?.[props.theme ?? 'default'] ??
+        getPptxTheme(props.theme ?? 'default');
 
   // Merge presentation-level componentDefaults on top of theme-level ones
   const presDefaults = props.componentDefaults;

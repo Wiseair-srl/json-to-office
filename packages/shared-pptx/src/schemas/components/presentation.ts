@@ -4,7 +4,7 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { TemplateSlideDefinitionSchema } from './template';
-import { GridConfigSchema } from '../theme';
+import { GridConfigSchema, ThemeConfigSchema } from '../theme';
 import { PptxComponentDefaultsSchema } from '../component-defaults';
 
 export const PresentationPropsSchema = Type.Object(
@@ -22,10 +22,21 @@ export const PresentationPropsSchema = Type.Object(
       Type.String({ description: 'Company name metadata' })
     ),
     theme: Type.Optional(
-      Type.String({
-        description: 'Theme name to apply (default: "default")',
-        default: 'default',
-      })
+      Type.Union(
+        [
+          Type.String({
+            description: 'Theme name to apply (default: "default")',
+            default: 'default',
+          }),
+          ThemeConfigSchema,
+        ],
+        {
+          description:
+            'Theme to apply: a built-in/custom theme name (default: ' +
+            '"default"), or an inline theme config object so the document ' +
+            'stays self-contained',
+        }
+      )
     ),
     slideWidth: Type.Optional(
       Type.Number({

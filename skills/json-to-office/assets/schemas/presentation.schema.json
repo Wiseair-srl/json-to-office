@@ -2546,9 +2546,1118 @@
               "type": "string"
             },
             "theme": {
-              "description": "Theme name to apply (default: \"default\")",
-              "default": "default",
-              "type": "string"
+              "description": "Theme to apply: a built-in/custom theme name (default: \"default\"), or an inline theme config object so the document stays self-contained",
+              "anyOf": [
+                {
+                  "description": "Theme name to apply (default: \"default\")",
+                  "default": "default",
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": false,
+                  "description": "Presentation theme configuration",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "description": "Theme name",
+                      "type": "string"
+                    },
+                    "colors": {
+                      "additionalProperties": false,
+                      "description": "Theme color palette (10-slot scheme)",
+                      "type": "object",
+                      "properties": {
+                        "primary": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        },
+                        "secondary": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        },
+                        "accent": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        },
+                        "background": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        },
+                        "text": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        },
+                        "text2": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        },
+                        "background2": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        },
+                        "accent4": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        },
+                        "accent5": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        },
+                        "accent6": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "primary",
+                        "secondary",
+                        "accent",
+                        "background",
+                        "text"
+                      ]
+                    },
+                    "fonts": {
+                      "additionalProperties": false,
+                      "description": "Font families",
+                      "type": "object",
+                      "properties": {
+                        "heading": {
+                          "description": "Font family name. Prefer a SAFE_FONTS entry (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) for zero-setup rendering. For any other font, register it in props.fontRegistry[] and reference it here by family. Unregistered non-safe names render with a host fallback.",
+                          "examples": [
+                            "Arial",
+                            "Calibri",
+                            "Georgia",
+                            "Inter",
+                            "Roboto"
+                          ],
+                          "type": "string"
+                        },
+                        "body": {
+                          "description": "Font family name. Prefer a SAFE_FONTS entry (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) for zero-setup rendering. For any other font, register it in props.fontRegistry[] and reference it here by family. Unregistered non-safe names render with a host fallback.",
+                          "examples": [
+                            "Arial",
+                            "Calibri",
+                            "Georgia",
+                            "Inter",
+                            "Roboto"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["heading", "body"]
+                    },
+                    "defaults": {
+                      "additionalProperties": false,
+                      "description": "Default text styling",
+                      "type": "object",
+                      "properties": {
+                        "fontSize": {
+                          "description": "Default font size in points",
+                          "type": "number"
+                        },
+                        "fontColor": {
+                          "pattern": "^#?[0-9A-Fa-f]{6}$",
+                          "description": "Hex color (e.g. #FF0000)",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["fontSize", "fontColor"]
+                    },
+                    "styles": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "additionalProperties": false,
+                          "description": "Text style preset",
+                          "type": "object",
+                          "properties": {
+                            "fontSize": {
+                              "type": "number"
+                            },
+                            "fontFace": {
+                              "description": "Font family name. Prefer a SAFE_FONTS entry (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) for zero-setup rendering. For any other font, register it in props.fontRegistry[] and reference it here by family. Unregistered non-safe names render with a host fallback.",
+                              "examples": [
+                                "Arial",
+                                "Calibri",
+                                "Georgia",
+                                "Inter",
+                                "Roboto"
+                              ],
+                              "type": "string"
+                            },
+                            "fontColor": {
+                              "description": "Hex color or semantic theme color name",
+                              "anyOf": [
+                                {
+                                  "pattern": "^#?[0-9A-Fa-f]{6}$",
+                                  "description": "Hex color (e.g. #FF0000)",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "primary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "secondary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent4",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent5",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent6",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent3",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg2",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "bold": {
+                              "type": "boolean"
+                            },
+                            "fontWeight": {
+                              "minimum": 100,
+                              "maximum": 900,
+                              "type": "integer"
+                            },
+                            "italic": {
+                              "type": "boolean"
+                            },
+                            "align": {
+                              "anyOf": [
+                                {
+                                  "const": "left",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "center",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "right",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "justify",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "lineSpacing": {
+                              "type": "number"
+                            },
+                            "charSpacing": {
+                              "type": "number"
+                            },
+                            "paraSpaceAfter": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "subtitle": {
+                          "additionalProperties": false,
+                          "description": "Text style preset",
+                          "type": "object",
+                          "properties": {
+                            "fontSize": {
+                              "type": "number"
+                            },
+                            "fontFace": {
+                              "description": "Font family name. Prefer a SAFE_FONTS entry (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) for zero-setup rendering. For any other font, register it in props.fontRegistry[] and reference it here by family. Unregistered non-safe names render with a host fallback.",
+                              "examples": [
+                                "Arial",
+                                "Calibri",
+                                "Georgia",
+                                "Inter",
+                                "Roboto"
+                              ],
+                              "type": "string"
+                            },
+                            "fontColor": {
+                              "description": "Hex color or semantic theme color name",
+                              "anyOf": [
+                                {
+                                  "pattern": "^#?[0-9A-Fa-f]{6}$",
+                                  "description": "Hex color (e.g. #FF0000)",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "primary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "secondary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent4",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent5",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent6",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent3",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg2",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "bold": {
+                              "type": "boolean"
+                            },
+                            "fontWeight": {
+                              "minimum": 100,
+                              "maximum": 900,
+                              "type": "integer"
+                            },
+                            "italic": {
+                              "type": "boolean"
+                            },
+                            "align": {
+                              "anyOf": [
+                                {
+                                  "const": "left",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "center",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "right",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "justify",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "lineSpacing": {
+                              "type": "number"
+                            },
+                            "charSpacing": {
+                              "type": "number"
+                            },
+                            "paraSpaceAfter": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "heading1": {
+                          "additionalProperties": false,
+                          "description": "Text style preset",
+                          "type": "object",
+                          "properties": {
+                            "fontSize": {
+                              "type": "number"
+                            },
+                            "fontFace": {
+                              "description": "Font family name. Prefer a SAFE_FONTS entry (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) for zero-setup rendering. For any other font, register it in props.fontRegistry[] and reference it here by family. Unregistered non-safe names render with a host fallback.",
+                              "examples": [
+                                "Arial",
+                                "Calibri",
+                                "Georgia",
+                                "Inter",
+                                "Roboto"
+                              ],
+                              "type": "string"
+                            },
+                            "fontColor": {
+                              "description": "Hex color or semantic theme color name",
+                              "anyOf": [
+                                {
+                                  "pattern": "^#?[0-9A-Fa-f]{6}$",
+                                  "description": "Hex color (e.g. #FF0000)",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "primary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "secondary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent4",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent5",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent6",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent3",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg2",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "bold": {
+                              "type": "boolean"
+                            },
+                            "fontWeight": {
+                              "minimum": 100,
+                              "maximum": 900,
+                              "type": "integer"
+                            },
+                            "italic": {
+                              "type": "boolean"
+                            },
+                            "align": {
+                              "anyOf": [
+                                {
+                                  "const": "left",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "center",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "right",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "justify",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "lineSpacing": {
+                              "type": "number"
+                            },
+                            "charSpacing": {
+                              "type": "number"
+                            },
+                            "paraSpaceAfter": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "heading2": {
+                          "additionalProperties": false,
+                          "description": "Text style preset",
+                          "type": "object",
+                          "properties": {
+                            "fontSize": {
+                              "type": "number"
+                            },
+                            "fontFace": {
+                              "description": "Font family name. Prefer a SAFE_FONTS entry (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) for zero-setup rendering. For any other font, register it in props.fontRegistry[] and reference it here by family. Unregistered non-safe names render with a host fallback.",
+                              "examples": [
+                                "Arial",
+                                "Calibri",
+                                "Georgia",
+                                "Inter",
+                                "Roboto"
+                              ],
+                              "type": "string"
+                            },
+                            "fontColor": {
+                              "description": "Hex color or semantic theme color name",
+                              "anyOf": [
+                                {
+                                  "pattern": "^#?[0-9A-Fa-f]{6}$",
+                                  "description": "Hex color (e.g. #FF0000)",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "primary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "secondary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent4",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent5",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent6",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent3",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg2",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "bold": {
+                              "type": "boolean"
+                            },
+                            "fontWeight": {
+                              "minimum": 100,
+                              "maximum": 900,
+                              "type": "integer"
+                            },
+                            "italic": {
+                              "type": "boolean"
+                            },
+                            "align": {
+                              "anyOf": [
+                                {
+                                  "const": "left",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "center",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "right",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "justify",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "lineSpacing": {
+                              "type": "number"
+                            },
+                            "charSpacing": {
+                              "type": "number"
+                            },
+                            "paraSpaceAfter": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "heading3": {
+                          "additionalProperties": false,
+                          "description": "Text style preset",
+                          "type": "object",
+                          "properties": {
+                            "fontSize": {
+                              "type": "number"
+                            },
+                            "fontFace": {
+                              "description": "Font family name. Prefer a SAFE_FONTS entry (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) for zero-setup rendering. For any other font, register it in props.fontRegistry[] and reference it here by family. Unregistered non-safe names render with a host fallback.",
+                              "examples": [
+                                "Arial",
+                                "Calibri",
+                                "Georgia",
+                                "Inter",
+                                "Roboto"
+                              ],
+                              "type": "string"
+                            },
+                            "fontColor": {
+                              "description": "Hex color or semantic theme color name",
+                              "anyOf": [
+                                {
+                                  "pattern": "^#?[0-9A-Fa-f]{6}$",
+                                  "description": "Hex color (e.g. #FF0000)",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "primary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "secondary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent4",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent5",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent6",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent3",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg2",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "bold": {
+                              "type": "boolean"
+                            },
+                            "fontWeight": {
+                              "minimum": 100,
+                              "maximum": 900,
+                              "type": "integer"
+                            },
+                            "italic": {
+                              "type": "boolean"
+                            },
+                            "align": {
+                              "anyOf": [
+                                {
+                                  "const": "left",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "center",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "right",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "justify",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "lineSpacing": {
+                              "type": "number"
+                            },
+                            "charSpacing": {
+                              "type": "number"
+                            },
+                            "paraSpaceAfter": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "body": {
+                          "additionalProperties": false,
+                          "description": "Text style preset",
+                          "type": "object",
+                          "properties": {
+                            "fontSize": {
+                              "type": "number"
+                            },
+                            "fontFace": {
+                              "description": "Font family name. Prefer a SAFE_FONTS entry (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) for zero-setup rendering. For any other font, register it in props.fontRegistry[] and reference it here by family. Unregistered non-safe names render with a host fallback.",
+                              "examples": [
+                                "Arial",
+                                "Calibri",
+                                "Georgia",
+                                "Inter",
+                                "Roboto"
+                              ],
+                              "type": "string"
+                            },
+                            "fontColor": {
+                              "description": "Hex color or semantic theme color name",
+                              "anyOf": [
+                                {
+                                  "pattern": "^#?[0-9A-Fa-f]{6}$",
+                                  "description": "Hex color (e.g. #FF0000)",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "primary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "secondary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent4",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent5",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent6",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent3",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg2",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "bold": {
+                              "type": "boolean"
+                            },
+                            "fontWeight": {
+                              "minimum": 100,
+                              "maximum": 900,
+                              "type": "integer"
+                            },
+                            "italic": {
+                              "type": "boolean"
+                            },
+                            "align": {
+                              "anyOf": [
+                                {
+                                  "const": "left",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "center",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "right",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "justify",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "lineSpacing": {
+                              "type": "number"
+                            },
+                            "charSpacing": {
+                              "type": "number"
+                            },
+                            "paraSpaceAfter": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "caption": {
+                          "additionalProperties": false,
+                          "description": "Text style preset",
+                          "type": "object",
+                          "properties": {
+                            "fontSize": {
+                              "type": "number"
+                            },
+                            "fontFace": {
+                              "description": "Font family name. Prefer a SAFE_FONTS entry (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) for zero-setup rendering. For any other font, register it in props.fontRegistry[] and reference it here by family. Unregistered non-safe names render with a host fallback.",
+                              "examples": [
+                                "Arial",
+                                "Calibri",
+                                "Georgia",
+                                "Inter",
+                                "Roboto"
+                              ],
+                              "type": "string"
+                            },
+                            "fontColor": {
+                              "description": "Hex color or semantic theme color name",
+                              "anyOf": [
+                                {
+                                  "pattern": "^#?[0-9A-Fa-f]{6}$",
+                                  "description": "Hex color (e.g. #FF0000)",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "primary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "secondary",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "text2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "background2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent4",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent5",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent6",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "accent3",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "tx2",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg1",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bg2",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "bold": {
+                              "type": "boolean"
+                            },
+                            "fontWeight": {
+                              "minimum": 100,
+                              "maximum": 900,
+                              "type": "integer"
+                            },
+                            "italic": {
+                              "type": "boolean"
+                            },
+                            "align": {
+                              "anyOf": [
+                                {
+                                  "const": "left",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "center",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "right",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "justify",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "lineSpacing": {
+                              "type": "number"
+                            },
+                            "charSpacing": {
+                              "type": "number"
+                            },
+                            "paraSpaceAfter": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      },
+                      "additionalProperties": false,
+                      "description": "Named text style presets"
+                    },
+                    "componentDefaults": {}
+                  },
+                  "required": ["name", "colors", "fonts", "defaults"]
+                }
+              ]
             },
             "slideWidth": {
               "description": "Slide width in inches (default: 10)",

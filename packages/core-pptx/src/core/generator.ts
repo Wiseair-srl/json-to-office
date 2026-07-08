@@ -110,7 +110,31 @@ export async function generateBufferWithWarnings(
   }
 
   const warnings: PipelineWarning[] = [];
-  const baseThemeName = component.props?.theme ?? 'default';
+
+  // An inline theme object (self-contained document) is normalized to a named
+  // customThemes entry up front so the rest of the pipeline — font-mode
+  // scoping and processPresentation's name-keyed re-resolution — works
+  // unchanged.
+  if (
+    typeof component.props?.theme === 'object' &&
+    component.props.theme !== null
+  ) {
+    const inlineTheme = component.props.theme as PptxThemeConfig;
+    const inlineName = inlineTheme.name || 'inline-theme';
+    component = {
+      ...component,
+      props: { ...component.props, theme: inlineName },
+    };
+    options = {
+      ...options,
+      customThemes: {
+        ...(options?.customThemes ?? {}),
+        [inlineName]: inlineTheme,
+      },
+    };
+  }
+
+  const baseThemeName = (component.props?.theme ?? 'default') as string;
   let resolvedTheme =
     options?.customThemes?.[baseThemeName] ?? getPptxTheme(baseThemeName);
   // Export-mode pre-pass: substitute rewrites non-safe families in place;
