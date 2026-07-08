@@ -109,8 +109,8 @@ function withThemeColors(
   if (palette.length === 0) return config;
   return {
     ...config,
-    options: { ...options, colors: palette },
-  } as HighchartsProps;
+    options: { ...config.options, colors: palette },
+  };
 }
 
 /**
