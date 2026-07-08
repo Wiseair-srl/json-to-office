@@ -1,5 +1,23 @@
 # @json-to-office/core-pptx
 
+## 0.20.0
+
+### Minor Changes
+
+- bc15ebf: feat(docx,pptx): highcharts charts follow the document theme by default
+
+  The `highcharts` component forwarded its config verbatim, so charts with no explicit `colors` rendered in the Highcharts default palette (blue-first) regardless of theme. When `options.colors` is absent, the renderer now injects the theme palette — pptx uses the same token list as the native `chart` component (primary, secondary, accent, accent4-6); docx uses primary/secondary/accent. Explicit `colors` always wins, so existing configs that set colors are unchanged.
+
+- de4d21c: feat(pptx): `props.theme` accepts an inline theme config object
+
+  A presentation can now embed its theme directly (`props.theme: { name, colors, fonts, defaults, ... }`) instead of naming a built-in or `--theme-path` theme, keeping the document fully self-contained. Both generators normalize the inline object to a named customThemes entry, so font-mode scoping and name-keyed theme re-resolution work unchanged. Validation checks the inline object against `ThemeConfigSchema`.
+
+### Patch Changes
+
+- Updated dependencies [bc15ebf]
+- Updated dependencies [de4d21c]
+  - @json-to-office/shared-pptx@0.20.0
+
 ## 0.19.0
 
 ### Minor Changes
