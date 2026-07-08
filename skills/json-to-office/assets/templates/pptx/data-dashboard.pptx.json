@@ -1,22 +1,59 @@
 {
   "name": "pptx",
   "props": {
-    "theme": "minimal",
+    "theme": {
+      "name": "editorial",
+      "colors": {
+        "primary": "#1A1A1A",
+        "secondary": "#444444",
+        "accent": "#CC785C",
+        "background": "#FFFFFF",
+        "text": "#1A1A1A",
+        "text2": "#888888",
+        "background2": "#F7F7F5",
+        "accent4": "#BBBBBB",
+        "accent5": "#EFEFEF",
+        "accent6": "#888888"
+      },
+      "fonts": {
+        "heading": "Helvetica",
+        "body": "Helvetica"
+      },
+      "defaults": {
+        "fontSize": 18,
+        "fontColor": "#1A1A1A"
+      }
+    },
     "slideWidth": 10,
     "slideHeight": 5.625,
-    "grid": { "columns": 12, "rows": 6, "gutter": 0.2, "padding": 0.55 }
+    "grid": {
+      "columns": 12,
+      "rows": 6,
+      "gutter": 0.2,
+      "margin": 0.55
+    }
   },
   "children": [
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "KPI dashboard. Lead with the headline takeaway, then walk the three stats left to right — each has a one-line delta underneath. Close on the trend chart: point at the last bar, not the axis."
+      },
       "children": [
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0,
             "y": 0,
             "w": 0.05,
@@ -29,20 +66,25 @@
             "text": "FIELD STUDIO  ·  Q2 PERFORMANCE  ·  2026",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "right",
             "x": 5,
             "y": 0.35,
             "w": 4.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0.55,
             "y": 1.0,
             "w": 0.25,
@@ -55,12 +97,12 @@
             "text": "Q2 PERFORMANCE",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "left",
             "x": 0.9,
             "y": 0.85,
             "w": 4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -70,20 +112,25 @@
             "fontSize": 30,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "x": 0.55,
             "y": 1.4,
             "w": 9.5,
-            "h": 0.7
+            "h": 0.7,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "EFEFEF" },
-            "line": { "color": "EFEFEF", "width": 0 },
+            "fill": {
+              "color": "accent5"
+            },
+            "line": {
+              "color": "accent5",
+              "width": 0
+            },
             "x": 0.55,
             "y": 2.3,
             "w": 0.6,
@@ -94,8 +141,13 @@
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "EFEFEF" },
-            "line": { "color": "EFEFEF", "width": 0 },
+            "fill": {
+              "color": "accent5"
+            },
+            "line": {
+              "color": "accent5",
+              "width": 0
+            },
             "x": 3.5,
             "y": 2.3,
             "w": 0.6,
@@ -106,8 +158,13 @@
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "EFEFEF" },
-            "line": { "color": "EFEFEF", "width": 0 },
+            "fill": {
+              "color": "accent5"
+            },
+            "line": {
+              "color": "accent5",
+              "width": 0
+            },
             "x": 6.5,
             "y": 2.3,
             "w": 0.6,
@@ -120,12 +177,12 @@
             "text": "REVENUE",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 2.4,
             "w": 3,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -135,12 +192,12 @@
             "fontSize": 52,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "x": 0.55,
             "y": 2.7,
             "w": 3,
-            "h": 0.9
+            "h": 0.9,
+            "color": "text"
           }
         },
         {
@@ -149,13 +206,13 @@
             "text": "+32% QoQ",
             "fontSize": 11,
             "fontFace": "Courier",
-            "fontColor": "text",
             "bold": true,
             "align": "left",
             "x": 0.55,
             "y": 3.7,
             "w": 3,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text"
           }
         },
         {
@@ -164,12 +221,12 @@
             "text": "ACTIVE CUSTOMERS",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 3.5,
             "y": 2.4,
             "w": 3,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -179,12 +236,12 @@
             "fontSize": 52,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "x": 3.5,
             "y": 2.7,
             "w": 3,
-            "h": 0.9
+            "h": 0.9,
+            "color": "text"
           }
         },
         {
@@ -193,13 +250,13 @@
             "text": "+12% QoQ",
             "fontSize": 11,
             "fontFace": "Courier",
-            "fontColor": "text",
             "bold": true,
             "align": "left",
             "x": 3.5,
             "y": 3.7,
             "w": 3,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text"
           }
         },
         {
@@ -208,12 +265,12 @@
             "text": "NET RETENTION",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 6.5,
             "y": 2.4,
             "w": 3,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -223,12 +280,12 @@
             "fontSize": 52,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "x": 6.5,
             "y": 2.7,
             "w": 3,
-            "h": 0.9
+            "h": 0.9,
+            "color": "text"
           }
         },
         {
@@ -237,13 +294,13 @@
             "text": "+4 pts QoQ",
             "fontSize": 11,
             "fontFace": "Courier",
-            "fontColor": "text",
             "bold": true,
             "align": "left",
             "x": 6.5,
             "y": 3.7,
             "w": 3,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text"
           }
         },
         {
@@ -277,8 +334,13 @@
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "888888" },
-            "line": { "color": "888888", "width": 0 },
+            "fill": {
+              "color": "text2"
+            },
+            "line": {
+              "color": "text2",
+              "width": 0
+            },
             "x": 0.55,
             "y": 5.15,
             "w": 8.9,
@@ -291,12 +353,12 @@
             "text": "01 / 01",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 5.25,
             "w": 1,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -305,12 +367,12 @@
             "text": "FIELD STUDIO",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "right",
             "x": 5,
             "y": 5.25,
             "w": 4.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         }
       ]

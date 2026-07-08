@@ -1,22 +1,59 @@
 {
   "name": "pptx",
   "props": {
-    "theme": "minimal",
+    "theme": {
+      "name": "editorial",
+      "colors": {
+        "primary": "#1A1A1A",
+        "secondary": "#444444",
+        "accent": "#CC785C",
+        "background": "#FFFFFF",
+        "text": "#1A1A1A",
+        "text2": "#888888",
+        "background2": "#F7F7F5",
+        "accent4": "#BBBBBB",
+        "accent5": "#EFEFEF",
+        "accent6": "#888888"
+      },
+      "fonts": {
+        "heading": "Helvetica",
+        "body": "Helvetica"
+      },
+      "defaults": {
+        "fontSize": 18,
+        "fontColor": "#1A1A1A"
+      }
+    },
     "slideWidth": 10,
     "slideHeight": 5.625,
-    "grid": { "columns": 12, "rows": 6, "gutter": 0.2, "padding": 0.55 }
+    "grid": {
+      "columns": 12,
+      "rows": 6,
+      "gutter": 0.2,
+      "margin": 0.55
+    }
   },
   "children": [
     {
       "name": "slide",
-      "props": { "background": { "color": "background" } },
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "Pricing slide. Anchor on the middle plan — it's the one you want them to pick. Walk price, then what's included; mention the free tier only if asked."
+      },
       "children": [
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0,
             "y": 0,
             "w": 0.05,
@@ -29,20 +66,25 @@
             "text": "FIELD STUDIO  ·  PRICING  ·  2026",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "right",
             "x": 5,
             "y": 0.35,
             "w": 4.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 0.55,
             "y": 1.0,
             "w": 0.25,
@@ -55,12 +97,12 @@
             "text": "PRICING",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "left",
             "x": 0.9,
             "y": 0.85,
             "w": 4,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -70,20 +112,25 @@
             "fontSize": 38,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "x": 0.55,
             "y": 1.4,
             "w": 9,
-            "h": 0.8
+            "h": 0.8,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "F7F7F5" },
-            "line": { "color": "F7F7F5", "width": 0 },
+            "fill": {
+              "color": "background2"
+            },
+            "line": {
+              "color": "background2",
+              "width": 0
+            },
             "x": 0.55,
             "y": 2.4,
             "w": 2.85,
@@ -94,8 +141,13 @@
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "FFFFFF" },
-            "line": { "color": "1A1A1A", "width": 1.5 },
+            "fill": {
+              "color": "background"
+            },
+            "line": {
+              "color": "text",
+              "width": 1.5
+            },
             "x": 3.575,
             "y": 2.3,
             "w": 2.85,
@@ -106,8 +158,13 @@
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "F7F7F5" },
-            "line": { "color": "F7F7F5", "width": 0 },
+            "fill": {
+              "color": "background2"
+            },
+            "line": {
+              "color": "background2",
+              "width": 0
+            },
             "x": 6.6,
             "y": 2.4,
             "w": 2.85,
@@ -121,12 +178,12 @@
             "fontSize": 13,
             "bold": true,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "left",
             "x": 0.75,
             "y": 2.7,
             "w": 2.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -136,12 +193,12 @@
             "fontSize": 54,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "x": 0.75,
             "y": 3.1,
             "w": 2.5,
-            "h": 0.9
+            "h": 0.9,
+            "color": "text"
           }
         },
         {
@@ -149,13 +206,13 @@
           "props": {
             "text": "per user / month",
             "fontSize": 10,
-            "fontColor": "text2",
             "italic": false,
             "align": "left",
             "x": 0.75,
             "y": 4.0,
             "w": 2.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -163,22 +220,27 @@
           "props": {
             "text": "Up to 5 seats\n10 GB storage\nEmail support",
             "fontSize": 11,
-            "fontColor": "text",
             "italic": false,
             "align": "left",
             "lineSpacing": 18,
             "x": 0.75,
             "y": 4.25,
             "w": 2.5,
-            "h": 0.85
+            "h": 0.85,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "CC785C" },
-            "line": { "color": "CC785C", "width": 0 },
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "accent",
+              "width": 0
+            },
             "x": 3.775,
             "y": 2.55,
             "w": 0.18,
@@ -192,12 +254,12 @@
             "fontSize": 13,
             "bold": true,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "left",
             "x": 4.05,
             "y": 2.6,
             "w": 2.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -207,12 +269,12 @@
             "fontSize": 54,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "x": 3.775,
             "y": 3.0,
             "w": 2.5,
-            "h": 0.9
+            "h": 0.9,
+            "color": "text"
           }
         },
         {
@@ -220,13 +282,13 @@
           "props": {
             "text": "per user / month",
             "fontSize": 10,
-            "fontColor": "text2",
             "italic": false,
             "align": "left",
             "x": 3.775,
             "y": 3.9,
             "w": 2.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -234,14 +296,14 @@
           "props": {
             "text": "Unlimited seats\n1 TB storage\nPriority support",
             "fontSize": 11,
-            "fontColor": "text",
             "italic": false,
             "align": "left",
             "lineSpacing": 18,
             "x": 3.775,
             "y": 4.15,
             "w": 2.5,
-            "h": 0.95
+            "h": 0.95,
+            "color": "text"
           }
         },
         {
@@ -251,12 +313,12 @@
             "fontSize": 13,
             "bold": true,
             "fontFace": "Courier",
-            "fontColor": "text",
             "align": "left",
             "x": 6.8,
             "y": 2.7,
             "w": 2.5,
-            "h": 0.3
+            "h": 0.3,
+            "color": "text"
           }
         },
         {
@@ -266,12 +328,12 @@
             "fontSize": 38,
             "bold": true,
             "italic": false,
-            "fontColor": "text",
             "align": "left",
             "x": 6.8,
             "y": 3.1,
             "w": 2.5,
-            "h": 0.7
+            "h": 0.7,
+            "color": "text"
           }
         },
         {
@@ -279,13 +341,13 @@
           "props": {
             "text": "tailored to your team",
             "fontSize": 10,
-            "fontColor": "text2",
             "italic": false,
             "align": "left",
             "x": 6.8,
             "y": 4.0,
             "w": 2.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -293,22 +355,27 @@
           "props": {
             "text": "Everything in Pro\nDedicated CSM\nCustom SLA",
             "fontSize": 11,
-            "fontColor": "text",
             "italic": false,
             "align": "left",
             "lineSpacing": 18,
             "x": 6.8,
             "y": 4.25,
             "w": 2.5,
-            "h": 0.85
+            "h": 0.85,
+            "color": "text"
           }
         },
         {
           "name": "shape",
           "props": {
             "type": "rect",
-            "fill": { "color": "888888" },
-            "line": { "color": "888888", "width": 0 },
+            "fill": {
+              "color": "text2"
+            },
+            "line": {
+              "color": "text2",
+              "width": 0
+            },
             "x": 0.55,
             "y": 5.15,
             "w": 8.9,
@@ -321,12 +388,12 @@
             "text": "01 / 01",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "left",
             "x": 0.55,
             "y": 5.2,
             "w": 1,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         },
         {
@@ -335,12 +402,12 @@
             "text": "FIELD STUDIO",
             "fontSize": 9,
             "fontFace": "Courier",
-            "fontColor": "text2",
             "align": "right",
             "x": 5,
             "y": 5.2,
             "w": 4.5,
-            "h": 0.25
+            "h": 0.25,
+            "color": "text2"
           }
         }
       ]
