@@ -642,4 +642,49 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       expect('resources' in body).toBe(false);
     });
   });
+
+  describe('theme palette injection', () => {
+    it('injects primary/secondary/accent when options.colors is absent', async () => {
+      const component = {
+        name: 'highcharts' as const,
+        props: {
+          options: {
+            chart: { width: 600, height: 400 },
+            series: [{ type: 'bar' as const, data: [1, 2, 3] }],
+          },
+        },
+      };
+
+      await renderHighchartsComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual(['#0066cc', '#6c757d', '#17a2b8']);
+    });
+
+    it('leaves explicit options.colors untouched', async () => {
+      const component = {
+        name: 'highcharts' as const,
+        props: {
+          options: {
+            chart: { width: 600, height: 400 },
+            colors: ['#ABCDEF'],
+            series: [{ type: 'bar' as const, data: [1, 2, 3] }],
+          },
+        },
+      };
+
+      await renderHighchartsComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual(['#ABCDEF']);
+    });
+  });
 });

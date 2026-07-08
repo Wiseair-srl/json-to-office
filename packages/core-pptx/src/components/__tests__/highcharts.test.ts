@@ -292,4 +292,64 @@ describe('renderHighchartsComponent', () => {
     // Backward compatible: no resources key sent.
     expect('resources' in body).toBe(false);
   });
+
+  describe('theme palette injection', () => {
+    const brandTheme = {
+      colors: {
+        primary: '#111111',
+        secondary: '#222222',
+        accent: '#CC785C',
+        background: '#FFFFFF',
+        text: '#1A1A1A',
+      },
+    } as any;
+
+    it('injects the theme palette when options.colors is absent', async () => {
+      const slide = mockSlide();
+      await renderHighchartsComponent(
+        slide,
+        { options: { chart: { width: 600, height: 400 } } },
+        brandTheme
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      // First three tokens resolve to the theme colors; accent4-6 are unset
+      // on this theme and fall back to primary.
+      expect(body.infile.colors.slice(0, 3)).toEqual([
+        '#111111',
+        '#222222',
+        '#CC785C',
+      ]);
+      expect(body.infile.colors).toHaveLength(6);
+    });
+
+    it('leaves explicit options.colors untouched', async () => {
+      const slide = mockSlide();
+      await renderHighchartsComponent(
+        slide,
+        {
+          options: {
+            chart: { width: 600, height: 400 },
+            colors: ['#ABCDEF'],
+          },
+        },
+        brandTheme
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual(['#ABCDEF']);
+    });
+
+    it('skips injection when the theme has no colors', async () => {
+      const slide = mockSlide();
+      await renderHighchartsComponent(
+        slide,
+        { options: { chart: { width: 600, height: 400 } } },
+        theme
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect('colors' in body.infile).toBe(false);
+    });
+  });
 });

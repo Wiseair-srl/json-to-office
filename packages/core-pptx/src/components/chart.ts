@@ -4,7 +4,7 @@
 
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig, PipelineWarning } from '../types';
-import { resolveColor } from '../utils/color';
+import { resolveColor, DEFAULT_CHART_THEME_COLORS } from '../utils/color';
 import { warn, W } from '../utils/warn';
 
 interface ChartDataSeries {
@@ -89,7 +89,7 @@ const CHART_TYPE_MAP: Record<string, string> = {
   scatter: 'scatter',
 };
 
-const DEFAULT_THEME_COLORS = ['primary', 'secondary', 'accent', 'accent4', 'accent5', 'accent6'];
+const DEFAULT_THEME_COLORS = DEFAULT_CHART_THEME_COLORS;
 
 export function renderChartComponent(
   slide: PptxGenJS.Slide,
@@ -100,23 +100,40 @@ export function renderChartComponent(
 ): void {
   const chartType = CHART_TYPE_MAP[props.type];
   if (!chartType) {
-    warn(warnings, W.UNKNOWN_CHART_TYPE, `Unknown chart type: ${props.type}`, { component: 'chart' });
+    warn(warnings, W.UNKNOWN_CHART_TYPE, `Unknown chart type: ${props.type}`, {
+      component: 'chart',
+    });
     return;
   }
 
   // Validate data
   if (!props.data || props.data.length === 0) {
-    warn(warnings, W.CHART_NO_DATA, 'Chart component has no data series', { component: 'chart' });
+    warn(warnings, W.CHART_NO_DATA, 'Chart component has no data series', {
+      component: 'chart',
+    });
     return;
   }
   for (const series of props.data) {
     if (!series.labels || !series.values) {
-      warn(warnings, W.CHART_INVALID_SERIES, `Chart series "${series.name ?? '(unnamed)'}" missing labels or values`, { component: 'chart' });
+      warn(
+        warnings,
+        W.CHART_INVALID_SERIES,
+        `Chart series "${series.name ?? '(unnamed)'}" missing labels or values`,
+        { component: 'chart' }
+      );
       return;
     }
   }
-  if ((chartType === 'pie' || chartType === 'doughnut') && props.data.length > 1) {
-    warn(warnings, W.CHART_MULTI_SERIES, `${props.type} chart has ${props.data.length} series — only the first will render`, { component: 'chart' });
+  if (
+    (chartType === 'pie' || chartType === 'doughnut') &&
+    props.data.length > 1
+  ) {
+    warn(
+      warnings,
+      W.CHART_MULTI_SERIES,
+      `${props.type} chart has ${props.data.length} series — only the first will render`,
+      { component: 'chart' }
+    );
   }
 
   // Build data array
@@ -144,10 +161,18 @@ export function renderChartComponent(
 
   // Auto-default chart text colors from theme to prevent dark-on-dark / light-on-light
   const themeTextColor = resolveColor('text', theme, warnings);
-  opts.titleColor = props.titleColor ? resolveColor(props.titleColor, theme, warnings) : themeTextColor;
-  opts.legendColor = props.legendColor ? resolveColor(props.legendColor, theme, warnings) : themeTextColor;
-  opts.catAxisLabelColor = props.catAxisLabelColor ? resolveColor(props.catAxisLabelColor, theme, warnings) : themeTextColor;
-  opts.valAxisLabelColor = props.valAxisLabelColor ? resolveColor(props.valAxisLabelColor, theme, warnings) : themeTextColor;
+  opts.titleColor = props.titleColor
+    ? resolveColor(props.titleColor, theme, warnings)
+    : themeTextColor;
+  opts.legendColor = props.legendColor
+    ? resolveColor(props.legendColor, theme, warnings)
+    : themeTextColor;
+  opts.catAxisLabelColor = props.catAxisLabelColor
+    ? resolveColor(props.catAxisLabelColor, theme, warnings)
+    : themeTextColor;
+  opts.valAxisLabelColor = props.valAxisLabelColor
+    ? resolveColor(props.valAxisLabelColor, theme, warnings)
+    : themeTextColor;
 
   // Display toggles
   if (props.showLegend !== undefined) opts.showLegend = props.showLegend;
@@ -159,57 +184,78 @@ export function renderChartComponent(
 
   // Title
   if (props.title !== undefined) opts.title = props.title;
-  if (props.titleFontSize !== undefined) opts.titleFontSize = props.titleFontSize;
-  if (props.titleFontFace !== undefined) opts.titleFontFace = props.titleFontFace;
+  if (props.titleFontSize !== undefined)
+    opts.titleFontSize = props.titleFontSize;
+  if (props.titleFontFace !== undefined)
+    opts.titleFontFace = props.titleFontFace;
 
   // Legend
   if (props.legendPos !== undefined) opts.legendPos = props.legendPos;
-  if (props.legendFontSize !== undefined) opts.legendFontSize = props.legendFontSize;
-  if (props.legendFontFace !== undefined) opts.legendFontFace = props.legendFontFace;
+  if (props.legendFontSize !== undefined)
+    opts.legendFontSize = props.legendFontSize;
+  if (props.legendFontFace !== undefined)
+    opts.legendFontFace = props.legendFontFace;
 
   // Category axis
   if (props.catAxisTitle !== undefined) {
     opts.catAxisTitle = props.catAxisTitle;
     opts.showCatAxisTitle = true;
   }
-  if (props.catAxisHidden !== undefined) opts.catAxisHidden = props.catAxisHidden;
-  if (props.catAxisLabelRotate !== undefined) opts.catAxisLabelRotate = props.catAxisLabelRotate;
-  if (props.catAxisLabelFontSize !== undefined) opts.catAxisLabelFontSize = props.catAxisLabelFontSize;
+  if (props.catAxisHidden !== undefined)
+    opts.catAxisHidden = props.catAxisHidden;
+  if (props.catAxisLabelRotate !== undefined)
+    opts.catAxisLabelRotate = props.catAxisLabelRotate;
+  if (props.catAxisLabelFontSize !== undefined)
+    opts.catAxisLabelFontSize = props.catAxisLabelFontSize;
 
   // Value axis
   if (props.valAxisTitle !== undefined) {
     opts.valAxisTitle = props.valAxisTitle;
     opts.showValAxisTitle = true;
   }
-  if (props.valAxisHidden !== undefined) opts.valAxisHidden = props.valAxisHidden;
-  if (props.valAxisMinVal !== undefined) opts.valAxisMinVal = props.valAxisMinVal;
-  if (props.valAxisMaxVal !== undefined) opts.valAxisMaxVal = props.valAxisMaxVal;
-  if (props.valAxisLabelFormatCode !== undefined) opts.valAxisLabelFormatCode = props.valAxisLabelFormatCode;
-  if (props.valAxisMajorUnit !== undefined) opts.valAxisMajorUnit = props.valAxisMajorUnit;
+  if (props.valAxisHidden !== undefined)
+    opts.valAxisHidden = props.valAxisHidden;
+  if (props.valAxisMinVal !== undefined)
+    opts.valAxisMinVal = props.valAxisMinVal;
+  if (props.valAxisMaxVal !== undefined)
+    opts.valAxisMaxVal = props.valAxisMaxVal;
+  if (props.valAxisLabelFormatCode !== undefined)
+    opts.valAxisLabelFormatCode = props.valAxisLabelFormatCode;
+  if (props.valAxisMajorUnit !== undefined)
+    opts.valAxisMajorUnit = props.valAxisMajorUnit;
 
   // Bar-specific
   if (props.barDir !== undefined) opts.barDir = props.barDir;
   if (props.barGrouping !== undefined) opts.barGrouping = props.barGrouping;
-  if (props.barGapWidthPct !== undefined) opts.barGapWidthPct = props.barGapWidthPct;
+  if (props.barGapWidthPct !== undefined)
+    opts.barGapWidthPct = props.barGapWidthPct;
 
   // Line-specific
   if (props.lineSmooth !== undefined) opts.lineSmooth = props.lineSmooth;
-  if (props.lineDataSymbol !== undefined) opts.lineDataSymbol = props.lineDataSymbol;
+  if (props.lineDataSymbol !== undefined)
+    opts.lineDataSymbol = props.lineDataSymbol;
   if (props.lineSize !== undefined) opts.lineSize = props.lineSize;
 
   // Pie/doughnut
-  if (props.firstSliceAng !== undefined) opts.firstSliceAng = props.firstSliceAng;
+  if (props.firstSliceAng !== undefined)
+    opts.firstSliceAng = props.firstSliceAng;
   if (props.holeSize !== undefined) opts.holeSize = props.holeSize;
 
   // Radar
   if (props.radarStyle !== undefined) opts.radarStyle = props.radarStyle;
 
   // Data labels
-  opts.dataLabelColor = props.dataLabelColor ? resolveColor(props.dataLabelColor, theme, warnings) : themeTextColor;
-  if (props.dataLabelFontSize !== undefined) opts.dataLabelFontSize = props.dataLabelFontSize;
-  if (props.dataLabelFontFace !== undefined) opts.dataLabelFontFace = props.dataLabelFontFace;
-  if (props.dataLabelFontBold !== undefined) opts.dataLabelFontBold = props.dataLabelFontBold;
-  if (props.dataLabelPosition !== undefined) opts.dataLabelPosition = props.dataLabelPosition;
+  opts.dataLabelColor = props.dataLabelColor
+    ? resolveColor(props.dataLabelColor, theme, warnings)
+    : themeTextColor;
+  if (props.dataLabelFontSize !== undefined)
+    opts.dataLabelFontSize = props.dataLabelFontSize;
+  if (props.dataLabelFontFace !== undefined)
+    opts.dataLabelFontFace = props.dataLabelFontFace;
+  if (props.dataLabelFontBold !== undefined)
+    opts.dataLabelFontBold = props.dataLabelFontBold;
+  if (props.dataLabelPosition !== undefined)
+    opts.dataLabelPosition = props.dataLabelPosition;
 
   slide.addChart(chartType as any, data as any[], opts as any);
 }
