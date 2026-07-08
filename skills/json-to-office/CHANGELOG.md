@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.3.1] - 2026-06-22
+
+### Changed
+
+- Bumped the pinned jto CLI version (`JTO_CLI_VERSION` in `scripts/_lib.py`) from `0.16.0` to `0.19.0`. Applied automatically by `bootstrap.py`'s npx fallback; dependent skills (`quote-carousel`, `blog-cover`) pick it up via `scripts/jto_argv.py`. Re-run `bootstrap.py` to refresh a stale `caps.json`.
+
+## [2.3.0] - 2026-06-16
+
+### Added
+
+- `render_preview.py` now accepts `--fonts-dir <dir>`, passed through to `jto-cli <kind> generate --fonts-dir`. Because the render loop runs with `--no-google-fonts`, a non-safe font (e.g. Inter) referenced by a component (`font.family` / `fontFace`) or a `fontRegistry` entry silently falls back to a host font in the preview; registering its TTFs via `--fonts-dir` makes the PNG show the real font. Recipe (`fonts install` + `--fonts-dir`) documented in SKILL.md step 7. Validates the directory exists and is a directory; no schema change, no effect when the flag is omitted.
+
+### Notes
+
+- Considered and rejected a `--theme-path` pass-through: in the pinned CLI (`jto-cli` 0.16.0, and 0.17.0) `--theme` / `--theme-path` are accepted but inert — generated output is byte-identical to the default for both DOCX and PPTX, by file, by built-in name, and via `props.theme` discovery. Fonts that actually render come from component-level props, not the theme. The theme-application gap is tracked separately.
+
 ## [2.2.1] - 2026-06-15
 
 ### Changed

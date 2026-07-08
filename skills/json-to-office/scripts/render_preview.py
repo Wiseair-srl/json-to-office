@@ -107,6 +107,18 @@ def main() -> int:
         action="store_true",
         help="Skip the PPTX preflight overflow check (PPTX-only).",
     )
+    parser.add_argument(
+        "--fonts-dir",
+        default=None,
+        help=(
+            "Directory of .ttf/.otf files to auto-register, passed through to "
+            "`jto-cli <kind> generate --fonts-dir`. Required to actually SEE a "
+            "non-safe font (e.g. Inter) in the preview: this script renders with "
+            "--no-google-fonts, so any family not in SAFE_FONTS silently falls "
+            "back to a host font unless its TTF is registered here. Install the "
+            "font first with `jto-cli <kind> fonts install <Family>`."
+        ),
+    )
     args = parser.parse_args()
 
     input_path = Path(args.input).resolve()
@@ -166,6 +178,14 @@ def main() -> int:
         str(office_path),
         "--no-google-fonts",
     ]
+    # Pass-through so the render→screenshot loop can actually display a non-safe
+    # font. Without it, --no-google-fonts above means any family outside
+    # SAFE_FONTS resolves to a host fallback and the preview lies about the font.
+    if args.fonts_dir:
+        fonts_dir = Path(args.fonts_dir).resolve()
+        if not fonts_dir.is_dir():
+            die(f"--fonts-dir not a directory: {fonts_dir}")
+        gen_argv += ["--fonts-dir", str(fonts_dir)]
     # Wire the out-of-process renderers for `highcharts` / `visual` components.
     # render_env defaults the service URLs to the hosted instance unless the user
     # overrode them (or, for docx visuals, a local rasterizer exists). The pptx

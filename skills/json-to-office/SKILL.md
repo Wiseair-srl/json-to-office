@@ -152,6 +152,14 @@ PNG=/path/to/.skill-out/our-pricing/page-02.png
 ...
 ```
 
+**Non-safe fonts in the preview.** `render_preview.py` renders with `--no-google-fonts` (offline, deterministic). Any family outside SAFE_FONTS (Arial, Calibri, Cambria, Consolas, Courier New, Georgia, Segoe UI, Tahoma, Times New Roman, Trebuchet MS, Verdana, Helvetica, Helvetica Neue, Menlo, Monaco) silently falls back to a host font, so the PNG lies about the font. This applies to a non-safe font wherever the renderer actually reads it — a component's `font.family` (DOCX) / `fontFace` (PPTX), or a registered `fontRegistry` entry. To preview the real font, register its TTFs and pass `--fonts-dir`:
+
+```bash
+JTO=$(python3 <skill>/scripts/jto_argv.py)
+$JTO docx fonts install "Inter"        # one-time; downloads TTFs into ./fonts (use `pptx` for decks)
+python3 <skill>/scripts/render_preview.py decks/our-pricing.pptx.json --fonts-dir ./fonts
+```
+
 **You MUST then Read each PNG.** They are real images; you can see them. Inspect for:
 
 - Text overflow (wraps awkwardly, runs off edge)
