@@ -71,7 +71,14 @@ export const NoProofWordsSchema = Type.Array(Type.String({ minLength: 1 }), {
  */
 export const TextFormattingPropertiesSchema = Type.Object(
   {
-    size: Type.Optional(Type.Number({ minimum: 8, maximum: 72 })),
+    size: Type.Optional(
+      Type.Number({
+        minimum: 8,
+        maximum: 1638,
+        description:
+          'Font size in points. Emitted as OOXML half-points (`w:sz` = size × 2), whose type `ST_HpsMeasure` has no 72pt ceiling — Word itself accepts up to 1638pt. Sizes well above body copy are legitimate display type (cover numerals, chapter headings, pull quotes).',
+      })
+    ),
     color: Type.Optional(HexColorSchema),
     bold: Type.Optional(Type.Boolean()),
     fontWeight: Type.Optional(
