@@ -16,6 +16,12 @@ services:
       # this same value; Blueprint secret fields intentionally do not commit it.
       - key: RENDER_API_KEY
         sync: false
+      # NODE_ENV=production selects OUTBOUND_SOURCE_MODE=safe, where an empty
+      # allowlist refuses every remote host. /rasterize receives full document
+      # JSON, so the hosts used by the bundled playground templates must be
+      # listed here too.
+      - key: OUTBOUND_HOST_ALLOWLIST
+        value: ik.imagekit.io,placehold.co
     healthCheckPath: /health
 
   - type: web
@@ -47,6 +53,11 @@ services:
         value: https://jto-render-server.onrender.com
       - key: JTO_PPTX_RASTERIZER_API_KEY
         sync: false
+      # Hosts referenced by the bundled templates and demo documents. In safe
+      # mode (the production default) an empty allowlist blocks every remote
+      # image, which fails the playground's own examples.
+      - key: OUTBOUND_HOST_ALLOWLIST
+        value: ik.imagekit.io,placehold.co
     healthCheckPath: /health
 
   - type: web
@@ -73,4 +84,7 @@ services:
         value: https://jto-render-server.onrender.com
       - key: JTO_PPTX_RASTERIZER_API_KEY
         sync: false
+      # See the DOCX service comment above.
+      - key: OUTBOUND_HOST_ALLOWLIST
+        value: ik.imagekit.io,placehold.co
     healthCheckPath: /health
