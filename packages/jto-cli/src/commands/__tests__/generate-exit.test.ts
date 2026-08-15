@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, writeFileSync, existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,9 +49,28 @@ describe('jto-cli docx generate exits promptly', () => {
     const outputPath = path.join(tmp, 'out.docx');
     writeFileSync(inputPath, JSON.stringify(fixture));
 
+    // TEMP DIAGNOSTIC: dump whatever is still holding the event loop open so a
+    // Windows-only hang is debuggable from CI logs. Timer is unref'd so it
+    // cannot itself keep the process alive.
+    const probePath = path.join(tmp, 'probe.mjs');
+    writeFileSync(
+      probePath,
+      `setTimeout(() => {
+  const handles = (process._getActiveHandles?.() ?? []).map(
+    (h) => h?.constructor?.name ?? 'unknown'
+  );
+  const requests = (process._getActiveRequests?.() ?? []).map(
+    (r) => r?.constructor?.name ?? 'unknown'
+  );
+  process.stderr.write('[DIAG] handles=' + JSON.stringify(handles) + ' requests=' + JSON.stringify(requests) + '\\n');
+}, 20000).unref();\n`
+    );
+
     const child = spawn(
       process.execPath,
       [
+        '--import',
+        pathToFileURL(probePath).href,
         cliPath,
         'docx',
         'generate',
@@ -64,8 +83,9 @@ describe('jto-cli docx generate exits promptly', () => {
     );
 
     let stderr = '';
+    let stdout = '';
     child.stderr.on('data', (d) => (stderr += d.toString()));
-    child.stdout.on('data', () => {});
+    child.stdout.on('data', (d) => (stdout += d.toString()));
 
     const start = Date.now();
     const exitCode: number = await new Promise((resolve, reject) => {
@@ -73,7 +93,7 @@ describe('jto-cli docx generate exits promptly', () => {
         child.kill('SIGKILL');
         reject(
           new Error(
-            `jto-cli did not exit within 30s (likely a leaked handle keeping the event loop alive). stderr:\n${stderr}`
+            `jto-cli did not exit within 30s (likely a leaked handle keeping the event loop alive).\nstdout:\n${stdout}\nstderr:\n${stderr}`
           )
         );
       }, 30_000);
@@ -87,7 +107,7 @@ describe('jto-cli docx generate exits promptly', () => {
       });
     });
 
-    expect(exitCode, `stderr:\n${stderr}`).toBe(0);
+    expect(exitCode, `stdout:\n${stdout}\nstderr:\n${stderr}`).toBe(0);
     expect(existsSync(outputPath)).toBe(true);
     // Sanity: the example renders in well under a second on the build machine;
     // anything close to 30s indicates the hang has regressed.
