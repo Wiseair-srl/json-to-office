@@ -247,12 +247,14 @@ function assertSafeResources(
       assertAllowedUrl(ref, `${path}.css`, allowedHosts);
     }
   }
-  if (Array.isArray(resources.files)) {
-    resources.files.forEach((file, index) => {
-      if (typeof file === 'string') {
-        assertAllowedUrl(file, `${path}.files[${index}]`, allowedHosts);
-      }
-    });
+  // Highcharts loads `resources.files` as JavaScript. Allowlisting a host for
+  // fonts or stylesheets must not also grant it script execution inside the
+  // renderer, so reject the field outright rather than URL-checking it.
+  if (Array.isArray(resources.files) && resources.files.length > 0) {
+    throw new UnsafeOutboundSourceError(
+      `${path}.files`,
+      'remote renderer JavaScript resources are disabled'
+    );
   }
 }
 

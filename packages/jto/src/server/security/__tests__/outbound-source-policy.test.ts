@@ -192,4 +192,35 @@ describe('outbound source policy', () => {
       )
     ).toThrow(/JavaScript resources/);
   });
+
+  it('rejects resources.files even on an allowlisted host', () => {
+    // Highcharts loads `files` as JavaScript, so allowlisting a CDN for CSS or
+    // fonts must not become script execution inside the renderer.
+    expect(() =>
+      assertSafeRendererPayload(
+        {
+          infile: {},
+          type: 'png',
+          b64: true,
+          resources: { files: ['https://assets.example.com/plugin.js'] },
+        },
+        safe(['assets.example.com'])
+      )
+    ).toThrow(/JavaScript resources/);
+
+    // CSS on an allowlisted host stays usable.
+    expect(() =>
+      assertSafeRendererPayload(
+        {
+          infile: {},
+          type: 'png',
+          b64: true,
+          resources: {
+            css: "@font-face { src: url('https://assets.example.com/f.woff2') }",
+          },
+        },
+        safe(['assets.example.com'])
+      )
+    ).not.toThrow();
+  });
 });

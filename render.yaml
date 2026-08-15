@@ -26,7 +26,11 @@ services:
     envVars:
       - key: FORMAT
         value: docx
+      # VITE_AI_ENABLED only hides the client UI; AI_ENABLED is what keeps the
+      # server from mounting /api/ai, which would be unauthenticated here.
       - key: VITE_AI_ENABLED
+        value: 'false'
+      - key: AI_ENABLED
         value: 'false'
       # These hosted playgrounds are intentionally public browser demos. A
       # browser cannot keep API_KEY secret; private deployments should remove
@@ -53,7 +57,10 @@ services:
     envVars:
       - key: FORMAT
         value: pptx
+      # See the DOCX service comment above: both flags are required.
       - key: VITE_AI_ENABLED
+        value: 'false'
+      - key: AI_ENABLED
         value: 'false'
       # Intentionally public demo; see the DOCX service comment above.
       - key: API_AUTH_MODE
