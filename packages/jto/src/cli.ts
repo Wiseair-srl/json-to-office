@@ -48,7 +48,10 @@ program.exitOverride();
     if (error.code === 'commander.executeSubCommandAsync') {
       process.exit(error.exitCode);
     }
-    await renderLines([{ text: `Error: ${error.message}`, tone: 'error' }]);
+    await renderLines(
+      [{ text: `Error: ${error.message}`, tone: 'error' }],
+      process.stderr
+    );
     process.exit(1);
   }
 })();

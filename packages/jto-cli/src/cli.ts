@@ -96,7 +96,10 @@ async function exitAfterFlush(code: number): Promise<never> {
     if (error.code === 'commander.executeSubCommandAsync') {
       await exitAfterFlush(error.exitCode);
     }
-    await renderLines([{ text: `Error: ${error.message}`, tone: 'error' }]);
+    await renderLines(
+      [{ text: `Error: ${error.message}`, tone: 'error' }],
+      process.stderr
+    );
     await exitAfterFlush(EXIT_CODES.FAIL);
   }
   await exitAfterFlush(

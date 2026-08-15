@@ -210,6 +210,30 @@ export async function runTask<T>(
     stdout?: NodeJS.WriteStream;
   } = {}
 ): Promise<T> {
+  const success = options.success ?? 'Done';
+  const failure = options.failure ?? 'Failed';
+  const stdout = options.stdout ?? process.stdout;
+
+  // Without a TTY there is nothing to animate, and Ink's redraw would leak
+  // escape sequences into the pipe. Run the task bare and report plainly.
+  if (!stdout.isTTY) {
+    const logs: UiLine[] = [];
+    const record = (text: string, tone: UiTone = 'default') =>
+      logs.push({ text, tone });
+    try {
+      const value = await runWithDiagnosticSink(record, () =>
+        task({ update: () => {}, log: record })
+      );
+      record(`✓ ${typeof success === 'function' ? success(value) : success}`);
+      writePlain(stdout, logs);
+      return value;
+    } catch (error) {
+      record(`✗ ${failure}`);
+      writePlain(stdout, logs);
+      throw error;
+    }
+  }
+
   let settle!: (outcome: TaskOutcome<T>) => void;
   const completed = new Promise<TaskOutcome<T>>((resolve) => {
     settle = resolve;
@@ -217,13 +241,11 @@ export async function runTask<T>(
   const component = createElement(TaskView<T>, {
     initial,
     task,
-    success: options.success ?? 'Done',
-    failure: options.failure ?? 'Failed',
+    success,
+    failure,
     complete: settle,
   });
-  const app = options.stdout
-    ? render(component, { stdout: options.stdout, patchConsole: false })
-    : render(component);
+  const app = render(component, { stdout, patchConsole: false });
   const exited = app.waitUntilExit();
   const outcome = await completed;
   await exited.catch(() => undefined);
@@ -232,12 +254,31 @@ export async function runTask<T>(
   return outcome.value as T;
 }
 
-export async function renderLines(lines: UiLine[]): Promise<void> {
+/**
+ * Ink drives a live, width-aware TUI: it emits cursor-control sequences and
+ * hard-wraps text at the terminal width. Both are wrong for a pipe or a file —
+ * wrapping injects real newlines into long paths, breaking anything that parses
+ * our output. When the target stream is not a TTY, write the lines plainly.
+ */
+function writePlain(stream: NodeJS.WriteStream, lines: UiLine[]): void {
+  stream.write(`${lines.map((line) => line.text).join('\n')}\n`);
+}
+
+export async function renderLines(
+  lines: UiLine[],
+  stdout: NodeJS.WriteStream = process.stdout
+): Promise<void> {
   if (lines.length === 0) return;
   const normalized = lines.flatMap((line) =>
     line.text.split('\n').map((text) => ({ ...line, text }))
   );
-  const app = render(createElement(StaticOutput, { lines: normalized }));
+  if (!stdout.isTTY) {
+    writePlain(stdout, normalized);
+    return;
+  }
+  const app = render(createElement(StaticOutput, { lines: normalized }), {
+    stdout,
+  });
   const exited = app.waitUntilExit();
   app.unmount();
   try {
@@ -358,6 +399,7 @@ export function errorLines(error: any): UiLine[] {
   return lines;
 }
 
+/** Failures belong on stderr so `cmd > out.json` keeps data and errors apart. */
 export async function formatError(error: unknown): Promise<void> {
-  await renderLines(errorLines(error));
+  await renderLines(errorLines(error), process.stderr);
 }
