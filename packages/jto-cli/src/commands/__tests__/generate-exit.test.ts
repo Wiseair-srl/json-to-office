@@ -55,15 +55,26 @@ describe('jto-cli docx generate exits promptly', () => {
     const probePath = path.join(tmp, 'probe.mjs');
     writeFileSync(
       probePath,
-      `setTimeout(() => {
-  const handles = (process._getActiveHandles?.() ?? []).map(
-    (h) => h?.constructor?.name ?? 'unknown'
-  );
-  const requests = (process._getActiveRequests?.() ?? []).map(
-    (r) => r?.constructor?.name ?? 'unknown'
-  );
-  process.stderr.write('[DIAG] handles=' + JSON.stringify(handles) + ' requests=' + JSON.stringify(requests) + '\\n');
-}, 20000).unref();\n`
+      `import { createHook } from 'node:async_hooks';
+const started = Date.now();
+const pending = new Map();
+createHook({
+  init(id, type) {
+    if (type.startsWith('FS') || type === 'GETADDRINFOREQWRAP' || type === 'TCPCONNECTWRAP') {
+      pending.set(id, { type, at: Date.now() - started, stack: new Error().stack });
+    }
+  },
+  after: (id) => pending.delete(id),
+  destroy: (id) => pending.delete(id),
+}).enable();
+const dump = (label) => {
+  process.stderr.write('[DIAG ' + label + '] elapsed=' + (Date.now() - started) + 'ms pending=' + pending.size + '\\n');
+  for (const [, v] of [...pending].slice(0, 3)) {
+    process.stderr.write('[DIAG ' + label + '] ' + v.type + ' opened@' + v.at + 'ms\\n' + v.stack + '\\n');
+  }
+};
+setTimeout(() => dump('10s'), 10000).unref();
+setTimeout(() => dump('20s'), 20000).unref();\n`
     );
 
     const child = spawn(
