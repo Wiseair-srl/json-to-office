@@ -54,7 +54,7 @@ jto <docx|pptx> generate <input> [options]
 | `--font-substitute <family=safe>` | string, repeatable       | `[]`                                        | Map a non-safe family to a specific safe font; the target must be in the safe-fonts list or the command errors                                              |
 | `--dry-run`                       | boolean                  | `false`                                     | Print a summary (input, output, format, theme, strict, plugins) without writing files                                                                       |
 
-Option precedence: CLI flags override values from the [plugin/generation config file](#plugin--generation-config) (`validation.strict`). The config file's `theme` / `themePath` keys are currently not applied by `generate` — theme selection works only through CLI flags or the document's `props.theme`.
+The [plugin/generation config file](#plugin--generation-config)'s `theme`, `themePath` and `validation.strict` keys are **not** applied by `generate`: theme selection works only through CLI flags or the document's `props.theme`, and `--strict` currently only affects the `--dry-run` summary. Plugin keys (`plugins`, `pluginDirs`, `autoDiscover`) do take effect.
 
 Font-directory filename parsing: names like `Inter-BoldItalic.ttf` or `Roboto_500.otf` are parsed into family, weight, and italic; weight names map thin=100 through black/heavy=900; only `.ttf`/`.otf` files are scanned, and multiple variant files coalesce into one registry entry per family.
 
@@ -209,12 +209,12 @@ jto <docx|pptx> dev [options]
 
 Starts the development server with the web playground UI (see [Playground](/guide/playground)).
 
-| Flag                  | Type    | Default                           | Description                                                            |
-| --------------------- | ------- | --------------------------------- | ---------------------------------------------------------------------- |
-| `-p, --port <port>`   | integer | **3003** (docx) / **3004** (pptx) | Server port. Precedence: CLI flag > format default > config-file value |
-| `-H, --host <host>`   | string  | `localhost`                       | Bind host                                                              |
-| `-o, --open`          | boolean | `false`                           | Open the browser on start                                              |
-| `-c, --config <path>` | string  | —                                 | Config file path                                                       |
+| Flag                  | Type    | Default                           | Description                                                                                                            |
+| --------------------- | ------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `-p, --port <port>`   | integer | **3003** (docx) / **3004** (pptx) | Server port. Precedence: CLI flag > config-file `server.port` (when changed from the built-in `3003`) > format default |
+| `-H, --host <host>`   | string  | `localhost`                       | Bind host                                                                                                              |
+| `-o, --open`          | boolean | `false`                           | Open the browser on start                                                                                              |
+| `-c, --config <path>` | string  | —                                 | Config file path                                                                                                       |
 
 On start the CLI prints the local URL, the API URL (`http://<host>:<port>/api/<format>/generate`), and the health URL (`http://<host>:<port>/health`). Shuts down gracefully on SIGINT/SIGTERM.
 
@@ -257,59 +257,57 @@ CLI flags win over config values. Note that the `theme` and `themePath` keys are
 
 Loaded by `dev` (also via `-c/--config`). Files: `json-to-office.config.ts` / `.js` / `.mjs` / `.json`, plus legacy docx/pptx variants. The file is deep-merged over the defaults and TypeBox-validated; an invalid config warns and falls back to defaults. `NODE_ENV=production` forces `mode: 'production'`.
 
-| Key                                    | Default             | Description                                                                   |
-| -------------------------------------- | ------------------- | ----------------------------------------------------------------------------- |
-| `mode`                                 | `development`       | `development` or `production`                                                 |
-| `server.port`                          | `3003`              | Server port (the pptx adapter default 3004 and the `-p` flag take precedence) |
-| `server.host`                          | `localhost`         | Bind host                                                                     |
-| `server.cors.origin`                   | `*`                 | CORS origin                                                                   |
-| `server.cors.credentials`              | `true`              | CORS credentials                                                              |
-| `api.basePath`                         | `/api`              | API mount path                                                                |
-| `api.upload.maxFileSize`               | `10485760` (10 MB)  | Upload size cap                                                               |
-| `api.upload.allowedMimeTypes`          | jpeg, png, gif, svg | Allowed upload types                                                          |
-| `playground.enabled`                   | `true`              | Serve the playground UI                                                       |
-| `playground.features.livePreview`      | `true`              | Live preview feature flag                                                     |
-| `playground.features.templateLibrary`  | `true`              | Template library feature flag                                                 |
-| `playground.features.componentBuilder` | `false`             | Component builder feature flag                                                |
-| `playground.features.collaboration`    | `false`             | Collaboration feature flag                                                    |
-| `development.hmr`                      | `true`              | Vite HMR in source mode                                                       |
-| `development.sourceMap`                | `true`              | Source maps                                                                   |
-| `development.verbose`                  | `false`             | Verbose logging                                                               |
-| `paths.templates`                      | `./templates`       | Templates path                                                                |
-| `paths.modules`                        | `./modules`         | Modules path                                                                  |
-| `paths.cache`                          | `./.cache`          | Cache path                                                                    |
+::: warning Most keys are accepted but unused
+The dev server currently reads only `mode`, `server.port`, `server.host`, and `development.hmrPort`. The remaining keys below are validated by the schema but have no effect — notably CORS, which is configured through the `CORS_ORIGIN` environment variable instead.
+:::
+
+| Key                                    | Default             | Description                                                                                                  |
+| -------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `mode`                                 | `development`       | `development` or `production`                                                                                |
+| `server.port`                          | `3003`              | Server port; `-p` overrides it. The pptx format default (3004) applies only while this key is left at `3003` |
+| `server.host`                          | `localhost`         | Bind host                                                                                                    |
+| `server.cors.origin`                   | `*`                 | CORS origin                                                                                                  |
+| `server.cors.credentials`              | `true`              | CORS credentials                                                                                             |
+| `api.basePath`                         | `/api`              | API mount path                                                                                               |
+| `api.upload.maxFileSize`               | `10485760` (10 MB)  | Upload size cap                                                                                              |
+| `api.upload.allowedMimeTypes`          | jpeg, png, gif, svg | Allowed upload types                                                                                         |
+| `playground.enabled`                   | `true`              | Serve the playground UI                                                                                      |
+| `playground.features.livePreview`      | `true`              | Live preview feature flag                                                                                    |
+| `playground.features.templateLibrary`  | `true`              | Template library feature flag                                                                                |
+| `playground.features.componentBuilder` | `false`             | Component builder feature flag                                                                               |
+| `playground.features.collaboration`    | `false`             | Collaboration feature flag                                                                                   |
+| `development.hmr`                      | `true`              | Vite HMR in source mode                                                                                      |
+| `development.sourceMap`                | `true`              | Source maps                                                                                                  |
+| `development.verbose`                  | `false`             | Verbose logging                                                                                              |
+| `paths.templates`                      | `./templates`       | Templates path                                                                                               |
+| `paths.modules`                        | `./modules`         | Modules path                                                                                                 |
+| `paths.cache`                          | `./.cache`          | Cache path                                                                                                   |
 
 ## Environment variables
 
-| Variable                             | Used by                   | Default                                    | Effect                                                                               |
-| ------------------------------------ | ------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `HIGHCHARTS_SERVER_URL`              | generate (both CLIs), dev | —                                          | Highcharts export server URL for [chart rendering](/guide/charts)                    |
-| `HIGHCHARTS_API_KEY`                 | generate, dev             | —                                          | API key sent to the Highcharts server                                                |
-| `HIGHCHARTS_API_KEY_HEADER`          | generate, dev             | `x-api-key`                                | Header name for the Highcharts API key                                               |
-| `JTO_PPTX_RASTERIZER_URL`            | docx generate             | —                                          | Remote rasterizer for `visual` components; unset ⇒ in-process LibreOffice rasterizer |
-| `JTO_PPTX_RASTERIZER_API_KEY`        | docx generate             | `HIGHCHARTS_API_KEY`                       | API key sent to the remote rasterizer                                                |
-| `JTO_PPTX_RASTERIZER_API_KEY_HEADER` | docx generate             | `HIGHCHARTS_API_KEY_HEADER` or `x-api-key` | Rasterizer API-key header name                                                       |
-| `LIBREOFFICE_PATH`                   | rasterizer, previews      | auto-detected                              | Path to the LibreOffice binary                                                       |
-| `PDFTOPPM_PATH`                      | rasterizer                | auto-detected                              | Path to the `pdftoppm` binary                                                        |
-| `DEBUG`                              | generate                  | —                                          | `true` enables generator debug mode                                                  |
-| `JTO_CLIENT_PATH`                    | `jto dev`                 | —                                          | Override the playground client directory                                             |
-| `AI_ENABLED`                         | `jto dev`                 | enabled                                    | `false` disables the `/api/ai` routes                                                |
-| `API_AUTH_MODE`                      | `jto dev`                 | `required` in production, `auto` otherwise | `required`, `auto`, or explicit `disabled` for an intentionally public/local server  |
-| `API_KEY`                            | `jto dev`                 | —                                          | Credential required on `/api/*` when auth mode requires it                           |
-| `API_KEY_HEADER`                     | `jto dev`                 | `x-api-key`                                | Header carrying the API key                                                          |
-| `CORS_ORIGIN`                        | `jto dev` server          | `*`                                        | Allowed origin(s), comma-separated                                                   |
-| `RATE_LIMIT_WINDOW_MS`               | `jto dev` server          | `900000`                                   | Rate-limit window (15 min)                                                           |
-| `RATE_LIMIT_MAX`                     | `jto dev` server          | `100` (production) / `1000` (development)  | Requests per window                                                                  |
-| `MAX_FILE_SIZE`                      | `jto dev` server          | `10485760`                                 | Upload size cap (bytes)                                                              |
-| `LIBREOFFICE_TIMEOUT_MS`             | `jto dev` server          | `30000`                                    | LibreOffice conversion timeout                                                       |
-| `LOG_LEVEL`                          | `jto dev` server          | `info`                                     | `error` \| `warn` \| `info` \| `debug`                                               |
-| `CACHE_ENABLED`                      | `jto dev` server          | `true`                                     | `false` disables the generation cache                                                |
-| `CACHE_MAX_SIZE_MB`                  | `jto dev` server          | `100`                                      | Cache size cap                                                                       |
-| `CACHE_TTL_SECONDS`                  | `jto dev` server          | `3600`                                     | Cache TTL                                                                            |
-| `CACHE_MAX_ITEMS`                    | `jto dev` server          | `1000`                                     | Cache item cap                                                                       |
-| `NODE_ENV`                           | both                      | `development`                              | `production` enables production rate limits and mode                                 |
+| Variable                    | Used by                   | Default       | Effect                                                                               |
+| --------------------------- | ------------------------- | ------------- | ------------------------------------------------------------------------------------ |
+| `HIGHCHARTS_SERVER_URL`     | generate (both CLIs), dev | —             | Highcharts export server URL for [chart rendering](/guide/charts)                    |
+| `HIGHCHARTS_API_KEY`        | generate, dev             | —             | API key sent to the Highcharts server                                                |
+| `HIGHCHARTS_API_KEY_HEADER` | generate, dev             | `x-api-key`   | Header name for the Highcharts API key                                               |
+| `JTO_PPTX_RASTERIZER_URL`   | docx generate             | —             | Remote rasterizer for `visual` components; unset ⇒ in-process LibreOffice rasterizer |
+| `LIBREOFFICE_PATH`          | rasterizer, previews      | auto-detected | Path to the LibreOffice binary                                                       |
+| `PDFTOPPM_PATH`             | rasterizer                | auto-detected | Path to the `pdftoppm` binary                                                        |
+| `DEBUG`                     | generate                  | —             | `true` enables generator debug mode                                                  |
+| `JTO_CLIENT_PATH`           | `jto dev`                 | —             | Override the playground client directory                                             |
+| `AI_ENABLED`                | `jto dev`                 | enabled       | `false` disables the `/api/ai` routes                                                |
+| `API_KEY`                   | `jto dev`                 | —             | Credential required on `/api/*` when auth mode requires it                           |
+| `API_KEY_HEADER`            | `jto dev`                 | `x-api-key`   | Header carrying the API key                                                          |
+| `CORS_ORIGIN`               | `jto dev` server          | `*`           | Allowed origin(s), comma-separated                                                   |
+| `LIBREOFFICE_TIMEOUT_MS`    | `jto dev` server          | `30000`       | LibreOffice conversion timeout                                                       |
+| `LOG_LEVEL`                 | `jto dev` server          | `info`        | `error` \| `warn` \| `info` \| `debug`                                               |
+| `CACHE_ENABLED`             | `jto dev` server          | `true`        | `false` disables the generation cache                                                |
+| `CACHE_MAX_SIZE_MB`         | `jto dev` server          | `100`         | Cache size cap                                                                       |
+| `CACHE_TTL_SECONDS`         | `jto dev` server          | `3600`        | Cache TTL                                                                            |
+| `CACHE_MAX_ITEMS`           | `jto dev` server          | `1000`        | Cache item cap                                                                       |
+| `NODE_ENV`                  | both                      | `development` | `production` enables production rate limits and mode                                 |
 
-The dev server loads a `.env` file via dotenv. `PORT` and `UPLOAD_DIR` are parsed into the dev-server env config but not consumed — the dev-server port is set by `-p`, the format default, or `server.port` in the config file. The standalone [render server](/guide/render-server) uses its own `RENDER_AUTH_MODE`, `RENDER_API_KEY`, body/output/concurrency limits, and outbound-source policy in addition to `PORT`, `HIGHCHARTS_UPSTREAM_URL`, and `PROXY_TIMEOUT_MS`.
+The dev server loads a `.env` file via dotenv. `PORT`, `UPLOAD_DIR`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX` and `MAX_FILE_SIZE` are parsed into the dev-server env config but never read: per-route rate limits (10/20/30 requests per 15 minutes in production, 1000 in development) and body caps are hardcoded, and the dev-server port comes from `-p`, `server.port`, or the format default. The standalone [render server](/guide/render-server) reads its own small set: `PORT`, `HIGHCHARTS_UPSTREAM_URL`, `PROXY_TIMEOUT_MS`, and `NODE_ENV`.
 
 ## Exit codes
 
@@ -322,7 +320,11 @@ These are the only two codes. Error output special-cases missing files ("File no
 
 ## Dev-server HTTP API
 
-Routes are mounted at `/api/<format>` (with legacy aliases `/api/documents` for docx and `/api/presentations` for pptx). Production defaults to `API_AUTH_MODE=required`: all `/api/*` routes require `API_KEY` in the `x-api-key` header (or `API_KEY_HEADER`) and fail closed when no key is configured. Development defaults to `auto`. Set `disabled` only for an intentionally public/local deployment. Rate limits below apply in production mode; development mode is effectively unlimited. See also the [API reference](/reference/api).
+Routes are mounted at `/api/<format>` (with legacy aliases `/api/documents` for docx and `/api/presentations` for pptx). Rate limits below apply in production mode; development mode is effectively unlimited. See also the [API reference](/reference/api).
+
+::: warning The API is unauthenticated unless you set `API_KEY`
+The key middleware is mounted only when `API_KEY` is set, and it checks the `x-api-key` header (or `API_KEY_HEADER`). With no key configured, every `/api/*` route is open in all modes — there is no fail-closed production default. Set `API_KEY`, or keep the server off the public internet.
+:::
 
 | Method   | Route                                                 | Description                                                                                                                                   |
 | -------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |

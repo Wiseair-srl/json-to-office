@@ -175,15 +175,16 @@ Repeating the same props on every node gets tedious, so defaults cascade from br
 
 In DOCX, `componentDefaults` accepts partial props for `heading`, `paragraph`, `image`, `statistic`, `table`, `section`, `columns`, and `list`. In PPTX it accepts partial props for `text`, `image`, `shape`, `table`, `highcharts`, and `chart`. PPTX `text` components additionally sit inside a style cascade: own props → named `style` preset → theme defaults.
 
-## Reproducibility: keep the JSON canonical
+## Keep the JSON canonical
 
-Buffer and file generation is deterministic by default. With the same json-to-office version, JSON, theme, and external asset bytes, repeated renders produce byte-identical Office archives. The JSON definition remains the canonical source of truth:
+The JSON definition, not the generated file, is the source of truth worth versioning:
 
 - Diffs are meaningful. Version your `.docx.json` files in git and review changes as text; use the [document diff engine](/guide/writing-docx) to turn two JSON versions into a native Word redline with tracked changes.
-- Stable output hashes support content-addressed caches and byte snapshots.
-- Tracked-change metadata is deterministic by default: a revision's `date` defaults to the Unix epoch rather than "now".
+- Tracked-change metadata is stable rather than wall-clock: a revision's `date` defaults to the Unix epoch rather than "now", so redlines don't churn between runs.
 
-OOXML packages are ZIP archives. json-to-office normalizes generated metadata, relationship IDs, embedded workbooks, and ZIP timestamps before returning a buffer or saving a file. Set `deterministic: false` to preserve backend-produced archive metadata, or set `generatedAt` to choose a stable document timestamp. External URLs, rendering services, fonts, and assets are inputs: pin their bytes when output hashes matter. Packing the low-level `Document`/`PptxGenJS` object yourself bypasses normalization; use the json-to-office buffer or save functions instead.
+::: info Output bytes are not guaranteed identical
+Rendering the same JSON twice produces an equivalent document, but json-to-office does not normalize ZIP timestamps or package metadata, so the archives are not guaranteed byte-for-byte identical. Compare the JSON, not file hashes. External URLs, rendering services, fonts, and assets are inputs too — pin them when output stability matters.
+:::
 
 This separation still makes the format a reliable target for LLM generation: the model produces validated data, and predictable code renders it. See [LLM generation](/guide/llms).
 

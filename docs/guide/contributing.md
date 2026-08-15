@@ -57,7 +57,7 @@ All packages publish under the `@json-to-office` npm scope. See [Architecture](/
 
 ## Testing
 
-Tests are written with [Vitest](https://vitest.dev) and live next to the code in `__tests__` directories. Run `pnpm test` locally; CI runs the suite on a matrix of **Node 20 and 22 × ubuntu-latest and windows-latest** for pull requests and `main` pushes. A separate conformance job regenerates schemas, validates every example, and renders dependency-free DOCX/PPTX smoke files. Keep platform differences — path separators, binary discovery — in mind.
+Tests are written with [Vitest](https://vitest.dev) and live next to the code in `__tests__` directories. Run `pnpm test` locally; CI runs the suite on a matrix of **Node 20 and 22 × ubuntu-latest and windows-latest** for pull requests (pushes to `main` only trigger the release job). Keep platform differences — path separators, binary discovery — in mind.
 
 ## Commit conventions
 

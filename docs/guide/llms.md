@@ -92,7 +92,7 @@ app.post('/reports', async (req, res) => {
 
 Useful properties of this setup:
 
-- The JSON is the artifact worth persisting — store it in a database row and re-render byte-identical output while the renderer version, theme, and external asset bytes stay fixed.
+- The JSON is the artifact worth persisting — store it in a database row and re-render the document on demand, instead of storing an opaque binary you can't diff or edit.
 - Documents can be post-processed as data before rendering: toggle nodes with `enabled: false`, inject tenant branding via themes and `componentDefaults`, or merge model-written content into a hand-built template skeleton (see [Core concepts](/guide/core-concepts)).
 - Charts via `highcharts` and the DOCX `visual` component need external rendering services at generation time — see [Render server](/guide/render-server). Native PPTX `chart` components need nothing.
 

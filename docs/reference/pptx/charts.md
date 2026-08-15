@@ -162,14 +162,14 @@ When unset, `titleColor`, `legendColor`, `catAxisLabelColor`, `valAxisLabelColor
 
 ### Chart warnings
 
-Render-time chart problems don't abort generation; they surface as [pipeline warnings](/guide/validation). Note that with the default validation gate, an invalid `type` or an empty `data` array fails validation before rendering ever starts — the first two codes below surface as warnings only when validation is disabled:
+Chart problems don't abort generation; they surface as [pipeline warnings](/guide/validation):
 
-| Code                   | Trigger                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------ |
-| `UNKNOWN_CHART_TYPE`   | `type` is not one of the 9 supported types (only reachable with validation disabled) |
-| `CHART_NO_DATA`        | Empty `data` array (only reachable with validation disabled)                         |
-| `CHART_INVALID_SERIES` | A series is missing `labels` or `values` — the chart is skipped                      |
-| `CHART_MULTI_SERIES`   | More than one series on a pie/doughnut — only the first renders                      |
+| Code                   | Trigger                                                           |
+| ---------------------- | ----------------------------------------------------------------- |
+| `UNKNOWN_CHART_TYPE`   | `type` is not one of the 9 supported types — the chart is skipped |
+| `CHART_NO_DATA`        | Empty `data` array — the chart is skipped                         |
+| `CHART_INVALID_SERIES` | A series is missing `labels` or `values` — the chart is skipped   |
+| `CHART_MULTI_SERIES`   | More than one series on a pie/doughnut — only the first renders   |
 
 ---
 

@@ -22,7 +22,7 @@ json-to-office flips this around. A document is a JSON tree:
 }
 ```
 
-That JSON can live in a database row, travel over HTTP, come out of an LLM, or be edited in a visual playground with autocomplete and validation. Definition and rendering are fully decoupled: the buffer and file APIs produce byte-identical Office archives for stable renderer versions, themes, and external asset bytes.
+That JSON can live in a database row, travel over HTTP, come out of an LLM, or be edited in a visual playground with autocomplete and validation. Definition and rendering are fully decoupled: the same JSON, theme, and assets always produce the same document, and the JSON — not the binary — is what you version and review.
 
 ## Why not just use X?
 

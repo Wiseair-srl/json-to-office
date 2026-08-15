@@ -33,7 +33,7 @@ Every node in the tree has the same shape: `{ "name", "props", "children" }`, pl
 }
 ```
 
-Sections map to Word sections: each one can carry its own header, footer, page size, and margins. A section starts on a new page only when you set `pageBreak: true` — the schema defaults it to `true`, but every built-in theme overrides it to `false` via `componentDefaults`, so in practice sections flow continuously unless you opt in. The `theme` prop picks one of the built-in themes (`minimal`, `corporate`, `modern`) or a custom one; see [Themes & styling](/guide/themes).
+Sections map to Word sections: each one can carry its own header, footer, page size, and margins. A section that carries a `props` object flows continuously unless you set `pageBreak: true` — the schema defaults it to `true`, but every built-in theme overrides it to `false` via `componentDefaults`. (A section written with no `props` key at all misses that default and does break to a new page.) The `theme` prop picks one of the built-in themes (`minimal`, `corporate`, `modern`) or a custom one; see [Themes & styling](/guide/themes).
 
 Render it with the library:
 
@@ -300,7 +300,7 @@ Each child fills the next column. Columns accept nearly everything a section doe
       "border": {
         "left": { "style": "solid", "width": 3, "color": "#2563EB" }
       },
-      "shading": { "fill": "EFF6FF" }
+      "shading": { "fill": "#EFF6FF" }
     }
   },
   "children": [
