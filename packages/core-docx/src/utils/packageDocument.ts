@@ -31,10 +31,23 @@ export function resolveGenerationDate(options?: DocumentPackageOptions): Date {
     : new Date(DEFAULT_GENERATION_DATE);
 }
 
+/** Encode a UTC instant into the packed MS-DOS date/time field ZIP headers use. */
+function toDosTime(date: Date): number {
+  const dosDate =
+    (((date.getUTCFullYear() - 1980) & 0x7f) << 9) |
+    ((date.getUTCMonth() + 1) << 5) |
+    date.getUTCDate();
+  const dosTime =
+    (date.getUTCHours() << 11) |
+    (date.getUTCMinutes() << 5) |
+    (date.getUTCSeconds() >> 1);
+  return ((dosDate << 16) | dosTime) >>> 0;
+}
+
 /**
  * Normalize package-level values that otherwise change on every render.
- * A local wall-clock value is used for ZIP headers because DOS timestamps do
- * not carry a timezone; this produces identical header bits in every locale.
+ * ZIP headers are written from UTC components because DOS timestamps carry no
+ * timezone; this produces identical header bits in every locale.
  */
 export function canonicalizeDocxBuffer(
   buffer: Buffer,
@@ -55,19 +68,16 @@ export function canonicalizeDocxBuffer(
     zip.updateFile(coreProperties, Buffer.from(normalized, 'utf8'));
   }
 
-  // AdmZip writes local wall-clock fields into the timezone-less DOS header.
-  // Rebuild from UTC components so the emitted bits are stable across hosts.
-  const zipTimestamp = new Date(
-    generatedAt.getUTCFullYear(),
-    generatedAt.getUTCMonth(),
-    generatedAt.getUTCDate(),
-    generatedAt.getUTCHours(),
-    generatedAt.getUTCMinutes(),
-    generatedAt.getUTCSeconds(),
-    0
-  );
+  // AdmZip's `header.time` setter encodes the timezone-less DOS field from
+  // local getters, so the emitted bits would vary by host. Write the raw field
+  // from UTC components instead. Going through a reconstructed local Date is
+  // not enough: a value inside a DST spring-forward gap has no local
+  // representation and the runtime silently shifts it an hour.
+  // `timeval` is the raw DOS field; @types/adm-zip@0.5.7 only declares the
+  // `time` Date accessor that wraps it, hence the cast.
+  const zipTimestamp = toDosTime(generatedAt);
   for (const entry of zip.getEntries()) {
-    entry.header.time = zipTimestamp;
+    (entry.header as unknown as { timeval: number }).timeval = zipTimestamp;
   }
 
   return zip.toBuffer();

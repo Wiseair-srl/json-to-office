@@ -102,6 +102,35 @@ describe('deterministic DOCX generation', () => {
     expect(documentXml(second)).not.toContain('2024-01-01');
   });
 
+  it('writes identical ZIP timestamps regardless of host timezone', async () => {
+    // 02:30 on this date does not exist in America/New_York (DST spring
+    // forward). Encoding the DOS field via a reconstructed local Date would
+    // silently shift it an hour and break cross-host byte identity.
+    const generatedAt = '2025-03-09T02:30:00.000Z';
+    const original = process.env.TZ;
+    const headerTimes: number[] = [];
+
+    try {
+      for (const timezone of [
+        'UTC',
+        'America/New_York',
+        'Australia/Lord_Howe',
+      ]) {
+        process.env.TZ = timezone;
+        const buffer = await generateBufferFromJson(document, { generatedAt });
+        const entry = new AdmZip(buffer).getEntry('word/document.xml');
+        headerTimes.push(
+          (entry!.header as unknown as { timeval: number }).timeval
+        );
+      }
+    } finally {
+      if (original === undefined) delete process.env.TZ;
+      else process.env.TZ = original;
+    }
+
+    expect(new Set(headerTimes).size).toBe(1);
+  });
+
   it('rejects an invalid generatedAt value', async () => {
     await expect(
       generateBufferFromJson(document, { generatedAt: 'not-a-date' })
