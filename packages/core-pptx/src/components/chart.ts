@@ -4,7 +4,7 @@
 
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig, PipelineWarning } from '../types';
-import { resolveColor, DEFAULT_CHART_THEME_COLORS } from '../utils/color';
+import { resolveColor, definedChartColorTokens } from '../utils/color';
 import { warn, W } from '../utils/warn';
 
 interface ChartDataSeries {
@@ -89,8 +89,6 @@ const CHART_TYPE_MAP: Record<string, string> = {
   scatter: 'scatter',
 };
 
-const DEFAULT_THEME_COLORS = DEFAULT_CHART_THEME_COLORS;
-
 export function renderChartComponent(
   slide: PptxGenJS.Slide,
   props: ChartComponentProps,
@@ -155,9 +153,19 @@ export function renderChartComponent(
   if (props.w !== undefined) opts.w = props.w;
   if (props.h !== undefined) opts.h = props.h;
 
-  // Colors — resolve semantic names to hex
-  const colorSources = props.chartColors ?? DEFAULT_THEME_COLORS;
-  opts.chartColors = colorSources.map((c) => resolveColor(c, theme, warnings));
+  // Colors — resolve semantic names to hex, following any token-to-token
+  // reference the theme sets up. The implicit palette skips tokens the theme
+  // leaves unset or leaves unresolvable (DOCX does the same); an explicit
+  // chartColors entry naming one keeps the loud fallback + warning. Only hex
+  // reaches pptxgenjs: it answers a stray token name with black. An empty list
+  // is left unset rather than passed on — pptxgenjs indexes `chartColors[i % 0]`
+  // and paints every series black, so its own palette is the better fallback.
+  const colorSources = props.chartColors ?? definedChartColorTokens(theme);
+  if (colorSources.length > 0) {
+    opts.chartColors = colorSources.map((c) =>
+      resolveColor(c, theme, warnings)
+    );
+  }
 
   // Auto-default chart text colors from theme to prevent dark-on-dark / light-on-light
   const themeTextColor = resolveColor('text', theme, warnings);

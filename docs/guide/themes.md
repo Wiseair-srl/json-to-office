@@ -8,16 +8,19 @@ Anywhere a component accepts a color, you can pass either a literal hex value (`
 
 The two formats use different token schemes.
 
-### DOCX: 13-color scheme
+### DOCX: 13 required colors + 3 optional
 
-Word themes define thirteen color keys, all required in a theme file:
+Word themes define thirteen required color keys, plus three optional chart-series slots:
 
-| Group      | Tokens                                                   |
-| ---------- | -------------------------------------------------------- |
-| Core       | `primary`, `secondary`, `accent`                         |
-| Text       | `text`, `textPrimary`, `textSecondary`, `textMuted`      |
-| Background | `background`, `backgroundPrimary`, `backgroundSecondary` |
-| Border     | `border`, `borderPrimary`, `borderSecondary`             |
+| Group      | Tokens                                                   | Required |
+| ---------- | -------------------------------------------------------- | -------- |
+| Core       | `primary`, `secondary`, `accent`                         | yes      |
+| Text       | `text`, `textPrimary`, `textSecondary`, `textMuted`      | yes      |
+| Background | `background`, `backgroundPrimary`, `backgroundSecondary` | yes      |
+| Border     | `border`, `borderPrimary`, `borderSecondary`             | yes      |
+| Chart      | `accent4`, `accent5`, `accent6`                          | no       |
+
+`accent4`–`accent6` carry the same names as the PPTX slots below. They exist for the chart palette, but once a theme defines one it is an ordinary token: any component color prop can name it. None of the built-in DOCX themes define them, so referencing `"accent4"` under a built-in theme throws like any other unknown name.
 
 Resolution rules:
 
@@ -48,7 +51,9 @@ Resolution is more forgiving than DOCX:
 - Literal hex values may omit the `#`, and 3-digit shorthand is expanded (`FFF` → `FFFFFF`). A string that is neither a token nor valid hex produces an `UNKNOWN_COLOR` warning.
 
 ::: info Charts inherit the palette
-The `chart` and `highcharts` components default their series colors to `['primary', 'secondary', 'accent', 'accent4', 'accent5', 'accent6']`, so a well-filled 10-slot theme gives you an on-brand chart palette for free. See [Charts](/guide/charts).
+The pptx `chart` and the `highcharts` component in **both** formats default their series colors to the same six tokens in the same order — `['primary', 'secondary', 'accent', 'accent4', 'accent5', 'accent6']` — so a theme that fills every slot gives you one on-brand chart palette across a deck and a document.
+
+A theme that fills only some of them behaves identically in both formats too: the unset slot is dropped, the palette is only as long as the theme has tokens defined, and the chart library reuses that shorter list. No warning is emitted — the fallback rule above governs a token named _explicitly_, not the implicit chart palette. Since no built-in DOCX theme defines `accent4`–`accent6`, a docx chart wraps three colors today. See [Charts](/guide/charts#theme-palette).
 :::
 
 ## Built-in themes
@@ -190,28 +195,37 @@ await generateAndSaveFromJson(documentJson, 'report.docx', {
 });
 ```
 
-**CLI** — point at a theme file with `--theme-path`:
+**CLI** — point at a theme file with `--theme-path`, or name a built-in with `--theme`:
 
 ```bash
 # --theme-path loads and registers the theme file; also accepts a JS/TS module
 # exporting `default` or `theme`
 jto docx generate report.json --theme-path ./brand.docx.theme.json
+
+# --theme selects a built-in (or a customThemes key, or a .json path)
+jto docx generate report.json --theme modern
 ```
 
-The loaded theme is registered under its `name`, which the document's `props.theme` must reference. (The `--theme` flag currently takes effect only in plugin-loaded runs — see the [CLI reference](/reference/cli#generate).)
+Both flags apply on every run — with plugins loaded and without — and both override the document's own `props.theme`. They also outrank the [config file](/reference/cli#plugin--generation-config), **as a pair**: passing either flag discards _both_ config-file keys (`theme` and `themePath`), so a config-file `themePath` can no longer quietly beat a `--theme` on the command line. Use no flag and the config file keeps both of its keys, where the theme _path_ is tried before the theme _name_. With nothing requested anywhere, `props.theme` applies unchanged. A theme file loaded via `--theme-path` is additionally registered under its `name`, so `props.theme` can still reference it by name. A theme that cannot be resolved leaves `props.theme` in charge instead of falling back to a default, and warns — `Unknown theme "X"; keeping the document's own theme` for a `--theme` value that names nothing, `Failed to load theme from <path>: <reason>` for a `--theme-path` that cannot be read. See the [CLI reference](/reference/cli#generate).
 
 Theme files are loaded with hardening guards (`.json` only, 10 MB cap, path-traversal checks) — see [Theme schema reference](/reference/theme-schema#loading-rules) for details, and the full file formats for both DOCX and PPTX themes.
 
 ## `componentDefaults` cascade
 
-Both theme files and documents can set default props per component type, so you can say "all tables are striped" once instead of on every table. The cascade, weakest to strongest:
+Both theme files and documents can set default props per component type, so you can say "every table hides its borders" once instead of on every table. The cascade, weakest to strongest:
 
 1. Built-in component defaults
 2. **Theme** `componentDefaults`
 3. **Document** `props.componentDefaults` (deep-merged on top of the theme's)
 4. Props set **on the component itself**
 
-Merging is a deep merge: nested objects merge key-by-key with the stronger layer winning, arrays are replaced wholesale.
+Merging is a deep merge: nested objects merge key-by-key with the stronger layer winning, arrays are replaced wholesale. A content component with no `props` key at all behaves exactly like one with `"props": {}` — it picks up the same defaults; there is no carve-out for propless nodes.
+
+::: warning The root node is the exception
+Both published JSON Schemas mark the root's `props` as **required**, so an editor wired to `$schema` flags a propless root in either format. Write `"props": {}` even when you have nothing to put in it. The runtime validators are not equally strict: `jto pptx validate` enforces the rule (`Missing required field "props"` at `/props`), while `jto docx validate` accepts a propless `docx` root and generation normalizes it to `{}`, producing bytes identical to the same document written with `"props": {}`. Do not lean on that gap — it is the DOCX validator being looser than its own schema, not a supported shape.
+:::
+
+Only real component props are valid `componentDefaults`. For `table` that means `borderColor`, `borderSize`, `hideBorders`, `cellDefaults`, `headerCellDefaults`, `columns`, `width`, `keepInOnePage`, `keepNext`, and `repeatHeaderOnPageBreak` — the schema is a strict partial of the component's props, so an invented key such as `striped`, `borders`, `borderWidth`, `headerBackground` or `headerColor` fails theme validation. Header styling goes through `headerCellDefaults` (`backgroundColor`, `color`), border width through `borderSize`, and borders on or off through `hideBorders`.
 
 ```json
 {

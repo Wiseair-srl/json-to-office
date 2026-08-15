@@ -33,7 +33,9 @@ Every node in the tree has the same shape: `{ "name", "props", "children" }`, pl
 }
 ```
 
-Sections map to Word sections: each one can carry its own header, footer, page size, and margins. A section that carries a `props` object flows continuously unless you set `pageBreak: true` — the schema defaults it to `true`, but every built-in theme overrides it to `false` via `componentDefaults`. (A section written with no `props` key at all misses that default and does break to a new page.) The `theme` prop picks one of the built-in themes (`minimal`, `corporate`, `modern`) or a custom one; see [Themes & styling](/guide/themes).
+Sections map to Word sections: each one can carry its own header, footer, page size, and margins. A section flows continuously unless you set `pageBreak: true` — the schema defaults it to `true`, but every built-in theme overrides it to `false` via `componentDefaults`. That default applies whether or not the node declares `props`: a section with no `props` key behaves exactly like one with `"props": {}`. (This changed — propless nodes used to skip the cascade and break to a new page; set `"pageBreak": true` explicitly if you were relying on that.) The `theme` prop picks one of the built-in themes (`minimal`, `corporate`, `modern`) or a custom one; see [Themes & styling](/guide/themes).
+
+`metadata` on the root is not decoration: it lands in Word's document properties — `title`, `author`, `description`, `tags` and `subtitle` in File → Info → Properties, and `company` and `version` as custom properties. There are no `created`/`modified` fields: package timestamps come from the `generatedAt` generation option instead. The full mapping is in the [document reference](/reference/docx/document#metadata-fields).
 
 Render it with the library:
 
@@ -312,6 +314,8 @@ Each child fills the next column. Columns accept nearly everything a section doe
   ]
 }
 ```
+
+Both colors in that `style` block — `border.<side>.color` and `shading.fill` — take a `#`-prefixed hex or a theme color name (`"primary"`, `"accent"`, ...), and both are checked against that pattern at validation. Bare hex is not accepted: `"0F0FDF"` fails validation outright, and a letter-leading one such as `"F0FDF4"` is indistinguishable from a theme color name, so it slips past the pattern only to throw at render. Write `"#F0FDF4"`.
 
 ## Table of contents
 

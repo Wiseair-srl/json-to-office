@@ -141,14 +141,14 @@ PPTX `text` components have their own pair of placeholders, `{PAGE_NUMBER}` and 
 
 Wherever a color is accepted, you can pass either a hex value or a **semantic token** — a named slot resolved against the active theme:
 
-- **DOCX** themes define 13 slots, including `primary`, `secondary`, `accent`, `text`, `background`, `border`, plus finer-grained variants like `textSecondary`, `textMuted`, and `backgroundSecondary`.
+- **DOCX** themes define 13 required slots, including `primary`, `secondary`, `accent`, `text`, `background`, `border`, plus finer-grained variants like `textSecondary`, `textMuted`, and `backgroundSecondary` — and three optional chart-only slots, `accent4`, `accent5`, `accent6`.
 - **PPTX** themes define a 10-slot scheme: `primary`, `secondary`, `accent`, `background`, `text` (required), plus optional `text2`, `background2`, `accent4`, `accent5`, `accent6`. PowerPoint-style aliases also work (`accent1` → `primary`, `tx1` → `text`, `bg1` → `background`, …).
 
 ```json
 { "name": "slide", "props": { "background": { "color": "background" } } }
 ```
 
-Using tokens instead of hex keeps documents theme-portable: switch the theme name and every token re-resolves. Chart palettes follow the theme too — the default PPTX chart color set is `["primary", "secondary", "accent", "accent4", "accent5", "accent6"]`. See [Themes & styling](/guide/themes) for the full theming model.
+Using tokens instead of hex keeps documents theme-portable: switch the theme name and every token re-resolves. Chart palettes follow the theme too — both formats default their series colors to `["primary", "secondary", "accent", "accent4", "accent5", "accent6"]`, and both skip a slot the theme leaves unset rather than padding it. See [Themes & styling](/guide/themes) for the full theming model and [Charts](/guide/charts#theme-palette) for the palette details.
 
 ## The `componentDefaults` cascade
 

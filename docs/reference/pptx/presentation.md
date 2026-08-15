@@ -16,15 +16,35 @@ Every component in the tree is an object of the form:
 }
 ```
 
-| Field      | Type    | Required            | Description                                                                                                                                                                                                              |
-| ---------- | ------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `name`     | string  | yes                 | Component type. The root must be `"pptx"`.                                                                                                                                                                               |
-| `id`       | string  | no                  | Free-form identifier, useful for tooling.                                                                                                                                                                                |
-| `enabled`  | boolean | no (default `true`) | When `false`, a content component (or template object) is filtered out and not rendered. Currently **ignored on `slide` components** — a disabled slide still renders. To drop a slide, remove it or set `hidden: true`. |
-| `props`    | object  | per component       | Component properties (tables below).                                                                                                                                                                                     |
-| `children` | array   | containers only     | `pptx` accepts only `slide` children; `slide` accepts only content components; content components must not carry `children`.                                                                                             |
+| Field      | Type    | Required            | Description                                                                                                                                                        |
+| ---------- | ------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`     | string  | yes                 | Component type. The root must be `"pptx"`.                                                                                                                         |
+| `id`       | string  | no                  | Free-form identifier, useful for tooling.                                                                                                                          |
+| `enabled`  | boolean | no (default `true`) | When `false`, the component is filtered out and not rendered — content components, template objects and `slide` components alike. See [`enabled`](#enabled) below. |
+| `props`    | object  | per component       | Component properties (tables below).                                                                                                                               |
+| `children` | array   | containers only     | `pptx` accepts only `slide` children; `slide` accepts only content components; content components must not carry `children`.                                       |
 
 The root component additionally allows a `$schema` field, so editors can wire up JSON Schema autocompletion (see [JSON schemas](/reference/json-schemas)). Both `pptx` props and `slide` props reject unknown keys (`additionalProperties: false`) — the deep validator reports them as errors unless you opt into `allowUnknownFields` (see [Validation](/guide/validation)).
+
+### `enabled`
+
+`enabled` sits alongside `props`, not inside it, and is declared on every component type — including `slide`. Omitting it means enabled; only the explicit value `false` removes a component:
+
+```json
+{
+  "name": "slide",
+  "enabled": false,
+  "props": { "notes": "Held back until the pricing review lands" },
+  "children": []
+}
+```
+
+A disabled slide is never written into the file. Two consequences follow:
+
+- **Slide numbers are computed after the drop.** `{PAGE_NUMBER}` / `{PAGE_COUNT}` and PowerPoint's native slide numbers count only the emitted slides, so a three-slide deck with the middle slide disabled renders as `1/2` and `2/2`.
+- **`hyperlink.slide` is rebased, not broken.** The internal-link target on `text` and `image` is a 1-based index over the **authored** slides, disabled slides included; generation remaps it onto the emitted slide numbering, so the link keeps pointing at the slide the author meant. If the target is itself disabled, or the index falls outside the authored range, the link is dropped and a `HYPERLINK_SLIDE_UNRESOLVED` warning is reported — rather than written as a relationship to a slide that is not in the file, which PowerPoint reports as a damaged package. Remapping covers every place a slide ref can be authored: slide children, slide `placeholders`, template `objects`, and a template placeholder's `defaults`. A `hyperlink.url` outranks `slide` and is never touched.
+
+To keep a slide in the file but skip it during the slideshow, use the slide prop [`hidden`](#notes-and-hidden) instead.
 
 ## Root `pptx` props
 
@@ -151,7 +171,7 @@ Background colors go through the same resolution as all colors: semantic names (
 }
 ```
 
-`notes` accepts plain text (use `\n` for line breaks). `hidden` slides are a good home for appendix material you want in the file but not in the live run.
+`notes` accepts plain text (use `\n` for line breaks). `hidden` slides are a good home for appendix material you want in the file but not in the live run — contrast with [`enabled: false`](#enabled), which drops the slide from the file altogether.
 
 ### `template` and `placeholders`
 

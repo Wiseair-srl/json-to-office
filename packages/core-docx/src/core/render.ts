@@ -8,6 +8,7 @@ import {
   Paragraph,
   Table,
   TableOfContents,
+  IPropertiesOptions,
   ISectionOptions,
   TextRun,
   AlignmentType,
@@ -50,7 +51,11 @@ import { ThemeConfig } from '../styles';
 import { createWordStyles } from '../styles/themeToDocxAdapter';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import { getPageSetup } from '../styles/utils/layoutUtils';
-import { ProcessedDocument, createRenderContext } from './structure';
+import {
+  DocumentMetadata,
+  ProcessedDocument,
+  createRenderContext,
+} from './structure';
 import { LayoutPlan, SectionLayout } from './layout';
 import {
   renderComponentWithCache,
@@ -105,6 +110,48 @@ function getAlignment(
     default:
       return AlignmentType.LEFT;
   }
+}
+
+type CorePropertyOptions = Pick<
+  IPropertiesOptions,
+  | 'title'
+  | 'subject'
+  | 'creator'
+  | 'description'
+  | 'keywords'
+  | 'lastModifiedBy'
+  | 'customProperties'
+>;
+
+/**
+ * Map root `props.metadata` onto Word's document properties.
+ *
+ * `date` is deliberately absent: it drives placeholder resolution, not the
+ * package timestamps. dcterms:created/modified come from the `generatedAt`
+ * generation option (docx always stamps them with the wall clock and offers no
+ * override, so packageDocument rewrites them), which is why `metadata` exposes
+ * no created/modified of its own.
+ * `company` and `version` have no core-property slot, so they land in
+ * docProps/custom.xml.
+ */
+function coreProperties(metadata: DocumentMetadata): CorePropertyOptions {
+  const { title, subtitle, description, author, company, version, tags } =
+    metadata;
+
+  const customProperties = [
+    ...(company ? [{ name: 'Company', value: company }] : []),
+    ...(version ? [{ name: 'Version', value: version }] : []),
+  ];
+
+  return {
+    ...(title && { title }),
+    ...(subtitle && { subject: subtitle }),
+    ...(description && { description }),
+    // Word surfaces both names; author is the only person the document knows.
+    ...(author && { creator: author, lastModifiedBy: author }),
+    ...(tags && tags.length > 0 && { keywords: tags.join(', ') }),
+    ...(customProperties.length > 0 && { customProperties }),
+  };
 }
 
 /**
@@ -260,6 +307,7 @@ async function renderDocumentScoped(
   return new Document({
     styles: createWordStyles(structure.theme, structure.language),
     sections,
+    ...coreProperties(structure.metadata),
     features: {
       updateFields: true, // Required for TOC fields to update correctly
       // Word opens the document in review mode (further edits are tracked)

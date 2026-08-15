@@ -11,12 +11,14 @@ import {
 } from '../types';
 import { ThemeConfig } from '../styles';
 import { createImage } from '../core/content';
+import { resolveColor } from '../styles/utils/colorUtils';
 import { isNodeEnvironment } from '../utils/environment';
 import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 // Import only the types we actually use from shared package
 import type { HighchartsProps } from '@json-to-office/shared-docx';
 import type { HighchartsServiceConfig } from '@json-to-office/shared';
+import { DEFAULT_CHART_THEME_COLORS } from '@json-to-office/shared';
 
 // Re-export HighchartsProps for backward compatibility
 export type { HighchartsProps } from '@json-to-office/shared-docx';
@@ -88,10 +90,34 @@ async function generateChart(
 }
 
 /**
+ * Turn one theme color value into a `#RRGGBB` string, or undefined when it
+ * cannot be resolved. The theme schema lets a color be another token's name
+ * (`"accent4": "primary"`), so a bare `#` prefix would post "#primary" to the
+ * export server; `resolveColor` walks the reference chain and throws on
+ * anything unresolvable, which we treat as an unset slot.
+ */
+function toChartColor(value: string, theme: ThemeConfig): string | undefined {
+  // Literal hex passes through untouched — resolveColor would upper-case it,
+  // and it rejects the bare (no '#') form the schema still accepts.
+  if (/^#?[0-9A-Fa-f]{6}$/.test(value)) {
+    return value.startsWith('#') ? value : `#${value}`;
+  }
+  try {
+    return `#${resolveColor(value, theme)}`;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * When the Highcharts config sets no top-level `colors`, series render in the
  * Highcharts default palette (blue-first) and ignore the document theme. Inject
- * the theme's primary/secondary/accent as series colors so charts follow the
- * theme by default. Explicit `colors` always wins.
+ * the theme's chart palette — the same token list PPTX charts resolve — as
+ * series colors so charts follow the theme by default. accent4-6 are optional
+ * in the theme schema; slots the theme leaves unset are skipped, in both
+ * formats, so the palette never carries gaps or repeats and Highcharts wraps
+ * the shorter list (see DEFAULT_CHART_THEME_COLORS). Explicit `colors` always
+ * wins.
  */
 function withThemeColors(
   config: HighchartsProps,
@@ -99,13 +125,13 @@ function withThemeColors(
 ): HighchartsProps {
   const options = config.options as Record<string, unknown> | undefined;
   if (!options || options.colors || !theme?.colors) return config;
-  const palette = [
-    theme.colors.primary,
-    theme.colors.secondary,
-    theme.colors.accent,
-  ]
-    .filter((c): c is string => typeof c === 'string' && c.length > 0)
-    .map((c) => (c.startsWith('#') ? c : `#${c}`));
+  const themeColors = theme.colors as Record<string, string | undefined>;
+  const palette = DEFAULT_CHART_THEME_COLORS.map((token) => {
+    const value = themeColors[token];
+    return typeof value === 'string' && value.length > 0
+      ? toChartColor(value, theme)
+      : undefined;
+  }).filter((c): c is string => c !== undefined);
   if (palette.length === 0) return config;
   return {
     ...config,

@@ -46,7 +46,9 @@ function parseEnv(env: NodeJS.ProcessEnv) {
   const nodeEnv = normalizeNodeEnv(env.NODE_ENV || 'development');
   return {
     NODE_ENV: nodeEnv,
-    PORT: positiveInteger(env.PORT, 3003),
+    // No PORT here: the listener is opened by the dev server from the CLI
+    // config (`-p` > `server.port` > `PORT` env > format default), so a second
+    // copy of it in this module would be silently ignored.
     CORS_ORIGIN: env.CORS_ORIGIN || '*',
     API_KEY: env.API_KEY,
     API_KEY_HEADER: env.API_KEY_HEADER || 'x-api-key',
@@ -74,7 +76,6 @@ function parseEnv(env: NodeJS.ProcessEnv) {
       .split(',')
       .map((host) => host.trim().toLowerCase())
       .filter(Boolean),
-    UPLOAD_DIR: env.UPLOAD_DIR || 'uploads',
     LIBREOFFICE_PATH: env.LIBREOFFICE_PATH,
     LIBREOFFICE_TIMEOUT_MS: env.LIBREOFFICE_TIMEOUT_MS
       ? positiveInteger(env.LIBREOFFICE_TIMEOUT_MS, 30000)

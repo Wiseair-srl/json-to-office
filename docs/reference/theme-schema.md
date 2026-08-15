@@ -22,11 +22,15 @@ A DOCX theme is a JSON object (conventionally a `*.docx.theme.json` file). Unkno
 
 ### `colors`
 
-All **13 keys are required**:
+**13 required keys**:
 
 `primary`, `secondary`, `accent`, `text`, `background`, `border`, `textPrimary`, `textSecondary`, `textMuted`, `borderPrimary`, `borderSecondary`, `backgroundPrimary`, `backgroundSecondary`
 
-Each value matches the pattern `^(#[0-9A-Fa-f]{6}|[a-zA-Z][a-zA-Z0-9]*)$` — either a `#RRGGBB` hex value **or the name of another theme color**. Name references are resolved recursively at render time (so `"border": "backgroundSecondary"` is valid); unknown names throw during generation.
+**3 optional keys** — `accent4`, `accent5`, `accent6` — named to match the PPTX palette so both formats share one chart-series vocabulary. They exist for the chart palette, though a theme that defines one makes it referenceable from any component color prop like any other token. None of the built-in DOCX themes define them; see [Charts](/guide/charts#theme-palette) for what a theme that omits them produces.
+
+No other key is accepted (`additionalProperties: false`).
+
+Each value matches the pattern `^(#[0-9A-Fa-f]{6}|[a-zA-Z][a-zA-Z0-9]*)$` — either a `#RRGGBB` hex value **or the name of another theme color**. Name references are resolved recursively at render time (so `"border": "backgroundSecondary"` is valid); unknown names throw during generation. Because the second alternative is a _name_, a bare hex is not a hex value here: a digit-leading one (`00FF00`) fails validation, and a letter-leading one (`AABBCC`) passes validation and is then treated as a token name, which throws everywhere `resolveColor` runs. The lone exception is the chart palette, which checks for a bare 6-digit hex before consulting the theme — so `"accent4": "AABBCC"` colors charts while breaking every other use of that token. Always write the `#`.
 
 ### `fonts`
 
@@ -176,7 +180,9 @@ A PPTX theme is a plain object, most often supplied **inline** on the presentati
 | `primary`, `secondary`, `accent`, `background`, `text`  | **yes**  |
 | `text2`, `background2`, `accent4`, `accent5`, `accent6` | no       |
 
-Values are **strict hex** matching `^#?[0-9A-Fa-f]{6}$` (leading `#` optional). Unlike DOCX, palette values cannot reference other color names — token indirection happens only where components _consume_ colors. Unset optional slots resolve to `primary` at render time, with a `THEME_COLOR_FALLBACK` warning.
+Values are **strict hex** matching `^#?[0-9A-Fa-f]{6}$` (leading `#` optional). Unlike DOCX, palette values cannot reference other color names — token indirection happens only where components _consume_ colors. An unset optional slot resolves to `primary` at render time, with a `THEME_COLOR_FALLBACK` warning, whenever something names the token explicitly; the implicit chart palette skips it instead (below).
+
+`accent4`–`accent6` carry the same names in the [DOCX scheme](#colors) so the chart palette reads one token list in both formats, and both formats skip an unfilled slot identically — the palette shrinks, no warning. Only the PPTX built-ins ship values for them. See [Charts](/guide/charts#theme-palette).
 
 ### `styles`
 

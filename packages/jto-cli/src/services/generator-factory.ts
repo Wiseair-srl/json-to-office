@@ -1,5 +1,9 @@
 import { PluginRegistry } from './plugin-registry.js';
-import type { FormatAdapter, GeneratorOptions } from '../format-adapter.js';
+import type {
+  FormatAdapter,
+  GeneratorOptions,
+  GeneratorResult,
+} from '../format-adapter.js';
 
 type ComponentDefinition = any;
 
@@ -12,11 +16,11 @@ export class GeneratorFactory {
     this.adapter = adapter;
   }
 
-  async createGenerator(options: GeneratorOptions = {}): Promise<{
-    generateBuffer: (document: ComponentDefinition | string) => Promise<Buffer>;
-    hasPlugins: boolean;
-    pluginNames: string[];
-  }> {
+  // Passes the adapter's result straight through: a narrower type here would
+  // silently drop fields (e.g. `themeLabel`) the CLI reports on.
+  async createGenerator(
+    options: GeneratorOptions = {}
+  ): Promise<GeneratorResult> {
     const plugins = this.registry.getPlugins();
     return this.adapter.createGenerator(plugins, options);
   }

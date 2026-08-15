@@ -20,7 +20,38 @@ import {
 import { getPptxTheme } from '../themes';
 import type { GenerationOptions } from './generator';
 import { resolveComponentTree } from '../utils/resolveComponentTree';
+import {
+  remapHyperlinkProps,
+  remapHyperlinkSlideRefs,
+} from '../utils/hyperlink';
 import { mergeWithDefaults } from '@json-to-office/shared';
+
+/** A slide child is rendered unless it carries `enabled: false`. */
+function isSlideEnabled(child: object): boolean {
+  return !(
+    'enabled' in child && (child as { enabled?: boolean }).enabled === false
+  );
+}
+
+/**
+ * Map authored 1-based slide numbers (disabled slides included) to their
+ * position in the generated deck. Dropped slides are absent from the map, so
+ * hyperlinks pointing at them resolve to nothing instead of to whichever slide
+ * happened to shift into that number.
+ */
+function buildSlideIndexMap(
+  children: PptxComponentInput[]
+): Map<number, number> {
+  const map = new Map<number, number>();
+  let authored = 0;
+  let rendered = 0;
+  for (const child of children) {
+    if (!isSlideComponent(child)) continue;
+    authored++;
+    if (isSlideEnabled(child)) map.set(authored, ++rendered);
+  }
+  return map;
+}
 
 export function processPresentation(
   document: PresentationComponentDefinition,
@@ -51,27 +82,41 @@ export function processPresentation(
   const slideWidth = props.slideWidth ?? 10;
   const slideHeight = props.slideHeight ?? 7.5;
 
+  const slideIndexMap = buildSlideIndexMap(children);
+
   // Process template slide definitions
   let templates: TemplateSlideDefinition[] | undefined;
   if (props.templates && props.templates.length > 0) {
     templates = props.templates.map((m: TemplateSlideDefinition) => {
       const effectiveGrid = mergeGridConfigs(props.grid, m.grid);
 
-      // Resolve grid positions on placeholders
+      // Rebase slide refs in placeholder `defaults`, then resolve grid
+      // positions. `defaults.props` is merged into the rendered component by
+      // core/render.ts, so it reaches the writer just like a component's own
+      // props and needs the same remapping.
       const resolvedPhs = m.placeholders?.map((ph) => {
-        if (!ph.grid) return ph;
+        const phDefaults = ph.defaults;
+        const defaultProps = phDefaults?.props
+          ? remapHyperlinkProps(phDefaults.props, slideIndexMap)
+          : undefined;
+        const base =
+          phDefaults && defaultProps && defaultProps !== phDefaults.props
+            ? { ...ph, defaults: { ...phDefaults, props: defaultProps } }
+            : ph;
+
+        if (!base.grid) return base;
         const abs = resolveGridPosition(
-          ph.grid,
+          base.grid,
           effectiveGrid,
           slideWidth,
           slideHeight
         );
         return {
-          ...ph,
-          x: ph.x ?? abs.x,
-          y: ph.y ?? abs.y,
-          w: ph.w ?? abs.w,
-          h: ph.h ?? abs.h,
+          ...base,
+          x: base.x ?? abs.x,
+          y: base.y ?? abs.y,
+          w: base.w ?? abs.w,
+          h: base.h ?? abs.h,
           grid: undefined,
         };
       });
@@ -81,11 +126,14 @@ export function processPresentation(
         ? resolveComponentTree(m.objects, theme)
         : undefined;
       const resolvedObjects = defaultedObjects?.map((obj) =>
-        resolveComponentGridPosition(
-          obj,
-          effectiveGrid,
-          slideWidth,
-          slideHeight
+        remapHyperlinkSlideRefs(
+          resolveComponentGridPosition(
+            obj,
+            effectiveGrid,
+            slideWidth,
+            slideHeight
+          ),
+          slideIndexMap
         )
       );
 
@@ -97,6 +145,9 @@ export function processPresentation(
 
   for (const child of children) {
     if (isSlideComponent(child)) {
+      // `enabled: false` drops the slide entirely; absent means enabled
+      if (!isSlideEnabled(child)) continue;
+
       const slideComponents: PptxComponentInput[] = [];
       if (child.children) {
         for (const slideChild of child.children) {
@@ -104,8 +155,16 @@ export function processPresentation(
         }
       }
 
-      // Resolve componentDefaults on all slide components
-      const resolvedComponents = resolveComponentTree(slideComponents, theme);
+      // Resolve componentDefaults on all slide components, then rebase
+      // slide-targeted hyperlinks onto the generated slide numbering
+      const resolvedComponents = resolveComponentTree(
+        slideComponents,
+        theme
+      ).map((component) => remapHyperlinkSlideRefs(component, slideIndexMap));
+
+      const placeholders = child.props.placeholders as
+        | Record<string, PptxComponentInput>
+        | undefined;
 
       slides.push({
         components: resolvedComponents,
@@ -114,9 +173,14 @@ export function processPresentation(
         layout: child.props.layout,
         hidden: child.props.hidden,
         template: child.props.template,
-        placeholders: child.props.placeholders as
-          | Record<string, any>
-          | undefined,
+        placeholders: placeholders
+          ? Object.fromEntries(
+              Object.entries(placeholders).map(([name, component]) => [
+                name,
+                remapHyperlinkSlideRefs(component, slideIndexMap),
+              ])
+            )
+          : undefined,
       });
     }
   }

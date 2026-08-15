@@ -400,6 +400,12 @@ export const ThemeConfigSchema = Type.Object(
         borderSecondary: HexColorSchema,
         backgroundPrimary: HexColorSchema,
         backgroundSecondary: HexColorSchema,
+        // Extra chart-series slots, named to match the PPTX theme so both
+        // formats share one palette vocabulary. Optional: the bundled DOCX
+        // themes leave them unset and charts skip the empty slots.
+        accent4: Type.Optional(HexColorSchema),
+        accent5: Type.Optional(HexColorSchema),
+        accent6: Type.Optional(HexColorSchema),
       },
       { additionalProperties: false }
     ),

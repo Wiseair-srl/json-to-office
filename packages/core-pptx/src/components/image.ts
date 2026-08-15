@@ -9,6 +9,7 @@ import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
 import { resolveImageSource } from '../utils/imageSource';
 import { warn, W } from '../utils/warn';
+import { applyHyperlink, type HyperlinkProps } from '../utils/hyperlink';
 
 /** Block requests to private/loopback/link-local hosts. */
 function isPrivateUrl(urlStr: string): boolean {
@@ -55,7 +56,7 @@ interface ImageComponentProps {
     angle?: number;
     opacity?: number;
   };
-  hyperlink?: { url?: string; slide?: number; tooltip?: string };
+  hyperlink?: HyperlinkProps;
   alt?: string;
 }
 
@@ -265,19 +266,7 @@ export async function renderImageComponent(
   }
 
   // Hyperlink
-  if (props.hyperlink) {
-    if (props.hyperlink.url) {
-      opts.hyperlink = {
-        url: props.hyperlink.url,
-        tooltip: props.hyperlink.tooltip,
-      };
-    } else if (props.hyperlink.slide) {
-      opts.hyperlink = {
-        slide: props.hyperlink.slide,
-        tooltip: props.hyperlink.tooltip,
-      };
-    }
-  }
+  applyHyperlink(opts, props.hyperlink, 'image', warnings);
 
   // Alt text
   if (props.alt) opts.altText = props.alt;

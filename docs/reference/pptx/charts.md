@@ -81,7 +81,13 @@ All optional. Grouped by concern:
 | ------------- | -------- | ------------- | -------------------------------------------------- |
 | `chartColors` | string[] | theme palette | Series colors — hex values or semantic theme names |
 
-When `chartColors` is unset, the chart uses the theme's 6-slot palette: `['primary', 'secondary', 'accent', 'accent4', 'accent5', 'accent6']`. This means charts automatically follow whichever [theme](/guide/themes) the document uses — re-render with a different theme and the palette follows.
+When `chartColors` is unset, the chart uses the theme's 6-slot palette: `['primary', 'secondary', 'accent', 'accent4', 'accent5', 'accent6']`. This means charts automatically follow whichever [theme](/guide/themes) the document uses — re-render with a different theme and the palette follows. It is the same token list, in the same order, that `highcharts` resolves in pptx and in docx alike.
+
+Slots the theme leaves unset are **skipped**: the resolved palette is only as long as the theme has tokens defined, and no `THEME_COLOR_FALLBACK` warning is emitted. Skipping compacts, so a theme with `accent5` but no `accent4` resolves to four colors and `accent5` paints the fourth series. All three built-in pptx themes fill every slot, so this only comes up with a custom theme. The docx `highcharts` component skips an unset slot the same way, so a theme with holes produces the same series colors in both formats; see [Charts](/guide/charts#theme-palette).
+
+A slot that is _filled_ but resolves to no color — its value names another token that leads nowhere, or a reference cycle — is skipped by the implicit palette too. Only hex reaches PowerPoint, which would otherwise paint the series black without saying anything. If _no_ token resolves, the palette is left unset rather than sent empty, and PowerPoint falls back to its own default colors.
+
+An explicit `chartColors` is resolved differently: an entry naming a slot the theme left unset falls back to `primary` and emits a `THEME_COLOR_FALLBACK` warning, and one naming a slot whose value resolves to nothing falls back to `primary` with an `UNKNOWN_COLOR` warning. Naming a token you never usefully defined is an authoring error rather than a partially filled theme.
 
 **Legend**
 
@@ -202,7 +208,7 @@ Authentication headers can be attached via `services.highcharts.headers` — a s
 - The component POSTs `{ infile: options, type: 'png', b64: true, scale, resources? }` to `{serverUrl}/export` and embeds the returned base64 PNG.
 - **Node-only**: generation with `highcharts` components throws in browser environments — chart rendering requires server-side fetch to the export server.
 - If the server is unreachable, the error message suggests the local quick-start: `npx highcharts-export-server --enableServer true`.
-- **Theme palette injection**: when `options.colors` is not set, the theme's chart palette (the same `primary`/`secondary`/`accent`/`accent4`/`accent5`/`accent6` tokens as native charts) is injected, so both chart paths follow the document theme consistently. An explicit `options.colors` always wins.
+- **Theme palette injection**: when `options.colors` is not set, the theme's chart palette (the same `primary`/`secondary`/`accent`/`accent4`/`accent5`/`accent6` tokens as native charts, and as the docx `highcharts` component) is injected, so every chart path follows the document theme consistently. Unset optional slots — and slots whose value resolves to no color — are dropped rather than padded with `primary`, and no warning is emitted, so the injected array is only as long as the theme has usable tokens and Highcharts wraps it; the docx component does exactly the same ([Charts](/guide/charts#theme-palette)). If nothing resolves, no `colors` key is injected at all and Highcharts uses its own palette. An explicit `options.colors` always wins — nothing is injected and no fallback warning is emitted.
 
 ```json
 {

@@ -22,6 +22,18 @@ export interface PluginConfig {
   };
 }
 
+/**
+ * Drop undefined-valued keys. Callers build the options object from CLI flags,
+ * so an absent flag arrives as `undefined` and would otherwise erase the
+ * corresponding config-file value when spread.
+ */
+function defined<T extends object>(source: T | undefined): T {
+  if (!source) return {} as T;
+  return Object.fromEntries(
+    Object.entries(source).filter(([, value]) => value !== undefined)
+  ) as T;
+}
+
 export class PluginConfigService {
   private static instance: PluginConfigService;
   private config: PluginConfig | null = null;
@@ -114,25 +126,46 @@ export class PluginConfigService {
     return this.configPath;
   }
 
+  /**
+   * `theme` and `themePath` are two spellings of one decision, and `themePath`
+   * is the one resolved first — so merging them key-by-key would let a
+   * config-file `themePath` outrank an explicit `--theme`. They merge as a
+   * group instead: either flag supersedes both config-file keys, and with
+   * neither flag the config file keeps both. This method is the only place
+   * that sees CLI and config-file origins side by side, so precedence between
+   * the two is settled here rather than downstream.
+   */
+  private mergeThemeSelection(
+    base: PluginConfig,
+    options: Partial<PluginConfig>
+  ): Pick<PluginConfig, 'theme' | 'themePath'> {
+    const requestedByFlag =
+      options.theme !== undefined || options.themePath !== undefined;
+    return requestedByFlag
+      ? { theme: options.theme, themePath: options.themePath }
+      : { theme: base.theme, themePath: base.themePath };
+  }
+
   mergeWithOptions(options: Partial<PluginConfig>): PluginConfig {
     const base = this.config || {};
 
     return {
       ...base,
-      ...options,
+      ...defined(options),
+      ...this.mergeThemeSelection(base, options),
       discovery: {
         ...base.discovery,
-        ...options.discovery,
+        ...defined(options.discovery),
       },
       validation: {
         ...base.validation,
-        ...options.validation,
+        ...defined(options.validation),
       },
       plugins: this.mergeArrays(base.plugins, options.plugins),
       pluginDirs: this.mergeArrays(base.pluginDirs, options.pluginDirs),
       aliases: {
         ...base.aliases,
-        ...options.aliases,
+        ...defined(options.aliases),
       },
     };
   }

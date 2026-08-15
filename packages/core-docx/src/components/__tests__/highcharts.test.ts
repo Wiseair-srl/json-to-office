@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Paragraph } from 'docx';
+import { isValidThemeConfig } from '@json-to-office/shared-docx';
 import { createMockTheme, TEST_THEME_NAME } from './helpers';
+import { corporateTheme } from '../../templates/themes';
+import type { ThemeConfig } from '../../styles';
 
 // Mock createImage and createText functions
 vi.mock('../../core/content', async () => {
@@ -644,25 +647,167 @@ describe('components/highcharts', { timeout: 30000 }, () => {
   });
 
   describe('theme palette injection', () => {
-    it('injects primary/secondary/accent when options.colors is absent', async () => {
-      const component = {
-        name: 'highcharts' as const,
-        props: {
-          options: {
-            chart: { width: 600, height: 400 },
-            series: [{ type: 'bar' as const, data: [1, 2, 3] }],
-          },
+    const chartComponent = {
+      name: 'highcharts' as const,
+      props: {
+        options: {
+          chart: { width: 600, height: 400 },
+          series: [{ type: 'bar' as const, data: [1, 2, 3] }],
+        },
+      },
+    };
+
+    it('injects the full shared chart palette when the theme defines every token', async () => {
+      // Built on a bundled theme so the input is one an author could actually
+      // load: accent4-6 are optional keys of the theme schema, not a cast.
+      const theme: ThemeConfig = {
+        ...corporateTheme,
+        colors: {
+          ...corporateTheme.colors,
+          accent4: '#AA1111',
+          accent5: '#22BB22',
+          accent6: '#3333CC',
+        },
+      };
+      expect(isValidThemeConfig(theme)).toBe(true);
+
+      await renderHighchartsComponent(chartComponent, theme, 'corporate');
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      // Same token order as PPTX: primary, secondary, accent, accent4-6.
+      expect(body.infile.colors).toEqual([
+        '#1a365d',
+        '#2D3748',
+        '#3182CE',
+        '#AA1111',
+        '#22BB22',
+        '#3333CC',
+      ]);
+    });
+
+    it('skips tokens the theme leaves undefined, compacting the hole', async () => {
+      // accent5 defined, accent4 not: the omitted slot is dropped rather than
+      // emitted as undefined or padded with a repeat, so accent5 slides up into
+      // the fourth series. Documented on DEFAULT_CHART_THEME_COLORS: the token
+      // list is a preference-ordered pool, not fixed per-series slots.
+      const theme: ThemeConfig = {
+        ...createMockTheme(),
+        colors: {
+          ...createMockTheme().colors,
+          accent5: '#5555AA',
         },
       };
 
-      await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
+      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual([
+        '#0066cc',
+        '#6c757d',
+        '#17a2b8',
+        '#5555AA',
+      ]);
+    });
+
+    it('resolves a token whose value names another token', async () => {
+      // The theme schema allows "accent4": "primary" — a name reference, which
+      // resolveColor walks. Blindly prefixing '#' would post "#primary".
+      const theme: ThemeConfig = {
+        ...createMockTheme(),
+        colors: {
+          ...createMockTheme().colors,
+          accent4: 'primary',
+          accent5: 'textSecondary',
+        },
+      };
+
+      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual([
+        '#0066cc',
+        '#6c757d',
+        '#17a2b8',
+        '#0066CC',
+        '#666666',
+      ]);
+      expect(body.infile.colors).not.toContain('#primary');
+    });
+
+    it('drops a token whose value resolves to nothing', async () => {
+      const theme: ThemeConfig = {
+        ...createMockTheme(),
+        colors: {
+          ...createMockTheme().colors,
+          accent4: 'notAThemeColor',
+        },
+      };
+
+      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.infile.colors).toEqual(['#0066cc', '#6c757d', '#17a2b8']);
+    });
+
+    it('matches the PPTX palette for a theme that leaves accent4-6 unset', async () => {
+      // Cross-format parity. The sibling PPTX test
+      // "matches the DOCX palette for a theme that leaves accent4-6 unset"
+      // (packages/core-pptx/src/components/__tests__/highcharts.test.ts) posts
+      // this exact array for the same three theme colors — package boundaries
+      // keep the two renderers out of one test file, so the expectation is
+      // pinned identically on both sides.
+      const theme: ThemeConfig = {
+        ...createMockTheme(),
+        colors: {
+          ...createMockTheme().colors,
+          primary: '#111111',
+          secondary: '#222222',
+          accent: '#CC785C',
+        },
+      };
+
+      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual(['#111111', '#222222', '#CC785C']);
+    });
+
+    it('emits a three-color palette for a bundled theme, which defines no accent4-6', async () => {
+      await renderHighchartsComponent(
+        chartComponent,
+        corporateTheme,
+        'corporate'
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual([
+        corporateTheme.colors.primary,
+        corporateTheme.colors.secondary,
+        corporateTheme.colors.accent,
+      ]);
+      // Pinned so a palette change in the theme JSON is a visible diff here.
+      expect(body.infile.colors).toEqual(['#1a365d', '#2D3748', '#3182CE']);
+    });
+
+    it('normalizes theme colors stored without a leading #', async () => {
+      const theme: ThemeConfig = {
+        ...createMockTheme(),
+        colors: {
+          ...createMockTheme().colors,
+          primary: 'FF0000',
+          accent4: 'AABBCC',
+        },
+      };
+
+      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual([
+        '#FF0000',
+        '#6c757d',
+        '#17a2b8',
+        '#AABBCC',
+      ]);
     });
 
     it('leaves explicit options.colors untouched', async () => {

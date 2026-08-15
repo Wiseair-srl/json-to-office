@@ -16,6 +16,33 @@ function safeThemeKey(name: string | undefined): string {
   return name && !UNSAFE_KEYS.has(name) ? name : 'custom';
 }
 
+/** Key the theme named by `--theme`/`--theme-path` is registered under. */
+const CLI_THEME_KEY = 'jto-cli-theme';
+
+/**
+ * Point a document at the explicitly requested theme. The JSON path selects a
+ * theme by name off `props.theme`, so `--theme`/`--theme-path` is applied by
+ * registering the resolved theme under a reserved key and rewriting the
+ * reference — an explicit theme wins over the document's own `props.theme`.
+ * With no theme requested the document is passed through untouched.
+ */
+function withRequestedTheme(
+  document: any,
+  theme: any | undefined,
+  customThemes: Record<string, any> | undefined
+): { document: any; customThemes: Record<string, any> | undefined } {
+  if (!theme || typeof document !== 'object' || document === null) {
+    return { document, customThemes };
+  }
+  return {
+    document: {
+      ...document,
+      props: { ...document.props, theme: CLI_THEME_KEY },
+    },
+    customThemes: { ...customThemes, [CLI_THEME_KEY]: theme },
+  };
+}
+
 export type FormatName = 'docx' | 'pptx';
 
 function buildServicesFromEnv(): ServicesConfig | undefined {
@@ -109,6 +136,26 @@ export interface GeneratorResult {
   getStandardComponentsDefinition?: (config: any) => Promise<any>;
   hasPlugins: boolean;
   pluginNames: string[];
+  /**
+   * Identity of the theme this generator forces on every document, or
+   * undefined when nothing was requested and each document's own `props.theme`
+   * decides. Reported by the CLI so the summary names what actually rendered.
+   */
+  themeLabel?: string;
+}
+
+/** One resolution of `theme`/`themePath`, shared by every consumer of a run. */
+interface ResolvedThemes {
+  /**
+   * The theme named by `theme`/`themePath`, or undefined when neither is set
+   * or resolves — callers that must not override the document's own
+   * `props.theme` depend on that distinction.
+   */
+  requested: any | undefined;
+  /** Themes registered by name for `props.theme` lookups. */
+  customThemes: Record<string, any> | undefined;
+  /** What to call `requested`; undefined when the document decides. */
+  label: string | undefined;
 }
 
 export interface FormatAdapter {
@@ -150,9 +197,13 @@ export class DocxFormatAdapter implements FormatAdapter {
     options: GeneratorOptions
   ): Promise<Buffer> {
     const core = await import('@json-to-office/core-docx');
-    const docDefinition =
-      typeof json === 'string' ? JSON.parse(json as string) : json;
-    const customThemes = await this.loadCustomThemes(options);
+    const parsed = typeof json === 'string' ? JSON.parse(json as string) : json;
+    const resolved = await this.resolveThemes(options);
+    const { document: docDefinition, customThemes } = withRequestedTheme(
+      parsed,
+      resolved.requested,
+      resolved.customThemes
+    );
     const services = buildDocxServices();
     return await core.generateBufferFromJson(docDefinition as any, {
       customThemes,
@@ -175,14 +226,23 @@ export class DocxFormatAdapter implements FormatAdapter {
     const pluginNames = plugins.map((p) => p.name);
     const services = buildDocxServices();
 
+    // Resolved once: repeating it per document would repeat the file read and
+    // any unknown-theme warning that comes with it.
+    const {
+      requested: requestedTheme,
+      customThemes,
+      label: themeLabel,
+    } = await this.resolveThemes(options);
+
     if (!hasPlugins) {
       return {
         generateBuffer: async (document: any) => {
-          const docDefinition =
+          const parsed =
             typeof document === 'string' ? JSON.parse(document) : document;
-          const customThemes = await this.loadCustomThemes(options);
+          const { document: docDefinition, customThemes: themes } =
+            withRequestedTheme(parsed, requestedTheme, customThemes);
           return await core.generateBufferFromJson(docDefinition, {
-            customThemes,
+            customThemes: themes,
             services,
             fonts: options.fonts,
             validation: {
@@ -194,14 +254,18 @@ export class DocxFormatAdapter implements FormatAdapter {
         },
         hasPlugins: false,
         pluginNames: [],
+        themeLabel,
       };
     }
 
-    const theme = await this.resolveTheme(options);
-    const customThemes = await this.loadCustomThemes(options);
     let generator: GeneratorBuilder = core.createDocumentGenerator({
-      theme,
-      customThemes,
+      // Undefined when nothing was requested: a constructor theme beats the
+      // generator's own `props.theme` lookup, so forcing one here would render
+      // every document in it.
+      theme: requestedTheme,
+      customThemes: requestedTheme
+        ? { ...customThemes, [CLI_THEME_KEY]: requestedTheme }
+        : customThemes,
       debug: process.env.DEBUG === 'true',
       services,
       fonts: options.fonts,
@@ -218,8 +282,13 @@ export class DocxFormatAdapter implements FormatAdapter {
 
     return {
       generateBuffer: async (document: any) => {
-        const docDefinition =
+        const parsed =
           typeof document === 'string' ? JSON.parse(document) : document;
+        const { document: docDefinition } = withRequestedTheme(
+          parsed,
+          requestedTheme,
+          customThemes
+        );
         const result = await generator.generateBuffer(docDefinition, {
           validation: {
             allowUnknownFields: options.validation?.allowUnknownFields,
@@ -234,6 +303,7 @@ export class DocxFormatAdapter implements FormatAdapter {
         : undefined,
       hasPlugins: true,
       pluginNames,
+      themeLabel,
     };
   }
 
@@ -266,15 +336,35 @@ export class DocxFormatAdapter implements FormatAdapter {
 
   async resolveTheme(options: GeneratorOptions): Promise<any> {
     const core = await import('@json-to-office/core-docx');
+    const { requested } = await this.resolveThemes(options);
+    return requested ?? (core.themes as any)?.minimal ?? {};
+  }
 
+  /**
+   * Resolve `theme`/`themePath` once for a whole run: `themePath` is read a
+   * single time and feeds both the requested theme and the custom-theme
+   * registry, so a bad path warns once instead of once per consumer.
+   */
+  private async resolveThemes(
+    options: GeneratorOptions
+  ): Promise<ResolvedThemes> {
+    const core = await import('@json-to-office/core-docx');
+    // Themes passed directly from the client (playground UI) come first.
+    const registry: Record<string, any> = { ...options.customThemes };
+
+    if (typeof options.theme === 'object' && options.theme !== null) {
+      registry[safeThemeKey(options.theme.name)] = options.theme;
+    }
+
+    let fileTheme: any | undefined;
     if (options.themePath) {
       try {
         if (options.themePath.endsWith('.json')) {
-          return await core.loadThemeFromFile(options.themePath);
+          fileTheme = await core.loadThemeFromFile(options.themePath);
         } else {
           const themePath = path.resolve(process.cwd(), options.themePath);
           const themeModule = await import(themePath);
-          return themeModule.default || themeModule.theme;
+          fileTheme = themeModule.default || themeModule.theme;
         }
       } catch (error: any) {
         emitDiagnostic(
@@ -282,69 +372,65 @@ export class DocxFormatAdapter implements FormatAdapter {
           'warning'
         );
       }
+      if (fileTheme) {
+        registry[safeThemeKey(fileTheme.name)] = fileTheme;
+      }
+    }
+
+    const customThemes =
+      Object.keys(registry).length > 0 ? registry : undefined;
+
+    if (fileTheme) {
+      return { requested: fileTheme, customThemes, label: options.themePath };
     }
 
     if (typeof options.theme === 'string') {
-      const builtInTheme = (core.themes as Record<string, any>)?.[
-        options.theme
-      ];
-      if (builtInTheme) return builtInTheme;
+      const named =
+        options.customThemes?.[options.theme] ??
+        (core.themes as Record<string, any>)?.[options.theme];
+      if (named)
+        return { requested: named, customThemes, label: options.theme };
 
       if (options.theme.endsWith('.json') && fs.existsSync(options.theme)) {
         try {
-          return await core.loadThemeFromFile(options.theme);
+          return {
+            requested: await core.loadThemeFromFile(options.theme),
+            customThemes,
+            label: options.theme,
+          };
         } catch {}
       }
 
       try {
-        return await core.loadThemeFromJson(options.theme);
+        const inline = await core.loadThemeFromJson(options.theme);
+        return {
+          requested: inline,
+          customThemes,
+          label: (inline as any)?.name || options.theme,
+        };
       } catch {}
+
+      emitDiagnostic(
+        `Unknown theme "${options.theme}"; keeping the document's own theme`,
+        'warning'
+      );
     }
 
     if (typeof options.theme === 'object' && options.theme !== null) {
-      return options.theme;
+      return {
+        requested: options.theme,
+        customThemes,
+        label: safeThemeKey(options.theme.name),
+      };
     }
 
-    return (core.themes as any)?.minimal || {};
+    return { requested: undefined, customThemes, label: undefined };
   }
 
   async loadCustomThemes(
     options: GeneratorOptions
   ): Promise<Record<string, any> | undefined> {
-    const core = await import('@json-to-office/core-docx');
-    const customThemes: Record<string, any> = {};
-
-    // Include themes passed directly from the client (playground UI)
-    if (options.customThemes) {
-      Object.assign(customThemes, options.customThemes);
-    }
-
-    if (typeof options.theme === 'object' && options.theme !== null) {
-      customThemes[safeThemeKey(options.theme.name)] = options.theme;
-    }
-
-    if (options.themePath) {
-      try {
-        let theme: any;
-        if (options.themePath.endsWith('.json')) {
-          theme = await core.loadThemeFromFile(options.themePath);
-        } else {
-          const themePath = path.resolve(process.cwd(), options.themePath);
-          const themeModule = await import(themePath);
-          theme = themeModule.default || themeModule.theme;
-        }
-        if (theme) {
-          customThemes[safeThemeKey(theme.name)] = theme;
-        }
-      } catch (error: any) {
-        emitDiagnostic(
-          `Failed to load theme from ${options.themePath}: ${error.message}`,
-          'warning'
-        );
-      }
-    }
-
-    return Object.keys(customThemes).length > 0 ? customThemes : undefined;
+    return (await this.resolveThemes(options)).customThemes;
   }
 
   async getComponentCacheStats(): Promise<any> {
@@ -435,9 +521,13 @@ export class PptxFormatAdapter implements FormatAdapter {
     options: GeneratorOptions
   ): Promise<Buffer> {
     const core = await import('@json-to-office/core-pptx');
-    const docDefinition =
-      typeof json === 'string' ? JSON.parse(json as string) : json;
-    const customThemes = await this.loadCustomThemes(options);
+    const parsed = typeof json === 'string' ? JSON.parse(json as string) : json;
+    const resolved = await this.resolveThemes(options);
+    const { document: docDefinition, customThemes } = withRequestedTheme(
+      parsed,
+      resolved.requested,
+      resolved.customThemes
+    );
     const services = buildServicesFromEnv();
     return await core.generateBufferFromJson(docDefinition as any, {
       customThemes,
@@ -460,14 +550,23 @@ export class PptxFormatAdapter implements FormatAdapter {
     const pluginNames = plugins.map((p) => p.name);
     const services = buildServicesFromEnv();
 
+    // Resolved once: repeating it per document would repeat the file read and
+    // any unknown-theme warning that comes with it.
+    const {
+      requested: requestedTheme,
+      customThemes,
+      label: themeLabel,
+    } = await this.resolveThemes(options);
+
     if (!hasPlugins) {
       return {
         generateBuffer: async (document: any) => {
-          const docDefinition =
+          const parsed =
             typeof document === 'string' ? JSON.parse(document) : document;
-          const customThemes = await this.loadCustomThemes(options);
+          const { document: docDefinition, customThemes: themes } =
+            withRequestedTheme(parsed, requestedTheme, customThemes);
           return await core.generateBufferFromJson(docDefinition, {
-            customThemes,
+            customThemes: themes,
             services,
             fonts: options.fonts,
             validation: {
@@ -479,14 +578,18 @@ export class PptxFormatAdapter implements FormatAdapter {
         },
         hasPlugins: false,
         pluginNames: [],
+        themeLabel,
       };
     }
 
-    const theme = await this.resolveTheme(options);
-    const customThemes = await this.loadCustomThemes(options);
     let generator: GeneratorBuilder = core.createPresentationGenerator({
-      theme,
-      customThemes,
+      // Undefined when nothing was requested: a constructor theme beats the
+      // generator's own `props.theme` lookup, so forcing one here would render
+      // every document in it.
+      theme: requestedTheme,
+      customThemes: requestedTheme
+        ? { ...customThemes, [CLI_THEME_KEY]: requestedTheme }
+        : customThemes,
       debug: process.env.DEBUG === 'true',
       services,
       fonts: options.fonts,
@@ -503,8 +606,13 @@ export class PptxFormatAdapter implements FormatAdapter {
 
     return {
       generateBuffer: async (document: any) => {
-        const docDefinition =
+        const parsed =
           typeof document === 'string' ? JSON.parse(document) : document;
+        const { document: docDefinition } = withRequestedTheme(
+          parsed,
+          requestedTheme,
+          customThemes
+        );
         const result = await generator.generateBuffer(docDefinition, {
           validation: {
             allowUnknownFields: options.validation?.allowUnknownFields,
@@ -516,6 +624,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       },
       hasPlugins: true,
       pluginNames,
+      themeLabel,
     };
   }
 
@@ -547,7 +656,28 @@ export class PptxFormatAdapter implements FormatAdapter {
   async resolveTheme(options: GeneratorOptions): Promise<any> {
     const core = await import('@json-to-office/core-pptx');
     const themes = (core as any).pptxThemes || {};
+    const { requested } = await this.resolveThemes(options);
+    return requested ?? themes.minimal ?? {};
+  }
 
+  /**
+   * Resolve `theme`/`themePath` once for a whole run: `themePath` is read a
+   * single time and feeds both the requested theme and the custom-theme
+   * registry, so a bad path warns once instead of once per consumer.
+   */
+  private async resolveThemes(
+    options: GeneratorOptions
+  ): Promise<ResolvedThemes> {
+    const core = await import('@json-to-office/core-pptx');
+    const themes = (core as any).pptxThemes || {};
+    // Themes passed directly from the client (playground UI) come first.
+    const registry: Record<string, any> = { ...options.customThemes };
+
+    if (typeof options.theme === 'object' && options.theme !== null) {
+      registry[safeThemeKey(options.theme.name)] = options.theme;
+    }
+
+    let fileTheme: any | undefined;
     if (options.themePath) {
       try {
         if (options.themePath.endsWith('.json')) {
@@ -555,11 +685,11 @@ export class PptxFormatAdapter implements FormatAdapter {
             path.resolve(process.cwd(), options.themePath),
             'utf-8'
           );
-          return JSON.parse(content);
+          fileTheme = JSON.parse(content);
         } else {
           const themePath = path.resolve(process.cwd(), options.themePath);
           const themeModule = await import(themePath);
-          return themeModule.default || themeModule.theme;
+          fileTheme = themeModule.default || themeModule.theme;
         }
       } catch (error: any) {
         emitDiagnostic(
@@ -567,12 +697,26 @@ export class PptxFormatAdapter implements FormatAdapter {
           'warning'
         );
       }
+      if (fileTheme) {
+        registry[safeThemeKey(fileTheme.name)] = fileTheme;
+      }
+    }
+
+    const customThemes =
+      Object.keys(registry).length > 0 ? registry : undefined;
+
+    if (fileTheme) {
+      return { requested: fileTheme, customThemes, label: options.themePath };
     }
 
     if (typeof options.theme === 'string') {
-      const builtIn =
-        themes[options.theme] || (core as any).getPptxTheme?.(options.theme);
-      if (builtIn) return builtIn;
+      // Deliberately not getPptxTheme(): it answers every unknown name with
+      // the default theme, which would silently swap a typo'd `--theme` in
+      // over the document's own.
+      const named =
+        options.customThemes?.[options.theme] ?? themes[options.theme];
+      if (named)
+        return { requested: named, customThemes, label: options.theme };
 
       if (options.theme.endsWith('.json') && fs.existsSync(options.theme)) {
         try {
@@ -580,58 +724,35 @@ export class PptxFormatAdapter implements FormatAdapter {
             path.resolve(process.cwd(), options.theme),
             'utf-8'
           );
-          return JSON.parse(content);
+          return {
+            requested: JSON.parse(content),
+            customThemes,
+            label: options.theme,
+          };
         } catch {}
       }
+
+      emitDiagnostic(
+        `Unknown theme "${options.theme}"; keeping the document's own theme`,
+        'warning'
+      );
     }
 
     if (typeof options.theme === 'object' && options.theme !== null) {
-      return options.theme;
+      return {
+        requested: options.theme,
+        customThemes,
+        label: safeThemeKey(options.theme.name),
+      };
     }
 
-    return themes.minimal || {};
+    return { requested: undefined, customThemes, label: undefined };
   }
 
   async loadCustomThemes(
     options: GeneratorOptions
   ): Promise<Record<string, any> | undefined> {
-    const customThemes: Record<string, any> = {};
-
-    // Include themes passed directly from the client (playground UI)
-    if (options.customThemes) {
-      Object.assign(customThemes, options.customThemes);
-    }
-
-    if (typeof options.theme === 'object' && options.theme !== null) {
-      customThemes[safeThemeKey(options.theme.name)] = options.theme;
-    }
-
-    if (options.themePath) {
-      try {
-        let theme: any;
-        if (options.themePath.endsWith('.json')) {
-          const content = fs.readFileSync(
-            path.resolve(process.cwd(), options.themePath),
-            'utf-8'
-          );
-          theme = JSON.parse(content);
-        } else {
-          const themePath = path.resolve(process.cwd(), options.themePath);
-          const themeModule = await import(themePath);
-          theme = themeModule.default || themeModule.theme;
-        }
-        if (theme) {
-          customThemes[safeThemeKey(theme.name)] = theme;
-        }
-      } catch (error: any) {
-        emitDiagnostic(
-          `Failed to load theme from ${options.themePath}: ${error.message}`,
-          'warning'
-        );
-      }
-    }
-
-    return Object.keys(customThemes).length > 0 ? customThemes : undefined;
+    return (await this.resolveThemes(options)).customThemes;
   }
 }
 

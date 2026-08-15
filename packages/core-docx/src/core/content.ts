@@ -1081,6 +1081,55 @@ export async function createTable(
     borderSize: 1,
   });
 
+  // No warning collector reaches createTable (the render path passes only
+  // theme/themeName), so use the prefixed console.warn fallback the generator
+  // uses when no collector is present. Deduped so a column of cells sharing the
+  // same bad value warns once per table.
+  const warnedCellColors = new Set<string>();
+  const warnCellColor = (code: string, message: string): void => {
+    if (warnedCellColors.has(message)) return;
+    warnedCellColors.add(message);
+    // eslint-disable-next-line no-console
+    console.warn(`[json-to-docx] ${code}: ${message}`);
+  };
+
+  // Resolve a cell color the same way paragraph/heading font colors are
+  // resolved: theme name ("primary") or "#RRGGBB". Bare 6-digit hex and "auto"
+  // are passed through — those are the only raw values OOXML itself accepts, so
+  // documents relying on them predate theme resolution and must keep working.
+  // "transparent" is a backgroundColor-only sentinel consumed at the shading
+  // site; on the text path nothing consumes it and it is not a legal w:color
+  // value, so it is dropped with a warning rather than emitted.
+  const resolveCellColor = (
+    value: string | undefined,
+    prop: 'color' | 'backgroundColor'
+  ): string | undefined => {
+    if (value === undefined || value === 'auto') return value;
+    if (value === 'transparent') {
+      if (prop === 'backgroundColor') return value;
+      warnCellColor(
+        'TABLE_CELL_COLOR_INVALID',
+        `"transparent" is not a valid table cell "color"; ignoring it and using the table style color. It only applies to "backgroundColor".`
+      );
+      return undefined;
+    }
+    if (/^[0-9A-Fa-f]{6}$/.test(value)) return value.toUpperCase();
+    try {
+      return resolveColor(value, theme);
+    } catch {
+      // Passing the value through instead would not save the document: docx
+      // rejects any non-hex, non-"auto" fill/color, so it would still fail —
+      // deeper in the stack with an opaque message.
+      const allowed =
+        prop === 'backgroundColor'
+          ? '"auto", or "transparent" for no shading'
+          : 'or "auto"';
+      throw new Error(
+        `Invalid table cell ${prop}: "${value}". Must be a hex color with # prefix (e.g. "#000000"), a theme color name, ${allowed}.`
+      );
+    }
+  };
+
   // Helper function to normalize border color to per-side format
   const normalizeBorderColor = (
     border: BorderColor | undefined
@@ -1323,13 +1372,17 @@ export async function createTable(
     );
 
     return {
-      color:
+      color: resolveCellColor(
         cellDef?.color ?? columnDef?.color ?? tableDef?.color ?? defaults.color,
-      backgroundColor:
+        'color'
+      ),
+      backgroundColor: resolveCellColor(
         cellDef?.backgroundColor ??
-        columnDef?.backgroundColor ??
-        tableDef?.backgroundColor ??
-        defaults.backgroundColor,
+          columnDef?.backgroundColor ??
+          tableDef?.backgroundColor ??
+          defaults.backgroundColor,
+        'backgroundColor'
+      ),
       horizontalAlignment:
         cellDef?.horizontalAlignment ??
         columnDef?.horizontalAlignment ??
@@ -1413,18 +1466,22 @@ export async function createTable(
     );
 
     return {
-      color:
+      color: resolveCellColor(
         headerDef?.color ??
-        headerTableDef?.color ??
-        columnDef?.color ??
-        tableDef?.color ??
-        defaults.color,
-      backgroundColor:
+          headerTableDef?.color ??
+          columnDef?.color ??
+          tableDef?.color ??
+          defaults.color,
+        'color'
+      ),
+      backgroundColor: resolveCellColor(
         headerDef?.backgroundColor ??
-        headerTableDef?.backgroundColor ??
-        columnDef?.backgroundColor ??
-        tableDef?.backgroundColor ??
-        defaults.backgroundColor,
+          headerTableDef?.backgroundColor ??
+          columnDef?.backgroundColor ??
+          tableDef?.backgroundColor ??
+          defaults.backgroundColor,
+        'backgroundColor'
+      ),
       horizontalAlignment:
         headerDef?.horizontalAlignment ??
         headerTableDef?.horizontalAlignment ??
@@ -1764,7 +1821,8 @@ export async function createTable(
   );
 
   const headerRow = new TableRow({
-    tableHeader: tableConfig.repeatHeaderOnPageBreak,
+    // Headers repeat across page breaks unless explicitly disabled
+    tableHeader: tableConfig.repeatHeaderOnPageBreak ?? true,
     height:
       headerHeight !== undefined
         ? { value: headerHeight * 20, rule: 'atLeast' as const }

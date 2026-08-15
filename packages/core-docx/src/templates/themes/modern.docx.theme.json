@@ -90,12 +90,7 @@
   },
   "componentDefaults": {
     "table": {
-      "borders": true,
-      "striped": false,
-      "headerBackground": "#6D28D9",
-      "headerColor": "#FFFFFF",
-      "borderColor": "#E2E8F0",
-      "borderWidth": 0.5
+      "borderColor": "#E2E8F0"
     },
     "list": {
       "format": "bullet",

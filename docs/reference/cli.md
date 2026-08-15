@@ -36,29 +36,53 @@ jto <docx|pptx> generate <input> [options]
 
 `<input>` (**required**) is the path to the input JSON file. There is no stdin/stdout mode — input is read from a file and output is written to a file.
 
-| Flag                              | Type                     | Default                                     | Description                                                                                                                                                 |
-| --------------------------------- | ------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-o, --output <path>`             | string                   | `<input basename>` + `.docx`/`.pptx` in cwd | Output file path                                                                                                                                            |
-| `-t, --template <name>`           | string                   | —                                           | Template name. Reserved — accepted but currently has no effect                                                                                              |
-| `--plugins [names-or-paths]`      | string \| boolean        | —                                           | Comma-separated plugin names/paths; bare flag enables auto-discovery                                                                                        |
-| `--plugin-dir <dir>`              | string                   | —                                           | Directory to search for plugins                                                                                                                             |
-| `--theme <name-or-path>`          | string                   | —                                           | Theme name or path. Currently takes effect only in plugin-loaded runs; in the standard path the theme comes from the document's `props.theme`               |
-| `--theme-path <path>`             | string                   | —                                           | Path to a theme file (alternative to `--theme`); `.json` files are parsed, other extensions are dynamically imported (uses the `default` or `theme` export) |
-| `--strict`                        | boolean                  | `false`                                     | Enable strict validation                                                                                                                                    |
-| `--strict-fonts`                  | boolean                  | `false`                                     | Fail generation on unresolved `fontRegistry` references                                                                                                     |
-| `--no-google-fonts`               | boolean                  | —                                           | Accepted but currently has no effect: `generate` performs no Google Fonts fetching (fetching happens only in the dev-server preview pipeline)               |
-| `--font-cache-dir <path>`         | string                   | —                                           | Directory to cache fetched Google Fonts TTFs — currently no effect on `generate` output (fetching happens only in the dev-server preview pipeline)          |
-| `--font <name=path>`              | string, repeatable       | `[]`                                        | Register a font file: `<family>=<path to .ttf/.otf>`                                                                                                        |
-| `--fonts-dir <path>`              | string                   | —                                           | Scan a directory for `.ttf`/`.otf` files and auto-register them by filename                                                                                 |
-| `--font-mode <mode>`              | `substitute` \| `custom` | `custom`                                    | `custom` keeps font references as-is; `substitute` rewrites non-safe fonts to safe ones. Any other value errors                                             |
-| `--font-substitute <family=safe>` | string, repeatable       | `[]`                                        | Map a non-safe family to a specific safe font; the target must be in the safe-fonts list or the command errors                                              |
-| `--dry-run`                       | boolean                  | `false`                                     | Print a summary (input, output, format, theme, strict, plugins) without writing files                                                                       |
+| Flag                              | Type                     | Default                                     | Description                                                                                                                                                                              |
+| --------------------------------- | ------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-o, --output <path>`             | string                   | `<input basename>` + `.docx`/`.pptx` in cwd | Output file path                                                                                                                                                                         |
+| `-t, --template <name>`           | string                   | —                                           | Template name. Reserved — accepted but currently has no effect                                                                                                                           |
+| `--plugins [names-or-paths]`      | string \| boolean        | —                                           | Comma-separated plugin names/paths; bare flag enables auto-discovery                                                                                                                     |
+| `--plugin-dir <dir>`              | string                   | —                                           | Directory to search for plugins                                                                                                                                                          |
+| `--theme <name-or-path>`          | string                   | —                                           | Theme name or path. Applied on **both** the standard and plugin-loaded paths, and overrides the document's `props.theme`                                                                 |
+| `--theme-path <path>`             | string                   | —                                           | Path to a theme file (tried before `--theme`); `.json` files are parsed, other extensions are dynamically imported (uses the `default` or `theme` export)                                |
+| `--strict`                        | boolean                  | `false`                                     | Accepted no-op kept for compatibility — validation always runs; see below                                                                                                                |
+| `--strict-fonts`                  | boolean                  | `false`                                     | Fail generation on unresolved `fontRegistry` references                                                                                                                                  |
+| `--no-google-fonts`               | boolean                  | —                                           | Sets `fonts.googleFonts.enabled: false` on the generator. Has no effect on `generate` output because `generate` never fetches (fetching happens only in the dev-server preview pipeline) |
+| `--font-cache-dir <path>`         | string                   | —                                           | Sets `fonts.googleFonts.cacheDir` on the generator. Has no effect on `generate` output for the same reason                                                                               |
+| `--font <name=path>`              | string, repeatable       | `[]`                                        | Register a font file: `<family>=<path to .ttf/.otf>`                                                                                                                                     |
+| `--fonts-dir <path>`              | string                   | —                                           | Scan a directory for `.ttf`/`.otf` files and auto-register them by filename                                                                                                              |
+| `--font-mode <mode>`              | `substitute` \| `custom` | `custom`                                    | `custom` keeps font references as-is; `substitute` rewrites non-safe fonts to safe ones. Any other value errors                                                                          |
+| `--font-substitute <family=safe>` | string, repeatable       | `[]`                                        | Map a non-safe family to a specific safe font; the target must be in the safe-fonts list or the command errors                                                                           |
+| `--dry-run`                       | boolean                  | `false`                                     | Print a summary — input, output, format, theme, plugins (when any loaded), and `Validation: passed` — without writing files                                                              |
 
-The [plugin/generation config file](#plugin--generation-config)'s `theme`, `themePath` and `validation.strict` keys are **not** applied by `generate`: theme selection works only through CLI flags or the document's `props.theme`, and `--strict` currently only affects the `--dry-run` summary. Plugin keys (`plugins`, `pluginDirs`, `autoDiscover`) do take effect.
+The [plugin/generation config file](#plugin--generation-config)'s `theme` and `themePath` keys **are** applied by `generate` (either CLI flag replaces both — see [Theme selection](#theme-selection) below), as is `validation.allowUnknownFields`. Only `validation.strict` is inert. Plugin keys (`plugins`, `pluginDirs`, `autoDiscover`) take effect as documented there.
 
 Font-directory filename parsing: names like `Inter-BoldItalic.ttf` or `Roboto_500.otf` are parsed into family, weight, and italic; weight names map thin=100 through black/heavy=900; only `.ttf`/`.otf` files are scanned, and multiple variant files coalesce into one registry entry per family.
 
-Theme selection: in the standard (no-plugin) path the theme is chosen by the document's `props.theme`, and `--theme-path` loads a custom theme file and registers it under its `name` — which `props.theme` must reference. `--theme` currently takes effect only when plugins are loaded; there it resolves built-in name → existing `.json` path → parsed as theme JSON, falling back to the `minimal` built-in. A theme that fails to load only warns — generation proceeds. See [Theme schema](/reference/theme-schema).
+### Theme selection
+
+`--theme` and `--theme-path` apply on **both** paths — with plugins loaded and without. The requested theme is registered under a reserved key and the document's `props.theme` is rewritten to point at it, so an explicitly requested theme beats the one the document names for itself. Precedence resolves in two steps:
+
+1. **Origin.** `--theme` and `--theme-path` are merged against the config file as one group, not key by key. If you pass **either** flag, both config-file keys (`theme`, `themePath`) are discarded and only the flags you typed survive. If you pass **neither**, both config-file keys survive.
+2. **Order within the surviving origin.** `themePath` is tried first, and `theme` only if it yielded nothing.
+
+Because step 1 settles the origin first, step 2 never mixes the two sources. The four combinations:
+
+| `--theme` | `--theme-path` | Theme used                                                                            |
+| --------- | -------------- | ------------------------------------------------------------------------------------- |
+| —         | —              | Config-file `themePath`, else config-file `theme`                                     |
+| set       | —              | The `--theme` value. A config-file `themePath` is **ignored**                         |
+| —         | set            | The `--theme-path` file. A config-file `theme` is **ignored**                         |
+| set       | set            | The `--theme-path` file; the `--theme` value is used only if reading that file throws |
+
+With no theme requested from either source, the document's `props.theme` is used unchanged.
+
+`--theme` resolves in order: a key of the supplied `customThemes` map → a built-in theme name → an existing `.json` path; for DOCX the value is additionally tried as inline theme JSON. `--theme-path` takes a `.json` file (parsed) or any other extension (dynamically imported, using the `default` or `theme` export), and also registers the theme under its own `name`.
+
+A requested theme that resolves to nothing leaves `props.theme` in charge; nothing is silently swapped to a default and generation proceeds. The message depends on which input failed: a `--theme` value that names no theme prints `Unknown theme "X"; keeping the document's own theme`, while a `--theme-path` that cannot be read, parsed, or imported prints `Failed to load theme from <path>: <reason>`. With both flags set, a failing path falls through to `--theme` and an unknown name there adds its own line, so a doubly-bad invocation prints both.
+
+A rejected request is **not** echoed on the `--dry-run`/summary `Theme:` line: that line reports the theme generation actually used, so it shows the document's own `props.theme` (or `default` when it names none). A resolved request is reported as the adapter resolved it — the file path for `--theme-path`, the name for `--theme`. See [Theme schema](/reference/theme-schema).
+
+`--strict` on `generate` is an accepted no-op: it affects nothing — not the output, not the dry-run summary. Validation always runs, and how permissive it is depends on `validation.allowUnknownFields`; `core-docx` marks `validation.strict` `@deprecated No longer consulted`. The config file's `validation.strict` key is inert for the same reason. (`--strict` on [`validate`](#validate) is a different flag and does still work.)
 
 ## `diff` (DOCX only)
 
@@ -209,12 +233,12 @@ jto <docx|pptx> dev [options]
 
 Starts the development server with the web playground UI (see [Playground](/guide/playground)).
 
-| Flag                  | Type    | Default                           | Description                                                                                                            |
-| --------------------- | ------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `-p, --port <port>`   | integer | **3003** (docx) / **3004** (pptx) | Server port. Precedence: CLI flag > config-file `server.port` (when changed from the built-in `3003`) > format default |
-| `-H, --host <host>`   | string  | `localhost`                       | Bind host                                                                                                              |
-| `-o, --open`          | boolean | `false`                           | Open the browser on start                                                                                              |
-| `-c, --config <path>` | string  | —                                 | Config file path                                                                                                       |
+| Flag                  | Type    | Default                           | Description                                                                                     |
+| --------------------- | ------- | --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `-p, --port <port>`   | integer | **3003** (docx) / **3004** (pptx) | Server port. Precedence: CLI flag > config-file `server.port` > `PORT` env var > format default |
+| `-H, --host <host>`   | string  | `localhost`                       | Bind host                                                                                       |
+| `-o, --open`          | boolean | `false`                           | Open the browser on start                                                                       |
+| `-c, --config <path>` | string  | —                                 | Config file path                                                                                |
 
 On start the CLI prints the local URL, the API URL (`http://<host>:<port>/api/<format>/generate`), and the health URL (`http://<host>:<port>/health`). Shuts down gracefully on SIGINT/SIGTERM.
 
@@ -251,37 +275,22 @@ Shape:
 }
 ```
 
-CLI flags win over config values. Note that the `theme` and `themePath` keys are currently ignored by `generate` — only the corresponding CLI flags take effect. Plugin load order: `--plugins` flag (bare = auto-discover, string = named list) → `autoDiscover` → `plugins` → `--plugin-dir` → `pluginDirs`.
+CLI flags win over config values — an absent flag no longer clobbers the corresponding key. The `theme` and `themePath` keys are applied by `generate` (see [Theme selection](#generate) above); `validation.allowUnknownFields` is forwarded to the generator; `validation.strict` is inert. Plugin load order: `--plugins` flag (bare = auto-discover, string = named list) → `autoDiscover` → `plugins` → `--plugin-dir` → `pluginDirs`.
 
 ### Dev-server config
 
 Loaded by `dev` (also via `-c/--config`). Files: `json-to-office.config.ts` / `.js` / `.mjs` / `.json`, plus legacy docx/pptx variants. The file is deep-merged over the defaults and TypeBox-validated; an invalid config warns and falls back to defaults. `NODE_ENV=production` forces `mode: 'production'`.
 
-::: warning Most keys are accepted but unused
-The dev server currently reads only `mode`, `server.port`, `server.host`, and `development.hmrPort`. The remaining keys below are validated by the schema but have no effect — notably CORS, which is configured through the `CORS_ORIGIN` environment variable instead.
-:::
+These four keys are the whole schema — the dev server reads every one of them:
 
-| Key                                    | Default             | Description                                                                                                  |
-| -------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `mode`                                 | `development`       | `development` or `production`                                                                                |
-| `server.port`                          | `3003`              | Server port; `-p` overrides it. The pptx format default (3004) applies only while this key is left at `3003` |
-| `server.host`                          | `localhost`         | Bind host                                                                                                    |
-| `server.cors.origin`                   | `*`                 | CORS origin                                                                                                  |
-| `server.cors.credentials`              | `true`              | CORS credentials                                                                                             |
-| `api.basePath`                         | `/api`              | API mount path                                                                                               |
-| `api.upload.maxFileSize`               | `10485760` (10 MB)  | Upload size cap                                                                                              |
-| `api.upload.allowedMimeTypes`          | jpeg, png, gif, svg | Allowed upload types                                                                                         |
-| `playground.enabled`                   | `true`              | Serve the playground UI                                                                                      |
-| `playground.features.livePreview`      | `true`              | Live preview feature flag                                                                                    |
-| `playground.features.templateLibrary`  | `true`              | Template library feature flag                                                                                |
-| `playground.features.componentBuilder` | `false`             | Component builder feature flag                                                                               |
-| `playground.features.collaboration`    | `false`             | Collaboration feature flag                                                                                   |
-| `development.hmr`                      | `true`              | Vite HMR in source mode                                                                                      |
-| `development.sourceMap`                | `true`              | Source maps                                                                                                  |
-| `development.verbose`                  | `false`             | Verbose logging                                                                                              |
-| `paths.templates`                      | `./templates`       | Templates path                                                                                               |
-| `paths.modules`                        | `./modules`         | Modules path                                                                                                 |
-| `paths.cache`                          | `./.cache`          | Cache path                                                                                                   |
+| Key                   | Default        | Description                                                                                                                                              |
+| --------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`                | `development`  | `development` or `production`                                                                                                                            |
+| `server.port`         | format default | Server port. Setting this key wins over `PORT` and the format default; only `-p` outranks it. Omit it and you get `PORT`, else 3003 (docx) / 3004 (pptx) |
+| `server.host`         | `localhost`    | Bind host                                                                                                                                                |
+| `development.hmrPort` | `5173`         | Vite HMR port when the client is served from source                                                                                                      |
+
+Keys the dev server never read — `server.cors.*`, `api.*`, `playground.*`, `paths.*`, `development.hmr`, `development.sourceMap`, `development.verbose` — were removed from the schema rather than left to imply an effect. Unknown keys still validate, so a config file that still carries them keeps loading; they are ignored, as they always were. CORS is configured through the `CORS_ORIGIN` environment variable and the upload size cap through `MAX_FILE_SIZE`.
 
 ## Environment variables
 
@@ -295,6 +304,7 @@ The dev server currently reads only `mode`, `server.port`, `server.host`, and `d
 | `LIBREOFFICE_PATH`            | rasterizer, previews      | auto-detected                         | Path to the LibreOffice binary                                                                                 |
 | `PDFTOPPM_PATH`               | rasterizer                | auto-detected                         | Path to the `pdftoppm` binary                                                                                  |
 | `DEBUG`                       | generate                  | —                                     | `true` enables generator debug mode                                                                            |
+| `PORT`                        | `jto dev`                 | —                                     | Listen port, used when the config file does not set `server.port` and `-p` is not given                        |
 | `JTO_CLIENT_PATH`             | `jto dev`                 | —                                     | Override the playground client directory                                                                       |
 | `AI_ENABLED`                  | `jto dev`                 | enabled                               | `false` disables the `/api/ai` routes                                                                          |
 | `API_AUTH_MODE`               | `jto dev`                 | see below                             | `required` \| `auto` \| `disabled`. Defaults to `required` in production, `auto` locally                       |
@@ -319,7 +329,9 @@ The dev server currently reads only `mode`, `server.port`, `server.host`, and `d
 
 The dev server loads a `.env` file via dotenv. `NODE_ENV` is normalized before use: only `development` and `test` keep permissive defaults, so a mislabelled deployment (`staging`, a typo) gets production-grade auth, rate limits, and outbound-source policy rather than silently opening up.
 
-The values above are applied process-wide across `/api/*`; individual expensive routes keep their own tighter per-route limits (10/20/30 requests per 15 minutes in production) below that ceiling. `PORT` and `UPLOAD_DIR` are still parsed but not read — the dev-server port comes from `-p`, `server.port`, or the format default. The standalone [render server](/guide/render-server) reads its own separate set of variables.
+The values above are applied process-wide across `/api/*`; individual expensive routes keep their own tighter per-route limits (10/20/30 requests per 15 minutes in production) below that ceiling. The standalone [render server](/guide/render-server) reads its own separate set of variables.
+
+`PORT` is read by `jto dev` as the deployment convention, but only below anything more specific: `-p` > config-file `server.port` > `PORT` > the format default (3003 docx / 3004 pptx). Each step is decided by whether the value was actually supplied, not by what it happens to equal, so `PORT=3003 jto pptx dev` binds 3003 rather than being mistaken for the unset default and bumped to 3004. A `PORT` that is not an integer in 0–65535 is ignored and the format default applies. The same order is used when the dev-server config file fails schema validation and the packaged defaults are substituted.
 
 ## Exit codes
 

@@ -11,6 +11,7 @@ import type {
 } from '../types';
 import { resolveColor } from '../utils/color';
 import { applyFontWeight } from '../utils/fontAliasContext';
+import { applyHyperlink, type HyperlinkProps } from '../utils/hyperlink';
 
 interface TextComponentProps {
   text: string;
@@ -42,7 +43,7 @@ interface TextComponentProps {
     opacity?: number;
   };
   fill?: { color: string; transparency?: number };
-  hyperlink?: { url?: string; slide?: number; tooltip?: string };
+  hyperlink?: HyperlinkProps;
   lineSpacing?: number;
   charSpacing?: number;
   paraSpaceBefore?: number;
@@ -170,19 +171,7 @@ export function renderTextComponent(
   }
 
   // Hyperlink
-  if (props.hyperlink) {
-    if (props.hyperlink.url) {
-      opts.hyperlink = {
-        url: props.hyperlink.url,
-        tooltip: props.hyperlink.tooltip,
-      };
-    } else if (props.hyperlink.slide) {
-      opts.hyperlink = {
-        slide: props.hyperlink.slide,
-        tooltip: props.hyperlink.tooltip,
-      };
-    }
-  }
+  applyHyperlink(opts, props.hyperlink, 'text', warnings);
 
   // Line spacing
   const lineSpacing = props.lineSpacing ?? style?.lineSpacing;

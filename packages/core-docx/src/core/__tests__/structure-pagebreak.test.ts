@@ -4,9 +4,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractSections } from '../structure';
-import { ComponentDefinition, RenderContext } from '../../types';
+import { extractSections, processDocument } from '../structure';
+import {
+  ComponentDefinition,
+  RenderContext,
+  ReportComponentDefinition,
+} from '../../types';
 import { createMockTheme } from '../../components/__tests__/helpers';
+import { ThemeConfig } from '../../styles';
 
 describe('Structure PageBreak', () => {
   const context: RenderContext = {
@@ -140,6 +145,82 @@ describe('Structure PageBreak', () => {
       expect(sections[0].pageBreak).toBeUndefined();
       expect(sections[0].components[0].name).toBe('heading');
       expect(sections[0].components[0].props.pageBreak).toBe(false);
+    });
+  });
+
+  describe('Theme componentDefaults', () => {
+    // resolveComponentDefaults used to bail out on a missing `props` key, so a
+    // propless section never saw componentDefaults.section and defaulted to a
+    // page break.
+    const themeWithoutPageBreak: ThemeConfig = {
+      ...createMockTheme(),
+      componentDefaults: { section: { pageBreak: false } },
+    };
+
+    const documentWith = (
+      section: ComponentDefinition
+    ): ReportComponentDefinition => ({
+      name: 'docx',
+      props: {},
+      children: [section],
+    });
+
+    const proplessSection = () =>
+      documentWith({
+        name: 'section',
+        children: [{ name: 'paragraph', props: { text: 'Content' } }],
+      } as ComponentDefinition);
+
+    // The regression case: only an absent `props` key hit the old early return.
+    it('should apply section pageBreak default to a section with no props key', async () => {
+      const processed = await processDocument(
+        proplessSection(),
+        themeWithoutPageBreak,
+        'mock'
+      );
+
+      expect(processed.sections).toHaveLength(1);
+      // No page break: the theme default reached the propless section.
+      expect(processed.sections[0].pageBreak).toBe(false);
+
+      // Same input, theme without componentDefaults.section — a titleless
+      // section falls back to true, so the false above is the theme's doing.
+      const withoutDefaults = await processDocument(
+        proplessSection(),
+        createMockTheme(),
+        'mock'
+      );
+      expect(withoutDefaults.sections[0].pageBreak).toBe(true);
+    });
+
+    // Control, not proof: `{}` is truthy, so it always took the resolver path.
+    // Kept to guard the empty-props path from regressing alongside the fix.
+    it('control: empty props already picked up the pageBreak default', async () => {
+      const processed = await processDocument(
+        documentWith({
+          name: 'section',
+          props: {},
+          children: [{ name: 'paragraph', props: { text: 'Content' } }],
+        }),
+        themeWithoutPageBreak,
+        'mock'
+      );
+
+      expect(processed.sections[0].pageBreak).toBe(false);
+    });
+
+    it('should let an explicit pageBreak win over the theme default', async () => {
+      const processed = await processDocument(
+        documentWith({
+          name: 'section',
+          props: { pageBreak: true },
+          children: [{ name: 'paragraph', props: { text: 'Content' } }],
+        }),
+        themeWithoutPageBreak,
+        'mock'
+      );
+
+      expect(processed.sections[0].pageBreak).toBe(true);
     });
   });
 
