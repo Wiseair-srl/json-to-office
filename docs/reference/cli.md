@@ -285,29 +285,41 @@ The dev server currently reads only `mode`, `server.port`, `server.host`, and `d
 
 ## Environment variables
 
-| Variable                    | Used by                   | Default       | Effect                                                                               |
-| --------------------------- | ------------------------- | ------------- | ------------------------------------------------------------------------------------ |
-| `HIGHCHARTS_SERVER_URL`     | generate (both CLIs), dev | —             | Highcharts export server URL for [chart rendering](/guide/charts)                    |
-| `HIGHCHARTS_API_KEY`        | generate, dev             | —             | API key sent to the Highcharts server                                                |
-| `HIGHCHARTS_API_KEY_HEADER` | generate, dev             | `x-api-key`   | Header name for the Highcharts API key                                               |
-| `JTO_PPTX_RASTERIZER_URL`   | docx generate             | —             | Remote rasterizer for `visual` components; unset ⇒ in-process LibreOffice rasterizer |
-| `LIBREOFFICE_PATH`          | rasterizer, previews      | auto-detected | Path to the LibreOffice binary                                                       |
-| `PDFTOPPM_PATH`             | rasterizer                | auto-detected | Path to the `pdftoppm` binary                                                        |
-| `DEBUG`                     | generate                  | —             | `true` enables generator debug mode                                                  |
-| `JTO_CLIENT_PATH`           | `jto dev`                 | —             | Override the playground client directory                                             |
-| `AI_ENABLED`                | `jto dev`                 | enabled       | `false` disables the `/api/ai` routes                                                |
-| `API_KEY`                   | `jto dev`                 | —             | Credential required on `/api/*` when auth mode requires it                           |
-| `API_KEY_HEADER`            | `jto dev`                 | `x-api-key`   | Header carrying the API key                                                          |
-| `CORS_ORIGIN`               | `jto dev` server          | `*`           | Allowed origin(s), comma-separated                                                   |
-| `LIBREOFFICE_TIMEOUT_MS`    | `jto dev` server          | `30000`       | LibreOffice conversion timeout                                                       |
-| `LOG_LEVEL`                 | `jto dev` server          | `info`        | `error` \| `warn` \| `info` \| `debug`                                               |
-| `CACHE_ENABLED`             | `jto dev` server          | `true`        | `false` disables the generation cache                                                |
-| `CACHE_MAX_SIZE_MB`         | `jto dev` server          | `100`         | Cache size cap                                                                       |
-| `CACHE_TTL_SECONDS`         | `jto dev` server          | `3600`        | Cache TTL                                                                            |
-| `CACHE_MAX_ITEMS`           | `jto dev` server          | `1000`        | Cache item cap                                                                       |
-| `NODE_ENV`                  | both                      | `development` | `production` enables production rate limits and mode                                 |
+| Variable                      | Used by                   | Default                               | Effect                                                                                                         |
+| ----------------------------- | ------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `HIGHCHARTS_SERVER_URL`       | generate (both CLIs), dev | —                                     | Highcharts export server URL for [chart rendering](/guide/charts)                                              |
+| `HIGHCHARTS_API_KEY`          | generate, dev             | —                                     | API key sent to the Highcharts server                                                                          |
+| `HIGHCHARTS_API_KEY_HEADER`   | generate, dev             | `x-api-key`                           | Header name for the Highcharts API key                                                                         |
+| `JTO_PPTX_RASTERIZER_URL`     | docx generate             | —                                     | Remote rasterizer for `visual` components; unset ⇒ in-process LibreOffice rasterizer                           |
+| `JTO_PPTX_RASTERIZER_API_KEY` | docx generate, dev        | —                                     | API key sent to the remote rasterizer                                                                          |
+| `LIBREOFFICE_PATH`            | rasterizer, previews      | auto-detected                         | Path to the LibreOffice binary                                                                                 |
+| `PDFTOPPM_PATH`               | rasterizer                | auto-detected                         | Path to the `pdftoppm` binary                                                                                  |
+| `DEBUG`                       | generate                  | —                                     | `true` enables generator debug mode                                                                            |
+| `JTO_CLIENT_PATH`             | `jto dev`                 | —                                     | Override the playground client directory                                                                       |
+| `AI_ENABLED`                  | `jto dev`                 | enabled                               | `false` disables the `/api/ai` routes                                                                          |
+| `API_AUTH_MODE`               | `jto dev`                 | see below                             | `required` \| `auto` \| `disabled`. Defaults to `required` in production, `auto` locally                       |
+| `API_KEY`                     | `jto dev`                 | —                                     | Credential required on `/api/*` when auth mode requires it                                                     |
+| `API_KEY_HEADER`              | `jto dev`                 | `x-api-key`                           | Header carrying the API key                                                                                    |
+| `RATE_LIMIT_WINDOW_MS`        | `jto dev` server          | `900000`                              | Rate-limit window applied across `/api/*`                                                                      |
+| `RATE_LIMIT_MAX`              | `jto dev` server          | `100` prod / `1000` dev               | Requests per window per client, per method+path                                                                |
+| `TRUST_PROXY_HEADERS`         | `jto dev` server          | `false`                               | Trust `X-Real-IP` / `X-Forwarded-For` for rate-limit identity. Enable only behind a proxy that overwrites them |
+| `MAX_REQUEST_BODY_SIZE`       | `jto dev` server          | `33554432`                            | Body cap across `/api/*` (32 MiB)                                                                              |
+| `MAX_CONCURRENT_REQUESTS`     | `jto dev` server          | `8` prod / `64` dev                   | In-flight `/api/*` requests before `503`                                                                       |
+| `MAX_FILE_SIZE`               | `jto dev` server          | `10485760`                            | Upload size cap (10 MiB)                                                                                       |
+| `OUTBOUND_SOURCE_MODE`        | `jto dev` server          | `safe` prod / `development` otherwise | `safe` restricts remote assets to allowlisted HTTPS hosts and blocks local paths                               |
+| `OUTBOUND_HOST_ALLOWLIST`     | `jto dev` server          | empty                                 | Comma-separated hosts allowed in `safe` mode; `*.example.com` wildcards supported                              |
+| `CORS_ORIGIN`                 | `jto dev` server          | `*`                                   | Allowed origin(s), comma-separated                                                                             |
+| `LIBREOFFICE_TIMEOUT_MS`      | `jto dev` server          | `30000`                               | LibreOffice conversion timeout                                                                                 |
+| `LOG_LEVEL`                   | `jto dev` server          | `info`                                | `error` \| `warn` \| `info` \| `debug`                                                                         |
+| `CACHE_ENABLED`               | `jto dev` server          | `true`                                | `false` disables the generation cache                                                                          |
+| `CACHE_MAX_SIZE_MB`           | `jto dev` server          | `100`                                 | Cache size cap                                                                                                 |
+| `CACHE_TTL_SECONDS`           | `jto dev` server          | `3600`                                | Cache TTL                                                                                                      |
+| `CACHE_MAX_ITEMS`             | `jto dev` server          | `1000`                                | Cache item cap                                                                                                 |
+| `NODE_ENV`                    | both                      | `development`                         | Anything other than `development` or `test` selects hardened defaults                                          |
 
-The dev server loads a `.env` file via dotenv. `PORT`, `UPLOAD_DIR`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX` and `MAX_FILE_SIZE` are parsed into the dev-server env config but never read: per-route rate limits (10/20/30 requests per 15 minutes in production, 1000 in development) and body caps are hardcoded, and the dev-server port comes from `-p`, `server.port`, or the format default. The standalone [render server](/guide/render-server) reads its own small set: `PORT`, `HIGHCHARTS_UPSTREAM_URL`, `PROXY_TIMEOUT_MS`, and `NODE_ENV`.
+The dev server loads a `.env` file via dotenv. `NODE_ENV` is normalized before use: only `development` and `test` keep permissive defaults, so a mislabelled deployment (`staging`, a typo) gets production-grade auth, rate limits, and outbound-source policy rather than silently opening up.
+
+The values above are applied process-wide across `/api/*`; individual expensive routes keep their own tighter per-route limits (10/20/30 requests per 15 minutes in production) below that ceiling. `PORT` and `UPLOAD_DIR` are still parsed but not read — the dev-server port comes from `-p`, `server.port`, or the format default. The standalone [render server](/guide/render-server) reads its own separate set of variables.
 
 ## Exit codes
 
@@ -318,12 +330,33 @@ The dev server loads a `.env` file via dotenv. `PORT`, `UPLOAD_DIR`, `RATE_LIMIT
 
 These are the only two codes. Error output special-cases missing files ("File not found") and malformed JSON ("Invalid JSON in input file"), and prints per-path validation errors with suggestions.
 
+## Output streams and piping
+
+The CLI renders with [Ink](https://github.com/vadimdemedes/ink), so an interactive terminal gets spinners, colour, and live status. Redirected output is handled differently on purpose:
+
+- **Error detail goes to stderr.** Command results — a validation report, a generated-file summary — go to stdout, so `jto pptx validate deck.json 2>/dev/null` still shows the report while `1>/dev/null` isolates the failure reason.
+- **Non-TTY output is plain.** When stdout (or stderr) is not a terminal, output bypasses Ink entirely: no cursor-control escape sequences, and no wrapping to the terminal width. Long file paths stay on one line, so `jto pptx validate deck.json | grep FAIL` behaves.
+
+For anything you intend to parse, prefer the machine-readable mode rather than scraping the human output:
+
+```bash
+jto pptx validate deck.json -f json > results.json
+```
+
+`-f json` — available on [`validate`](#validate) and on [`diff`](#diff-docx-only) (DOCX only) — writes structured JSON straight to stdout, bypassing the renderer entirely. Note that `-f` on [`schemas`](#schemas) means something different: it selects `json` or `typebox` as the _schema_ output format.
+
 ## Dev-server HTTP API
 
 Routes are mounted at `/api/<format>` (with legacy aliases `/api/documents` for docx and `/api/presentations` for pptx). Rate limits below apply in production mode; development mode is effectively unlimited. See also the [API reference](/reference/api).
 
-::: warning The API is unauthenticated unless you set `API_KEY`
-The key middleware is mounted only when `API_KEY` is set, and it checks the `x-api-key` header (or `API_KEY_HEADER`). With no key configured, every `/api/*` route is open in all modes — there is no fail-closed production default. Set `API_KEY`, or keep the server off the public internet.
+::: warning Authentication depends on `API_AUTH_MODE`
+Auth is controlled by `API_AUTH_MODE`, which defaults to `required` in production and `auto` locally.
+
+- **`required`** — every `/api/*` request needs the key. If no `API_KEY` is configured the server answers `503`, so a production deployment fails closed rather than open.
+- **`auto`** — enforced only when `API_KEY` is set; with no key the API is open. This keeps local playgrounds zero-config.
+- **`disabled`** — no check at all. Only for an intentionally public demo.
+
+The key is read from `x-api-key` (or `API_KEY_HEADER`), and `Authorization: Bearer <key>` is also accepted. Comparison is timing-safe. Running `auto` or `disabled` on a reachable host means keeping the server off the public internet.
 :::
 
 | Method   | Route                                                 | Description                                                                                                                                   |

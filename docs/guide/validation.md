@@ -106,14 +106,18 @@ try {
 
 PPTX validation is a single deep walk over the tree — the same engine that powers `jto pptx validate`. For every node it checks:
 
-- the root is named `pptx` and has a `children` array;
-- each object carries only the allowed top-level keys (`name`, `id`, `enabled`, `props`, `children`; the root may also carry `$schema`);
-- each component's `props` match its registry schema (a missing `props` is validated as `{}`);
+- the root is named `pptx` and carries both a `props` object and a `children` array;
+- each object carries only the allowed top-level keys (`name`, `id`, `enabled`, `props`, `children`; the root may also carry `$schema`, and plugin components may also carry `version`);
+- each component's `props` match its registry schema (on nested components a missing `props` is validated as `{}`, so the schema decides whether props are required);
 - container narrowing holds (`pptx` → `slide` only, `slide` → the six content components);
 - leaf components don't carry `children`;
 - every value in a slide's `placeholders` record is itself a valid component.
 
-Plugin component names can be skipped via `knownCustomNames`, and `allowUnknownFields` strips unknown props instead of rejecting, mirroring the DOCX options. Noise from TypeBox's generic union catch-alls is filtered out and errors are deduplicated, so what remains is actionable.
+::: warning The root `props` key is required
+`{ "name": "pptx", "children": [] }` is rejected with `Missing required field "props"` at `/props`. This matches the published JSON Schema, which has always marked `props` as required. Every field _inside_ presentation props is optional, so `"props": {}` is enough.
+:::
+
+Plugin components are validated in two passes: the deep walker skips their `props` (the plugin layer checks those against the resolved component version), but it still walks their `children`. Standard components authored inside a plugin container therefore obey the same prop and tree contract they do anywhere else. `allowUnknownFields` strips unknown props instead of rejecting, mirroring the DOCX options. Noise from TypeBox's generic union catch-alls is filtered out and errors are deduplicated, so what remains is actionable.
 
 ```ts
 import { validate } from '@json-to-office/json-to-pptx';

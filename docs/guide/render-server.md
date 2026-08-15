@@ -28,9 +28,9 @@ Programmatically, services are passed as a generation option:
 ```ts
 import { generateBufferFromJson } from '@json-to-office/json-to-docx';
 
-// The service itself has no auth; these headers are for your own
-// gateway in front of it, if you put one there.
-const renderHeaders = { 'x-api-key': process.env.RENDER_GATEWAY_KEY! };
+// The service authenticates with an API key of its own (RENDER_API_KEY).
+// Send it on every call; add gateway credentials here too if you front it.
+const renderHeaders = { 'x-api-key': process.env.RENDER_API_KEY! };
 const buffer = await generateBufferFromJson(document, {
   services: {
     highcharts: {
@@ -52,9 +52,13 @@ See the [API reference](/reference/api) for the full options object and the [cha
 `services/jto-render-server` in the repo ([GitHub](https://github.com/Wiseair-srl/json-to-office)) packages both rendering backends into **one Docker image with one public port**:
 
 - A Node **front server** (`packages/jto/dist/render-server.js`) owns the public port (`PORT`, default `10000`) and exposes:
+
   - `GET /health` — probes the internal Highcharts server (2 s timeout). Returns `ok` on success, otherwise `503 { status: 'degraded', ... }`. Reporting 503 while Highcharts is down keeps a load balancer from routing `/export` traffic to a half-up instance.
   - `POST /rasterize` — the pptx-slide-to-PNG endpoint (rate-limited to 30 requests / 15 min in production).
-  - **Everything else** — reverse-proxied to the Highcharts upstream. In practice that means `POST /export`, the Highcharts Export Server protocol.
+  - `POST /export` — the Highcharts Export Server protocol, proxied to the internal upstream after strict validation. Only base64 PNG exports are accepted (`type: "png"`, `b64: true`), unknown top-level fields are rejected, and the effective raster size is capped.
+
+  There is no catch-all proxy: any other path returns `404`, and a wrong method on `/export` or `/rasterize` returns `405`. Upstream `Set-Cookie` headers are stripped from responses.
+
 - A **Highcharts Export Server** (`highcharts-export-server@5.1.0`, Puppeteer + Chromium) runs internally on `127.0.0.1:7801` and is never exposed directly.
 
 The image's `entrypoint.sh` runs Highcharts in a supervisor loop (restart with a 2 s backoff if it exits) and `exec`s the front server in the foreground, so the container's lifecycle tracks the front server while a Highcharts crash self-heals — with `/health` honestly reporting 503 in the meantime.
@@ -63,17 +67,51 @@ The Dockerfile builds the whole monorepo in a `node:20-slim` stage, then assembl
 
 ### Environment variables (front server)
 
-The front server reads exactly four environment variables:
+**Networking**
 
-| Variable                  | Default                 | Description                                                                                       |
-| ------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
-| `PORT`                    | `10000`                 | Public listen port.                                                                               |
-| `HIGHCHARTS_UPSTREAM_URL` | `http://127.0.0.1:7801` | Internal Highcharts Export Server address (trailing slash stripped).                              |
-| `PROXY_TIMEOUT_MS`        | `30000`                 | Proxy fetch timeout; `504` on timeout, `502` if the upstream is unreachable.                      |
-| `NODE_ENV`                | —                       | `production` tightens the `/rasterize` rate limit to 30 requests per 15 minutes (1000 otherwise). |
+| Variable                  | Default                 | Description                                                                  |
+| ------------------------- | ----------------------- | ---------------------------------------------------------------------------- |
+| `PORT`                    | `10000`                 | Public listen port.                                                          |
+| `HIGHCHARTS_UPSTREAM_URL` | `http://127.0.0.1:7801` | Internal Highcharts Export Server address (trailing slash stripped).         |
+| `PROXY_TIMEOUT_MS`        | `30000`                 | Proxy fetch timeout; `504` on timeout, `502` if the upstream is unreachable. |
+| `HEALTH_TIMEOUT_MS`       | `2000`                  | Upstream probe timeout for `GET /health`.                                    |
 
-::: warning The render server has no authentication
-There is no API-key check, no allowlist, and no auth mode on this service — anyone who can reach it can submit render jobs, and `/export` is proxied straight through to Highcharts. Do not expose it directly to the public internet. Put it behind your own gateway, network policy, or private network, and give only your playground or backend access to it.
+**Authentication**
+
+| Variable                | Default                                 | Description                                                                                                                                                      |
+| ----------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RENDER_AUTH_MODE`      | `required` (hardened), `auto` otherwise | `required` rejects every unauthenticated call and returns `503` if no key is configured; `auto` enforces only when a key is set; `disabled` turns the check off. |
+| `RENDER_API_KEY`        | — (falls back to `API_KEY`)             | Expected key. Compared with a timing-safe digest comparison.                                                                                                     |
+| `RENDER_API_KEY_HEADER` | `x-api-key`                             | Header carrying the key. `Authorization: Bearer <key>` is also accepted.                                                                                         |
+
+**Outbound source policy**
+
+| Variable                  | Default                                    | Description                                                                                                                                                                                                                                               |
+| ------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OUTBOUND_SOURCE_MODE`    | `safe` (hardened), `development` otherwise | In `safe` mode every remote asset must be HTTPS on an allowlisted host; local paths, private/loopback addresses, credentialed URLs, active SVG, and renderer JavaScript are rejected. `development` skips these checks so local playgrounds keep working. |
+| `OUTBOUND_HOST_ALLOWLIST` | empty                                      | Comma-separated hosts permitted in `safe` mode. `*.example.com` wildcards are supported. **Empty means every remote host is refused.**                                                                                                                    |
+
+**Limits**
+
+| Variable                      | Default                           | Description                                                                                                                                                                               |
+| ----------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EXPORT_RATE_LIMIT`           | `60` (hardened), `1000` otherwise | `POST /export` requests per window.                                                                                                                                                       |
+| `RASTERIZE_RATE_LIMIT`        | `30` (hardened), `1000` otherwise | `POST /rasterize` requests per window.                                                                                                                                                    |
+| `RENDER_RATE_LIMIT_WINDOW_MS` | `900000`                          | Rate-limit window (15 minutes).                                                                                                                                                           |
+| `MAX_CONCURRENT_RENDERS`      | `4` (hardened), `16` otherwise    | In-flight renders before `503 Server is at capacity`.                                                                                                                                     |
+| `MAX_EXPORT_BODY_SIZE`        | `4194304`                         | Max `/export` request body (4 MiB).                                                                                                                                                       |
+| `MAX_RASTERIZE_BODY_SIZE`     | `33554432`                        | Max `/rasterize` request body (32 MiB).                                                                                                                                                   |
+| `MAX_RENDER_RESPONSE_SIZE`    | `25165824`                        | Max upstream response read (24 MiB).                                                                                                                                                      |
+| `TRUST_PROXY_HEADERS`         | `false`                           | Derive the rate-limit client key from `X-Real-IP` / `X-Forwarded-For`. Enable **only** behind a proxy that overwrites them — otherwise callers can spoof their identity and evade limits. |
+
+::: tip `NODE_ENV` selects the hardened defaults
+Any value other than `development` or `test` — including `production`, `staging`, or a typo — selects the hardened column above. A mislabelled deployment fails safe rather than silently running with permissive defaults.
+:::
+
+::: warning Authentication is on by default, but the key is yours to set
+With `RENDER_AUTH_MODE=required` and no `RENDER_API_KEY`, the service answers `503` to every request — it fails closed rather than open. Set a strong key and send it from every client.
+
+The outbound-source policy blocks SSRF and local-file reads, but it is not a substitute for network isolation. Rendering is expensive and Chromium-backed, so still prefer to keep the service on a private network or behind your own gateway, reachable only by your playground or backend.
 :::
 
 ### Running it locally
@@ -84,7 +122,7 @@ The compose file builds from the repo root (the Dockerfile compiles the monorepo
 docker compose -f services/jto-render-server/docker-compose.yml up --build
 ```
 
-It publishes port `10000` with a `/health` healthcheck. Note the port is bound on all interfaces, not just loopback.
+It publishes port `10000` on loopback only (`127.0.0.1:10000`) with a `/health` healthcheck, and runs with `RENDER_AUTH_MODE=required`. The compose file defaults `RENDER_API_KEY` to `local-render-key`; override it in your environment and send the same value from clients.
 
 ## The /rasterize protocol
 
@@ -121,6 +159,7 @@ Contract details, enforced by a handler shared between the render server and the
 
 - Body must be `application/json` (else `400`) and at most **32 MB** (else `413`).
 - Schema: `presentation` (object, required) and optional `dpi`, which must be a number in `[36, 600]`; unknown fields are rejected. Omitting `dpi` uses the default of `200`.
+- The presentation is checked against the [outbound source policy](#environment-variables-front-server) before rendering, so local file paths and non-allowlisted hosts fail with `400` rather than being fetched.
 - Errors: missing binaries map to `503`, invalid presentations to `400`, everything else to `500`.
 
 ## Deploying the playgrounds
@@ -136,13 +175,15 @@ One image serves both formats: set `FORMAT=docx` or `FORMAT=pptx` per container.
 
 The `render.yaml` Render.com blueprint declares the full production topology — three Docker web services, all health-checked on `/health`:
 
-| Service               | Dockerfile                              | Env                                                                                        |
-| --------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `jto-render-server`   | `services/jto-render-server/Dockerfile` | None                                                                                       |
-| `jto-playground-docx` | root `Dockerfile`                       | `FORMAT=docx`, `VITE_AI_ENABLED=false`, `HIGHCHARTS_SERVER_URL`, `JTO_PPTX_RASTERIZER_URL` |
-| `jto-playground-pptx` | root `Dockerfile`                       | Same, with `FORMAT=pptx`                                                                   |
+| Service               | Dockerfile                              | Env                                                                                                                                                                                             |
+| --------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jto-render-server`   | `services/jto-render-server/Dockerfile` | `RENDER_AUTH_MODE=required`, `RENDER_API_KEY` (secret, not committed)                                                                                                                           |
+| `jto-playground-docx` | root `Dockerfile`                       | `FORMAT=docx`, `VITE_AI_ENABLED=false`, `AI_ENABLED=false`, `API_AUTH_MODE=disabled`, `HIGHCHARTS_SERVER_URL` + `HIGHCHARTS_API_KEY`, `JTO_PPTX_RASTERIZER_URL` + `JTO_PPTX_RASTERIZER_API_KEY` |
+| `jto-playground-pptx` | root `Dockerfile`                       | Same, with `FORMAT=pptx`                                                                                                                                                                        |
 
-Both playgrounds point their render URLs at `https://jto-render-server.onrender.com`. Note that this topology runs the render server unauthenticated (it has no auth layer at all) — acceptable for a public demo, but for a private deployment put the render server on a private network or behind your own gateway rather than relying on the service itself to reject callers.
+Both playgrounds point their render URLs at `https://jto-render-server.onrender.com` and authenticate with the render server's `RENDER_API_KEY`; the two caller-side key variables carry that same value.
+
+The playgrounds themselves run with `API_AUTH_MODE=disabled` because they are deliberately public browser demos — a browser cannot keep an API key secret. Both also set `AI_ENABLED=false`: `VITE_AI_ENABLED` only hides the client UI, while `AI_ENABLED` is what stops the server mounting `/api/ai`. For a private deployment, drop the `disabled` override, use `API_AUTH_MODE=required`, and put the key behind an authenticated gateway.
 
 ```text
 .docx.json / .pptx.json
