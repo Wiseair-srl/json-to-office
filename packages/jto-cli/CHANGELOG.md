@@ -1,5 +1,67 @@
 # @json-to-office/jto-cli
 
+## 0.22.0
+
+### Minor Changes
+
+- e311268: fix(cli): honour `PORT` in `jto dev`, and drop the dev-server config keys nothing read
+
+  `PORT` was parsed in two places and read in neither: the dev server took its port from `-p`, the config file, or a `server.port === 3003` sentinel that stood in for "the user did not choose a port". The sentinel could not tell an untouched default from a deliberate `3003`, so `jto pptx dev` with `PORT=3003` — or with `"server.port": 3003` in the config file — bound 3004 instead.
+
+  - `loadConfig` resolves the port in one place: config file > `PORT` > the caller's default > the packaged `3003`. `dev -p` still outranks all of them.
+  - `loadConfig` takes an optional second argument (`{ defaultPort }`), so `dev` supplies the format's port instead of the loader emitting a magic value the caller has to recognise. The parameter is optional and existing call sites keep working.
+  - The returned config is a fresh `structuredClone` of the defaults on every load, including the failure path. `dev -p` writes straight into `config.server.port`, which used to mutate the shared module-level `defaultConfig`, leaking one command's port into every later load in the same process.
+  - A config file that fails schema validation still falls back to defaults, but the fallback now honours `PORT` and the caller's default rather than always returning `3003`.
+  - The dev-server config schema keeps only what the dev server reads (`mode`, `server.port`, `server.host`, `development.hmrPort`). `server.cors.*`, `api.*`, `playground.*`, `paths.*`, and `development.hmr` / `sourceMap` / `verbose` are gone rather than left to imply an effect they never had. Unknown keys still validate, so a config file that still carries them keeps loading and they keep being ignored. CORS is configured through `CORS_ORIGIN`.
+  - `jto`'s server config no longer parses `PORT` and `UPLOAD_DIR` into an object nobody consulted; the listener's port comes from the CLI config above.
+
+  **Behaviour changes to expect when upgrading:**
+
+  - **`PORT` now decides the dev-server port** when `-p` is absent and the config file sets no `server.port`. A deployment that exports `PORT` for some other process and previously landed on 3003/3004 will now bind `$PORT`. Pin the port with `-p` or `server.port` if you need the old value.
+  - **`PORT=3003 jto pptx dev` binds 3003**, not 3004.
+
+  Port parsing is strict: `Number.parseInt` stops at the first non-digit, so `PORT=8080x` used to bind 8080. Both `PORT` and `--port` now require a complete integer in range, and an invalid `--port` fails with a clear message instead of silently binding elsewhere. `loadConfig` also survives a malformed config file — a top-level `null`, or `"server": null`, previously threw while computing the fallback port and skipped the warn-and-default path that exists for exactly that case.
+
+- e311268: fix(cli): make `--theme` / `--theme-path` and the config file's theme keys actually select the theme
+
+  Theme selection was wired up in only half the code paths. Without plugins, `createGenerator`/`generateBuffer` passed `customThemes` and nothing else, so `--theme` was ignored outright and `--theme-path` only worked if the document's `props.theme` happened to name the loaded theme. With plugins, an unknown `--theme` quietly resolved to a built-in default. And in `PluginConfigService.mergeWithOptions`, every CLI option was spread over the config file including the absent ones, so an unset flag overwrote the matching config-file key with `undefined`.
+
+  - A requested theme now applies on **both** paths. It is registered under a reserved `customThemes` key (`jto-cli-theme`) and the document's `props.theme` is rewritten to point at it. With no theme requested, the document is passed through untouched and `props.theme` stays in charge — on the plugin path too, where the generator is now constructed with no `theme` at all rather than a `minimal` default that would have restyled every document.
+  - `--theme` also resolves against the supplied `customThemes` map before trying built-in names and file paths.
+  - A theme that resolves to nothing — an unknown built-in name, an unreadable file — prints `Unknown theme "X"; keeping the document's own theme` and leaves the document's theme alone. PPTX no longer routes unknown names through `getPptxTheme()`, which answered every one of them with the default theme.
+  - The theme is resolved **once per generator**, and `--theme-path` is read exactly once inside that resolution. Without plugins the read moved off the per-document path, so a batch of documents produces one `Failed to load theme from …` warning instead of one per document. With plugins it used to be read twice at `createGenerator()` time — once for the requested theme, once for the `customThemes` registry — and printed that warning twice for a single bad path; one read now feeds both.
+  - Absent CLI flags no longer erase config-file values. `theme`, `themePath`, `validation.allowUnknownFields`, `discovery`, and `aliases` from the config file now take effect when the matching flag is not passed.
+
+  **Behaviour changes to expect when upgrading:**
+
+  - **A document's own `props.theme` no longer wins over a requested theme.** If you pass `--theme`/`--theme-path`, or your config file sets `theme`/`themePath`, documents that named their own theme now render with the requested one. Drop the flag and the config keys to go back to per-document themes.
+  - **Config-file `theme` / `themePath` now apply to `generate`.** They were previously wiped by the unset flags and had no effect; a config file left over from that period will start changing output.
+  - **`theme` and `themePath` merge as one group, not key by key.** Passing either flag supersedes _both_ config-file keys; with neither flag, the config file keeps both and its own `themePath`-before-`theme` order. Previously a config-file `themePath` outranked an explicit `--theme`, which is the case this changes.
+  - **A mistyped `--theme` no longer silently swaps in a default theme.** It warns and keeps the document's theme, so a typo now shows up as a warning plus unchanged styling instead of a differently styled file.
+  - **The `Theme:` summary line reports the theme that rendered** instead of echoing the `--theme` flag. It previously printed the `--theme` value or, whenever that flag was absent, the literal `default`. Now: `--theme-path` prints the file path (it printed `default`), config-file `theme`/`themePath` print what they resolved to (they printed `default`, since the unset flags wiped them), an unrecognised `--theme` prints the document's own theme or `default` (it printed the misspelling), `--theme` and `--theme-path` together print the path that won (it printed the `--theme` name), and a document-level `props.theme` is named rather than reported as `default`. A resolved plain `--theme` still prints that name. Scripts scraping the line need updating.
+  - **A bad `--theme-path` warns once on plugin-loaded runs, not twice.** Anything counting CLI diagnostics sees one fewer.
+
+### Patch Changes
+
+- e311268: fix(cli): forward `--no-google-fonts` to the generator
+
+  `generate` read `options.noGoogleFonts`, a key Commander never sets: a `--no-x` flag is delivered as `options.x === false`. The condition was therefore never true and the flag was inert. It now sets `fonts.googleFonts.enabled: false` on the generator options, alongside `--font-cache-dir`.
+
+  This does not change generated files — `generate` performs no Google Fonts fetching in the first place (fetching happens only in the dev-server preview pipeline) — but the flag now reaches the generator configuration as documented, instead of being dropped before it gets there.
+
+- Updated dependencies [e311268]
+- Updated dependencies [e311268]
+- Updated dependencies [e311268]
+- Updated dependencies [e311268]
+- Updated dependencies [e311268]
+- Updated dependencies [e311268]
+- Updated dependencies [e311268]
+  - @json-to-office/shared@0.22.0
+  - @json-to-office/shared-docx@0.22.0
+  - @json-to-office/core-docx@0.22.0
+  - @json-to-office/core-pptx@0.22.0
+  - @json-to-office/shared-pptx@0.22.0
+
 ## 0.21.0
 
 ### Minor Changes
