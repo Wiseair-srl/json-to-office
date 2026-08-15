@@ -55,23 +55,34 @@ describe('jto-cli docx generate exits promptly', () => {
     const probePath = path.join(tmp, 'probe.mjs');
     writeFileSync(
       probePath,
-      `import { createHook } from 'node:async_hooks';
+      `import { createRequire } from 'node:module';
 const started = Date.now();
-const pending = new Map();
-createHook({
-  init(id, type) {
-    if (type.startsWith('FS') || type === 'GETADDRINFOREQWRAP' || type === 'TCPCONNECTWRAP') {
-      pending.set(id, { type, at: Date.now() - started, stack: new Error().stack });
+const require = createRequire(process.cwd() + '/probe.js');
+const fsp = require('fs').promises;
+const counts = new Map();
+const slow = [];
+let total = 0;
+for (const name of ['readFile', 'stat', 'lstat', 'readdir', 'access', 'realpath']) {
+  const orig = fsp[name];
+  if (typeof orig !== 'function') continue;
+  fsp[name] = async function (target, ...rest) {
+    const t = Date.now();
+    total++;
+    const key = String(target);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+    try {
+      return await orig.call(this, target, ...rest);
+    } finally {
+      const d = Date.now() - t;
+      if (d > 250) slow.push(d + 'ms ' + name + ' ' + key);
     }
-  },
-  after: (id) => pending.delete(id),
-  destroy: (id) => pending.delete(id),
-}).enable();
+  };
+}
 const dump = (label) => {
-  process.stderr.write('[DIAG ' + label + '] elapsed=' + (Date.now() - started) + 'ms pending=' + pending.size + '\\n');
-  for (const [, v] of [...pending].slice(0, 3)) {
-    process.stderr.write('[DIAG ' + label + '] ' + v.type + ' opened@' + v.at + 'ms\\n' + v.stack + '\\n');
-  }
+  const top = [...counts].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  process.stderr.write('[DIAG ' + label + '] elapsed=' + (Date.now() - started) + 'ms totalOps=' + total + ' distinctPaths=' + counts.size + '\\n');
+  for (const [p, n] of top) process.stderr.write('[DIAG ' + label + '] x' + n + ' ' + p + '\\n');
+  for (const s of slow.slice(-5)) process.stderr.write('[DIAG ' + label + '] SLOW ' + s + '\\n');
 };
 setTimeout(() => dump('10s'), 10000).unref();
 setTimeout(() => dump('20s'), 20000).unref();\n`
