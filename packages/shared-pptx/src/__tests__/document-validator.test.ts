@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { validate, validateStrict } from '../validation/unified';
+import {
+  validate,
+  validatePresentationDocument,
+  validateStrict,
+} from '../validation/unified';
 
 const slide = (children: any[], props: Record<string, unknown> = {}) => ({
   name: 'slide',
@@ -50,11 +54,56 @@ describe('validateJsonPresentationDocument: pptx root recognition', () => {
     );
   });
 
+  it('rejects a document missing its props object', () => {
+    const result = validate.document({ name: 'pptx', children: [] });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({ path: '/props', code: 'required_property' })
+    );
+  });
+
   it('rejects invalid JSON with a parse error', () => {
     const result = validate.jsonDocument('{ not json');
 
     expect(result.valid).toBe(false);
     expect(result.errors[0]).toMatchObject({ code: 'json_parse_error' });
+  });
+});
+
+describe('plugin-aware tree validation', () => {
+  it('defers custom props but still validates their standard descendants', () => {
+    const result = validatePresentationDocument(
+      deck([
+        slide([
+          {
+            name: 'custom-container',
+            version: '1.0.0',
+            props: { pluginOwned: true },
+            children: [
+              {
+                name: 'text',
+                props: { text: 'Hello', fontColor: 'CC785C' },
+              },
+            ],
+          },
+        ]),
+      ]),
+      { knownCustomNames: new Set(['custom-container']) }
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        path: expect.stringContaining(
+          '/children/0/children/0/children/0/props'
+        ),
+        message: expect.stringMatching(/fontColor/),
+      })
+    );
+    expect(result.errors.some((error) => error.path.endsWith('/version'))).toBe(
+      false
+    );
   });
 });
 

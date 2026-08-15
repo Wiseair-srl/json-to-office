@@ -4,6 +4,8 @@ import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
 import { logger as honoLogger } from 'hono/logger';
 import { timing } from 'hono/timing';
+import { bodyLimit } from 'hono/body-limit';
+import { HTTPException } from 'hono/http-exception';
 import { config } from './config/index.js';
 import { getApiInfo } from './config/api-info.js';
 import type { FormatAdapter } from '@json-to-office/jto-cli';
@@ -20,6 +22,8 @@ import { errorHandler } from './middleware/hono/error-handler.js';
 import { securityMiddleware } from './middleware/hono/security.js';
 import { errorRecoveryMiddleware } from './middleware/hono/error-recovery.js';
 import { requestLoggerMiddleware } from './middleware/hono/request-logger.js';
+import { rateLimiter } from './middleware/hono/rate-limit.js';
+import { concurrencyLimiter } from './middleware/hono/concurrency-limit.js';
 
 import { AppEnv } from './types/hono.js';
 import { Container } from './container/index.js';
@@ -39,7 +43,7 @@ export function createAPIApp(adapter: FormatAdapter) {
     '*',
     cors({
       origin: config.cors.origin,
-      credentials: config.cors.credentials,
+      credentials: config.cors.origin === '*' ? false : config.cors.credentials,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization', config.API_KEY_HEADER],
       exposeHeaders: ['X-Request-Id', 'X-File-Id'],
@@ -59,6 +63,31 @@ export function createAPIApp(adapter: FormatAdapter) {
   if (config.features.apiKey) {
     honoApp.use('/api/*', apiKeyAuthMiddleware);
   }
+
+  // Uniform admission controls cover every API surface. Individual expensive
+  // routes retain tighter limits below this process-wide ceiling.
+  honoApp.use(
+    '/api/*',
+    bodyLimit({
+      maxSize: config.requestLimits.maxBodySize,
+      onError: () => {
+        throw new HTTPException(413, { message: 'Request body too large' });
+      },
+    })
+  );
+  honoApp.use(
+    '/api/*',
+    rateLimiter({
+      limit: config.rateLimit.max,
+      window: config.rateLimit.windowMs,
+      namespace: (c) => `${c.req.method}:${c.req.path}`,
+      trustProxy: config.rateLimit.trustProxy,
+    })
+  );
+  honoApp.use(
+    '/api/*',
+    concurrencyLimiter({ limit: config.requestLimits.maxConcurrent })
+  );
 
   // Mount routes
   honoApp.route('/health', healthRouter);

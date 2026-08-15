@@ -1,11 +1,10 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
-import boxen from 'boxen';
 import {
   type FormatAdapter,
   loadConfig,
   formatError,
+  renderLines,
+  runTask,
   EXIT_CODES,
 } from '@json-to-office/jto-cli';
 
@@ -14,6 +13,53 @@ interface DevOptions {
   host?: string;
   open?: boolean;
   config?: string;
+}
+
+interface StoppableServer {
+  stop(): Promise<void>;
+}
+
+function installShutdownHandlers(server: StoppableServer): void {
+  let shutdownPromise: Promise<void> | undefined;
+
+  const removeHandlers = () => {
+    process.off('SIGINT', handleShutdown);
+    process.off('SIGTERM', handleShutdown);
+  };
+  const handleShutdown = () => {
+    shutdownPromise ??= (async () => {
+      let exitCode: number = EXIT_CODES.OK;
+      try {
+        await runTask('Shutting down...', () => server.stop(), {
+          success: 'Server stopped',
+          failure: 'Failed to stop server',
+        });
+      } catch (error) {
+        exitCode = EXIT_CODES.FAIL;
+        await formatError(error);
+      } finally {
+        removeHandlers();
+      }
+      process.exit(exitCode);
+    })();
+  };
+
+  process.once('SIGINT', handleShutdown);
+  process.once('SIGTERM', handleShutdown);
+}
+
+async function openBrowser(url: string): Promise<void> {
+  const { execFile } = await import('node:child_process');
+  const [command, args] =
+    process.platform === 'darwin'
+      ? ['open', [url]]
+      : process.platform === 'win32'
+        ? ['cmd', ['/c', 'start', '', url]]
+        : ['xdg-open', [url]];
+
+  await new Promise<void>((resolve, reject) => {
+    execFile(command, args, (error) => (error ? reject(error) : resolve()));
+  });
 }
 
 export function createDevCommand(adapter: FormatAdapter): Command {
@@ -29,74 +75,70 @@ export function createDevCommand(adapter: FormatAdapter): Command {
     .option('-o, --open', 'Open browser automatically')
     .option('-c, --config <path>', 'Path to config file')
     .action(async (options: DevOptions) => {
-      const spinner = ora(
-        `Starting ${adapter.name.toUpperCase()} dev server...`
-      ).start();
-
       try {
-        const config = await loadConfig(options.config);
+        const { server, url } = await runTask(
+          `Starting ${adapter.name.toUpperCase()} dev server...`,
+          async () => {
+            const config = await loadConfig(options.config);
 
-        // CLI flag > adapter default > config file default
-        const portSource = dev.getOptionValueSource('port');
-        const hostSource = dev.getOptionValueSource('host');
-        if (portSource === 'cli') {
-          config.server.port = parseInt(options.port!, 10);
-        } else if (
-          config.server.port === 3003 &&
-          adapter.defaultPort !== 3003
-        ) {
-          config.server.port = adapter.defaultPort;
-        }
-        if (hostSource === 'cli') {
-          config.server.host = options.host!;
-        }
-
-        const { UnifiedServer } = await import('../server/unified-server.js');
-        const server = new UnifiedServer(adapter, config);
-        await server.start();
-
-        const url = `http://${config.server.host}:${config.server.port}`;
-        spinner.succeed('Server ready');
-
-        console.log(
-          boxen(
-            chalk.bold(`${adapter.name.toUpperCase()} Dev Server\n\n`) +
-              `${chalk.cyan('Local:')}   ${chalk.bold(url)}\n` +
-              `${chalk.cyan('API:')}     ${url}/api/${adapter.name}/generate\n` +
-              `${chalk.cyan('Health:')}  ${url}/health\n\n` +
-              chalk.gray('Press Ctrl+C to stop'),
-            {
-              padding: 1,
-              borderColor: 'green',
-              borderStyle: 'round',
+            // CLI flag > adapter default > config file default
+            const portSource = dev.getOptionValueSource('port');
+            const hostSource = dev.getOptionValueSource('host');
+            if (portSource === 'cli') {
+              config.server.port = parseInt(options.port!, 10);
+            } else if (
+              config.server.port === 3003 &&
+              adapter.defaultPort !== 3003
+            ) {
+              config.server.port = adapter.defaultPort;
             }
-          )
+            if (hostSource === 'cli') {
+              config.server.host = options.host!;
+            }
+
+            const { UnifiedServer } = await import(
+              '../server/unified-server.js'
+            );
+            const server = new UnifiedServer(adapter, config);
+            await server.start();
+
+            return {
+              server,
+              url: `http://${config.server.host}:${config.server.port}`,
+            };
+          },
+          { success: 'Server ready', failure: 'Failed to start dev server' }
         );
+
+        installShutdownHandlers(server);
+        await renderLines([
+          {
+            text: `${adapter.name.toUpperCase()} Dev Server`,
+            tone: 'success',
+          },
+          { text: `Local:   ${url}` },
+          { text: `API:     ${url}/api/${adapter.name}/generate` },
+          { text: `Health:  ${url}/health` },
+          { text: 'Press Ctrl+C to stop', tone: 'muted' },
+        ]);
 
         // Open browser if requested
         if (options.open) {
-          const { execFile } = await import('child_process');
-          const cmd =
-            process.platform === 'darwin'
-              ? 'open'
-              : process.platform === 'win32'
-                ? 'start'
-                : 'xdg-open';
-          execFile(cmd, [url]);
+          try {
+            await openBrowser(url);
+          } catch (error) {
+            await renderLines([
+              {
+                text: `Could not open browser: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+                tone: 'warning',
+              },
+            ]);
+          }
         }
-
-        // Graceful shutdown
-        const shutdown = async () => {
-          console.log(chalk.yellow('\nShutting down...'));
-          await server.stop();
-          process.exit(EXIT_CODES.OK);
-        };
-
-        process.on('SIGINT', shutdown);
-        process.on('SIGTERM', shutdown);
-      } catch (error: any) {
-        spinner.fail('Failed to start dev server');
-        formatError(error);
+      } catch (error) {
+        await formatError(error);
         process.exit(EXIT_CODES.FAIL);
       }
     });

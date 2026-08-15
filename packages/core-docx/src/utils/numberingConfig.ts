@@ -5,6 +5,7 @@
 
 import { AlignmentType, convertInchesToTwip, LevelFormat } from 'docx';
 import type { ILevelsOptions } from 'docx';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 // Type mapping from schema strings to docx LevelFormat values
 const LEVEL_FORMAT_MAP: Record<
@@ -99,6 +100,16 @@ export interface ListLevelConfig {
 export interface NumberingConfig {
   reference: string;
   levels: ListLevelConfig[];
+}
+
+type RegisteredNumberingConfig = {
+  levels: ILevelsOptions[];
+  reference: string;
+};
+
+interface NumberingState {
+  configs: Map<string, RegisteredNumberingConfig>;
+  counter: number;
 }
 
 /**
@@ -241,18 +252,27 @@ export function createNumberedListConfig(
  * Registry for managing numbering configurations
  */
 export class NumberingRegistry {
-  private configs: Map<
-    string,
-    { levels: ILevelsOptions[]; reference: string }
-  > = new Map();
-  private counter = 0;
+  private readonly fallback: NumberingState = {
+    configs: new Map(),
+    counter: 0,
+  };
+  private readonly scopes = new AsyncLocalStorage<NumberingState>();
+
+  private get state(): NumberingState {
+    return this.scopes.getStore() ?? this.fallback;
+  }
+
+  /** Run work with an isolated registry that follows its async call chain. */
+  runScoped<T>(callback: () => T): T {
+    return this.scopes.run({ configs: new Map(), counter: 0 }, callback);
+  }
 
   /**
    * Register a numbering configuration
    */
   register(config: { levels: ILevelsOptions[]; reference: string }): string {
     const reference = config.reference;
-    this.configs.set(reference, config);
+    this.state.configs.set(reference, config);
     return reference;
   }
 
@@ -260,29 +280,29 @@ export class NumberingRegistry {
    * Generate a unique reference ID
    */
   generateReference(prefix: string = 'list'): string {
-    return `${prefix}-${++this.counter}`;
+    return `${prefix}-${++this.state.counter}`;
   }
 
   /**
    * Get all registered configurations as an array suitable for INumberingOptions
    */
   getAll(): { levels: ILevelsOptions[]; reference: string }[] {
-    return Array.from(this.configs.values());
+    return Array.from(this.state.configs.values());
   }
 
   /**
    * Clear all configurations
    */
   clear(): void {
-    this.configs.clear();
-    this.counter = 0;
+    this.state.configs.clear();
+    this.state.counter = 0;
   }
 
   /**
    * Check if a reference exists
    */
   has(reference: string): boolean {
-    return this.configs.has(reference);
+    return this.state.configs.has(reference);
   }
 
   /**
@@ -291,7 +311,7 @@ export class NumberingRegistry {
   get(
     reference: string
   ): { levels: ILevelsOptions[]; reference: string } | undefined {
-    return this.configs.get(reference);
+    return this.state.configs.get(reference);
   }
 }
 

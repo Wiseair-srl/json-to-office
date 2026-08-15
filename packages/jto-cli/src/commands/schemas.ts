@@ -1,6 +1,5 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import ora from 'ora';
 import * as path from 'path';
 import type { FormatAdapter } from '../format-adapter.js';
 import { PluginRegistry } from '../services/plugin-registry.js';
@@ -12,6 +11,8 @@ import {
   shortPath,
   formatTiming,
   formatError,
+  renderLines,
+  runTask,
   EXIT_CODES,
 } from './ui.js';
 
@@ -43,44 +44,41 @@ export function createSchemasCommand(adapter: FormatAdapter): Command {
     .option('--document-only', 'Generate only document schemas')
     .option('--split', 'Generate separate schema files for each component type')
     .action(async (options: JsonSchemaOptions) => {
-      const spinner = ora('Initializing...').start();
       const startTime = performance.now();
 
       try {
-        const configService = PluginConfigService.getInstance();
-        const config = await configService.loadConfig();
+        const results = await runTask(
+          'Initializing...',
+          async (reporter) => {
+            const configService = PluginConfigService.getInstance();
+            const config = await configService.loadConfig();
 
-        if (!options.themeOnly) {
-          await loadPlugins(
-            options,
-            config,
-            configService,
-            spinner,
-            adapter.name as 'docx' | 'pptx'
-          );
-        }
+            if (!options.themeOnly) {
+              await loadPlugins(
+                options,
+                config,
+                configService,
+                reporter,
+                adapter.name as 'docx' | 'pptx'
+              );
+            }
 
-        spinner.text = 'Generating schemas...';
-        const generator = new SchemaGenerator(adapter.name);
-
-        const generateOptions = {
-          includeDocument: !options.themeOnly,
-          includeTheme: !options.documentOnly,
-          split: options.split || false,
-          format: options.format || 'json',
-        };
-
-        const outputDir = path.resolve(
-          process.cwd(),
-          options.outputDir || './schemas'
-        );
-        const results = await generator.generateAndExportSchemas(
-          outputDir,
-          generateOptions
-        );
-
-        spinner.succeed(
-          `Schema generation completed! ${formatTiming(startTime)}`
+            reporter.update('Generating schemas...');
+            const generator = new SchemaGenerator(adapter.name);
+            return generator.generateAndExportSchemas(
+              path.resolve(process.cwd(), options.outputDir || './schemas'),
+              {
+                includeDocument: !options.themeOnly,
+                includeTheme: !options.documentOnly,
+                split: options.split || false,
+                format: options.format || 'json',
+              }
+            );
+          },
+          {
+            success: `Schema generation completed ${formatTiming(startTime)}`,
+            failure: 'Schema generation failed',
+          }
         );
 
         const rows: string[][] = [];
@@ -96,28 +94,26 @@ export function createSchemasCommand(adapter: FormatAdapter): Command {
           }
         }
 
-        console.log(`\n${chalk.bold('Generated Schemas:')}\n`);
-        console.log(createTable(['Type', 'Path'], rows));
+        const lines = [
+          { text: chalk.bold('Generated schemas:') },
+          { text: createTable(['Type', 'Path'], rows) },
+        ];
 
         const registry = PluginRegistry.getInstance();
         const loadedPlugins = registry.getPlugins();
         if (loadedPlugins.length > 0) {
-          console.log(chalk.cyan('\n  Included Plugins:'));
-          loadedPlugins.forEach((plugin) => {
-            console.log(
-              chalk.dim(
-                `    - ${plugin.name}${(plugin as any).version ? ` (${(plugin as any).version})` : ''}`
-              )
-            );
-          });
+          lines.push({ text: chalk.cyan('Included plugins:') });
+          for (const plugin of loadedPlugins) {
+            lines.push({
+              text: `  - ${plugin.name}${(plugin as any).version ? ` (${(plugin as any).version})` : ''}`,
+            });
+          }
         }
-
-        console.log('\n' + chalk.green('Schemas are ready for use!'));
+        await renderLines(lines);
 
         PluginRegistry.getInstance().clear();
       } catch (error: any) {
-        spinner.fail('Schema generation failed');
-        formatError(error);
+        await formatError(error);
         PluginRegistry.getInstance().clear();
         process.exit(EXIT_CODES.FAIL);
       }

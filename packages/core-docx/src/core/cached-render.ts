@@ -14,6 +14,7 @@ import {
 } from '../cache';
 import { renderComponent } from './render';
 import { componentHasRevision } from '../utils/revisionUtils';
+import { getGenerationDate } from '../utils/generationContext';
 import { createHash } from 'crypto';
 
 // Global component cache instance
@@ -92,8 +93,8 @@ export async function renderComponentWithCache(
   // Certain components depend on dynamic runtime context and must not be cached.
   // - 'toc' depends on section bookmark IDs generated at render time; caching
   //   can produce stale references to non-existent bookmarks on re-render.
-  // - 'section' generates unique bookmarks internally; caching would duplicate
-  //   bookmark IDs across sections/documents.
+  // - 'section' generates document-scoped bookmarks internally; caching would
+  //   duplicate bookmark IDs across sections.
   // - revision-bearing components embed document-scoped w:ins/w:del ids from
   //   a per-render counter; caching would leak ids across documents.
   // - 'visual' rasterizes via the injected services.pptx (an in-process render
@@ -105,6 +106,13 @@ export async function renderComponentWithCache(
     component.name === 'toc' ||
     component.name === 'section' ||
     component.name === 'visual' ||
+    component.name === 'heading' ||
+    // Both explicit lists and markdown-list paragraphs register numbering in
+    // the current document scope. Cached paragraphs can otherwise reference
+    // definitions that only existed in a previous render.
+    component.name === 'list' ||
+    component.name === 'paragraph' ||
+    'id' in component ||
     componentHasRevision(component);
 
   // Initialize cache if needed
@@ -132,6 +140,11 @@ export async function renderComponentWithCache(
   const contextKey = context?.section
     ? `${context.section.currentLayout}:${context.section.columnCount}`
     : 'no-section';
+  // Placeholder resolution is scoped to the document metadata/generatedAt
+  // date. Include it for every cacheable component because dynamic text can
+  // appear inside nested container props (for example a table cell), not only
+  // in top-level paragraph components.
+  const generationDateKey = getGenerationDate().toISOString();
 
   // For container components (columns, section, etc.), include children in cache key
   // This ensures cache invalidation when child component content changes
@@ -140,7 +153,7 @@ export async function renderComponentWithCache(
       ? `:children:${JSON.stringify(component.children)}`
       : '';
 
-  const cacheKey = `component:${component.name}:${themeHash}:${contextKey}:${componentProps}${childrenKey}`;
+  const cacheKey = `component:${component.name}:${themeHash}:${contextKey}:${generationDateKey}:${componentProps}${childrenKey}`;
 
   // Try to get from cache
   const cached = await componentCache.get(cacheKey);

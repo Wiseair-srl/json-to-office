@@ -7,6 +7,7 @@ import {
   type PluginMetadata,
 } from './plugin-metadata.js';
 import { getProjectRoot, resolveScopePath } from '../utils/project-root.js';
+import { emitDiagnostic } from './diagnostics.js';
 
 export interface DiscoverOptions {
   scope?: string;
@@ -51,12 +52,7 @@ export class PluginDiscoveryService {
     this.projectRoot = getProjectRoot();
 
     if (options.scope) {
-      try {
-        this.searchPath = resolveScopePath(options.scope, this.projectRoot);
-      } catch (error: any) {
-        console.error(`Error: ${error.message}`);
-        process.exit(1);
-      }
+      this.searchPath = resolveScopePath(options.scope, this.projectRoot);
     } else {
       this.searchPath = this.projectRoot;
     }
@@ -78,13 +74,19 @@ export class PluginDiscoveryService {
       const uniquePaths = this.scanner.deduplicatePaths(allPluginPaths);
 
       if (this.options.verbose) {
-        console.log(`Found ${uniquePaths.length} potential plugin files`);
+        emitDiagnostic(
+          `Found ${uniquePaths.length} potential plugin files`,
+          'info'
+        );
       }
 
       const loadedModules = await this.loader.loadPlugins(uniquePaths);
 
       if (this.options.verbose) {
-        console.log(`Successfully loaded ${loadedModules.size} plugins`);
+        emitDiagnostic(
+          `Successfully loaded ${loadedModules.size} plugins`,
+          'success'
+        );
       }
 
       const metadata = await this.metadataExtractor.extractBatch(loadedModules);

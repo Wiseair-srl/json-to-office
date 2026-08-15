@@ -18,6 +18,7 @@ import {
 } from '@json-to-office/shared';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
 import type { AppEnv } from '../types/hono.js';
+import { config } from '../config/index.js';
 
 export const fontsRouter = new Hono<AppEnv>();
 
@@ -68,10 +69,7 @@ fontsRouter.post(
   rateLimiter({
     limit: process.env.NODE_ENV === 'production' ? 20 : 1000,
     window: 15 * 60 * 1000,
-    keyGenerator: (c) =>
-      c.req.header('X-Real-IP') ||
-      c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
-      'anonymous',
+    trustProxy: config.rateLimit.trustProxy,
   }),
   async (c) => {
     let body: MaterializeBody;

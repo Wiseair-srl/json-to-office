@@ -1,4 +1,3 @@
-import { Packer } from 'docx';
 import type { TSchema } from '@sinclair/typebox';
 import type { CustomComponent } from './createComponent';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
@@ -31,6 +30,10 @@ import { processDocument } from '../core/structure';
 import { applyLayout } from '../core/layout';
 import { renderDocument } from '../core/render';
 import { normalizeDocument } from '../json/normalizer';
+import {
+  packageDocument,
+  resolveGenerationDate,
+} from '../utils/packageDocument';
 
 /**
  * Options for creating a document generator
@@ -54,6 +57,10 @@ export interface DocumentGeneratorOptions {
    * default; pass `{ enabled: false }` to opt out.
    */
   validation?: GenerationValidationOptions;
+  /** Normalize volatile OOXML values for byte-identical output. Defaults true. */
+  deterministic?: boolean;
+  /** Default build timestamp for generated metadata. */
+  generatedAt?: string | Date;
 }
 
 /**
@@ -69,6 +76,8 @@ interface BuilderState {
   services?: ServicesConfig;
   fonts?: FontRuntimeOpts;
   validation?: GenerationValidationOptions;
+  deterministic: boolean;
+  generatedAt?: string | Date;
 }
 
 /**
@@ -328,6 +337,9 @@ function createBuilderImpl<
       enableCache: state.enableCache,
       services: state.services,
       fonts: state.fonts,
+      validation: state.validation,
+      deterministic: state.deterministic,
+      generatedAt: state.generatedAt,
     };
 
     // Return NEW builder with expanded type
@@ -480,10 +492,20 @@ function createBuilderImpl<
       await resolveDocumentFonts(modedDoc, modedTheme, state.fonts, warnings);
 
       // Use the document generation pipeline directly
-      const structure = await processDocument(modedDoc, modedTheme, themeName);
+      const packageOptions = {
+        deterministic: options?.deterministic ?? state.deterministic,
+        generatedAt: options?.generatedAt ?? state.generatedAt,
+      };
+      const structure = await processDocument(
+        modedDoc,
+        modedTheme,
+        themeName,
+        resolveGenerationDate(packageOptions)
+      );
       const layout = applyLayout(structure.sections, modedTheme, themeName);
       const generatedDocument = await renderDocument(structure, layout, {
         services: state.services,
+        bypassCache: !state.enableCache,
       });
 
       // Build preservedDefinition iff the caller opted in. Reuses the same
@@ -523,7 +545,10 @@ function createBuilderImpl<
       standardDefinition,
       preservedDefinition,
     } = await generate(document, options);
-    const buffer = (await Packer.toBuffer(doc)) as Buffer;
+    const buffer = await packageDocument(doc, {
+      deterministic: options?.deterministic ?? state.deterministic,
+      generatedAt: options?.generatedAt ?? state.generatedAt,
+    });
     return { buffer, warnings, standardDefinition, preservedDefinition };
   }
 
@@ -678,6 +703,8 @@ export function createDocumentGenerator(
     services: options.services,
     fonts: options.fonts,
     validation: options.validation,
+    deterministic: options.deterministic ?? true,
+    generatedAt: options.generatedAt,
   };
 
   return createBuilderImpl<readonly []>(initialState);

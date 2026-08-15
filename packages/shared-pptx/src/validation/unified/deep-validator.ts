@@ -41,6 +41,10 @@ const COMPONENT_OBJECT_KEYS = new Set([
   'props',
   'children',
 ]);
+const CUSTOM_COMPONENT_OBJECT_KEYS = new Set([
+  ...COMPONENT_OBJECT_KEYS,
+  'version',
+]);
 const ROOT_OBJECT_KEYS = new Set([...COMPONENT_OBJECT_KEYS, '$schema']);
 
 /**
@@ -105,7 +109,13 @@ export function deepValidatePresentation(
   // Validate props when the key is present so explicit `null` (or any falsy
   // non-object) is checked against the component's schema instead of silently
   // passing.
-  if (ROOT_COMPONENT_NAMES.has(data.name) && 'props' in data) {
+  if (!('props' in data)) {
+    allErrors.push({
+      path: '/props',
+      message: 'Missing required field "props"',
+      code: 'required_property',
+    });
+  } else if (ROOT_COMPONENT_NAMES.has(data.name)) {
     allErrors.push(
       ...validateComponentProps(data.name, data.props, '/props', opts)
     );
@@ -173,19 +183,28 @@ function walkComponentTree(
       return;
     }
 
-    // Registered plugin components are validated by the plugin layer; skip
-    // their props and subtree so they are neither double-validated nor
-    // misreported as unknown.
-    if (opts.knownCustomNames?.has(child.name)) return;
+    // Registered plugin props are validated version-aware by the plugin layer.
+    // Their children still need walking: custom containers may hold authored
+    // standard components, and those must obey the same prop/tree contract as
+    // standard components elsewhere in the presentation.
+    const isCustomComponent = opts.knownCustomNames?.has(child.name) ?? false;
+    const allowedObjectKeys = isCustomComponent
+      ? CUSTOM_COMPONENT_OBJECT_KEYS
+      : COMPONENT_OBJECT_KEYS;
 
     for (const key of Object.keys(child)) {
-      if (!COMPONENT_OBJECT_KEYS.has(key)) {
+      if (!allowedObjectKeys.has(key)) {
         errors.push({
           path: `${childPath}/${key}`,
           message: `Unknown field "${key}" on component "${child.name}"`,
           code: 'unknown_field',
         });
       }
+    }
+
+    if (isCustomComponent) {
+      walkComponentTree(child, childPath, opts, errors);
+      return;
     }
 
     // Validate props against the component's schema. When props is omitted,

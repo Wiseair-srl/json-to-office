@@ -4,12 +4,14 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "lib": ["ES2022"],
+    "jsx": "react-jsx",
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": [
     "node_modules",
     "dist",
     "src/**/*.test.ts",
+    "src/**/*.test.tsx",
     "src/**/__tests__/**",
   ],
   "references": [

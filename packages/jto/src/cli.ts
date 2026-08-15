@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { registerCoreCommands } from '@json-to-office/jto-cli';
+import { registerCoreCommands, renderLines } from '@json-to-office/jto-cli';
 import { createDevCommand } from './commands/dev.js';
 
 declare const __PACKAGE_VERSION__: string | undefined;
@@ -48,7 +48,7 @@ program.exitOverride();
     if (error.code === 'commander.executeSubCommandAsync') {
       process.exit(error.exitCode);
     }
-    console.error(chalk.red('Error:'), error.message);
+    await renderLines([{ text: `Error: ${error.message}`, tone: 'error' }]);
     process.exit(1);
   }
 })();

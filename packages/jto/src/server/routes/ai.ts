@@ -10,6 +10,7 @@ import {
 import { loadPrompt } from '../services/prompt-loader.js';
 import { logger } from '../utils/logger.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
+import { config } from '../config/index.js';
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[[\]\n\r]/g, '_');
@@ -150,10 +151,7 @@ export function createAiRouter() {
     rateLimiter({
       limit: process.env.NODE_ENV === 'production' ? 30 : 1000,
       window: 15 * 60 * 1000,
-      keyGenerator: (c) =>
-        c.req.header('X-Real-IP') ||
-        c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
-        'anonymous',
+      trustProxy: config.rateLimit.trustProxy,
     }),
     async (c) => {
       try {

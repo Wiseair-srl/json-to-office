@@ -12,14 +12,25 @@ import {
 import { ThemeConfig } from '../styles';
 import { renderComponent } from '../core/render';
 
-/**
- * Generate unique bookmark ID for section scoping
- * Uses timestamp and random component for uniqueness without global state
- */
-function generateSectionBookmarkId(): { id: string; linkId: number } {
-  const linkId = Math.floor(Math.random() * 1000000);
+interface SectionBookmarkState {
+  next: number;
+}
+
+/** Generate a document-scoped, reproducible bookmark ID. */
+function generateSectionBookmarkId(context: RenderContext): {
+  id: string;
+  linkId: number;
+} {
+  const custom = (context.custom ??= {});
+  const state = (custom.sectionBookmarks ??= {
+    next: 1,
+  }) as SectionBookmarkState;
+  const ordinal = state.next++;
+  // Keep nested component IDs away from the low ordinals used by layout
+  // section bookmarks in core/render.ts.
+  const linkId = 1_000_000 + ordinal;
   return {
-    id: `_Section_${linkId}_${Date.now()}`,
+    id: `_NestedSection_${ordinal}`,
     linkId,
   };
 }
@@ -39,7 +50,7 @@ export async function renderSectionComponent(
 
   // Generate unique bookmark ID for this section
   const { id: sectionBookmarkId, linkId: bookmarkLinkId } =
-    generateSectionBookmarkId();
+    generateSectionBookmarkId(context);
 
   // Add bookmark in a zero-spacing paragraph at section start
   // This prevents visual gaps while maintaining bookmark functionality

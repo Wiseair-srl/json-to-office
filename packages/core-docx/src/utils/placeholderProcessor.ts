@@ -15,23 +15,57 @@ import {
   TextStyle,
 } from './textParser';
 import { normalizeUnicodeText } from './unicode';
+import { getGenerationDate } from './generationContext';
 
 // Type alias for elements that can appear in a paragraph
-type ParagraphChild = TextRun | ExternalHyperlink | InternalHyperlink;
+export type PlaceholderChild = TextRun | ExternalHyperlink | InternalHyperlink;
 
 /**
  * Placeholder handler function type
  */
 export type PlaceholderHandler = (
   _context?: PlaceholderContext
-) => TextRun | TextRun[] | string;
+) => PlaceholderChild | PlaceholderChild[] | string;
 
 /**
  * Context passed to placeholder handlers
  */
 export interface PlaceholderContext {
   style?: TextStyle;
+  date?: Date;
   [key: string]: unknown;
+}
+
+function styledPlaceholderText(
+  text: string,
+  context?: PlaceholderContext
+): TextRun {
+  return new TextRun({
+    text,
+    font: context?.style?.font,
+    size: context?.style?.size,
+    color: context?.style?.color,
+    bold: context?.style?.bold,
+    italics: context?.style?.italics,
+    underline: context?.style?.underline,
+    language: context?.style?.language,
+    noProof: context?.style?.noProof,
+  });
+}
+
+function placeholderDate(context?: PlaceholderContext): Date {
+  return context?.date ?? getGenerationDate();
+}
+
+function isoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function isoDateTime(date: Date): string {
+  return date
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/\.\d{3}Z$/, 'Z');
 }
 
 /**
@@ -83,10 +117,10 @@ export function processPlaceholders(
   text: string,
   baseStyle: TextStyle = {},
   context: PlaceholderContext = {}
-): ParagraphChild[] {
+): PlaceholderChild[] {
   const normalizedText = normalizeUnicodeText(text);
   const placeholderRegex = /\{([^}]+)\}/g;
-  const result: ParagraphChild[] = [];
+  const result: PlaceholderChild[] = [];
   let lastIndex = 0;
 
   let match: RegExpExecArray | null;
@@ -106,10 +140,10 @@ export function processPlaceholders(
 
       if (Array.isArray(placeholderResult)) {
         result.push(...placeholderResult);
-      } else if (placeholderResult instanceof TextRun) {
-        result.push(placeholderResult);
       } else if (typeof placeholderResult === 'string') {
         result.push(...parseTextWithDecorators(placeholderResult, baseStyle));
+      } else {
+        result.push(placeholderResult);
       }
     } else {
       // Unknown placeholder - keep as text
@@ -141,13 +175,13 @@ export function processTextWithPlaceholders(
   baseStyle: TextStyle = {},
   context: PlaceholderContext = {},
   noProofWords?: string[]
-): ParagraphChild[] {
+): PlaceholderChild[] {
   const normalizedText = normalizeUnicodeText(text);
   // Use a more sophisticated approach to handle both decorators and placeholders
   // This regex captures both markdown decorators and placeholders
   const combinedRegex =
     /(\*\*\*|___)([\s\S]*?)\1|(\*\*|__)([\s\S]*?)\3|(\*|_)([\s\S]*?)\5|\{([^}]+)\}/g;
-  const result: ParagraphChild[] = [];
+  const result: PlaceholderChild[] = [];
   let lastIndex = 0;
 
   let match: RegExpExecArray | null;
@@ -171,8 +205,6 @@ export function processTextWithPlaceholders(
 
         if (Array.isArray(placeholderResult)) {
           result.push(...placeholderResult);
-        } else if (placeholderResult instanceof TextRun) {
-          result.push(placeholderResult);
         } else if (typeof placeholderResult === 'string') {
           result.push(
             ...createTextRunsWithNewlines(
@@ -181,6 +213,8 @@ export function processTextWithPlaceholders(
               noProofWords
             )
           );
+        } else {
+          result.push(placeholderResult);
         }
       } else {
         // Unknown placeholder - keep as text
@@ -331,48 +365,22 @@ export function initializeBuiltinPlaceholders(): void {
   });
 
   // DATE placeholder
-  PlaceholderRegistry.register('DATE', (context) => {
-    const today = new Date();
-    const dateString = today.toLocaleDateString();
-    return new TextRun({
-      text: dateString,
-      font: context?.style?.font,
-      size: context?.style?.size,
-      color: context?.style?.color,
-      bold: context?.style?.bold,
-      italics: context?.style?.italics,
-      underline: context?.style?.underline,
-    });
-  });
+  PlaceholderRegistry.register('DATE', (context) =>
+    styledPlaceholderText(isoDate(placeholderDate(context)), context)
+  );
 
   // DATETIME placeholder
-  PlaceholderRegistry.register('DATETIME', (context) => {
-    const now = new Date();
-    const dateTimeString = now.toLocaleString();
-    return new TextRun({
-      text: dateTimeString,
-      font: context?.style?.font,
-      size: context?.style?.size,
-      color: context?.style?.color,
-      bold: context?.style?.bold,
-      italics: context?.style?.italics,
-      underline: context?.style?.underline,
-    });
-  });
+  PlaceholderRegistry.register('DATETIME', (context) =>
+    styledPlaceholderText(isoDateTime(placeholderDate(context)), context)
+  );
 
   // YEAR placeholder
-  PlaceholderRegistry.register('YEAR', (context) => {
-    const year = new Date().getFullYear().toString();
-    return new TextRun({
-      text: year,
-      font: context?.style?.font,
-      size: context?.style?.size,
-      color: context?.style?.color,
-      bold: context?.style?.bold,
-      italics: context?.style?.italics,
-      underline: context?.style?.underline,
-    });
-  });
+  PlaceholderRegistry.register('YEAR', (context) =>
+    styledPlaceholderText(
+      String(placeholderDate(context).getUTCFullYear()),
+      context
+    )
+  );
 }
 
 // Initialize built-in placeholders

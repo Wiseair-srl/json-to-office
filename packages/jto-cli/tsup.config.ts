@@ -15,7 +15,6 @@ const commonExternal = [
   '@sinclair/typebox',
   'tsx',
   'tsx/esm/api',
-  'prompts',
   'ajv',
   'ajv-formats',
   'cosmiconfig',

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { registerCoreCommands } from './cli-register.js';
+import { renderLines } from './commands/ui.js';
 
 declare const __PACKAGE_VERSION__: string | undefined;
 const PACKAGE_VERSION =
@@ -41,13 +42,16 @@ function registerDevHint(parent: Command): void {
       .description('(unavailable in jto-cli — install @json-to-office/jto)')
       .helpOption(false)
       .allowUnknownOption(true)
-      .action(() => {
-        console.error(
-          chalk.yellow(
-            '\n`dev` requires the web playground, which is not included in @json-to-office/jto-cli.\n'
-          ) +
-            `Install ${chalk.bold('@json-to-office/jto')} to enable ${chalk.bold('jto docx dev')} / ${chalk.bold('jto pptx dev')}.\n`
-        );
+      .action(async () => {
+        await renderLines([
+          {
+            text: '`dev` requires the web playground, unavailable in @json-to-office/jto-cli.',
+            tone: 'warning',
+          },
+          {
+            text: 'Install @json-to-office/jto to enable `jto docx dev` / `jto pptx dev`.',
+          },
+        ]);
         process.exit(1);
       }),
     { hidden: true }
@@ -71,7 +75,7 @@ program.exitOverride();
     if (error.code === 'commander.executeSubCommandAsync') {
       process.exit(error.exitCode);
     }
-    console.error(chalk.red('Error:'), error.message);
+    await renderLines([{ text: `Error: ${error.message}`, tone: 'error' }]);
     process.exit(1);
   }
 })();

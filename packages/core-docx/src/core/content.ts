@@ -21,8 +21,6 @@ import {
   TableLayoutType,
   VerticalAlign,
   Bookmark,
-  ExternalHyperlink,
-  InternalHyperlink,
 } from 'docx';
 import {
   calculateImageDimensions,
@@ -40,7 +38,10 @@ import {
   parseTextWithDecorators,
   splitByNoProofWords,
 } from '../utils/textParser';
-import { processTextWithPlaceholders } from '../utils/placeholderProcessor';
+import {
+  processTextWithPlaceholders,
+  type PlaceholderChild,
+} from '../utils/placeholderProcessor';
 import { normalizeUnicodeText } from '../utils/unicode';
 import { getStyleIdForLevel } from '../styles/themeToDocxAdapter';
 import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
@@ -281,10 +282,8 @@ export function createText(
 
   // Build children array
   const children: (
-    | TextRun
+    | PlaceholderChild
     | ColumnBreak
-    | ExternalHyperlink
-    | InternalHyperlink
     | Bookmark
     | import('../utils/revisionUtils').RevisionRun
   )[] = [];
@@ -1590,15 +1589,8 @@ export async function createTable(
     cell: string | ComponentDefinition | undefined,
     cellDefaults: NormalizedCellDefaults,
     baseCellStyle: typeof tableStyle.tableCell
-  ): Promise<
-    (TextRun | ImageRun | ExternalHyperlink | InternalHyperlink)[]
-  > => {
-    let cellChildren: (
-      | TextRun
-      | ImageRun
-      | ExternalHyperlink
-      | InternalHyperlink
-    )[] = [];
+  ): Promise<(PlaceholderChild | ImageRun)[]> => {
+    let cellChildren: (PlaceholderChild | ImageRun)[] = [];
 
     // Handle undefined or empty content
     if (!cell) {
@@ -2206,7 +2198,7 @@ export function createPageNumberElement(
   format?: string,
   alignment?: 'left' | 'center' | 'right'
 ): Paragraph {
-  const children: (TextRun | ExternalHyperlink | InternalHyperlink)[] = [];
+  const children: PlaceholderChild[] = [];
 
   if (format) {
     // Use placeholder processor to handle {PAGE} and other placeholders
@@ -2364,12 +2356,7 @@ export async function createHeaderFooterTable(
               const alignment = cellAlignments[cellIndex] || 'left';
               const cellStyle = cellStyling[rowIndex]?.[cellIndex] || {};
 
-              let paragraphChildren: (
-                | TextRun
-                | ImageRun
-                | ExternalHyperlink
-                | InternalHyperlink
-              )[] = [];
+              let paragraphChildren: (PlaceholderChild | ImageRun)[] = [];
 
               // Handle ComponentDefinition first
               if (

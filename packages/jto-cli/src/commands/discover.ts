@@ -1,6 +1,5 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import ora from 'ora';
 import {
   PluginDiscoveryService,
   type DocumentMetadata,
@@ -9,7 +8,22 @@ import {
 import { PluginDisplay } from '../services/plugin-display.js';
 import { PluginRegistry } from '../services/plugin-registry.js';
 import type { FormatAdapter } from '../format-adapter.js';
-import { createTable, dimPath, formatError, EXIT_CODES } from './ui.js';
+import {
+  createTable,
+  dimPath,
+  formatError,
+  renderLines,
+  runTask,
+  writeJson,
+  EXIT_CODES,
+  type UiLine,
+} from './ui.js';
+
+interface DiscoveryResult {
+  plugins: any[];
+  documents: DocumentMetadata[];
+  themes: ThemeMetadata[];
+}
 
 export function createDiscoverCommand(adapter: FormatAdapter): Command {
   return new Command('discover')
@@ -19,15 +33,8 @@ export function createDiscoverCommand(adapter: FormatAdapter): Command {
     .option('-j, --json', 'Output as JSON')
     .option('-s, --schema', 'Include full schemas in output (plugins only)')
     .option('-e, --examples', 'Include usage examples (plugins only)')
-    .option(
-      '-t, --type <type>',
-      'Type to discover: plugin, document, theme, or all (default: all)',
-      'all'
-    )
-    .option(
-      '-s, --scope <path>',
-      'Limit discovery scope to a specific directory'
-    )
+    .option('-t, --type <type>', 'Type: plugin, document, theme, or all', 'all')
+    .option('--scope <path>', 'Limit discovery scope to a specific directory')
     .option('--max-depth <depth>', 'Maximum search depth', '10')
     .option('--include-node-modules', 'Include node_modules in search')
     .option('-v, --verbose', 'Verbose output for debugging')
@@ -36,180 +43,158 @@ export function createDiscoverCommand(adapter: FormatAdapter): Command {
       const discoverType = options.type?.toLowerCase() || 'all';
       const validTypes = ['plugin', 'document', 'theme', 'all'];
 
-      if (!validTypes.includes(discoverType)) {
-        console.error(
-          chalk.red(
-            `Invalid type: ${discoverType}. Must be one of: ${validTypes.join(', ')}`
-          )
-        );
-        process.exit(EXIT_CODES.FAIL);
-      }
-
-      const scopeDescription = options.scope
-        ? `scope: ${options.scope}`
-        : 'entire project';
-
-      const spinnerText =
-        discoverType === 'all'
-          ? `Discovering plugins, documents, and themes in ${scopeDescription}...`
-          : `Discovering ${discoverType}s in ${scopeDescription}...`;
-      const spinner = options.json ? null : ora(spinnerText).start();
-
       try {
-        const discoveryOptions = {
-          scope: options.scope,
-          maxDepth: parseInt(options.maxDepth, 10),
-          includeNodeModules: options.includeNodeModules,
-          verbose: options.verbose,
+        if (!validTypes.includes(discoverType)) {
+          throw new Error(
+            `Invalid type: ${discoverType}. Must be one of: ${validTypes.join(', ')}`
+          );
+        }
+
+        const scope = options.scope
+          ? `scope: ${options.scope}`
+          : 'entire project';
+        const initial =
+          discoverType === 'all'
+            ? `Discovering plugins, documents, and themes in ${scope}...`
+            : `Discovering ${discoverType}s in ${scope}...`;
+
+        const discover = async (): Promise<DiscoveryResult> => {
+          const service = new PluginDiscoveryService({
+            scope: options.scope,
+            maxDepth: parseInt(options.maxDepth, 10),
+            includeNodeModules: options.includeNodeModules,
+            verbose: options.verbose,
+          });
+          const format = adapter.name as 'docx' | 'pptx';
+          if (discoverType === 'all') return service.discoverAll(format);
+          if (discoverType === 'plugin') {
+            return {
+              plugins: await service.discoverPlugins(format),
+              documents: [],
+              themes: [],
+            };
+          }
+          if (discoverType === 'document') {
+            return {
+              plugins: [],
+              documents: await service.discoverDocuments(format),
+              themes: [],
+            };
+          }
+          return {
+            plugins: [],
+            documents: [],
+            themes: await service.discoverThemes(format),
+          };
         };
 
-        const discovery = new PluginDiscoveryService(discoveryOptions);
+        const result = options.json
+          ? await discover()
+          : await runTask(initial, async () => discover(), {
+              success: ({ plugins, documents, themes }) => {
+                const count = plugins.length + documents.length + themes.length;
+                if (count === 0) return 'No items found';
+                if (discoverType !== 'all') {
+                  return `Found ${count} ${discoverType}${count === 1 ? '' : 's'}`;
+                }
+                return `Found ${plugins.length} plugins, ${documents.length} documents, ${themes.length} themes`;
+              },
+              failure: 'Discovery failed',
+            });
 
-        let plugins: any[] = [];
-        let documents: DocumentMetadata[] = [];
-        let themes: ThemeMetadata[] = [];
-        let totalCount = 0;
-
-        const format = adapter.name as 'docx' | 'pptx';
-
-        if (discoverType === 'all') {
-          const results = await discovery.discoverAll(format);
-          plugins = results.plugins;
-          documents = results.documents;
-          themes = results.themes;
-          totalCount = plugins.length + documents.length + themes.length;
-        } else if (discoverType === 'plugin') {
-          plugins = await discovery.discoverPlugins(format);
-          totalCount = plugins.length;
-        } else if (discoverType === 'document') {
-          documents = await discovery.discoverDocuments(format);
-          totalCount = documents.length;
-        } else if (discoverType === 'theme') {
-          themes = await discovery.discoverThemes(format);
-          totalCount = themes.length;
-        }
-
-        if (spinner) {
-          if (totalCount === 0) {
-            spinner.warn(
-              `No ${discoverType === 'all' ? 'items' : discoverType + 's'} found`
-            );
-          } else {
-            const message =
-              discoverType === 'all'
-                ? `Found ${plugins.length} plugin${plugins.length !== 1 ? 's' : ''}, ` +
-                  `${documents.length} document${documents.length !== 1 ? 's' : ''}, ` +
-                  `${themes.length} theme${themes.length !== 1 ? 's' : ''}`
-                : `Found ${totalCount} ${discoverType}${totalCount !== 1 ? 's' : ''}`;
-            spinner.succeed(message);
-          }
-        }
-
+        const { plugins, documents, themes } = result;
         if (options.json) {
-          if (discoverType === 'all') {
-            console.log(
-              JSON.stringify({ plugins, documents, themes }, null, 2)
-            );
-          } else if (discoverType === 'plugin') {
-            const display = new PluginDisplay({
+          if (discoverType === 'all') writeJson(result);
+          else if (discoverType === 'plugin') {
+            await new PluginDisplay({
               json: true,
               schema: options.schema,
               examples: options.examples,
               verbose: options.verbose,
-            });
-            await display.show(plugins);
-          } else if (discoverType === 'document') {
-            console.log(JSON.stringify(documents, null, 2));
-          } else if (discoverType === 'theme') {
-            console.log(JSON.stringify(themes, null, 2));
-          }
-        } else {
-          if (discoverType === 'all') {
-            if (plugins.length > 0) {
-              console.log(chalk.bold('\nPlugins:'));
-              displayAsTable(plugins, 'plugin', options.grouped);
-            }
-            if (documents.length > 0) {
-              console.log(chalk.bold('\nDocuments:'));
-              displayAsTable(documents, 'document', options.grouped);
-            }
-            if (themes.length > 0) {
-              console.log(chalk.bold('\nThemes:'));
-              displayAsTable(themes, 'theme', options.grouped);
-            }
-          } else if (discoverType === 'plugin') {
-            const display = new PluginDisplay({
-              json: false,
-              schema: options.schema,
-              examples: options.examples,
-              verbose: options.verbose,
-            });
-            if (options.grouped) {
-              display.displayGrouped(plugins);
-            } else {
-              await display.show(plugins);
-            }
-          } else if (discoverType === 'document') {
-            displayAsTable(documents, 'document', options.grouped);
-          } else if (discoverType === 'theme') {
-            displayAsTable(themes, 'theme', options.grouped);
-          }
+            }).show(plugins);
+          } else writeJson(discoverType === 'document' ? documents : themes);
+          return;
         }
 
-        PluginRegistry.getInstance().clear();
+        if (discoverType === 'plugin') {
+          const display = new PluginDisplay({
+            schema: options.schema,
+            examples: options.examples,
+            verbose: options.verbose,
+          });
+          if (options.grouped) await display.displayGrouped(plugins);
+          else await display.show(plugins);
+        } else {
+          const lines: UiLine[] = [];
+          if (discoverType === 'all' || discoverType === 'plugin') {
+            lines.push(
+              ...tableLines('Plugins', plugins, 'plugin', options.grouped)
+            );
+          }
+          if (discoverType === 'all' || discoverType === 'document') {
+            lines.push(
+              ...tableLines('Documents', documents, 'document', options.grouped)
+            );
+          }
+          if (discoverType === 'all' || discoverType === 'theme') {
+            lines.push(
+              ...tableLines('Themes', themes, 'theme', options.grouped)
+            );
+          }
+          await renderLines(lines);
+        }
       } catch (error: any) {
-        if (spinner) spinner.fail('Discovery failed');
-        formatError(error);
-        PluginRegistry.getInstance().clear();
+        await formatError(error);
         process.exit(EXIT_CODES.FAIL);
+      } finally {
+        PluginRegistry.getInstance().clear();
       }
     })
     .addHelpText(
       'after',
       `
 ${chalk.gray('Examples:')}
-  $ jto ${adapter.name} discover                     ${chalk.dim('# Discover all items')}
-  $ jto ${adapter.name} discover --type plugin       ${chalk.dim('# Discover only plugins')}
-  $ jto ${adapter.name} discover --json              ${chalk.dim('# Output as JSON')}
-  $ jto ${adapter.name} discover --grouped           ${chalk.dim('# Group by location')}
+  $ jto ${adapter.name} discover
+  $ jto ${adapter.name} discover --type plugin
+  $ jto ${adapter.name} discover --json
+  $ jto ${adapter.name} discover --grouped
 `
     );
 }
 
-function displayAsTable(items: any[], type: string, grouped: boolean) {
-  if (grouped) {
-    const groups = groupByLocation(items);
-    for (const [location, groupItems] of Object.entries(groups)) {
-      if (groupItems.length > 0) {
-        console.log(chalk.gray(`\n  ${location}:`));
-        const rows = groupItems.map((item: any) => [
-          item.name || item.title || '',
-          type,
-          dimPath(item.filePath || item.path || ''),
-        ]);
-        console.log(createTable(['Name', 'Type', 'Path'], rows));
-      }
-    }
-  } else {
-    const rows = items.map((item: any) => [
+function tableLines(
+  heading: string,
+  items: any[],
+  type: string,
+  grouped: boolean
+): UiLine[] {
+  if (items.length === 0) return [];
+  const lines: UiLine[] = [{ text: heading, tone: 'info' }];
+  if (!grouped) {
+    const rows = items.map((item) => [
       item.name || item.title || '',
       type,
       dimPath(item.filePath || item.path || ''),
     ]);
-    console.log(createTable(['Name', 'Type', 'Path'], rows));
+    return [...lines, { text: createTable(['Name', 'Type', 'Path'], rows) }];
   }
+  for (const [location, groupItems] of Object.entries(groupByLocation(items))) {
+    lines.push({ text: location, tone: 'muted' });
+    const rows = groupItems.map((item: any) => [
+      item.name || item.title || '',
+      type,
+      dimPath(item.filePath || item.path || ''),
+    ]);
+    lines.push({ text: createTable(['Name', 'Type', 'Path'], rows) });
+  }
+  return lines;
 }
 
 function groupByLocation<T extends { location: string }>(
   items: T[]
 ): Record<string, T[]> {
-  return items.reduce(
-    (acc, item) => {
-      const loc = item.location;
-      if (!acc[loc]) acc[loc] = [];
-      acc[loc].push(item);
-      return acc;
-    },
-    {} as Record<string, T[]>
-  );
+  return items.reduce<Record<string, T[]>>((groups, item) => {
+    (groups[item.location] ??= []).push(item);
+    return groups;
+  }, {});
 }

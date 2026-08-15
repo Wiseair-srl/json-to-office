@@ -8,7 +8,7 @@ CLI and visual playground for [json-to-office](https://github.com/Wiseair-srl/js
 ## Quick start
 
 ```bash
-npm install -g @json-to-office/jto
+pnpm add -g @json-to-office/jto
 
 # Open the visual playground with live preview
 jto docx dev
@@ -20,7 +20,7 @@ jto pptx dev
 If you only need the generation/validation CLI (no React/Monaco/Vite stack), install the lean package instead — it ships the same commands except `dev`, with a fraction of the dependency footprint:
 
 ```bash
-npm install -g @json-to-office/jto-cli
+pnpm add -g @json-to-office/jto-cli
 jto-cli docx generate doc.json
 jto-cli pptx validate slides.json
 ```

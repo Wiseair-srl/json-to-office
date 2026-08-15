@@ -3,10 +3,16 @@
  * Utilities for managing document bookmarks for internal hyperlinks
  */
 
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 export interface BookmarkInfo {
   id: string;
   title: string;
   type: string; // e.g., 'heading', 'paragraph', 'table', etc.
+}
+
+interface BookmarkState {
+  bookmarks: Map<string, BookmarkInfo>;
 }
 
 /**
@@ -14,19 +20,28 @@ export interface BookmarkInfo {
  * Used to track bookmark IDs and validate internal hyperlink targets
  */
 export class BookmarkRegistry {
-  private bookmarks: Map<string, BookmarkInfo> = new Map();
-  private counter = 0;
+  private readonly fallback: BookmarkState = { bookmarks: new Map() };
+  private readonly scopes = new AsyncLocalStorage<BookmarkState>();
+
+  private get state(): BookmarkState {
+    return this.scopes.getStore() ?? this.fallback;
+  }
+
+  /** Run work with an isolated registry that follows its async call chain. */
+  runScoped<T>(callback: () => T): T {
+    return this.scopes.run({ bookmarks: new Map() }, callback);
+  }
 
   /**
    * Register a bookmark
    */
   register(id: string, title: string, type: string): void {
-    if (this.bookmarks.has(id)) {
+    if (this.state.bookmarks.has(id)) {
       console.warn(
         `Duplicate bookmark ID: ${id}. Using the latest registration.`
       );
     }
-    this.bookmarks.set(id, { id, title, type });
+    this.state.bookmarks.set(id, { id, title, type });
   }
 
   /**
@@ -44,7 +59,7 @@ export class BookmarkRegistry {
     // Ensure uniqueness by appending counter if needed
     let id = baseId;
     let attempt = 0;
-    while (this.bookmarks.has(id) && attempt < 100) {
+    while (this.state.bookmarks.has(id) && attempt < 100) {
       id = `${baseId}-${++attempt}`;
     }
 
@@ -55,29 +70,28 @@ export class BookmarkRegistry {
    * Check if a bookmark exists
    */
   exists(id: string): boolean {
-    return this.bookmarks.has(id);
+    return this.state.bookmarks.has(id);
   }
 
   /**
    * Get bookmark info by ID
    */
   get(id: string): BookmarkInfo | undefined {
-    return this.bookmarks.get(id);
+    return this.state.bookmarks.get(id);
   }
 
   /**
    * Get all registered bookmarks
    */
   getAll(): BookmarkInfo[] {
-    return Array.from(this.bookmarks.values());
+    return Array.from(this.state.bookmarks.values());
   }
 
   /**
    * Clear all bookmarks
    */
   clear(): void {
-    this.bookmarks.clear();
-    this.counter = 0;
+    this.state.bookmarks.clear();
   }
 
   /**

@@ -3,11 +3,21 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { ColorValueSchema } from '../theme';
+import { ColorValueSchema } from '@json-to-office/shared/schemas/slide-content';
 
-// ============================================================================
-// PPTX-Specific Common Types
-// ============================================================================
+export {
+  PptxAlignmentSchema,
+  VerticalAlignmentSchema,
+  ShadowSchema,
+  GridPositionSchema,
+} from '@json-to-office/shared/schemas/slide-content';
+
+export type {
+  PptxAlignment,
+  VerticalAlignment,
+  Shadow,
+  GridPosition,
+} from '@json-to-office/shared/schemas/slide-content';
 
 export const PositionSchema = Type.Object(
   {
@@ -60,7 +70,9 @@ export const SlideBackgroundSchema = Type.Object(
     image: Type.Optional(
       Type.Object(
         {
-          path: Type.Optional(Type.String({ description: 'Image file path or URL' })),
+          path: Type.Optional(
+            Type.String({ description: 'Image file path or URL' })
+          ),
           base64: Type.Optional(
             Type.String({ description: 'Base64-encoded image data' })
           ),
@@ -102,60 +114,6 @@ export const TransitionSchema = Type.Object(
   }
 );
 
-export const PptxAlignmentSchema = Type.Union(
-  [Type.Literal('left'), Type.Literal('center'), Type.Literal('right')],
-  { description: 'Horizontal alignment options' }
-);
-
-export const VerticalAlignmentSchema = Type.Union(
-  [Type.Literal('top'), Type.Literal('middle'), Type.Literal('bottom')],
-  { description: 'Vertical alignment options' }
-);
-
-export const ShadowSchema = Type.Object(
-  {
-    type: Type.Optional(
-      Type.Union([Type.Literal('outer'), Type.Literal('inner')], {
-        description: 'Shadow type',
-      })
-    ),
-    color: Type.Optional(ColorValueSchema),
-    blur: Type.Optional(Type.Number({ description: 'Shadow blur radius in points' })),
-    offset: Type.Optional(Type.Number({ description: 'Shadow offset in points' })),
-    angle: Type.Optional(Type.Number({ description: 'Shadow angle in degrees' })),
-    opacity: Type.Optional(
-      Type.Number({
-        minimum: 0,
-        maximum: 1,
-        description: 'Shadow opacity (0-1)',
-      })
-    ),
-  },
-  {
-    description: 'Shadow configuration',
-    additionalProperties: false,
-  }
-);
-
-export const GridPositionSchema = Type.Object(
-  {
-    column: Type.Number({ minimum: 0, description: 'Starting column (0-indexed)' }),
-    row: Type.Number({ minimum: 0, description: 'Starting row (0-indexed)' }),
-    columnSpan: Type.Optional(Type.Number({ minimum: 1, description: 'Number of columns to span (default: 1)' })),
-    rowSpan: Type.Optional(Type.Number({ minimum: 1, description: 'Number of rows to span (default: 1)' })),
-  },
-  { additionalProperties: false, description: 'Grid-based positioning' }
-);
-
-export type GridPosition = Static<typeof GridPositionSchema>;
-
-// ============================================================================
-// TypeScript Types
-// ============================================================================
-
 export type Position = Static<typeof PositionSchema>;
 export type SlideBackground = Static<typeof SlideBackgroundSchema>;
 export type Transition = Static<typeof TransitionSchema>;
-export type PptxAlignment = Static<typeof PptxAlignmentSchema>;
-export type VerticalAlignment = Static<typeof VerticalAlignmentSchema>;
-export type Shadow = Static<typeof ShadowSchema>;

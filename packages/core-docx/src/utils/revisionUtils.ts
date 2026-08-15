@@ -11,6 +11,7 @@ import type { Revision } from '@json-to-office/shared-docx';
 import { normalizeUnicodeText } from './unicode';
 import { processTextWithPlaceholders } from './placeholderProcessor';
 import type { TextStyle } from './textParser';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 export const DEFAULT_REVISION_AUTHOR = 'json-to-office';
 // Deterministic fallback so identical inputs produce byte-identical XML
@@ -18,22 +19,35 @@ export const DEFAULT_REVISION_DATE = '1970-01-01T00:00:00Z';
 
 /**
  * OOXML requires a numeric id on every w:ins / w:del element, unique within
- * one document. The counter is process-wide and never reset between renders:
- * concurrent renderDocument calls then draw from disjoint id sets, so
- * intra-document uniqueness holds even when renders interleave (a per-render
- * reset would let one render clear the counter mid-flight for another).
+ * one document. Async-local state gives each render its own deterministic
+ * counter without collisions when documents render concurrently.
  */
 class RevisionIdRegistry {
-  private counter = 0;
+  private fallbackCounter = 0;
+  private readonly scopes = new AsyncLocalStorage<{ counter: number }>();
+
+  runScoped<T>(callback: () => T): T {
+    return this.scopes.run({ counter: 0 }, callback);
+  }
 
   next(): number {
-    this.counter += 1;
-    return this.counter;
+    const state = this.scopes.getStore();
+    if (state) {
+      state.counter += 1;
+      return state.counter;
+    }
+    this.fallbackCounter += 1;
+    return this.fallbackCounter;
   }
 
   /** Test-only: deterministic ids for snapshot assertions. */
   clear(): void {
-    this.counter = 0;
+    const state = this.scopes.getStore();
+    if (state) {
+      state.counter = 0;
+    } else {
+      this.fallbackCounter = 0;
+    }
   }
 }
 

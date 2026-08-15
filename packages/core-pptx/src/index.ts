@@ -12,10 +12,20 @@ export {
   generateFromFile,
   savePresentation,
   isPresentationComponentDefinition,
+  PresentationValidationError,
   PresentationGenerator,
 } from './core/generator';
 
-export type { GenerationOptions, GenerationResult } from './core/generator';
+export type {
+  GenerationOptions,
+  GenerationResult,
+  GenerationValidationOptions,
+} from './core/generator';
+export {
+  DEFAULT_GENERATED_AT,
+  packagePresentationBuffer,
+} from './core/packagePresentation';
+export type { PresentationPackagingOptions } from './core/packagePresentation';
 
 // Types
 export type {
@@ -65,6 +75,9 @@ export type {
   PresentationGeneratorBuilder,
   BufferGenerationResult as PluginBufferGenerationResult,
   FileGenerationResult as PluginFileGenerationResult,
+  GenerateFileOptions as PluginGenerateFileOptions,
+  GenerateOptions as PluginGenerateOptions,
+  GenerationValidationOptions as PluginGenerationValidationOptions,
   ValidationResult as PluginValidationResult,
   ExtractCustomComponentType,
   CustomComponentUnion,

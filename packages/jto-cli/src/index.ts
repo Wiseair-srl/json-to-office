@@ -71,4 +71,10 @@ export {
   createTable,
   formatTiming,
   formatError,
+  renderLines,
+  runTask,
+  promptText,
+  type UiLine,
+  type UiTone,
+  type TaskReporter,
 } from './commands/ui.js';

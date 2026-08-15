@@ -215,7 +215,7 @@ describe('docx schemas', () => {
   it('generates document and theme JSON schemas', () => {
     const outDir = join(TMP, 'schemas-docx');
     const out = run(['docx', 'schemas', '-o', outDir]);
-    expect(out).toContain('Schemas');
+    expect(out).toContain('Generated schemas');
     expect(existsSync(join(outDir, 'document.schema.json'))).toBe(true);
     expect(existsSync(join(outDir, 'theme.schema.json'))).toBe(true);
 

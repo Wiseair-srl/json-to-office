@@ -5,7 +5,7 @@ Lightweight CLI for [json-to-office](https://github.com/Wiseair-srl/json-to-offi
 Same commands as [`@json-to-office/jto`](https://www.npmjs.com/package/@json-to-office/jto) minus `dev`. No React/Monaco/Vite/AI-SDK dependencies — install this in CI, serverless functions, or any scripted pipeline where the playground UI is dead weight.
 
 ```bash
-npm install -g @json-to-office/jto-cli
+pnpm add -g @json-to-office/jto-cli
 
 jto-cli docx generate doc.json
 jto-cli pptx generate slides.json

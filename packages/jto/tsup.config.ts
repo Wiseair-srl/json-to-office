@@ -15,7 +15,6 @@ const commonExternal = [
   '@json-to-office/jto-cli',
   'tsx',
   'tsx/esm/api',
-  'prompts',
   'ajv',
   'ajv-formats',
   'cosmiconfig',
@@ -43,7 +42,7 @@ export default defineConfig([
     dts: true,
     splitting: false,
     sourcemap: true,
-    // Cleaning is done once by the build script (rm -rf dist) to avoid a race
+    // Cleaning is done once by the build script to avoid a race
     // between this config and the parallel library config wiping its output.
     clean: false,
     shims: true,

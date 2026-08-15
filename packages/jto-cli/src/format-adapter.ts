@@ -6,7 +6,10 @@ import type {
   FontRuntimeOpts,
   PptxRasterizer,
 } from '@json-to-office/shared';
+import { validatePresentationDocument } from '@json-to-office/shared-pptx';
+import { validate as validateDocx } from '@json-to-office/shared-docx';
 import { createLibreOfficePptxRasterizer } from './pptx-rasterizer.js';
+import { emitDiagnostic } from './services/diagnostics.js';
 
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 function safeThemeKey(name: string | undefined): string {
@@ -51,9 +54,20 @@ function getPptxRasterizer(): PptxRasterizer {
 function buildDocxServices(): ServicesConfig {
   const base = buildServicesFromEnv() ?? {};
   const serverUrl = process.env.JTO_PPTX_RASTERIZER_URL?.trim();
+  const apiKey =
+    process.env.JTO_PPTX_RASTERIZER_API_KEY || process.env.HIGHCHARTS_API_KEY;
+  const apiKeyHeader =
+    process.env.JTO_PPTX_RASTERIZER_API_KEY_HEADER ||
+    process.env.HIGHCHARTS_API_KEY_HEADER ||
+    'x-api-key';
   return {
     ...base,
-    pptx: serverUrl ? { serverUrl } : { render: getPptxRasterizer() },
+    pptx: serverUrl
+      ? {
+          serverUrl,
+          ...(apiKey && { headers: { [apiKeyHeader]: apiKey } }),
+        }
+      : { render: getPptxRasterizer() },
   };
 }
 
@@ -64,7 +78,14 @@ interface GeneratorBuilder {
     valid: boolean;
     errors?: { path: string; message: string }[];
   };
-  generateBuffer(document: any): Promise<{ buffer: Buffer; warnings: any }>;
+  generateBuffer(
+    document: any,
+    options?: {
+      deterministic?: boolean;
+      generatedAt?: string | Date;
+      validation?: { allowUnknownFields?: boolean };
+    }
+  ): Promise<{ buffer: Buffer; warnings: any }>;
   /** @deprecated Read `standardDefinition` off `generate(...)` instead. */
   getStandardComponentsDefinition?: (document: any) => Promise<any>;
 }
@@ -78,6 +99,8 @@ export interface GeneratorOptions {
     allowUnknownFields?: boolean;
   };
   fonts?: FontRuntimeOpts;
+  deterministic?: boolean;
+  generatedAt?: string | Date;
 }
 
 export interface GeneratorResult {
@@ -135,6 +158,11 @@ export class DocxFormatAdapter implements FormatAdapter {
       customThemes,
       services,
       fonts: options.fonts,
+      validation: {
+        allowUnknownFields: options.validation?.allowUnknownFields,
+      },
+      deterministic: options.deterministic,
+      generatedAt: options.generatedAt,
     });
   }
 
@@ -157,6 +185,11 @@ export class DocxFormatAdapter implements FormatAdapter {
             customThemes,
             services,
             fonts: options.fonts,
+            validation: {
+              allowUnknownFields: options.validation?.allowUnknownFields,
+            },
+            deterministic: options.deterministic,
+            generatedAt: options.generatedAt,
           });
         },
         hasPlugins: false,
@@ -172,6 +205,11 @@ export class DocxFormatAdapter implements FormatAdapter {
       debug: process.env.DEBUG === 'true',
       services,
       fonts: options.fonts,
+      validation: {
+        allowUnknownFields: options.validation?.allowUnknownFields,
+      },
+      deterministic: options.deterministic,
+      generatedAt: options.generatedAt,
     });
 
     for (const plugin of plugins) {
@@ -182,16 +220,13 @@ export class DocxFormatAdapter implements FormatAdapter {
       generateBuffer: async (document: any) => {
         const docDefinition =
           typeof document === 'string' ? JSON.parse(document) : document;
-        const validationResult = generator.validate(docDefinition);
-        if (!validationResult.valid) {
-          const errors = validationResult.errors || [];
-          throw new Error(
-            `Document validation failed:\n${errors
-              .map((e: any) => `  - ${e.path}: ${e.message}`)
-              .join('\n')}`
-          );
-        }
-        const result = await generator.generateBuffer(docDefinition);
+        const result = await generator.generateBuffer(docDefinition, {
+          validation: {
+            allowUnknownFields: options.validation?.allowUnknownFields,
+          },
+          deterministic: options.deterministic,
+          generatedAt: options.generatedAt,
+        });
         return result.buffer;
       },
       getStandardComponentsDefinition: generator.getStandardComponentsDefinition
@@ -206,8 +241,12 @@ export class DocxFormatAdapter implements FormatAdapter {
     return typeof input === 'string' ? JSON.parse(input) : input;
   }
 
-  validateDocument(_doc: unknown): { valid: boolean; errors?: any[] } {
-    return { valid: true };
+  validateDocument(doc: unknown): { valid: boolean; errors?: any[] } {
+    const result = validateDocx.jsonDocument(doc as object);
+    return {
+      valid: result.valid,
+      ...(result.errors.length > 0 && { errors: result.errors }),
+    };
   }
 
   generateSchema(_options?: any): any {
@@ -238,8 +277,9 @@ export class DocxFormatAdapter implements FormatAdapter {
           return themeModule.default || themeModule.theme;
         }
       } catch (error: any) {
-        console.warn(
-          `Failed to load theme from ${options.themePath}: ${error.message}`
+        emitDiagnostic(
+          `Failed to load theme from ${options.themePath}: ${error.message}`,
+          'warning'
         );
       }
     }
@@ -297,8 +337,9 @@ export class DocxFormatAdapter implements FormatAdapter {
           customThemes[safeThemeKey(theme.name)] = theme;
         }
       } catch (error: any) {
-        console.warn(
-          `Failed to load theme from ${options.themePath}: ${error.message}`
+        emitDiagnostic(
+          `Failed to load theme from ${options.themePath}: ${error.message}`,
+          'warning'
         );
       }
     }
@@ -402,6 +443,11 @@ export class PptxFormatAdapter implements FormatAdapter {
       customThemes,
       services,
       fonts: options.fonts,
+      validation: {
+        allowUnknownFields: options.validation?.allowUnknownFields,
+      },
+      deterministic: options.deterministic,
+      generatedAt: options.generatedAt,
     });
   }
 
@@ -424,6 +470,11 @@ export class PptxFormatAdapter implements FormatAdapter {
             customThemes,
             services,
             fonts: options.fonts,
+            validation: {
+              allowUnknownFields: options.validation?.allowUnknownFields,
+            },
+            deterministic: options.deterministic,
+            generatedAt: options.generatedAt,
           });
         },
         hasPlugins: false,
@@ -439,6 +490,11 @@ export class PptxFormatAdapter implements FormatAdapter {
       debug: process.env.DEBUG === 'true',
       services,
       fonts: options.fonts,
+      validation: {
+        allowUnknownFields: options.validation?.allowUnknownFields,
+      },
+      deterministic: options.deterministic,
+      generatedAt: options.generatedAt,
     });
 
     for (const plugin of plugins) {
@@ -449,16 +505,13 @@ export class PptxFormatAdapter implements FormatAdapter {
       generateBuffer: async (document: any) => {
         const docDefinition =
           typeof document === 'string' ? JSON.parse(document) : document;
-        const validationResult = generator.validate(docDefinition);
-        if (!validationResult.valid) {
-          const errors = validationResult.errors || [];
-          throw new Error(
-            `Presentation validation failed:\n${errors
-              .map((e: any) => `  - ${e.path}: ${e.message}`)
-              .join('\n')}`
-          );
-        }
-        const result = await generator.generateBuffer(docDefinition);
+        const result = await generator.generateBuffer(docDefinition, {
+          validation: {
+            allowUnknownFields: options.validation?.allowUnknownFields,
+          },
+          deterministic: options.deterministic,
+          generatedAt: options.generatedAt,
+        });
         return result.buffer;
       },
       hasPlugins: true,
@@ -470,8 +523,12 @@ export class PptxFormatAdapter implements FormatAdapter {
     return typeof input === 'string' ? JSON.parse(input) : input;
   }
 
-  validateDocument(_doc: unknown): { valid: boolean; errors?: any[] } {
-    return { valid: true };
+  validateDocument(doc: unknown): { valid: boolean; errors?: any[] } {
+    const result = validatePresentationDocument(doc);
+    return {
+      valid: result.valid,
+      ...(result.errors.length > 0 && { errors: result.errors }),
+    };
   }
 
   generateSchema(_options?: any): any {
@@ -505,8 +562,9 @@ export class PptxFormatAdapter implements FormatAdapter {
           return themeModule.default || themeModule.theme;
         }
       } catch (error: any) {
-        console.warn(
-          `Failed to load theme from ${options.themePath}: ${error.message}`
+        emitDiagnostic(
+          `Failed to load theme from ${options.themePath}: ${error.message}`,
+          'warning'
         );
       }
     }
@@ -566,8 +624,9 @@ export class PptxFormatAdapter implements FormatAdapter {
           customThemes[safeThemeKey(theme.name)] = theme;
         }
       } catch (error: any) {
-        console.warn(
-          `Failed to load theme from ${options.themePath}: ${error.message}`
+        emitDiagnostic(
+          `Failed to load theme from ${options.themePath}: ${error.message}`,
+          'warning'
         );
       }
     }

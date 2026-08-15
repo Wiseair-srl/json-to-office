@@ -5,6 +5,7 @@ import { pathToFileURL } from 'url';
 import { Config, ConfigSchema } from './schema.js';
 import { Value } from '@sinclair/typebox/value';
 import { defaultConfig } from './defaults.js';
+import { emitDiagnostic } from '../services/diagnostics.js';
 
 const CONFIG_FILES = [
   'json-to-office.config.ts',
@@ -29,7 +30,7 @@ export async function loadConfig(configPath?: string): Promise<Config> {
     try {
       userConfig = await loadConfigFile(configFile);
     } catch (error: any) {
-      console.warn(`Warning: Failed to load config file: ${error.message}`);
+      emitDiagnostic(`Failed to load config file: ${error.message}`, 'warning');
     }
   }
 
@@ -41,7 +42,10 @@ export async function loadConfig(configPath?: string): Promise<Config> {
 
   if (!Value.Check(ConfigSchema, config)) {
     const errors = [...Value.Errors(ConfigSchema, config)];
-    console.warn('Warning: Invalid configuration detected:', errors);
+    emitDiagnostic(
+      `Invalid configuration detected (${errors.length} schema error(s)); using defaults`,
+      'warning'
+    );
     return defaultConfig;
   }
 

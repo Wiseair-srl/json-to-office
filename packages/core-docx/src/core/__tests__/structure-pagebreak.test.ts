@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { extractSections } from '../structure';
 import { ComponentDefinition, RenderContext } from '../../types';
-import { createMockTheme } from '../../modules/__tests__/test-helpers';
+import { createMockTheme } from '../../components/__tests__/helpers';
 
 describe('Structure PageBreak', () => {
   const context: RenderContext = {

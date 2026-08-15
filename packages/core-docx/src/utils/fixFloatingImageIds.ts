@@ -12,49 +12,35 @@
  */
 
 import AdmZip from 'adm-zip';
+import { readFile, writeFile } from 'fs/promises';
+
+/** Fix duplicate floating-image IDs without touching the filesystem. */
+export function fixFloatingImageIdsInBuffer(buffer: Buffer): Buffer {
+  const zip = new AdmZip(buffer);
+  const documentEntry = zip.getEntry('word/document.xml');
+
+  if (!documentEntry) {
+    throw new Error('document.xml not found in DOCX');
+  }
+
+  let idCounter = 1;
+  const documentXml = documentEntry
+    .getData()
+    .toString('utf8')
+    .replace(/<wp:docPr\s+id="(\d+)"/g, () => {
+      const newId = idCounter++;
+      return `<wp:docPr id="${newId}"`;
+    });
+
+  zip.updateFile(documentEntry, Buffer.from(documentXml, 'utf8'));
+  return zip.toBuffer();
+}
 
 /**
  * Fix floating image issues in a generated DOCX file
  * @param docxPath - Path to the DOCX file to fix
  */
 export async function fixFloatingImageIds(docxPath: string): Promise<void> {
-  try {
-    // Read the DOCX file as a ZIP
-    const zip = new AdmZip(docxPath);
-
-    // Get the document.xml entry
-    const documentEntry = zip.getEntry('word/document.xml');
-    if (!documentEntry) {
-      throw new Error('document.xml not found in DOCX');
-    }
-
-    // Extract and parse the XML
-    let documentXml = documentEntry.getData().toString('utf8');
-
-    // Fix 1: Duplicate wp:docPr IDs
-    // Pattern: <wp:docPr id="N" ...> where N is the ID
-    let idCounter = 1;
-    documentXml = documentXml.replace(
-      /<wp:docPr\s+id="(\d+)"/g,
-      (_match: string) => {
-        const newId = idCounter++;
-        return `<wp:docPr id="${newId}"`;
-      }
-    );
-
-    // Note: No other post-processing is applied.
-
-    // Update the document.xml in the ZIP
-    zip.updateFile('word/document.xml', Buffer.from(documentXml, 'utf8'));
-
-    // Write the fixed DOCX back
-    zip.writeZip(docxPath);
-
-    console.log(
-      `Fixed ${idCounter - 1} duplicate floating image docPr IDs in ${docxPath}`
-    );
-  } catch (error) {
-    console.error('Failed to fix floating image issues:', error);
-    throw error;
-  }
+  const buffer = await readFile(docxPath);
+  await writeFile(docxPath, fixFloatingImageIdsInBuffer(buffer));
 }

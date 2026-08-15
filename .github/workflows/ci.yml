@@ -5,7 +5,6 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    paths-ignore: ['*.md', 'LICENSE', '.changeset/*.md']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,7 +15,7 @@ env:
 
 jobs:
   quality:
-    if: github.event_name == 'pull_request' && github.head_ref != 'changeset-release/main'
+    if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,8 +33,10 @@ jobs:
 
       - run: pnpm typecheck
 
+      - run: pnpm docs:build
+
   test:
-    if: github.event_name == 'pull_request' && github.head_ref != 'changeset-release/main'
+    if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
     strategy:
       matrix:
         node-version: [20, 22]
@@ -57,7 +58,65 @@ jobs:
 
       - run: pnpm test
 
+  conformance:
+    if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Generate JSON and TypeBox schemas
+        shell: bash
+        run: |
+          node packages/jto-cli/dist/cli.js docx schemas --document-only --output-dir .schema-smoke/docx
+          node packages/jto-cli/dist/cli.js pptx schemas --document-only --output-dir .schema-smoke/pptx
+          node packages/jto-cli/dist/cli.js docx schemas --document-only --format typebox --output-dir .schema-smoke/typebox-docx
+          node packages/jto-cli/dist/cli.js pptx schemas --document-only --format typebox --output-dir .schema-smoke/typebox-pptx
+          test -s .schema-smoke/docx/document.schema.json
+          test -s .schema-smoke/pptx/presentation.schema.json
+          test -s .schema-smoke/typebox-docx/document.schema.ts
+          test -s .schema-smoke/typebox-pptx/presentation.schema.ts
+          if grep -R 'Type\.Any' .schema-smoke/typebox-*; then
+            echo 'TypeBox export contains a Type.Any placeholder' >&2
+            exit 1
+          fi
+
+      - name: Validate all examples
+        shell: bash
+        run: |
+          for file in examples/*.docx.json; do
+            node packages/jto-cli/dist/cli.js docx validate "$file" --strict --quiet
+          done
+          for file in examples/*.pptx.json; do
+            node packages/jto-cli/dist/cli.js pptx validate "$file" --strict --quiet
+          done
+
+      - name: Check generated schemas against smoke examples
+        shell: bash
+        run: |
+          node packages/jto-cli/dist/cli.js docx validate examples/invoice.docx.json --quiet --schema .schema-smoke/docx/document.schema.json
+          node packages/jto-cli/dist/cli.js pptx validate examples/quarterly-review.pptx.json --quiet --schema .schema-smoke/pptx/presentation.schema.json
+
+      - name: Render dependency-free smoke examples
+        shell: bash
+        run: |
+          node packages/jto-cli/dist/cli.js docx generate examples/invoice.docx.json --output "$RUNNER_TEMP/invoice.docx" --no-google-fonts
+          node packages/jto-cli/dist/cli.js pptx generate examples/quarterly-review.pptx.json --output "$RUNNER_TEMP/quarterly-review.pptx" --no-google-fonts
+          test -s "$RUNNER_TEMP/invoice.docx"
+          test -s "$RUNNER_TEMP/quarterly-review.pptx"
+
   release:
+    needs: [quality, test, conformance]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:

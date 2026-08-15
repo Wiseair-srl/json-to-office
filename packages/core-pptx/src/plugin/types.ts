@@ -10,6 +10,7 @@ import type {
   SlideComponentDefinition,
   PipelineWarning,
 } from '../types';
+import type { PresentationPackagingOptions } from '../core/packagePresentation';
 
 // ---- Helper types ----
 
@@ -136,6 +137,20 @@ export interface ValidationResult {
   }>;
 }
 
+/** Validation behavior shared by all plugin generation entry points. */
+export interface GenerationValidationOptions {
+  /** Validate authored and expanded trees before rendering. Defaults to true. */
+  enabled?: boolean;
+  /** Accept unknown props while preserving required-field/type checks. */
+  allowUnknownFields?: boolean;
+}
+
+export interface GenerateOptions extends PresentationPackagingOptions {
+  validation?: GenerationValidationOptions;
+}
+
+export type GenerateFileOptions = GenerateOptions;
+
 // ---- Generator interfaces ----
 
 /**
@@ -149,16 +164,19 @@ export interface PresentationGenerator<
   >[] = readonly [],
 > {
   generate: (
-    document: ExtendedPresentationComponent<TCustomComponents>
+    document: ExtendedPresentationComponent<TCustomComponents>,
+    options?: GenerateOptions
   ) => Promise<BufferGenerationResult>;
 
   generateBuffer: (
-    document: ExtendedPresentationComponent<TCustomComponents>
+    document: ExtendedPresentationComponent<TCustomComponents>,
+    options?: GenerateOptions
   ) => Promise<BufferGenerationResult>;
 
   generateFile: (
     document: ExtendedPresentationComponent<TCustomComponents>,
-    outputPath: string
+    outputPath: string,
+    options?: GenerateFileOptions
   ) => Promise<FileGenerationResult>;
 
   getComponentNames: () => string[];

@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { cosmiconfig } from 'cosmiconfig';
+import { emitDiagnostic } from '../services/diagnostics.js';
 
 export interface PluginConfig {
   plugins?: string[];
@@ -67,7 +68,10 @@ export class PluginConfigService {
         return this.config;
       }
     } catch (error: any) {
-      console.warn(`Failed to load configuration: ${error.message}`);
+      emitDiagnostic(
+        `Failed to load configuration: ${error.message}`,
+        'warning'
+      );
     }
 
     const packageConfig = await this.loadFromPackageJson(startPath);

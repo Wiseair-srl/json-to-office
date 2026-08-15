@@ -1,7 +1,8 @@
 import { TextRun, ExternalHyperlink, InternalHyperlink } from 'docx';
 import {
   processTextWithPlaceholders,
-  PlaceholderContext,
+  type PlaceholderChild,
+  type PlaceholderContext,
 } from './placeholderProcessor';
 import { normalizeUnicodeText } from './unicode';
 
@@ -129,7 +130,7 @@ export function parseTextWithDecorators(
   text: string,
   baseStyle: TextStyle = {},
   options: TextDecoratorOptions = {}
-): (TextRun | ExternalHyperlink | InternalHyperlink)[] {
+): PlaceholderChild[] {
   // Guard against undefined or null text
   if (!text) {
     return [new TextRun({ text: '', ...baseStyle })];
@@ -155,7 +156,7 @@ export function parseTextWithDecorators(
   }
 
   // Original decorator-only processing
-  const runs: (TextRun | ExternalHyperlink | InternalHyperlink)[] = [];
+  const runs: PlaceholderChild[] = [];
 
   // Process decorators on the entire text first (including newlines)
   const decoratorRegex =
@@ -309,9 +310,9 @@ function parseTextWithHyperlinks(
   text: string,
   baseStyle: TextStyle = {},
   options: TextDecoratorOptions = {}
-): (TextRun | ExternalHyperlink | InternalHyperlink)[] {
+): PlaceholderChild[] {
   const normalizedText = normalizeUnicodeText(text);
-  const runs: (TextRun | ExternalHyperlink | InternalHyperlink)[] = [];
+  const runs: PlaceholderChild[] = [];
 
   // Regex to match markdown-style links: [text](url)
   // This regex handles nested brackets in the link text

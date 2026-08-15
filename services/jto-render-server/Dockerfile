@@ -42,9 +42,6 @@ RUN mkdir -p /usr/src/app && \
   "puppeteer": {\
     "executablePath": "/usr/bin/chromium",\
     "args": [\
-      "--no-sandbox",\
-      "--no-zygote",\
-      "--disable-setuid-sandbox",\
       "--disable-dev-shm-usage",\
       "--disable-gpu",\
       "--disable-features=VizDisplayCompositor",\

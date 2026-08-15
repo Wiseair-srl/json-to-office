@@ -47,7 +47,7 @@ export function cleanNodeOptions(debug = false): string | undefined {
   const dq = countUnescaped(original, '"');
   const sq = countUnescaped(original, "'");
   if (dq % 2 === 1 || sq % 2 === 1) {
-    console.warn('[WARN] Detected malformed NODE_OPTIONS. Removing.');
+    emitDiagnostic('Detected malformed NODE_OPTIONS; removing it', 'warning');
     return undefined;
   }
 
@@ -133,10 +133,10 @@ export function cleanNodeOptions(debug = false): string | undefined {
   const cleanOptions = filtered.join(' ').trim();
 
   if (debug && cleanOptions !== original) {
-    console.log('[DEBUG] Cleaned NODE_OPTIONS:', {
-      original,
-      cleaned: cleanOptions || '(empty)',
-    });
+    emitDiagnostic(
+      `Cleaned NODE_OPTIONS: ${original} -> ${cleanOptions || '(empty)'}`,
+      'muted'
+    );
   }
 
   return cleanOptions || undefined;
@@ -207,3 +207,4 @@ export function createCleanEnv(): NodeJS.ProcessEnv {
 
   return cleanEnv;
 }
+import { emitDiagnostic } from '../services/diagnostics.js';

@@ -78,6 +78,16 @@ import {
   createFooterElement,
 } from './content';
 import { mapFloatingOptions } from '../utils/docxImagePositioning';
+import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
+import { globalNumberingRegistry } from '../utils/numberingConfig';
+import { globalRevisionIdRegistry } from '../utils/revisionUtils';
+import { runWithGenerationDate } from '../utils/generationContext';
+
+interface RenderDocumentOptions {
+  cache?: MemoryCache;
+  bypassCache?: boolean;
+  services?: ServicesConfig;
+}
 
 /**
  * Convert alignment string to docx AlignmentType
@@ -103,11 +113,23 @@ function getAlignment(
 export async function renderDocument(
   structure: ProcessedDocument,
   layout: LayoutPlan,
-  options?: {
-    cache?: MemoryCache;
-    bypassCache?: boolean;
-    services?: ServicesConfig;
-  }
+  options?: RenderDocumentOptions
+): Promise<Document> {
+  return runWithGenerationDate(structure.metadata.date, () =>
+    globalBookmarkRegistry.runScoped(() =>
+      globalRevisionIdRegistry.runScoped(() =>
+        globalNumberingRegistry.runScoped(() =>
+          renderDocumentScoped(structure, layout, options)
+        )
+      )
+    )
+  );
+}
+
+async function renderDocumentScoped(
+  structure: ProcessedDocument,
+  layout: LayoutPlan,
+  options?: RenderDocumentOptions
 ): Promise<Document> {
   // Initialize component cache if provided
   if (options?.cache) {
@@ -116,14 +138,6 @@ export async function renderDocument(
     // Initialize with default cache unless bypassed
     initializeComponentCache();
   }
-
-  // Clear the numbering registry for a fresh start
-  const { globalNumberingRegistry } = await import('../utils/numberingConfig');
-  globalNumberingRegistry.clear();
-
-  // Revision ids (w:ins/w:del) are deliberately NOT reset here: the counter
-  // is process-wide so concurrent renders draw from disjoint id sets
-  // (intra-document uniqueness is the OOXML invariant; see revisionUtils.ts)
 
   const sections: ISectionOptions[] = [];
 
@@ -226,7 +240,8 @@ export async function renderDocument(
       structure.themeName,
       context,
       sectionOrdinal,
-      closeBookmark
+      closeBookmark,
+      options?.bypassCache === true
     );
 
     // Increment counter if this section created a bookmark
@@ -498,7 +513,8 @@ export async function renderSection(
   themeName: string,
   context: RenderContext,
   sectionOrdinal?: number,
-  closeBookmark?: boolean
+  closeBookmark?: boolean,
+  bypassCache = false
 ): Promise<ISectionOptions> {
   const elements: (Paragraph | Table | TableOfContents)[] = [];
 
@@ -552,7 +568,7 @@ export async function renderSection(
       theme,
       themeName,
       sectionContext,
-      false // Don't bypass cache
+      bypassCache
     );
     elements.push(...rendered);
   }

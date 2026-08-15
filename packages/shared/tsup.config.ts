@@ -4,6 +4,7 @@ export default defineConfig({
   entry: [
     'src/index.ts',
     'src/schemas/schema-utils.ts',
+    'src/schemas/slide-content.ts',
     'src/validation/unified/index.ts',
     'src/utils/semver.ts',
     'src/types/warnings.ts',

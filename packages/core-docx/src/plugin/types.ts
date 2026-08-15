@@ -140,6 +140,10 @@ export interface GenerateOptions {
   preserveCustomComponents?: string[];
   /** Override the generator's validation behavior for this call. */
   validation?: GenerationValidationOptions;
+  /** Normalize volatile OOXML values for byte-identical output. Defaults true. */
+  deterministic?: boolean;
+  /** Build timestamp for metadata; defaults to a stable epoch. */
+  generatedAt?: string | Date;
 }
 
 /**
