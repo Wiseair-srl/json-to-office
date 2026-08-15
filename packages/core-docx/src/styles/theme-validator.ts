@@ -1,5 +1,6 @@
 import type { ThemeConfig } from './index';
 import { validateTheme as validateThemeUnified } from '@json-to-office/shared-docx/validation/unified';
+import { hasTheme, getThemeNames } from '../templates/themes';
 
 /**
  * Validate a theme configuration
@@ -13,7 +14,14 @@ export function validateTheme(
   }
 
   if (typeof theme === 'string') {
-    // Theme name - will be resolved later
+    // Theme name: resolved later, but check it exists now. Casting an
+    // unregistered name straight through is what let a typo reach the
+    // renderer and silently come back as `minimal`.
+    if (!hasTheme(theme)) {
+      throw new Error(
+        `Unknown theme "${theme}". Available themes: ${getThemeNames().sort().join(', ')}.`
+      );
+    }
     return theme as unknown as ThemeConfig;
   }
 

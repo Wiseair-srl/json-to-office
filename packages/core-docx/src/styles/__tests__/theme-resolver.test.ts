@@ -1,54 +1,45 @@
 import { describe, it, expect } from 'vitest';
-import { resolveTheme } from '../theme-resolver';
-import type { ThemeConfig } from '../index';
+import type { GenerationWarning } from '@json-to-office/shared';
+import { resolveBuiltInTheme } from '../theme-resolver';
 
 describe('styles/theme-resolver', () => {
-  describe('resolveTheme', () => {
-    it('should resolve theme by name', () => {
-      const theme = resolveTheme('minimal');
-      expect(theme).toBeDefined();
-      expect(theme).toHaveProperty('colors');
+  describe('resolveBuiltInTheme', () => {
+    it('resolves a built-in theme by name without warning', () => {
+      const warnings: GenerationWarning[] = [];
+      const theme = resolveBuiltInTheme('minimal', { warnings });
+
+      expect(theme.name).toBe('minimal');
+      expect(warnings).toEqual([]);
     });
 
-    it('should return minimal theme for unknown name', () => {
-      const theme = resolveTheme('non-existent');
-      expect(theme).toBeDefined();
-      expect(theme).toHaveProperty('colors');
+    it('warns when the name does not resolve, and still falls back', () => {
+      const warnings: GenerationWarning[] = [];
+      const theme = resolveBuiltInTheme('non-existent', { warnings });
+
+      // The fallback stays — a bad name must not fail an otherwise valid render.
+      expect(theme.name).toBe('minimal');
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toMatchObject({
+        component: 'theme',
+        severity: 'warning',
+        context: { code: 'theme_not_found', requested: 'non-existent' },
+      });
+      expect(warnings[0].message).toContain('non-existent');
+      expect(warnings[0].message).toContain('minimal');
     });
 
-    it('should handle undefined theme name', () => {
-      const theme = resolveTheme(undefined);
-      expect(theme).toBeDefined();
-      expect(theme).toHaveProperty('colors');
+    it('lists custom theme names as available in the warning', () => {
+      const warnings: GenerationWarning[] = [];
+      resolveBuiltInTheme('typo', {
+        customThemes: { 'house-style': {} as never },
+        warnings,
+      });
+
+      expect(warnings[0].context?.available).toContain('house-style');
     });
 
-    it('should return theme object as-is', () => {
-      const customTheme: ThemeConfig = {
-        colors: {
-          primary: '#FF0000',
-          secondary: '#00FF00',
-          text: '#000000',
-          background: '#FFFFFF',
-        },
-        fonts: {
-          heading: 'Arial',
-          body: 'Calibri',
-        },
-      };
-
-      const resolved = resolveTheme(customTheme);
-      expect(resolved).toEqual(customTheme);
-    });
-
-    it('should handle partial theme objects', () => {
-      const partialTheme: ThemeConfig = {
-        colors: {
-          primary: '#123456',
-        },
-      };
-
-      const resolved = resolveTheme(partialTheme);
-      expect(resolved.colors?.primary).toBe('#123456');
+    it('does not require a warnings sink', () => {
+      expect(() => resolveBuiltInTheme('non-existent')).not.toThrow();
     });
   });
 });

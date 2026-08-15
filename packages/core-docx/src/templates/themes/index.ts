@@ -6,13 +6,22 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import type { ThemeConfigJson } from '@json-to-office/shared-docx';
+import {
+  isValidThemeConfig,
+  type ThemeConfigJson,
+} from '@json-to-office/shared-docx';
 import { ensureThemeDefaults } from '../../themes/defaults';
 
-// Import theme JSON files directly
+// Import theme JSON files directly. Every bundled theme is imported here, so
+// which themes exist is decided by code, not by whether `dist/` happens to be
+// built and fresh — `apex` and `devportal` used to be reachable only through
+// the filesystem scan below, which meant a stale build silently served the old
+// copy and a missing one degraded to `minimal`.
 import minimalThemeJson from './minimal.docx.theme.json';
 import corporateThemeJson from './corporate.docx.theme.json';
 import modernThemeJson from './modern.docx.theme.json';
+import apexThemeJson from './apex.docx.theme.json';
+import devportalThemeJson from './devportal.docx.theme.json';
 
 /**
  * Registry of available themes loaded from JSON files
@@ -29,6 +38,8 @@ function loadThemesFromJson(): Record<string, ThemeConfigJson> {
     minimal: ensureThemeDefaults(minimalThemeJson as ThemeConfigJson),
     corporate: ensureThemeDefaults(corporateThemeJson as ThemeConfigJson),
     modern: ensureThemeDefaults(modernThemeJson as ThemeConfigJson),
+    apex: ensureThemeDefaults(apexThemeJson as ThemeConfigJson),
+    devportal: ensureThemeDefaults(devportalThemeJson as ThemeConfigJson),
   };
 
   // Also try to load from file system for runtime additions (if available)
@@ -46,9 +57,22 @@ function loadThemesFromJson(): Record<string, ThemeConfigJson> {
       for (const themeName of themeFiles) {
         if (!themes[themeName]) {
           try {
-            const filePath = path.join(themesDir, `${themeName}.docx.theme.json`);
+            const filePath = path.join(
+              themesDir,
+              `${themeName}.docx.theme.json`
+            );
             const content = fs.readFileSync(filePath, 'utf8');
             const parsedTheme = JSON.parse(content);
+            // Check before registering. A theme that reaches the registry is
+            // never validated again, so an invalid one here renders wrong
+            // rather than failing — the drift that hid dead `componentDefaults`
+            // props across five themes for as long as they shipped.
+            if (!isValidThemeConfig(parsedTheme)) {
+              console.warn(
+                `Skipping theme ${themeName}: does not match the theme schema.`
+              );
+              continue;
+            }
             themes[themeName] = ensureThemeDefaults(parsedTheme);
           } catch (error) {
             console.warn(

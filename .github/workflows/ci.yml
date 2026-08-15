@@ -101,6 +101,10 @@ jobs:
             node packages/jto-cli/dist/cli.js pptx validate "$file" --strict --quiet
           done
 
+      - name: Validate shipped assets and docs samples
+        shell: bash
+        run: pnpm validate:assets
+
       - name: Check generated schemas against smoke examples
         shell: bash
         run: |

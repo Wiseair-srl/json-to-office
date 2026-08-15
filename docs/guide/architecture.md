@@ -10,6 +10,8 @@ A document is a tree of **modules**. Each module contains **base components** â€
 
 Every node has the same shape: a `name`, a `props` object, and optionally `children`:
 
+<!-- jto-validate: skip -- illustrates a custom plugin component (kpi-card) that is not in the base registry -->
+
 ```json
 {
   "name": "docx",
