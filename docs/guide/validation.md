@@ -132,7 +132,7 @@ For PPTX, `validateStrict` is currently an alias of `validate`: the PPTX deep va
 
 PPTX generation does not run the deep validator — validation is a separate step you invoke yourself. The only hard failures at generation time are a root component that isn't `pptx`, and the image source mutual-exclusivity rule (one of `path` / `base64` / `svg`), both of which throw a plain `Error`.
 
-Everything else the pipeline can recover from is reported as a warning rather than an exception — skipped charts, unknown colors, clamped grid positions — as structured warnings. The warning-friendly entry point returns both the file and the warning list:
+Everything else the pipeline can recover from — skipped charts, unknown colors, clamped grid positions — is reported as a structured warning rather than an exception. The warning-friendly entry point returns both the file and the warning list:
 
 ```ts
 import { generateBufferWithWarnings } from '@json-to-office/json-to-pptx';
