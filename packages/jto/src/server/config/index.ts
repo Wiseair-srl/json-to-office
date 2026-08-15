@@ -30,11 +30,20 @@ function parseOutboundSourceMode(
   return nodeEnv === 'production' ? 'safe' : 'development';
 }
 
+/**
+ * Only the two explicitly local environments keep permissive defaults. Every
+ * other value — `staging`, `prod`, a typo — gets production-grade hardening, so
+ * a mislabelled deployment cannot silently disable auth, rate limits, or the
+ * outbound-source (SSRF) checks.
+ */
+function normalizeNodeEnv(
+  value: string | undefined
+): 'development' | 'production' | 'test' {
+  return value === 'development' || value === 'test' ? value : 'production';
+}
+
 function parseEnv(env: NodeJS.ProcessEnv) {
-  const nodeEnv = (env.NODE_ENV || 'development') as
-    | 'development'
-    | 'production'
-    | 'test';
+  const nodeEnv = normalizeNodeEnv(env.NODE_ENV || 'development');
   return {
     NODE_ENV: nodeEnv,
     PORT: positiveInteger(env.PORT, 3003),

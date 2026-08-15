@@ -112,6 +112,42 @@ describe('standalone render server', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('caps dimensions declared under infile.exporting, not just infile.chart', async () => {
+    const fetchMock = vi.fn(async () => new Response('ok'));
+    const app = createRenderServerApp({
+      fetch: fetchMock as typeof fetch,
+      auth: { mode: 'disabled' },
+      sourcePolicy: { mode: 'safe', allowedHosts: [] },
+    });
+
+    // Highcharts ranks exporting.sourceWidth/sourceHeight above chart.*, so
+    // these would previously validate against the 600x400 defaults.
+    for (const infile of [
+      { exporting: { sourceWidth: 20_000, sourceHeight: 20_000 } },
+      { chart: { width: 100, height: 100 }, exporting: { sourceWidth: 9_000 } },
+      { chart: { width: 4_000, height: 4_000 }, exporting: { scale: 4 } },
+      { exporting: { scale: 99 } },
+    ]) {
+      expect(
+        (await post(app, '/export', { ...exportBody, infile })).status
+      ).toBe(400);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // A nested block within budget still proxies.
+    expect(
+      (
+        await post(app, '/export', {
+          ...exportBody,
+          infile: {
+            exporting: { sourceWidth: 800, sourceHeight: 600, scale: 2 },
+          },
+        })
+      ).status
+    ).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('enforces request, response, and per-route rate limits', async () => {
     const fetchMock = vi.fn(async () => new Response('x'.repeat(32)));
     const requestLimited = createRenderServerApp({

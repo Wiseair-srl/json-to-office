@@ -59,13 +59,12 @@ export function createAPIApp(adapter: FormatAdapter) {
   honoApp.use('*', requestLoggerMiddleware);
   honoApp.use('*', securityMiddleware);
 
-  // API key auth (if enabled)
-  if (config.features.apiKey) {
-    honoApp.use('/api/*', apiKeyAuthMiddleware);
-  }
-
   // Uniform admission controls cover every API surface. Individual expensive
   // routes retain tighter limits below this process-wide ceiling.
+  //
+  // These run BEFORE authentication on purpose: Hono executes middleware in
+  // registration order, so an auth check registered first would return 401
+  // without ever reaching the limiter, leaving API-key guessing unbounded.
   honoApp.use(
     '/api/*',
     bodyLimit({
@@ -88,6 +87,11 @@ export function createAPIApp(adapter: FormatAdapter) {
     '/api/*',
     concurrencyLimiter({ limit: config.requestLimits.maxConcurrent })
   );
+
+  // API key auth (if enabled)
+  if (config.features.apiKey) {
+    honoApp.use('/api/*', apiKeyAuthMiddleware);
+  }
 
   // Mount routes
   honoApp.route('/health', healthRouter);

@@ -30,6 +30,7 @@ const DEFAULT_RASTERIZE_BODY_BYTES = 32 * 1024 * 1024;
 const DEFAULT_RESPONSE_BYTES = 24 * 1024 * 1024;
 const MAX_CHART_DIMENSION = 4_096;
 const MAX_CHART_PIXELS = 16_000_000;
+const MAX_CHART_SCALE = 4;
 
 type FetchImplementation = typeof fetch;
 
@@ -58,8 +59,19 @@ function positiveInteger(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+/**
+ * Only the two explicitly local environments relax defaults. `staging`, `prod`,
+ * or a typo must not silently downgrade auth, rate limits, or source policy.
+ */
+function isHardenedEnv(): boolean {
+  const nodeEnv = process.env.NODE_ENV;
+  return (
+    nodeEnv !== undefined && nodeEnv !== 'development' && nodeEnv !== 'test'
+  );
+}
+
 function envAuthOptions(): ApiKeyAuthOptions {
-  const production = process.env.NODE_ENV === 'production';
+  const production = isHardenedEnv();
   const requestedMode = process.env.RENDER_AUTH_MODE;
   const mode =
     requestedMode === 'auto' ||
@@ -81,7 +93,7 @@ function envSourcePolicy(): OutboundSourcePolicy {
   const mode =
     requestedMode === 'safe' || requestedMode === 'development'
       ? requestedMode
-      : process.env.NODE_ENV === 'production'
+      : isHardenedEnv()
         ? 'safe'
         : 'development';
   return {
@@ -95,6 +107,51 @@ function envSourcePolicy(): OutboundSourcePolicy {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Resolve one export dimension the way Highcharts does: `exporting.sourceWidth`
+ * / `sourceHeight` outrank `chart.width` / `chart.height`, which in turn outrank
+ * the 600x400 defaults. Checking only `chart.*` would let a nested `exporting`
+ * block request an arbitrarily large raster past the pixel budget below.
+ */
+function resolveDimension(
+  exporting: Record<string, unknown> | undefined,
+  chart: Record<string, unknown> | undefined,
+  sourceKey: 'sourceWidth' | 'sourceHeight',
+  chartKey: 'width' | 'height',
+  fallback: number
+): number {
+  for (const candidate of [exporting?.[sourceKey], chart?.[chartKey]]) {
+    if (candidate === undefined) continue;
+    if (
+      typeof candidate !== 'number' ||
+      !Number.isFinite(candidate) ||
+      candidate <= 0 ||
+      candidate > MAX_CHART_DIMENSION
+    ) {
+      throw new HTTPException(400, {
+        message: 'Requested chart dimensions are too large',
+      });
+    }
+    return candidate;
+  }
+  return fallback;
+}
+
+function resolveScale(value: unknown, fallback: number): number {
+  if (value === undefined) return fallback;
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value <= 0 ||
+    value > MAX_CHART_SCALE
+  ) {
+    throw new HTTPException(400, {
+      message: `scale must be between 0 and ${MAX_CHART_SCALE}`,
+    });
+  }
+  return value;
 }
 
 function validateExportRequest(
@@ -121,30 +178,24 @@ function validateExportRequest(
     });
   }
 
-  const scale = value.scale === undefined ? 1 : value.scale;
-  if (
-    typeof scale !== 'number' ||
-    !Number.isFinite(scale) ||
-    scale <= 0 ||
-    scale > 4
-  ) {
-    throw new HTTPException(400, { message: 'scale must be between 0 and 4' });
-  }
-
   const chart = isRecord(value.infile.chart) ? value.infile.chart : undefined;
-  const width = chart?.width === undefined ? 600 : chart.width;
-  const height = chart?.height === undefined ? 400 : chart.height;
-  if (
-    typeof width !== 'number' ||
-    typeof height !== 'number' ||
-    !Number.isFinite(width) ||
-    !Number.isFinite(height) ||
-    width <= 0 ||
-    height <= 0 ||
-    width > MAX_CHART_DIMENSION ||
-    height > MAX_CHART_DIMENSION ||
-    width * height * scale * scale > MAX_CHART_PIXELS
-  ) {
+  const exporting = isRecord(value.infile.exporting)
+    ? value.infile.exporting
+    : undefined;
+
+  // A request-level `scale` outranks `exporting.scale`; validate both so
+  // neither path can smuggle an oversized multiplier past the pixel budget.
+  const scale = resolveScale(value.scale, resolveScale(exporting?.scale, 1));
+  const width = resolveDimension(exporting, chart, 'sourceWidth', 'width', 600);
+  const height = resolveDimension(
+    exporting,
+    chart,
+    'sourceHeight',
+    'height',
+    400
+  );
+
+  if (width * height * scale * scale > MAX_CHART_PIXELS) {
     throw new HTTPException(400, {
       message: 'Requested chart dimensions are too large',
     });
@@ -191,7 +242,7 @@ async function readLimitedBody(
 }
 
 export function createRenderServerApp(options: RenderServerOptions = {}): Hono {
-  const production = process.env.NODE_ENV === 'production';
+  const production = isHardenedEnv();
   const upstream = (
     options.upstreamUrl ||
     process.env.HIGHCHARTS_UPSTREAM_URL ||
@@ -257,10 +308,12 @@ export function createRenderServerApp(options: RenderServerOptions = {}): Hono {
     }
   });
 
+  // Admission controls precede `auth` deliberately: middleware runs in order,
+  // so authenticating first would answer 401 before the limiter counted the
+  // attempt, leaving API-key guessing unbounded.
   registerRasterizeRoute(app, {
     getRasterizer: options.getRasterizer,
     preMiddleware: [
-      auth,
       rateLimiter({
         limit:
           options.rasterizeRateLimit ??
@@ -279,13 +332,13 @@ export function createRenderServerApp(options: RenderServerOptions = {}): Hono {
           throw new HTTPException(413, { message: 'Request body too large' });
         },
       }),
+      auth,
     ],
     sourcePolicy,
   });
 
   app.post(
     '/export',
-    auth,
     rateLimiter({
       limit:
         options.exportRateLimit ??
@@ -301,6 +354,7 @@ export function createRenderServerApp(options: RenderServerOptions = {}): Hono {
         throw new HTTPException(413, { message: 'Request body too large' });
       },
     }),
+    auth,
     async (c) => {
       const contentType = c.req.header('content-type');
       if (!contentType?.toLowerCase().includes('application/json')) {
