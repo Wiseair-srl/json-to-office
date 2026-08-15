@@ -3,6 +3,12 @@ export {
   ThemeConfigSchema,
   type ThemeConfigJson,
   isValidThemeConfig,
+  /**
+   * Create a minimal theme template for users to start with.
+   * Defined in shared-docx next to `ThemeConfigSchema` so every consumer
+   * (CLI, playground) scaffolds from one schema-checked source.
+   */
+  createMinimalTheme,
 } from '@json-to-office/shared-docx';
 export { ThemeParser, ThemeValidationError, ThemeParseError } from './parser';
 export {
@@ -81,60 +87,4 @@ export function exportThemeToJson(
  */
 export function validateThemeJsonString(jsonString: string) {
   return themeParser.validate(jsonString);
-}
-
-/**
- * Create a minimal theme template for users to start with
- * @returns ThemeConfig - Basic theme with required properties
- */
-export function createMinimalTheme(): ThemeConfigJson {
-  return {
-    name: 'minimal-theme',
-    displayName: 'Minimal Theme',
-    description: 'A minimal theme with basic styling',
-    version: '1.0.0',
-    colors: {
-      primary: '2563EB',
-      secondary: '64748B',
-      accent: 'F8FAFC',
-      text: '334155',
-      background: 'FFFFFF',
-      border: '334155',
-      textPrimary: '334155',
-      textSecondary: '64748B',
-      textMuted: '94A3B8',
-      borderPrimary: '334155',
-      borderSecondary: '64748B',
-      backgroundPrimary: 'FFFFFF',
-      backgroundSecondary: 'F8FAFC',
-    },
-    fonts: {
-      heading: { family: 'Arial', size: 14 },
-      body: { family: 'Arial', size: 11 },
-      mono: { family: 'Courier New', size: 10 },
-      light: { family: 'Arial', size: 10 },
-    },
-    page: {
-      size: 'A4',
-      margins: {
-        top: 1440,
-        bottom: 1440,
-        left: 1440,
-        right: 1440,
-        header: 720,
-        footer: 720,
-        gutter: 0,
-      },
-    },
-    styles: {
-      normal: {
-        font: 'body',
-        size: 11,
-        color: '334155',
-        alignment: 'left',
-        lineSpacing: { type: 'multiple', value: 1.15 },
-        spacing: { after: 8 },
-      },
-    },
-  };
 }

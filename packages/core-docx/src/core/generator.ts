@@ -11,7 +11,8 @@ import {
   ReportComponentDefinition,
   isReportComponent,
 } from '../types';
-import { getThemeWithFallback, ThemeConfig } from '../styles';
+import { ThemeConfig } from '../styles';
+import { resolveBuiltInTheme } from '../styles/theme-resolver';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { processDocument } from './structure';
 import { applyLayout } from './layout';
@@ -175,11 +176,11 @@ async function generateDocumentWithCustomThemes(
       if (matchingThemeKey) {
         theme = customThemes[matchingThemeKey];
       } else {
-        theme = getThemeWithFallback(themeName);
+        theme = resolveBuiltInTheme(themeName, { customThemes, warnings });
       }
     }
   } else {
-    theme = getThemeWithFallback(themeName);
+    theme = resolveBuiltInTheme(themeName, { warnings });
   }
 
   // Export-mode pre-pass: substitute (default) rewrites non-safe families

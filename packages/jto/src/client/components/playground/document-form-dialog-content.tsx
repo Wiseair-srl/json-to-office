@@ -31,6 +31,7 @@ import {
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useThemesStore } from '../../store/themes-store-provider';
 import { useChatStore } from '../../store/chat-store-provider';
+import { useToast } from '../ui/use-toast';
 import type { Mode } from '../../lib/types';
 import type { DocumentMetadata, ThemeMetadata } from '../../hooks/useDiscovery';
 import {
@@ -40,6 +41,7 @@ import {
   type DocumentFormData,
 } from '../../lib/validation';
 import { FORMAT } from '../../lib/env';
+import { createMinimalTheme } from '@json-to-office/shared-docx';
 
 const getLabels = (isTheme?: boolean) => ({
   create: {
@@ -97,6 +99,13 @@ function DocumentFormDialogContent({
   const [selectedItemContent, setSelectedItemContent] = useState<string | null>(
     null
   );
+  // Tracks the template copy independently of its content: a null
+  // `selectedItemContent` means "start from scratch" when idle, but "the copy
+  // failed" when errored — the two must not both fall back to the scaffold.
+  const [templateStatus, setTemplateStatus] = useState<
+    'idle' | 'loading' | 'error'
+  >('idle');
+  const { toast } = useToast();
   const labels = getLabels(isTheme);
   const {
     documents,
@@ -192,6 +201,11 @@ function DocumentFormDialogContent({
     ) {
       const item = itemsByPath.get(selectedPath);
       if (item) {
+        // Drop the previous template's content up front: while this fetch is
+        // in flight the selection no longer matches what we hold.
+        setSelectedItemContent(null);
+        setTemplateStatus('loading');
+        let cancelled = false;
         fetch(
           `/api/discovery/${isTheme ? 'themes' : 'documents'}/${encodeURIComponent(item.name)}/content`
         )
@@ -202,20 +216,24 @@ function DocumentFormDialogContent({
             return res.text();
           })
           .then((content) => {
-            try {
-              const parsed = JSON.parse(content);
-              setSelectedItemContent(JSON.stringify(parsed, null, 2));
-            } catch (e) {
-              console.error('Invalid JSON content received:', e);
-              setSelectedItemContent(null);
-            }
+            if (cancelled) return;
+            // Throws on malformed JSON, handled below like any fetch failure.
+            const parsed = JSON.parse(content);
+            setSelectedItemContent(JSON.stringify(parsed, null, 2));
+            setTemplateStatus('idle');
           })
           .catch((error) => {
-            console.error('Failed to fetch content:', error);
+            if (cancelled) return;
+            console.error('Failed to copy template:', error);
             setSelectedItemContent(null);
+            setTemplateStatus('error');
           });
+        return () => {
+          cancelled = true;
+        };
       }
     }
+    setTemplateStatus('idle');
   }, [selectedPath, mode, itemsByPath, isTheme]);
 
   // reset form
@@ -223,6 +241,7 @@ function DocumentFormDialogContent({
     if (shouldReset) {
       form.reset();
       setSelectedItemContent(null);
+      setTemplateStatus('idle');
       setSelectedPath(defaultTemplatePath);
     }
   }, [form, shouldReset]);
@@ -240,6 +259,26 @@ function DocumentFormDialogContent({
         let content: string;
         let finalName = name as string;
 
+        // A template was picked but its content never arrived. Creating the
+        // file anyway would produce something named after the template and
+        // containing none of it, so stop instead of falling back.
+        const templatePicked =
+          Boolean(selectedPath) && selectedPath !== EMPTY_TEMPLATE_VALUE;
+        if (templatePicked && selectedItemContent === null) {
+          toast({
+            title:
+              templateStatus === 'loading'
+                ? 'Template still loading'
+                : `Could not copy ${selectedItem?.name ?? 'the selected template'}`,
+            description:
+              templateStatus === 'loading'
+                ? 'Wait for the template to finish loading, then try again.'
+                : 'Pick another template, or create an empty one instead.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
         if (isTheme) {
           // Use discovered theme content or create format-specific default
           const themeName = finalName
@@ -248,21 +287,9 @@ function DocumentFormDialogContent({
             .replace(/\s+/g, '-');
           const defaultTheme =
             FORMAT === 'docx'
-              ? {
-                  name: themeName,
-                  colors: {
-                    primary: '#2563EB',
-                    secondary: '#64748B',
-                    accent: '#F8FAFC',
-                    background: '#FFFFFF',
-                    text: '#334155',
-                  },
-                  fonts: {
-                    heading: { family: 'Calibri', size: 28 },
-                    body: { family: 'Calibri', size: 11 },
-                  },
-                  page: { size: 'A4' },
-                }
+              ? // Scaffolded from shared-docx so a new theme is schema-valid on
+                // creation instead of opening with validation errors.
+                createMinimalTheme(themeName)
               : {
                   name: themeName,
                   colors: {

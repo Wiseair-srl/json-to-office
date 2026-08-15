@@ -462,3 +462,80 @@ import { Value } from '@sinclair/typebox/value';
 export function isValidThemeConfig(data: unknown): data is ThemeConfigJson {
   return Value.Check(ThemeConfigSchema, data);
 }
+
+// ============================================================================
+// Minimal Theme Scaffold
+// ============================================================================
+
+/**
+ * Build a schema-complete theme to start from.
+ *
+ * Lives next to `ThemeConfigSchema` on purpose: the return type is the schema's
+ * `Static` type, so a required property added to the schema breaks the build
+ * here instead of shipping a scaffold that only fails at validation time.
+ * Colour patterns are runtime-only, so `theme-scaffold.test.ts` validates the
+ * result against the schema as well.
+ *
+ * Browser-safe (no Node built-ins), so the playground can scaffold new themes
+ * from the same source as the CLI.
+ *
+ * @param name - Theme identifier; defaults to `minimal-theme`
+ */
+export function createMinimalTheme(
+  name: string = 'minimal-theme'
+): ThemeConfigJson {
+  return {
+    name,
+    displayName:
+      name
+        .split(/[-_\s]+/)
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ') || name,
+    description: 'A minimal theme with basic styling',
+    version: '1.0.0',
+    colors: {
+      primary: '#2563EB',
+      secondary: '#64748B',
+      accent: '#F8FAFC',
+      text: '#334155',
+      background: '#FFFFFF',
+      border: '#E2E8F0',
+      textPrimary: '#334155',
+      textSecondary: '#64748B',
+      textMuted: '#94A3B8',
+      borderPrimary: '#CBD5E1',
+      borderSecondary: '#E2E8F0',
+      backgroundPrimary: '#FFFFFF',
+      backgroundSecondary: '#F8FAFC',
+    },
+    fonts: {
+      heading: { family: 'Arial', size: 14 },
+      body: { family: 'Arial', size: 11 },
+      mono: { family: 'Courier New', size: 10 },
+      light: { family: 'Arial', size: 10 },
+    },
+    page: {
+      size: 'A4',
+      margins: {
+        top: 1440,
+        bottom: 1440,
+        left: 1440,
+        right: 1440,
+        header: 720,
+        footer: 720,
+        gutter: 0,
+      },
+    },
+    styles: {
+      normal: {
+        font: 'body',
+        size: 11,
+        color: '#334155',
+        alignment: 'left',
+        lineSpacing: { type: 'multiple', value: 1.15 },
+        spacing: { after: 8 },
+      },
+    },
+  };
+}

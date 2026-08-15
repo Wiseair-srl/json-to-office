@@ -1,7 +1,8 @@
 import type { TSchema } from '@sinclair/typebox';
 import type { CustomComponent } from './createComponent';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
-import { type ThemeConfig, getThemeWithFallback } from '../styles';
+import { type ThemeConfig } from '../styles';
+import { resolveBuiltInTheme } from '../styles/theme-resolver';
 import type { GenerationWarning } from '@json-to-office/shared-docx';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
@@ -92,7 +93,10 @@ function createBuilderImpl<
   /**
    * Resolve theme for a document: customThemes → built-in → constructor fallback
    */
-  function resolveDocumentTheme(themeName: string): ThemeConfig {
+  function resolveDocumentTheme(
+    themeName: string,
+    warnings?: GenerationWarning[]
+  ): ThemeConfig {
     if (state.customThemes) {
       if (state.customThemes[themeName]) {
         return state.customThemes[themeName];
@@ -107,7 +111,10 @@ function createBuilderImpl<
     if (state.theme) {
       return state.theme;
     }
-    return getThemeWithFallback(themeName);
+    return resolveBuiltInTheme(themeName, {
+      customThemes: state.customThemes,
+      warnings,
+    });
   }
 
   /**
@@ -442,12 +449,12 @@ function createBuilderImpl<
               }
             };
 
-      // Resolve theme per-document: customThemes → built-in → constructor fallback
-      const baseThemeName = internalDocument.props.theme || 'minimal';
-      const docTheme = resolveDocumentTheme(baseThemeName);
-
       // Initialize warnings collector
       const warnings: GenerationWarning[] = [];
+
+      // Resolve theme per-document: customThemes → built-in → constructor fallback
+      const baseThemeName = internalDocument.props.theme || 'minimal';
+      const docTheme = resolveDocumentTheme(baseThemeName, warnings);
 
       // Export-mode pre-pass runs BEFORE custom-component expansion so
       // components that read `theme.fonts.*` during render see the

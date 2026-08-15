@@ -5,11 +5,22 @@ import type {
   ServicesConfig,
   FontRuntimeOpts,
   PptxRasterizer,
+  GenerationWarning,
 } from '@json-to-office/shared';
 import { validatePresentationDocument } from '@json-to-office/shared-pptx';
 import { validate as validateDocx } from '@json-to-office/shared-docx';
 import { createLibreOfficePptxRasterizer } from './pptx-rasterizer.js';
 import { emitDiagnostic } from './services/diagnostics.js';
+
+/** Forward structured warnings collected during generation to the terminal. */
+function emitGenerationWarnings(warnings: GenerationWarning[]): void {
+  for (const warning of warnings) {
+    emitDiagnostic(
+      `${warning.component}: ${warning.message}`,
+      warning.severity === 'info' ? 'info' : 'warning'
+    );
+  }
+}
 
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 function safeThemeKey(name: string | undefined): string {
@@ -205,7 +216,11 @@ export class DocxFormatAdapter implements FormatAdapter {
       resolved.customThemes
     );
     const services = buildDocxServices();
-    return await core.generateBufferFromJson(docDefinition as any, {
+    // Collect rather than swallow: without a sink, core warnings (an
+    // unresolvable `props.theme` among them) never reach the terminal and the
+    // render just comes back looking subtly wrong.
+    const warnings: GenerationWarning[] = [];
+    const buffer = await core.generateBufferFromJson(docDefinition as any, {
       customThemes,
       services,
       fonts: options.fonts,
@@ -214,7 +229,10 @@ export class DocxFormatAdapter implements FormatAdapter {
       },
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
+      warnings,
     });
+    emitGenerationWarnings(warnings);
+    return buffer;
   }
 
   async createGenerator(
@@ -241,7 +259,8 @@ export class DocxFormatAdapter implements FormatAdapter {
             typeof document === 'string' ? JSON.parse(document) : document;
           const { document: docDefinition, customThemes: themes } =
             withRequestedTheme(parsed, requestedTheme, customThemes);
-          return await core.generateBufferFromJson(docDefinition, {
+          const warnings: GenerationWarning[] = [];
+          const buffer = await core.generateBufferFromJson(docDefinition, {
             customThemes: themes,
             services,
             fonts: options.fonts,
@@ -250,7 +269,10 @@ export class DocxFormatAdapter implements FormatAdapter {
             },
             deterministic: options.deterministic,
             generatedAt: options.generatedAt,
+            warnings,
           });
+          emitGenerationWarnings(warnings);
+          return buffer;
         },
         hasPlugins: false,
         pluginNames: [],
@@ -296,6 +318,7 @@ export class DocxFormatAdapter implements FormatAdapter {
           deterministic: options.deterministic,
           generatedAt: options.generatedAt,
         });
+        emitGenerationWarnings(result.warnings ?? []);
         return result.buffer;
       },
       getStandardComponentsDefinition: generator.getStandardComponentsDefinition

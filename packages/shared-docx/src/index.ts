@@ -93,7 +93,11 @@ export type {
 // Docx-specific: Theme schemas
 // ============================================================================
 
-export { ThemeConfigSchema, isValidThemeConfig } from './schemas/theme';
+export {
+  ThemeConfigSchema,
+  isValidThemeConfig,
+  createMinimalTheme,
+} from './schemas/theme';
 
 export type {
   ThemeConfigJson,
