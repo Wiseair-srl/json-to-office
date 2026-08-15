@@ -152,8 +152,11 @@ async function generateDocumentWithCustomThemes(
   // theme references to the rewritten versions. A root written without a
   // `props` key validates clean, so default it to `{}` here — otherwise every
   // downstream `document.props.*` read (theme, componentDefaults,
-  // noProofWords, trackRevisions, language, metadata) throws.
-  let document = documentIn.props ? documentIn : { ...documentIn, props: {} };
+  // noProofWords, trackRevisions, language, metadata) throws. Only `undefined`
+  // is defaulted: `props: null` is malformed and must reach the validator,
+  // which rejects it, rather than being quietly rewritten into a valid shape.
+  let document =
+    documentIn.props === undefined ? { ...documentIn, props: {} } : documentIn;
   // Get theme configuration with custom theme support (theme is always a string name)
   let themeName = document.props.theme || 'minimal';
   let theme: ThemeConfig;

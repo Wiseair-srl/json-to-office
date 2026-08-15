@@ -315,7 +315,7 @@ Each child fills the next column. Columns accept nearly everything a section doe
 }
 ```
 
-Both colors in that `style` block — `border.<side>.color` and `shading.fill` — take a `#`-prefixed hex or a theme color name (`"primary"`, `"accent"`, ...), and both are checked against that pattern at validation. Bare hex is not accepted: `"0F0FDF"` fails validation outright, and a letter-leading one such as `"F0FDF4"` is indistinguishable from a theme color name, so it slips past the pattern only to throw at render. Write `"#F0FDF4"`.
+Both colors in that `style` block — `border.<side>.color` and `shading.fill` — take a `#`-prefixed hex or a theme color name (`"primary"`, `"accent"`, ...), and both are checked against that pattern at validation. A digit-leading bare hex such as `"0F0FDF"` fails validation outright. A letter-leading one such as `"F0FDF4"` is indistinguishable from a theme color name under that pattern, so it passes validation — and resolves as hex at render, since no theme color name is six hex characters. Write `"#F0FDF4"` anyway: it is the form the schema is built around, and the only one that works for both leading digits and letters.
 
 ## Table of contents
 

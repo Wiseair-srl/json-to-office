@@ -57,7 +57,7 @@ export {
   PluginConfigService,
   type PluginConfig,
 } from './config/plugin-config.js';
-export { loadConfig } from './config/loader.js';
+export { loadConfig, parsePort } from './config/loader.js';
 export type { Config } from './config/schema.js';
 
 // CLI entry wiring (for composing a larger CLI, e.g. jto with playground dev)

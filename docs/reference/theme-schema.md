@@ -30,7 +30,7 @@ A DOCX theme is a JSON object (conventionally a `*.docx.theme.json` file). Unkno
 
 No other key is accepted (`additionalProperties: false`).
 
-Each value matches the pattern `^(#[0-9A-Fa-f]{6}|[a-zA-Z][a-zA-Z0-9]*)$` — either a `#RRGGBB` hex value **or the name of another theme color**. Name references are resolved recursively at render time (so `"border": "backgroundSecondary"` is valid); unknown names throw during generation. Because the second alternative is a _name_, a bare hex is not a hex value here: a digit-leading one (`00FF00`) fails validation, and a letter-leading one (`AABBCC`) passes validation and is then treated as a token name, which throws everywhere `resolveColor` runs. The lone exception is the chart palette, which checks for a bare 6-digit hex before consulting the theme — so `"accent4": "AABBCC"` colors charts while breaking every other use of that token. Always write the `#`.
+Each value matches the pattern `^(#[0-9A-Fa-f]{6}|[a-zA-Z][a-zA-Z0-9]*)$` — either a `#RRGGBB` hex value **or the name of another theme color**. Name references are resolved recursively at render time (so `"border": "backgroundSecondary"` is valid); unknown names throw during generation. Because the second alternative is a _name_, a digit-leading bare hex (`00FF00`) is not expressible: it matches neither alternative and fails validation. A letter-leading one (`AABBCC`) passes the pattern, and `resolveColor` falls back to reading it as hex once no token by that name is found — no theme color name is six hex characters, so the two never collide. Always write the `#` regardless: it is unambiguous and works for both leading digits and letters.
 
 ### `fonts`
 

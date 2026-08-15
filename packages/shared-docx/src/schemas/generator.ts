@@ -234,7 +234,10 @@ export function generateUnifiedDocumentSchema(
       name: Type.Literal('docx'),
       id: Type.Optional(Type.String()),
       $schema: Type.Optional(Type.String({ format: 'uri' })),
-      props: reportComponent.propsSchema,
+      // Optional so the exported schema agrees with the runtime validator and
+      // the generator, both of which treat a propless root as `props: {}`.
+      // Schema-driven editors would otherwise flag a document that builds.
+      props: Type.Optional(reportComponent.propsSchema),
       children: Type.Optional(
         Type.Array(
           capturedPluginSchemas.length > 0

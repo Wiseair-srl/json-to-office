@@ -103,4 +103,52 @@ describe('loadConfig port resolution', () => {
 
     expect(second.server).toEqual({ port: 3003, host: 'localhost' });
   });
+
+  // `Number.parseInt` stops at the first non-digit, so these used to be read
+  // as a valid port and silently bind somewhere the operator never asked for.
+  it.each(['8080x', '3003; rm -rf /', ' 80 80', '1e4', '-1', '65536', 'abc'])(
+    'ignores the malformed PORT %j',
+    async (port) => {
+      process.env.PORT = port;
+
+      const config = await loadConfig(configFile({ mode: 'development' }), {
+        defaultPort: 4000,
+      });
+
+      expect(config.server.port).toBe(4000);
+    }
+  );
+
+  it('still accepts a well-formed PORT with surrounding whitespace', async () => {
+    process.env.PORT = ' 4321 ';
+
+    const config = await loadConfig(configFile({ mode: 'development' }));
+
+    expect(config.server.port).toBe(4321);
+  });
+
+  // The fallback-port assignment runs before schema validation, so a config
+  // whose `server` is not an object used to throw there and skip the
+  // warn-and-default path that exists precisely for malformed input.
+  it('falls back to defaults for a config with "server": null', async () => {
+    process.env.PORT = '4321';
+
+    const config = await loadConfig(configFile({ server: null } as never));
+
+    expect(config.server.port).toBe(4321);
+    expect(config.server.host).toBe('localhost');
+  });
+
+  it('falls back to defaults for a top-level null config', async () => {
+    process.env.PORT = '4321';
+
+    const directory = mkdtempSync(join(tmpdir(), 'jto-loader-'));
+    const filepath = join(directory, 'json-to-office.config.json');
+    writeFileSync(filepath, 'null');
+
+    const config = await loadConfig(filepath);
+
+    expect(config.server.port).toBe(4321);
+    expect(config.server.host).toBe('localhost');
+  });
 });

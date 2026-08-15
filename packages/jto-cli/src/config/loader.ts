@@ -21,11 +21,18 @@ const CONFIG_FILES = [
   'json-to-pptx.config.json',
 ];
 
-function parsePort(value: string | undefined): number | undefined {
-  const parsed = Number.parseInt(value ?? '', 10);
-  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 65535
-    ? parsed
-    : undefined;
+function isPlainObject(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Strict: the whole string must be a port. `Number.parseInt` stops at the
+ * first non-digit, so it would read "8080x" — or "3003; rm -rf" — as 8080.
+ */
+export function parsePort(value: string | undefined): number | undefined {
+  if (!value || !/^\d+$/.test(value.trim())) return undefined;
+  const parsed = Number(value.trim());
+  return parsed >= 0 && parsed <= 65535 ? parsed : undefined;
 }
 
 export interface LoadConfigOptions {
@@ -76,7 +83,16 @@ export async function loadConfig(
     options.defaultPort ??
     defaultConfig.server.port;
 
-  if (userConfig.server?.port === undefined) {
+  // Only safe once we know both sides are objects: a config file holding
+  // `null`, or `"server": null`, would otherwise throw here and skip the
+  // warning-and-defaults path below that exists to handle exactly that.
+  const userServer = isPlainObject(userConfig)
+    ? (userConfig as Partial<Config>).server
+    : undefined;
+  if (
+    isPlainObject(config.server) &&
+    (!isPlainObject(userServer) || userServer.port === undefined)
+  ) {
     config.server.port = fallbackPort();
   }
 

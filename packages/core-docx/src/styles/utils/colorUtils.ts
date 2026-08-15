@@ -53,6 +53,15 @@ export function resolveColor(
     return resolveColor(resolvedColor, theme);
   }
 
+  // Bare 6-digit hex, e.g. "F0FDF4". HexColorSchema admits it through the
+  // theme-name branch, so rejecting it here would validate a document and then
+  // throw while rendering it. Table cells and the chart palette already accept
+  // this form; no theme color name is six hex characters, so there is no
+  // ambiguity with a real token.
+  if (/^[0-9A-Fa-f]{6}$/.test(colorValue)) {
+    return colorValue.toUpperCase();
+  }
+
   // Strict validation - throw error for invalid colors
   throw new Error(
     `Invalid color value: "${colorValue}". Must be a hex color with # prefix (e.g., "#000000") or a valid theme color name.`
@@ -71,7 +80,15 @@ export function isValidColorName(
   theme: ThemeConfig
 ): boolean {
   const colors = getThemeColors(theme);
-  return typeof colors[colorName as ColorName] === 'string';
+  if (typeof colors[colorName as ColorName] !== 'string') return false;
+  // Follow the reference chain: a token whose value names an unset slot is not
+  // usable, so reporting it as valid would hand a caller a color that throws.
+  try {
+    resolveColor(colorName as ColorValue, theme);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -81,7 +98,5 @@ export function isValidColorName(
  */
 export function getAvailableColorNames(theme: ThemeConfig): string[] {
   const colors = getThemeColors(theme);
-  return Object.keys(colors).filter(
-    (name) => typeof colors[name as ColorName] === 'string'
-  );
+  return Object.keys(colors).filter((name) => isValidColorName(name, theme));
 }

@@ -4,10 +4,11 @@
  * used to be a bare Type.String(), so malformed colours passed validation and
  * blew up mid-render. It now shares HexColorSchema with the border colours.
  *
- * Known gap: HexColorSchema's theme-colour-name branch (`[a-zA-Z][a-zA-Z0-9]*`)
- * also matches letter-leading bare hex such as "F0FDF4", so that one shape still
- * reaches resolveColor. Closing it means enumerating theme colour names in
- * HexColorSchema itself (schemas/font.ts), which is repo-wide.
+ * HexColorSchema's theme-colour-name branch (`[a-zA-Z][a-zA-Z0-9]*`) also matches
+ * letter-leading bare hex such as "F0FDF4". Rather than enumerate theme colour
+ * names in HexColorSchema (repo-wide, and it would reject values the table-cell
+ * and chart paths already accept), resolveColor now resolves bare 6-digit hex —
+ * so that shape validates and renders instead of validating and throwing.
  */
 
 import { describe, it, expect } from 'vitest';

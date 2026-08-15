@@ -10,6 +10,25 @@ import { createValidateCommand } from '../validate.js';
 /** Summary lines the command printed, captured from the mocked renderer. */
 const { rendered } = vi.hoisted(() => ({ rendered: [] as string[] }));
 
+// `generate` calls `loadConfig()` with no startPath, so cosmiconfig walks up
+// out of the repo. Without this, a stray `.json-to-office.config.*` anywhere
+// above the checkout would silently supply a theme and fail these assertions.
+vi.mock('../../config/plugin-config.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../config/plugin-config.js')
+  >('../../config/plugin-config.js');
+  return {
+    ...actual,
+    PluginConfigService: {
+      ...actual.PluginConfigService,
+      getInstance: () => ({
+        loadConfig: async () => null,
+        mergeWithOptions: (options: unknown) => options,
+      }),
+    },
+  };
+});
+
 vi.mock('../ui.js', async () => {
   const actual = await vi.importActual<typeof import('../ui.js')>('../ui.js');
   return {

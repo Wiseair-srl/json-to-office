@@ -17,6 +17,13 @@ const themeWithUndefinedAccent4 = {
 // Same theme without the key at all.
 const themeWithoutAccent4 = corporateTheme as ThemeConfig;
 
+// A token whose value names a slot the theme never sets: the direct lookup
+// finds a string, but following the reference leads nowhere.
+const themeWithDanglingAlias = {
+  ...corporateTheme,
+  colors: { ...corporateTheme.colors, accent5: 'accent4' },
+} as ThemeConfig;
+
 function captureError(fn: () => unknown): unknown {
   try {
     fn();
@@ -77,6 +84,14 @@ describe('styles/utils/colorUtils', () => {
       );
     });
 
+    // HexColorSchema admits a letter-leading bare hex through its theme-name
+    // branch, so throwing here would validate a document and then fail while
+    // rendering it. No theme token is six hex characters, so there is no clash.
+    it('should resolve bare 6-digit hex', () => {
+      expect(resolveColor('F0FDF4', themeWithoutAccent4)).toBe('F0FDF4');
+      expect(resolveColor('0f0fdf', themeWithoutAccent4)).toBe('0F0FDF');
+    });
+
     it('should throw for an invalid hex color', () => {
       expect(() => resolveColor('#12345', themeWithoutAccent4)).toThrow(
         'Invalid hex color'
@@ -97,6 +112,16 @@ describe('styles/utils/colorUtils', () => {
 
     it('should reject an absent color name', () => {
       expect(isValidColorName('accent4', themeWithoutAccent4)).toBe(false);
+    });
+
+    // The direct lookup finds the string 'accent4'; only following the chain
+    // reveals it resolves to nothing. Reporting it valid would hand a caller a
+    // name that throws at render.
+    it('should reject a token aliased to an unset slot', () => {
+      expect(isValidColorName('accent5', themeWithDanglingAlias)).toBe(false);
+      expect(getAvailableColorNames(themeWithDanglingAlias)).not.toContain(
+        'accent5'
+      );
     });
 
     it('should agree with resolveColor on every candidate name', () => {
