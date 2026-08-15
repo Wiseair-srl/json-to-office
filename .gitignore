@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 .turbo/
+docs/.vitepress/cache/
 *.tsbuildinfo
 coverage/
 .env
