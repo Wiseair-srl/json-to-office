@@ -49,6 +49,52 @@ describe('TypeBoxExporter', () => {
     expect(source).toContain('{ additionalProperties: false }');
   });
 
+  it('inlines $ref targets so the generated schema is standalone', async () => {
+    const outputPath = await temporaryFile('widget.schema.ts');
+    const Vector = Type.Object(
+      { x: Type.Number(), y: Type.Number() },
+      { $id: 'Vector' }
+    );
+
+    await new TypeBoxExporter('pptx').exportComponentSchema(
+      'widget',
+      Type.Object({ position: Type.Ref('Vector'), label: Type.String() }, {
+        $defs: { Vector },
+        additionalProperties: false,
+      } as never),
+      outputPath
+    );
+
+    const source = await readFile(outputPath, 'utf8');
+    // Emitting Type.Ref would compile but throw "Unable to dereference schema
+    // with $id 'Vector'" the first time the schema validated anything.
+    expect(source).not.toContain('Type.Ref');
+    expect(source).not.toContain('$defs');
+    expect(source).toContain('"position": Type.Object({');
+    expect(source).toContain('"x": Type.Number()');
+  });
+
+  it('reports a recursive $ref instead of emitting an unusable file', async () => {
+    const outputPath = await temporaryFile('node.schema.ts');
+    const Node = {
+      $id: 'Node',
+      type: 'object',
+      properties: { next: { $ref: 'Node' } },
+    };
+
+    await expect(
+      new TypeBoxExporter('pptx').exportComponentSchema(
+        'node',
+        {
+          type: 'object',
+          properties: { root: { $ref: 'Node' } },
+          $defs: { Node },
+        } as never,
+        outputPath
+      )
+    ).rejects.toThrow(/recursive/);
+  });
+
   it('exports executable registry-backed document schemas with plugin versions', async () => {
     const outputPath = await temporaryFile('document.schema.ts');
     const exporter = new TypeBoxExporter('docx');

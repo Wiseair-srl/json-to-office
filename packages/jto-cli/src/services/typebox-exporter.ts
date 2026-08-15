@@ -30,6 +30,10 @@ const STRUCTURAL_KEYS = new Set([
   '$ref',
   'patternProperties',
   'not',
+  // Ref targets are inlined at export time, so carrying the containers into the
+  // emitted options would leave inert duplicates behind.
+  '$defs',
+  'definitions',
 ]);
 
 /**
@@ -39,6 +43,10 @@ const STRUCTURAL_KEYS = new Set([
  */
 export class TypeBoxExporter {
   private formatName: FormatName;
+  /** Root of the schema currently being converted, for `$ref` resolution. */
+  private refRoot: JsonSchema | undefined;
+  /** Pointers being inlined, so a recursive `$ref` is reported not looped. */
+  private refStack: string[] = [];
 
   constructor(formatName: FormatName = 'docx') {
     this.formatName = formatName;
@@ -273,7 +281,59 @@ export class TypeBoxExporter {
 
   private schemaToTypeBox(schema: TSchema): string {
     const jsonSchema = JSON.parse(JSON.stringify(schema)) as JsonSchema;
-    return this.jsonSchemaToTypeBox(jsonSchema, 0);
+    this.refRoot = jsonSchema;
+    this.refStack = [];
+    try {
+      return this.jsonSchemaToTypeBox(jsonSchema, 0);
+    } finally {
+      this.refRoot = undefined;
+      this.refStack = [];
+    }
+  }
+
+  /**
+   * Resolve a `$ref` against the root schema's `$defs` / `definitions`.
+   *
+   * TypeBox's `Type.Ref` takes a bare identifier and does not register its
+   * target: emitting one would produce a file that throws "Unable to
+   * dereference schema" the first time it is compiled or checked. Inlining the
+   * target keeps the generated schema standalone and executable.
+   */
+  private resolveRef(pointer: string): JsonSchema {
+    const containers = [this.refRoot?.$defs, this.refRoot?.definitions].filter(
+      (container): container is JsonSchema => this.isJsonSchema(container)
+    );
+    const name = pointer.replace(/^#\/(?:\$defs|definitions)\//, '');
+
+    for (const container of containers) {
+      const direct = container[name];
+      if (this.isJsonSchema(direct)) return direct;
+    }
+    for (const container of containers) {
+      for (const candidate of Object.values(container)) {
+        if (this.isJsonSchema(candidate) && candidate.$id === pointer) {
+          return candidate;
+        }
+      }
+    }
+
+    throw new Error(
+      `Cannot export schema: $ref "${pointer}" has no definition under $defs or definitions.`
+    );
+  }
+
+  private withRefGuard(pointer: string, render: () => string): string {
+    if (this.refStack.includes(pointer)) {
+      throw new Error(
+        `Cannot export schema: $ref "${pointer}" is recursive. Inlining it would not terminate — declare the schema with Type.Recursive instead.`
+      );
+    }
+    this.refStack.push(pointer);
+    try {
+      return render();
+    } finally {
+      this.refStack.pop();
+    }
   }
 
   private jsonSchemaToTypeBox(schema: JsonSchema, level: number): string {
@@ -286,7 +346,13 @@ export class TypeBoxExporter {
     };
 
     if ('$ref' in schema && typeof schema.$ref === 'string') {
-      return withOptions(`Type.Ref(${JSON.stringify(schema.$ref)})`);
+      // Keywords sitting alongside $ref win over the target's own, matching
+      // JSON Schema 2019-09 sibling semantics.
+      const { $ref, ...siblings } = schema;
+      const target = this.resolveRef($ref as string);
+      return this.withRefGuard($ref as string, () =>
+        this.jsonSchemaToTypeBox({ ...target, ...siblings }, level)
+      );
     }
 
     if ('const' in schema) {
