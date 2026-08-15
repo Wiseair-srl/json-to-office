@@ -383,12 +383,12 @@ function createBuilderImpl<
 
       // Cast to ReportComponentDefinition for internal processing. A root
       // written without a `props` key validates clean, so default it to `{}`
-      // — otherwise every downstream `props.*` read throws. Matches
-      // core/generator.ts.
+      // — otherwise every downstream `props.*` read throws. Only `undefined`
+      // is defaulted, so a malformed `props: null` still reaches the
+      // validator. Matches core/generator.ts.
       const rootIn = document as unknown as ReportComponentDefinition;
-      const internalDocument: ReportComponentDefinition = rootIn.props
-        ? rootIn
-        : { ...rootIn, props: {} };
+      const internalDocument: ReportComponentDefinition =
+        rootIn.props === undefined ? { ...rootIn, props: {} } : rootIn;
 
       // Validate the document first (plugin-aware), unless disabled. Throwing
       // here stops a malformed document from silently building into a corrupt

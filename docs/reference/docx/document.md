@@ -20,6 +20,8 @@ The root `docx` node additionally accepts a `$schema` field, so editors can wire
 
 The document root. Its only allowed children are `section` components.
 
+`props` itself is optional: a root written without it generates exactly as one written with `"props": {}`, and the exported JSON Schema marks it optional too, so schema-driven editors agree with the generator. An explicit `props` must still be an object — `null`, `false` or a string is rejected by validation rather than quietly treated as empty.
+
 | Prop                | Type              | Default     | Description                                                                                                                                                                                                                                                                                                             |
 | ------------------- | ----------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `theme`             | `string`          | `'minimal'` | Theme name — built-ins are `minimal`, `corporate`, `modern`; custom themes are matched case-insensitively from the `customThemes` generation option. An unknown name silently falls back to `minimal`. See [Themes & styling](/guide/themes).                                                                           |

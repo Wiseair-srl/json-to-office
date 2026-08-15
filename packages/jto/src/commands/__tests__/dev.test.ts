@@ -28,6 +28,8 @@ vi.mock('@json-to-office/jto-cli', async () => {
     loadConfig: mocks.loadConfig,
     renderLines: mocks.renderLines,
     runTask: mocks.runTask,
+    // Real parser: the port-resolution cases below assert on its strictness.
+    parsePort: actual.parsePort,
     __actualLoadConfig: actual.loadConfig,
   };
 });

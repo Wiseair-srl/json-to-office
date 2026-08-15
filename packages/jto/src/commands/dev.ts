@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import {
   type FormatAdapter,
   loadConfig,
+  parsePort,
   formatError,
   renderLines,
   runTask,
@@ -89,7 +90,15 @@ export function createDevCommand(adapter: FormatAdapter): Command {
             const portSource = dev.getOptionValueSource('port');
             const hostSource = dev.getOptionValueSource('host');
             if (portSource === 'cli') {
-              config.server.port = parseInt(options.port!, 10);
+              // Same strict parser as PORT: `parseInt` would read "8080x" as
+              // 8080 and bind a port the user never asked for.
+              const port = parsePort(options.port);
+              if (port === undefined) {
+                throw new Error(
+                  `Invalid --port "${options.port}": expected an integer between 0 and 65535`
+                );
+              }
+              config.server.port = port;
             }
             if (hostSource === 'cli') {
               config.server.host = options.host!;

@@ -378,7 +378,7 @@ A bordered, padded box — callouts, sidebars, cover-page blocks. Allowed childr
 | `style.border`  | per-side `{ style: 'solid'\|'dashed'\|'dotted'\|'double'\|'none', width?, color? }` | no       | —       | `color` takes `#`-prefixed hex or a theme color name                                   |
 | `style.shading` | `{ fill?: color }`                                                                  | no       | —       | Background fill. `fill` takes the same color type as `style.border.*.color`            |
 
-`style.shading.fill` and every `style.border.*.color` share one color type — `#RRGGBB` hex or a theme color name — enforced by the schema rather than at render time. Malformed values (`#F0F`, `#GGGGGG`, `rgb(240, 253, 244)`, `light green`, a digit-leading bare hex such as `0F0FDF`, the empty string) are rejected at validation. One gap remains: a letter-leading bare hex such as `F0FDF4` is indistinguishable from a theme color name under that pattern, so it passes validation and still throws at render — write `#F0FDF4`.
+`style.shading.fill` and every `style.border.*.color` share one color type — `#RRGGBB` hex or a theme color name — enforced by the schema rather than at render time. Malformed values (`#F0F`, `#GGGGGG`, `rgb(240, 253, 244)`, `light green`, a digit-leading bare hex such as `0F0FDF`, the empty string) are rejected at validation. A letter-leading bare hex such as `F0FDF4` is indistinguishable from a theme color name under that pattern, so it passes validation — and resolves as hex at render, since no theme color name is six hex characters. Write `#F0FDF4` anyway; it is the only form that works whether the value starts with a digit or a letter.
 
 ```json
 {

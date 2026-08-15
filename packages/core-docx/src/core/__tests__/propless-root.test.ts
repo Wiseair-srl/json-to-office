@@ -37,4 +37,49 @@ describe('propless docx root', () => {
     expect(result.document).toBeDefined();
     expect(result.standardDefinition.children!.length).toBe(2);
   });
+
+  // Only an absent/undefined `props` is defaulted. A malformed explicit value
+  // must not be rewritten into a valid shape.
+  describe('malformed explicit props', () => {
+    // Control: these pass under the old truthiness check too, because
+    // validation rejects a non-object `props` before normalization runs.
+    // Kept to pin that the validator is the first line of defence.
+    for (const bad of [null, false, '', 0]) {
+      it(`is rejected by validation — props: ${JSON.stringify(bad)}`, async () => {
+        await expect(
+          generateBufferFromJson({
+            name: 'docx',
+            props: bad,
+            children,
+          } as unknown as ReportComponentDefinition)
+        ).rejects.toThrow();
+      });
+    }
+
+    // The discriminating case. With validation off nothing else catches a
+    // malformed root, so defaulting on truthiness silently turned `props:
+    // null` into `{}` and produced a document byte-identical to the propless
+    // one. It must fail instead.
+    it('is not rewritten into {} when validation is disabled', async () => {
+      const opts = { validation: { enabled: false } } as never;
+
+      await expect(
+        generateBufferFromJson(
+          {
+            name: 'docx',
+            props: null,
+            children,
+          } as unknown as ReportComponentDefinition,
+          opts
+        )
+      ).rejects.toThrow();
+
+      // …while a genuinely propless root still builds on the same path.
+      const propless = await generateBufferFromJson(
+        { name: 'docx', children } as ReportComponentDefinition,
+        opts
+      );
+      expect(propless.length).toBeGreaterThan(0);
+    });
+  });
 });
