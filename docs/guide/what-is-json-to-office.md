@@ -1,12 +1,37 @@
 # What is json-to-office?
 
-json-to-office lets you describe Microsoft Word (`.docx`) and PowerPoint (`.pptx`) documents as plain JSON and render them into real Office files. The document definition is **data, not code** — serializable, portable, and language-agnostic.
+> **This page:** the idea the library is built around, in one read. The hands-on version is [Getting started](/guide/getting-started); the tree model and props are [Core concepts](/guide/core-concepts).
 
-## Documents as data
+## The problem
 
-Libraries like [docx](https://github.com/dolanmiu/docx) and [pptxgenjs](https://github.com/gitbrent/PptxGenJS) are imperative, code-first APIs: you build documents by constructing class instances and chaining methods. That works, but the document definition _is_ the program. You can't store it in a database, send it over an API, generate it from an LLM, or hand it to a non-developer.
+A backend that has to emit a `.docx` or a `.pptx` has four options, and each of them answers a different question than the one you asked.
 
-json-to-office flips this around. A document is a JSON tree:
+**Build it in code.** [docx](https://github.com/dolanmiu/docx) and [pptxgenjs](https://github.com/gitbrent/PptxGenJS) give you class instances and method chains, and they work. But the document definition _is_ the program. A customer complains about the report you sent them in March; you can't retrieve what that report said, because it never existed as a thing — only as a code path that ran once over inputs you may or may not still have. Two versions of a layout diff as a diff of TypeScript. Nothing crosses a process boundary, so the service that decides _what_ goes in the document is the same service that knows how a header is styled.
+
+**Fill in a template.** Carbone and docxtemplater work exactly as long as the structure is fixed and only the values move. The first conditional section breaks that, and so does the first table whose row count depends on the data. And the template is an opaque binary: you cannot diff it, lint it, review it in a pull request, or compose two of them. Changing a heading means opening Word.
+
+**Hand it to a SaaS.** Gamma and Tome are built for one human assembling one deck in a browser. There is no API contract to code against, no self-hosting, and the artifact lives on someone else's platform.
+
+**Ask a model for the file.** An LLM will happily emit a `.pptx`. Ask twice and you get two different documents, neither validated, neither replayable — and the prompt that produced them is not the document, so there is nothing to store, diff, or regenerate. It also conflates what the document _says_ with how it _looks_, and the model is worse at the second one.
+
+The four are not variations on one problem. They disagree about something more basic: **what a document is, in a system.** If it is an artifact you render once and email, any of them is fine. If it is an output of your platform — emitted thousands of times, on demand, by services and models, branded, regeneratable, auditable — then it has to behave like everything else you already know how to operate: a value you can store, validate, version, and diff.
+
+## The idea
+
+> **The document is a value. Rendering is a function.**
+
+json-to-office splits the thing that was fused together. The definition is a JSON tree of components and props, and it is inert data. The renderer is a pinned library version that turns that data into Office bytes. Neither knows anything about the other beyond a schema.
+
+|                     | The definition                                               | The renderer                                                    |
+| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------- |
+| **Is**              | a JSON tree of components and props                          | a function of `(JSON, theme, assets)` → `.docx` / `.pptx` bytes |
+| **Produced by**     | your service, an LLM, the playground, a row in your database | one pinned version of the library                               |
+| **Lives**           | wherever you keep data — DB, S3, git, an HTTP body           | in one Node process, replaceable                                |
+| **Lifetime**        | as long as you keep the row                                  | the deployment                                                  |
+| **Runs**            | nowhere. It is data                                          | on the server. No Word, no LibreOffice, no sidecar              |
+| **Wrong answer to** | "what should this font size be" — that's the theme           | "what should this document say"                                 |
+
+A complete document definition, in full:
 
 ```json
 {
@@ -22,29 +47,67 @@ json-to-office flips this around. A document is a JSON tree:
 }
 ```
 
-That JSON can live in a database row, travel over HTTP, come out of an LLM, or be edited in a visual playground with autocomplete and validation. Definition and rendering are fully decoupled: the same JSON, theme, and assets always produce the same document, and the JSON — not the binary — is what you version and review.
+Store it, send it, generate it, review it. Rendering it is a separate concern that happens later, somewhere else, maybe by someone else.
 
-## Why not just use X?
+## What is _not_ in the JSON
 
-Generating an Office document from a backend usually means one of four approaches. The question to start from: **what should a document _be_, in a system?** If it's an output of your platform — emitted thousands of times, on demand, by services and LLMs, branded, regeneratable, auditable — it should behave like data: serializable, validatable, versionable, diffable.
+There is no escape hatch — no raw OOXML string, no embedded expression language, no callback, no page coordinates you have to compute yourself. Not restricted: **absent**. Every node is a named component with a schema, which is why a definition can be validated before anything renders, autocompleted in an editor, emitted by a model under a JSON Schema, and diffed against last month's version in terms a reviewer understands.
 
-|                   | json-to-office                          | Imperative libs (docx, pptxgenjs, officegen, react-pdf) | Template-driven (Carbone, docxtemplater) | SaaS / AI doc tools (Gamma, Tome) | Plain LLM (prompt → .docx/.pptx) |
-| ----------------- | --------------------------------------- | ------------------------------------------------------- | ---------------------------------------- | --------------------------------- | -------------------------------- |
-| **Document is**   | Declarative JSON                        | Code                                                    | Binary template + data                   | Hosted artifact                   | Free-form prompt                 |
-| **Serializable**  | Yes                                     | No: trapped in code                                     | Partial: data is JSON, structure isn't   | No: locked in platform            | No: prompt ≠ output              |
-| **Reproducible**  | Byte-identical output for stable inputs | Library-dependent                                       | Template-dependent                       | No                                | No: stochastic                   |
-| **LLM-friendly**  | Schema-constrained output               | Fragile: no schema                                      | Needs pre-made template                  | N/A                               | No structure, no validation      |
-| **Validation**    | Full TypeBox schemas                    | None                                                    | None                                     | N/A                               | None                             |
-| **Themes**        | Built-in, swappable                     | Manual styling                                          | Baked into template                      | Built-in                          | Whatever the model picks         |
-| **Extensibility** | Plugin architecture + semver            | Library APIs                                            | Limited                                  | None                              | None                             |
-| **Self-hosted**   | Yes                                     | Yes                                                     | Yes (+ LibreOffice)                      | No                                | No (API)                         |
+If you find yourself wanting to inject something the components don't express, the missing piece is a **custom component** — a named, versioned, schema-checked node you register with the generator and then use in JSON like any built-in. See [Architecture](/guide/architecture).
 
-- **vs. imperative libs.** docx and pptxgenjs are json-to-office's own rendering backends. The difference is the layer above them: a schema-validated JSON contract, themes, a layout pipeline, a plugin architecture, and TypeBox schemas that double as TypeScript types and runtime validators. What your code emits stops being code and starts being a value — storable, sendable, replayable.
-- **vs. template-driven.** Templates work when structure is fixed and only data changes. They break the moment structure becomes dynamic: conditional sections, variable-length tables, data-driven layouts. A `.docx` template is an opaque binary — you cannot diff it, lint it, or compose it. JSON you can.
-- **vs. SaaS / AI doc tools.** Built for a human assembling one deck in a browser, not a backend emitting thousands of branded documents from structured inputs. No API contract, no self-hosting, no ownership of the pipeline or the artifact.
-- **vs. plain LLM output.** An LLM can emit a `.pptx` directly if you ask. But the output is non-deterministic — same prompt, different document, no validation, no replay — and it conflates _content_ with _rendering_. With a JSON layer, the LLM emits a small, schema-constrained value, and predictable code handles rendering. See [LLM integration](/guide/llms).
+## Structure in the tree, style in the theme
 
-## Key features
+That split leaves one real judgement call per document, and it is worth getting right:
+
+> **Structure in the tree. Style in the theme.**
+
+**The tree** carries what the document _means_: this is a heading, this is a table with these columns, this section repeats per region. It changes because the content changed.
+
+**The theme** carries what the document _looks like_: colors, fonts, spacing, per-component defaults. It changes because the brand changed — for every document at once, including the ones you rendered last year.
+
+Pushing style into props is the expensive mistake, and it never looks like one at the time: a `color` here, a font size there, and the document is correct. Then a second tenant arrives, or the brand moves, and the styling is scattered across ten thousand rows of JSON instead of sitting in one theme file. The rule of thumb: if the value would be identical in every document you will ever render, it belongs in the theme. See [Themes & styling](/guide/themes).
+
+## What this buys you
+
+**The same inputs produce the same bytes.** Volatile OOXML metadata and ZIP timestamps are normalized, so a definition, a theme, a pinned library version, and unchanged asset bytes render byte-identically. Regenerating last quarter's report is a real operation, not an approximation of one.
+
+**An LLM emits a value, not a program.** The model's job shrinks to producing a small object against a JSON Schema — no method names to hallucinate, no constructor signatures to get wrong, and a validator that rejects the attempt before anything is rendered. The unreliable part produces content; deterministic code does the rendering. See [Using with LLMs](/guide/llms).
+
+**Documents review like code.** The JSON is what lands in the pull request, so a change to a contract template is a diff a human can read. DOCX goes further: because two versions are just data, `diffDocuments` produces a redline that opens in Word as native tracked changes — accept, reject, author, timestamp. See [Writing Word documents](/guide/writing-docx).
+
+**One structure, many brands.** The same tree rendered under a different theme is a different-looking document. Multi-tenant branding is a column in a table, not a fork of your rendering code.
+
+**Nothing to install next to it.** Rendering is pure Node — no Word, no LibreOffice, no headless browser, no per-tenant template files on disk. The playground can optionally use LibreOffice for pixel-accurate previews; the libraries never do. See [Render server & deployment](/guide/render-server).
+
+## The invariants
+
+These hold regardless of what produced the JSON:
+
+1. **Validation runs before rendering.** A document that fails its schema throws; there is no half-written file and no silently-dropped prop.
+2. **An unknown component name is an error.** Not skipped, not passed through — rejected by name.
+3. **Expansion is bounded.** Custom components may render other custom components, expanded recursively to at most 20 levels before the generator throws on a suspected circular reference.
+4. **What reaches the renderer is base components only.** The processor expands every custom node first, so the renderer's surface is fixed no matter how many plugins you register.
+5. **The definition never executes.** It contains no code and no raw markup, so an untrusted definition is untrusted _data_ — the worst case is a validation error.
+
+## Where the pieces sit
+
+```
+   your service  |  an LLM  |  the playground  |  a row in your DB
+        ↓
+   JSON definition          (schema-validated, inert, portable)
+        ↓
+   processor                (expands custom components, applies theme defaults)
+        ↓
+   flat tree of base components
+        ↓
+   renderer                 (docx.js / pptxgenjs)
+        ↓
+   .docx / .pptx bytes
+```
+
+Everything above the processor is yours and can be written in any language, by any system, at any time. Everything below it is a pinned dependency. The seam between them is a JSON Schema, which is the whole point: it is the only thing the two halves have to agree on. [Architecture](/guide/architecture) walks each layer.
+
+## What's in the box
 
 ### DOCX
 
@@ -64,8 +127,6 @@ Generating an Office document from a backend usually means one of four approache
 | table of contents  | Auto-generated from headings                                    |
 | section            | Independent page size, orientation, margins                     |
 
-DOCX also supports **document diff**: because documents are data, two versions diff like data, and the result opens in Word as native tracked changes (accept/reject, author, timestamp, review mode). See [Writing DOCX](/guide/writing-docx).
-
 ### PPTX
 
 7 components built around a grid-based layout system — see the [PPTX component reference](/reference/pptx/components):
@@ -80,37 +141,29 @@ DOCX also supports **document diff**: because documents are data, two versions d
 | highcharts | Server-side chart rendering                                                              |
 | slide      | Grid-based positioning, backgrounds, templates                                           |
 
-### Cross-format
+### Both formats
 
-- **Theme system** — colors, fonts, spacing, and component defaults. 3 built-in themes per format, or define your own. See [Themes & styling](/guide/themes).
+- **Theme system** — colors, fonts, spacing, and component defaults. 5 built-in DOCX themes, 3 PPTX themes, or define your own. See [Themes & styling](/guide/themes).
 - **Font system** — a curated Office-safe font list plus `fonts.extraEntries` for Google Fonts and custom TTF/OTF. See [Fonts](/guide/fonts).
-- **Schema validation** — full TypeBox schemas that serve as TypeScript types _and_ runtime validators, so errors surface before rendering. See [Validation](/guide/validation).
-- **Plugin architecture** — versioned custom components with `createComponent()`, full TypeScript support, and schema generation. See [Architecture](/guide/architecture).
-- **Template / placeholder system** (PPTX) — slide templates with named placeholder regions, static and dynamic content, style inheritance.
+- **Schema validation** — TypeBox schemas that are TypeScript types _and_ runtime validators, exportable as JSON Schema. See [Validation](/guide/validation).
+- **Plugin architecture** — semver-versioned custom components via `createComponent()`. See [Architecture](/guide/architecture).
+- **Template / placeholder system** (PPTX) — slide templates with named regions, static and dynamic content, style inheritance.
 - **Grid layout** (PPTX) — 12-column responsive grid with configurable margins and gutters. See [Slides & grid](/reference/pptx/slides-and-grid).
 
-## Who it's for
+## Where it fits
 
-- **API-driven SaaS teams** that need to emit branded reports, invoices, or decks from backend services.
-- **LLM-powered products** where a model generates the document JSON against a schema and deterministic code renders it.
-- **Teams that want decoupled pipelines** — the system that decides _what_ a document contains is separate from the system that renders it.
+**A product that emits documents.** "Download as PowerPoint" on a dashboard, invoices from a billing service, weekly statements from a cron job. The backend assembles JSON from data it already has and renders it — no template files to deploy, nothing to install beside Node.
 
-## Use cases
+**A product where a model writes the document.** The model fills a schema, your code renders it. Deterministic output, validation before rendering, and a stored definition you can regenerate.
 
-- On-demand dashboard exports ("Download as PowerPoint")
-- LLM document generation with schema-constrained output
-- Scheduled batch exports (weekly reports, statements)
-- Multi-tenant SaaS templates — one JSON structure, per-tenant themes
-- Internal tooling and back-office document generation
-- Headless CMS content rendered to Office documents
-- CI/CD artifacts — release notes or audit reports as `.docx`
+**A pipeline split across teams or languages.** A Python service, a CMS, or a non-developer in the playground produces the JSON; a Node service renders it. They share a schema and nothing else — no library, no deployment, no release calendar.
 
 ::: info Practical details
 MIT licensed, self-hostable, published on npm under the `@json-to-office` scope. Requires Node 20 or later. Source at [Wiseair-srl/json-to-office](https://github.com/Wiseair-srl/json-to-office).
 :::
 
-## Next steps
+## Next
 
-- [Getting started](/guide/getting-started) — install and generate your first documents in minutes.
-- [Core concepts](/guide/core-concepts) — the JSON tree model, components, props, and themes.
+- [Getting started](/guide/getting-started) — install and render your first documents in minutes.
+- [Core concepts](/guide/core-concepts) — the tree model, components, props, and themes.
 - [Playground](/guide/playground) — or skip the install and try the hosted [DOCX](https://docx.json-to-office.com) and [PPTX](https://pptx.json-to-office.com) playgrounds now.

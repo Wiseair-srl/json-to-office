@@ -13,9 +13,9 @@
 
 - [Quick start](#quick-start)
 - [The problem](#the-problem)
-- [The solution](#the-solution)
+- [The idea](#the-idea)
+- [What this buys you](#what-this-buys-you)
 - [Architecture](#architecture)
-- [Why not just use X?](#why-not-just-use-x)
 - [Features](#features)
 - [Full examples](#full-examples)
 - [Who it's for](#who-its-for)
@@ -111,11 +111,23 @@ jto-cli docx generate doc.json
 
 ## The problem
 
-Libraries like [docx](https://github.com/dolanmiu/docx) and [pptxgenjs](https://github.com/gitbrent/PptxGenJS) are imperative, code-first APIs. You build documents by constructing class instances and chaining methods. Powerful, but the document definition _is_ the program. You can't store it in a database, send it over an API, generate it from an LLM, or hand it to a non-developer.
+A backend that has to emit a `.docx` or a `.pptx` has four options, and each answers a different question than the one you asked.
 
-## The solution
+**Build it in code.** [docx](https://github.com/dolanmiu/docx) and [pptxgenjs](https://github.com/gitbrent/PptxGenJS) give you class instances and method chains, and they work. But the document definition _is_ the program. A customer complains about the report you sent in March; you can't retrieve what it said, because it never existed as a thing — only as a code path that ran once. Two versions of a layout diff as a diff of TypeScript.
 
-json-to-office makes the document definition **data**. You describe a `.docx` or `.pptx` as a JSON tree, and the library renders it into a real Office file. The JSON can live in a DB row, travel over HTTP, come out of GPT-4, or be edited in a visual playground with autocomplete and validation. Definition and rendering are fully decoupled.
+**Fill in a template.** Templates work exactly as long as the structure is fixed and only the values move. The first conditional section breaks that, and so does the first table whose row count depends on the data. And a `.docx` template is an opaque binary: you cannot diff it, lint it, review it, or compose two of them.
+
+**Hand it to a SaaS.** Built for one human assembling one deck in a browser. No API contract, no self-hosting, no ownership of the artifact.
+
+**Ask a model for the file.** An LLM will happily emit a `.pptx`. Ask twice and you get two different documents, neither validated, neither replayable — and the prompt is not the document, so there is nothing to store, diff, or regenerate.
+
+The four disagree about something more basic: **what a document is, in a system.** If it's an artifact you render once and email, any of them is fine. If it's an output of your platform — emitted thousands of times, on demand, by services and models, branded, regeneratable, auditable — then it has to behave like everything else you already know how to operate: a value you can store, validate, version, and diff.
+
+## The idea
+
+> **The document is a value. Rendering is a function.**
+
+json-to-office splits the two apart. The definition is a JSON tree of components and props, and it is inert data: no code, no raw OOXML, no escape hatch. The renderer is a pinned library version that turns that data into Office bytes. The only thing the two halves agree on is a schema.
 
 ```jsonc
 // This is a complete document definition. Store it, send it, generate it.
@@ -159,7 +171,25 @@ json-to-office makes the document definition **data**. You describe a `.docx` or
 }
 ```
 
-Your document is just JSON now. Generate it, store it, validate it, version it, and render it anywhere, without touching TypeScript or Office internals.
+Store it, send it, generate it, review it. Rendering happens later, somewhere else, maybe by someone else.
+
+One judgement call follows from the split, and it is worth getting right:
+
+> **Structure in the tree. Style in the theme.**
+
+The tree carries what the document _means_ — this is a heading, this is a table with these columns. The theme carries what it _looks like_ — colors, fonts, spacing, per-component defaults — and changes for every document at once. Pushing style into props never looks like a mistake at the time; it becomes one when a second tenant arrives and the branding is scattered across ten thousand rows of JSON.
+
+## What this buys you
+
+**The same inputs produce the same bytes.** Volatile OOXML metadata and ZIP timestamps are normalized, so a definition, a theme, a pinned library version, and unchanged asset bytes render byte-identically. Regenerating last quarter's report is a real operation, not an approximation of one.
+
+**An LLM emits a value, not a program.** The model's job shrinks to producing a small object against a JSON Schema — no method names to hallucinate, no constructor signatures to get wrong, and a validator that rejects the attempt before anything renders. The unreliable part produces content; deterministic code does the rendering.
+
+**Documents review like code.** The JSON is what lands in the pull request, so a change to a contract template is a diff a human can read. DOCX goes further: two versions diff into a redline that opens in Word as native tracked changes.
+
+**One structure, many brands.** The same tree under a different theme is a different-looking document. Multi-tenant branding is a column in a table, not a fork of your rendering code.
+
+**Nothing to install next to it.** Rendering is pure Node — no Word, no LibreOffice, no headless browser, no per-tenant template files on disk.
 
 ## Architecture
 
@@ -225,33 +255,6 @@ await generator.generateToFile(
 
 Generated JSON Schemas are local artifacts rather than stable hosted URLs today. Pin the CLI version and commit the generated files in the consuming application when the schema is an API contract; see the [schema versioning guide](docs/reference/json-schemas.md#versioning-schemas).
 
-## Why not just use X?
-
-Generating an Office document from a backend service usually means one of four things. Start from the question:
-
-**What should a document _be_, in a system?**
-
-An artifact rendered once and emailed? Any tool works. An _output of your platform_ — emitted thousands of times, on demand, by services and LLMs, branded, regeneratable, auditable? Then it should behave like data: serializable, validatable, versionable, diffable. None of the four common approaches give you that.
-
-|                   | json-to-office                          | Imperative libs<br/>(docx, pptxgenjs, officegen, react-pdf) | Template-driven<br/>(Carbone, docxtemplater) | SaaS / AI doc tools<br/>(Gamma, Tome) | Plain Claude<br/>(direct prompt → .docx/.pptx) |
-| ----------------- | --------------------------------------- | ----------------------------------------------------------- | -------------------------------------------- | ------------------------------------- | ---------------------------------------------- |
-| **Document is**   | Declarative JSON                        | Code                                                        | Binary template + data                       | Hosted artifact                       | Free-form prompt                               |
-| **Serializable**  | Yes                                     | No: trapped in code                                         | Partial: data is JSON, structure isn't       | No: locked in platform                | No: prompt ≠ output                            |
-| **Reproducible**  | Byte-identical output for stable inputs | Library-dependent                                           | Template-dependent                           | No                                    | No: stochastic                                 |
-| **LLM-friendly**  | Schema-constrained output               | Fragile: no schema                                          | Needs pre-made template                      | N/A                                   | No structure, no validation                    |
-| **Validation**    | Full TypeBox schemas                    | None                                                        | None                                         | N/A                                   | None                                           |
-| **Themes**        | Built-in, swappable                     | Manual styling                                              | Baked into template                          | Built-in                              | Whatever the model picks                       |
-| **Extensibility** | Plugin architecture + semver            | Library APIs                                                | Limited                                      | None                                  | None                                           |
-| **Self-hosted**   | Yes                                     | Yes                                                         | Yes (+ LibreOffice)                          | No                                    | No (API)                                       |
-
-**vs. imperative libs.** docx and pptxgenjs are json-to-office's own rendering backends. The difference is the layer above: a schema-validated JSON contract, themes, layout pipeline, plugin architecture, and TypeBox schemas that double as TypeScript types and runtime validators. What your code emits stops being code and starts being a value — storable, sendable, replayable.
-
-**vs. template-driven.** Templates work when structure is fixed and only data changes. They break the moment structure becomes dynamic: conditional sections, variable-length tables, data-driven layouts. A `.docx` template is an opaque binary — you cannot diff it, lint it, or compose it. JSON you can.
-
-**vs. SaaS / AI doc tools.** Built for a human assembling one deck in a browser, not a backend emitting thousands of branded documents from structured inputs. No API contract, no self-hosting, no ownership of the pipeline or the artifact.
-
-**vs. Plain Claude.** Claude can emit a `.pptx` directly if you ask. Two problems: (1) output is non-deterministic — same prompt, different document, no validation, no replay; (2) it conflates _content_ with _rendering_. With a JSON layer the LLM emits a small, schema-constrained value, and predictable rendering code produces reliable structure and themed output. Buffer and file APIs produce byte-identical Office archives when the json-to-office version, JSON, theme, and external asset bytes are unchanged.
-
 ## Features
 
 ### DOCX: 13 components
@@ -294,7 +297,7 @@ Every text edit becomes a real Word revision (accept/reject, author, timestamp) 
 
 ### Cross-format
 
-- **Theme system**: colors, fonts, spacing, component defaults. 3 built-in themes per format (minimal, corporate, vibrant/modern), or define your own.
+- **Theme system**: colors, fonts, spacing, component defaults. 5 built-in DOCX themes (minimal, corporate, modern, apex, devportal) and 3 PPTX themes (default, dark, minimal), or define your own.
 - **Font system**: curated Office-safe font list plus code-side `fonts.extraEntries` option for embedding Google Fonts and custom TTF/OTF across DOCX and PPTX. Themes name fonts; code registers them. See [docs/fonts.md](docs/fonts.md).
 - **Schema validation**: full TypeBox schemas that serve as TypeScript types _and_ runtime validators. Catch errors before rendering.
 - **Plugin architecture**: create versioned custom components with `createComponent()`. Full TypeScript support, chainable API, schema generation.
