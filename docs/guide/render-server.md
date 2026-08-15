@@ -28,7 +28,9 @@ Programmatically, services are passed as a generation option:
 ```ts
 import { generateBufferFromJson } from '@json-to-office/json-to-docx';
 
-const renderHeaders = { 'x-api-key': process.env.RENDER_API_KEY! };
+// The service itself has no auth; these headers are for your own
+// gateway in front of it, if you put one there.
+const renderHeaders = { 'x-api-key': process.env.RENDER_GATEWAY_KEY! };
 const buffer = await generateBufferFromJson(document, {
   services: {
     highcharts: {
@@ -61,38 +63,28 @@ The Dockerfile builds the whole monorepo in a `node:20-slim` stage, then assembl
 
 ### Environment variables (front server)
 
-| Variable                                     | Default                                       | Description                                                                                                             |
-| -------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                                       | `10000`                                       | Public listen port.                                                                                                     |
-| `HIGHCHARTS_UPSTREAM_URL`                    | `http://127.0.0.1:7801`                       | Internal Highcharts Export Server address (trailing slash stripped).                                                    |
-| `PROXY_TIMEOUT_MS`                           | `30000`                                       | Proxy fetch timeout; `504` on timeout, `502` if the upstream is unreachable.                                            |
-| `RENDER_AUTH_MODE`                           | `required` in production, `auto` otherwise    | `required` always checks credentials, `auto` checks only when a key exists, `disabled` is an explicit opt-out.          |
-| `RENDER_API_KEY`                             | —                                             | Secret required by `/export` and `/rasterize` when auth is required. `API_KEY` is accepted as a compatibility fallback. |
-| `RENDER_API_KEY_HEADER`                      | `x-api-key`                                   | Credential header name. Bearer authorization is also accepted.                                                          |
-| `MAX_EXPORT_BODY_SIZE`                       | `4194304`                                     | Maximum `/export` JSON body in bytes.                                                                                   |
-| `MAX_RASTERIZE_BODY_SIZE`                    | `33554432`                                    | Maximum `/rasterize` JSON body in bytes.                                                                                |
-| `MAX_RENDER_RESPONSE_SIZE`                   | `25165824`                                    | Maximum buffered Highcharts response in bytes.                                                                          |
-| `MAX_CONCURRENT_RENDERS`                     | `4` in production, `16` otherwise             | Shared concurrency cap across both render routes.                                                                       |
-| `EXPORT_RATE_LIMIT` / `RASTERIZE_RATE_LIMIT` | `60` / `30` in production                     | Requests allowed per render-rate window.                                                                                |
-| `RENDER_RATE_LIMIT_WINDOW_MS`                | `900000`                                      | Rate-limit window in milliseconds.                                                                                      |
-| `OUTBOUND_SOURCE_MODE`                       | `safe` in production, `development` otherwise | `safe` rejects local paths, private-network URLs, and hosts outside the allowlist.                                      |
-| `OUTBOUND_HOST_ALLOWLIST`                    | —                                             | Comma-separated external asset hosts allowed in safe mode.                                                              |
-| `TRUST_PROXY_HEADERS`                        | `false`                                       | Trust forwarded client-IP headers for rate limiting only behind a trusted proxy.                                        |
-| `NODE_ENV`                                   | —                                             | `production` enables required auth, safe outbound-source policy, and tighter limits by default.                         |
+The front server reads exactly four environment variables:
 
-`GET /health` remains unauthenticated for load balancers. In production, omitting `RENDER_API_KEY` while auth is required makes render requests fail closed with `503 AUTH_CONFIGURATION_ERROR`; it never silently creates a public renderer.
+| Variable                  | Default                 | Description                                                                                       |
+| ------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
+| `PORT`                    | `10000`                 | Public listen port.                                                                               |
+| `HIGHCHARTS_UPSTREAM_URL` | `http://127.0.0.1:7801` | Internal Highcharts Export Server address (trailing slash stripped).                              |
+| `PROXY_TIMEOUT_MS`        | `30000`                 | Proxy fetch timeout; `504` on timeout, `502` if the upstream is unreachable.                      |
+| `NODE_ENV`                | —                       | `production` tightens the `/rasterize` rate limit to 30 requests per 15 minutes (1000 otherwise). |
+
+::: warning The render server has no authentication
+There is no API-key check, no allowlist, and no auth mode on this service — anyone who can reach it can submit render jobs, and `/export` is proxied straight through to Highcharts. Do not expose it directly to the public internet. Put it behind your own gateway, network policy, or private network, and give only your playground or backend access to it.
+:::
 
 ### Running it locally
 
 The compose file builds from the repo root (the Dockerfile compiles the monorepo):
 
 ```bash
-RENDER_API_KEY=replace-with-a-random-secret \
-  docker compose -f services/jto-render-server/docker-compose.yml up --build
-# bound to http://127.0.0.1:10000 with a /health healthcheck
+docker compose -f services/jto-render-server/docker-compose.yml up --build
 ```
 
-The compose default key (`local-render-key`) is only a local convenience and the port is loopback-bound. Set `RENDER_API_KEY` explicitly for shared development hosts.
+It publishes port `10000` with a `/health` healthcheck. Note the port is bound on all interfaces, not just loopback.
 
 ## The /rasterize protocol
 
@@ -101,7 +93,6 @@ The compose default key (`local-render-key`) is only a local convenience and the
 ```json
 POST /rasterize
 Content-Type: application/json
-x-api-key: <RENDER_API_KEY>
 
 {
   "presentation": {
@@ -145,13 +136,13 @@ One image serves both formats: set `FORMAT=docx` or `FORMAT=pptx` per container.
 
 The `render.yaml` Render.com blueprint declares the full production topology — three Docker web services, all health-checked on `/health`:
 
-| Service               | Dockerfile                              | Env                                                                                                                        |
-| --------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `jto-render-server`   | `services/jto-render-server/Dockerfile` | `RENDER_AUTH_MODE=required`, secret `RENDER_API_KEY`                                                                       |
-| `jto-playground-docx` | root `Dockerfile`                       | `FORMAT=docx`, `VITE_AI_ENABLED=false`, render URLs, and the matching `HIGHCHARTS_API_KEY` / `JTO_PPTX_RASTERIZER_API_KEY` |
-| `jto-playground-pptx` | root `Dockerfile`                       | Same, with `FORMAT=pptx`                                                                                                   |
+| Service               | Dockerfile                              | Env                                                                                        |
+| --------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `jto-render-server`   | `services/jto-render-server/Dockerfile` | None                                                                                       |
+| `jto-playground-docx` | root `Dockerfile`                       | `FORMAT=docx`, `VITE_AI_ENABLED=false`, `HIGHCHARTS_SERVER_URL`, `JTO_PPTX_RASTERIZER_URL` |
+| `jto-playground-pptx` | root `Dockerfile`                       | Same, with `FORMAT=pptx`                                                                   |
 
-In `render.yaml`, every `sync: false` render credential must be set to the **same secret value** in the Render dashboard. The hosted playground services explicitly set `API_AUTH_MODE=disabled` because they are public browser demos and a browser-delivered API key would not be secret. For a private deployment, keep the production default (`required`), set `API_KEY`, restrict `CORS_ORIGIN`, and place the UI/API behind your identity-aware gateway.
+Both playgrounds point their render URLs at `https://jto-render-server.onrender.com`. Note that this topology runs the render server unauthenticated (it has no auth layer at all) — acceptable for a public demo, but for a private deployment put the render server on a private network or behind your own gateway rather than relying on the service itself to reject callers.
 
 ```text
 .docx.json / .pptx.json
@@ -168,23 +159,22 @@ core-docx `visual`    ──(services.pptx.render | serverUrl)─▶ in-process 
 
 Both CLIs build a `ServicesConfig` from the environment:
 
-| Variable                                                             | Effect                                                                                                       |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `HIGHCHARTS_SERVER_URL`                                              | Sets `services.highcharts.serverUrl` for `highcharts` components.                                            |
-| `HIGHCHARTS_API_KEY` / `HIGHCHARTS_API_KEY_HEADER`                   | Adds an auth header (header name defaults to `x-api-key`).                                                   |
-| `JTO_PPTX_RASTERIZER_URL`                                            | DOCX generation uses this remote `/rasterize` server for `visual` components.                                |
-| `JTO_PPTX_RASTERIZER_API_KEY` / `JTO_PPTX_RASTERIZER_API_KEY_HEADER` | Adds rasterizer auth (header defaults to `x-api-key`). Falls back to the Highcharts key/header when omitted. |
-| `LIBREOFFICE_PATH` / `PDFTOPPM_PATH`                                 | Override binary paths for the in-process rasterizer.                                                         |
+| Variable                                           | Effect                                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Variable                                           | Effect                                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `HIGHCHARTS_SERVER_URL`                            | Sets `services.highcharts.serverUrl` for `highcharts` components.               |
+| `HIGHCHARTS_API_KEY` / `HIGHCHARTS_API_KEY_HEADER` | Adds an auth header to chart export requests (header defaults to `x-api-key`).  |
+| `JTO_PPTX_RASTERIZER_URL`                          | DOCX generation uses this remote `/rasterize` server for `visual` components.   |
+| `LIBREOFFICE_PATH` / `PDFTOPPM_PATH`               | Override binary paths for the in-process rasterizer.                            |
 
 Without `HIGHCHARTS_SERVER_URL`, chart components fall back to `http://localhost:7801` (start one with `pnpm dlx highcharts-export-server --enableServer true`). Without a configured rasterizer URL, the default remote endpoint is `http://localhost:7802` — but the CLI does not need it, as described next.
 
-For the combined authenticated server, configure both callers explicitly:
+There is no rasterizer-specific API-key variable: `services.pptx` accepts `headers` programmatically, but the CLI only wires a URL from the environment. Point both callers at the render server like this:
 
 ```bash
 export HIGHCHARTS_SERVER_URL=https://render.example.com
-export HIGHCHARTS_API_KEY="$RENDER_API_KEY"
 export JTO_PPTX_RASTERIZER_URL=https://render.example.com
-export JTO_PPTX_RASTERIZER_API_KEY="$RENDER_API_KEY"
 ```
 
 ### In-process LibreOffice fallback

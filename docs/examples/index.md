@@ -71,35 +71,6 @@ A complete professional-services invoice for a fictional studio: section header/
 jto docx generate ./invoice.docx.json -o ./invoice.docx
 ```
 
-## `quarterly-review.pptx.json` — a dependency-free review deck
-
-A two-slide widescreen presentation showing the core PPTX primitives without remote images or rendering services: the grid system, semantic theme colors, named text styles, speaker notes, a native editable chart, and a table.
-
-```json
-{
-  "name": "chart",
-  "props": {
-    "type": "bar",
-    "title": "Quarterly revenue ($k)",
-    "showValue": true,
-    "data": [
-      {
-        "name": "Revenue",
-        "labels": ["Q3 2025", "Q4 2025", "Q1 2026", "Q2 2026"],
-        "values": [420, 510, 575, 690]
-      }
-    ],
-    "grid": { "column": 0, "row": 1, "columnSpan": 8, "rowSpan": 5 }
-  }
-}
-```
-
-```bash
-jto pptx generate ./quarterly-review.pptx.json -o ./quarterly-review.pptx
-```
-
-CI strictly validates every file in `examples/` and renders this deck plus the invoice as smoke tests. They are the safest starting points when checking a new runtime or deployment.
-
 ## `contract-v1.docx.json` / `contract-v2.docx.json` — tracked-changes diff
 
 Two versions of the same service agreement, made to be diffed. Between v1 and v2 the fee clause changes materially — v1 reads:

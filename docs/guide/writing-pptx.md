@@ -222,6 +222,7 @@ Once a deck has more than a few slides, you will notice the same layouts repeati
     "title": "Company deck",
     "slideWidth": 13.33,
     "slideHeight": 7.5,
+    "grid": { "columns": 12, "rows": 12 },
     "templates": [
       {
         "name": "COVER_TEMPLATE",
@@ -335,8 +336,10 @@ for (const w of warnings) {
 
 Generation is forgiving about recoverable content problems: instead of failing on them, it emits **pipeline warnings** and produces the best file it can. Each warning has a machine-readable `code` — for example `GRID_POSITION_CLAMPED` (a grid placement fell outside the grid and was clamped), `MISSING_TEMPLATE` (a slide referenced a template name that doesn't exist), `IMAGE_NO_SOURCE`, `CHART_INVALID_SERIES`, `THEME_COLOR_FALLBACK`, or `FONT_UNRESOLVED` — and, where available, the component and/or slide it came from.
 
-::: tip Validation runs at generation time too
-Warnings cover recoverable semantic issues, but structural mistakes (wrong prop names, invalid nesting) don't get that far: generation runs the same deep validation by default and throws a `PresentationValidationError` before rendering — see [Validation](/guide/validation). You can opt out with `validation: { enabled: false }` in the generation options. Beyond validation, the remaining hard failures are an image with more than one source (`path` + `base64` + `svg` are mutually exclusive) and `highcharts` errors (unreachable export server, or running in a browser).
+::: tip Validation is a separate step
+Generation does **not** validate the document against the schema, so structural mistakes (wrong prop names, invalid nesting) surface as warnings or renderer errors rather than a clean upfront failure. Run `validate.document(...)` from the package — or `jto pptx validate` — before generating if you want schema errors reported properly. See [Validation](/guide/validation).
+
+The hard failures at generation time are: a root component that isn't `pptx`, an image with more than one source (`path` + `base64` + `svg` are mutually exclusive), and `highcharts` errors (unreachable export server, or running in a browser).
 :::
 
 ## Where to go next

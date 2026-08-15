@@ -16,7 +16,7 @@ json-to-office gives you two ways to put charts in a document: **native PowerPoi
 
 **Rule of thumb**: reach for native `chart` first. It needs no infrastructure, recipients can tweak it, and it covers the common business-chart types. Reach for `highcharts` when you need chart types or styling that PowerPoint charts can't express — or when you're generating a Word document, where `highcharts` is the chart component.
 
-Both paths default their series colors to the theme palette (`primary`, `secondary`, `accent`, `accent4`, `accent5`, `accent6`), so charts recolor themselves when you switch [themes](/guide/themes).
+Both paths default their series colors to the theme palette, so charts recolor themselves when you switch [themes](/guide/themes). The palettes differ by format: in PPTX — native `chart` and `highcharts` alike — the default set is `primary`, `secondary`, `accent`, `accent4`, `accent5`, `accent6`; the DOCX `highcharts` component injects the first three only (`primary`, `secondary`, `accent`). In both cases an explicit `options.colors` always wins.
 
 ## Quick examples
 

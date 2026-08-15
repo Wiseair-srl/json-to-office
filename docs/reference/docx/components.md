@@ -62,7 +62,7 @@ A document heading. Headings feed the [table of contents](#toc) and Word's navig
 | `lineSpacing`  | `number` \| `{ type: 'single'\|'atLeast'\|'exactly'\|'double'\|'multiple', value? }` | no       | theme               |                                                                       |
 | `pageBreak`    | `boolean`                                                                            | no       | —                   | Page break before the heading                                         |
 | `columnBreak`  | `boolean`                                                                            | no       | —                   | Column break before the heading                                       |
-| `numbering`    | `boolean`                                                                            | no       | —                   | Include the heading in heading numbering                              |
+| `numbering`    | `boolean`                                                                            | no       | —                   | Accepted by the schema but not currently applied by the renderer      |
 | `keepNext`     | `boolean`                                                                            | no       | —                   | Keep with the next paragraph                                          |
 | `keepLines`    | `boolean`                                                                            | no       | —                   | Keep all lines on one page                                            |
 | `revision`     | `Revision`                                                                           | no       | —                   | Tracked-change segments (see [Revisions](#revisions-tracked-changes)) |
@@ -125,7 +125,7 @@ An embedded picture, with optional caption and floating (anchored) placement.
 | `height`           | `number` (px) \| `"%"` string       | no        | aspect ratio |                                                                                      |
 | `widthRelativeTo`  | `'content'` \| `'page'`             | no        | `'content'`  | `content` = page width minus margins                                                 |
 | `heightRelativeTo` | `'content'` \| `'page'`             | no        | `'content'`  |                                                                                      |
-| `alignment`        | `'left'` \| `'center'` \| `'right'` | no        | —            |                                                                                      |
+| `alignment`        | `'left'` \| `'center'` \| `'right'` | no        | theme        | Falls back to `'center'` when the theme sets none                                    |
 | `caption`          | `string`                            | no        | —            | Supports `**bold**`, `*italic*`, `***both***`                                        |
 | `spacing`          | `{ before?, after? }` (points)      | no        | —            |                                                                                      |
 | `floating`         | floating object                     | no        | —            | Anchored placement (see below)                                                       |
@@ -175,7 +175,7 @@ A KPI card: a large number with unit, description, and an optional trend indicat
 | `format`      | `string`                             | no       | —       | Number format pattern                   |
 | `trend`       | `'up'` \| `'down'` \| `'neutral'`    | no       | —       | Trend direction                         |
 | `trendValue`  | `string` \| `number`                 | no       | —       | Trend delta shown next to the indicator |
-| `alignment`   | `'left'` \| `'center'` \| `'right'`  | no       | —       |                                         |
+| `alignment`   | `'left'` \| `'center'` \| `'right'`  | no       | theme   |                                         |
 | `spacing`     | `{ before?, after? }` (points)       | no       | —       |                                         |
 | `size`        | `'small'` \| `'medium'` \| `'large'` | no       | —       | Card scale                              |
 
@@ -220,17 +220,17 @@ A **column-based** table: each column declares its header, width, cell defaults,
 
 **Cell**
 
-| Field                        | Type                                                          | Description                                                       |
-| ---------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `content`                    | `string` \| component                                         | Plain text or a full nested component (image, list, columns, ...) |
-| `color`                      | `string`                                                      | Text color: `#`-prefixed hex or a theme color name                |
-| `backgroundColor`            | `string`                                                      | `#`-prefixed hex, theme color name, or `'transparent'`            |
-| `horizontalAlignment`        | `'left'` \| `'center'` \| `'right'` \| `'justify'`            |                                                                   |
-| `verticalAlignment`          | `'top'` \| `'middle'` \| `'bottom'`                           |                                                                   |
-| `font`                       | `{ family?, size?, bold?, fontWeight?, italic?, underline? }` | `fontWeight` (100–900) overrides `bold`                           |
-| `borderColor` / `borderSize` | `string` / `number` (points)                                  | Per-cell border override                                          |
-| `padding`                    | `number` \| `{ top?, bottom?, left?, right? }` (points)       |                                                                   |
-| `height`                     | `number` (points)                                             | Minimum row height contribution                                   |
+| Field                        | Type                                                          | Description                                                                                   |
+| ---------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `content`                    | `string` \| component                                         | Plain text or a full nested component (image, list, columns, ...)                             |
+| `color`                      | `string`                                                      | Text color. Bare hex, passed to OOXML unchanged — theme color names are **not** resolved here |
+| `backgroundColor`            | `string`                                                      | Cell fill. Bare hex, passed to OOXML unchanged — theme color names are **not** resolved here  |
+| `horizontalAlignment`        | `'left'` \| `'center'` \| `'right'` \| `'justify'`            |                                                                                               |
+| `verticalAlignment`          | `'top'` \| `'middle'` \| `'bottom'`                           |                                                                                               |
+| `font`                       | `{ family?, size?, bold?, fontWeight?, italic?, underline? }` | `fontWeight` (100–900) overrides `bold`                                                       |
+| `borderColor` / `borderSize` | `string` / `number` (points)                                  | Per-cell border override                                                                      |
+| `padding`                    | `number` \| `{ top?, bottom?, left?, right? }` (points)       |                                                                                               |
+| `height`                     | `number` (points)                                             | Minimum row height contribution                                                               |
 
 Note the hex conventions differ: cell `color`/`backgroundColor` hex values must be `#`-prefixed, while `borderColor` (table- and cell-level) is hex **without** `#`.
 
@@ -305,17 +305,17 @@ Bulleted or numbered lists with up to nine nesting levels and fully configurable
 
 A native Word table of contents built from headings (and optionally custom styles). Word refreshes it as a field.
 
-| Prop                 | Type                                    | Required | Default              | Description                                                       |
-| -------------------- | --------------------------------------- | -------- | -------------------- | ----------------------------------------------------------------- |
-| `pageBreak`          | `boolean`                               | no       | —                    | Page break before the TOC                                         |
-| `depth`              | `{ from? (1–6), to? (1–6) }`            | no       | `{ from: 1, to: 3 }` | Heading levels included                                           |
-| `pageNumbersDepth`   | same shape                              | no       | —                    | Which levels show page numbers                                    |
-| `numberingStyle`     | `'numeric'` \| `'bullet'` \| `'none'`   | no       | —                    | Entry numbering                                                   |
-| `title`              | `string`                                | no       | —                    | TOC heading                                                       |
-| `includePageNumbers` | `boolean`                               | no       | `true`               |                                                                   |
-| `numberSeparator`    | `boolean`                               | no       | `true`               | `true` = tab before the page number, `false` = space              |
-| `scope`              | `'document'` \| `'section'` \| `'auto'` | no       | `'auto'`             | `auto` = section-scoped when inside a section, else document-wide |
-| `styles`             | `{ styleId: string, level: 1–6 }[]`     | no       | —                    | Map custom theme styles into TOC levels                           |
+| Prop                 | Type                                    | Required | Default              | Description                                                                       |
+| -------------------- | --------------------------------------- | -------- | -------------------- | --------------------------------------------------------------------------------- |
+| `pageBreak`          | `boolean`                               | no       | —                    | Page break before the TOC                                                         |
+| `depth`              | `{ from? (1–6), to? (1–6) }`            | no       | `{ from: 1, to: 3 }` | Heading levels included                                                           |
+| `pageNumbersDepth`   | same shape                              | no       | —                    | Which levels show page numbers                                                    |
+| `numberingStyle`     | `'numeric'` \| `'bullet'` \| `'none'`   | no       | —                    | Accepted but not applied — the underlying `docx` TOC API has no equivalent option |
+| `title`              | `string`                                | no       | —                    | TOC heading                                                                       |
+| `includePageNumbers` | `boolean`                               | no       | `true`               |                                                                                   |
+| `numberSeparator`    | `boolean`                               | no       | `true`               | `true` = tab before the page number, `false` = space                              |
+| `scope`              | `'document'` \| `'section'` \| `'auto'` | no       | `'auto'`             | `auto` = section-scoped when inside a section, else document-wide                 |
+| `styles`             | `{ styleId: string, level: 1–6 }[]`     | no       | —                    | Map custom theme styles into TOC levels                                           |
 
 ```json
 {
@@ -357,14 +357,14 @@ Inside a `text-box`, a nested `columns` renders as a multi-column table.
 
 A bordered, padded box — callouts, sidebars, cover-page blocks. Allowed children: `heading`, `paragraph`, `image`.
 
-| Prop            | Type                                                                                | Required | Default | Description                                                                            |
-| --------------- | ----------------------------------------------------------------------------------- | -------- | ------- | -------------------------------------------------------------------------------------- |
-| `width`         | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       | Relative to content width                                                              |
-| `height`        | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       |                                                                                        |
-| `floating`      | floating object                                                                     | no       | —       | Identical schema to [`image`](#image) — one shared floating schema for both components |
-| `style.padding` | `{ top?, right?, bottom?, left? }` (≥ 0)                                            | no       | —       | Inner padding                                                                          |
-| `style.border`  | per-side `{ style: 'solid'\|'dashed'\|'dotted'\|'double'\|'none', width?, color? }` | no       | —       | `color` takes `#`-prefixed hex or a theme color name                                   |
-| `style.shading` | `{ fill?: string }`                                                                 | no       | —       | Background fill                                                                        |
+| Prop            | Type                                                                                | Required | Default | Description                                                                                               |
+| --------------- | ----------------------------------------------------------------------------------- | -------- | ------- | --------------------------------------------------------------------------------------------------------- |
+| `width`         | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       | Relative to content width                                                                                 |
+| `height`        | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       |                                                                                                           |
+| `floating`      | floating object                                                                     | no       | —       | Identical schema to [`image`](#image) — one shared floating schema for both components                    |
+| `style.padding` | `{ top?, right?, bottom?, left? }` (≥ 0)                                            | no       | —       | Inner padding                                                                                             |
+| `style.border`  | per-side `{ style: 'solid'\|'dashed'\|'dotted'\|'double'\|'none', width?, color? }` | no       | —       | `color` takes `#`-prefixed hex or a theme color name                                                      |
+| `style.shading` | `{ fill?: string }`                                                                 | no       | —       | Background fill. `fill` takes `#`-prefixed hex or a theme color name — a bare hex string throws at render |
 
 ```json
 {
@@ -376,7 +376,7 @@ A bordered, padded box — callouts, sidebars, cover-page blocks. Allowed childr
       "border": {
         "left": { "style": "solid", "width": 3, "color": "#16A34A" }
       },
-      "shading": { "fill": "F0FDF4" }
+      "shading": { "fill": "#F0FDF4" }
     }
   },
   "children": [
@@ -419,17 +419,17 @@ Renders a chart through a Highcharts export server and embeds the result as an i
 
 A free-canvas graphic authored as a **single PPTX slide** — text, shapes, images, tables, and charts positioned in inches — rasterized to a PNG by a PPTX rendering service and placed like an [`image`](#image). This gives Word documents the full expressiveness of the slide engine; see the [PPTX component reference](/reference/pptx/components) for the element types.
 
-| Prop                                              | Type                                | Required | Default                 | Description                                                                                                                                        |
-| ------------------------------------------------- | ----------------------------------- | -------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `canvas`                                          | object                              | **yes**  | —                       | `{ width, height }` in **inches** (each ≥ 0.1), optional `theme` (a PPTX theme name) and `background` (`{ color?, image?: { path? \| base64? } }`) |
-| `elements`                                        | PPTX slide-content array            | no       | —                       | The real PPTX slide-content union: `text`, `image`, `shape`, `table`, `highcharts`, `chart` nodes with `x`/`y`/`w`/`h` in inches                   |
-| `dpi`                                             | `number` (36–600)                   | no       | `200`                   | Raster resolution; out-of-range values fail validation (the render-time clamp applies only to unvalidated inputs like `services.pptx.dpi`)         |
-| `serverUrl`                                       | `string`                            | no       | `http://localhost:7802` | Rasterization service URL; an in-process `services.pptx.render` callback takes precedence                                                          |
-| `width` / `height`                                | `number` (px) \| `"%"` string       | no       | canvas size at 96 px/in | Placement size in the document                                                                                                                     |
-| `alignment`                                       | `'left'` \| `'center'` \| `'right'` | no       | `'center'`              |                                                                                                                                                    |
-| `caption`                                         | `string`                            | no       | —                       | Rich text (bold/italic)                                                                                                                            |
-| `alt`                                             | `string`                            | no       | —                       | Accessibility text                                                                                                                                 |
-| `spacing` / `floating` / `keepNext` / `keepLines` | as `image`                          | no       | —                       |                                                                                                                                                    |
+| Prop                                              | Type                                | Required | Default                          | Description                                                                                                                                        |
+| ------------------------------------------------- | ----------------------------------- | -------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `canvas`                                          | object                              | **yes**  | —                                | `{ width, height }` in **inches** (each ≥ 0.1), optional `theme` (a PPTX theme name) and `background` (`{ color?, image?: { path? \| base64? } }`) |
+| `elements`                                        | PPTX slide-content array            | no       | —                                | The real PPTX slide-content union: `text`, `image`, `shape`, `table`, `highcharts`, `chart` nodes with `x`/`y`/`w`/`h` in inches                   |
+| `dpi`                                             | `number` (36–600)                   | no       | `200`                            | Raster resolution; out-of-range values fail validation (the render-time clamp applies only to unvalidated inputs like `services.pptx.dpi`)         |
+| `serverUrl`                                       | `string`                            | no       | `http://localhost:7802`          | Rasterization service URL; an in-process `services.pptx.render` callback takes precedence                                                          |
+| `width` / `height`                                | `number` (px) \| `"%"` string       | no       | `width`: canvas size at 96 px/in | `width` defaults to the canvas physical size; `height` is left unset so the rendered PNG's aspect ratio is preserved                               |
+| `alignment`                                       | `'left'` \| `'center'` \| `'right'` | no       | `'center'`                       |                                                                                                                                                    |
+| `caption`                                         | `string`                            | no       | —                                | Rich text (bold/italic)                                                                                                                            |
+| `alt`                                             | `string`                            | no       | —                                | Accessibility text                                                                                                                                 |
+| `spacing` / `floating` / `keepNext` / `keepLines` | as `image`                          | no       | —                                |                                                                                                                                                    |
 
 At render time the visual becomes a one-slide presentation `{ name: 'pptx', ... }` and is POSTed to the service's `/rasterize` endpoint as `{ presentation, dpi }`; the response `{ base64DataUri, width, height }` is embedded as an image. If the service is unreachable, the error suggests configuring `services.pptx`.
 

@@ -2,10 +2,14 @@
 
 json-to-office is validation-first: every component's props are described by a TypeBox schema, and documents are checked against those schemas before anything is rendered. Because the document is data, errors can point at an exact JSON path with an actionable message — instead of a stack trace from deep inside a rendering library.
 
-Both formats validate up front by default and fail hard on schema errors:
+The two formats take different stances on _when_ that check runs:
 
-- **DOCX**: `generateDocumentFromJson` refuses to render an invalid document, throwing `JsonValidationError`.
-- **PPTX**: generation runs the same deep validator before rendering, throwing `PresentationValidationError` on schema errors (opt out with `options.validation.enabled = false`). On top of that, render-time problems the schema can't catch — an invalid chart series, an unknown color — surface as coded **pipeline warnings** rather than sinking the whole deck.
+- **DOCX**: validation is built into generation. `generateDocumentFromJson` refuses to render an invalid document, throwing `JsonValidationError`.
+- **PPTX**: generation does **not** validate — validation is an explicit, separate step (`validate.document(...)` or `jto pptx validate`). Render-time problems the schema can't catch — an invalid chart series, an unknown color — surface as coded **pipeline warnings** rather than sinking the whole deck.
+
+::: tip Validate your PPTX before generating
+Because PPTX generation skips the schema check, a typo in a prop name is silently ignored rather than reported. Run the validator first in any pipeline where the JSON isn't hand-checked.
+:::
 
 ## DOCX validation
 
@@ -124,11 +128,11 @@ if (!result.valid) {
 For PPTX, `validateStrict` is currently an alias of `validate`: the PPTX deep validation never cleans data or applies defaults, so there is no lenient/strict split to choose between.
 :::
 
-### Validation and warnings at generation
+### Warnings, not errors, at generation
 
-PPTX generation runs the full deep validator by default, same stance as DOCX: `generatePresentation` and `generateBufferWithWarnings` validate the component tree up front and throw `PresentationValidationError` on schema errors. Opt out with `options.validation.enabled = false`; `options.validation.allowUnknownFields` strips unknown props instead of rejecting them. (The image source mutual-exclusivity rule — one of `path` / `base64` / `svg` — is also enforced at generation time and throws even with validation disabled.)
+PPTX generation does not run the deep validator — validation is a separate step you invoke yourself. The only hard failures at generation time are a root component that isn't `pptx`, and the image source mutual-exclusivity rule (one of `path` / `base64` / `svg`), both of which throw a plain `Error`.
 
-Beyond validation, the pipeline reports render-time issues that schema validation can't catch — skipped charts, unknown colors, clamped grid positions — as structured warnings. The warning-friendly entry point returns both the file and the warning list:
+Everything else the pipeline can recover from is reported as a warning rather than an exception — skipped charts, unknown colors, clamped grid positions — as structured warnings. The warning-friendly entry point returns both the file and the warning list:
 
 ```ts
 import { generateBufferWithWarnings } from '@json-to-office/json-to-pptx';

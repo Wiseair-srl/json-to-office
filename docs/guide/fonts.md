@@ -70,7 +70,7 @@ The check runs _after_ the export-mode pre-pass, which makes the two modes behav
 - In `substitute` mode, non-safe references have already been rewritten to safe fonts — strict only throws if something slipped past the rewrite (e.g. a custom substitution targeting another non-safe family).
 
 ::: warning
-Strict is a library/CLI feature only. The HTTP render server strips `strict` from client-supplied options so that a stray font reference can't be turned into a predictable 500. See [Render server](/guide/render-server).
+Strict is a library/CLI feature only. The dev-server HTTP API strips `strict` from client-supplied `options.fonts` on `POST /api/<format>/generate`, so a stray font reference can't be turned into a predictable 500. See the [CLI reference](/reference/cli) for that endpoint.
 :::
 
 ## Registering non-safe fonts

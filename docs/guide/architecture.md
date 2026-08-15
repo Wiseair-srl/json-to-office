@@ -33,7 +33,7 @@ Generation happens in two stages:
 1. **The processor** walks the tree. When it encounters a custom component, it validates the props against that component's schema, resolves the requested semver version, calls the component's `render()` function, and splices the result back into the tree. If `render()` returns other custom components, the processor re-expands them recursively, up to **20 levels deep**. The output is a flat tree of base components only.
 2. **The renderer** converts that flat tree into native Office objects using a battle-tested backend: [docx.js](https://github.com/dolanmiu/docx) for DOCX, [pptxgenjs](https://github.com/gitbrent/PptxGenJS) for PPTX.
 
-This split is what makes the whole system deterministic and testable: all dynamic logic lives in the expansion stage, and rendering is a pure translation of base components into Office XML.
+This split is what makes the whole system predictable and testable: all dynamic logic lives in the expansion stage, and rendering is a pure translation of base components into Office XML.
 
 ## Custom components and versioning
 
