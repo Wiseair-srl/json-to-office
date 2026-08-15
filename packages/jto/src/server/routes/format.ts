@@ -13,6 +13,11 @@ import { rateLimiter } from '../middleware/hono/rate-limit.js';
 import { AppEnv } from '../types/hono.js';
 import { type FormatAdapter, PluginRegistry } from '@json-to-office/jto-cli';
 import { registerRasterizeRoute } from '../rasterize-route.js';
+import { config } from '../config/index.js';
+import {
+  assertSafeOutboundSources,
+  UnsafeOutboundSourceError,
+} from '../security/outbound-source-policy.js';
 import {
   LibreOfficeBinaryNotFoundError,
   LibreOfficeConversionError,
@@ -22,6 +27,16 @@ import {
 
 export function createFormatRouter(adapter: FormatAdapter) {
   const router = new Hono<AppEnv>();
+  const assertRequestSources = (value: unknown, path: string) => {
+    try {
+      assertSafeOutboundSources(value, config.outboundSources, path);
+    } catch (error) {
+      if (error instanceof UnsafeOutboundSourceError) {
+        throw new HTTPException(400, { message: error.message });
+      }
+      throw error;
+    }
+  };
 
   const contentTypeMw = async (c: any, next: () => Promise<void>) => {
     const contentType = c.req.header('content-type');
@@ -39,10 +54,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
     rateLimiter({
       limit: process.env.NODE_ENV === 'production' ? 10 : 1000,
       window: 15 * 60 * 1000,
-      keyGenerator: (c) =>
-        c.req.header('X-Real-IP') ||
-        c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
-        'anonymous',
+      trustProxy: config.rateLimit.trustProxy,
     }),
     contentTypeMw,
     tbValidator(LooseDocumentGenerationRequestSchema),
@@ -56,6 +68,10 @@ export function createFormatRouter(adapter: FormatAdapter) {
       const requestId = c.get('requestId');
 
       try {
+        assertRequestSources(jsonDefinition, 'jsonDefinition');
+        assertRequestSources(customThemes, 'customThemes');
+        assertRequestSources(options, 'options');
+
         const bypassCache =
           c.req.header('X-Bypass-Cache') === 'true' ||
           c.req.query('bypass-cache') === 'true' ||
@@ -182,10 +198,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
       rateLimiter({
         limit: process.env.NODE_ENV === 'production' ? 30 : 1000,
         window: 15 * 60 * 1000,
-        keyGenerator: (c) =>
-          c.req.header('X-Real-IP') ||
-          c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
-          'anonymous',
+        trustProxy: config.rateLimit.trustProxy,
       }),
       contentTypeMw,
       tbValidator(LooseDocumentDiffRequestSchema),
@@ -212,8 +225,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
           const oldDoc = parseDef('Old', oldDefinition);
           const newDoc = parseDef('New', newDefinition);
 
-          // The adapter's validateDocument is a no-op stub; use the real
-          // TypeBox document validation from shared-docx (same as the CLI)
+          // Use the canonical shared-docx validator (same as the CLI).
           const sharedDocx = await import('@json-to-office/shared-docx');
           for (const [label, doc] of [
             ['Old', oldDoc],
@@ -281,13 +293,17 @@ export function createFormatRouter(adapter: FormatAdapter) {
   // POST /preview/libreoffice
   router.post(
     '/preview/libreoffice',
+    bodyLimit({
+      // Multipart framing adds a small amount around the configured file cap.
+      maxSize: config.requestLimits.maxFileSize + 64 * 1024,
+      onError: () => {
+        throw new HTTPException(413, { message: 'Request body too large' });
+      },
+    }),
     rateLimiter({
       limit: process.env.NODE_ENV === 'production' ? 20 : 1000,
       window: 15 * 60 * 1000,
-      keyGenerator: (c) =>
-        c.req.header('X-Real-IP') ||
-        c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
-        'anonymous',
+      trustProxy: config.rateLimit.trustProxy,
     }),
     async (c) => {
       const requestId = c.get('requestId');
@@ -309,16 +325,41 @@ export function createFormatRouter(adapter: FormatAdapter) {
             message: `${adapter.name.toUpperCase()} file is empty`,
           });
         }
+        if ((file as File).size > config.requestLimits.maxFileSize) {
+          throw new HTTPException(413, {
+            message: `File exceeds ${config.requestLimits.maxFileSize} bytes`,
+          });
+        }
+
+        const expectedExtension = `.${adapter.name}`;
+        const originalName =
+          (file as File).name || `preview${expectedExtension}`;
+        if (!originalName.toLowerCase().endsWith(expectedExtension)) {
+          throw new HTTPException(400, {
+            message: `Expected a ${adapter.name.toUpperCase()} file`,
+          });
+        }
 
         const arrayBuffer = await (file as File).arrayBuffer();
         const inputBuffer = Buffer.from(arrayBuffer);
+        if (
+          inputBuffer.length < 4 ||
+          inputBuffer[0] !== 0x50 ||
+          inputBuffer[1] !== 0x4b
+        ) {
+          throw new HTTPException(400, {
+            message: `Invalid ${adapter.name.toUpperCase()} file`,
+          });
+        }
         const pdfBuffer = await libreOfficeService.convertToPdf(
           inputBuffer,
-          (file as File).name
+          originalName
         );
 
         const pdfName =
-          ((file as File).name || 'preview').replace(/\.[^.]+$/i, '') + '.pdf';
+          originalName
+            .replace(/\.[^.]+$/i, '')
+            .replace(/[^a-zA-Z0-9._-]/g, '_') + '.pdf';
         c.header('Content-Type', 'application/pdf');
         c.header('Content-Disposition', `inline; filename="${pdfName}"`);
         c.header('Content-Length', String(pdfBuffer.length));
@@ -371,10 +412,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
     rateLimiter({
       limit: process.env.NODE_ENV === 'production' ? 20 : 1000,
       window: 15 * 60 * 1000,
-      keyGenerator: (c) =>
-        c.req.header('X-Real-IP') ||
-        c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
-        'anonymous',
+      trustProxy: config.rateLimit.trustProxy,
     }),
     contentTypeMw,
     tbValidator(LooseDocumentGenerationRequestSchema),
@@ -390,6 +428,9 @@ export function createFormatRouter(adapter: FormatAdapter) {
       }>(c, 'json');
 
       try {
+        assertRequestSources(jsonDefinition, 'jsonDefinition');
+        assertRequestSources(customThemes, 'customThemes');
+
         const generated = await generatorService.generate({
           jsonDefinition,
           customThemes,
@@ -448,6 +489,9 @@ export function createFormatRouter(adapter: FormatAdapter) {
       const requestId = c.get('requestId');
 
       try {
+        assertRequestSources(jsonDefinition, 'jsonDefinition');
+        assertRequestSources(customThemes, 'customThemes');
+
         const config =
           typeof jsonDefinition === 'string'
             ? JSON.parse(jsonDefinition)
@@ -571,12 +615,10 @@ export function createFormatRouter(adapter: FormatAdapter) {
       rateLimiter({
         limit: process.env.NODE_ENV === 'production' ? 10 : 1000,
         window: 15 * 60 * 1000,
-        keyGenerator: (c) =>
-          c.req.header('X-Real-IP') ||
-          c.req.header('X-Forwarded-For')?.split(',').pop()?.trim() ||
-          'anonymous',
+        trustProxy: config.rateLimit.trustProxy,
       }),
     ],
+    sourcePolicy: config.outboundSources,
     onError: (error) => logger.error('Visual rasterization failed', { error }),
   });
 

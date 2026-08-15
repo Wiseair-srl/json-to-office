@@ -1,0 +1,119 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Northvane Studio — Quarterly Review",
+    "author": "Northvane Studio",
+    "company": "Northvane Studio",
+    "language": "en-US",
+    "theme": "corporate",
+    "slideWidth": 13.333,
+    "slideHeight": 7.5,
+    "grid": {
+      "columns": 12,
+      "rows": 6,
+      "margin": 0.5,
+      "gutter": { "column": 0.15, "row": 0.15 }
+    }
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {
+        "background": { "color": "background" },
+        "notes": "Open with the quarter's two headline outcomes."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "Q2 2026\nQuarterly Review",
+            "style": "title",
+            "grid": { "column": 1, "row": 1, "columnSpan": 10, "rowSpan": 2 }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Sustainable growth, stronger retention, focused execution",
+            "style": "subtitle",
+            "grid": { "column": 1, "row": 3, "columnSpan": 10, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "line": { "color": "accent", "width": 3 },
+            "grid": { "column": 1, "row": 4, "columnSpan": 3, "rowSpan": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": { "color": "background" },
+        "notes": "Revenue is in USD thousands. Emphasize retention before pipeline."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "Performance at a glance",
+            "style": "heading1",
+            "grid": { "column": 0, "row": 0, "columnSpan": 12, "rowSpan": 1 }
+          }
+        },
+        {
+          "name": "chart",
+          "props": {
+            "type": "bar",
+            "title": "Quarterly revenue ($k)",
+            "showTitle": true,
+            "showLegend": false,
+            "showValue": true,
+            "barDir": "col",
+            "chartColors": ["primary"],
+            "data": [
+              {
+                "name": "Revenue",
+                "labels": ["Q3 2025", "Q4 2025", "Q1 2026", "Q2 2026"],
+                "values": [420, 510, 575, 690]
+              }
+            ],
+            "grid": { "column": 0, "row": 1, "columnSpan": 8, "rowSpan": 5 }
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "rows": [
+              [
+                {
+                  "text": "Metric",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                },
+                {
+                  "text": "Q2",
+                  "bold": true,
+                  "fill": "primary",
+                  "color": "FFFFFF"
+                }
+              ],
+              ["Gross margin", "68%"],
+              ["Net retention", "112%"],
+              ["Qualified pipeline", "$1.8M"],
+              ["On-time delivery", "96%"]
+            ],
+            "fontSize": 14,
+            "border": { "type": "solid", "pt": 1, "color": "D9DEE8" },
+            "margin": 6,
+            "grid": { "column": 8, "row": 1, "columnSpan": 4, "rowSpan": 5 }
+          }
+        }
+      ]
+    }
+  ]
+}

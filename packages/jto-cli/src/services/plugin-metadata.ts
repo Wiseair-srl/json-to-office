@@ -3,6 +3,7 @@ import * as fs from 'fs/promises';
 import { type TSchema } from '@sinclair/typebox';
 import { latestVersion } from '@json-to-office/shared';
 import type { CustomComponent } from './plugin-loader.js';
+import { emitDiagnostic } from './diagnostics.js';
 
 export interface PluginExample {
   title?: string;
@@ -52,9 +53,9 @@ export class PluginMetadataExtractor {
       const source = await fs.readFile(filePath, 'utf-8');
       format = this.detectFormat(source);
     } catch (err) {
-      console.warn(
-        `Failed to read plugin source for format detection: ${filePath}`,
-        err
+      emitDiagnostic(
+        `Failed to read plugin source for format detection: ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+        'warning'
       );
     }
 
@@ -272,7 +273,10 @@ export class PluginMetadataExtractor {
         const metadata = await this.extract(component, filePath);
         metadataList.push(metadata);
       } catch (error) {
-        console.warn(`Failed to extract metadata from ${filePath}:`, error);
+        emitDiagnostic(
+          `Failed to extract metadata from ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+          'warning'
+        );
       }
     }
 

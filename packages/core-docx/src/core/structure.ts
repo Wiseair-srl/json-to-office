@@ -69,9 +69,10 @@ export interface ProcessedSection {
 export async function processDocument(
   document: ReportComponentDefinition,
   theme: ThemeConfig,
-  themeName: string
+  themeName: string,
+  generationDate?: Date
 ): Promise<ProcessedDocument> {
-  const metadata = createDocumentMetadata(document.props);
+  const metadata = createDocumentMetadata(document.props, generationDate);
 
   // Merge document-level componentDefaults on top of theme-level ones
   // (document overrides theme)
@@ -139,13 +140,16 @@ export async function processDocument(
 /**
  * Extract document metadata from report props
  */
-export function createDocumentMetadata(props: ReportProps): DocumentMetadata {
+export function createDocumentMetadata(
+  props: ReportProps,
+  generationDate = new Date()
+): DocumentMetadata {
   return {
     title: props.metadata?.title,
     subtitle: props.metadata?.subtitle,
     author: props.metadata?.author,
     company: props.metadata?.company,
-    date: props.metadata?.date ? new Date(props.metadata.date) : new Date(),
+    date: props.metadata?.date ? new Date(props.metadata.date) : generationDate,
   };
 }
 

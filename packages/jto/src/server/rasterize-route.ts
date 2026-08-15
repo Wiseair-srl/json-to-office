@@ -18,6 +18,11 @@ import {
 } from '@json-to-office/shared';
 import { createLibreOfficePptxRasterizer } from '@json-to-office/jto-cli';
 import { tbValidator, getValidated } from './lib/typebox-validator.js';
+import {
+  assertSafeOutboundSources,
+  type OutboundSourcePolicy,
+  UnsafeOutboundSourceError,
+} from './security/outbound-source-policy.js';
 
 /** Body for POST /rasterize: a single-slide pptx presentation + optional dpi. */
 export const RasterizeRequestSchema = Type.Object(
@@ -62,6 +67,7 @@ export function registerRasterizeRoute(
   options: {
     getRasterizer?: () => PptxRasterizer;
     preMiddleware?: MiddlewareHandler[];
+    sourcePolicy?: OutboundSourcePolicy;
     onError?: (error: unknown) => void;
   } = {}
 ): void {
@@ -85,6 +91,13 @@ export function registerRasterizeRoute(
       }>(c, 'json');
 
       try {
+        if (options.sourcePolicy) {
+          assertSafeOutboundSources(
+            presentation,
+            options.sourcePolicy,
+            'presentation'
+          );
+        }
         const result = await getRasterizer()({
           presentation,
           dpi: clampVisualDpi(dpi ?? DEFAULT_VISUAL_DPI),
@@ -93,6 +106,9 @@ export function registerRasterizeRoute(
       } catch (error) {
         options.onError?.(error);
         if (error instanceof HTTPException) throw error;
+        if (error instanceof UnsafeOutboundSourceError) {
+          throw new HTTPException(400, { message: error.message });
+        }
         const msg =
           error instanceof Error ? error.message.toLowerCase() : String(error);
         if (msg.includes('not found') || msg.includes('rasterization needs')) {

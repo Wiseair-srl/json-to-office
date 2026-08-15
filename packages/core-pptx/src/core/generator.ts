@@ -4,7 +4,6 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
-import JSZip from 'jszip';
 import { writeFileSync } from 'fs';
 import type {
   PresentationComponentDefinition,
@@ -18,15 +17,32 @@ import { renderPresentation } from './render';
 import { getPptxTheme } from '../themes/defaults';
 import { resolveDocumentFonts } from './fontResolution';
 import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
-import { collectImageSourceConflicts } from '@json-to-office/shared-pptx';
+import {
+  collectImageSourceConflicts,
+  validateJsonPresentationDocument,
+  validatePresentationDocument,
+  type ValidationError,
+} from '@json-to-office/shared-pptx';
+import {
+  packagePresentationBuffer,
+  type PresentationPackagingOptions,
+} from './packagePresentation';
+
+export interface GenerationValidationOptions {
+  /** Validate the complete component tree before rendering. Defaults to true. */
+  enabled?: boolean;
+  /** Accept unknown props while still enforcing required fields and types. */
+  allowUnknownFields?: boolean;
+}
 
 /**
  * Options for the generation pipeline
  */
-export interface GenerationOptions {
+export interface GenerationOptions extends PresentationPackagingOptions {
   customThemes?: Record<string, PptxThemeConfig>;
   services?: ServicesConfig;
   fonts?: FontRuntimeOpts;
+  validation?: GenerationValidationOptions;
 }
 
 // Font resolution shared with the plugin path — see ./fontResolution.ts
@@ -37,6 +53,40 @@ export interface GenerationOptions {
 export interface GenerationResult {
   buffer: Buffer;
   warnings: PipelineWarning[];
+}
+
+/** Error thrown when a presentation fails the generation validation gate. */
+export class PresentationValidationError extends Error {
+  public readonly errors: ValidationError[];
+
+  constructor(errors: ValidationError[]) {
+    super(
+      `Presentation validation failed:\n${errors
+        .map((error) => `  - ${error.path}: ${error.message}`)
+        .join('\n')}`
+    );
+    this.name = 'PresentationValidationError';
+    this.errors = errors;
+  }
+}
+
+function assertValidPresentation(
+  input: string | unknown,
+  validation?: GenerationValidationOptions
+): void {
+  if (validation?.enabled === false) return;
+
+  const options = {
+    allowUnknownFields: validation?.allowUnknownFields,
+  };
+  const result =
+    typeof input === 'string'
+      ? validateJsonPresentationDocument(input, options)
+      : validatePresentationDocument(input, options);
+
+  if (!result.valid) {
+    throw new PresentationValidationError(result.errors);
+  }
 }
 
 /**
@@ -58,6 +108,8 @@ export async function generatePresentation(
   options?: GenerationOptions,
   warnings?: PipelineWarning[]
 ): Promise<PptxGenJS> {
+  assertValidPresentation(document, options?.validation);
+
   if (!document || document.name !== 'pptx') {
     throw new Error('Top-level component must be a pptx component');
   }
@@ -97,6 +149,8 @@ export async function generateBufferWithWarnings(
   jsonConfig: string | PresentationComponentDefinition,
   options?: GenerationOptions
 ): Promise<GenerationResult> {
+  assertValidPresentation(jsonConfig, options?.validation);
+
   let component: PresentationComponentDefinition;
 
   if (typeof jsonConfig === 'string') {
@@ -186,7 +240,7 @@ export async function generateBufferWithWarnings(
     warnings
   );
   const data = await pptx.write({ outputType: 'nodebuffer' });
-  const buffer = await neutralizeTableStyle(data as Buffer);
+  const buffer = await packagePresentationBuffer(data as Buffer, options);
   return { buffer, warnings };
 }
 
@@ -207,34 +261,12 @@ export async function generateAndSaveFromJson(
  */
 export async function generateFromFile(
   filePath: string,
-  outputPath: string
+  outputPath: string,
+  options?: GenerationOptions
 ): Promise<void> {
   const { readFileSync } = await import('fs');
   const json = readFileSync(filePath, 'utf-8');
-  await generateAndSaveFromJson(json, outputPath);
-}
-
-/**
- * Replace the default table style (Medium Style 2 - Accent 1, which applies allCaps
- * to headers) with "No Style, No Grid" so table text renders as authored.
- */
-const MEDIUM_STYLE_2_ACCENT_1 = '{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}';
-const NO_STYLE_NO_GRID = '{2D5ABB26-0587-4C30-8999-92F81FD0307C}';
-
-async function neutralizeTableStyle(buffer: Buffer): Promise<Buffer> {
-  const zip = await JSZip.loadAsync(buffer);
-  let changed = false;
-  for (const [path, entry] of Object.entries(zip.files)) {
-    if (!path.match(/^ppt\/slides\/slide\d+\.xml$/)) continue;
-    const xml = await entry.async('string');
-    if (xml.includes(MEDIUM_STYLE_2_ACCENT_1)) {
-      zip.file(path, xml.replaceAll(MEDIUM_STYLE_2_ACCENT_1, NO_STYLE_NO_GRID));
-      changed = true;
-    }
-  }
-  return changed
-    ? ((await zip.generateAsync({ type: 'nodebuffer' })) as Buffer)
-    : buffer;
+  await generateAndSaveFromJson(json, outputPath, options);
 }
 
 /**
@@ -242,10 +274,11 @@ async function neutralizeTableStyle(buffer: Buffer): Promise<Buffer> {
  */
 export async function savePresentation(
   pptx: PptxGenJS,
-  outputPath: string
+  outputPath: string,
+  options?: PresentationPackagingOptions
 ): Promise<void> {
   const data = await pptx.write({ outputType: 'nodebuffer' });
-  const buffer = await neutralizeTableStyle(data as Buffer);
+  const buffer = await packagePresentationBuffer(data as Buffer, options);
   writeFileSync(outputPath, buffer);
 }
 

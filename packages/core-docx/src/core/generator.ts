@@ -3,7 +3,7 @@
  * Main orchestration functions that compose the document generation pipeline
  */
 
-import { Document, Packer } from 'docx';
+import { Document } from 'docx';
 import { writeFileSync } from 'fs';
 import {
   ComponentDefinition,
@@ -18,6 +18,10 @@ import { applyLayout } from './layout';
 import { renderDocument } from './render';
 import { resolveDocumentFonts } from './fontResolution';
 import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
+import {
+  packageDocument,
+  resolveGenerationDate,
+} from '../utils/packageDocument';
 
 // JSON support imports
 import { DocumentValidationResult } from '@json-to-office/shared-docx';
@@ -57,6 +61,10 @@ export interface JsonGenerationOptions {
    * warnings fall back to `console.warn` as before.
    */
   warnings?: GenerationWarning[];
+  /** Normalize volatile OOXML values for byte-identical output. Defaults true. */
+  deterministic?: boolean;
+  /** Build timestamp for metadata; defaults to a stable epoch. */
+  generatedAt?: string | Date;
 }
 
 // Font resolution shared with the plugin path — see ./fontResolution.ts
@@ -104,7 +112,8 @@ export async function generateDocument(
     options?.customThemes,
     options?.services,
     options?.fonts,
-    options?.warnings
+    options?.warnings,
+    resolveGenerationDate(options)
   );
 }
 
@@ -135,7 +144,8 @@ async function generateDocumentWithCustomThemes(
   customThemes?: { [key: string]: ThemeConfig },
   services?: ServicesConfig,
   fonts?: FontRuntimeOpts,
-  warnings?: GenerationWarning[]
+  warnings?: GenerationWarning[],
+  generationDate?: Date
 ): Promise<Document> {
   // Alias so we can reassign after the export-mode pre-pass swaps doc +
   // theme references to the rewritten versions.
@@ -193,7 +203,12 @@ async function generateDocumentWithCustomThemes(
   await resolveDocumentFonts(document, theme, fonts, warnings);
 
   // Pipeline: Structure -> Layout -> Render (with caching)
-  const structure = await processDocument(document, theme, themeName);
+  const structure = await processDocument(
+    document,
+    theme,
+    themeName,
+    generationDate
+  );
   const layout = applyLayout(structure.sections, theme, themeName);
   const renderedDocument = await renderDocument(structure, layout, {
     bypassCache: false,
@@ -264,7 +279,8 @@ export async function generateDocumentFromJson(
     options?.customThemes,
     options?.services,
     options?.fonts,
-    options?.warnings
+    options?.warnings,
+    resolveGenerationDate(options)
   );
 }
 
@@ -285,7 +301,7 @@ export async function generateBufferFromJson(
   options?: JsonGenerationOptions
 ): Promise<Buffer> {
   const document = await generateDocumentFromJson(jsonConfig, options);
-  return (await Packer.toBuffer(document)) as Buffer;
+  return packageDocument(document, options);
 }
 
 /**
@@ -297,7 +313,7 @@ export async function generateAndSaveFromJson(
   options?: JsonGenerationOptions
 ): Promise<void> {
   const document = await generateDocumentFromJson(jsonConfig, options);
-  await saveDocument(document, filename);
+  await saveDocument(document, filename, options);
 }
 
 /**
@@ -321,7 +337,7 @@ export async function generateBufferFromFile(
   options?: JsonGenerationOptions
 ): Promise<Buffer> {
   const document = await generateDocumentFromFile(filePath, options);
-  return (await Packer.toBuffer(document)) as Buffer;
+  return packageDocument(document, options);
 }
 
 /**
@@ -333,7 +349,7 @@ export async function generateAndSaveFromFile(
   options?: JsonGenerationOptions
 ): Promise<void> {
   const document = await generateDocumentFromFile(inputFilePath, options);
-  await saveDocument(document, outputFilePath);
+  await saveDocument(document, outputFilePath, options);
 }
 
 /**
@@ -341,20 +357,11 @@ export async function generateAndSaveFromFile(
  */
 export async function saveDocument(
   document: Document,
-  filename: string
+  filename: string,
+  options?: JsonGenerationOptions
 ): Promise<void> {
-  const buffer = await Packer.toBuffer(document);
+  const buffer = await packageDocument(document, options);
   writeFileSync(filename, buffer);
-
-  // Post-process: Fix duplicate wp:docPr IDs in floating images
-  try {
-    const { fixFloatingImageIds } = await import(
-      '../utils/fixFloatingImageIds'
-    );
-    await fixFloatingImageIds(filename);
-  } catch (error) {
-    console.warn('Failed to fix floating image IDs (non-critical):', error);
-  }
 }
 
 /**
@@ -362,10 +369,11 @@ export async function saveDocument(
  */
 export async function generateAndSave(
   document: ReportComponentDefinition,
-  filename: string
+  filename: string,
+  options?: JsonGenerationOptions
 ): Promise<void> {
-  const generatedDocument = await generateDocument(document);
-  await saveDocument(generatedDocument, filename);
+  const generatedDocument = await generateDocument(document, options);
+  await saveDocument(generatedDocument, filename, options);
 }
 
 /**

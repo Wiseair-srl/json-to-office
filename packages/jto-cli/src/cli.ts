@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { registerCoreCommands } from './cli-register.js';
+import { EXIT_CODES, renderLines } from './commands/ui.js';
 
 declare const __PACKAGE_VERSION__: string | undefined;
 const PACKAGE_VERSION =
@@ -41,13 +42,16 @@ function registerDevHint(parent: Command): void {
       .description('(unavailable in jto-cli — install @json-to-office/jto)')
       .helpOption(false)
       .allowUnknownOption(true)
-      .action(() => {
-        console.error(
-          chalk.yellow(
-            '\n`dev` requires the web playground, which is not included in @json-to-office/jto-cli.\n'
-          ) +
-            `Install ${chalk.bold('@json-to-office/jto')} to enable ${chalk.bold('jto docx dev')} / ${chalk.bold('jto pptx dev')}.\n`
-        );
+      .action(async () => {
+        await renderLines([
+          {
+            text: '`dev` requires the web playground, unavailable in @json-to-office/jto-cli.',
+            tone: 'warning',
+          },
+          {
+            text: 'Install @json-to-office/jto to enable `jto docx dev` / `jto pptx dev`.',
+          },
+        ]);
         process.exit(1);
       }),
     { hidden: true }
@@ -56,6 +60,27 @@ function registerDevHint(parent: Command): void {
 for (const sub of program.commands) registerDevHint(sub);
 
 program.exitOverride();
+
+/** Resolves once the stream has drained everything already queued. */
+function flush(stream: NodeJS.WriteStream): Promise<void> {
+  if (stream.writableEnded || stream.writableLength === 0) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    stream.write('', () => resolve());
+  });
+}
+
+// Ink can leave handles attached to stdio after the last frame — on Windows a
+// piped stdin keeps the event loop alive long after the command is done, so the
+// process lingers instead of exiting. Commands already terminate explicitly on
+// failure; do the same on success, once output has been flushed, so the CLI
+// exits as soon as its work is finished rather than waiting for the loop to
+// drain on its own. Guarded by src/commands/__tests__/generate-exit.test.ts.
+async function exitAfterFlush(code: number): Promise<never> {
+  await Promise.all([flush(process.stdout), flush(process.stderr)]);
+  process.exit(code);
+}
 
 (async () => {
   try {
@@ -66,12 +91,18 @@ program.exitOverride();
       error.code === 'commander.help' ||
       error.code === 'commander.helpDisplayed'
     ) {
-      process.exit(0);
+      await exitAfterFlush(EXIT_CODES.OK);
     }
     if (error.code === 'commander.executeSubCommandAsync') {
-      process.exit(error.exitCode);
+      await exitAfterFlush(error.exitCode);
     }
-    console.error(chalk.red('Error:'), error.message);
-    process.exit(1);
+    await renderLines(
+      [{ text: `Error: ${error.message}`, tone: 'error' }],
+      process.stderr
+    );
+    await exitAfterFlush(EXIT_CODES.FAIL);
   }
+  await exitAfterFlush(
+    typeof process.exitCode === 'number' ? process.exitCode : EXIT_CODES.OK
+  );
 })();

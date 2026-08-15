@@ -6,6 +6,7 @@
  */
 
 import { Type, TSchema } from '@sinclair/typebox';
+import { PPTX_SLIDE_CONTENT_COMPONENTS } from '@json-to-office/shared/schemas/slide-content';
 
 /**
  * Component definition with metadata
@@ -30,12 +31,6 @@ export interface PptxStandardComponentDefinition {
 }
 import { PresentationPropsSchema } from './components/presentation';
 import { SlidePropsSchema } from './components/slide';
-import { TextPropsSchema } from './components/text';
-import { PptxImagePropsSchema } from './components/image';
-import { ShapePropsSchema } from './components/shape';
-import { PptxTablePropsSchema } from './components/table';
-import { PptxHighchartsPropsSchema } from './components/highcharts';
-import { PptxChartPropsSchema } from './components/chart';
 
 /**
  * SINGLE SOURCE OF TRUTH for all standard PPTX components
@@ -61,71 +56,16 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
       name: 'slide',
       propsSchema: SlidePropsSchema,
       hasChildren: true,
-      allowedChildren: [
-        'text',
-        'image',
-        'shape',
-        'table',
-        'highcharts',
-        'chart',
-      ],
+      allowedChildren: PPTX_SLIDE_CONTENT_COMPONENTS.map(({ name }) => name),
       hasPlaceholders: true,
       category: 'container',
       description:
         'Slide container - groups content elements on a single slide.',
     },
 
-    // ========================================================================
-    // Content Components (leaf nodes, no children)
-    // ========================================================================
-    {
-      name: 'text',
-      propsSchema: TextPropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        'Text element - displays text with formatting, positioning and styling options.',
-    },
-    {
-      name: 'image',
-      propsSchema: PptxImagePropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        'Image element - displays images from file path, URL, or base64 data.',
-    },
-    {
-      name: 'shape',
-      propsSchema: ShapePropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        'Shape element - draws geometric shapes with optional text, fill, and line styling.',
-    },
-    {
-      name: 'table',
-      propsSchema: PptxTablePropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        'Table element - displays tabular data with rows and columns.',
-    },
-    {
-      name: 'highcharts',
-      propsSchema: PptxHighchartsPropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        'Highcharts element - renders charts via Highcharts Export Server.',
-    },
-    {
-      name: 'chart',
-      propsSchema: PptxChartPropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        'Native PowerPoint chart - editable, scalable, no external server needed.',
-    },
+    // Content components are canonical in @json-to-office/shared so DOCX
+    // visuals can reuse the exact schemas without depending on shared-pptx.
+    ...PPTX_SLIDE_CONTENT_COMPONENTS,
   ] as const;
 
 // ============================================================================

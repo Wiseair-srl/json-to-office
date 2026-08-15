@@ -7,9 +7,18 @@ services:
       context: ../..
       dockerfile: services/jto-render-server/Dockerfile
     ports:
-      - '10000:10000'
+      - '127.0.0.1:10000:10000'
+    environment:
+      RENDER_AUTH_MODE: required
+      RENDER_API_KEY: ${RENDER_API_KEY:-local-render-key}
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:10000/health']
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:10000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
       interval: 10s
       timeout: 5s
       retries: 3

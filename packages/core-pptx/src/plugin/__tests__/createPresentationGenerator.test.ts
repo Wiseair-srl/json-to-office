@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { Type } from '@sinclair/typebox';
+import { Value } from '@sinclair/typebox/value';
 import {
   createComponent,
   createVersion,
   createPresentationGenerator,
+  ComponentValidationError,
   DuplicateComponentError,
 } from '../index';
 import type { PptxComponentInput } from '../../types';
@@ -14,10 +16,13 @@ const bannerComponent = createComponent({
   name: 'banner' as const,
   versions: {
     '1.0.0': createVersion({
-      propsSchema: Type.Object({
-        title: Type.String(),
-        subtitle: Type.Optional(Type.String()),
-      }),
+      propsSchema: Type.Object(
+        {
+          title: Type.String(),
+          subtitle: Type.Optional(Type.String()),
+        },
+        { additionalProperties: false }
+      ),
       render: async ({ props }) => {
         const components: PptxComponentInput[] = [
           {
@@ -50,10 +55,13 @@ const bannerComponent = createComponent({
       },
     }),
     '2.0.0': createVersion({
-      propsSchema: Type.Object({
-        heading: Type.String(),
-        color: Type.Optional(Type.String({ default: '#000000' })),
-      }),
+      propsSchema: Type.Object(
+        {
+          heading: Type.String(),
+          color: Type.Optional(Type.String({ default: '#000000' })),
+        },
+        { additionalProperties: false }
+      ),
       render: async ({ props }) => [
         {
           name: 'text',
@@ -64,7 +72,7 @@ const bannerComponent = createComponent({
             w: 9,
             h: 1,
             fontSize: 36,
-            fontColor: props.color,
+            color: props.color,
           },
         } as PptxComponentInput,
       ],
@@ -159,6 +167,32 @@ describe('createPresentationGenerator', () => {
 
     expect(result.buffer).toBeInstanceOf(Buffer);
     expect(result.buffer.length).toBeGreaterThan(0);
+  });
+
+  it('packages repeated plugin generations byte-identically', async () => {
+    const gen = createPresentationGenerator().addComponent(bannerComponent);
+    const document = {
+      name: 'pptx' as const,
+      props: {},
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [
+            {
+              name: 'banner' as const,
+              version: '1.0.0' as const,
+              props: { title: 'Stable plugin output' },
+            },
+          ],
+        },
+      ],
+    };
+
+    const first = await gen.generateBuffer(document);
+    const second = await gen.generateBuffer(document);
+
+    expect(first.buffer.equals(second.buffer)).toBe(true);
   });
 
   it('resolves latest version when no version specified', async () => {
@@ -290,6 +324,124 @@ describe('createPresentationGenerator', () => {
     expect(result.errors!.length).toBeGreaterThan(0);
   });
 
+  it('rejects dead props on authored standard components', async () => {
+    const gen = createPresentationGenerator().addComponent(bannerComponent);
+    const document = {
+      name: 'pptx' as const,
+      props: {},
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [
+            {
+              name: 'text',
+              props: { text: 'Hello', fontColor: 'CC785C' },
+            },
+          ],
+        },
+      ],
+    } as any;
+
+    expect(gen.validate(document).valid).toBe(false);
+    await expect(gen.generateBuffer(document)).rejects.toBeInstanceOf(
+      ComponentValidationError
+    );
+  });
+
+  it('rejects unknown custom props before render-time cleaning', async () => {
+    const gen = createPresentationGenerator().addComponent(bannerComponent);
+    const document = {
+      name: 'pptx' as const,
+      props: {},
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [
+            {
+              name: 'banner',
+              version: '1.0.0',
+              props: { title: 'Hello', bogus: true },
+            },
+          ],
+        },
+      ],
+    } as any;
+
+    expect(gen.validate(document).valid).toBe(false);
+    await expect(gen.generateBuffer(document)).rejects.toBeInstanceOf(
+      ComponentValidationError
+    );
+  });
+
+  it('allows unknown props only through the explicit migration option', async () => {
+    const gen = createPresentationGenerator().addComponent(bannerComponent);
+    const document = {
+      name: 'pptx' as const,
+      props: {},
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [
+            {
+              name: 'banner',
+              version: '1.0.0',
+              props: { title: 'Hello', bogus: true },
+            },
+          ],
+        },
+      ],
+    } as any;
+
+    const result = await gen.generateBuffer(document, {
+      validation: { allowUnknownFields: true },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
+  });
+
+  it('rejects invalid standard output emitted by a custom render', async () => {
+    const invalidEmitter = createComponent({
+      name: 'invalid-emitter' as const,
+      versions: {
+        '1.0.0': createVersion({
+          propsSchema: Type.Object({}, { additionalProperties: false }),
+          render: async () => [
+            {
+              name: 'text',
+              props: { text: 'Bad output', fontColor: 'CC785C' },
+            } as any,
+          ],
+        }),
+      },
+    });
+    const gen = createPresentationGenerator().addComponent(invalidEmitter);
+
+    try {
+      await gen.generateBuffer({
+        name: 'pptx',
+        props: {},
+        children: [
+          {
+            name: 'slide',
+            props: {},
+            children: [{ name: 'invalid-emitter', props: {} }],
+          },
+        ],
+      });
+      throw new Error('expected generation to fail');
+    } catch (error) {
+      expect(error).toBeInstanceOf(ComponentValidationError);
+      expect((error as ComponentValidationError).message).toContain(
+        "custom component 'invalid-emitter' emitted invalid output"
+      );
+      expect((error as ComponentValidationError).message).toContain(
+        'fontColor'
+      );
+    }
+  });
+
   it('rejects an image that sets more than one source (path/base64/svg)', () => {
     const gen = createPresentationGenerator();
 
@@ -390,6 +542,76 @@ describe('createPresentationGenerator', () => {
     const gen = createPresentationGenerator().addComponent(bannerComponent);
     const schema = gen.generateSchema();
     expect(schema).toBeDefined();
+  });
+
+  it('generates version-discriminated plugin schemas', () => {
+    const gen = createPresentationGenerator().addComponent(bannerComponent);
+    const schema = gen.generateSchema();
+    const presentation = (component: Record<string, unknown>) => ({
+      name: 'pptx',
+      props: {},
+      children: [{ name: 'slide', props: {}, children: [component] }],
+    });
+
+    expect(
+      Value.Check(
+        schema,
+        presentation({
+          name: 'banner',
+          version: '1.0.0',
+          props: { title: 'Legacy' },
+        })
+      )
+    ).toBe(true);
+    expect(
+      Value.Check(
+        schema,
+        presentation({ name: 'banner', props: { heading: 'Latest' } })
+      )
+    ).toBe(true);
+    expect(
+      Value.Check(
+        schema,
+        presentation({
+          name: 'banner',
+          version: '1.0.0',
+          props: { heading: 'Wrong version' },
+        })
+      )
+    ).toBe(false);
+  });
+
+  it('selects the latest plugin schema with semantic version ordering', () => {
+    const semverComponent = createComponent({
+      name: 'semver-card' as const,
+      versions: {
+        '1.9.0': createVersion({
+          propsSchema: Type.Object({ oldValue: Type.String() }),
+          render: async () => [],
+        }),
+        '1.10.0': createVersion({
+          propsSchema: Type.Object({ newValue: Type.String() }),
+          render: async () => [],
+        }),
+      },
+    });
+    const schema = createPresentationGenerator()
+      .addComponent(semverComponent)
+      .generateSchema();
+
+    expect(
+      Value.Check(schema, {
+        name: 'pptx',
+        props: {},
+        children: [
+          {
+            name: 'slide',
+            props: {},
+            children: [{ name: 'semver-card', props: { newValue: 'latest' } }],
+          },
+        ],
+      })
+    ).toBe(true);
   });
 
   it('passes through standard components unchanged', async () => {

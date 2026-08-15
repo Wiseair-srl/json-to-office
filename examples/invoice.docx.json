@@ -90,8 +90,8 @@
           "name": "table",
           "props": {
             "headerCellDefaults": {
-              "backgroundColor": "000000",
-              "color": "FFFFFF",
+              "backgroundColor": "#000000",
+              "color": "#FFFFFF",
               "font": { "bold": true, "size": 10 },
               "padding": { "top": 8, "right": 12, "bottom": 8, "left": 12 }
             },
@@ -168,8 +168,7 @@
                   { "content": "$4,500" }
                 ]
               }
-            ],
-            "spacing": { "before": 200 }
+            ]
           }
         },
         { "name": "paragraph", "props": { "text": "" } },

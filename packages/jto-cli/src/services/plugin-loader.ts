@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { pathToFileURL } from 'url';
+import { emitDiagnostic } from './diagnostics.js';
 
 export interface CustomComponent {
   name: string;
@@ -31,7 +32,10 @@ export class PluginLoader {
         globalTsxUnregister = register();
         this.tsxUnregister = globalTsxUnregister;
       } catch {
-        console.warn('tsx not available, TypeScript module loading may fail');
+        emitDiagnostic(
+          'tsx unavailable; TypeScript plugin loading may fail',
+          'warning'
+        );
       }
     })();
 
@@ -53,10 +57,14 @@ export class PluginLoader {
       return this.extractComponent(module, filePath);
     } catch (error: any) {
       if (process.env.DEBUG) {
-        console.error(`Failed to load plugin from ${filePath}:`, error);
+        emitDiagnostic(
+          `Failed to load plugin from ${filePath}: ${error?.stack || error}`,
+          'error'
+        );
       } else {
-        console.warn(
-          `Failed to load plugin from ${path.basename(filePath)}: ${error.message}`
+        emitDiagnostic(
+          `Failed to load plugin from ${path.basename(filePath)}: ${error.message}`,
+          'warning'
         );
       }
       return null;
@@ -111,8 +119,9 @@ export class PluginLoader {
     for (const [key, value] of Object.entries(module)) {
       if (this.isValidComponent(value)) {
         if (process.env.DEBUG) {
-          console.log(
-            `Found component in export '${key}' from ${path.basename(filePath)}`
+          emitDiagnostic(
+            `Found component in export '${key}' from ${path.basename(filePath)}`,
+            'muted'
           );
         }
         return value as CustomComponent;

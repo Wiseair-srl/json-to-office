@@ -1,11 +1,18 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import ora from 'ora';
-import { resolve, relative } from 'path';
-import { existsSync } from 'fs';
+import { existsSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
 import type { FormatAdapter } from '../format-adapter.js';
 import { JsonValidator } from '../services/json-validator.js';
-import { createTable, formatTiming, formatError, EXIT_CODES } from './ui.js';
+import {
+  createTable,
+  formatTiming,
+  formatError,
+  renderLines,
+  runTask,
+  writeJson,
+  EXIT_CODES,
+} from './ui.js';
 
 interface ValidateCommandOptions {
   type?: 'document' | 'theme' | 'auto';
@@ -44,102 +51,86 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
       async (fileOrDirectory: string, options: ValidateCommandOptions) => {
         const validator = new JsonValidator(adapter.name);
         const isJsonFormat = options.format === 'json';
-
-        const showSpinner = !options.quiet && !isJsonFormat;
-        const spinner = showSpinner ? ora('Validating...').start() : null;
         const startTime = performance.now();
 
         try {
-          if (options.schema && !existsSync(resolve(options.schema))) {
-            throw new Error(`Schema file not found: ${options.schema}`);
-          }
+          const validate = async () => {
+            if (options.schema && !existsSync(resolve(options.schema))) {
+              throw new Error(`Schema file not found: ${options.schema}`);
+            }
+            return validator.validate(fileOrDirectory, {
+              type: options.type,
+              schema: options.schema,
+              strict: options.strict,
+              recursive: options.recursive,
+            });
+          };
 
-          const results = await validator.validate(fileOrDirectory, {
-            type: options.type,
-            schema: options.schema,
-            strict: options.strict,
-            recursive: options.recursive,
-          });
+          const results =
+            isJsonFormat || options.quiet
+              ? await validate()
+              : await runTask('Validating...', async () => validate(), {
+                  success: (values) => {
+                    const invalid = values.filter(
+                      (result) => !result.valid
+                    ).length;
+                    return invalid > 0
+                      ? `Validation completed: ${invalid}/${values.length} file(s) failed ${formatTiming(startTime)}`
+                      : values.length === 0
+                        ? 'No JSON files found to validate'
+                        : `All ${values.length} file(s) are valid ${formatTiming(startTime)}`;
+                  },
+                  failure: 'Validation failed',
+                });
 
-          if (results.length === 0) {
-            if (spinner) spinner.warn('No JSON files found to validate');
-            process.exit(EXIT_CODES.OK);
-          }
-
-          const totalFiles = results.length;
-          const validFiles = results.filter((r) => r.valid).length;
-          const invalidFiles = totalFiles - validFiles;
+          const invalidFiles = results.filter((result) => !result.valid).length;
 
           if (isJsonFormat) {
-            console.log(validator.formatResultsAsJson(results));
+            process.stdout.write(`${validator.formatResultsAsJson(results)}\n`);
           } else {
-            if (spinner) {
-              if (invalidFiles > 0) {
-                spinner.fail(
-                  `Validation completed: ${invalidFiles}/${totalFiles} file(s) failed ${formatTiming(startTime)}`
-                );
-              } else {
-                spinner.succeed(
-                  `All ${totalFiles} file(s) are valid! ${formatTiming(startTime)}`
-                );
-              }
-            }
-
-            if (!options.quiet || invalidFiles > 0) {
-              console.log('');
-
-              // Show per-file error details for failed files
-              for (const result of results) {
-                if (!result.valid) {
-                  const relativePath = relative(process.cwd(), result.file);
-                  console.log(chalk.red('FAIL'), chalk.bold(relativePath));
-
-                  if (result.errors && result.errors.length > 0) {
-                    console.log(chalk.red('  Errors:'));
-                    for (const error of result.errors) {
-                      console.log(chalk.red(validator.formatError(error, 4)));
-                    }
-                  }
-
-                  if (result.warnings && result.warnings.length > 0) {
-                    console.log(chalk.yellow('  Warnings:'));
-                    for (const warning of result.warnings) {
-                      console.log(
-                        chalk.yellow(validator.formatError(warning, 4))
-                      );
-                    }
-                  }
-
-                  console.log('');
-                }
-              }
-            }
-
-            if (totalFiles > 1 && !options.quiet) {
-              const rows = results.map((r) => {
-                const relativePath = relative(process.cwd(), r.file);
-                const status = r.valid ? chalk.green('OK') : chalk.red('FAIL');
-                const errorCount = r.valid
-                  ? '-'
-                  : chalk.red(String(r.errors?.length || 0));
-                return [relativePath, status, errorCount];
+            const lines = [];
+            for (const result of results) {
+              if (result.valid) continue;
+              lines.push({
+                text: `FAIL ${relative(process.cwd(), result.file)}`,
+                tone: 'error' as const,
               });
-              console.log(createTable(['File', 'Status', 'Errors'], rows));
+              for (const error of result.errors ?? []) {
+                lines.push({
+                  text: validator.formatError(error, 2),
+                  tone: 'error' as const,
+                });
+              }
+              for (const warning of result.warnings ?? []) {
+                lines.push({
+                  text: validator.formatError(warning, 2),
+                  tone: 'warning' as const,
+                });
+              }
             }
+
+            if (results.length > 1 && !options.quiet) {
+              const rows = results.map((result) => [
+                relative(process.cwd(), result.file),
+                result.valid ? chalk.green('OK') : chalk.red('FAIL'),
+                result.valid
+                  ? '-'
+                  : chalk.red(String(result.errors?.length || 0)),
+              ]);
+              lines.push({
+                text: createTable(['File', 'Status', 'Errors'], rows),
+              });
+            }
+            await renderLines(lines);
           }
 
           process.exit(invalidFiles > 0 ? EXIT_CODES.FAIL : EXIT_CODES.OK);
         } catch (error: any) {
-          if (spinner) spinner.fail('Validation failed');
-
           if (isJsonFormat) {
-            console.log(
-              JSON.stringify({ error: true, message: error.message }, null, 2)
-            );
+            writeJson({ error: true, message: error.message });
           } else {
-            formatError(error);
+            await formatError(error);
           }
-
           process.exit(EXIT_CODES.FAIL);
         }
       }
@@ -148,10 +139,10 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
       'after',
       `
 ${chalk.gray('Examples:')}
-  $ jto ${adapter.name} validate document.json                     ${chalk.dim('# Validate a single file')}
-  $ jto ${adapter.name} validate theme.json --type theme           ${chalk.dim('# Validate with specific type')}
-  $ jto ${adapter.name} validate ./documents --recursive           ${chalk.dim('# Validate all JSON files in directory')}
-  $ jto ${adapter.name} validate document.json --format json       ${chalk.dim('# Output as JSON for tooling')}
+  $ jto ${adapter.name} validate document.json
+  $ jto ${adapter.name} validate theme.json --type theme
+  $ jto ${adapter.name} validate ./documents --recursive
+  $ jto ${adapter.name} validate document.json --format json
 `
     );
 }

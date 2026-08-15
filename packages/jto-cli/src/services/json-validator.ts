@@ -224,6 +224,12 @@ export class JsonValidator {
       const schemaContent = readFileSync(resolve(schemaPath), 'utf-8');
       const schema = JSON.parse(schemaContent);
 
+      // Ajv bundles draft-07 under its canonical http URI. Accept the https
+      // spelling emitted by older json-to-office schema generators too.
+      if (schema.$schema === 'https://json-schema.org/draft-07/schema#') {
+        schema.$schema = 'http://json-schema.org/draft-07/schema#';
+      }
+
       const Ajv = (await import('ajv')).default;
       const addFormats = (await import('ajv-formats')).default;
 

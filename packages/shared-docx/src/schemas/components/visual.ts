@@ -18,7 +18,7 @@ import {
   MAX_VISUAL_DPI,
   DEFAULT_VISUAL_DPI,
 } from '@json-to-office/shared';
-import { PptxSlideContentSchema } from '@json-to-office/shared-pptx';
+import { PptxSlideContentSchema } from '@json-to-office/shared/schemas/slide-content';
 import {
   AlignmentSchema,
   SpacingSchema,
@@ -78,7 +78,8 @@ export const VisualCanvasSchema = Type.Object(
 
 // A single pptx slide content element (text, image, shape, table, highcharts,
 // chart) is validated against the real PPTX slide-content union
-// (`PptxSlideContentSchema` from @json-to-office/shared-pptx) — same authoring
+// (`PptxSlideContentSchema` from @json-to-office/shared/schemas/slide-content)
+// — same authoring
 // fidelity as a standalone `.pptx.json`. Used directly as the `elements` item
 // schema below.
 

@@ -9,6 +9,13 @@ services:
     runtime: docker
     plan: standard
     dockerfilePath: ./services/jto-render-server/Dockerfile
+    envVars:
+      - key: RENDER_AUTH_MODE
+        value: required
+      # Set a strong secret in Render. The three caller keys below must use
+      # this same value; Blueprint secret fields intentionally do not commit it.
+      - key: RENDER_API_KEY
+        sync: false
     healthCheckPath: /health
 
   - type: web
@@ -19,13 +26,27 @@ services:
     envVars:
       - key: FORMAT
         value: docx
+      # VITE_AI_ENABLED only hides the client UI; AI_ENABLED is what keeps the
+      # server from mounting /api/ai, which would be unauthenticated here.
       - key: VITE_AI_ENABLED
-        value: "false"
+        value: 'false'
+      - key: AI_ENABLED
+        value: 'false'
+      # These hosted playgrounds are intentionally public browser demos. A
+      # browser cannot keep API_KEY secret; private deployments should remove
+      # this override, use API_AUTH_MODE=required, and set API_KEY behind an
+      # authenticated gateway.
+      - key: API_AUTH_MODE
+        value: disabled
       # Both chart export and visual rasterization are served by jto-render-server.
       - key: HIGHCHARTS_SERVER_URL
         value: https://jto-render-server.onrender.com
+      - key: HIGHCHARTS_API_KEY
+        sync: false
       - key: JTO_PPTX_RASTERIZER_URL
         value: https://jto-render-server.onrender.com
+      - key: JTO_PPTX_RASTERIZER_API_KEY
+        sync: false
     healthCheckPath: /health
 
   - type: web
@@ -36,10 +57,20 @@ services:
     envVars:
       - key: FORMAT
         value: pptx
+      # See the DOCX service comment above: both flags are required.
       - key: VITE_AI_ENABLED
-        value: "false"
+        value: 'false'
+      - key: AI_ENABLED
+        value: 'false'
+      # Intentionally public demo; see the DOCX service comment above.
+      - key: API_AUTH_MODE
+        value: disabled
       - key: HIGHCHARTS_SERVER_URL
         value: https://jto-render-server.onrender.com
+      - key: HIGHCHARTS_API_KEY
+        sync: false
       - key: JTO_PPTX_RASTERIZER_URL
         value: https://jto-render-server.onrender.com
+      - key: JTO_PPTX_RASTERIZER_API_KEY
+        sync: false
     healthCheckPath: /health

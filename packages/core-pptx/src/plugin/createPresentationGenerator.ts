@@ -1,4 +1,3 @@
-import JSZip from 'jszip';
 import type { TSchema } from '@sinclair/typebox';
 import type { CustomComponent } from '@json-to-office/shared/plugin';
 import {
@@ -17,6 +16,9 @@ import type {
   PresentationGeneratorBuilder,
   BufferGenerationResult,
   FileGenerationResult,
+  GenerateFileOptions,
+  GenerateOptions,
+  GenerationValidationOptions,
   ValidationResult,
 } from './types';
 import { validatePresentation, cleanComponentProps } from './validation';
@@ -27,11 +29,16 @@ import { getPptxTheme } from '../themes';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from '../core/fontResolution';
 import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
+import {
+  packagePresentationBuffer,
+  type PresentationPackagingOptions,
+} from '../core/packagePresentation';
 
 /**
  * Options for creating a presentation generator
  */
-export interface PresentationGeneratorOptions {
+export interface PresentationGeneratorOptions
+  extends PresentationPackagingOptions {
   /** Theme configuration or theme name */
   theme?: PptxThemeConfig | string;
   /** Custom themes map */
@@ -42,6 +49,8 @@ export interface PresentationGeneratorOptions {
   services?: ServicesConfig;
   /** Font resolution options — extraEntries, Google Fonts config, onResolved hook. */
   fonts?: FontRuntimeOpts;
+  /** Default validation behavior; per-call options take precedence. */
+  validation?: GenerationValidationOptions;
 }
 
 /**
@@ -55,30 +64,15 @@ interface BuilderState {
   debug: boolean;
   services?: ServicesConfig;
   fonts?: FontRuntimeOpts;
+  validation?: GenerationValidationOptions;
+  packaging: PresentationPackagingOptions;
 }
 
-/**
- * Replace the default table style (Medium Style 2 - Accent 1, which applies allCaps
- * to headers) with "No Style, No Grid" so table text renders as authored.
- */
-const MEDIUM_STYLE_2_ACCENT_1 = '{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}';
-const NO_STYLE_NO_GRID = '{2D5ABB26-0587-4C30-8999-92F81FD0307C}';
-
-async function neutralizeTableStyle(buffer: Buffer): Promise<Buffer> {
-  const zip = await JSZip.loadAsync(buffer);
-  let changed = false;
-  for (const [path, entry] of Object.entries(zip.files)) {
-    if (!path.match(/^ppt\/slides\/slide\d+\.xml$/)) continue;
-    const xml = await entry.async('string');
-    if (xml.includes(MEDIUM_STYLE_2_ACCENT_1)) {
-      zip.file(path, xml.replaceAll(MEDIUM_STYLE_2_ACCENT_1, NO_STYLE_NO_GRID));
-      changed = true;
-    }
-  }
-  return changed
-    ? ((await zip.generateAsync({ type: 'nodebuffer' })) as Buffer)
-    : buffer;
-}
+type ValidateEmitted = (
+  emitted: PptxComponentInput[],
+  componentLabel: string,
+  parentName?: string
+) => void;
 
 /**
  * Create the builder implementation with the given state
@@ -96,6 +90,8 @@ function createBuilderImpl<
     components: PptxComponentInput[],
     warningsCollector: PipelineWarning[],
     theme: PptxThemeConfig,
+    validateEmitted: ValidateEmitted | undefined,
+    parentName?: string,
     depth = 0
   ): Promise<PptxComponentInput[]> {
     if (depth > 20) {
@@ -147,6 +143,8 @@ function createBuilderImpl<
               componentWithVersion.children,
               warningsCollector,
               theme,
+              validateEmitted,
+              undefined,
               depth + 1
             );
           }
@@ -180,11 +178,15 @@ function createBuilderImpl<
             Array.isArray(result) ? result : [result]
           ) as PptxComponentInput[];
 
+          validateEmitted?.(resultComponents, versionLabel, parentName);
+
           // Recursively process in case result contains more custom components
           const processedResult = await processSlideComponents(
             resultComponents,
             warningsCollector,
             theme,
+            validateEmitted,
+            parentName,
             depth + 1
           );
           processed.push(...processedResult);
@@ -212,6 +214,8 @@ function createBuilderImpl<
             componentData.children,
             warningsCollector,
             theme,
+            validateEmitted,
+            componentData.name,
             depth + 1
           );
           processed.push({
@@ -252,6 +256,8 @@ function createBuilderImpl<
       debug: state.debug,
       services: state.services,
       fonts: state.fonts,
+      validation: state.validation,
+      packaging: state.packaging,
     };
 
     return createBuilderImpl<readonly [...TComponents, TNewComponent]>(
@@ -263,13 +269,27 @@ function createBuilderImpl<
    * Generate a presentation buffer
    */
   async function generate(
-    document: ExtendedPresentationComponent<TComponents>
+    document: ExtendedPresentationComponent<TComponents>,
+    options?: GenerateOptions
   ): Promise<BufferGenerationResult> {
     try {
       let internalDocument =
         document as unknown as PresentationComponentDefinition;
 
-      if (!internalDocument || internalDocument.name !== 'pptx') {
+      const validationOptions: GenerationValidationOptions = {
+        ...state.validation,
+        ...options?.validation,
+      };
+      if (validationOptions.enabled !== false) {
+        const result = validatePresentation(
+          internalDocument,
+          state.components as unknown as CustomComponent<TSchema>[],
+          { allowUnknownFields: validationOptions.allowUnknownFields }
+        );
+        if (!result.valid) {
+          throw new ComponentValidationError(result.errors, internalDocument);
+        }
+      } else if (!internalDocument || internalDocument.name !== 'pptx') {
         throw new Error('Top-level component must be a pptx component');
       }
 
@@ -328,9 +348,51 @@ function createBuilderImpl<
         });
       }
 
+      // A custom render() creates a new, previously unseen boundary in the
+      // component tree. Validate its output in the authored parent context so
+      // dead props and illegal placement cannot reach the renderer silently.
+      const validateEmitted: ValidateEmitted | undefined =
+        validationOptions.enabled === false
+          ? undefined
+          : (emitted, componentLabel, parentName) => {
+              let validationDocument: PresentationComponentDefinition;
+              if (parentName === 'pptx') {
+                validationDocument = { ...mode.doc, children: emitted };
+              } else if (parentName === 'slide') {
+                validationDocument = {
+                  ...mode.doc,
+                  children: [{ name: 'slide', props: {}, children: emitted }],
+                };
+              } else {
+                // Custom container semantics are plugin-defined. The complete
+                // expanded-tree pass below validates the final standard tree.
+                return;
+              }
+
+              const result = validatePresentation(
+                validationDocument,
+                state.components as unknown as CustomComponent<TSchema>[],
+                { allowUnknownFields: validationOptions.allowUnknownFields }
+              );
+              if (!result.valid) {
+                throw new ComponentValidationError(
+                  result.errors.map((error) => ({
+                    ...error,
+                    message: `custom component '${componentLabel}' emitted invalid output — ${error.message}`,
+                  })),
+                  emitted
+                );
+              }
+            };
+
       // Process custom components in all slide children
       const processedChildren = mode.doc.children
-        ? await processAllSlides(mode.doc.children, warnings, resolvedTheme)
+        ? await processAllSlides(
+            mode.doc.children,
+            warnings,
+            resolvedTheme,
+            validateEmitted
+          )
         : [];
 
       // Scope the theme key by mode so any future theme-name-keyed cache
@@ -347,6 +409,24 @@ function createBuilderImpl<
           : { ...mode.doc, children: processedChildren };
 
       const processedDocument = docWithScopedTheme;
+
+      // Validate the fully expanded tree once more. This covers output from
+      // nested custom containers whose intermediate parent semantics are
+      // plugin-defined and therefore cannot be checked at render time.
+      if (validationOptions.enabled !== false) {
+        const result = validatePresentation(processedDocument, [], {
+          allowUnknownFields: validationOptions.allowUnknownFields,
+        });
+        if (!result.valid) {
+          throw new ComponentValidationError(
+            result.errors.map((error) => ({
+              ...error,
+              message: `expanded plugin output failed validation — ${error.message}`,
+            })),
+            processedDocument
+          );
+        }
+      }
 
       // resolveDocumentFonts fires `fonts.onResolved` internally when a
       // listener is registered (LibreOffice preview stager). The PPTX
@@ -372,7 +452,10 @@ function createBuilderImpl<
       });
       const pptx = await renderPresentation(processed, warnings);
       const data = await pptx.write({ outputType: 'nodebuffer' });
-      const buffer = await neutralizeTableStyle(data as Buffer);
+      const buffer = await packagePresentationBuffer(data as Buffer, {
+        deterministic: options?.deterministic ?? state.packaging.deterministic,
+        generatedAt: options?.generatedAt ?? state.packaging.generatedAt,
+      });
 
       return { buffer, warnings };
     } catch (error) {
@@ -390,7 +473,8 @@ function createBuilderImpl<
   async function processAllSlides(
     children: PptxComponentInput[],
     warnings: PipelineWarning[],
-    theme: PptxThemeConfig
+    theme: PptxThemeConfig,
+    validateEmitted: ValidateEmitted | undefined
   ): Promise<PptxComponentInput[]> {
     const result: PptxComponentInput[] = [];
 
@@ -399,7 +483,9 @@ function createBuilderImpl<
         const processedSlideChildren = await processSlideComponents(
           child.children,
           warnings,
-          theme
+          theme,
+          validateEmitted,
+          'slide'
         );
         result.push({ ...child, children: processedSlideChildren });
       } else {
@@ -407,7 +493,9 @@ function createBuilderImpl<
         const processedTopLevel = await processSlideComponents(
           [child],
           warnings,
-          theme
+          theme,
+          validateEmitted,
+          'pptx'
         );
         result.push(...processedTopLevel);
       }
@@ -421,9 +509,10 @@ function createBuilderImpl<
    */
   async function generateFile(
     document: ExtendedPresentationComponent<TComponents>,
-    outputPath: string
+    outputPath: string,
+    options?: GenerateFileOptions
   ): Promise<FileGenerationResult> {
-    const { buffer, warnings } = await generate(document);
+    const { buffer, warnings } = await generate(document, options);
     const fs = await import('fs/promises');
     await fs.writeFile(outputPath, new Uint8Array(buffer));
     return { warnings };
@@ -530,6 +619,11 @@ export function createPresentationGenerator(
     debug: options.debug ?? false,
     services: options.services,
     fonts: options.fonts,
+    validation: options.validation,
+    packaging: {
+      deterministic: options.deterministic,
+      generatedAt: options.generatedAt,
+    },
   };
 
   return createBuilderImpl<readonly []>(initialState);

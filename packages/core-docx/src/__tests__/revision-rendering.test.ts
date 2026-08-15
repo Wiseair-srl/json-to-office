@@ -166,7 +166,7 @@ describe('tracked-change rendering', () => {
     } as any);
     const xml = await readZipEntry(buf, 'word/document.xml');
     expect(xml).not.toContain('{YEAR}');
-    expect(xml).toContain(String(new Date().getFullYear()));
+    expect(xml).toContain('2000');
   });
 
   it('keeps the bookmark anchor on a revised paragraph with an id', async () => {

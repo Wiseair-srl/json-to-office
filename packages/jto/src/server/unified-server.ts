@@ -50,7 +50,7 @@ export class UnifiedServer {
     const apiApp = createAPIApp(this.adapter);
 
     this.app.get('/api', async (c) => {
-      return await apiApp.fetch(c.req.raw);
+      return await apiApp.fetch(c.req.raw, c.env as any);
     });
 
     this.app.use('*', async (c, next) => {
@@ -61,7 +61,7 @@ export class UnifiedServer {
         if (/\.(ts|tsx|js|jsx|css|map)$/.test(path)) {
           return next();
         }
-        const response = await apiApp.fetch(c.req.raw);
+        const response = await apiApp.fetch(c.req.raw, c.env as any);
         if (response.status !== 404) {
           return response;
         }

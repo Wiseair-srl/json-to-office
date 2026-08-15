@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { PluginDiscoveryService } from './plugin-discovery.js';
 import type { PluginMetadata } from './plugin-metadata.js';
+import { emitDiagnostic } from './diagnostics.js';
 
 export class PluginResolver {
   private discoveryService: PluginDiscoveryService;
@@ -87,7 +88,7 @@ export class PluginResolver {
       }
       this.lastDiscoveryTime = Date.now();
     } catch (error: any) {
-      console.warn(`Plugin discovery failed: ${error.message}`);
+      emitDiagnostic(`Plugin discovery failed: ${error.message}`, 'warning');
     }
   }
 

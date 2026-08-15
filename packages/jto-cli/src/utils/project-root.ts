@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { emitDiagnostic } from '../services/diagnostics.js';
 
 const PROJECT_ROOT_MARKERS = [
   'pnpm-workspace.yaml',
@@ -59,8 +60,9 @@ export function findProjectRoot(startPath?: string): string | null {
 export function getProjectRoot(startPath?: string): string {
   const root = findProjectRoot(startPath);
   if (!root) {
-    console.warn(
-      'Warning: Could not detect project root, using current directory'
+    emitDiagnostic(
+      'Could not detect project root; using current directory',
+      'warning'
     );
     return process.cwd();
   }

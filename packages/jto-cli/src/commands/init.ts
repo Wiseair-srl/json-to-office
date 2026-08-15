@@ -1,12 +1,15 @@
 import { Command } from 'commander';
-import { mkdirSync, writeFileSync, existsSync } from 'fs';
-import { resolve, join } from 'path';
-import { execSync } from 'child_process';
-import ora from 'ora';
-import chalk from 'chalk';
-import boxen from 'boxen';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import type { FormatAdapter } from '../format-adapter.js';
-import { EXIT_CODES } from './ui.js';
+import {
+  formatError,
+  promptText,
+  renderLines,
+  runTask,
+  EXIT_CODES,
+} from './ui.js';
 
 interface InitOptions {
   template?: string;
@@ -22,160 +25,136 @@ export function createInitCommand(adapter: FormatAdapter): Command {
     .action(async (name: string | undefined, options: InitOptions) => {
       try {
         if (!name) {
-          try {
-            // @ts-expect-error -- prompts lacks type declarations
-            const prompts = (await import('prompts')).default;
-            const response = await prompts({
-              type: 'text',
-              name: 'projectName',
-              message: 'Project name:',
-              initial: `my-json-to-${adapter.name}-project`,
-            });
-            name = response.projectName;
-          } catch {
-            name = `my-json-to-${adapter.name}-project`;
-          }
-
-          if (!name) {
-            console.log(chalk.red('Project name is required'));
-            process.exit(EXIT_CODES.FAIL);
-          }
+          name = await promptText(
+            'Project name:',
+            `my-json-to-${adapter.name}-project`
+          );
         }
+        if (!name) throw new Error('Project name is required');
 
-        const projectPath = resolve(process.cwd(), name);
+        const projectName = name;
+        const projectPath = resolve(process.cwd(), projectName);
+        const result = await runTask(
+          'Creating project...',
+          async (reporter) => {
+            if (existsSync(projectPath)) {
+              throw new Error(`Directory ${projectName} already exists`);
+            }
+            mkdirSync(projectPath, { recursive: true });
 
-        if (existsSync(projectPath)) {
-          console.error(chalk.red(`Directory ${name} already exists`));
-          process.exit(EXIT_CODES.FAIL);
-        }
-
-        mkdirSync(projectPath, { recursive: true });
-
-        const packageJson = {
-          name,
-          version: '0.1.0',
-          private: true,
-          type: 'module',
-          scripts: {
-            dev: `jto ${adapter.name} dev`,
-            generate: `jto ${adapter.name} generate`,
-            validate: `jto ${adapter.name} validate`,
-            schemas: `jto ${adapter.name} schemas`,
-          },
-          dependencies: {
-            [`@json-to-office/json-to-${adapter.name}`]: 'latest',
-          },
-          devDependencies: {
-            '@json-to-office/jto': 'latest',
-            typescript: '^5.3.3',
-          },
-        };
-
-        writeFileSync(
-          join(projectPath, 'package.json'),
-          JSON.stringify(packageJson, null, 2)
-        );
-
-        // Create example document based on format
-        const exampleDocument =
-          adapter.name === 'docx'
-            ? {
-                name: 'docx',
-                props: {
-                  title: 'Welcome to JSON-to-Office',
-                  subtitle: `Your ${adapter.label} generation project`,
-                  theme: 'minimal',
-                },
-                children: [
-                  {
-                    name: 'heading',
-                    props: { text: 'Welcome', level: 1 },
+            writeFileSync(
+              join(projectPath, 'package.json'),
+              JSON.stringify(
+                {
+                  name: projectName,
+                  version: '0.1.0',
+                  private: true,
+                  type: 'module',
+                  scripts: {
+                    dev: `jto ${adapter.name} dev`,
+                    generate: `jto ${adapter.name} generate`,
+                    validate: `jto ${adapter.name} validate`,
+                    schemas: `jto ${adapter.name} schemas`,
                   },
-                  {
-                    name: 'paragraph',
+                  dependencies: {
+                    [`@json-to-office/json-to-${adapter.name}`]: 'latest',
+                  },
+                  devDependencies: {
+                    '@json-to-office/jto': 'latest',
+                    typescript: '^5.3.3',
+                  },
+                },
+                null,
+                2
+              )
+            );
+
+            const exampleDocument =
+              adapter.name === 'docx'
+                ? {
+                    name: 'docx',
                     props: {
-                      text: 'Edit example.json to customize your document.',
+                      title: 'Welcome to JSON-to-Office',
+                      subtitle: `Your ${adapter.label} generation project`,
+                      theme: 'minimal',
                     },
-                  },
-                ],
-              }
-            : {
-                name: 'pptx',
-                props: {
-                  title: 'Welcome to JSON-to-Office',
-                },
-                children: [
-                  {
-                    name: 'slide',
-                    props: {},
                     children: [
+                      { name: 'heading', props: { text: 'Welcome', level: 1 } },
                       {
-                        name: 'text',
+                        name: 'paragraph',
                         props: {
-                          text: 'Welcome to JSON-to-Office',
-                          x: 1,
-                          y: 1,
-                          w: 8,
-                          h: 2,
-                          fontSize: 36,
+                          text: 'Edit example.json to customize your document.',
                         },
                       },
                     ],
-                  },
-                ],
-              };
-
-        writeFileSync(
-          join(projectPath, 'example.json'),
-          JSON.stringify(exampleDocument, null, 2)
-        );
-
-        const gitignore = `node_modules\ndist\n.cache\n*${adapter.extension}\n.env\n.env.local\n`;
-        writeFileSync(join(projectPath, '.gitignore'), gitignore);
-
-        console.log(chalk.green(`\nCreated project at ${projectPath}\n`));
-
-        if (!options.skipInstall) {
-          const spinner = ora('Installing dependencies...').start();
-
-          try {
-            execSync('npm install', {
-              cwd: projectPath,
-              stdio: 'ignore',
-            });
-            spinner.succeed('Dependencies installed');
-          } catch {
-            spinner.fail('Failed to install dependencies');
-            console.log(
-              chalk.yellow(
-                '\nRun `npm install` manually to install dependencies'
-              )
+                  }
+                : {
+                    name: 'pptx',
+                    props: { title: 'Welcome to JSON-to-Office' },
+                    children: [
+                      {
+                        name: 'slide',
+                        props: {},
+                        children: [
+                          {
+                            name: 'text',
+                            props: {
+                              text: 'Welcome to JSON-to-Office',
+                              x: 1,
+                              y: 1,
+                              w: 8,
+                              h: 2,
+                              fontSize: 36,
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  };
+            writeFileSync(
+              join(projectPath, 'example.json'),
+              JSON.stringify(exampleDocument, null, 2)
             );
-          }
-        }
+            writeFileSync(
+              join(projectPath, '.gitignore'),
+              `node_modules\ndist\n.cache\n*${adapter.extension}\n.env\n.env.local\n`
+            );
 
-        const nextSteps = [
-          `cd ${name}`,
-          ...(options.skipInstall ? ['npm install'] : []),
-          `jto ${adapter.name} generate example.json`,
-        ];
-
-        console.log(
-          boxen(
-            chalk.bold(`${name}\n\n`) +
-              chalk.gray('Next steps:\n') +
-              nextSteps.map((s) => chalk.cyan(`  $ ${s}`)).join('\n'),
-            {
-              padding: 1,
-              borderColor: 'green',
-              borderStyle: 'round',
-              title: 'Project created',
-              titleAlignment: 'center',
+            let installed = false;
+            if (!options.skipInstall) {
+              reporter.update('Installing dependencies with pnpm...');
+              try {
+                execFileSync('pnpm', ['install'], {
+                  cwd: projectPath,
+                  stdio: 'ignore',
+                });
+                installed = true;
+              } catch {
+                reporter.log(
+                  'Dependency install failed. Run `pnpm install` manually.',
+                  'warning'
+                );
+              }
             }
-          )
+            return { installed };
+          },
+          {
+            success: 'Project created',
+            failure: 'Project creation failed',
+          }
         );
+
+        await renderLines([
+          { text: projectPath, tone: 'success' },
+          { text: 'Next steps:', tone: 'muted' },
+          { text: `  cd ${projectName}`, tone: 'info' },
+          ...(!result.installed
+            ? [{ text: '  pnpm install', tone: 'info' as const }]
+            : []),
+          { text: `  jto ${adapter.name} generate example.json`, tone: 'info' },
+        ]);
       } catch (error: any) {
-        console.error(chalk.red('Failed to create project:'), error.message);
+        await formatError(error);
         process.exit(EXIT_CODES.FAIL);
       }
     });

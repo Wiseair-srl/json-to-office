@@ -1,5 +1,5 @@
-import chalk from 'chalk';
 import type { PluginMetadata } from './plugin-metadata.js';
+import { renderLines, writeJson, type UiLine } from '../commands/ui.js';
 
 export interface DisplayOptions {
   json?: boolean;
@@ -9,36 +9,30 @@ export interface DisplayOptions {
 }
 
 export class PluginDisplay {
-  private options: DisplayOptions;
-
-  constructor(options: DisplayOptions = {}) {
-    this.options = options;
-  }
+  constructor(private readonly options: DisplayOptions = {}) {}
 
   async show(plugins: PluginMetadata[]): Promise<void> {
     if (this.options.json) {
-      this.displayJson(plugins);
-    } else {
-      this.displayConsole(plugins);
+      writeJson({
+        plugins: plugins.map((plugin) => this.formatPluginForJson(plugin)),
+        count: plugins.length,
+        locations: {
+          upstream: plugins.filter((plugin) => plugin.location === 'upstream')
+            .length,
+          current: plugins.filter((plugin) => plugin.location === 'current')
+            .length,
+          downstream: plugins.filter(
+            (plugin) => plugin.location === 'downstream'
+          ).length,
+        },
+      });
+      return;
     }
+    await renderLines(this.consoleLines(plugins));
   }
 
-  private displayJson(plugins: PluginMetadata[]): void {
-    const output: any = {
-      plugins: plugins.map((plugin) => this.formatPluginForJson(plugin)),
-      count: plugins.length,
-      locations: {
-        upstream: plugins.filter((p) => p.location === 'upstream').length,
-        current: plugins.filter((p) => p.location === 'current').length,
-        downstream: plugins.filter((p) => p.location === 'downstream').length,
-      },
-    };
-
-    console.log(JSON.stringify(output, null, 2));
-  }
-
-  private formatPluginForJson(plugin: PluginMetadata): any {
-    const formatted: any = {
+  private formatPluginForJson(plugin: PluginMetadata): Record<string, unknown> {
+    const formatted: Record<string, unknown> = {
       name: plugin.name,
       description: plugin.description,
       version: plugin.version,
@@ -46,172 +40,105 @@ export class PluginDisplay {
       relativePath: plugin.relativePath,
       location: plugin.location,
     };
-
     if (this.options.schema) {
       formatted.schema = plugin.schema.jsonSchema || plugin.schema.raw;
       formatted.properties = plugin.schema.properties;
     }
-
-    if (this.options.examples && plugin.examples) {
+    if (this.options.examples && plugin.examples)
       formatted.examples = plugin.examples;
-    }
-
     return formatted;
   }
 
-  private displayConsole(plugins: PluginMetadata[]): void {
-    console.log();
-    console.log(chalk.bold.cyan('Custom Plugins Discovery'));
-    console.log(chalk.gray('-'.repeat(50)));
-    console.log();
-
-    const upstream = plugins.filter((p) => p.location === 'upstream');
-    const current = plugins.filter((p) => p.location === 'current');
-    const downstream = plugins.filter((p) => p.location === 'downstream');
-
-    console.log(chalk.bold('Search Results:'));
-    if (upstream.length > 0) {
-      console.log(
-        chalk.gray('  Upstream:  ') +
-          chalk.green(
-            `${upstream.length} plugin${upstream.length !== 1 ? 's' : ''} found`
-          )
-      );
+  private consoleLines(plugins: PluginMetadata[]): UiLine[] {
+    const lines: UiLine[] = [
+      { text: 'Custom Plugins Discovery', tone: 'info' },
+    ];
+    const locations = ['upstream', 'current', 'downstream'] as const;
+    lines.push({ text: 'Search results:' });
+    for (const location of locations) {
+      const count = plugins.filter(
+        (plugin) => plugin.location === location
+      ).length;
+      if (count > 0) {
+        lines.push({
+          text: `  ${location}: ${count} plugin${count === 1 ? '' : 's'} found`,
+          tone: 'success',
+        });
+      }
     }
-    if (current.length > 0) {
-      console.log(
-        chalk.gray('  Current:   ') +
-          chalk.green(
-            `${current.length} plugin${current.length !== 1 ? 's' : ''} found`
-          )
-      );
-    }
-    if (downstream.length > 0) {
-      console.log(
-        chalk.gray('  Downstream:') +
-          chalk.green(
-            `${downstream.length} plugin${downstream.length !== 1 ? 's' : ''} found`
-          )
-      );
-    }
-    console.log();
-
     if (plugins.length === 0) {
-      console.log(chalk.yellow('No plugins found.'));
-      console.log(
-        chalk.gray(
-          'Make sure your custom components follow the *.component.ts naming convention.'
-        )
-      );
-      return;
+      return [
+        ...lines,
+        { text: 'No plugins found.', tone: 'warning' },
+        {
+          text: 'Custom components must follow the *.component.ts naming convention.',
+          tone: 'muted',
+        },
+      ];
     }
-
-    plugins.forEach((plugin, index) => {
-      if (index > 0) console.log();
-      this.displayPlugin(plugin);
+    for (const plugin of plugins) lines.push(...this.pluginLines(plugin));
+    lines.push({
+      text: `Total: ${plugins.length} plugin${plugins.length === 1 ? '' : 's'} discovered`,
     });
-
-    console.log();
-    console.log(chalk.gray('-'.repeat(50)));
-    console.log(
-      chalk.bold(
-        `Total: ${plugins.length} plugin${plugins.length !== 1 ? 's' : ''} discovered`
-      )
-    );
+    return lines;
   }
 
-  private displayPlugin(plugin: PluginMetadata): void {
-    console.log(chalk.bold.yellow(`  ${plugin.name}`));
-
-    const locationIcon = {
-      upstream: '^',
-      current: '*',
-      downstream: 'v',
-    }[plugin.location];
-
-    console.log(
-      chalk.gray(`   ${locationIcon} Path: `) + chalk.blue(plugin.relativePath)
-    );
-
-    if (plugin.description) {
-      console.log(chalk.gray('   Description: ') + plugin.description);
-    }
-
-    if (plugin.version) {
-      console.log(chalk.gray('   Version: ') + plugin.version);
-    }
-
+  private pluginLines(plugin: PluginMetadata): UiLine[] {
+    const icon = { upstream: '^', current: '*', downstream: 'v' }[
+      plugin.location
+    ];
+    const lines: UiLine[] = [
+      { text: `${plugin.name}`, tone: 'warning' },
+      { text: `  ${icon} Path: ${plugin.relativePath}`, tone: 'muted' },
+    ];
+    if (plugin.description)
+      lines.push({ text: `  Description: ${plugin.description}` });
+    if (plugin.version) lines.push({ text: `  Version: ${plugin.version}` });
     if (this.options.schema && plugin.schema.properties) {
-      console.log();
-      console.log(chalk.gray('   Schema Properties:'));
-      for (const [key, prop] of Object.entries(plugin.schema.properties)) {
-        const required = (prop as any).required ? chalk.red('*') : '';
-        const type = chalk.cyan((prop as any).type || 'any');
-        let line = `   - ${key}${required} (${type})`;
-        if ((prop as any).description) {
-          line += chalk.gray(` - ${(prop as any).description}`);
-        }
-        console.log(line);
+      lines.push({ text: '  Schema properties:', tone: 'muted' });
+      for (const [key, property] of Object.entries(plugin.schema.properties)) {
+        const value = property as any;
+        lines.push({
+          text: `  - ${key}${value.required ? '*' : ''} (${value.type || 'any'})${
+            value.description ? ` - ${value.description}` : ''
+          }`,
+        });
       }
     }
-
-    if (
-      this.options.examples &&
-      plugin.examples &&
-      plugin.examples.length > 0
-    ) {
-      console.log();
-      console.log(chalk.gray('   Example:'));
+    if (this.options.examples && plugin.examples?.length) {
       const example = plugin.examples[0];
-      if (example.title) {
-        console.log(chalk.gray(`   ${example.title}`));
-      }
-      const exampleJson = JSON.stringify(example.props, null, 2);
-      const indentedJson = exampleJson
-        .split('\n')
-        .map((line) => '   ' + line)
-        .join('\n');
-      console.log(chalk.green(indentedJson));
-    }
-  }
-
-  displayGrouped(plugins: PluginMetadata[]): void {
-    const grouped = {
-      upstream: plugins.filter((p) => p.location === 'upstream'),
-      current: plugins.filter((p) => p.location === 'current'),
-      downstream: plugins.filter((p) => p.location === 'downstream'),
-    };
-
-    console.log();
-    console.log(chalk.bold.cyan('Custom Plugins Discovery'));
-    console.log(chalk.gray('-'.repeat(50)));
-
-    for (const [location, locationPlugins] of Object.entries(grouped)) {
-      if (locationPlugins.length === 0) continue;
-
-      console.log();
-      console.log(
-        chalk.bold(
-          `${location.charAt(0).toUpperCase() + location.slice(1)} (${locationPlugins.length}):`
-        )
-      );
-      console.log();
-
-      locationPlugins.forEach((plugin) => {
-        console.log(`  ${chalk.yellow('*')} ${chalk.bold(plugin.name)}`);
-        console.log(`    ${chalk.gray(plugin.relativePath)}`);
-        if (plugin.description) {
-          console.log(`    ${chalk.italic(plugin.description)}`);
-        }
+      lines.push({
+        text: `  Example${example.title ? `: ${example.title}` : ':'}`,
+        tone: 'muted',
+      });
+      lines.push({
+        text: JSON.stringify(example.props, null, 2),
+        tone: 'success',
       });
     }
+    return lines;
+  }
 
-    console.log();
-    console.log(chalk.gray('-'.repeat(50)));
-    console.log(
-      chalk.bold(
-        `Total: ${plugins.length} plugin${plugins.length !== 1 ? 's' : ''} discovered`
-      )
-    );
+  async displayGrouped(plugins: PluginMetadata[]): Promise<void> {
+    const lines: UiLine[] = [
+      { text: 'Custom Plugins Discovery', tone: 'info' },
+    ];
+    for (const location of ['upstream', 'current', 'downstream'] as const) {
+      const items = plugins.filter((plugin) => plugin.location === location);
+      if (items.length === 0) continue;
+      lines.push({
+        text: `${location.charAt(0).toUpperCase() + location.slice(1)} (${items.length}):`,
+      });
+      for (const plugin of items) {
+        lines.push({ text: `  * ${plugin.name}`, tone: 'warning' });
+        lines.push({ text: `    ${plugin.relativePath}`, tone: 'muted' });
+        if (plugin.description)
+          lines.push({ text: `    ${plugin.description}` });
+      }
+    }
+    lines.push({
+      text: `Total: ${plugins.length} plugin${plugins.length === 1 ? '' : 's'} discovered`,
+    });
+    await renderLines(lines);
   }
 }

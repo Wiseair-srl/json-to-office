@@ -8,7 +8,7 @@ import {
   type ComponentValidationResult,
 } from '@json-to-office/shared/plugin';
 import type { ValidationError } from '@json-to-office/shared';
-import { collectImageSourceConflicts } from '@json-to-office/shared-pptx';
+import { validatePresentationDocument } from '@json-to-office/shared-pptx';
 
 // Re-export errors from shared
 export {
@@ -24,11 +24,15 @@ export type { ValidationError } from '@json-to-office/shared';
 export function validateComponentProps<TPropsSchema extends TSchema>(
   schema: { propsSchema: TPropsSchema },
   props: unknown,
-  componentName?: string
+  componentName?: string,
+  opts?: { clean?: boolean; applyDefaults?: boolean }
 ): ComponentValidationResult<TPropsSchema> {
   return validateCustomComponentProps<TPropsSchema>(schema.propsSchema, props, {
-    clean: true,
-    applyDefaults: true,
+    // Render-time cleaning remains the default. The document-validation path
+    // passes clean:false so unknown custom props are rejected when the custom
+    // schema declares additionalProperties:false.
+    clean: opts?.clean ?? true,
+    applyDefaults: opts?.applyDefaults ?? true,
     componentName,
   });
 }
@@ -36,23 +40,35 @@ export function validateComponentProps<TPropsSchema extends TSchema>(
 /**
  * Validate presentation and all custom components (version-aware).
  *
- * Custom component props are checked version-aware. In addition, a structural
- * pass rejects image components that set more than one mutually-exclusive source
- * (`path`/`base64`/`svg`) — matching core-docx behavior so a multi-source payload
- * is a hard error rather than being silently resolved by runtime precedence.
+ * Standard nodes and tree structure are checked by the shared deep validator;
+ * custom component props are then checked against their resolved version.
  */
 export function validatePresentation(
   document: PresentationComponentDefinition,
-  customComponents: CustomComponent<any, any, any>[]
+  customComponents: CustomComponent<any, any, any>[],
+  options?: { allowUnknownFields?: boolean }
 ): { valid: boolean; errors: ValidationError[] } {
-  const errors: ValidationError[] = [];
+  const knownCustomNames = new Set(customComponents.map((c) => c.name));
 
-  // Structural rule the per-component schema can't express: image sources are
-  // mutually exclusive. Runs unconditionally over the whole tree.
-  errors.push(...collectImageSourceConflicts(document));
+  // Validate all standard nodes and tree structure. Registered custom nodes
+  // are deferred to the version-aware pass below, while their descendants are
+  // still walked by the unified validator.
+  const documentResult = validatePresentationDocument(document, {
+    knownCustomNames,
+    allowUnknownFields: options?.allowUnknownFields,
+  });
+  const errors: ValidationError[] = [...documentResult.errors];
 
   function validateComponents(components: any[], pathPrefix = 'children') {
     components.forEach((componentData, index) => {
+      if (
+        !componentData ||
+        typeof componentData !== 'object' ||
+        Array.isArray(componentData)
+      ) {
+        return;
+      }
+
       const customComponent = customComponents.find(
         (cc) => cc.name === componentData.name
       );
@@ -67,7 +83,8 @@ export function validatePresentation(
         const validation = validateComponentProps(
           versionEntry,
           componentData.props,
-          customComponent.name
+          customComponent.name,
+          { clean: options?.allowUnknownFields === true }
         );
 
         if (!validation.valid && validation.errors) {
@@ -91,7 +108,7 @@ export function validatePresentation(
     });
   }
 
-  if (document.children) {
+  if (document && Array.isArray(document.children)) {
     validateComponents(document.children);
   }
 
