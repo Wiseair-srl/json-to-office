@@ -182,11 +182,39 @@ The JSON definition, not the generated file, is the source of truth worth versio
 - Diffs are meaningful. Version your `.docx.json` files in git and review changes as text; use the [document diff engine](/guide/writing-docx) to turn two JSON versions into a native Word redline with tracked changes.
 - Tracked-change metadata is stable rather than wall-clock: a revision's `date` defaults to the Unix epoch rather than "now", so redlines don't churn between runs.
 
-::: info Output bytes are not guaranteed identical
-Rendering the same JSON twice produces an equivalent document, but json-to-office does not normalize ZIP timestamps or package metadata, so the archives are not guaranteed byte-for-byte identical. Compare the JSON, not file hashes. External URLs, rendering services, fonts, and assets are inputs too — pin them when output stability matters.
-:::
+This separation makes the format a reliable target for LLM generation: the model produces validated data, and predictable code renders it. See [LLM generation](/guide/llms).
 
-This separation still makes the format a reliable target for LLM generation: the model produces validated data, and predictable code renders it. See [LLM generation](/guide/llms).
+## Reproducible output
+
+Generation is deterministic by default. Rendering the same JSON twice produces **byte-identical** archives, so you can hash the output, cache on it, or assert on it in tests.
+
+Office files are full of values that would otherwise change on every run, so json-to-office normalizes them:
+
+- **Package metadata** — `dcterms:created` / `dcterms:modified` in `docProps/core.xml`.
+- **ZIP entry timestamps** — written from UTC components, so the bytes match regardless of the building machine's timezone.
+- **Generated identifiers** — bookmark, revision, and numbering IDs come from per-document registries rather than counters seeded by the clock.
+- **Date placeholders** — `{DATE}` and `{DATETIME}` resolve against the document's generation date, not `Date.now()`.
+- **Chart IDs** — PPTX chart parts are renumbered from 1, and the XLSX packages embedded in native charts are normalized recursively (they carry their own timestamps).
+
+Two options control this, on both formats:
+
+```ts
+// Default: stable epoch, byte-identical across runs and machines.
+await generateBufferFromJson(doc);
+
+// Stamp a real build timestamp — still reproducible for that timestamp.
+// Strings are parsed as dates, so pass an ISO-8601 value, not Unix seconds.
+await generateBufferFromJson(doc, { generatedAt: '2025-06-07T08:09:10Z' });
+
+// Opt out entirely and use the wall clock.
+await generateBufferFromJson(doc, { deterministic: false });
+```
+
+`generatedAt` must be a valid date on or after 1980-01-01 — the earliest a ZIP header can represent — and generation throws otherwise rather than silently writing a bogus timestamp.
+
+::: info What reproducibility does not cover
+Byte-identity holds when the json-to-office version, the JSON, the theme, and the bytes of every external asset are unchanged. Remote images, fonts fetched at generation time, and chart-rendering services are inputs too: pin them when output stability matters. Upgrading json-to-office can legitimately change output bytes.
+:::
 
 ## Where to go next
 
