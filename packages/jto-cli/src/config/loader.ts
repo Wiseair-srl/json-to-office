@@ -21,8 +21,36 @@ const CONFIG_FILES = [
   'json-to-pptx.config.json',
 ];
 
-export async function loadConfig(configPath?: string): Promise<Config> {
-  let userConfig = {};
+function parsePort(value: string | undefined): number | undefined {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 65535
+    ? parsed
+    : undefined;
+}
+
+export interface LoadConfigOptions {
+  /**
+   * Port used when neither the config file nor `PORT` names one — lets a
+   * caller supply its own default (e.g. the format's port) without the loader
+   * having to guess which of the returned values was actually requested.
+   */
+  defaultPort?: number;
+}
+
+/**
+ * Callers mutate what they get back (`dev -p` writes straight to
+ * `config.server.port`), so never hand out `defaultConfig` or any of its
+ * sub-objects — one command's port would leak into every later load.
+ */
+function cloneDefaults(): Config {
+  return structuredClone(defaultConfig);
+}
+
+export async function loadConfig(
+  configPath?: string,
+  options: LoadConfigOptions = {}
+): Promise<Config> {
+  let userConfig: Partial<Config> = {};
 
   const configFile = configPath || (await findConfigFile());
 
@@ -34,10 +62,22 @@ export async function loadConfig(configPath?: string): Promise<Config> {
     }
   }
 
-  const config = deepMerge(defaultConfig, userConfig);
+  const config = deepMerge(cloneDefaults(), userConfig);
 
   if (process.env.NODE_ENV === 'production') {
     config.mode = 'production';
+  }
+
+  // Port precedence: config file > `PORT` (the deployment convention) >
+  // caller's default > packaged default. `dev -p` outranks all of them and is
+  // applied by the caller.
+  const fallbackPort = () =>
+    parsePort(process.env.PORT) ??
+    options.defaultPort ??
+    defaultConfig.server.port;
+
+  if (userConfig.server?.port === undefined) {
+    config.server.port = fallbackPort();
   }
 
   if (!Value.Check(ConfigSchema, config)) {
@@ -46,7 +86,9 @@ export async function loadConfig(configPath?: string): Promise<Config> {
       `Invalid configuration detected (${errors.length} schema error(s)); using defaults`,
       'warning'
     );
-    return defaultConfig;
+    const fallback = cloneDefaults();
+    fallback.server.port = fallbackPort();
+    return fallback;
   }
 
   return config as Config;

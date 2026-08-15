@@ -381,8 +381,14 @@ function createBuilderImpl<
     try {
       const preserveSet = resolvePreserveSet(options);
 
-      // Cast to ReportComponentDefinition for internal processing
-      const internalDocument = document as unknown as ReportComponentDefinition;
+      // Cast to ReportComponentDefinition for internal processing. A root
+      // written without a `props` key validates clean, so default it to `{}`
+      // — otherwise every downstream `props.*` read throws. Matches
+      // core/generator.ts.
+      const rootIn = document as unknown as ReportComponentDefinition;
+      const internalDocument: ReportComponentDefinition = rootIn.props
+        ? rootIn
+        : { ...rootIn, props: {} };
 
       // Validate the document first (plugin-aware), unless disabled. Throwing
       // here stops a malformed document from silently building into a corrupt

@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import chalk from 'chalk';
-import type { FormatAdapter } from '../format-adapter.js';
+import type { FormatAdapter, GeneratorResult } from '../format-adapter.js';
 import { PluginRegistry } from '../services/plugin-registry.js';
 import { GeneratorFactory } from '../services/generator-factory.js';
 import { PluginConfigService } from '../config/plugin-config.js';
@@ -29,7 +29,8 @@ interface GenerateOptions {
   strict?: boolean;
   dryRun?: boolean;
   strictFonts?: boolean;
-  noGoogleFonts?: boolean;
+  /** Commander maps `--no-google-fonts` here: false when the flag is passed. */
+  googleFonts?: boolean;
   fontCacheDir?: string;
   font?: string[];
   fontsDir?: string;
@@ -54,6 +55,20 @@ function parseGeneratedAt(value: string | undefined): string | undefined {
     throw new Error(`Invalid --generated-at: "${value}" (expected ISO 8601)`);
   }
   return parsed.toISOString();
+}
+
+/**
+ * What to print on the `Theme:` line. `themeLabel` is what the adapter really
+ * resolved — `--theme-path` outranks `--theme`, and a rejected name resolves to
+ * nothing at all — and with none requested the document's own `props.theme` is
+ * what renders. Reading the merged config instead misreports both cases.
+ */
+function themeSummary(themeLabel: string | undefined, document: any): string {
+  if (themeLabel) return themeLabel;
+  const own = document?.props?.theme;
+  if (typeof own === 'string' && own) return own;
+  if (own && typeof own === 'object') return own.name || 'custom';
+  return 'default';
 }
 
 export function defaultOutputName(input: string, extension: string): string {
@@ -196,7 +211,7 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
                 ? `Validating ${adapter.label} preview...`
                 : `Generating ${adapter.label}...`
             );
-            const buffer = await factory.generate(documentDefinition, {
+            const generator: GeneratorResult = await factory.createGenerator({
               theme: mergedConfig.theme,
               themePath: mergedConfig.themePath,
               validation: mergedConfig.validation,
@@ -208,13 +223,14 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
                 ...(options.fontMode && { mode: options.fontMode }),
                 ...(Object.keys(substitution).length > 0 && { substitution }),
                 googleFonts: {
-                  ...(options.noGoogleFonts === true && { enabled: false }),
+                  ...(options.googleFonts === false && { enabled: false }),
                   ...(options.fontCacheDir && {
                     cacheDir: resolve(process.cwd(), options.fontCacheDir),
                   }),
                 },
               },
             });
+            const buffer = await generator.generateBuffer(documentDefinition);
 
             if (!options.dryRun) {
               reporter.update('Writing output file...');
@@ -224,7 +240,7 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
             return {
               input,
               output: outputPath,
-              theme: mergedConfig.theme || 'default',
+              theme: themeSummary(generator.themeLabel, documentDefinition),
               dryRun: Boolean(options.dryRun),
               plugins: pluginInfo.names,
             };

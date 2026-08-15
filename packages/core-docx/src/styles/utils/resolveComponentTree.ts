@@ -59,18 +59,21 @@ const RESOLVER_MAP: Record<string, Resolver> = {
  * Resolve componentDefaults for a single component.
  * Known components use their typed resolver; unknown names
  * fall back to resolveCustomComponentProps.
+ *
+ * A missing `props` key is treated as `{}` — a propless node must still pick up
+ * the theme's defaults (e.g. `componentDefaults.section.pageBreak: false`).
  */
 export function resolveComponentDefaults(
   component: ComponentDefinition,
   theme: ThemeConfig
 ): ComponentDefinition {
-  if (!component.props) return component;
+  const props = component.props ?? {};
 
   const resolver = RESOLVER_MAP[component.name];
   const resolvedProps = resolver
-    ? resolver(component.props, theme)
+    ? resolver(props, theme)
     : resolveCustomComponentProps(
-        component.props as Record<string, unknown>,
+        props as Record<string, unknown>,
         theme,
         component.name
       );

@@ -79,18 +79,17 @@ export function createDevCommand(adapter: FormatAdapter): Command {
         const { server, url } = await runTask(
           `Starting ${adapter.name.toUpperCase()} dev server...`,
           async () => {
-            const config = await loadConfig(options.config);
+            // The adapter default goes in as the loader's fallback so an
+            // explicit port equal to it stays explicit — no sentinel value.
+            const config = await loadConfig(options.config, {
+              defaultPort: adapter.defaultPort,
+            });
 
-            // CLI flag > adapter default > config file default
+            // CLI flag > config file > PORT > adapter default
             const portSource = dev.getOptionValueSource('port');
             const hostSource = dev.getOptionValueSource('host');
             if (portSource === 'cli') {
               config.server.port = parseInt(options.port!, 10);
-            } else if (
-              config.server.port === 3003 &&
-              adapter.defaultPort !== 3003
-            ) {
-              config.server.port = adapter.defaultPort;
             }
             if (hostSource === 'cli') {
               config.server.host = options.host!;

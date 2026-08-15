@@ -266,7 +266,7 @@ export function createTablePropsSchema(componentRef: TSchema): TSchema {
       repeatHeaderOnPageBreak: Type.Optional(
         Type.Boolean({
           description:
-            'Repeat the header row on each page when the table spans multiple pages. Defaults to false.',
+            'Repeat the header row on each page when the table spans multiple pages. Defaults to true.',
           default: true,
         })
       ),

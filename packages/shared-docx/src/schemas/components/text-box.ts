@@ -152,7 +152,10 @@ export const TextBoxPropsSchema = Type.Object(
           shading: Type.Optional(
             Type.Object(
               {
-                fill: Type.Optional(Type.String()),
+                // Same domain as every other colour prop and as the border
+                // colours above: resolveColor() accepts "#RRGGBB" or a theme
+                // colour name, and throws on anything else at render time.
+                fill: Type.Optional(HexColorSchema),
               },
               { additionalProperties: false }
             )

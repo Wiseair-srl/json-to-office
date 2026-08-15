@@ -44,10 +44,11 @@ export function resolveColor(
     );
   }
 
-  // If it's a color name, resolve it from the theme
+  // If it's a color name, resolve it from the theme. Optional slots
+  // (accent4-6) may be present-but-undefined, which counts as unset.
   const colors = getThemeColors(theme);
-  if (colorValue in colors) {
-    const resolvedColor = colors[colorValue as ColorName];
+  const resolvedColor = colors[colorValue as ColorName];
+  if (typeof resolvedColor === 'string') {
     // Recursively resolve in case the theme color is also a reference
     return resolveColor(resolvedColor, theme);
   }
@@ -59,25 +60,28 @@ export function resolveColor(
 }
 
 /**
- * Validates if a color name exists in the theme
+ * Validates if a color name is set in the theme
  * @param colorName - The color name to validate
  * @param theme - The theme configuration
- * @returns True if the color name exists in the theme
+ * @returns True if the color name resolves to a value. A present-but-undefined
+ *   optional slot counts as unset, matching what `resolveColor` accepts.
  */
 export function isValidColorName(
   colorName: string,
   theme: ThemeConfig
 ): boolean {
   const colors = getThemeColors(theme);
-  return colorName in colors;
+  return typeof colors[colorName as ColorName] === 'string';
 }
 
 /**
  * Gets all available color names from a theme
  * @param theme - The theme configuration
- * @returns Array of valid color names
+ * @returns Array of valid color names, excluding present-but-undefined slots
  */
 export function getAvailableColorNames(theme: ThemeConfig): string[] {
   const colors = getThemeColors(theme);
-  return Object.keys(colors);
+  return Object.keys(colors).filter(
+    (name) => typeof colors[name as ColorName] === 'string'
+  );
 }

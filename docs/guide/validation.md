@@ -155,24 +155,25 @@ Each warning is a `PipelineWarning`:
 
 ### Warning codes
 
-| Code                      | Meaning                                                                   |
-| ------------------------- | ------------------------------------------------------------------------- |
-| `UNKNOWN_COMPONENT`       | Component name not recognized; node skipped.                              |
-| `UNKNOWN_CHART_TYPE`      | `chart.type` isn't a supported chart type.                                |
-| `UNKNOWN_SHAPE`           | `shape.type` isn't a supported shape type.                                |
-| `CHART_NO_DATA`           | Chart has no data series to render.                                       |
-| `CHART_INVALID_SERIES`    | A series is missing `labels` or `values`; the chart is skipped.           |
-| `CHART_MULTI_SERIES`      | Pie/doughnut chart given multiple series; only the first is rendered.     |
-| `IMAGE_NO_SOURCE`         | Image has none of `path` / `base64` / `svg`; skipped.                     |
-| `IMAGE_PROBE_FAILED`      | Intrinsic image dimensions could not be probed (affects auto-sizing).     |
-| `IMAGE_ZERO_BOX`          | Image sizing box resolved to zero width or height.                        |
-| `MISSING_TEMPLATE`        | Slide references a template name that isn't defined.                      |
-| `UNKNOWN_PLACEHOLDER`     | Slide fills a placeholder name the template doesn't declare.              |
-| `PLACEHOLDER_NO_POSITION` | Placeholder used without a template and without any position; skipped.    |
-| `THEME_COLOR_FALLBACK`    | Optional theme color slot missing; fell back to `primary`.                |
-| `UNKNOWN_COLOR`           | Color string is neither valid hex nor a semantic token.                   |
-| `GRID_POSITION_CLAMPED`   | Grid `column` / `row` out of range; clamped into the grid.                |
-| `FONT_UNRESOLVED`         | Referenced font family could not be resolved (see [Fonts](/guide/fonts)). |
+| Code                         | Meaning                                                                                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `UNKNOWN_COMPONENT`          | Component name not recognized; node skipped.                                                                                                                       |
+| `UNKNOWN_CHART_TYPE`         | `chart.type` isn't a supported chart type.                                                                                                                         |
+| `UNKNOWN_SHAPE`              | `shape.type` isn't a supported shape type.                                                                                                                         |
+| `CHART_NO_DATA`              | Chart has no data series to render.                                                                                                                                |
+| `CHART_INVALID_SERIES`       | A series is missing `labels` or `values`; the chart is skipped.                                                                                                    |
+| `CHART_MULTI_SERIES`         | Pie/doughnut chart given multiple series; only the first is rendered.                                                                                              |
+| `IMAGE_NO_SOURCE`            | Image has none of `path` / `base64` / `svg`; skipped.                                                                                                              |
+| `IMAGE_PROBE_FAILED`         | Intrinsic image dimensions could not be probed (affects auto-sizing).                                                                                              |
+| `IMAGE_ZERO_BOX`             | Image sizing box resolved to zero width or height.                                                                                                                 |
+| `MISSING_TEMPLATE`           | Slide references a template name that isn't defined.                                                                                                               |
+| `UNKNOWN_PLACEHOLDER`        | Slide fills a placeholder name the template doesn't declare.                                                                                                       |
+| `PLACEHOLDER_NO_POSITION`    | Placeholder used without a template and without any position; skipped.                                                                                             |
+| `THEME_COLOR_FALLBACK`       | Optional theme color slot missing; fell back to `primary`.                                                                                                         |
+| `UNKNOWN_COLOR`              | Color string is neither valid hex nor a semantic token — or names a theme slot whose own value resolves to neither, in which case it also falls back to `primary`. |
+| `HYPERLINK_SLIDE_UNRESOLVED` | `hyperlink.slide` matches no emitted slide (target disabled, or index outside the authored range); the link is dropped and the component renders unlinked.         |
+| `GRID_POSITION_CLAMPED`      | Grid `column` / `row` out of range; clamped into the grid.                                                                                                         |
+| `FONT_UNRESOLVED`            | Referenced font family could not be resolved (see [Fonts](/guide/fonts)).                                                                                          |
 
 ::: tip Treat warnings as CI failures
 `generateBufferWithWarnings` makes it easy to enforce a zero-warning policy: fail the build when `warnings.length > 0`. You get DOCX-style strictness where you want it, without losing PPTX's resilience in interactive use.

@@ -313,14 +313,125 @@ describe('renderHighchartsComponent', () => {
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      // First three tokens resolve to the theme colors; accent4-6 are unset
-      // on this theme and fall back to primary.
-      expect(body.infile.colors.slice(0, 3)).toEqual([
+      // accent4-6 are unset on this theme, so the palette stops at three
+      // rather than repeating primary — same as DOCX.
+      expect(body.infile.colors).toEqual(['#111111', '#222222', '#CC785C']);
+    });
+
+    it('matches the DOCX palette for a theme that leaves accent4-6 unset', async () => {
+      // Cross-format parity. The sibling DOCX test
+      // "matches the PPTX palette for a theme that leaves accent4-6 unset"
+      // (packages/core-docx/src/components/__tests__/highcharts.test.ts) posts
+      // this exact array for the same three theme colors — package boundaries
+      // keep the two renderers out of one test file, so the expectation is
+      // pinned identically on both sides.
+      const slide = mockSlide();
+      await renderHighchartsComponent(
+        slide,
+        { options: { chart: { width: 600, height: 400 } } },
+        brandTheme
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual(['#111111', '#222222', '#CC785C']);
+    });
+
+    it('emits no THEME_COLOR_FALLBACK warning for unset accent slots', async () => {
+      const slide = mockSlide();
+      const warnings: any[] = [];
+      await renderHighchartsComponent(
+        slide,
+        { options: { chart: { width: 600, height: 400 } } },
+        brandTheme,
+        warnings
+      );
+
+      expect(warnings).toEqual([]);
+    });
+
+    it('keeps defined accent4-6 and compacts holes', async () => {
+      const slide = mockSlide();
+      await renderHighchartsComponent(
+        slide,
+        { options: { chart: { width: 600, height: 400 } } },
+        { colors: { ...brandTheme.colors, accent5: '#5555AA' } } as any
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      // accent4 unset, accent5 defined: accent5 slides into the fourth slot,
+      // matching the DOCX compaction documented on DEFAULT_CHART_THEME_COLORS.
+      expect(body.infile.colors).toEqual([
         '#111111',
         '#222222',
         '#CC785C',
+        '#5555AA',
       ]);
-      expect(body.infile.colors).toHaveLength(6);
+    });
+
+    // The theme schema lets one slot name another. These themes carry the same
+    // three hexes as the DOCX `createMockTheme`, so each expectation below is
+    // pinned byte-for-byte against its DOCX sibling in
+    // packages/core-docx/src/components/__tests__/highcharts.test.ts.
+    const chainedColors = {
+      primary: '#0066cc',
+      secondary: '#6c757d',
+      accent: '#17a2b8',
+      text: '#000000',
+      background: '#FFFFFF',
+    };
+
+    it('resolves a token whose value names another token', async () => {
+      // Sibling DOCX test of the same name posts '#0066CC' for accent4. PPTX
+      // used to post the literal '#primary' — the export server drew it black.
+      const slide = mockSlide();
+      const warnings: any[] = [];
+      await renderHighchartsComponent(
+        slide,
+        { options: { chart: { width: 600, height: 400 } } },
+        { colors: { ...chainedColors, accent4: 'primary' } } as any,
+        warnings
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual([
+        '#0066cc',
+        '#6c757d',
+        '#17a2b8',
+        '#0066CC',
+      ]);
+      expect(body.infile.colors).not.toContain('#primary');
+      expect(warnings).toEqual([]);
+    });
+
+    it('drops a token whose value resolves to nothing', async () => {
+      const slide = mockSlide();
+      await renderHighchartsComponent(
+        slide,
+        { options: { chart: { width: 600, height: 400 } } },
+        { colors: { ...chainedColors, accent4: 'notAThemeColor' } } as any
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      // Same three-color palette the DOCX sibling emits for this theme.
+      expect(body.infile.colors).toEqual(['#0066cc', '#6c757d', '#17a2b8']);
+    });
+
+    it('drops tokens caught in a reference cycle', async () => {
+      const slide = mockSlide();
+      await renderHighchartsComponent(
+        slide,
+        { options: { chart: { width: 600, height: 400 } } },
+        {
+          colors: {
+            ...chainedColors,
+            accent4: 'accent5',
+            accent5: 'accent4',
+          },
+        } as any
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.infile.colors).toEqual(['#0066cc', '#6c757d', '#17a2b8']);
     });
 
     it('leaves explicit options.colors untouched', async () => {

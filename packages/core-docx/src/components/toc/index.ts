@@ -103,9 +103,19 @@ export function renderTocComponent(
     pageNumbersEnd = pageNumbersRange.to;
   }
 
-  // Note: numberingStyle is not currently used by docx.js TableOfContents API
-  // Future enhancement: implement custom numbering via post-processing or XmlComponent
-  // const numberingStyle = componentProps.numberingStyle ?? 'numeric';
+  // numberingStyle has no representation in Word's TOC field: the field carries
+  // no numbering switch, so entries always inherit the numbering of the heading
+  // styles they point at. The prop stays in the schema (documents already set it
+  // and props are additionalProperties:false), but the no-op is announced rather
+  // than swallowed.
+  if (componentProps.numberingStyle !== undefined) {
+    console.warn(
+      `TOC numberingStyle "${componentProps.numberingStyle}" is ignored: Word's ` +
+        'table-of-contents field has no numbering switch. TOC entries inherit ' +
+        'numbering from the heading styles they reference.'
+    );
+  }
+
   const includePageNumbers = componentProps.includePageNumbers !== false; // default true
   const scope = componentProps.scope ?? 'auto';
 
@@ -186,10 +196,10 @@ export function renderTocComponent(
         Object.prototype.hasOwnProperty.call(theme.styles, styleId);
       const styleDisplayName = isCustomStyle
         ? styleId
-          .replace(/([A-Z])/g, ' $1')
-          .replace(/[-_]+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/[-_]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
         : styleId; // If it's not a custom style key, assume it's already a display name
 
       stylesWithLevels.push(
@@ -262,10 +272,10 @@ export function renderTocComponent(
     // Boolean: true = "\t" (tab, default), false = " " (space)
     ...(componentProps.numberSeparator !== undefined
       ? {
-        entryAndPageNumberSeparator: componentProps.numberSeparator
-          ? '\t'
-          : ' ',
-      }
+          entryAndPageNumberSeparator: componentProps.numberSeparator
+            ? '\t'
+            : ' ',
+        }
       : { entryAndPageNumberSeparator: '\t' }), // default to tab
   };
 

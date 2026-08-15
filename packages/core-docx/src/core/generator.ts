@@ -81,8 +81,9 @@ export function isReportComponentDefinition(
 
   const def = definition as Record<string, unknown>;
 
-  // Must be a report component (optionally with $schema for JSON validation)
-  return def.name === 'docx' && 'props' in def;
+  // Must be a report component (optionally with $schema for JSON validation).
+  // `props` is optional: a propless root generates like one with `props: {}`.
+  return def.name === 'docx';
 }
 
 /**
@@ -148,8 +149,11 @@ async function generateDocumentWithCustomThemes(
   generationDate?: Date
 ): Promise<Document> {
   // Alias so we can reassign after the export-mode pre-pass swaps doc +
-  // theme references to the rewritten versions.
-  let document = documentIn;
+  // theme references to the rewritten versions. A root written without a
+  // `props` key validates clean, so default it to `{}` here — otherwise every
+  // downstream `document.props.*` read (theme, componentDefaults,
+  // noProofWords, trackRevisions, language, metadata) throws.
+  let document = documentIn.props ? documentIn : { ...documentIn, props: {} };
   // Get theme configuration with custom theme support (theme is always a string name)
   let themeName = document.props.theme || 'minimal';
   let theme: ThemeConfig;

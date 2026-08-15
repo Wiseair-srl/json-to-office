@@ -49,16 +49,29 @@ export const createReportPropsSchema = (_moduleRef?: TSchema) =>
             ),
             description: Type.Optional(Type.String()),
             author: Type.Optional(Type.String()),
-            company: Type.Optional(Type.String()),
-            date: Type.Optional(Type.String()),
-            created: Type.Optional(Type.String({ format: 'date-time' })),
-            modified: Type.Optional(Type.String({ format: 'date-time' })),
-            version: Type.Optional(Type.String()),
+            company: Type.Optional(
+              Type.String({
+                description:
+                  'Company name, written to docProps/custom.xml (Word has no core-property slot for it)',
+              })
+            ),
+            date: Type.Optional(
+              Type.String({
+                description:
+                  'Document date used by {DATE}/{DATETIME} placeholders (defaults to the generation timestamp)',
+              })
+            ),
+            version: Type.Optional(
+              Type.String({
+                description: 'Document version, written to docProps/custom.xml',
+                examples: ['1.0', '2024.3'],
+              })
+            ),
             tags: Type.Optional(Type.Array(Type.String())),
           },
           {
             description:
-              'Document metadata (title, author, company, dates, etc.)',
+              'Document metadata (title, author, company, version, etc.). Package timestamps (dcterms:created/modified) are not part of this object: they come from the `generatedAt` generation option so repeated builds stay byte-identical.',
             additionalProperties: false,
           }
         )

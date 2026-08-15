@@ -7,7 +7,7 @@ import type { PptxThemeConfig, PipelineWarning } from '../types';
 import type { PptxHighchartsProps } from '@json-to-office/shared-pptx';
 import type { HighchartsServiceConfig } from '@json-to-office/shared';
 import { isNodeEnvironment } from '../utils/environment';
-import { resolveColor, DEFAULT_CHART_THEME_COLORS } from '../utils/color';
+import { resolveColor, definedChartColorTokens } from '../utils/color';
 
 const PX_PER_INCH = 96;
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
@@ -87,7 +87,10 @@ async function generateChart(
  * When the Highcharts config sets no top-level `colors`, series render in the
  * Highcharts default palette (blue-first) and ignore the document theme. Inject
  * the theme's chart palette (same tokens as the native `chart` component) so
- * both chart paths follow the theme by default. Explicit `colors` always wins.
+ * both chart paths follow the theme by default. accent4-6 are optional in the
+ * theme schema; slots the theme leaves unset are skipped, in both formats, so
+ * the palette never repeats primary and Highcharts wraps the shorter list (see
+ * DEFAULT_CHART_THEME_COLORS). Explicit `colors` always wins.
  */
 function withThemeColors(
   props: PptxHighchartsProps,
@@ -95,9 +98,10 @@ function withThemeColors(
   warnings?: PipelineWarning[]
 ): PptxHighchartsProps {
   if (!props.options || props.options.colors || !theme?.colors) return props;
-  const palette = DEFAULT_CHART_THEME_COLORS.map(
+  const palette = definedChartColorTokens(theme).map(
     (token) => `#${resolveColor(token, theme, warnings)}`
   );
+  if (palette.length === 0) return props;
   return {
     ...props,
     options: { ...props.options, colors: palette },

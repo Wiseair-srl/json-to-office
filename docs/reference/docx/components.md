@@ -196,18 +196,22 @@ A KPI card: a large number with unit, description, and an optional trend indicat
 
 A **column-based** table: each column declares its header, width, cell defaults, and cells top-to-bottom. Cell `content` accepts a string or any nested component.
 
-| Prop                      | Type                                                                                | Required | Default             | Description                                                                                                                  |
-| ------------------------- | ----------------------------------------------------------------------------------- | -------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `columns`                 | `Column[]` (min 1)                                                                  | **yes**  | —                   | See the Column table below                                                                                                   |
-| `borderColor`             | `string` \| `{ top?, bottom?, left?, right? }`                                      | no       | theme               | Hex without `#`                                                                                                              |
-| `borderSize`              | `number` \| per-side object                                                         | no       | theme               | Points                                                                                                                       |
-| `hideBorders`             | `boolean` \| `{ top?, bottom?, left?, right?, insideHorizontal?, insideVertical? }` | no       | —                   | Hide all borders or specific sides                                                                                           |
-| `cellDefaults`            | `Cell` defaults object                                                              | no       | —                   | Defaults for body cells                                                                                                      |
-| `headerCellDefaults`      | `Cell` defaults object                                                              | no       | —                   | Defaults for header cells                                                                                                    |
-| `width`                   | `number` (0–100)                                                                    | no       | —                   | Table width as a percentage of content width                                                                                 |
-| `keepInOnePage`           | `boolean`                                                                           | no       | —                   | Sets `keepNext` on all rows to avoid page splits                                                                             |
-| `keepNext`                | `boolean`                                                                           | no       | `false`             | Keep the last row attached to the next element                                                                               |
-| `repeatHeaderOnPageBreak` | `boolean`                                                                           | no       | `false` (effective) | Repeat the header row on every page the table spans — the header row does not repeat unless this is explicitly set to `true` |
+| Prop                      | Type                                                                                | Required | Default | Description                                                                        |
+| ------------------------- | ----------------------------------------------------------------------------------- | -------- | ------- | ---------------------------------------------------------------------------------- |
+| `columns`                 | `Column[]` (min 1)                                                                  | **yes**  | —       | See the Column table below                                                         |
+| `borderColor`             | `string` \| `{ top?, bottom?, left?, right? }`                                      | no       | theme   | Hex without `#`                                                                    |
+| `borderSize`              | `number` \| per-side object                                                         | no       | theme   | Points                                                                             |
+| `hideBorders`             | `boolean` \| `{ top?, bottom?, left?, right?, insideHorizontal?, insideVertical? }` | no       | —       | Hide all borders or specific sides                                                 |
+| `cellDefaults`            | `Cell` defaults object                                                              | no       | —       | Defaults for body cells                                                            |
+| `headerCellDefaults`      | `Cell` defaults object                                                              | no       | —       | Defaults for header cells                                                          |
+| `width`                   | `number` (0–100)                                                                    | no       | —       | Table width as a percentage of content width                                       |
+| `keepInOnePage`           | `boolean`                                                                           | no       | —       | Sets `keepNext` on all rows to avoid page splits                                   |
+| `keepNext`                | `boolean`                                                                           | no       | `false` | Keep the last row attached to the next element                                     |
+| `repeatHeaderOnPageBreak` | `boolean`                                                                           | no       | `true`  | Repeat the header row on every page the table spans — set it to `false` to opt out |
+
+::: warning Header rows repeat by default
+The header row emits `<w:tblHeader/>` unless `repeatHeaderOnPageBreak` is explicitly `false`. This changes how existing multi-page tables render: a table that spans a page break now repeats its header on every page instead of showing it once. Pass `"repeatHeaderOnPageBreak": false` to keep the header on the first page only.
+:::
 
 **Column**
 
@@ -220,19 +224,27 @@ A **column-based** table: each column declares its header, width, cell defaults,
 
 **Cell**
 
-| Field                        | Type                                                          | Description                                                                                   |
-| ---------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `content`                    | `string` \| component                                         | Plain text or a full nested component (image, list, columns, ...)                             |
-| `color`                      | `string`                                                      | Text color. Bare hex, passed to OOXML unchanged — theme color names are **not** resolved here |
-| `backgroundColor`            | `string`                                                      | Cell fill. Bare hex, passed to OOXML unchanged — theme color names are **not** resolved here  |
-| `horizontalAlignment`        | `'left'` \| `'center'` \| `'right'` \| `'justify'`            |                                                                                               |
-| `verticalAlignment`          | `'top'` \| `'middle'` \| `'bottom'`                           |                                                                                               |
-| `font`                       | `{ family?, size?, bold?, fontWeight?, italic?, underline? }` | `fontWeight` (100–900) overrides `bold`                                                       |
-| `borderColor` / `borderSize` | `string` / `number` (points)                                  | Per-cell border override                                                                      |
-| `padding`                    | `number` \| `{ top?, bottom?, left?, right? }` (points)       |                                                                                               |
-| `height`                     | `number` (points)                                             | Minimum row height contribution                                                               |
+| Field                        | Type                                                          | Description                                                                        |
+| ---------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `content`                    | `string` \| component                                         | Plain text or a full nested component (image, list, columns, ...)                  |
+| `color`                      | `string`                                                      | Text color. `#`-prefixed hex, a theme color name, or `"auto"`                      |
+| `backgroundColor`            | `string`                                                      | Cell fill. Same values as `color`, plus `"transparent"` to leave the cell unshaded |
+| `horizontalAlignment`        | `'left'` \| `'center'` \| `'right'` \| `'justify'`            |                                                                                    |
+| `verticalAlignment`          | `'top'` \| `'middle'` \| `'bottom'`                           |                                                                                    |
+| `font`                       | `{ family?, size?, bold?, fontWeight?, italic?, underline? }` | `fontWeight` (100–900) overrides `bold`                                            |
+| `borderColor` / `borderSize` | `string` / `number` (points)                                  | Per-cell border override                                                           |
+| `padding`                    | `number` \| `{ top?, bottom?, left?, right? }` (points)       |                                                                                    |
+| `height`                     | `number` (points)                                             | Minimum row height contribution                                                    |
 
-Note the hex conventions differ: cell `color`/`backgroundColor` hex values must be `#`-prefixed, while `borderColor` (table- and cell-level) is hex **without** `#`.
+Cell `color` and `backgroundColor` are resolved the same way paragraph and heading `font.color` are: `#RRGGBB` is normalized to bare uppercase hex, and a theme color name (`primary`, `accent`, `text`, ...) resolves to that theme's value. A bare hex without `#` still works for backwards compatibility, but only when it starts with a letter (`F0FDF4`) — a digit-leading one such as `0F0FDF` fails validation, because the shared color pattern accepts only `#RRGGBB` or an identifier.
+
+`"auto"` is accepted on both props and passed through to OOXML unchanged (`w:fill="auto"` / `w:val="auto"`) — it is the one non-hex keyword Word itself understands.
+
+`"transparent"` is a **`backgroundColor`-only** sentinel: it suppresses the `w:shd` element so the cell stays unshaded. On `color` there is nothing to suppress and no legal `w:color` value to emit, so it is dropped with a `TABLE_CELL_COLOR_INVALID` warning on stderr and the cell's text takes the table style's color instead. The warning is deduplicated per table, so a whole column of `"transparent"` cells reports once.
+
+Anything else the theme cannot resolve **aborts generation** with a message naming the prop — for example _Invalid table cell color: "accnet". Must be a hex color with # prefix (e.g. "#000000"), a theme color name, or "auto"._ (the `backgroundColor` variant ends `..., "auto", or "transparent" for no shading.`). Failing here is deliberate: the underlying `docx` library rejects every non-hex, non-`"auto"` fill and color value anyway, so passing the value through would fail all the same, deeper down and with an opaque message.
+
+Note the conventions differ between the two color families: `borderColor` (table- and cell-level) is hex **without** `#`, passed to OOXML unchanged, and theme color names are **not** resolved there.
 
 ```json
 {
@@ -305,17 +317,17 @@ Bulleted or numbered lists with up to nine nesting levels and fully configurable
 
 A native Word table of contents built from headings (and optionally custom styles). Word refreshes it as a field.
 
-| Prop                 | Type                                    | Required | Default              | Description                                                                       |
-| -------------------- | --------------------------------------- | -------- | -------------------- | --------------------------------------------------------------------------------- |
-| `pageBreak`          | `boolean`                               | no       | —                    | Page break before the TOC                                                         |
-| `depth`              | `{ from? (1–6), to? (1–6) }`            | no       | `{ from: 1, to: 3 }` | Heading levels included                                                           |
-| `pageNumbersDepth`   | same shape                              | no       | —                    | Which levels show page numbers                                                    |
-| `numberingStyle`     | `'numeric'` \| `'bullet'` \| `'none'`   | no       | —                    | Accepted but not applied — the underlying `docx` TOC API has no equivalent option |
-| `title`              | `string`                                | no       | —                    | TOC heading                                                                       |
-| `includePageNumbers` | `boolean`                               | no       | `true`               |                                                                                   |
-| `numberSeparator`    | `boolean`                               | no       | `true`               | `true` = tab before the page number, `false` = space                              |
-| `scope`              | `'document'` \| `'section'` \| `'auto'` | no       | `'auto'`             | `auto` = section-scoped when inside a section, else document-wide                 |
-| `styles`             | `{ styleId: string, level: 1–6 }[]`     | no       | —                    | Map custom theme styles into TOC levels                                           |
+| Prop                 | Type                                    | Required | Default              | Description                                                                                                                                                                           |
+| -------------------- | --------------------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pageBreak`          | `boolean`                               | no       | —                    | Page break before the TOC                                                                                                                                                             |
+| `depth`              | `{ from? (1–6), to? (1–6) }`            | no       | `{ from: 1, to: 3 }` | Heading levels included                                                                                                                                                               |
+| `pageNumbersDepth`   | same shape                              | no       | —                    | Which levels show page numbers                                                                                                                                                        |
+| `numberingStyle`     | `'numeric'` \| `'bullet'` \| `'none'`   | no       | —                    | Accepted but not applied — Word's TOC field has no numbering switch, so entries inherit numbering from the heading styles they reference; setting it logs a warning during generation |
+| `title`              | `string`                                | no       | —                    | TOC heading                                                                                                                                                                           |
+| `includePageNumbers` | `boolean`                               | no       | `true`               |                                                                                                                                                                                       |
+| `numberSeparator`    | `boolean`                               | no       | `true`               | `true` = tab before the page number, `false` = space                                                                                                                                  |
+| `scope`              | `'document'` \| `'section'` \| `'auto'` | no       | `'auto'`             | `auto` = section-scoped when inside a section, else document-wide                                                                                                                     |
+| `styles`             | `{ styleId: string, level: 1–6 }[]`     | no       | —                    | Map custom theme styles into TOC levels                                                                                                                                               |
 
 ```json
 {
@@ -357,14 +369,16 @@ Inside a `text-box`, a nested `columns` renders as a multi-column table.
 
 A bordered, padded box — callouts, sidebars, cover-page blocks. Allowed children: `heading`, `paragraph`, `image`.
 
-| Prop            | Type                                                                                | Required | Default | Description                                                                                               |
-| --------------- | ----------------------------------------------------------------------------------- | -------- | ------- | --------------------------------------------------------------------------------------------------------- |
-| `width`         | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       | Relative to content width                                                                                 |
-| `height`        | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       |                                                                                                           |
-| `floating`      | floating object                                                                     | no       | —       | Identical schema to [`image`](#image) — one shared floating schema for both components                    |
-| `style.padding` | `{ top?, right?, bottom?, left? }` (≥ 0)                                            | no       | —       | Inner padding                                                                                             |
-| `style.border`  | per-side `{ style: 'solid'\|'dashed'\|'dotted'\|'double'\|'none', width?, color? }` | no       | —       | `color` takes `#`-prefixed hex or a theme color name                                                      |
-| `style.shading` | `{ fill?: string }`                                                                 | no       | —       | Background fill. `fill` takes `#`-prefixed hex or a theme color name — a bare hex string throws at render |
+| Prop            | Type                                                                                | Required | Default | Description                                                                            |
+| --------------- | ----------------------------------------------------------------------------------- | -------- | ------- | -------------------------------------------------------------------------------------- |
+| `width`         | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       | Relative to content width                                                              |
+| `height`        | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       |                                                                                        |
+| `floating`      | floating object                                                                     | no       | —       | Identical schema to [`image`](#image) — one shared floating schema for both components |
+| `style.padding` | `{ top?, right?, bottom?, left? }` (≥ 0)                                            | no       | —       | Inner padding                                                                          |
+| `style.border`  | per-side `{ style: 'solid'\|'dashed'\|'dotted'\|'double'\|'none', width?, color? }` | no       | —       | `color` takes `#`-prefixed hex or a theme color name                                   |
+| `style.shading` | `{ fill?: color }`                                                                  | no       | —       | Background fill. `fill` takes the same color type as `style.border.*.color`            |
+
+`style.shading.fill` and every `style.border.*.color` share one color type — `#RRGGBB` hex or a theme color name — enforced by the schema rather than at render time. Malformed values (`#F0F`, `#GGGGGG`, `rgb(240, 253, 244)`, `light green`, a digit-leading bare hex such as `0F0FDF`, the empty string) are rejected at validation. One gap remains: a letter-leading bare hex such as `F0FDF4` is indistinguishable from a theme color name under that pattern, so it passes validation and still throws at render — write `#F0FDF4`.
 
 ```json
 {
@@ -392,13 +406,13 @@ A bordered, padded box — callouts, sidebars, cover-page blocks. Allowed childr
 
 Renders a chart through a Highcharts export server and embeds the result as an image. Requires a Node.js environment and a reachable export server (or the `services.highcharts` generation option). See [Charts](/guide/charts).
 
-| Prop               | Type                          | Required | Default                 | Description                                                                                                                                     |
-| ------------------ | ----------------------------- | -------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `options`          | Highcharts config object      | **yes**  | —                       | Passed to the export server verbatim; `chart.width` and `chart.height` (numbers) are mandatory                                                  |
-| `scale`            | `number`                      | no       | —                       | Export scale factor (higher = sharper raster)                                                                                                   |
-| `resources`        | `{ css?, js?, files? }`       | no       | —                       | Forwarded to the export server; enables custom `@font-face`, plugins                                                                            |
-| `serverUrl`        | `string`                      | no       | `http://localhost:7801` | Export server URL override; takes precedence over the `services.highcharts` config, which in turn overrides the default `http://localhost:7801` |
-| `width` / `height` | `number` (px) \| `"%"` string | no       | —                       | Rendered image size in the document                                                                                                             |
+| Prop               | Type                          | Required | Default                 | Description                                                                                                                                                                                                |
+| ------------------ | ----------------------------- | -------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `options`          | Highcharts config object      | **yes**  | —                       | Passed to the export server as written, except that a missing top-level `colors` is filled from the [theme palette](/guide/charts#theme-palette); `chart.width` and `chart.height` (numbers) are mandatory |
+| `scale`            | `number`                      | no       | —                       | Export scale factor (higher = sharper raster)                                                                                                                                                              |
+| `resources`        | `{ css?, js?, files? }`       | no       | —                       | Forwarded to the export server; enables custom `@font-face`, plugins                                                                                                                                       |
+| `serverUrl`        | `string`                      | no       | `http://localhost:7801` | Export server URL override; takes precedence over the `services.highcharts` config, which in turn overrides the default `http://localhost:7801`                                                            |
+| `width` / `height` | `number` (px) \| `"%"` string | no       | —                       | Rendered image size in the document                                                                                                                                                                        |
 
 ```json
 {

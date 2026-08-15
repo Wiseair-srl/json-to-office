@@ -119,15 +119,15 @@ Registered font bytes are only materialized (fetched, cached, pinned) for the Li
 
 All flags apply to `jto docx generate` and `jto pptx generate`; see the [CLI reference](/reference/cli) for the full command surface.
 
-| Flag                              | Description                                                                                                                                    |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--font <name=path>`              | Register a font file (repeatable): `<family>=<path to .ttf/.otf>`.                                                                             |
-| `--fonts-dir <path>`              | Scan a directory for `.ttf`/`.otf` files and auto-register them by filename.                                                                   |
-| `--font-mode <mode>`              | `custom` (default) or `substitute`.                                                                                                            |
-| `--font-substitute <family=safe>` | Map a non-safe family to a specific safe font (repeatable; used with `--font-mode substitute`).                                                |
-| `--strict-fonts`                  | Fail generation on unresolved font references.                                                                                                 |
-| `--no-google-fonts`               | Accepted but currently has no effect: `generate` performs no Google Fonts fetching (fetching happens only in the dev-server preview pipeline). |
-| `--font-cache-dir <path>`         | Directory to cache fetched Google Fonts TTFs — currently no effect on `generate` output (preview pipeline only).                               |
+| Flag                              | Description                                                                                                                                                                                                |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--font <name=path>`              | Register a font file (repeatable): `<family>=<path to .ttf/.otf>`.                                                                                                                                         |
+| `--fonts-dir <path>`              | Scan a directory for `.ttf`/`.otf` files and auto-register them by filename.                                                                                                                               |
+| `--font-mode <mode>`              | `custom` (default) or `substitute`.                                                                                                                                                                        |
+| `--font-substitute <family=safe>` | Map a non-safe family to a specific safe font (repeatable; used with `--font-mode substitute`).                                                                                                            |
+| `--strict-fonts`                  | Fail generation on unresolved font references.                                                                                                                                                             |
+| `--no-google-fonts`               | Sets `fonts.googleFonts.enabled: false`. Forwarded to font resolution, but has no effect on `generate` output because `generate` never fetches — fetching happens only in the dev-server preview pipeline. |
+| `--font-cache-dir <path>`         | Sets `fonts.googleFonts.cacheDir`. Forwarded the same way, and inert on `generate` output for the same reason.                                                                                             |
 
 ## Warning codes
 

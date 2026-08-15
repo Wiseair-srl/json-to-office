@@ -33,8 +33,11 @@ export interface ProcessedDocument {
 export interface DocumentMetadata {
   title?: string;
   subtitle?: string;
+  description?: string;
   author?: string;
   company?: string;
+  version?: string;
+  tags?: string[];
   date: Date;
 }
 
@@ -147,8 +150,11 @@ export function createDocumentMetadata(
   return {
     title: props.metadata?.title,
     subtitle: props.metadata?.subtitle,
+    description: props.metadata?.description,
     author: props.metadata?.author,
     company: props.metadata?.company,
+    version: props.metadata?.version,
+    tags: props.metadata?.tags,
     date: props.metadata?.date ? new Date(props.metadata.date) : generationDate,
   };
 }

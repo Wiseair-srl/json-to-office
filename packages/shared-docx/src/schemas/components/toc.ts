@@ -4,9 +4,17 @@
 
 import { Type, Static } from '@sinclair/typebox';
 
+/**
+ * Kept for back-compat only. Word's TOC field has no numbering switch, so the
+ * renderer cannot apply this and logs a warning when it is set; entries inherit
+ * the numbering of the heading styles they reference.
+ */
 export const TocStyleSchema = Type.Union(
   [Type.Literal('numeric'), Type.Literal('bullet'), Type.Literal('none')],
-  { description: 'TOC numbering style' }
+  {
+    description:
+      'TOC numbering style — accepted but not applied (Word TOC fields carry no numbering switch); setting it logs a warning during generation',
+  }
 );
 
 export const TocScopeSchema = Type.Union(

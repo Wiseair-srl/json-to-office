@@ -29,7 +29,7 @@ Every document starts with a root component named `pptx`. Its `props` carry meta
 }
 ```
 
-Every component in the tree has the same shape: `{ "name": ..., "props": ..., "children": ... }` plus optional `id` and `enabled` fields. Setting `enabled: false` on a content component removes it from the output without deleting it from your JSON — handy for toggling elements on and off while iterating. Note that `enabled` is **not honored on `slide` components**: a disabled slide still renders — use `hidden: true` or delete the slide instead.
+Every component in the tree has the same shape: `{ "name": ..., "props": ..., "children": ... }` plus optional `id` and `enabled` fields. Setting `enabled: false` removes a component from the output without deleting it from your JSON — handy for toggling elements on and off while iterating. It works the same way on **slides**: a slide marked `enabled: false` is not emitted at all, and the slides after it move up. Omitting `enabled` means enabled; only the explicit value `false` drops a component.
 
 The root may only contain `slide` children, and slides may only contain the six content components: `text`, `image`, `shape`, `table`, `chart`, and `highcharts`. Content components are leaves — they never have children of their own.
 
@@ -194,6 +194,11 @@ Slides carry presentation logistics in their own props. `notes` becomes the spea
 }
 ```
 
+`hidden: true` and `enabled: false` are different tools: a hidden slide ships in the `.pptx` and is only skipped while presenting, whereas a disabled slide never reaches the file at all. Dropping a slide has two knock-on effects worth knowing before you toggle one off mid-deck:
+
+- **Numbering is computed after the drop.** `{PAGE_NUMBER}` / `{PAGE_COUNT}` and PowerPoint's own slide numbers count only the slides that were emitted — a three-slide deck with the middle slide disabled renders as `1/2` and `2/2`.
+- **Internal links follow the slide they point at.** `hyperlink.slide` on `text` and `image` is a 1-based index over the slides _as written in the JSON_, disabled ones included, and generation rebases it onto the emitted numbering — so a link to the third slide you authored still reaches that slide's content after an earlier slide is switched off. A link whose own target is disabled, or whose index falls outside the authored range, cannot be honored: it is dropped, the `text` or `image` renders without a link, and generation reports a `HYPERLINK_SLIDE_UNRESOLVED` warning. Previously such a link was written as a relationship to a `slideN.xml` part that is not in the file, which PowerPoint reports as damaged and offers to repair.
+
 ## Backgrounds
 
 Each slide can set a background color (hex or semantic theme name) or a background image:
@@ -334,7 +339,7 @@ for (const w of warnings) {
 }
 ```
 
-Generation is forgiving about recoverable content problems: instead of failing on them, it emits **pipeline warnings** and produces the best file it can. Each warning has a machine-readable `code` — for example `GRID_POSITION_CLAMPED` (a grid placement fell outside the grid and was clamped), `MISSING_TEMPLATE` (a slide referenced a template name that doesn't exist), `IMAGE_NO_SOURCE`, `CHART_INVALID_SERIES`, `THEME_COLOR_FALLBACK`, or `FONT_UNRESOLVED` — and, where available, the component and/or slide it came from.
+Generation is forgiving about recoverable content problems: instead of failing on them, it emits **pipeline warnings** and produces the best file it can. Each warning has a machine-readable `code` — for example `GRID_POSITION_CLAMPED` (a grid placement fell outside the grid and was clamped), `MISSING_TEMPLATE` (a slide referenced a template name that doesn't exist), `HYPERLINK_SLIDE_UNRESOLVED` (an internal link pointed at no emitted slide and was dropped), `IMAGE_NO_SOURCE`, `CHART_INVALID_SERIES`, `THEME_COLOR_FALLBACK`, or `FONT_UNRESOLVED` — and, where available, the component and/or slide it came from.
 
 ::: tip Validation is a separate step
 Generation does **not** validate the document against the schema, so structural mistakes (wrong prop names, invalid nesting) surface as warnings or renderer errors rather than a clean upfront failure. Run `validate.document(...)` from the package — or `jto pptx validate` — before generating if you want schema errors reported properly. See [Validation](/guide/validation).

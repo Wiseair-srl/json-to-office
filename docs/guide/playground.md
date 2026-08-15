@@ -61,12 +61,12 @@ jto pptx dev   # PPTX playground on http://localhost:3004
 
 On start, the CLI prints the local URL, the generation API URL (`http://localhost:<port>/api/<format>/generate`), and the health endpoint (`/health`).
 
-| Flag                  | Default                       | Description                                                                    |
-| --------------------- | ----------------------------- | ------------------------------------------------------------------------------ |
-| `-p, --port <port>`   | `3003` (docx) / `3004` (pptx) | Server port. CLI flag wins over the adapter default and any config-file value. |
-| `-H, --host <host>`   | `localhost`                   | Bind host.                                                                     |
-| `-o, --open`          | off                           | Open the browser automatically.                                                |
-| `-c, --config <path>` | —                             | Path to a config file.                                                         |
+| Flag                  | Default                       | Description                                                                  |
+| --------------------- | ----------------------------- | ---------------------------------------------------------------------------- |
+| `-p, --port <port>`   | `3003` (docx) / `3004` (pptx) | Server port. `-p` > config-file `server.port` > `PORT` > the format default. |
+| `-H, --host <host>`   | `localhost`                   | Bind host.                                                                   |
+| `-o, --open`          | off                           | Open the browser automatically.                                              |
+| `-c, --config <path>` | —                             | Path to a config file.                                                       |
 
 ::: tip
 The lean `@json-to-office/jto-cli` package deliberately excludes the playground (no React, Monaco, Vite, or AI dependencies) to stay small for CI and serverless use. Running `jto-cli docx dev` prints a pointer to install `@json-to-office/jto` instead. See [the CLI guide](/guide/cli).

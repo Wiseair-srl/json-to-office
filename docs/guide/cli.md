@@ -43,13 +43,25 @@ The input is a JSON file following the document schema — see [Writing DOCX doc
 
 ### Applying a theme
 
-Built-in themes are selected by the document itself — set `props.theme` on the root component (`"minimal"`, `"corporate"`, `"modern"`). For a custom theme file, load and register it with `--theme-path`:
+A document picks its own theme with `props.theme` on the root component (`"minimal"`, `"corporate"`, `"modern"`). To override that from the command line, name a built-in with `--theme` or point at a theme file with `--theme-path`:
 
 ```bash
+jto docx generate report.json --theme modern
 jto docx generate report.json --theme-path ./brand-theme.json
 ```
 
-`--theme-path` accepts a `.json` theme file or a JS/TS module that exports a theme object. Themes loaded this way are registered under their `name`, which the document's `props.theme` must reference. The `--theme` flag currently takes effect only in plugin-loaded runs. See [Themes & styling](/guide/themes).
+Both flags apply whether or not plugins are loaded, and both win over the document's `props.theme`. Against the [config file](/reference/cli#plugin--generation-config) the two flags count as one group: passing either of them discards both config-file keys (`theme` and `themePath`), so the flag you typed is the theme you get. Pass neither and the config file's own `theme`/`themePath` apply, with the theme _path_ tried first. When neither the flags nor the config file ask for a theme, `props.theme` applies unchanged.
+
+`--theme-path` accepts a `.json` theme file or a JS/TS module that exports a theme object; themes loaded this way are also registered under their `name`, so a document can still reference them from `props.theme`.
+
+A request that resolves to nothing never substitutes a default — generation proceeds with the document's own theme — but the two failure modes print **different** messages, which matters if you grep CI logs:
+
+| What failed                                                 | Message                                               |
+| ----------------------------------------------------------- | ----------------------------------------------------- |
+| `--theme` names nothing (misspelled built-in, no such file) | `Unknown theme "X"; keeping the document's own theme` |
+| `--theme-path` can't be read, parsed, or imported           | `Failed to load theme from <path>: <reason>`          |
+
+Pass both and a failing `--theme-path` falls through to `--theme`, so an unusable path plus an unknown name prints one of each. See [Themes & styling](/guide/themes).
 
 ### Custom fonts
 
@@ -60,7 +72,7 @@ jto docx generate report.json --font Inter=./fonts/Inter-Regular.ttf
 jto docx generate report.json --fonts-dir ./fonts
 ```
 
-Google Fonts referenced in the document are fetched over HTTP only by the dev-server/LibreOffice preview pipeline — plain `generate` never fetches them, so offline or air-gapped CLI builds need no special flags. To fail hard instead of falling back when a font can't be resolved:
+Google Fonts referenced in the document are fetched over HTTP only by the dev-server/LibreOffice preview pipeline — plain `generate` never fetches them, so offline or air-gapped CLI builds need no special flags. `--no-google-fonts` and `--font-cache-dir` are forwarded to font resolution, but since `generate` has nothing to fetch or cache, neither changes the file it writes. To fail hard instead of falling back when a font can't be resolved:
 
 ```bash
 jto docx generate report.json --strict-fonts              # fail on unresolved fonts
@@ -84,7 +96,7 @@ jto docx generate report.json --plugin-dir ./plugins   # search a directory
 jto docx generate report.json --dry-run                # summary, no file written
 ```
 
-`--dry-run` prints a boxed summary (input, output, format, theme, strict mode, plugins) without writing anything — handy for checking what a CI invocation would do.
+`--dry-run` prints a boxed summary without writing anything — handy for checking what a CI invocation would do. The lines are `Input:`, `Output:`, `Format:`, `Theme:`, `Plugins:` (only when at least one loaded), and `Validation: passed`, which appears on dry runs only — the document is validated either way, but only a dry run says so. The `Theme:` line names the theme that actually rendered: the theme file path when `--theme-path` wins, the resolved `--theme` name otherwise, and — with nothing requested anywhere — the document's own `props.theme`, or `default` when it names none. A misspelled name shows up in the warning, never on this line.
 
 ::: info Charts
 Chart components render through a Highcharts export service. Point the CLI at one with the `HIGHCHARTS_SERVER_URL` environment variable (plus `HIGHCHARTS_API_KEY` if it needs auth). See [Charts](/guide/charts) and the [render server guide](/guide/render-server).
@@ -199,7 +211,7 @@ jto docx dev --open    # http://localhost:3003
 jto pptx dev --open    # http://localhost:3004
 ```
 
-DOCX serves on port **3003** and PPTX on **3004** by default; override with `-p`, bind with `-H`, and `--open` launches your browser. On start the CLI prints the local URL, the API URL (`/api/docx/generate` or `/api/pptx/generate`), and the health endpoint.
+DOCX serves on port **3003** and PPTX on **3004** by default; override with `-p`, bind with `-H`, and `--open` launches your browser. Deployments that inject a port via the `PORT` environment variable are honoured too — the order is `-p` > the config file's `server.port` > `PORT` > the format default. On start the CLI prints the local URL, the API URL (`/api/docx/generate` or `/api/pptx/generate`), and the health endpoint.
 
 The AI assistant (backed by your local Claude Code auth) is on by default; disable it with:
 
