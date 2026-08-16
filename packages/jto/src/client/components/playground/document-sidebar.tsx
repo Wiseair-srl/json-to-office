@@ -222,6 +222,12 @@ function DocumentSidebarComponent({
       ) {
         return;
       }
+      // A modal is open: Radix marks everything outside the portal
+      // aria-hidden/inert, so focusing the filter would swallow the keystroke
+      // and move nothing. Testing the input itself also covers the rename and
+      // delete dialogs, which belong to the row components rather than to this
+      // one — guarding on local dialog state would miss them.
+      if (filterRef.current?.closest('[aria-hidden="true"], [inert]')) return;
       e.preventDefault();
       filterRef.current?.focus();
       filterRef.current?.select();

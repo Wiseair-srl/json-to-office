@@ -247,7 +247,10 @@ export function SidebarLibrary({
         >
           {plugins.map((plugin) => {
             const active = isPluginSelected(plugin.name);
-            const switchId = `plugin-switch-${plugin.name}`;
+            // Same identity the row key uses: two plugins discovered in
+            // different locations can share a name, and a duplicate id would
+            // point every `htmlFor` at the first switch.
+            const switchId = `plugin-switch-${plugin.filePath || plugin.name}`;
             return (
               <div
                 key={plugin.filePath || plugin.name}
