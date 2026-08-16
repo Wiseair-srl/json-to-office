@@ -272,7 +272,7 @@ export const CompareDocumentsDialog: React.FC<CompareDocumentsDialogProps> = ({
               )}
               {summary.untracked.length > 0 && (
                 <div className="grid gap-1 max-h-32 overflow-y-auto">
-                  <p className="font-medium text-amber-600 dark:text-amber-500">
+                  <p className="font-medium text-warning">
                     {summary.untracked.length} change(s) not expressible as
                     tracked changes:
                   </p>

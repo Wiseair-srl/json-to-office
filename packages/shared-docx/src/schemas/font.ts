@@ -1,6 +1,6 @@
 /**
  * Font-related Schemas (shared)
- * Extracted to avoid circular dependencies between theme and module schemas.
+ * Extracted to avoid circular dependencies between theme and component schemas.
  */
 
 import { Type } from '@sinclair/typebox';

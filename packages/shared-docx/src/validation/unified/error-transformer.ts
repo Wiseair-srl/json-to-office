@@ -404,7 +404,7 @@ function getSuggestion(
   }
 
   if (typeStr === 'array') {
-    if (path?.includes('children') || path?.includes('modules')) {
+    if (path?.includes('children')) {
       return 'Provide an array of component objects, each with a "name" field';
     }
     return 'Provide an array/list of values using square brackets []';

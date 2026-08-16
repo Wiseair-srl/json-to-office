@@ -115,7 +115,7 @@ export function PluginSelector({
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <Sparkles className="size-5 text-amber-600 dark:text-amber-400" />
+          <Sparkles className="size-5 text-warning" />
           Plugins
           <Badge variant="secondary" className="font-normal">
             {selectedPlugins.size} active
@@ -162,7 +162,7 @@ export function PluginSelector({
                                 className={cn(
                                   'size-1.5 rounded-full flex-none transition-colors',
                                   isEnabled
-                                    ? 'bg-amber-500 dark:bg-amber-400'
+                                    ? 'bg-warning'
                                     : 'bg-muted-foreground/30'
                                 )}
                               />
@@ -339,7 +339,7 @@ export function PluginSelector({
                         >
                           {copiedIndex === index ? (
                             <>
-                              <CheckCircle className="size-3 mr-1 text-green-600" />
+                              <CheckCircle className="size-3 mr-1 text-success" />
                               Copied
                             </>
                           ) : (
@@ -422,7 +422,7 @@ function PropertyRow({ name, prop }: { name: string; prop: any }) {
           {typeLabel}
         </Badge>
         {prop.optional === false && (
-          <span className="text-[10px] text-red-500 font-medium flex-none">
+          <span className="text-[10px] text-destructive font-medium flex-none">
             required
           </span>
         )}
@@ -442,7 +442,7 @@ function PropertyRow({ name, prop }: { name: string; prop: any }) {
               {prop.enum.map((v: any, i: number) => (
                 <span key={i}>
                   {i > 0 && ', '}
-                  <code className="bg-muted px-1 rounded">
+                  <code className="bg-muted px-1 rounded-sm">
                     {JSON.stringify(v)}
                   </code>
                 </span>

@@ -7,7 +7,7 @@ import { ComponentDefaultsSchema } from '../component-defaults';
 import { NoProofWordsSchema } from '../font';
 
 // Create a function to generate ReportPropsSchema with recursive component reference
-export const createReportPropsSchema = (_moduleRef?: TSchema) =>
+export const createReportPropsSchema = (_componentRef?: TSchema) =>
   Type.Object(
     {
       theme: Type.Optional(

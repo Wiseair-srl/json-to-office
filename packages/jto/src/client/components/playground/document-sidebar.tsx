@@ -8,56 +8,43 @@ import {
   useContext,
 } from 'react';
 import {
-  FilePlusIcon,
   GitCompareArrows,
-  PaletteIcon,
   Plus,
-  Sparkles,
   Search,
   PanelLeftClose,
   PanelLeftOpen,
-  Info,
+  X,
 } from 'lucide-react';
 import { CompareDocumentsDialog } from './compare-documents-dialog';
 import { FORMAT } from '../../lib/env';
 import { DocumentFormDialogContentMemoized } from './document-form-dialog-content';
 import { DocumentMenuItemMemoized } from './document-menu-item';
 import { PluginSelector } from './plugin-selector';
-import { Switch } from '../ui/switch';
-import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
+import { SidebarLibrary } from './sidebar-library';
+import {
+  EmptyRow,
+  RailIconButton,
+  SectionLabel,
+  matchesQuery,
+} from './sidebar-shared';
+import { Dialog, DialogContent } from '../ui/dialog';
+import { Kbd, KbdShortcut } from '../ui/kbd';
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarFooter,
   SidebarMenu,
-  SidebarSeparator,
 } from '../ui/sidebar';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import {
   useThemesStore,
   ThemesStoreContext,
 } from '../../store/themes-store-provider';
-import type {
-  DiscoveryResult,
-  DocumentMetadata,
-  ThemeMetadata,
-} from '../../hooks/useDiscovery';
+import type { DiscoveryResult } from '../../hooks/useDiscovery';
 import { useShallow } from 'zustand/react/shallow';
-import { getThemeName } from '../../lib/theme-validation';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '../ui/collapsible';
-import { ChevronDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { ButtonModeToggle } from '../mode-toggle';
-import { SchemaDialog } from './schema-dialog';
 import { useTheme } from '../theme-provider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { useToast } from '../ui/use-toast';
@@ -70,6 +57,19 @@ interface DocumentSidebarProps {
   isAnimating?: boolean;
 }
 
+/**
+ * Playground rail.
+ *
+ * Two regions, in the order you use them: the files you have open, then the
+ * files the project has on disk. A single filter across the top cuts through
+ * both — with a dozen documents, themes and plugins in a 256px column, scanning
+ * was the slowest thing about this panel.
+ *
+ * Colour is rationed. `--primary` marks the row the editor has open,
+ * `--data-blue` the one in the preview, `--warning` a theme that preview is
+ * using, `--accent2` the theme category. Nothing else in the rail is tinted, so
+ * those four always mean something.
+ */
 function DocumentSidebarComponent({
   discoveryData,
   onToggleSidebar,
@@ -97,11 +97,12 @@ function DocumentSidebarComponent({
   const isPluginSelected = usePluginsStore((state) => state.isPluginSelected);
   const selectedPlugins = usePluginsStore((state) => state.selectedPlugins);
   const isApplyingPlugins = usePluginsStore((state) => state.isApplyingPlugins);
-  const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set(['current-docs', 'current-themes'])
+    new Set(['library-documents'])
   );
+  const [query, setQuery] = useState('');
+  const filterRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Separate documents and themes
@@ -111,64 +112,6 @@ function DocumentSidebarComponent({
   const themeDocuments = documents.filter(
     (doc) => documentTypes[doc.name] === 'application/json+theme'
   );
-
-  // Group discovered documents and themes by location
-  const groupedDiscoveredDocuments = useMemo(() => {
-    if (!discoveryData) return { current: [], downstream: [] };
-
-    const groups: Record<string, DocumentMetadata[]> = {
-      current: [],
-      downstream: [],
-    };
-
-    discoveryData.documents.forEach((doc) => {
-      if (groups[doc.location]) {
-        groups[doc.location].push(doc);
-      }
-    });
-
-    return groups;
-  }, [discoveryData]);
-
-  const groupedDiscoveredThemes = useMemo(() => {
-    if (!discoveryData) return { current: [], downstream: [] };
-
-    const groups: Record<string, ThemeMetadata[]> = {
-      current: [],
-      downstream: [],
-    };
-
-    discoveryData.themes.forEach((theme) => {
-      if (groups[theme.location]) {
-        groups[theme.location].push(theme);
-      }
-    });
-
-    return groups;
-  }, [discoveryData]);
-
-  // Extract theme names from documents
-  const themesInUse = useMemo(() => {
-    const themes = new Set<string>();
-    reportDocuments.forEach((doc) => {
-      try {
-        const parsed = JSON.parse(doc.text);
-        // Look for theme in the report component props
-        if (parsed.children && Array.isArray(parsed.children)) {
-          parsed.children.forEach(
-            (component: { name?: string; props?: { theme?: string } }) => {
-              if (component.name === 'docx' && component.props?.theme) {
-                themes.add(component.props.theme);
-              }
-            }
-          );
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    });
-    return themes;
-  }, [reportDocuments]);
 
   const closeDialog = useCallback(() => {
     setDialogOpen(false);
@@ -217,23 +160,14 @@ function DocumentSidebarComponent({
     });
   }, [themeDocuments, removeTheme, themesStoreApi]);
 
-  const toggleGroup = (groupId: string) => {
+  const toggleGroup = useCallback((groupId: string) => {
     setExpandedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
       return next;
     });
-  };
-
-  const activeTab = useDocumentsStore((state) => state.activeTab);
-  const activeDocumentType =
-    activeTab && documentTypes[activeTab] === 'application/json+theme'
-      ? 'theme'
-      : 'document';
+  }, []);
 
   const { resolvedTheme } = useTheme();
   const logoSrc =
@@ -271,570 +205,471 @@ function DocumentSidebarComponent({
     [documents, createDocument, openDocument, toast]
   );
 
+  // `/` jumps to the filter, the convention in every editor-shaped app. Guarded
+  // against text targets so it never steals a slash you meant to type.
+  useEffect(() => {
+    if (isCollapsed) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName?.toLowerCase();
+      if (
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        el?.isContentEditable ||
+        el?.closest?.('.monaco-editor')
+      ) {
+        return;
+      }
+      e.preventDefault();
+      filterRef.current?.focus();
+      filterRef.current?.select();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isCollapsed]);
+
+  const q = query.trim();
+  const openNames = useMemo(
+    () => new Set(documents.map((d) => d.name)),
+    [documents]
+  );
+
+  const visibleDocuments = useMemo(
+    () => reportDocuments.filter((d) => matchesQuery(d.name, q)),
+    [reportDocuments, q]
+  );
+  const visibleThemes = useMemo(
+    () => themeDocuments.filter((d) => matchesQuery(d.name, q)),
+    [themeDocuments, q]
+  );
+  const libraryDocuments = useMemo(
+    () =>
+      (discoveryData?.documents ?? []).filter(
+        (d) => matchesQuery(d.name, q) || matchesQuery(d.title ?? '', q)
+      ),
+    [discoveryData, q]
+  );
+  const libraryThemes = useMemo(
+    () =>
+      (discoveryData?.themes ?? []).filter(
+        (t) => matchesQuery(t.name, q) || matchesQuery(t.description ?? '', q)
+      ),
+    [discoveryData, q]
+  );
+  const libraryPlugins = useMemo(
+    () =>
+      (discoveryData?.plugins ?? []).filter(
+        (p) => matchesQuery(p.name, q) || matchesQuery(p.description ?? '', q)
+      ),
+    [discoveryData, q]
+  );
+
+  const nothingMatches =
+    q.length > 0 &&
+    visibleDocuments.length === 0 &&
+    visibleThemes.length === 0 &&
+    libraryDocuments.length === 0 &&
+    libraryThemes.length === 0 &&
+    libraryPlugins.length === 0;
+
+  const fade = cn(
+    'transition-opacity duration-150 ease-out',
+    isAnimating ? 'opacity-0' : 'opacity-100'
+  );
+
   return (
-    // In-panel sidebar; includes global tools previously in header
     <>
       <Sidebar
         collapsible="none"
         style={{ ['--sidebar-width' as any]: isCollapsed ? '3rem' : '16rem' }}
       >
-        <SidebarHeader>
-          <div
-            className={cn(
-              'flex items-center transition-opacity duration-150 ease-out',
-              isAnimating ? 'opacity-0' : 'opacity-100',
-              isCollapsed ? 'justify-center' : 'justify-between'
-            )}
-          >
-            {isCollapsed ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Expand sidebar"
-                aria-expanded={false}
-                onClick={onToggleSidebar}
-              >
-                <PanelLeftOpen className="h-4 w-4" />
-              </Button>
-            ) : (
-              <>
-                <a href="/" className="flex items-center pl-2">
-                  <img
-                    src={logoSrc}
-                    alt="WiseAir logo"
-                    className="h-5 w-auto max-w-[120px] shrink-0"
-                  />
-                </a>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Collapse sidebar"
-                    aria-expanded={true}
+        {isCollapsed ? (
+          /* ---------------------------------------------------------------
+           * Collapsed rail. Real file icons rather than two-letter monograms:
+           * `contract-v1` and `contract-v2` both reduced to "CO", which made
+           * the compact rail unreadable exactly when it needed to be scannable.
+           * ------------------------------------------------------------- */
+          <>
+            <SidebarHeader className={cn('gap-0 p-1.5', fade)}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <RailIconButton
+                    className="mx-auto size-7"
+                    aria-label="Expand sidebar"
+                    aria-expanded={false}
                     onClick={onToggleSidebar}
                   >
-                    <PanelLeftClose className="h-4 w-4" />
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </SidebarHeader>
-        <SidebarContent
-          className={cn(
-            'h-full transition-opacity duration-150 ease-out',
-            isAnimating ? 'opacity-0' : 'opacity-100'
-          )}
-        >
-          {/* Active Documents Section */}
-          <SidebarGroup>
-            <SidebarGroupLabel
-              className={cn(
-                'flex items-center',
-                isCollapsed ? 'justify-center' : 'justify-between'
-              )}
-            >
-              <div className="flex items-center gap-2">
-                {!isCollapsed && <FilePlusIcon className="size-3" />}
-                {!isCollapsed && <span>Active Documents</span>}
-              </div>
-              <div className="flex items-center gap-0.5">
-                {FORMAT === 'docx' && !isCollapsed && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        className="h-6 w-6 p-0 flex-shrink-0"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Compare documents"
-                        disabled={reportDocuments.length < 2}
-                        onClick={() => setCompareDialogOpen(true)}
-                      >
-                        <GitCompareArrows className="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <span className="text-xs">
-                        {reportDocuments.length < 2
-                          ? 'Compare needs two documents'
-                          : 'Compare documents (redline)'}
-                      </span>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <DialogTrigger asChild>
-                        <Button
-                          className={cn(
-                            'p-0 flex-shrink-0',
-                            isCollapsed
-                              ? 'mx-auto h-8 w-8 rounded border border-dashed border-sidebar-foreground/20 hover:border-sidebar-foreground/40'
-                              : 'h-6 w-6'
-                          )}
-                          variant="ghost"
-                          size="icon"
-                        >
-                          <Plus
-                            className={isCollapsed ? 'size-3.5' : 'size-4'}
-                          />
-                        </Button>
-                      </DialogTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side={isCollapsed ? 'right' : 'bottom'}>
-                      <span className="text-xs">New Document</span>
-                    </TooltipContent>
-                  </Tooltip>
-                  <DialogContent className="sm:max-w-[525px]">
-                    <DocumentFormDialogContentMemoized
-                      mode="create"
-                      shouldReset={!dialogOpen}
-                      postSubmit={closeDialog}
-                      discoveredDocuments={discoveryData?.documents || []}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </SidebarGroupLabel>
-            {isCollapsed ? (
-              /* Collapsed: show icon badges for each doc */
-              <SidebarGroupContent>
-                <div className="flex flex-col items-center gap-0.5 px-0.5">
-                  {reportDocuments.map((doc) => {
-                    const isActive = activeTab === doc.name;
-                    return (
-                      <Tooltip key={doc.name}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => openDocument(doc.name)}
-                            aria-label={doc.name}
-                            className={cn(
-                              'relative w-8 h-8 rounded flex items-center justify-center text-[11px] font-bold transition-colors cursor-pointer',
-                              isActive
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                            )}
-                          >
-                            {isActive && (
-                              <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-green-500 dark:bg-green-400" />
-                            )}
-                            {doc.name
-                              .replace(/\.[^.]+$/, '')
-                              .slice(0, 2)
-                              .toUpperCase()}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          <span className="text-xs">{doc.name}</span>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              </SidebarGroupContent>
-            ) : (
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {reportDocuments.length > 0 ? (
-                    reportDocuments.map((doc, index) => (
-                      <DocumentMenuItemMemoized
-                        key={`doc-${index}`}
-                        document={doc}
-                        compact={isCollapsed}
-                      />
-                    ))
-                  ) : (
-                    <div className="px-3 py-2 text-xs text-muted-foreground">
-                      No active documents. Click + to create one.
-                    </div>
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            )}
-          </SidebarGroup>
-
-          {/* Separator between documents and themes */}
-          <SidebarSeparator />
-
-          {/* Active Themes Section */}
-          <SidebarGroup>
-            <SidebarGroupLabel
-              className={cn(
-                'flex items-center',
-                isCollapsed ? 'justify-center' : 'justify-between'
-              )}
-            >
-              <div className="flex items-center gap-2">
-                {!isCollapsed && (
-                  <PaletteIcon className="size-3 text-purple-600 dark:text-purple-400" />
-                )}
-                {!isCollapsed && <span>Active Themes</span>}
-              </div>
-              <Dialog open={themeDialogOpen} onOpenChange={setThemeDialogOpen}>
+                    <PanelLeftOpen />
+                  </RailIconButton>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="flex items-center gap-2"
+                >
+                  <span>Expand sidebar</span>
+                  <KbdShortcut shortcut="mod+b" />
+                </TooltipContent>
+              </Tooltip>
+            </SidebarHeader>
+            <SidebarContent className={cn('gap-2 px-1 py-1', fade)}>
+              <SidebarMenu className="items-center gap-0.5">
+                {reportDocuments.map((doc) => (
+                  <DocumentMenuItemMemoized
+                    key={doc.name}
+                    document={doc}
+                    compact
+                  />
+                ))}
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
-                      <Button
-                        className={cn(
-                          'p-0 flex-shrink-0',
-                          isCollapsed
-                            ? 'mx-auto h-8 w-8 rounded border border-dashed border-sidebar-foreground/20 hover:border-sidebar-foreground/40'
-                            : 'h-6 w-6'
-                        )}
-                        variant="ghost"
-                        size="icon"
-                      >
-                        <Plus className={isCollapsed ? 'size-3.5' : 'size-4'} />
-                      </Button>
-                    </DialogTrigger>
+                    <RailIconButton
+                      className="size-7"
+                      aria-label="New document"
+                      onClick={() => setDialogOpen(true)}
+                    >
+                      <Plus />
+                    </RailIconButton>
                   </TooltipTrigger>
-                  <TooltipContent side={isCollapsed ? 'right' : 'bottom'}>
-                    <span className="text-xs">New Theme</span>
+                  <TooltipContent side="right">New document</TooltipContent>
+                </Tooltip>
+              </SidebarMenu>
+
+              <div className="bg-sidebar-border/70 mx-auto h-px w-6" />
+
+              <SidebarMenu className="items-center gap-0.5">
+                {themeDocuments.map((doc) => (
+                  <DocumentMenuItemMemoized
+                    key={doc.name}
+                    document={doc}
+                    compact
+                  />
+                ))}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <RailIconButton
+                      className="size-7"
+                      aria-label="New theme"
+                      onClick={() => setThemeDialogOpen(true)}
+                    >
+                      <Plus />
+                    </RailIconButton>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">New theme</TooltipContent>
+                </Tooltip>
+              </SidebarMenu>
+            </SidebarContent>
+          </>
+        ) : (
+          /* -----------------------------------------------------------------
+           * Expanded rail.
+           * --------------------------------------------------------------- */
+          <>
+            <SidebarHeader className={cn('gap-0 p-2', fade)}>
+              <div className="flex h-7 items-center justify-between gap-1">
+                <a
+                  href="/"
+                  aria-label="JSON to Office home"
+                  className="focus-visible:ring-sidebar-ring flex items-center rounded-sm pl-1 focus-visible:ring-1 focus-visible:outline-none"
+                >
+                  <img
+                    src={logoSrc}
+                    alt="Wiseair"
+                    className="h-[18px] w-auto max-w-[110px] shrink-0"
+                  />
+                </a>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <RailIconButton
+                      aria-label="Collapse sidebar"
+                      aria-expanded={true}
+                      onClick={onToggleSidebar}
+                    >
+                      <PanelLeftClose />
+                    </RailIconButton>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="flex items-center gap-2"
+                  >
+                    <span>Collapse sidebar</span>
+                    <KbdShortcut shortcut="mod+b" />
                   </TooltipContent>
                 </Tooltip>
-                <DialogContent className="sm:max-w-[525px]">
-                  <DocumentFormDialogContentMemoized
-                    mode="create"
-                    shouldReset={!themeDialogOpen}
-                    postSubmit={closeThemeDialog}
-                    discoveredThemes={discoveryData?.themes || []}
-                    isTheme={true}
-                  />
-                </DialogContent>
-              </Dialog>
-            </SidebarGroupLabel>
-            {isCollapsed ? (
-              /* Collapsed: show icon badges for each theme */
-              <SidebarGroupContent>
-                <div className="flex flex-col items-center gap-0.5 px-0.5">
-                  {themeDocuments.map((doc) => {
-                    const isActive = activeTab === doc.name;
-                    let themeName: string | null = null;
-                    try {
-                      const parsed = JSON.parse(doc.text);
-                      themeName = getThemeName(parsed);
-                    } catch {}
-                    const isInUse = themeName
-                      ? themesInUse.has(themeName)
-                      : false;
+              </div>
 
-                    return (
-                      <Tooltip key={doc.name}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => openDocument(doc.name)}
-                            aria-label={doc.name}
-                            className={cn(
-                              'relative w-8 h-8 rounded flex items-center justify-center text-[11px] font-bold transition-colors cursor-pointer',
-                              isActive
-                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
-                                : isInUse
-                                  ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'
-                                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                            )}
-                          >
-                            {isActive && (
-                              <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-purple-500 dark:bg-purple-400" />
-                            )}
-                            {(themeName || doc.name).charAt(0).toUpperCase()}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          <div className="text-xs">
-                            {doc.name}
-                            {isInUse && (
-                              <div className="opacity-70">In use</div>
-                            )}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
+              {/* One filter for the whole rail: open files, project files and
+                  plugins all narrow together. */}
+              <div className="relative mt-2">
+                <Search
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-sidebar-foreground/40"
+                />
+                <input
+                  ref={filterRef}
+                  type="text"
+                  value={query}
+                  spellCheck={false}
+                  autoComplete="off"
+                  placeholder="Filter files…"
+                  aria-label="Filter documents, themes and plugins"
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setQuery('');
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  className={cn(
+                    'border-sidebar-border/70 bg-sidebar-accent/40 h-7 w-full rounded-sm border',
+                    'pr-7 pl-7 text-[13px] text-sidebar-foreground transition-colors',
+                    'placeholder:text-sidebar-foreground/60',
+                    'focus-visible:border-sidebar-ring focus-visible:bg-sidebar-accent/60',
+                    'focus-visible:ring-sidebar-ring focus-visible:ring-1 focus-visible:outline-none'
+                  )}
+                />
+                {q ? (
+                  <RailIconButton
+                    aria-label="Clear filter"
+                    onClick={() => {
+                      setQuery('');
+                      filterRef.current?.focus();
+                    }}
+                    className="absolute top-1/2 right-1 -translate-y-1/2"
+                  >
+                    <X />
+                  </RailIconButton>
+                ) : (
+                  <Kbd className="absolute top-1/2 right-1.5 h-4 min-w-4 -translate-y-1/2 bg-transparent px-0 text-[10px] text-sidebar-foreground/65">
+                    /
+                  </Kbd>
+                )}
+              </div>
+            </SidebarHeader>
+
+            <SidebarContent className={cn('gap-0 px-2 pb-2', fade)}>
+              {nothingMatches ? (
+                <div className="px-1 py-6 text-center">
+                  <p className="text-[13px] text-sidebar-foreground/70">
+                    No files match “{q}”
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery('');
+                      filterRef.current?.focus();
+                    }}
+                    className="text-sidebar-foreground/70 hover:text-sidebar-foreground focus-visible:ring-sidebar-ring mt-1 cursor-pointer rounded-sm text-[12px] underline-offset-2 hover:underline focus-visible:ring-1 focus-visible:outline-none"
+                  >
+                    Clear filter
+                  </button>
                 </div>
-              </SidebarGroupContent>
-            ) : (
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {themeDocuments.length > 0 ? (
-                    themeDocuments.map((doc, index) => {
-                      // Get the actual theme name from the parsed content
-                      let themeName: string | null = null;
-                      try {
-                        const parsed = JSON.parse(doc.text);
-                        themeName = getThemeName(parsed);
-                      } catch {
-                        // If parsing fails, theme is not valid
-                      }
+              ) : (
+                <>
+                  {/* Open documents */}
+                  {(visibleDocuments.length > 0 || !q) && (
+                    <section>
+                      <SectionLabel
+                        count={
+                          (q
+                            ? visibleDocuments.length
+                            : reportDocuments.length) || undefined
+                        }
+                        actions={
+                          <>
+                            {FORMAT === 'docx' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <RailIconButton
+                                    aria-label="Compare documents"
+                                    disabled={reportDocuments.length < 2}
+                                    onClick={() => setCompareDialogOpen(true)}
+                                  >
+                                    <GitCompareArrows />
+                                  </RailIconButton>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">
+                                  {reportDocuments.length < 2
+                                    ? 'Compare needs two documents'
+                                    : 'Compare documents (redline)'}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <RailIconButton
+                                  aria-label="New document"
+                                  onClick={() => setDialogOpen(true)}
+                                >
+                                  <Plus />
+                                </RailIconButton>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                New document
+                              </TooltipContent>
+                            </Tooltip>
+                          </>
+                        }
+                      >
+                        Documents
+                      </SectionLabel>
+                      <SidebarMenu className="gap-0.5">
+                        {visibleDocuments.length > 0 ? (
+                          visibleDocuments.map((doc) => (
+                            <DocumentMenuItemMemoized
+                              key={doc.name}
+                              document={doc}
+                              query={q}
+                            />
+                          ))
+                        ) : (
+                          <EmptyRow
+                            icon={Plus}
+                            label="New document"
+                            onClick={() => setDialogOpen(true)}
+                          />
+                        )}
+                      </SidebarMenu>
+                    </section>
+                  )}
 
-                      // Check if this theme name is in use
-                      const isInUse = themeName
-                        ? themesInUse.has(themeName)
-                        : false;
-                      return (
-                        <DocumentMenuItemMemoized
-                          key={`theme-${index}`}
-                          document={doc}
-                          compact={isCollapsed}
-                          indicator={isInUse ? 'in-use' : undefined}
-                        />
-                      );
-                    })
-                  ) : (
-                    <div className="px-3 py-2 text-xs text-muted-foreground">
-                      No active themes.{' '}
-                      {discoveryData && discoveryData.themes.length > 0
-                        ? 'Click + to add one.'
-                        : 'No themes discovered in project.'}
+                  {/* Open themes */}
+                  {(visibleThemes.length > 0 || !q) && (
+                    <section className="mt-3">
+                      <SectionLabel
+                        count={
+                          (q ? visibleThemes.length : themeDocuments.length) ||
+                          undefined
+                        }
+                        actions={
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <RailIconButton
+                                aria-label="New theme"
+                                onClick={() => setThemeDialogOpen(true)}
+                              >
+                                <Plus />
+                              </RailIconButton>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              New theme
+                            </TooltipContent>
+                          </Tooltip>
+                        }
+                      >
+                        Themes
+                      </SectionLabel>
+                      <SidebarMenu className="gap-0.5">
+                        {visibleThemes.length > 0 ? (
+                          visibleThemes.map((doc) => (
+                            <DocumentMenuItemMemoized
+                              key={doc.name}
+                              document={doc}
+                              query={q}
+                            />
+                          ))
+                        ) : (
+                          <EmptyRow
+                            icon={Plus}
+                            label="New theme"
+                            onClick={() => setThemeDialogOpen(true)}
+                          />
+                        )}
+                      </SidebarMenu>
+                    </section>
+                  )}
+
+                  {/* Project library */}
+                  {(libraryDocuments.length > 0 ||
+                    libraryThemes.length > 0 ||
+                    libraryPlugins.length > 0) && (
+                    <div className="border-sidebar-border/70 mt-3 border-t pt-2">
+                      <SidebarLibrary
+                        documents={libraryDocuments}
+                        themes={libraryThemes}
+                        plugins={libraryPlugins}
+                        openNames={openNames}
+                        query={q}
+                        expandedGroups={expandedGroups}
+                        onToggleGroup={toggleGroup}
+                        onQuickAdd={handleQuickAdd}
+                        onShowPluginDetails={(name) => {
+                          setPluginSelectorFocusedPlugin(name);
+                          setPluginSelectorOpen(true);
+                        }}
+                        isPluginSelected={isPluginSelected}
+                        onTogglePlugin={togglePlugin}
+                        isApplyingPlugins={isApplyingPlugins}
+                        selectedPluginCount={selectedPlugins.size}
+                      />
                     </div>
                   )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            )}
-          </SidebarGroup>
-
-          {/* Plugins moved under Discovered Resources */}
-
-          {/* Discovered Resources Section */}
-          {!isCollapsed &&
-            discoveryData &&
-            (discoveryData.documents.length > 0 ||
-              discoveryData.themes.length > 0) && (
-              <SidebarGroup className="mt-2 border-t pt-4">
-                <SidebarGroupLabel className="flex items-center mb-2 gap-2">
-                  <Search className="size-3" />
-                  <span>Discovered Resources</span>
-                </SidebarGroupLabel>
-
-                <>
-                  {/* Discovered Documents */}
-                  {Object.entries(groupedDiscoveredDocuments).map(
-                    ([location, docs]) => {
-                      if (docs.length === 0) return null;
-                      const groupId = `${location}-docs`;
-                      const isExpanded = expandedGroups.has(groupId);
-
-                      return (
-                        <Collapsible key={groupId} open={isExpanded}>
-                          <CollapsibleTrigger
-                            className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                            onClick={() => toggleGroup(groupId)}
-                          >
-                            <ChevronDown
-                              className={cn(
-                                'size-3 transition-transform',
-                                !isExpanded && '-rotate-90'
-                              )}
-                            />
-                            <FilePlusIcon className="size-3" />
-                            {location === 'current'
-                              ? 'Current Directory'
-                              : 'Project'}{' '}
-                            Documents ({docs.length})
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="pl-4 space-y-0.5">
-                              {docs.map((doc, idx) => {
-                                const alreadyAdded = documents.some(
-                                  (d) => d.name === doc.name
-                                );
-                                return (
-                                  <button
-                                    key={idx}
-                                    onClick={() =>
-                                      handleQuickAdd(doc.name, false)
-                                    }
-                                    className={cn(
-                                      'w-full text-left py-1 px-2 rounded text-sm transition-colors',
-                                      'border-l-2 border-blue-400/60 dark:border-blue-500/40',
-                                      'hover:bg-accent hover:text-accent-foreground',
-                                      alreadyAdded && 'opacity-50'
-                                    )}
-                                  >
-                                    <div className="font-medium truncate">
-                                      {doc.name}
-                                    </div>
-                                    {doc.title && (
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        {doc.title}
-                                      </div>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      );
-                    }
-                  )}
-
-                  {/* Discovered Themes */}
-                  {Object.entries(groupedDiscoveredThemes).map(
-                    ([location, themes]) => {
-                      if (themes.length === 0) return null;
-                      const groupId = `${location}-themes`;
-                      const isExpanded = expandedGroups.has(groupId);
-
-                      return (
-                        <Collapsible key={groupId} open={isExpanded}>
-                          <CollapsibleTrigger
-                            className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                            onClick={() => toggleGroup(groupId)}
-                          >
-                            <ChevronDown
-                              className={cn(
-                                'size-3 transition-transform',
-                                !isExpanded && '-rotate-90'
-                              )}
-                            />
-                            <PaletteIcon className="size-3" />
-                            {location === 'current'
-                              ? 'Current Directory'
-                              : 'Project'}{' '}
-                            Themes ({themes.length})
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="pl-4 space-y-0.5">
-                              {themes.map((theme, idx) => {
-                                const alreadyAdded = documents.some(
-                                  (d) => d.name === theme.name
-                                );
-                                return (
-                                  <button
-                                    key={idx}
-                                    onClick={() =>
-                                      handleQuickAdd(theme.name, true)
-                                    }
-                                    className={cn(
-                                      'w-full text-left py-1 px-2 rounded text-sm transition-colors',
-                                      'border-l-2 border-purple-400/60 dark:border-purple-500/40',
-                                      'hover:bg-accent hover:text-accent-foreground',
-                                      alreadyAdded && 'opacity-50'
-                                    )}
-                                  >
-                                    <div className="font-medium truncate">
-                                      {theme.name}
-                                    </div>
-                                    {theme.description && (
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        {theme.description}
-                                      </div>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      );
-                    }
-                  )}
-
-                  {/* Discovered Plugins */}
-                  {discoveryData && discoveryData.plugins.length > 0 && (
-                    <Collapsible open={expandedGroups.has('plugins')}>
-                      <CollapsibleTrigger
-                        className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-                        onClick={() => toggleGroup('plugins')}
-                      >
-                        <ChevronDown
-                          className={cn(
-                            'size-3 transition-transform',
-                            !expandedGroups.has('plugins') && '-rotate-90'
-                          )}
-                        />
-                        <Sparkles className="size-3 text-amber-600 dark:text-amber-400" />
-                        Plugins ({selectedPlugins.size}/
-                        {discoveryData.plugins.length})
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="pl-4 space-y-0.5">
-                          {discoveryData.plugins.map((p, idx) => {
-                            const isActive = isPluginSelected(p.name);
-                            return (
-                              <div
-                                key={idx}
-                                className={cn(
-                                  'py-1 px-2 text-sm border-l-2 flex items-center gap-2 group transition-colors',
-                                  isActive
-                                    ? 'border-amber-500 dark:border-amber-400 text-foreground'
-                                    : 'border-amber-400/30 dark:border-amber-500/20 text-muted-foreground'
-                                )}
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium truncate">
-                                    {p.name}
-                                  </div>
-                                  {p.description && (
-                                    <div className="text-xs opacity-70 truncate">
-                                      {p.description}
-                                    </div>
-                                  )}
-                                </div>
-                                <button
-                                  className="flex-none size-5 flex items-center justify-center rounded-sm opacity-0 group-hover:opacity-100 hover:bg-accent transition-all cursor-pointer"
-                                  title={`View details for ${p.name}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setPluginSelectorFocusedPlugin(p.name);
-                                    setPluginSelectorOpen(true);
-                                  }}
-                                >
-                                  <Info className="size-3 text-muted-foreground" />
-                                </button>
-                                <Switch
-                                  checked={isActive}
-                                  onCheckedChange={() => togglePlugin(p)}
-                                  disabled={isApplyingPlugins}
-                                  className="flex-none scale-[0.8]"
-                                  aria-label={`Toggle ${p.name} plugin`}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  )}
                 </>
-              </SidebarGroup>
-            )}
-        </SidebarContent>
-        <SidebarFooter>
+              )}
+            </SidebarContent>
+          </>
+        )}
+
+        <SidebarFooter
+          className={cn('border-sidebar-border/70 gap-0 border-t p-1.5', fade)}
+        >
           <div
             className={cn(
-              'flex w-full items-center transition-opacity duration-150 ease-out',
-              isAnimating ? 'opacity-0' : 'opacity-100',
-              isCollapsed ? 'justify-center' : 'justify-end pr-2'
+              'flex items-center',
+              isCollapsed ? 'justify-center' : 'justify-start'
             )}
           >
-            <ButtonModeToggle />
+            {/* The stock toggle is 36px with the card-plane hover fill; in a
+                rail whose tallest row is 28px and whose every other hover is
+                `sidebar-accent`, both read as foreign. */}
+            <ButtonModeToggle className="size-7 rounded-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground [&_svg]:size-3.5" />
           </div>
         </SidebarFooter>
-
-        {/* Plugin Selector Dialog */}
-        <Dialog
-          open={pluginSelectorOpen}
-          onOpenChange={(open) => {
-            setPluginSelectorOpen(open);
-            if (!open) setPluginSelectorFocusedPlugin(null);
-          }}
-        >
-          <DialogContent className="sm:max-w-5xl max-h-[85vh] overflow-hidden">
-            <PluginSelector
-              plugins={discoveryData?.plugins || []}
-              initialFocusedPlugin={pluginSelectorFocusedPlugin}
-            />
-          </DialogContent>
-        </Dialog>
       </Sidebar>
-      {/* Schema Dialog */}
-      <SchemaDialog
-        open={schemaDialogOpen}
-        onOpenChange={setSchemaDialogOpen}
-        defaultTab={activeDocumentType === 'theme' ? 'theme' : 'document'}
-      />
+
+      {/* Creation dialogs are controlled rather than trigger-bound so the same
+          dialog serves the expanded rail, the collapsed rail and the empty
+          states. */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DocumentFormDialogContentMemoized
+            mode="create"
+            shouldReset={!dialogOpen}
+            postSubmit={closeDialog}
+            discoveredDocuments={discoveryData?.documents || []}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={themeDialogOpen} onOpenChange={setThemeDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DocumentFormDialogContentMemoized
+            mode="create"
+            shouldReset={!themeDialogOpen}
+            postSubmit={closeThemeDialog}
+            discoveredThemes={discoveryData?.themes || []}
+            isTheme={true}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={pluginSelectorOpen}
+        onOpenChange={(open) => {
+          setPluginSelectorOpen(open);
+          if (!open) setPluginSelectorFocusedPlugin(null);
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-5xl">
+          <PluginSelector
+            plugins={discoveryData?.plugins || []}
+            initialFocusedPlugin={pluginSelectorFocusedPlugin}
+          />
+        </DialogContent>
+      </Dialog>
+
       <CompareDocumentsDialog
         open={compareDialogOpen}
         onOpenChange={setCompareDialogOpen}

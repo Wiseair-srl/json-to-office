@@ -60,7 +60,7 @@ export {
 } from '@json-to-office/shared';
 
 // Docx-specific error formatter extras (local)
-export { ERROR_TEMPLATES, DOC_LINKS } from './error-formatter-config';
+export { ERROR_TEMPLATES } from './error-formatter-config';
 
 // Export base validator utilities
 export {

@@ -14,6 +14,7 @@ import {
   createContextSnippet,
 } from '../../lib/monaco-selection-utils';
 import { ValidationPanel, ValidationStatusBar } from './validation-panel';
+import { monacoThemeFor, registerMonacoThemes } from '../../lib/monaco-theme';
 
 /** Ensure defaultPath matches the schema fileMatch pattern (*.FORMAT.theme.json) */
 function resolveThemeDefaultPath(name: string): string {
@@ -66,6 +67,9 @@ function EditorMonacoTheme({
   // Initialize Monaco editor
   const handleEditorWillMount = useCallback((monaco: Monaco) => {
     monacoRef.current = monaco;
+    // Idempotent; guards the case where an editor mounts before the global
+    // configureMonaco() promise has resolved.
+    registerMonacoThemes(monaco);
     // Don't call setDiagnosticsOptions here — it would clobber the global
     // config. The theme schema is already registered by configureMonacoInstance
     // and matched via defaultPath → fileMatch.
@@ -247,8 +251,7 @@ function EditorMonacoTheme({
   // Update theme
   useEffect(() => {
     if (editorRef.current) {
-      const newTheme = resolvedTheme === 'dark' ? 'vs-dark' : 'vs';
-      editorRef.current.updateOptions({ theme: newTheme });
+      editorRef.current.updateOptions({ theme: monacoThemeFor(resolvedTheme) });
     }
   }, [resolvedTheme]);
 
@@ -285,7 +288,7 @@ function EditorMonacoTheme({
             original={pendingDiff.original}
             modified={pendingDiff.modified}
             language="json"
-            theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs'}
+            theme={monacoThemeFor(resolvedTheme)}
             options={{
               readOnly: true,
               renderSideBySide: true,
@@ -302,7 +305,7 @@ function EditorMonacoTheme({
           language="json"
           defaultPath={resolveThemeDefaultPath(document.name)}
           value={document.text}
-          theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs'}
+          theme={monacoThemeFor(resolvedTheme)}
           onChange={handleChange}
           beforeMount={handleEditorWillMount}
           onMount={handleEditorMount}

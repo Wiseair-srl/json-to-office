@@ -420,7 +420,7 @@ function PreviewHeader({
 
       toast({
         title: 'Copied to clipboard',
-        description: 'Standard modules JSON has been copied',
+        description: 'Standard components JSON has been copied',
       });
     } catch (error) {
       console.error('Error copying standard components:', error);
@@ -439,7 +439,9 @@ function PreviewHeader({
 
   return (
     <>
-      <div className="bg-sidebar flex flex-row flex-nowrap items-center justify-between gap-x-2 px-3 py-1.5">
+      {/* App header: a hairline is what separates it from the panes below —
+          the system uses borders, not elevation, to divide planes. */}
+      <div className="bg-sidebar border-b flex flex-row flex-nowrap items-center justify-between gap-x-2 px-3 py-1.5">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <p className="text-foreground text-sm font-semibold tracking-tight truncate flex-1 min-w-0">
             {name}
@@ -449,7 +451,7 @@ function PreviewHeader({
               <button
                 type="button"
                 aria-label="Preview disclaimer"
-                className="cursor-help inline-flex items-center justify-center h-6 w-6 rounded hover:bg-muted/60 shrink-0"
+                className="cursor-help inline-flex items-center justify-center h-6 w-6 rounded-sm hover:bg-muted/60 shrink-0"
               >
                 <InfoIcon className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
@@ -582,7 +584,7 @@ function PreviewHeader({
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-7 w-7 bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900"
+                  className="h-7 w-7 border-transparent bg-warning/10 text-warning hover:bg-warning/20"
                   disabled={isDownloadingWarnings || isGenerating}
                   onClick={handleDownloadWarnings}
                 >

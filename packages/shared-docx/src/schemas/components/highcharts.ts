@@ -1,7 +1,7 @@
 /**
  * Highcharts Component Schema
  *
- * Standard module for rendering charts using Highcharts export server.
+ * Standard component for rendering charts using Highcharts export server.
  */
 
 import { Type, Static } from '@sinclair/typebox';

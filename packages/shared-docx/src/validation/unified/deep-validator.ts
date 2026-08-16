@@ -422,7 +422,7 @@ function isGenericUnionCatchAll(error: ValidationError): boolean {
   if (!atRoot) return false;
   const msg = error.message || '';
   return (
-    /invalid (component|module) configurations?/i.test(msg) ||
+    /invalid component configurations?/i.test(msg) ||
     /invalid document structure/i.test(msg)
   );
 }
