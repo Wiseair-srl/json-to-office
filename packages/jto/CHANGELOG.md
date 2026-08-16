@@ -1,5 +1,109 @@
 # @json-to-office/jto
 
+## 0.24.0
+
+### Minor Changes
+
+- 5e6f5df: Rebuild the playground sidebar around the files you have open.
+
+  The rail carried two competing ideas at once. "Active Documents" and "Active
+  Themes" were the working set; "Discovered Resources" was the library — but the
+  library nested its files two levels deep (Discovered Resources → Project
+  Documents → the file), so a 256px column spent roughly 40px of its width on
+  chrome before showing a filename. There was no way to search any of it. With a
+  dozen documents, themes and plugins in the project, scanning was the slowest
+  thing about the panel.
+
+  The library sections are now top level, one indent, one neutral tree guide. A
+  single filter across the top narrows open files, project files and plugins
+  together, auto-expanding whatever still has matches; `/` focuses it, `Esc`
+  clears it, and matched runs are marked with weight rather than a tint, because
+  every hue in this rail already means something.
+
+  State reads more precisely and more quietly. The file icon no longer swaps to a
+  play glyph when a document is previewing — that swap cost the only cue
+  distinguishing a document from a theme. Instead exactly one row carries a filled
+  bed and a `--primary` stripe (the one the editor has open), while previewing and
+  theme-in-use are marked with a `--data-blue` or `--warning` dot on the trailing
+  edge. Decorative left stripes are gone from the library rows, so a stripe now
+  only ever means "open in the editor". The collapsed rail shows real file icons
+  in place of two-letter monograms, which had rendered both `contract-v1` and
+  `contract-v2` as "CO".
+
+  Rows are denser (28px, 13px text, 14px icons) and each one reveals an overflow
+  menu on hover — rename, download and delete had been reachable only by
+  right-clicking. Empty sections are buttons that create the thing they are empty
+  of. Plugin names now label their switch, so toggling a plugin is a 28px row
+  target rather than an 18px track.
+
+  Muted text was recalibrated: several rail values sat below WCAG AA (section
+  labels at 3.4:1, counts at 2.1:1). Rail text now lives in a documented
+  `/65`–`/85` opacity band and takes its hierarchy from size, weight and uppercase
+  tracking instead of fading out.
+
+  Two dead paths went with the rewrite: a `SchemaDialog` whose open-state setter
+  was never called, and a per-render `JSON.parse` of every open document feeding an
+  indicator prop the row component ignored.
+
+- 5e6f5df: Align the playground UI with the Wiseair design system.
+
+  The playground now runs on the Banani tokens from `wiseair-mono/apps/dashboard`.
+  Light is the cool-grey enterprise surface (canvas `#f4f6f9`, white panels,
+  `#e2e6ed` hairlines, Brand Slate `#383F5D` primary, `#546f9c` secondary text).
+  Dark is a surface ramp rather than one flat near-black — canvas `#1D2130` → card
+  `#282c3e` → subtle fill `#3b4054` → border `#494e65`, over a recessed `#10141e`
+  sidebar rail — so cards, popovers and muted fills stay distinguishable from each
+  other. Also: the 2/4/6/10px radius ladder, the dense 11/13/14/16/20/24/30/36
+  type scale, and self-hosted Inter in place of Geist (dropping a render-blocking
+  Google Fonts request).
+
+  Ad-hoc Tailwind palette colors scattered across the sidebar, warnings panel,
+  preview status bar and schema viewer are gone; document and theme states now use
+  the system's own vocabulary (`success`, `warning`, `destructive`, `data-blue`,
+  `accent2`, `header-bg`, `sidebar-accent`) with the dashboard's soft-wash callout
+  recipe, so they read as one system in both themes.
+
+  Components follow the same recipes: flat surfaces separated by hairlines rather
+  than shadows, 2px-cornered controls, 4px badges, 6px floating overlays. The
+  Monaco editor gets `jto-light` / `jto-dark` themes so the editor pane is painted
+  from the same surface tokens as the rest of the shell instead of stock white /
+  `#1E1E1E`.
+
+### Patch Changes
+
+- 5e6f5df: Say "component" everywhere; drop the last traces of the old `modules` format.
+
+  The JSON tree has one node kind — `{ name, props, children? }` — in two
+  flavours, base and custom. But an earlier format nested `modules` inside
+  `modules`, and its vocabulary outlived it. The README and the architecture guide
+  both opened by describing documents as "a tree of **modules**, each module
+  containing base components", a hierarchy that no longer exists and that the code
+  sample directly beneath contradicted. Schema descriptions called section
+  header/footer arrays "modules", and a validation hint told authors to check
+  their "module type" — a phrase they would find nowhere in the schema. All of
+  these now say component, matching what the validator actually reports.
+
+  Two dead things went with it. `DOC_LINKS` is **removed** from the
+  `@json-to-office/shared-docx` public surface: it was consumed nowhere, and all
+  three of its URLs pointed at a `json-to-docx.com` docs domain the project no
+  longer uses. `core-docx`'s `examples/test-spacing-debug.ts` is deleted — it was
+  written in the superseded `type`/`config`/`modules` shape, so it could not
+  render against the current parser, yet still compiled as part of the package.
+
+  The error-message change is behavioural, not just cosmetic: the generic
+  union catch-all detector in both deep validators matched
+  `/invalid (component|module) configurations?/`, and the union-array hint
+  branched on `path?.includes('modules')`. No message producer has emitted
+  "module" for some time and no path segment is named `modules`, so both branches
+  were unreachable; they now match only what is actually emitted.
+
+- Updated dependencies [5e6f5df]
+  - @json-to-office/shared-docx@0.24.0
+  - @json-to-office/shared-pptx@0.24.0
+  - @json-to-office/core-docx@0.24.0
+  - @json-to-office/jto-cli@0.24.0
+  - @json-to-office/core-pptx@0.24.0
+
 ## 0.23.0
 
 ### Minor Changes
