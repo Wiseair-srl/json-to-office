@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "playground-docx",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["cli:dev:docx"],
+      "port": 3003
+    },
+    {
+      "name": "docs",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["docs:preview"],
+      "port": 4173
+    }
+  ]
+}

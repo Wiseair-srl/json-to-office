@@ -16,3 +16,6 @@ packages/*/package-lock.json
 skills/*/.skill-out/
 **/__pycache__/
 *.skill
+
+.claude/settings.local.json
+.claude/worktrees/
