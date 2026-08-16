@@ -307,7 +307,15 @@ export class JsonDocumentParser {
       suggestions.push(
         'Check that the value matches one of the allowed formats'
       );
-      suggestions.push('Verify the component name is spelled correctly');
+      // The component registry is itself a union, so a union failure on a node
+      // in a `children` array — or on its `name` discriminator — usually is a
+      // misspelt component name. Unions elsewhere (spacing, colour, size) are
+      // not, and the unconditional hint sent authors hunting for a field their
+      // error had nothing to do with.
+      const path = error.path ?? '';
+      if (/\/children\/\d+$/.test(path) || path.endsWith('/name')) {
+        suggestions.push('Verify the component name is spelled correctly');
+      }
     } else if (message.includes('minimum')) {
       const match = message.match(/minimum.*?(\d+)/);
       if (match) {

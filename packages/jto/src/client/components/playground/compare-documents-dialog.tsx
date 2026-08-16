@@ -272,7 +272,9 @@ export const CompareDocumentsDialog: React.FC<CompareDocumentsDialogProps> = ({
               )}
               {summary.untracked.length > 0 && (
                 <div className="grid gap-1 max-h-32 overflow-y-auto">
-                  <p className="font-medium text-warning">
+                  {/* `--warning` is a fill hue; as body text on the dialog
+                      surface it is 2.8:1. The callout foreground reads. */}
+                  <p className="font-medium text-warning-bg-foreground">
                     {summary.untracked.length} change(s) not expressible as
                     tracked changes:
                   </p>

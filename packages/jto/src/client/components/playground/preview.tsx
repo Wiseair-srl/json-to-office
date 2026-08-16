@@ -233,36 +233,37 @@ export function Preview() {
     };
   }, [handleManualRender]);
 
+  const localHeaderVisible =
+    (useSettingsStore as any)?.getState?.().useGlobalPreviewHeader === false;
+
   return (
     <>
       <div className="flex h-full flex-col">
-        {(useSettingsStore as any) &&
-          (useSettingsStore as any).getState?.().useGlobalPreviewHeader ===
-            false && (
-            <PreviewHeaderMemoized
-              iframeRef={iframeRef}
-              displayReloadButton={
-                Boolean(iframeSrc) && !(iframeSrc?.startsWith('blob:') ?? false)
-              }
-              name={name?.trim() || 'Preview'}
-              blob={blob}
-              autoReload={autoReload}
-              onToggleAutoReload={() =>
-                setSettings({ autoReload: !autoReload })
-              }
-              onManualRender={handleManualRender}
-              isGenerating={isGenerating}
-              isRendering={isRendering}
-              onShowCacheMetrics={() => setShowCacheMetrics(true)}
-              documentText={text}
-              warnings={warnings}
-              renderingLibrary={renderingLibrary}
-              setRenderingLibrary={(lib) =>
-                setSettings({ renderingLibrary: lib } as any)
-              }
-            />
-          )}
-        <Separator />
+        {localHeaderVisible && (
+          <PreviewHeaderMemoized
+            iframeRef={iframeRef}
+            displayReloadButton={
+              Boolean(iframeSrc) && !(iframeSrc?.startsWith('blob:') ?? false)
+            }
+            name={name?.trim() || 'Preview'}
+            blob={blob}
+            autoReload={autoReload}
+            onToggleAutoReload={() => setSettings({ autoReload: !autoReload })}
+            onManualRender={handleManualRender}
+            isGenerating={isGenerating}
+            isRendering={isRendering}
+            onShowCacheMetrics={() => setShowCacheMetrics(true)}
+            documentText={text}
+            warnings={warnings}
+            renderingLibrary={renderingLibrary}
+            setRenderingLibrary={(lib) =>
+              setSettings({ renderingLibrary: lib } as any)
+            }
+          />
+        )}
+        {/* The local header draws its own `border-b`; a standalone separator
+            underneath it stacked two hairlines. */}
+        {!localHeaderVisible && <Separator />}
         {FORMAT === 'docx' && renderingLibrary === 'docxjs' && (
           <div className="px-3 py-1.5 flex items-center gap-2 border-b bg-data-blue/10 text-xs text-data-blue">
             <InfoIcon className="h-3.5 w-3.5 shrink-0" />

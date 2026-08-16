@@ -727,12 +727,17 @@ const ChatMessage = memo(
               scope={scope}
             />
           )}
+          {/* The reveal lives on the wrapper, so it has to react to focus too —
+              opacity here hides the button no matter what the button itself
+              declares, which left a focusable invisible destructive control in
+              the tab order. */}
           {onDelete && !isStreaming && (
-            <div className="opacity-0 group-hover/msg:opacity-100 transition-opacity mt-1">
+            <div className="opacity-0 transition-opacity group-hover/msg:opacity-100 focus-within:opacity-100 mt-1">
               <button
                 type="button"
+                aria-label="Delete message"
                 onClick={() => onDelete(msg.id)}
-                className={`p-0.5 rounded-sm cursor-pointer ${msg.role === 'user' ? 'text-primary-foreground/50 hover:text-primary-foreground/80' : 'text-muted-foreground hover:text-destructive'}`}
+                className={`p-0.5 rounded-sm cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${msg.role === 'user' ? 'text-primary-foreground/50 hover:text-primary-foreground/80' : 'text-muted-foreground hover:text-destructive'}`}
               >
                 <Trash2 className="h-3 w-3" />
               </button>
@@ -744,6 +749,11 @@ const ChatMessage = memo(
   },
   (prev, next) =>
     prev.msg.id === next.msg.id &&
+    // `text` is derived from `msg.parts` inside the component, and the last
+    // assistant message keeps the same id and `isStreaming: true` for the whole
+    // response. Without an identity check the bubble froze at its first frame
+    // and only filled in once streaming ended.
+    prev.msg === next.msg &&
     prev.isStreaming === next.isStreaming &&
     prev.scope === next.scope &&
     prev.onDelete === next.onDelete &&
