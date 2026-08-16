@@ -3,13 +3,21 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const alertVariants = cva(
-  'relative w-full rounded-lg border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*]:pl-7',
+  /* In-page surface → the 2px corner. Status variants follow the dashboard's
+     callout recipe: a soft wash of the status colour with that colour as the
+     text, rather than a solid fill. */
+  'relative w-full rounded-sm border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*]:pl-7',
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground',
+        default: 'bg-card text-foreground',
         destructive:
-          'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
+          'border-transparent bg-destructive/10 text-destructive [&>svg]:text-destructive',
+        warning:
+          'border-transparent bg-warning/10 text-warning [&>svg]:text-warning',
+        success:
+          'border-transparent bg-success/10 text-success [&>svg]:text-success',
+        info: 'border-transparent bg-data-blue/10 text-data-blue [&>svg]:text-data-blue',
       },
     },
     defaultVariants: {

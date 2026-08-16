@@ -90,7 +90,7 @@ export function DocumentGenerationLoader({
                   className={cn(
                     'h-1.5 rounded-full transition-all duration-300',
                     isCompleted
-                      ? 'bg-green-500'
+                      ? 'bg-success'
                       : isActive
                         ? 'bg-primary animate-pulse'
                         : 'bg-transparent'
@@ -210,7 +210,7 @@ export function FileOperationLoader({
   return (
     <div
       className={cn(
-        'flex items-center gap-3 p-3 border rounded-lg bg-muted/50',
+        'flex items-center gap-3 p-3 border rounded-sm bg-header-bg',
         className
       )}
     >

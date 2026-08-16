@@ -1,10 +1,26 @@
 import { useEffect, useRef, useCallback, useState, useMemo, memo } from 'react';
-import { Send, X, Loader2, Square, Paperclip, AlertTriangle, Trash2 } from 'lucide-react';
+import {
+  Send,
+  X,
+  Loader2,
+  Square,
+  Paperclip,
+  AlertTriangle,
+  Trash2,
+} from 'lucide-react';
 import type { FileUIPart } from 'ai';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Button } from '../../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '../../ui/dialog';
 import { useChatStore } from '../../../store/chat-store-provider';
 import { useDocumentsStore } from '../../../store/documents-store-provider';
 import { useChatSessionContext } from '../../../store/chat-session-provider';
@@ -12,7 +28,13 @@ import { ChatContextChip } from './chat-context-chip';
 import { ChatApplyButton } from './chat-apply-button';
 import { ChatThreadList } from './chat-thread-list';
 import { ScrollArea } from '../../ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 import { KbdShortcut } from '../../ui/kbd';
 import { defaultThreadTitle } from '../../../store/chat-store';
@@ -20,9 +42,15 @@ import type { AiScope, AiModel } from '../../../store/chat-store';
 import { FORMAT } from '../../../lib/env';
 
 const ALLOWED_TYPES = new Set([
-  'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
   'application/pdf',
-  'text/plain', 'text/markdown', 'text/csv', 'text/html',
+  'text/plain',
+  'text/markdown',
+  'text/csv',
+  'text/html',
 ]);
 const ACCEPT_STRING = Array.from(ALLOWED_TYPES).join(',');
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB (Claude supports up to 20MB)
@@ -32,7 +60,12 @@ function fileToUIPart(file: File): Promise<FileUIPart> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () =>
-      resolve({ type: 'file', mediaType: file.type, filename: file.name, url: reader.result as string });
+      resolve({
+        type: 'file',
+        mediaType: file.type,
+        filename: file.name,
+        url: reader.result as string,
+      });
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -40,7 +73,7 @@ function fileToUIPart(file: File): Promise<FileUIPart> {
 
 function filterValidFiles(files: FileList | File[]): File[] {
   return Array.from(files).filter(
-    (f) => ALLOWED_TYPES.has(f.type) && f.size <= MAX_FILE_SIZE,
+    (f) => ALLOWED_TYPES.has(f.type) && f.size <= MAX_FILE_SIZE
   );
 }
 
@@ -66,12 +99,23 @@ export function ChatPanel() {
   const switchThread = useChatStore((s) => s.switchThread);
   const updateThreadMessages = useChatStore((s) => s.updateThreadMessages);
   const updateThreadTitle = useChatStore((s) => s.updateThreadTitle);
-  const deleteThreadsForDocument = useChatStore((s) => s.deleteThreadsForDocument);
+  const deleteThreadsForDocument = useChatStore(
+    (s) => s.deleteThreadsForDocument
+  );
 
   const activeTab = useDocumentsStore((s) => s.activeTab);
   const documents = useDocumentsStore((s) => s.documents);
 
-  const { messages, sendMessage, status, error, setMessages, stop, getMessageContext, getMessageScope } = useChatSessionContext();
+  const {
+    messages,
+    sendMessage,
+    status,
+    error,
+    setMessages,
+    stop,
+    getMessageContext,
+    getMessageScope,
+  } = useChatSessionContext();
 
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<FileUIPart[]>([]);
@@ -109,7 +153,7 @@ export function ChatPanel() {
         }
       }
     },
-    [addAttachments],
+    [addAttachments]
   );
 
   const handleDrop = useCallback(
@@ -119,7 +163,7 @@ export function ChatPanel() {
       const files = e.dataTransfer?.files;
       if (files && files.length > 0) addAttachments(Array.from(files));
     },
-    [addAttachments],
+    [addAttachments]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -155,7 +199,10 @@ export function ChatPanel() {
     const docNames = new Set(documents.map((d) => d.name));
     const orphanDocs = new Set<string>();
     for (const thread of Object.values(threadsCleanupRef.current)) {
-      if (!docNames.has(thread.documentName) && thread.documentName !== '__migrated__') {
+      if (
+        !docNames.has(thread.documentName) &&
+        thread.documentName !== '__migrated__'
+      ) {
         orphanDocs.add(thread.documentName);
       }
     }
@@ -186,10 +233,7 @@ export function ChatPanel() {
       openChat();
       inputRef.current?.focus();
     };
-    window.addEventListener(
-      'monaco-selection-to-ai',
-      handler as EventListener
-    );
+    window.addEventListener('monaco-selection-to-ai', handler as EventListener);
     return () =>
       window.removeEventListener(
         'monaco-selection-to-ai',
@@ -244,19 +288,32 @@ export function ChatPanel() {
   const confirmDeleteMessage = useCallback(() => {
     if (!deleteMessageId) return;
     const idx = messages.findIndex((m) => m.id === deleteMessageId);
-    if (idx === -1) { setDeleteMessageId(null); return; }
+    if (idx === -1) {
+      setDeleteMessageId(null);
+      return;
+    }
     const msg = messages[idx];
     const toRemove = new Set<number>([idx]);
     if (msg.role === 'user' && messages[idx + 1]?.role === 'assistant') {
       toRemove.add(idx + 1);
-    } else if (msg.role === 'assistant' && idx > 0 && messages[idx - 1]?.role === 'user') {
+    } else if (
+      msg.role === 'assistant' &&
+      idx > 0 &&
+      messages[idx - 1]?.role === 'user'
+    ) {
       toRemove.add(idx - 1);
     }
     const filtered = messages.filter((_, i) => !toRemove.has(i));
     setMessages(filtered);
     if (activeThreadId) updateThreadMessages(activeThreadId, filtered as any);
     setDeleteMessageId(null);
-  }, [deleteMessageId, messages, setMessages, activeThreadId, updateThreadMessages]);
+  }, [
+    deleteMessageId,
+    messages,
+    setMessages,
+    activeThreadId,
+    updateThreadMessages,
+  ]);
 
   const handleDeleteThread = useCallback(
     (id: string) => {
@@ -337,7 +394,8 @@ export function ChatPanel() {
                 JSON Assistant
               </p>
               <p className="text-xs text-muted-foreground text-center max-w-[200px] mb-4">
-                Generate, edit, and refine your JSON document definitions with AI.
+                Generate, edit, and refine your JSON document definitions with
+                AI.
               </p>
               <div className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2.5 py-1.5">
                 <KbdShortcut shortcut="mod+k" />
@@ -362,8 +420,12 @@ export function ChatPanel() {
               }
             }
 
-            const isMsgStreaming = isStreaming && i === messages.length - 1 && msg.role === 'assistant';
-            const msgScope = msg.role === 'user' ? getMessageScope(msg.id) : undefined;
+            const isMsgStreaming =
+              isStreaming &&
+              i === messages.length - 1 &&
+              msg.role === 'assistant';
+            const msgScope =
+              msg.role === 'user' ? getMessageScope(msg.id) : undefined;
 
             return (
               <ChatMessage
@@ -419,7 +481,13 @@ export function ChatPanel() {
         <div className="flex items-center gap-3 flex-wrap">
           <ModelSelector model={model} setModel={setModel} />
           {FORMAT === 'pptx' && activeTab && (
-            <ScopeSelector scope={scope} setScope={setScope} docSize={documents.find((d) => d.name === activeTab)?.text?.length ?? 0} />
+            <ScopeSelector
+              scope={scope}
+              setScope={setScope}
+              docSize={
+                documents.find((d) => d.name === activeTab)?.text?.length ?? 0
+              }
+            />
           )}
         </div>
         {attachments.length > 0 && (
@@ -435,7 +503,9 @@ export function ChatPanel() {
                 ) : (
                   <div className="h-14 px-2.5 flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/60 max-w-[140px]">
                     <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <span className="text-xs truncate text-muted-foreground">{f.filename || 'file'}</span>
+                    <span className="text-xs truncate text-muted-foreground">
+                      {f.filename || 'file'}
+                    </span>
                   </div>
                 )}
                 <button
@@ -522,12 +592,15 @@ export function ChatPanel() {
           <DialogHeader>
             <DialogTitle>Clear thread</DialogTitle>
             <DialogDescription>
-              This will delete all messages in this thread. This action cannot be undone.
+              This will delete all messages in this thread. This action cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="ghost" size="sm">Cancel</Button>
+              <Button variant="ghost" size="sm">
+                Cancel
+              </Button>
             </DialogClose>
             <Button variant="destructive" size="sm" onClick={confirmClearChat}>
               Clear
@@ -535,19 +608,31 @@ export function ChatPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={deleteMessageId !== null} onOpenChange={(open) => { if (!open) setDeleteMessageId(null); }}>
+      <Dialog
+        open={deleteMessageId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteMessageId(null);
+        }}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete message</DialogTitle>
             <DialogDescription>
-              This will delete the message and its paired response. This action cannot be undone.
+              This will delete the message and its paired response. This action
+              cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="ghost" size="sm">Cancel</Button>
+              <Button variant="ghost" size="sm">
+                Cancel
+              </Button>
             </DialogClose>
-            <Button variant="destructive" size="sm" onClick={confirmDeleteMessage}>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={confirmDeleteMessage}
+            >
               Delete
             </Button>
           </DialogFooter>
@@ -558,93 +643,132 @@ export function ChatPanel() {
 }
 
 /** Fix 1: Memoized wrapper — completed messages skip re-render during streaming */
-const ChatMessage = memo(function ChatMessage({
-  msg,
+const ChatMessage = memo(
+  function ChatMessage({
+    msg,
+    isStreaming,
+    context,
+    scope,
+    onDelete,
+  }: {
+    msg: any;
+    isStreaming: boolean;
+    context?: any[];
+    scope?: AiScope;
+    onDelete?: (id: string) => void;
+  }) {
+    const text =
+      msg.parts
+        ?.filter((p: any) => p.type === 'text')
+        .map((p: any) => p.text)
+        .join('') || '';
+    const fileParts = msg.parts?.filter((p: any) => p.type === 'file') || [];
+
+    return (
+      <div
+        className={`group/msg flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+      >
+        <div
+          className={`rounded-lg px-3 py-2 max-w-[90%] overflow-hidden min-w-0 ${
+            msg.role === 'user'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted/60 border border-border/40'
+          }`}
+        >
+          {msg.role === 'user' ? (
+            <div>
+              {fileParts.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-1.5">
+                  {fileParts.map((f: any, i: number) =>
+                    isImageType(f.mediaType) ? (
+                      <img
+                        key={i}
+                        src={f.url}
+                        alt={f.filename || 'image'}
+                        className="h-20 max-w-[160px] rounded-sm object-cover"
+                      />
+                    ) : (
+                      <div
+                        key={i}
+                        className="flex items-center gap-1.5 rounded-sm bg-primary-foreground/20 px-2 py-1"
+                      >
+                        <Paperclip className="h-3 w-3 shrink-0" />
+                        <span className="text-xs truncate max-w-[120px]">
+                          {f.filename || 'file'}
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+              {context && context.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-1.5">
+                  {context.map((ctx: any, i: number) => (
+                    <ChatContextChip key={i} context={ctx} variant="sent" />
+                  ))}
+                </div>
+              )}
+              {text && (
+                <div className="whitespace-pre-wrap text-sm break-words">
+                  {text}
+                </div>
+              )}
+              {scope && scope !== 'global' && (
+                <span className="text-[10px] text-primary-foreground/60 mt-0.5 block text-right">
+                  {scope}
+                </span>
+              )}
+            </div>
+          ) : (
+            <AssistantMessage
+              text={text}
+              isStreaming={isStreaming}
+              context={context}
+              scope={scope}
+            />
+          )}
+          {onDelete && !isStreaming && (
+            <div className="opacity-0 group-hover/msg:opacity-100 transition-opacity mt-1">
+              <button
+                type="button"
+                onClick={() => onDelete(msg.id)}
+                className={`p-0.5 rounded-sm cursor-pointer ${msg.role === 'user' ? 'text-primary-foreground/50 hover:text-primary-foreground/80' : 'text-muted-foreground hover:text-destructive'}`}
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+  (prev, next) =>
+    prev.msg.id === next.msg.id &&
+    prev.isStreaming === next.isStreaming &&
+    prev.scope === next.scope &&
+    prev.onDelete === next.onDelete &&
+    prev.context === next.context
+);
+
+/** Fix 2: Skip Markdown parsing during streaming — render plain text instead */
+function AssistantMessage({
+  text,
   isStreaming,
   context,
   scope,
-  onDelete,
 }: {
-  msg: any;
+  text: string;
   isStreaming: boolean;
   context?: any[];
   scope?: AiScope;
-  onDelete?: (id: string) => void;
 }) {
-  const text = msg.parts
-    ?.filter((p: any) => p.type === 'text')
-    .map((p: any) => p.text)
-    .join('') || '';
-  const fileParts = msg.parts?.filter((p: any) => p.type === 'file') || [];
-
-  return (
-    <div className={`group/msg flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={`rounded-lg px-3 py-2 max-w-[90%] overflow-hidden min-w-0 ${
-          msg.role === 'user'
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-muted/60 border border-border/40'
-        }`}
-      >
-        {msg.role === 'user' ? (
-          <div>
-            {fileParts.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-1.5">
-                {fileParts.map((f: any, i: number) =>
-                  isImageType(f.mediaType) ? (
-                    <img
-                      key={i}
-                      src={f.url}
-                      alt={f.filename || 'image'}
-                      className="h-20 max-w-[160px] rounded object-cover"
-                    />
-                  ) : (
-                    <div key={i} className="flex items-center gap-1.5 rounded bg-primary-foreground/20 px-2 py-1">
-                      <Paperclip className="h-3 w-3 shrink-0" />
-                      <span className="text-xs truncate max-w-[120px]">{f.filename || 'file'}</span>
-                    </div>
-                  ),
-                )}
-              </div>
-            )}
-            {context && context.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-1.5">
-                {context.map((ctx: any, i: number) => (
-                  <ChatContextChip key={i} context={ctx} variant="sent" />
-                ))}
-              </div>
-            )}
-            {text && <div className="whitespace-pre-wrap text-sm break-words">{text}</div>}
-            {scope && scope !== 'global' && (
-              <span className="text-[10px] text-primary-foreground/60 mt-0.5 block text-right">{scope}</span>
-            )}
-          </div>
-        ) : (
-          <AssistantMessage text={text} isStreaming={isStreaming} context={context} scope={scope} />
-        )}
-        {onDelete && !isStreaming && (
-          <div className="opacity-0 group-hover/msg:opacity-100 transition-opacity mt-1">
-            <button
-              type="button"
-              onClick={() => onDelete(msg.id)}
-              className={`p-0.5 rounded cursor-pointer ${msg.role === 'user' ? 'text-primary-foreground/50 hover:text-primary-foreground/80' : 'text-muted-foreground hover:text-destructive'}`}
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}, (prev, next) => prev.msg.id === next.msg.id && prev.isStreaming === next.isStreaming && prev.scope === next.scope && prev.onDelete === next.onDelete && prev.context === next.context);
-
-/** Fix 2: Skip Markdown parsing during streaming — render plain text instead */
-function AssistantMessage({ text, isStreaming, context, scope }: { text: string; isStreaming: boolean; context?: any[]; scope?: AiScope }) {
   // During streaming, skip expensive Markdown + remarkGfm parsing
   if (isStreaming) {
     return (
       <div className="text-sm prose prose-sm dark:prose-invert break-words [&_pre]:overflow-x-auto [&_p]:my-1">
-        <pre className="whitespace-pre-wrap font-sans text-sm m-0 p-0 bg-transparent border-none">{text}</pre>
+        <pre className="whitespace-pre-wrap font-sans text-sm m-0 p-0 bg-transparent border-none">
+          {text}
+        </pre>
       </div>
     );
   }
@@ -662,7 +786,7 @@ function AssistantMessage({ text, isStreaming, context, scope }: { text: string;
 
             if (!isBlock) {
               return (
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                <code className="rounded-sm bg-muted px-1 py-0.5 text-xs font-mono">
                   {children}
                 </code>
               );
@@ -679,7 +803,13 @@ function AssistantMessage({ text, isStreaming, context, scope }: { text: string;
                 <pre className="p-3 text-xs font-mono overflow-x-auto max-h-80 overflow-y-auto m-0">
                   <code>{code}</code>
                 </pre>
-                {isJson && <ChatApplyButton json={code} context={context} scope={scope} />}
+                {isJson && (
+                  <ChatApplyButton
+                    json={code}
+                    context={context}
+                    scope={scope}
+                  />
+                )}
               </div>
             );
           },
@@ -697,7 +827,13 @@ const MODEL_OPTIONS: { value: AiModel; label: string }[] = [
   { value: 'haiku', label: 'Haiku' },
 ];
 
-function ModelSelector({ model, setModel }: { model: AiModel; setModel: (m: AiModel) => void }) {
+function ModelSelector({
+  model,
+  setModel,
+}: {
+  model: AiModel;
+  setModel: (m: AiModel) => void;
+}) {
   return (
     <Select value={model} onValueChange={(v) => setModel(v as AiModel)}>
       <SelectTrigger className="h-6 w-auto gap-1 border-none bg-muted/40 px-2 py-0 text-[10px] shadow-none focus:ring-0">
@@ -721,7 +857,15 @@ const SCOPE_HINTS: Record<AiScope, string> = {
 };
 const LARGE_DOC_THRESHOLD = 100_000;
 
-function ScopeSelector({ scope, setScope, docSize }: { scope: AiScope; setScope: (s: AiScope) => void; docSize: number }) {
+function ScopeSelector({
+  scope,
+  setScope,
+  docSize,
+}: {
+  scope: AiScope;
+  setScope: (s: AiScope) => void;
+  docSize: number;
+}) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <div className="flex items-center gap-1.5">
@@ -733,12 +877,14 @@ function ScopeSelector({ scope, setScope, docSize }: { scope: AiScope; setScope:
                 <button
                   type="button"
                   onClick={() => setScope(s)}
-                  className={`px-2 py-0.5 rounded text-[10px] cursor-pointer transition-colors ${
+                  className={`px-2 py-0.5 rounded-sm text-[10px] cursor-pointer transition-colors ${
                     scope === s
                       ? 'bg-background text-foreground font-medium shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
-                >{s}</button>
+                >
+                  {s}
+                </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs max-w-[200px]">
                 {SCOPE_HINTS[s]}
@@ -748,12 +894,25 @@ function ScopeSelector({ scope, setScope, docSize }: { scope: AiScope; setScope:
         </div>
       </div>
       {scope === 'global' && docSize > LARGE_DOC_THRESHOLD && (
-        <div className="text-[10px] text-amber-500 flex items-center gap-1">
+        <div className="text-[10px] text-warning flex items-center gap-1">
           <AlertTriangle className="h-3 w-3 shrink-0" />
-          <span>Large doc — switch to{' '}
-            <button type="button" onClick={() => setScope('slides')} className="underline cursor-pointer hover:text-amber-400">slides</button>
-            {' '}or{' '}
-            <button type="button" onClick={() => setScope('templates')} className="underline cursor-pointer hover:text-amber-400">templates</button>
+          <span>
+            Large doc — switch to{' '}
+            <button
+              type="button"
+              onClick={() => setScope('slides')}
+              className="underline cursor-pointer hover:text-warning/80"
+            >
+              slides
+            </button>{' '}
+            or{' '}
+            <button
+              type="button"
+              onClick={() => setScope('templates')}
+              className="underline cursor-pointer hover:text-warning/80"
+            >
+              templates
+            </button>
           </span>
         </div>
       )}

@@ -6,7 +6,7 @@ import { Type, Static, TSchema } from '@sinclair/typebox';
 import { SpacingSchema } from './common';
 
 // Create a function to generate SectionPropsSchema with recursive component reference
-export const createSectionPropsSchema = (moduleRef?: TSchema) =>
+export const createSectionPropsSchema = (componentRef?: TSchema) =>
   Type.Object(
     {
       title: Type.Optional(
@@ -24,8 +24,8 @@ export const createSectionPropsSchema = (moduleRef?: TSchema) =>
       ),
       header: Type.Optional(
         Type.Union([
-          Type.Array(moduleRef || Type.Any(), {
-            description: 'Section header modules',
+          Type.Array(componentRef || Type.Any(), {
+            description: 'Section header components',
           }),
           Type.Literal('linkToPrevious', {
             description: 'Link header to previous section',
@@ -34,8 +34,8 @@ export const createSectionPropsSchema = (moduleRef?: TSchema) =>
       ),
       footer: Type.Optional(
         Type.Union([
-          Type.Array(moduleRef || Type.Any(), {
-            description: 'Section footer modules',
+          Type.Array(componentRef || Type.Any(), {
+            description: 'Section footer components',
           }),
           Type.Literal('linkToPrevious', {
             description: 'Link footer to previous section',

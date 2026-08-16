@@ -14,9 +14,12 @@ export function Kbd({
 }) {
   return (
     <kbd
+      data-slot="kbd"
       className={cn(
-        'inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded border border-border bg-background text-[11px] font-mono font-medium text-muted-foreground shadow-[0_1px_0_0] shadow-border/50 leading-none select-none',
-        className,
+        'pointer-events-none inline-flex h-5 w-fit min-w-5 select-none items-center justify-center gap-1 rounded-sm bg-muted px-1 font-sans text-xs font-medium text-muted-foreground',
+        // Inside a tooltip the surface is the primary colour — flip the chip to read against it.
+        '[[data-slot=tooltip-content]_&]:bg-primary-foreground/20 [[data-slot=tooltip-content]_&]:text-primary-foreground',
+        className
       )}
     >
       {children}
@@ -42,7 +45,8 @@ export function KbdGroup({
 }
 
 const IS_MAC =
-  typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  typeof navigator !== 'undefined' &&
+  /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 
 /**
  * Convenience: renders a full shortcut from a descriptor string.
@@ -60,18 +64,18 @@ export function KbdShortcut({
 
   const labels: string[] = parts.map((p) => {
     switch (p) {
-    case 'mod':
-      return IS_MAC ? '⌘' : 'Ctrl';
-    case 'shift':
-      return IS_MAC ? '⇧' : 'Shift';
-    case 'alt':
-      return IS_MAC ? '⌥' : 'Alt';
-    case 'ctrl':
-      return IS_MAC ? '⌃' : 'Ctrl';
-    case 'enter':
-      return '↵';
-    default:
-      return p.toUpperCase();
+      case 'mod':
+        return IS_MAC ? '⌘' : 'Ctrl';
+      case 'shift':
+        return IS_MAC ? '⇧' : 'Shift';
+      case 'alt':
+        return IS_MAC ? '⌥' : 'Alt';
+      case 'ctrl':
+        return IS_MAC ? '⌃' : 'Ctrl';
+      case 'enter':
+        return '↵';
+      default:
+        return p.toUpperCase();
     }
   });
 

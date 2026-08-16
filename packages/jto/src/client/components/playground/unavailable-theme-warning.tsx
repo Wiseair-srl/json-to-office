@@ -45,18 +45,18 @@ export function UnavailableThemeWarning({ className }: { className?: string }) {
 
   return (
     <div
-      className={`flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 px-3 py-2 ${className ?? ''}`}
+      className={`flex items-start gap-2 rounded-sm border border-transparent bg-warning/10 px-3 py-2 ${className ?? ''}`}
     >
-      <AlertTriangle className="h-3.5 w-3.5 mt-0.5 text-amber-500 flex-shrink-0" />
+      <AlertTriangle className="h-3.5 w-3.5 mt-0.5 text-warning flex-shrink-0" />
       <div className="flex-1 min-w-0 text-xs leading-relaxed">
-        <span className="font-medium text-amber-700 dark:text-amber-300">
+        <span className="font-medium text-warning">
           Theme{' '}
-          <code className="bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded">
+          <code className="bg-warning/20 px-1 py-0.5 rounded-sm text-warning">
             {missingThemeName}
           </code>{' '}
           is not available.
         </span>{' '}
-        <span className="text-amber-700/80 dark:text-amber-300/80">
+        <span className="text-warning/80">
           Add it as a custom theme or use a built-in theme (
           {BUILTIN_THEMES[FORMAT]?.join(', ')}). The renderer will fall back to
           a default.

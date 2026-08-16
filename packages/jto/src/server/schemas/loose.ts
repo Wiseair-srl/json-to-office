@@ -6,7 +6,7 @@
 import { Type } from '@sinclair/typebox';
 
 /**
- * Loose presentation generation request schema that allows plugin module types.
+ * Loose presentation generation request schema that allows plugin component names.
  * The strict validation is performed later with plugin-aware validators.
  */
 /**
@@ -52,7 +52,7 @@ export const LooseDocumentGenerationRequestSchema = Type.Object(
 );
 
 /**
- * Loose document validation request schema that allows plugin module types.
+ * Loose document validation request schema that allows plugin component names.
  */
 export const LooseDocumentValidationRequestSchema = Type.Object(
   {

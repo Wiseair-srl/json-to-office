@@ -25,18 +25,11 @@ function EditorTabItem({ name }: { name: string }) {
       }}
     >
       {isTheme ? (
-        <PaletteIcon className="size-4 text-purple-600 dark:text-purple-400" />
+        <PaletteIcon className="size-4 text-accent2" />
       ) : (
-        <FileTextIcon className="size-4 text-blue-600 dark:text-blue-400" />
+        <FileTextIcon className="size-4 text-muted-foreground" />
       )}
-      <span
-        className={cn(
-          'truncate',
-          isTheme && 'text-purple-700 dark:text-purple-300'
-        )}
-      >
-        {name}
-      </span>
+      <span className="truncate">{name}</span>
       <XIcon
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon' }),

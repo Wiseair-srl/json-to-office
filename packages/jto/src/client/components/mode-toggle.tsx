@@ -37,7 +37,12 @@ export function ModeToggle() {
   );
 }
 
-export function ButtonModeToggle() {
+/**
+ * `className` lands on the button itself so callers can size it to their own
+ * control rhythm — the playground rail runs on 28px rows, where the default
+ * 36px icon button is the loudest thing in the panel.
+ */
+export function ButtonModeToggle({ className }: { className?: string } = {}) {
   const { theme, setTheme } = useTheme();
 
   // Get resolved theme - convert 'system' to actual theme
@@ -55,7 +60,12 @@ export function ButtonModeToggle() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" onClick={toggleTheme}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          className={className}
+        >
           <Sun className="hidden dark:block" />
           <Moon className="block dark:hidden" />
           <span className="sr-only">Toggle theme</span>

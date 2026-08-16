@@ -18,6 +18,7 @@ import {
   type CollapseController,
 } from '../../lib/monaco-collapse-strings';
 import { ValidationPanel, ValidationStatusBar } from './validation-panel';
+import { monacoThemeFor, registerMonacoThemes } from '../../lib/monaco-theme';
 
 interface EditorMonacoJsonProps {
   name: string;
@@ -86,7 +87,10 @@ function EditorMonacoJson({
   // Note: schema configuration is handled by configureMonaco() at startup
   // and updateMonacoWithPlugins() via useMonacoPlugins hook.
   // Calling configureMonacoInstance here would overwrite plugin-aware schemas.
-  const handleEditorWillMount = useCallback((_monaco: Monaco) => {
+  const handleEditorWillMount = useCallback((monaco: Monaco) => {
+    // Idempotent; guards the case where an editor mounts before the global
+    // configureMonaco() promise has resolved.
+    registerMonacoThemes(monaco);
     console.debug('Setting up Monaco for JSON editor');
   }, []);
 
@@ -332,7 +336,7 @@ function EditorMonacoJson({
             original={pendingDiff.original}
             modified={pendingDiff.modified}
             language="json"
-            theme={`vs-${resolvedTheme}`}
+            theme={monacoThemeFor(resolvedTheme)}
             options={{
               readOnly: true,
               renderSideBySide: true,
@@ -347,7 +351,7 @@ function EditorMonacoJson({
         <Editor
           height="100%"
           defaultLanguage="json"
-          theme={`vs-${resolvedTheme}`}
+          theme={monacoThemeFor(resolvedTheme)}
           defaultPath={name.endsWith('.json') ? name : `${name}.json`}
           value={editorValue}
           beforeMount={handleEditorWillMount}

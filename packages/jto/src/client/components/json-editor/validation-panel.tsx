@@ -75,7 +75,7 @@ export function ValidationPanel({
               e.stopPropagation();
               toggleExpanded();
             }}
-            className="p-1 hover:bg-destructive/20 rounded transition-colors"
+            className="p-1 hover:bg-destructive/20 rounded-sm transition-colors"
             aria-label={isExpanded ? 'Minimize' : 'Expand'}
           >
             {isExpanded ? (
@@ -90,7 +90,7 @@ export function ValidationPanel({
                 e.stopPropagation();
                 onClose();
               }}
-              className="p-1 hover:bg-destructive/20 rounded transition-colors"
+              className="p-1 hover:bg-destructive/20 rounded-sm transition-colors"
               aria-label="Close validation panel"
             >
               <X className="w-4 h-4" />
@@ -141,8 +141,8 @@ function CopyErrorsButton({ errors }: { errors: JsonEditorError[] }) {
     <button
       onClick={handleCopy}
       className={cn(
-        'flex items-center gap-1 px-1.5 py-1 rounded transition-all duration-200 cursor-pointer',
-        copied ? 'bg-green-500/15 text-green-500' : 'hover:bg-destructive/20'
+        'flex items-center gap-1 px-1.5 py-1 rounded-sm transition-all duration-200 cursor-pointer',
+        copied ? 'bg-success/10 text-success' : 'hover:bg-destructive/20'
       )}
       aria-label="Copy all errors"
     >
@@ -171,11 +171,9 @@ function ErrorItem({ error, onClick }: ErrorItemProps) {
           <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
         );
       case 'warning':
-        return (
-          <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-        );
+        return <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />;
       default:
-        return <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />;
+        return <AlertCircle className="w-4 h-4 text-data-blue flex-shrink-0" />;
     }
   };
 

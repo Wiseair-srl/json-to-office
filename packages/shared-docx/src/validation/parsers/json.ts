@@ -307,7 +307,7 @@ export class JsonDocumentParser {
       suggestions.push(
         'Check that the value matches one of the allowed formats'
       );
-      suggestions.push('Verify the module type is spelled correctly');
+      suggestions.push('Verify the component name is spelled correctly');
     } else if (message.includes('minimum')) {
       const match = message.match(/minimum.*?(\d+)/);
       if (match) {

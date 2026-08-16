@@ -11,6 +11,7 @@ import {
 } from './json-schema-generator';
 import { schemaService } from './schema-service';
 import { registerFontCodeLens } from './monaco-fonts-codelens';
+import { registerMonacoThemes } from './monaco-theme';
 
 let isConfigured = false;
 let completionDisposable: { dispose(): void } | null = null;
@@ -57,6 +58,9 @@ function removeTrailingCommas(jsonStr: string): string {
  * Configure a Monaco instance with JSON schemas
  */
 export function configureMonacoInstance(monaco: Monaco): void {
+  // Paint the editor chrome from the design tokens (idempotent).
+  registerMonacoThemes(monaco);
+
   // Configure JSON language defaults with enhanced settings
   monaco.languages.json.jsonDefaults.setModeConfiguration({
     documentFormattingEdits: true,

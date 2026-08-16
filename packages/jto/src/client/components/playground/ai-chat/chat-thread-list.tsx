@@ -134,11 +134,11 @@ export function ChatThreadList({
                   key={t.id}
                   className="flex items-center gap-2 px-2 py-1.5 text-sm"
                 >
-                  <span className="text-red-400 text-xs flex-1 truncate">
+                  <span className="text-destructive text-xs flex-1 truncate">
                     Delete this thread?
                   </span>
                   <button
-                    className="shrink-0 text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                    className="shrink-0 text-destructive hover:text-destructive/80 transition-colors cursor-pointer"
                     onClick={confirmDelete}
                   >
                     <Check className="h-3.5 w-3.5" />
@@ -168,7 +168,7 @@ export function ChatThreadList({
                     onChange={(e) => setEditValue(e.target.value)}
                     onKeyDown={handleEditKeyDown}
                     onBlur={commitRename}
-                    className="flex-1 min-w-0 text-sm rounded border border-border bg-background px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-primary/40"
+                    className="flex-1 min-w-0 text-sm rounded-sm border border-border bg-background px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-primary/40"
                   />
                   <button
                     className="shrink-0 text-primary hover:text-primary/80 transition-colors cursor-pointer"

@@ -6,7 +6,7 @@ json-to-office is a pipeline: a JSON tree goes in, a validated and expanded tree
 
 ## The JSON tree model
 
-A document is a tree of **modules**. Each module contains **base components** — the built-in vocabulary of the format (heading, paragraph, table for DOCX; slide, text, chart for PPTX) — and optionally **custom components** that you define in your own project via the plugin system.
+A document is a tree of **components**, in two flavours: **base components** — the built-in vocabulary of the format (heading, paragraph, table for DOCX; slide, text, chart for PPTX) — and **custom components** that you define in your own project via the plugin system.
 
 Every node has the same shape: a `name`, a `props` object, and optionally `children`:
 

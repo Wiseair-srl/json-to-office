@@ -5,8 +5,9 @@ import React, {
   useMemo,
   useEffect,
 } from 'react';
-import { FileTextIcon, PaletteIcon, PlayCircle } from 'lucide-react';
+import { FileTextIcon, PaletteIcon, MoreHorizontal } from 'lucide-react';
 import { DocumentFormDialogContentMemoized } from './document-form-dialog-content';
+import { HighlightedText, StatusDot } from './sidebar-shared';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -15,9 +16,21 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from '../ui/context-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { Dialog, DialogContent } from '../ui/dialog';
-import { SidebarMenuButton, SidebarMenuItem } from '../ui/sidebar';
+import {
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '../ui/sidebar';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useOutputStore } from '../../store/output-store-provider';
 import { download } from '../../lib/download';
@@ -30,27 +43,47 @@ const isMac: boolean =
     ? navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
     : false;
 
+type RowAction = {
+  key: string;
+  label: string;
+  shortcut?: string;
+  separatorBefore?: boolean;
+  danger?: boolean;
+  run: () => void;
+};
+
+/**
+ * One open file in the rail.
+ *
+ * Three states have to read at a glance, and only one of them gets a filled
+ * bed: the row you are editing. Preview and theme-in-use are marked with a
+ * 6px dot on the trailing edge instead. The file icon never changes — swapping
+ * it for a state glyph costs you the only cue that says document vs theme.
+ */
 function DocumentMenuItem({
   document,
-  indicator: _indicator,
   compact = false,
+  query = '',
 }: {
   document: TextFile;
-  indicator?: 'in-use';
   compact?: boolean;
+  query?: string;
 }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState<boolean>(false);
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState<boolean>(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState<boolean>(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
-  const { openDocument, documentTypes, activeTab } = useDocumentsStore(
-    (state) => state
-  );
-  const {
-    name: previewDocumentName,
-    text: previewText,
-    isGenerating,
-  } = useOutputStore((state) => state);
+
+  // Narrow selectors: this component is rendered once per file, so subscribing
+  // to the whole store would re-render the entire rail on every keystroke.
+  const openDocument = useDocumentsStore((state) => state.openDocument);
+  const documentTypes = useDocumentsStore((state) => state.documentTypes);
+  const activeTab = useDocumentsStore((state) => state.activeTab);
+
+  const previewDocumentName = useOutputStore((state) => state.name);
+  const previewText = useOutputStore((state) => state.text);
+  const isGenerating = useOutputStore((state) => state.isGenerating);
 
   const documentType =
     documentTypes[document.name] || 'application/json+report';
@@ -132,13 +165,7 @@ function DocumentMenuItem({
       // Ignore errors
     }
     return false;
-  }, [
-    isTheme,
-    persistentPreviewText,
-    document.text,
-    document.name,
-    persistentPreviewName,
-  ]);
+  }, [isTheme, persistentPreviewText, document.text]);
 
   const closeRenameDialog = useCallback(() => {
     setIsRenameDialogOpen(false);
@@ -148,33 +175,85 @@ function DocumentMenuItem({
     setIsDeleteDialogOpen(false);
   }, []);
 
+  // The dot is suppressed on the active row — that row already carries the
+  // accent bed, and a marker on top of it says nothing new.
+  const dotTone: 'preview' | 'in-use' | null = isEditing
+    ? null
+    : isPreviewing
+      ? 'preview'
+      : isThemeUsedInPreview
+        ? 'in-use'
+        : null;
+
+  const stateLabel = isEditing
+    ? 'Editing'
+    : isPreviewing
+      ? 'In preview'
+      : isThemeUsedInPreview
+        ? 'Used by preview'
+        : null;
+
+  const actions: RowAction[] = useMemo(
+    () => [
+      {
+        key: 'open',
+        label: 'Open',
+        shortcut: isMac ? '⌘⏎' : '⌃⏎',
+        run: () => openDocument(document.name),
+      },
+      {
+        key: 'download',
+        label: 'Download…',
+        separatorBefore: true,
+        run: () =>
+          download(
+            document.name,
+            new Blob([document.text], { type: document.type })
+          ),
+      },
+      {
+        key: 'rename',
+        label: 'Rename…',
+        shortcut: '⏎',
+        separatorBefore: true,
+        run: () => setIsRenameDialogOpen(true),
+      },
+      {
+        key: 'delete',
+        label: 'Delete',
+        shortcut: '⌫',
+        danger: true,
+        run: () => setIsDeleteDialogOpen(true),
+      },
+    ],
+    [document.name, document.text, document.type, openDocument]
+  );
+
+  const Icon = isTheme ? PaletteIcon : FileTextIcon;
+  const menuOpen = isContextMenuOpen || isActionMenuOpen;
+
   const button = (
     <SidebarMenuButton
-      variant="default"
-      size="default"
+      size="sm"
       ref={buttonRef}
+      aria-label={
+        stateLabel ? `${document.name} — ${stateLabel}` : document.name
+      }
       className={cn(
-        'text-sidebar-foreground focus:bg-accent focus:text-accent-foreground w-full',
-        compact ? 'justify-center px-1' : 'justify-start gap-2',
-        isContextMenuOpen && 'bg-accent text-accent-foreground', // because will lose focus/style
-        // Priority order for background highlighting: Editing > Previewing Document > Theme Used in Preview
+        'relative h-7 rounded-sm text-[13px] font-normal',
+        'text-sidebar-foreground/85 transition-colors',
+        'hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
+        compact ? 'size-7 justify-center px-0' : 'gap-2 pr-7 pl-2',
+        // Keep the hover bed while a menu is open — the row loses focus to the
+        // popover and would otherwise flick back to its resting state.
+        menuOpen && 'bg-sidebar-accent/60 text-sidebar-foreground',
+        // The one filled bed in the panel, plus the stripe. The stripe is
+        // status, not ornament: it only ever means "this is what the editor
+        // has open".
         isEditing &&
-          (compact
-            ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300'
-            : 'bg-green-50 border-l-2 border-green-500 text-green-700 dark:bg-green-900/20 dark:border-green-400 dark:text-green-300'),
-        isPreviewing &&
-          !isEditing &&
-          (compact
-            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-            : 'bg-blue-50 border-l-2 border-blue-500 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'),
-        isThemeUsedInPreview &&
-          !isEditing &&
-          !isPreviewing &&
-          (compact
-            ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'
-            : 'bg-purple-50 border-l-2 border-purple-500 text-purple-700 dark:bg-purple-900/20 dark:border-purple-400 dark:text-purple-300')
+          'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
       )}
-      title={document.name}
+      title={stateLabel ? `${document.name} — ${stateLabel}` : document.name}
       onClick={() => {
         openDocument(document.name);
       }}
@@ -199,33 +278,32 @@ function DocumentMenuItem({
         }
       }}
     >
-      {isEditing ? (
-        <PlayCircle
-          className={cn('size-4', 'text-green-600 dark:text-green-400')}
-        />
-      ) : isPreviewing ? (
-        <PlayCircle
-          className={cn('size-4', 'text-blue-600 dark:text-blue-400')}
-        />
-      ) : isTheme ? (
-        <PaletteIcon className="size-4 text-purple-600 dark:text-purple-400" />
-      ) : (
-        <FileTextIcon className="size-4 text-blue-600 dark:text-blue-400" />
-      )}
-      {!compact && (
+      {isEditing && (
         <span
+          aria-hidden
           className={cn(
-            'truncate flex-1',
-            isTheme &&
-              !isEditing &&
-              !isPreviewing &&
-              !isThemeUsedInPreview &&
-              'text-purple-700 dark:text-purple-300',
-            (isEditing || isPreviewing || isThemeUsedInPreview) && 'font-medium'
+            'bg-primary absolute top-1 bottom-1 left-0 w-[2px] rounded-full',
+            compact && 'top-1.5 bottom-1.5'
           )}
-        >
-          {document.name}
+        />
+      )}
+      <Icon
+        className={cn(
+          'size-3.5 shrink-0',
+          isTheme ? 'text-accent2' : 'text-sidebar-foreground/60',
+          isEditing && !isTheme && 'text-sidebar-accent-foreground/70'
+        )}
+      />
+      {!compact && (
+        <span className="flex-1 truncate">
+          <HighlightedText text={document.name} query={query} />
         </span>
+      )}
+      {compact && dotTone && (
+        <StatusDot
+          tone={dotTone}
+          className="absolute top-1 right-1 size-1.5 ring-2 ring-[hsl(var(--sidebar))]"
+        />
       )}
     </SidebarMenuButton>
   );
@@ -233,18 +311,16 @@ function DocumentMenuItem({
   return (
     <SidebarMenuItem>
       <ContextMenu onOpenChange={setIsContextMenuOpen}>
-        <ContextMenuTrigger>
+        <ContextMenuTrigger className="block">
           {compact ? (
             <Tooltip>
               <TooltipTrigger asChild>{button}</TooltipTrigger>
               <TooltipContent side="right">
                 <div className="text-xs">
-                  {document.name}
-                  {isTheme ? (
-                    <div className="opacity-70">Theme</div>
-                  ) : (
-                    <div className="opacity-70">Document</div>
-                  )}
+                  <div>{document.name}</div>
+                  <div className="opacity-70">
+                    {stateLabel ?? (isTheme ? 'Theme' : 'Document')}
+                  </div>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -252,35 +328,75 @@ function DocumentMenuItem({
             button
           )}
         </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem onClick={() => openDocument(document.name)}>
-            Open
-            <ContextMenuShortcut>{isMac ? '⌘⏎' : '⌃⏎'}</ContextMenuShortcut>
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            disabled={!document}
-            onClick={() => {
-              if (document)
-                download(
-                  document.name,
-                  new Blob([document.text], { type: document.type })
-                );
-            }}
-          >
-            Download...
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onClick={() => setIsRenameDialogOpen(true)}>
-            Rename...
-            <ContextMenuShortcut>⏎</ContextMenuShortcut>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
-            Delete
-            <ContextMenuShortcut>⌫</ContextMenuShortcut>
-          </ContextMenuItem>
+        <ContextMenuContent className="w-44">
+          {actions.map((action) => (
+            <React.Fragment key={action.key}>
+              {action.separatorBefore && <ContextMenuSeparator />}
+              <ContextMenuItem
+                onClick={action.run}
+                className={cn(
+                  action.danger && 'text-destructive focus:text-destructive'
+                )}
+              >
+                {action.label}
+                {action.shortcut && (
+                  <ContextMenuShortcut>{action.shortcut}</ContextMenuShortcut>
+                )}
+              </ContextMenuItem>
+            </React.Fragment>
+          ))}
         </ContextMenuContent>
       </ContextMenu>
+
+      {/* Trailing slot. The dot rests here; hovering or focusing the row swaps
+          it for the overflow menu, so rename/download/delete stop being
+          right-click-only secrets. */}
+      {!compact && (
+        <>
+          {dotTone && (
+            <StatusDot
+              tone={dotTone}
+              className={cn(
+                'pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 transition-opacity',
+                'group-hover/menu-item:opacity-0 group-focus-within/menu-item:opacity-0',
+                isActionMenuOpen && 'opacity-0'
+              )}
+            />
+          )}
+          <DropdownMenu onOpenChange={setIsActionMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuAction
+                showOnHover
+                aria-label={`Actions for ${document.name}`}
+                className="top-1 size-5 rounded-sm text-sidebar-foreground/55 hover:text-sidebar-foreground [&>svg]:size-3.5"
+              >
+                <MoreHorizontal />
+              </SidebarMenuAction>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" className="w-44">
+              {actions.map((action) => (
+                <React.Fragment key={action.key}>
+                  {action.separatorBefore && <DropdownMenuSeparator />}
+                  <DropdownMenuItem
+                    onClick={action.run}
+                    className={cn(
+                      action.danger && 'text-destructive focus:text-destructive'
+                    )}
+                  >
+                    {action.label}
+                    {action.shortcut && (
+                      <DropdownMenuShortcut>
+                        {action.shortcut}
+                      </DropdownMenuShortcut>
+                    )}
+                  </DropdownMenuItem>
+                </React.Fragment>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
+      )}
+
       <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
         <DialogContent
           className="sm:max-w-[425px]"

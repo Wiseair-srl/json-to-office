@@ -57,9 +57,9 @@ const DebounceCountdown = memo(function DebounceCountdown({
   const pct = Math.min(100, (remaining / debounceMs) * 100);
 
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 tabular-nums">
+    <span className="inline-flex items-center gap-1.5 text-xs text-warning tabular-nums">
       <span
-        className="h-1 rounded-full bg-amber-500/60 transition-[width] duration-100"
+        className="h-1 rounded-full bg-warning/60 transition-[width] duration-100"
         style={{ width: `${Math.round(pct * 0.4)}px` }}
       />
       {secs}s
@@ -264,7 +264,7 @@ export function Preview() {
           )}
         <Separator />
         {FORMAT === 'docx' && renderingLibrary === 'docxjs' && (
-          <div className="px-3 py-1.5 flex items-center gap-2 border-b bg-blue-500/10 border-blue-500/30 text-xs text-blue-700 dark:text-blue-300">
+          <div className="px-3 py-1.5 flex items-center gap-2 border-b bg-data-blue/10 text-xs text-data-blue">
             <InfoIcon className="h-3.5 w-3.5 shrink-0" />
             <span>
               The docxjs renderer is not 100% representative of the actual
@@ -284,30 +284,28 @@ export function Preview() {
             ((cacheStatus && cacheStatus !== 'UNKNOWN') || isStale) && (
               <div
                 className={`px-3 py-1.5 flex items-center justify-between border-b overflow-hidden ${
-                  isStale
-                    ? 'bg-amber-500/10 border-amber-500/30'
-                    : 'bg-muted/30'
+                  isStale ? 'bg-warning/10' : 'bg-header-bg'
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0 truncate">
                   {cacheStatus === 'HIT' && !isStale ? (
                     <>
-                      <div className="h-1.5 w-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-success flex-shrink-0" />
                       <span className="text-xs text-muted-foreground truncate">
                         Cached
                       </span>
                     </>
                   ) : cacheStatus === 'MISS' && !isStale ? (
                     <>
-                      <div className="h-1.5 w-1.5 rounded-full bg-orange-500 flex-shrink-0" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-accent2 flex-shrink-0" />
                       <span className="text-xs text-muted-foreground truncate">
                         Fresh {FORMAT_LABEL.toLowerCase()}
                       </span>
                     </>
                   ) : isStale ? (
                     <>
-                      <div className="h-1.5 w-1.5 rounded-full bg-amber-500 flex-shrink-0" />
-                      <span className="text-xs text-amber-600 dark:text-amber-400 truncate">
+                      <div className="h-1.5 w-1.5 rounded-full bg-warning flex-shrink-0" />
+                      <span className="text-xs text-warning truncate">
                         Outdated — click Run
                       </span>
                       {editTimestamp &&
@@ -339,9 +337,9 @@ export function Preview() {
         {/* Generation Error — centered in preview area */}
         {globalError && !isGenerating ? (
           <div className="flex-1 flex items-center justify-center p-6">
-            <div className="max-w-md rounded-lg border border-red-400/50 bg-red-400/10 px-4 py-3 text-sm text-red-400">
+            <div className="max-w-md rounded-sm border-l-4 border-l-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
               <p className="font-medium mb-1">Generation failed</p>
-              <p className="text-xs text-red-400/80 break-words">
+              <p className="text-xs text-destructive/80 break-words">
                 {globalError}
               </p>
             </div>

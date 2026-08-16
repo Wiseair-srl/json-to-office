@@ -193,7 +193,7 @@ The tree carries what the document _means_ — this is a heading, this is a tabl
 
 ## Architecture
 
-A JSON document is a tree of **modules**. Each module contains **base components** (heading, paragraph, table, etc.) and optionally **custom components** that you define in your project via a plugin system.
+A JSON document is a tree of **components**. Every node has the same shape, and comes in two flavours: **base components** (heading, paragraph, table, etc.) and **custom components** that you define in your project via a plugin system.
 
 ![Architecture](docs/architecture.png)
 
