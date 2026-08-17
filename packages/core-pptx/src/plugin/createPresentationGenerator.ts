@@ -413,17 +413,11 @@ function createBuilderImpl<
       // and this path silently resolved by runtime precedence.
       assertNoContentConflicts(processedDocument);
 
-      // processPresentation re-resolves the theme from `props.theme`
-      // (normalized to context.themeName); inject the post-substitute theme
-      // under that name so substitute-mode rewrites survive into slide
-      // processing instead of being overwritten by a fresh `getPptxTheme()`
-      // lookup.
-      const effectiveCustomThemes = {
-        ...(state.customThemes ?? {}),
-        [context.themeName]: resolvedTheme,
-      };
+      // processPresentation takes the resolved (post-substitute) theme by
+      // value — the document's `props.theme` stays as authored and is not
+      // consulted again.
       const processed = processPresentation(processedDocument, {
-        customThemes: effectiveCustomThemes,
+        theme: resolvedTheme,
         services: state.services,
       });
       const pendingFills: PendingXmlFill[] = [];

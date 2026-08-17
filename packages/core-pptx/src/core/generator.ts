@@ -41,6 +41,12 @@ export interface GenerationValidationOptions {
  */
 export interface GenerationOptions extends PresentationPackagingOptions {
   customThemes?: Record<string, PptxThemeConfig>;
+  /**
+   * Fully resolved theme, set by the generation prologue after the
+   * export-mode pre-pass. Wins over the `props.theme` name/inline lookup in
+   * `processPresentation` — omit it (direct callers) to fall back to that.
+   */
+  theme?: PptxThemeConfig;
   services?: ServicesConfig;
   fonts?: FontRuntimeOpts;
   validation?: GenerationValidationOptions;
@@ -200,15 +206,11 @@ export async function generateBufferWithWarnings(
     warnings,
     options?.fonts
   );
-  // processPresentation re-resolves the theme from `props.theme` (normalized
-  // to context.themeName), so the resolved theme is registered under that
-  // name for it to find.
+  // processPresentation takes the resolved theme by value — the document's
+  // `props.theme` stays as authored and is not consulted again.
   const effectiveOptions: GenerationOptions = {
     ...options,
-    customThemes: {
-      ...(options?.customThemes ?? {}),
-      [context.themeName]: context.theme,
-    },
+    theme: context.theme,
   };
   // Gradient/pattern fills render as sentinel solid fills during generation;
   // packagePresentationBuffer splices the real fill XML in afterwards.

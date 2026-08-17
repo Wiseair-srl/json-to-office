@@ -59,13 +59,17 @@ export function processPresentation(
 ): ProcessedPresentation {
   const { props, children = [] } = document;
 
-  // `theme` is a name to resolve, or an inline theme config object embedded in
-  // the document itself (self-contained documents-as-data).
+  // The generation prologue hands the resolved theme over directly — after
+  // the export-mode pre-pass, so a name lookup here would resurrect
+  // pre-substitute font families. The `props.theme` resolution below (a name,
+  // or an inline theme config object embedded in the document itself —
+  // self-contained documents-as-data) is the fallback for direct callers.
   const baseTheme =
-    typeof props.theme === 'object' && props.theme !== null
+    options?.theme ??
+    (typeof props.theme === 'object' && props.theme !== null
       ? (props.theme as PptxThemeConfig)
       : options?.customThemes?.[props.theme ?? 'default'] ??
-        getPptxTheme(props.theme ?? 'default');
+        getPptxTheme(props.theme ?? 'default'));
 
   // Merge presentation-level componentDefaults on top of theme-level ones
   const presDefaults = props.componentDefaults;

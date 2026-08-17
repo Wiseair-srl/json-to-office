@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { processPresentation } from '../structure';
 import { generateBufferWithWarnings } from '../generator';
+import { resolveThemeContext } from '../generationContext';
 import type { PresentationComponentDefinition } from '../../types';
 
 const inlineTheme = {
@@ -53,5 +54,29 @@ describe('inline document theme', () => {
     expect(warnings.filter((w) => String(w.code).includes('THEME'))).toEqual(
       []
     );
+  });
+});
+
+describe('generation prologue with an inline theme', () => {
+  // The theme reaches processPresentation by value, so the prologue no longer
+  // flattens the inline object into a synthetic named customThemes entry —
+  // the document round-trips with `props.theme` exactly as authored.
+  it('leaves the authored props.theme untouched, in substitute mode too', () => {
+    const context = resolveThemeContext(doc(inlineTheme), {
+      fonts: { mode: 'substitute' },
+    });
+
+    expect(context.document.props.theme).toEqual(inlineTheme);
+    expect(context.theme.colors.accent).toBe('#CC785C');
+    // Cache key still scopes by export mode and inline name.
+    expect(context.themeName).toBe('editorial#substitute');
+  });
+
+  it('leaves an authored theme name untouched', () => {
+    const context = resolveThemeContext(doc('minimal'), {});
+
+    expect(context.document.props.theme).toBe('minimal');
+    expect(context.themeName).toBe('minimal');
+    expect(context.theme.name).toBe('minimal');
   });
 });

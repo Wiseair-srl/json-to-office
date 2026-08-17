@@ -45,15 +45,20 @@ export interface ThemeContextOptions {
 
 export interface GenerationThemeContext {
   /**
-   * The document after the export-mode pre-pass rewrote font references, with
-   * `props.theme` normalized to `themeName`. `processPresentation` re-resolves
-   * the theme by name from `props.theme`, so callers must register `theme`
-   * under `themeName` in the customThemes they pass it (#135 tracks deleting
-   * this dance by handing the resolved theme over directly).
+   * The document after the export-mode pre-pass rewrote font references.
+   * `props.theme` stays as authored (name or inline object) — callers hand
+   * `theme` to `processPresentation` by value instead of round-tripping it
+   * through a name lookup (#135).
    */
   document: PresentationComponentDefinition;
   theme: PptxThemeConfig;
-  /** Cache key: base theme name + export-mode scope. */
+  /**
+   * Cache key: base theme name + export-mode scope. Nothing in PPTX consumes
+   * a theme by name after the prologue today; this is the key a future
+   * theme-keyed cache must use (a substitute-mode run rewrites the theme in
+   * place, so it must never share a slot with a custom-mode run of the same
+   * base name — the DOCX layout cache is keyed exactly this way).
+   */
   themeName: string;
 }
 
@@ -80,26 +85,23 @@ export function resolveThemeContext(
   let document =
     documentIn.props === undefined ? { ...documentIn, props: {} } : documentIn;
 
-  // An inline theme object (self-contained document) is normalized to a name
-  // plus resolved config so font-mode scoping and the name-keyed re-resolution
-  // in `processPresentation` work unchanged. The inline object wins over any
-  // customThemes entry sharing its name, on both paths.
+  // An inline theme object (self-contained document) resolves directly and
+  // wins over any customThemes entry sharing its name, on both paths. The
+  // document keeps the authored object — nothing downstream resolves the
+  // theme by name anymore.
   let inlineTheme: PptxThemeConfig | undefined;
   if (
     typeof document.props.theme === 'object' &&
     document.props.theme !== null
   ) {
     inlineTheme = document.props.theme as PptxThemeConfig;
-    document = {
-      ...document,
-      props: { ...document.props, theme: inlineTheme.name || 'inline-theme' },
-    };
   }
 
-  const baseThemeName =
-    (document.props.theme as string | undefined) ??
-    defaultThemeName ??
-    'default';
+  const baseThemeName = inlineTheme
+    ? inlineTheme.name || 'inline-theme'
+    : (document.props.theme as string | undefined) ??
+      defaultThemeName ??
+      'default';
   let theme =
     inlineTheme ??
     (resolveNamedTheme
@@ -119,21 +121,9 @@ export function resolveThemeContext(
     });
   }
 
-  // Scope the cache key by mode so a theme-name-keyed cache can't leak a
-  // custom-mode run into a substitute-mode slot (or vice versa), then
-  // normalize `props.theme` to it: `processPresentation` resolves the theme
-  // from `props.theme`, so the name the document carries must be the name the
-  // caller registers the resolved theme under. Normalizing whenever the value
-  // differs — not only when mode scoping applies — is what keeps a
-  // constructor-supplied default theme name from being silently dropped
-  // between font resolution and slide processing.
-  const themeName = scopedThemeName(baseThemeName, fonts?.mode);
-  if (document.props.theme !== themeName) {
-    document = {
-      ...document,
-      props: { ...document.props, theme: themeName },
-    };
-  }
-
-  return { document, theme, themeName };
+  return {
+    document,
+    theme,
+    themeName: scopedThemeName(baseThemeName, fonts?.mode),
+  };
 }

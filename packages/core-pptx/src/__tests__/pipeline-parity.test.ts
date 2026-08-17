@@ -104,6 +104,43 @@ describe('generateBufferFromJson vs createPresentationGenerator', () => {
   });
 });
 
+describe('substitute-mode theme delivery', () => {
+  // The resolved theme reaches processPresentation by value. Before #135 it
+  // travelled by name — rewritten `props.theme` + a scoped customThemes
+  // entry — and a miss meant slide processing silently re-resolved a fresh,
+  // pre-substitute theme. This is the regression that fails if the handover
+  // is ever wired wrong: the non-safe family must not reach the slide XML.
+  it('renders substituted families identically on both paths', async () => {
+    const inter = deck({
+      name: 'subst-parity',
+      colors: {
+        primary: '#231F20',
+        secondary: '#595959',
+        accent: '#E6E620',
+        background: '#FFFFFF',
+        text: '#000000',
+      },
+      fonts: { heading: 'Inter', body: 'Inter' },
+      defaults: { fontSize: 18, fontColor: '#000000' },
+    });
+    const fonts = { mode: 'substitute' as const };
+
+    const viaCore = await generateBufferFromJson(
+      structuredClone(inter) as never,
+      { fonts }
+    );
+    const { buffer: viaPlugin } = await createPresentationGenerator({
+      fonts,
+    }).generateBuffer(structuredClone(inter) as never);
+
+    const core = await slideXml(viaCore as Buffer);
+    const plugin = await slideXml(viaPlugin);
+    expect(core).not.toContain('typeface="Inter"');
+    expect(core).toContain('typeface="Calibri"');
+    expect(plugin).toEqual(core);
+  });
+});
+
 describe('root props defaulting', () => {
   // The PPTX validator rejects a missing root `props`, so the divergence
   // lived behind `validation: { enabled: false }`: the core path died with a
