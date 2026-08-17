@@ -1,5 +1,52 @@
 # @json-to-office/core-docx
 
+## 0.25.0
+
+### Minor Changes
+
+- 96c30b3: Capabilities needed to reproduce professionally designed Office templates.
+
+  **PPTX** — `text.runs[]` for per-run styling and `lineSpacingMultiple` for
+  percent line spacing; `shape.fill.gradient` (linear/radial) and
+  `shape.fill.pattern` (OOXML preset hatches), both injected into slide XML at
+  package time since pptxgenjs exposes neither; `shape.angleRange` for
+  arc/pie/blockArc/chord plus `flipH`/`flipV`; chart passthrough for
+  `dataBorder`, grid lines, axis label fonts and sizes, axis line visibility,
+  marker size and bar overlap.
+
+  **DOCX** — paragraph/heading `indent`; paragraph `tabStops` with leaders and
+  literal tab runs; `font.scale` for glyph width; `font.size` now accepts up to
+  120pt for display typography; and root `props.themeOverrides`, a partial theme
+  deep-merged over the named theme so palette tokens, font roles and named styles
+  can be defined in-document rather than in an external theme file. `boldColor`
+  resolves theme tokens like every other color prop.
+
+  DOCX also gains a single shared generation prologue, so the plain and
+  plugin-aware entry points can no longer disagree about theme resolution.
+
+### Patch Changes
+
+- f3b3674: Fix three props that validated and rendered while being silently ignored.
+
+  `font.characterSpacing` reached paragraphs but not headings, and was dropped
+  whenever the text contained a placeholder — so the same value rendered letter
+  tracking for plain text and lost it for `Generated on {DATE}`. Both paths
+  already forwarded `font.scale`.
+
+  An unknown `shape.fill.pattern.preset` warned that it was falling back to the
+  solid foreground and then set no fill at all, leaving the shape on the
+  pptxgenjs default. It now uses the pattern foreground, with an explicit
+  `fill.color` still taking precedence.
+
+  `props: null` surfaced as `Cannot read properties of null` from theme
+  resolution on the one entry point that runs no validator (`generateDocument`
+  with no `$schema`); it now throws a clear error naming the problem.
+
+- Updated dependencies [2801ec4]
+- Updated dependencies [96c30b3]
+  - @json-to-office/shared-docx@0.25.0
+  - @json-to-office/shared@0.25.0
+
 ## 0.24.0
 
 ### Patch Changes
