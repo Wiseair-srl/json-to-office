@@ -12,6 +12,7 @@ import { extractStandardComponentNames } from '@json-to-office/shared';
 import {
   comprehensiveValidateDocument,
   collectImageSourceConflicts,
+  collectIndentConflicts,
 } from './deep-validator';
 
 // JsonComponentDefinitionSchema is just an alias for ComponentDefinitionSchema
@@ -53,6 +54,13 @@ export function validateDocument(
   const sourceConflicts = collectImageSourceConflicts(data);
   if (sourceConflicts.length > 0) {
     finalErrors = [...finalErrors, ...sourceConflicts];
+    finalValid = false;
+  }
+
+  // Same for indent hanging/firstLine mutual-exclusivity.
+  const indentConflicts = collectIndentConflicts(data);
+  if (indentConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...indentConflicts];
     finalValid = false;
   }
 
@@ -118,6 +126,13 @@ export function validateJsonDocument(
   const sourceConflicts = collectImageSourceConflicts(result.parsed);
   if (sourceConflicts.length > 0) {
     finalErrors = [...finalErrors, ...sourceConflicts];
+    finalValid = false;
+  }
+
+  // Indent hanging/firstLine mutual-exclusivity (see validateDocument).
+  const indentConflicts = collectIndentConflicts(result.parsed);
+  if (indentConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...indentConflicts];
     finalValid = false;
   }
 

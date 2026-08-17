@@ -14,6 +14,7 @@ import {
   JustifiedAlignmentSchema,
   SpacingSchema,
   LineSpacingSchema,
+  ParagraphIndentSchema,
 } from './common';
 import { RevisionSchema } from './revision';
 
@@ -34,6 +35,8 @@ export const HeadingPropsSchema = Type.Object(
     noProofWords: Type.Optional(NoProofWordsSchema),
     alignment: Type.Optional(JustifiedAlignmentSchema),
     spacing: Type.Optional(SpacingSchema),
+    // Paragraph indentation (w:ind) in twips
+    indent: Type.Optional(ParagraphIndentSchema),
     lineSpacing: Type.Optional(
       Type.Union([Type.Number({ minimum: 0 }), LineSpacingSchema])
     ),

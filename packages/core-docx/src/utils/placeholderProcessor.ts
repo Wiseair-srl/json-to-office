@@ -8,6 +8,7 @@ import {
   PageNumber,
   ExternalHyperlink,
   InternalHyperlink,
+  Tab,
 } from 'docx';
 import {
   parseTextWithDecorators,
@@ -305,28 +306,48 @@ function createTextRunsWithNewlines(
         bold: baseStyle.bold,
         italics: baseStyle.italics,
         underline: baseStyle.underline,
+        ...(baseStyle.scale && { scale: baseStyle.scale }),
         ...(baseStyle.language && { language: baseStyle.language }),
       };
       const wholeRunNoProof = baseStyle.noProof === true;
       const wordsForLine = wholeRunNoProof ? undefined : noProofWords;
 
       let firstSegment = true;
-      const lineRuns = splitByNoProofWords(
-        line,
-        (segment, matched) => {
-          const run = new TextRun({
-            text: segment,
-            ...commonProps,
-            ...((matched || baseStyle.noProof !== undefined) && {
-              noProof: matched || wholeRunNoProof,
-            }),
-            break: needsLineBreak && firstSegment ? 1 : undefined,
-          });
+      const lineRuns: TextRun[] = [];
+      // Tab characters become real <w:tab/> runs (see textParser) so
+      // paragraph tabStops apply.
+      const tabSegments = line.split('\t');
+      tabSegments.forEach((tabSegment, tabIndex) => {
+        if (tabIndex > 0) {
+          lineRuns.push(
+            new TextRun({
+              children: [new Tab()],
+              ...commonProps,
+              break: needsLineBreak && firstSegment ? 1 : undefined,
+            })
+          );
           firstSegment = false;
-          return run;
-        },
-        wordsForLine
-      );
+        }
+        if (!tabSegment && tabSegments.length > 1) return;
+        lineRuns.push(
+          ...splitByNoProofWords(
+            tabSegment,
+            (segment, matched) => {
+              const run = new TextRun({
+                text: segment,
+                ...commonProps,
+                ...((matched || baseStyle.noProof !== undefined) && {
+                  noProof: matched || wholeRunNoProof,
+                }),
+                break: needsLineBreak && firstSegment ? 1 : undefined,
+              });
+              firstSegment = false;
+              return run;
+            },
+            wordsForLine
+          )
+        );
+      });
       runs.push(...lineRuns);
     }
   }

@@ -5,6 +5,7 @@
 import { Type, Static, TSchema } from '@sinclair/typebox';
 import { ComponentDefaultsSchema } from '../component-defaults';
 import { NoProofWordsSchema } from '../font';
+import { ThemeOverridesSchema } from '../theme';
 
 // Create a function to generate ReportPropsSchema with recursive component reference
 export const createReportPropsSchema = (_componentRef?: TSchema) =>
@@ -17,6 +18,7 @@ export const createReportPropsSchema = (_componentRef?: TSchema) =>
           default: 'minimal',
         })
       ),
+      themeOverrides: Type.Optional(ThemeOverridesSchema),
       componentDefaults: Type.Optional(ComponentDefaultsSchema),
       language: Type.Optional(
         Type.String({

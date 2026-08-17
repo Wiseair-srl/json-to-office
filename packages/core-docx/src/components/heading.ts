@@ -48,6 +48,7 @@ export function renderHeadingComponent(
         ?.fontWeight,
       italic: config.font?.italic,
       underline: config.font?.underline,
+      scale: config.font?.scale,
       // Proofing: local language override + no-proof toggle + known-words list
       language: config.language,
       noProof: config.noProof,
@@ -55,6 +56,8 @@ export function renderHeadingComponent(
       // Pagination control
       keepNext: config.keepNext,
       keepLines: config.keepLines,
+      // Paragraph indentation (w:ind) in twips
+      indent: config.indent,
       // Bookmark ID for internal linking
       bookmarkId: bookmarkId,
       // Tracked-change segments (rendered as native Word revisions)

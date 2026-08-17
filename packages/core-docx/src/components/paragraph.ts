@@ -195,6 +195,8 @@ export function renderParagraphComponent(
       ?.fontWeight,
     italic: resolvedConfig.font?.italic,
     underline: resolvedConfig.font?.underline,
+    scale: resolvedConfig.font?.scale,
+    characterSpacing: resolvedConfig.font?.characterSpacing,
     // Proofing: local language override + no-proof toggle + known-words list
     language: resolvedConfig.language,
     noProof: resolvedConfig.noProof,
@@ -207,6 +209,10 @@ export function renderParagraphComponent(
     keepNext: resolvedConfig.keepNext,
     // Pass keepLines property
     keepLines: resolvedConfig.keepLines,
+    // Paragraph indentation (w:ind) in twips
+    indent: resolvedConfig.indent,
+    // Tab stops (w:tabs); \t characters in text jump to these positions
+    tabStops: resolvedConfig.tabStops,
     // Pass bookmark ID for internal linking
     bookmarkId: resolvedConfig.id,
     // Tracked-change segments (rendered as native Word revisions)

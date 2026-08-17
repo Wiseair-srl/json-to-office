@@ -3,9 +3,9 @@ import type { CustomComponent } from './createComponent';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
 import { type ThemeConfig } from '../styles';
 import { resolveBuiltInTheme } from '../styles/theme-resolver';
+import { resolveThemeContext } from '../core/generationContext';
 import type { GenerationWarning } from '@json-to-office/shared-docx';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
-import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
 import { resolveDocumentFonts } from '../core/fontResolution';
 import type {
   ExtendedReportComponent,
@@ -452,36 +452,27 @@ function createBuilderImpl<
       // Initialize warnings collector
       const warnings: GenerationWarning[] = [];
 
-      // Resolve theme per-document: customThemes → built-in → constructor fallback
-      const baseThemeName = internalDocument.props.theme || 'minimal';
-      const docTheme = resolveDocumentTheme(baseThemeName, warnings);
-
-      // Export-mode pre-pass runs BEFORE custom-component expansion so
-      // components that read `theme.fonts.*` during render see the
+      // Props defaulting, theme resolution (customThemes → constructor theme →
+      // built-in), in-document overrides, export-mode pre-pass and cache-key
+      // scoping — shared with the core pipeline so the two cannot drift (see
+      // core/generationContext.ts). The pre-pass runs BEFORE custom-component
+      // expansion so components reading `theme.fonts.*` during render see the
       // substituted names, not the original non-safe ones.
-      const mode = applyExportMode({
-        doc: internalDocument,
-        theme: docTheme,
+      const {
+        document: modedRoot,
+        theme: modedTheme,
+        themeName,
+      } = resolveThemeContext(internalDocument, {
+        customThemes: state.customThemes,
         fonts: state.fonts,
+        warnings,
+        resolveNamedTheme: resolveDocumentTheme,
       });
-      const modedTheme = mode.theme;
-      // Scope cache key by mode: substitute rewrites the theme in place, so
-      // structure/layout caches must not share slots with custom-mode runs
-      // keyed on the same themeName. Matches core/generator.ts.
-      const themeName = scopedThemeName(baseThemeName, state.fonts?.mode);
-      for (const w of mode.warnings) {
-        warnings.push({
-          component: 'fontRegistry',
-          message: w.message,
-          severity: 'warning',
-          context: { code: w.code },
-        });
-      }
 
       // Process custom components to convert them to standard components.
       // Builds standard (fully expanded) and preserved (partial) trees in one pass.
       const processed = await processDocumentComponents(
-        mode.doc.children || [],
+        modedRoot.children || [],
         preserveSet,
         warnings,
         modedTheme,
@@ -490,7 +481,7 @@ function createBuilderImpl<
 
       // Create a new document definition with processed components
       const processedDocument: ReportComponentDefinition = {
-        ...mode.doc,
+        ...modedRoot,
         children: processed.standard,
       };
 
@@ -526,7 +517,7 @@ function createBuilderImpl<
       // Not normalized — preserved subtrees are meant to be "as authored".
       const preservedDefinition = preserveSet
         ? ({
-            ...mode.doc,
+            ...modedRoot,
             children: processed.preserved,
           } as unknown as ExtendedReportComponent<TComponents>)
         : undefined;
