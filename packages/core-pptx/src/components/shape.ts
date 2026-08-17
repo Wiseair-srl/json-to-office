@@ -3,11 +3,30 @@
  */
 
 import type PptxGenJS from 'pptxgenjs';
-import type { PptxThemeConfig, StyleName, PipelineWarning } from '../types';
-import type { TextSegment } from '@json-to-office/shared-pptx';
+import type {
+  PptxThemeConfig,
+  StyleName,
+  PipelineWarning,
+  PendingXmlFill,
+  SlideRenderContext,
+} from '../types';
+import type {
+  TextSegment,
+  GradientFill,
+  PatternFill,
+} from '@json-to-office/shared-pptx';
+import { PATTERN_FILL_PRESETS } from '@json-to-office/shared-pptx';
 import { applyFontWeight } from '../utils/fontAliasContext';
 import { resolveColor } from '../utils/color';
+import { buildGradientFillXml, buildPatternFillXml } from '../utils/fillXml';
 import { warn, W } from '../utils/warn';
+
+export interface ShapeFillProps {
+  color?: string;
+  transparency?: number;
+  gradient?: GradientFill;
+  pattern?: PatternFill;
+}
 
 interface ShapeComponentProps {
   type: string;
@@ -15,7 +34,7 @@ interface ShapeComponentProps {
   y?: number | string;
   w?: number | string;
   h?: number | string;
-  fill?: { color: string; transparency?: number };
+  fill?: ShapeFillProps;
   line?: { color?: string; width?: number; dashType?: string };
   text?: string | TextSegment[];
   fontSize?: number;
@@ -28,6 +47,9 @@ interface ShapeComponentProps {
   align?: string;
   valign?: string;
   rotate?: number;
+  angleRange?: [number, number];
+  flipH?: boolean;
+  flipV?: boolean;
   shadow?: {
     type?: string;
     color?: string;
@@ -58,10 +80,84 @@ const SHAPE_TYPE_MAP: Record<string, string> = {
   lightning: 'lightningBolt',
 };
 
+/**
+ * Apply a shape fill to pptxgenjs opts. Gradient and pattern fills are not
+ * expressible through pptxgenjs, so they render as a sentinel solid fill on a
+ * shape tagged with a unique `objectName`; the real fill XML is registered in
+ * `pendingFills` and spliced in by packagePresentationBuffer. Without a
+ * registry (direct render outside the buffer pipeline) they degrade to the
+ * sentinel solid color with a warning.
+ */
+export function applyShapeFill(
+  opts: Record<string, unknown>,
+  fill: ShapeFillProps,
+  theme: PptxThemeConfig,
+  warnings?: PipelineWarning[],
+  pendingFills?: PendingXmlFill[]
+): void {
+  let gradient = fill.gradient;
+  let pattern = fill.pattern;
+  if (gradient && pattern) {
+    warn(
+      warnings,
+      W.ADVANCED_FILL_FALLBACK,
+      'Shape fill sets both "gradient" and "pattern" — using the gradient',
+      { component: 'shape' }
+    );
+    pattern = undefined;
+  }
+  if (
+    pattern &&
+    !(PATTERN_FILL_PRESETS as readonly string[]).includes(pattern.preset)
+  ) {
+    warn(
+      warnings,
+      W.UNKNOWN_PATTERN_PRESET,
+      `Unknown pattern preset "${pattern.preset}" — falling back to solid foreground`,
+      { component: 'shape' }
+    );
+    pattern = undefined;
+  }
+
+  if (gradient || pattern) {
+    // Sentinel color: keeps the deck presentable if the splice cannot run.
+    const sentinel = resolveColor(
+      fill.color ?? (gradient ? gradient.stops[0].color : pattern!.foreground),
+      theme,
+      warnings
+    );
+    if (pendingFills) {
+      const xml = gradient
+        ? buildGradientFillXml(gradient, theme, warnings)
+        : buildPatternFillXml(pattern!, theme, warnings);
+      const objectName = `__jto_fill_${pendingFills.length}__`;
+      pendingFills.push({ objectName, xml });
+      opts.objectName = objectName;
+    } else {
+      warn(
+        warnings,
+        W.ADVANCED_FILL_FALLBACK,
+        `${gradient ? 'Gradient' : 'Pattern'} fill requires the buffer generation pipeline — rendering a solid fill instead`,
+        { component: 'shape' }
+      );
+    }
+    opts.fill = { color: sentinel };
+    return;
+  }
+
+  if (fill.color !== undefined) {
+    opts.fill = { color: resolveColor(fill.color, theme, warnings) };
+    if (fill.transparency !== undefined) {
+      (opts.fill as Record<string, unknown>).transparency = fill.transparency;
+    }
+  }
+}
+
 function buildShapeOpts(
   props: ShapeComponentProps,
   theme: PptxThemeConfig,
-  warnings?: PipelineWarning[]
+  warnings?: PipelineWarning[],
+  pendingFills?: PendingXmlFill[]
 ): Record<string, unknown> {
   const opts: Record<string, unknown> = {};
 
@@ -71,11 +167,7 @@ function buildShapeOpts(
   if (props.h !== undefined) opts.h = props.h;
 
   if (props.fill) {
-    opts.fill = { color: resolveColor(props.fill.color, theme, warnings) };
-    if (props.fill.transparency !== undefined) {
-      (opts.fill as Record<string, unknown>).transparency =
-        props.fill.transparency;
-    }
+    applyShapeFill(opts, props.fill, theme, warnings, pendingFills);
   }
 
   if (props.line) {
@@ -93,6 +185,9 @@ function buildShapeOpts(
   }
 
   if (props.rotate !== undefined) opts.rotate = props.rotate;
+  if (props.angleRange !== undefined) opts.angleRange = props.angleRange;
+  if (props.flipH !== undefined) opts.flipH = props.flipH;
+  if (props.flipV !== undefined) opts.flipV = props.flipV;
   if (props.rectRadius !== undefined) opts.rectRadius = props.rectRadius;
 
   if (props.shadow) {
@@ -114,7 +209,8 @@ export function renderShapeComponent(
   props: ShapeComponentProps,
   theme: PptxThemeConfig,
   pptx: PptxGenJS,
-  warnings?: PipelineWarning[]
+  warnings?: PipelineWarning[],
+  ctx?: SlideRenderContext
 ): void {
   // Resolve shape type from pptxgenjs ShapeType enum
   const shapeTypeName = SHAPE_TYPE_MAP[props.type] || props.type;
@@ -131,7 +227,7 @@ export function renderShapeComponent(
   const style = props.style ? theme.styles?.[props.style] : undefined;
   const isHeadingStyle = props.style && /^(title|heading)/.test(props.style);
 
-  const opts = buildShapeOpts(props, theme, warnings);
+  const opts = buildShapeOpts(props, theme, warnings, ctx?.pendingFills);
 
   // If shape has text, use addText with shape option
   if (props.text && (!Array.isArray(props.text) || props.text.length > 0)) {

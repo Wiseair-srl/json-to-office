@@ -12,9 +12,87 @@ import {
 } from './common';
 import { StyleNameSchema } from './theme';
 
+export const TextRunSchema = Type.Object(
+  {
+    text: Type.String({ description: 'Run text content' }),
+    color: Type.Optional(
+      Type.String({
+        description: 'Run color (hex without # or semantic theme name)',
+      })
+    ),
+    bold: Type.Optional(Type.Boolean({ description: 'Bold run' })),
+    fontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Per-run weight (100–900). Overrides `bold` when set — renderer picks the closest embedded variant via CSS font-matching.',
+      })
+    ),
+    italic: Type.Optional(Type.Boolean({ description: 'Italic run' })),
+    underline: Type.Optional(
+      Type.Union([
+        Type.Boolean({ description: 'Simple underline toggle' }),
+        Type.Object(
+          {
+            style: Type.Optional(
+              Type.Union([
+                Type.Literal('sng'),
+                Type.Literal('dbl'),
+                Type.Literal('dash'),
+                Type.Literal('dotted'),
+              ])
+            ),
+            color: Type.Optional(
+              Type.String({ description: 'Underline color (hex)' })
+            ),
+          },
+          { additionalProperties: false }
+        ),
+      ])
+    ),
+    strike: Type.Optional(Type.Boolean({ description: 'Strikethrough run' })),
+    fontSize: Type.Optional(
+      Type.Number({ minimum: 1, description: 'Run font size in points' })
+    ),
+    fontFace: Type.Optional(Type.String({ description: 'Run font family' })),
+    superscript: Type.Optional(
+      Type.Boolean({ description: 'Render run as superscript' })
+    ),
+    subscript: Type.Optional(
+      Type.Boolean({ description: 'Render run as subscript' })
+    ),
+    charSpacing: Type.Optional(
+      Type.Number({ description: 'Character spacing in points' })
+    ),
+    breakLine: Type.Optional(
+      Type.Boolean({ description: 'Insert line break after this run' })
+    ),
+  },
+  {
+    description:
+      'A styled text run. Run options override component-level defaults.',
+    additionalProperties: false,
+  }
+);
+
+export type TextRun = Static<typeof TextRunSchema>;
+
 export const TextPropsSchema = Type.Object(
   {
-    text: Type.String({ description: 'Text content to display' }),
+    text: Type.Optional(
+      Type.String({
+        description:
+          'Text content to display. Mutually exclusive with `runs` — set exactly one of the two.',
+      })
+    ),
+    runs: Type.Optional(
+      Type.Array(TextRunSchema, {
+        minItems: 1,
+        description:
+          'Rich text runs with per-run styling, rendered as one text block. Mutually exclusive with `text` — set exactly one of the two. Component-level props (align, valign, fill, lineSpacing, position…) still apply to the whole block.',
+      })
+    ),
     x: Type.Optional(
       Type.Union([
         Type.Number({ description: 'X position in inches' }),
@@ -167,6 +245,14 @@ export const TextPropsSchema = Type.Object(
     ),
     lineSpacing: Type.Optional(
       Type.Number({ description: 'Line spacing in points' })
+    ),
+    lineSpacingMultiple: Type.Optional(
+      Type.Number({
+        minimum: 0.1,
+        maximum: 10,
+        description:
+          'Line spacing as a multiple of the font size (e.g. 0.9 = 90%). Takes precedence over lineSpacing.',
+      })
     ),
     charSpacing: Type.Optional(
       Type.Number({

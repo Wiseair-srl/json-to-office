@@ -3,7 +3,10 @@
  */
 
 import type { ServicesConfig } from '@json-to-office/shared';
-import type { PptxComponentDefaults } from '@json-to-office/shared-pptx';
+import type {
+  GradientFill,
+  PptxComponentDefaults,
+} from '@json-to-office/shared-pptx';
 
 export interface PptxComponentInput {
   name: string;
@@ -41,6 +44,7 @@ export interface SlideComponentDefinition {
   props: {
     background?: {
       color?: string;
+      gradient?: GradientFill;
       image?: { path?: string; base64?: string };
     };
     transition?: {
@@ -80,6 +84,7 @@ export interface ProcessedSlide {
   components: PptxComponentInput[];
   background?: {
     color?: string;
+    gradient?: GradientFill;
     image?: { path?: string; base64?: string };
   };
   notes?: string;
@@ -170,7 +175,11 @@ export interface PlaceholderDefinition {
 
 export interface TemplateSlideDefinition {
   name: string;
-  background?: { color?: string; image?: { path?: string; base64?: string } };
+  background?: {
+    color?: string;
+    gradient?: GradientFill;
+    image?: { path?: string; base64?: string };
+  };
   margin?: number | [number, number, number, number];
   slideNumber?: {
     x: number;
@@ -198,6 +207,24 @@ export interface SlideRenderContext {
   services?: ServicesConfig;
   slideWidth: number;
   slideHeight: number;
+  /**
+   * Per-generation registry of fills (gradient/pattern) that pptxgenjs cannot
+   * express. Components render a sentinel solid fill tagged with a unique
+   * objectName; packagePresentationBuffer swaps the sentinel for the real
+   * fill XML after generation.
+   */
+  pendingFills?: PendingXmlFill[];
+}
+
+/**
+ * A fill to be spliced into the slide XML during packaging. The component that
+ * registered it rendered a sentinel `<a:solidFill>` on a shape whose
+ * `cNvPr name` equals `objectName`.
+ */
+export interface PendingXmlFill {
+  objectName: string;
+  /** Complete replacement fill element (e.g. `<a:gradFill>…</a:gradFill>`). */
+  xml: string;
 }
 
 export interface PipelineWarning {

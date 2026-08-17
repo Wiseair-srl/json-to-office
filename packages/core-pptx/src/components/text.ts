@@ -12,9 +12,27 @@ import type {
 import { resolveColor } from '../utils/color';
 import { applyFontWeight } from '../utils/fontAliasContext';
 import { applyHyperlink, type HyperlinkProps } from '../utils/hyperlink';
+import { warn, W } from '../utils/warn';
+
+interface TextRunProps {
+  text: string;
+  color?: string;
+  bold?: boolean;
+  fontWeight?: number;
+  italic?: boolean;
+  underline?: boolean | { style?: string; color?: string };
+  strike?: boolean;
+  fontSize?: number;
+  fontFace?: string;
+  superscript?: boolean;
+  subscript?: boolean;
+  charSpacing?: number;
+  breakLine?: boolean;
+}
 
 interface TextComponentProps {
-  text: string;
+  text?: string;
+  runs?: TextRunProps[];
   x?: number | string;
   y?: number | string;
   w?: number | string;
@@ -45,6 +63,7 @@ interface TextComponentProps {
   fill?: { color: string; transparency?: number };
   hyperlink?: HyperlinkProps;
   lineSpacing?: number;
+  lineSpacingMultiple?: number;
   charSpacing?: number;
   paraSpaceBefore?: number;
   paraSpaceAfter?: number;
@@ -69,6 +88,19 @@ export function renderTextComponent(
   warnings?: PipelineWarning[],
   slideCtx?: SlideContext
 ): void {
+  // Exactly one of `text`/`runs` carries the content. Validation enforces the
+  // rule up front; this guard covers validation-disabled runs.
+  const runs = props.runs && props.runs.length > 0 ? props.runs : undefined;
+  if (props.text === undefined && !runs) {
+    warn(
+      warnings,
+      W.TEXT_NO_CONTENT,
+      'Text component has neither "text" nor "runs" — skipped',
+      { component: 'text' }
+    );
+    return;
+  }
+
   // Resolve named style as defaults
   const style = props.style ? theme.styles?.[props.style] : undefined;
   const isHeadingStyle = props.style && /^(title|heading)/.test(props.style);
@@ -86,7 +118,15 @@ export function renderTextComponent(
   // the text. Also mark as textBox for proper auto-sizing in PowerPoint.
   if (props.h === undefined) {
     const fontSize = props.fontSize ?? theme.defaults.fontSize ?? 18;
-    const lines = (props.text.match(/\n/g)?.length ?? 0) + 1;
+    const lines = runs
+      ? runs.reduce(
+          (count, run) =>
+            count +
+            (run.breakLine ? 1 : 0) +
+            (run.text.match(/\n/g)?.length ?? 0),
+          1
+        )
+      : (props.text!.match(/\n/g)?.length ?? 0) + 1;
     opts.h = Math.max(0.5, (fontSize / 72) * 1.6 * lines);
     opts.isTextBox = true;
   }
@@ -103,7 +143,10 @@ export function renderTextComponent(
     warnings
   );
 
-  // Formatting
+  // Formatting — preserve the pre-alias family so runs that set their own
+  // weight resolve their alias from the base family, not an
+  // already-synthesized name (e.g. "Inter Light").
+  const preAliasFamily = opts.fontFace as string | undefined;
   const bold = props.bold ?? style?.bold;
   const italic = props.italic ?? style?.italic;
   const fontWeight = props.fontWeight ?? style?.fontWeight;
@@ -175,7 +218,11 @@ export function renderTextComponent(
 
   // Line spacing
   const lineSpacing = props.lineSpacing ?? style?.lineSpacing;
-  if (lineSpacing !== undefined) opts.lineSpacing = lineSpacing;
+  if (props.lineSpacingMultiple !== undefined) {
+    opts.lineSpacingMultiple = props.lineSpacingMultiple;
+  } else if (lineSpacing !== undefined) {
+    opts.lineSpacing = lineSpacing;
+  }
   const charSpacing = props.charSpacing ?? style?.charSpacing;
   if (charSpacing !== undefined) opts.charSpacing = charSpacing;
   if (props.paraSpaceBefore !== undefined)
@@ -186,8 +233,62 @@ export function renderTextComponent(
   // Break line handling
   if (props.breakLine) opts.breakLine = true;
 
+  if (runs) {
+    // Rich text runs — pptxgenjs natively accepts [{ text, options }] and
+    // merges each run's options over the block-level opts, so run options
+    // override component-level defaults per run.
+    const runSegments = runs.map((run) => {
+      const runOpts: Record<string, unknown> = {};
+      if (run.fontSize != null) runOpts.fontSize = run.fontSize;
+      if (run.fontFace != null) runOpts.fontFace = run.fontFace;
+      if (run.color != null)
+        runOpts.color = resolveColor(run.color, theme, warnings);
+      if (run.strike != null) runOpts.strike = run.strike;
+      if (run.underline !== undefined) {
+        if (typeof run.underline === 'boolean') {
+          if (run.underline) runOpts.underline = { style: 'sng' };
+        } else {
+          runOpts.underline = run.underline;
+        }
+      }
+      if (run.superscript != null) runOpts.superscript = run.superscript;
+      if (run.subscript != null) runOpts.subscript = run.subscript;
+      if (run.charSpacing != null) runOpts.charSpacing = run.charSpacing;
+      if (run.breakLine != null) runOpts.breakLine = run.breakLine;
+
+      const effWeight = run.fontWeight ?? fontWeight;
+      const effBold = run.bold ?? bold;
+      const effItalic = run.italic ?? italic;
+      if (effBold != null) runOpts.bold = effBold;
+      if (effItalic != null) runOpts.italic = effItalic;
+      if (effWeight != null || effBold === true) {
+        // Only alias when the run inherits the component's family; if the run
+        // explicitly sets its own fontFace, the author has already picked the
+        // face they want and re-aliasing would double up the suffix.
+        if (run.fontFace == null) {
+          const w = applyFontWeight({
+            family: preAliasFamily,
+            fontWeight: effWeight,
+            italic: effItalic,
+            bold: effBold,
+          });
+          if (w.fontFace !== undefined) runOpts.fontFace = w.fontFace;
+          if (w.bold !== undefined) runOpts.bold = w.bold;
+          if (w.italic !== undefined) runOpts.italic = w.italic;
+        }
+      }
+
+      const runText = slideCtx
+        ? resolvePagePlaceholders(run.text, slideCtx)
+        : run.text;
+      return { text: runText, options: runOpts };
+    });
+    slide.addText(runSegments as any, opts as any);
+    return;
+  }
+
   const text = slideCtx
-    ? resolvePagePlaceholders(props.text, slideCtx)
-    : props.text;
+    ? resolvePagePlaceholders(props.text!, slideCtx)
+    : props.text!;
   slide.addText(text, opts as any);
 }

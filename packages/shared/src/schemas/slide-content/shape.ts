@@ -23,6 +23,10 @@ export const ShapeTypeSchema = Type.Union(
     Type.Literal('star5'),
     Type.Literal('star6'),
     Type.Literal('line'),
+    Type.Literal('arc'),
+    Type.Literal('pie'),
+    Type.Literal('blockArc'),
+    Type.Literal('chord'),
     Type.Literal('arrow'),
     Type.Literal('chevron'),
     Type.Literal('cloud'),
@@ -69,6 +73,142 @@ export const TextSegmentSchema = Type.Object(
 
 export type TextSegment = Static<typeof TextSegmentSchema>;
 
+/**
+ * OOXML `a:pattFill` preset names (ST_PresetPatternVal).
+ */
+export const PATTERN_FILL_PRESETS = [
+  'pct5',
+  'pct10',
+  'pct20',
+  'pct25',
+  'pct30',
+  'pct40',
+  'pct50',
+  'pct60',
+  'pct70',
+  'pct75',
+  'pct80',
+  'pct90',
+  'horz',
+  'vert',
+  'ltHorz',
+  'ltVert',
+  'dkHorz',
+  'dkVert',
+  'narHorz',
+  'narVert',
+  'dashHorz',
+  'dashVert',
+  'cross',
+  'dnDiag',
+  'upDiag',
+  'ltDnDiag',
+  'ltUpDiag',
+  'dkDnDiag',
+  'dkUpDiag',
+  'wdDnDiag',
+  'wdUpDiag',
+  'dashDnDiag',
+  'dashUpDiag',
+  'diagCross',
+  'smCheck',
+  'lgCheck',
+  'smGrid',
+  'lgGrid',
+  'dotGrid',
+  'smConfetti',
+  'lgConfetti',
+  'horzBrick',
+  'diagBrick',
+  'solidDmnd',
+  'openDmnd',
+  'dotDmnd',
+  'plaid',
+  'sphere',
+  'weave',
+  'divot',
+  'shingle',
+  'wave',
+  'trellis',
+  'zigZag',
+] as const;
+
+export const GradientStopSchema = Type.Object(
+  {
+    color: Type.String({
+      description: 'Stop color (hex without # or semantic theme name)',
+    }),
+    pos: Type.Number({
+      minimum: 0,
+      maximum: 100,
+      description: 'Stop position along the gradient (0-100)',
+    }),
+    transparency: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        maximum: 100,
+        description: 'Stop transparency (0-100)',
+      })
+    ),
+  },
+  { additionalProperties: false, description: 'Gradient color stop' }
+);
+
+export const GradientFillSchema = Type.Object(
+  {
+    type: Type.Union([Type.Literal('linear'), Type.Literal('radial')], {
+      description: 'Gradient type',
+    }),
+    angle: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        maximum: 360,
+        description:
+          'Gradient angle in degrees for linear gradients (0 = left→right, 90 = top→bottom). Default: 0.',
+      })
+    ),
+    stops: Type.Array(GradientStopSchema, {
+      minItems: 2,
+      description: 'Gradient color stops (at least 2)',
+    }),
+    focus: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal('center'),
+          Type.Literal('topLeft'),
+          Type.Literal('topRight'),
+          Type.Literal('bottomLeft'),
+          Type.Literal('bottomRight'),
+        ],
+        {
+          description: 'Focus point for radial gradients (default: "center")',
+        }
+      )
+    ),
+  },
+  { additionalProperties: false, description: 'Gradient fill configuration' }
+);
+
+export const PatternFillSchema = Type.Object(
+  {
+    preset: Type.Union(
+      PATTERN_FILL_PRESETS.map((p) => Type.Literal(p)),
+      { description: 'OOXML pattern preset name (a:pattFill prst value)' }
+    ),
+    foreground: Type.String({
+      description: 'Pattern foreground color (hex without # or semantic name)',
+    }),
+    background: Type.String({
+      description: 'Pattern background color (hex without # or semantic name)',
+    }),
+  },
+  { additionalProperties: false, description: 'Pattern fill configuration' }
+);
+
+export type GradientStop = Static<typeof GradientStopSchema>;
+export type GradientFill = Static<typeof GradientFillSchema>;
+export type PatternFill = Static<typeof PatternFillSchema>;
+
 export const ShapePropsSchema = Type.Object(
   {
     type: ShapeTypeSchema,
@@ -111,7 +251,9 @@ export const ShapePropsSchema = Type.Object(
     fill: Type.Optional(
       Type.Object(
         {
-          color: Type.String({ description: 'Fill color (hex without #)' }),
+          color: Type.Optional(
+            Type.String({ description: 'Fill color (hex without #)' })
+          ),
           transparency: Type.Optional(
             Type.Number({
               minimum: 0,
@@ -119,6 +261,8 @@ export const ShapePropsSchema = Type.Object(
               description: 'Fill transparency (0-100)',
             })
           ),
+          gradient: Type.Optional(GradientFillSchema),
+          pattern: Type.Optional(PatternFillSchema),
         },
         { additionalProperties: false }
       )
@@ -180,6 +324,20 @@ export const ShapePropsSchema = Type.Object(
     valign: Type.Optional(VerticalAlignmentSchema),
     rotate: Type.Optional(
       Type.Number({ description: 'Rotation angle in degrees' })
+    ),
+    angleRange: Type.Optional(
+      Type.Array(Type.Number(), {
+        minItems: 2,
+        maxItems: 2,
+        description:
+          'Shape arc [start, end] angles in degrees (arc/pie/blockArc/chord shapes)',
+      })
+    ),
+    flipH: Type.Optional(
+      Type.Boolean({ description: 'Flip shape horizontally' })
+    ),
+    flipV: Type.Optional(
+      Type.Boolean({ description: 'Flip shape vertically' })
     ),
     shadow: Type.Optional(ShadowSchema),
     rectRadius: Type.Optional(

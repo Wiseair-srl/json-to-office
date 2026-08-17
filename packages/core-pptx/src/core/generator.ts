@@ -9,6 +9,7 @@ import type {
   PresentationComponentDefinition,
   PptxThemeConfig,
   PipelineWarning,
+  PendingXmlFill,
 } from '../types';
 import { isPresentationComponent } from '../types';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
@@ -19,6 +20,7 @@ import { resolveDocumentFonts } from './fontResolution';
 import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
 import {
   collectImageSourceConflicts,
+  collectTextContentConflicts,
   validateJsonPresentationDocument,
   validatePresentationDocument,
   type ValidationError,
@@ -106,7 +108,8 @@ export function isPresentationComponentDefinition(
 export async function generatePresentation(
   document: PresentationComponentDefinition,
   options?: GenerationOptions,
-  warnings?: PipelineWarning[]
+  warnings?: PipelineWarning[],
+  pendingFills?: PendingXmlFill[]
 ): Promise<PptxGenJS> {
   assertValidPresentation(document, options?.validation);
 
@@ -114,11 +117,15 @@ export async function generatePresentation(
     throw new Error('Top-level component must be a pptx component');
   }
 
-  // Structural rule the per-component schema can't express: image sources
-  // (path/base64/svg) are mutually exclusive. Reject multi-source payloads
-  // before rendering so they can't be silently resolved by runtime precedence.
-  // Matches core-docx, which fails generation on the same conflict.
-  const sourceConflicts = collectImageSourceConflicts(document);
+  // Structural rules the per-component schema can't express: image sources
+  // (path/base64/svg) are mutually exclusive, and text components carry
+  // exactly one of text/runs. Reject conflicting payloads before rendering so
+  // they can't be silently resolved by runtime precedence. Matches core-docx,
+  // which fails generation on the same image conflict.
+  const sourceConflicts = [
+    ...collectImageSourceConflicts(document),
+    ...collectTextContentConflicts(document),
+  ];
   if (sourceConflicts.length > 0) {
     throw new Error(
       `Document validation failed:\n${sourceConflicts
@@ -128,7 +135,7 @@ export async function generatePresentation(
   }
 
   const processed = processPresentation(document, options);
-  return await renderPresentation(processed, warnings);
+  return await renderPresentation(processed, warnings, pendingFills);
 }
 
 /**
@@ -234,13 +241,20 @@ export async function generateBufferWithWarnings(
       [themeName]: resolvedTheme,
     },
   };
+  // Gradient/pattern fills render as sentinel solid fills during generation;
+  // packagePresentationBuffer splices the real fill XML in afterwards.
+  const pendingFills: PendingXmlFill[] = [];
   const pptx = await generatePresentation(
     component,
     effectiveOptions,
-    warnings
+    warnings,
+    pendingFills
   );
   const data = await pptx.write({ outputType: 'nodebuffer' });
-  const buffer = await packagePresentationBuffer(data as Buffer, options);
+  const buffer = await packagePresentationBuffer(data as Buffer, {
+    ...options,
+    pendingFills,
+  });
   return { buffer, warnings };
 }
 
