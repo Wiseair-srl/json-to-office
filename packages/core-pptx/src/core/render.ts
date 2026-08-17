@@ -7,10 +7,11 @@ import PptxGenJS from 'pptxgenjs';
 import type {
   ProcessedPresentation,
   PipelineWarning,
+  PendingXmlFill,
   SlideContext,
   SlideRenderContext,
 } from '../types';
-import { renderComponent } from '../components';
+import { renderComponent, renderShapeComponent } from '../components';
 import { resolveComponentGridPosition, mergeGridConfigs } from './grid';
 import { resolveColor } from '../utils/color';
 import { warn, W } from '../utils/warn';
@@ -21,7 +22,8 @@ import { mergeWithDefaults } from '@json-to-office/shared';
 
 export async function renderPresentation(
   processed: ProcessedPresentation,
-  warnings?: PipelineWarning[]
+  warnings?: PipelineWarning[],
+  pendingFills?: PendingXmlFill[]
 ): Promise<PptxGenJS> {
   const pptx = new PptxGenJS();
 
@@ -80,13 +82,49 @@ export async function renderPresentation(
       services: processed.services,
       slideWidth: processed.slideWidth,
       slideHeight: processed.slideHeight,
+      pendingFills,
     };
     const slide = slideData.template
       ? pptx.addSlide({ masterName: slideData.template })
       : pptx.addSlide();
 
-    // Apply slide background
-    if (slideData.background) {
+    // Determine effective grid for this slide (template grid merged with presentation grid)
+    const templateDef = slideData.template
+      ? templateMap.get(slideData.template)
+      : undefined;
+    if (slideData.template && !templateDef) {
+      warn(
+        warnings,
+        W.MISSING_TEMPLATE,
+        `Unknown template "${slideData.template}". Available: ${[...templateMap.keys()].join(', ')}`,
+        { slide: slideIdx }
+      );
+    }
+
+    // Apply slide background. Gradients can't be expressed through pptxgenjs's
+    // bkgd, so a background gradient renders as a full-bleed rect placed at
+    // the very back (added first) with the shape gradient-fill mechanism. The
+    // slide's own background wins over the template's.
+    const backgroundGradient =
+      slideData.background?.gradient ??
+      (slideData.background ? undefined : templateDef?.background?.gradient);
+    if (backgroundGradient) {
+      renderShapeComponent(
+        slide,
+        {
+          type: 'rect',
+          x: 0,
+          y: 0,
+          w: processed.slideWidth,
+          h: processed.slideHeight,
+          fill: { gradient: backgroundGradient },
+        },
+        processed.theme,
+        pptx,
+        warnings,
+        renderCtx
+      );
+    } else if (slideData.background) {
       if (slideData.background.color) {
         slide.background = {
           color: resolveColor(
@@ -107,19 +145,6 @@ export async function renderPresentation(
     // Apply hidden flag
     if (slideData.hidden) {
       slide.hidden = true;
-    }
-
-    // Determine effective grid for this slide (template grid merged with presentation grid)
-    const templateDef = slideData.template
-      ? templateMap.get(slideData.template)
-      : undefined;
-    if (slideData.template && !templateDef) {
-      warn(
-        warnings,
-        W.MISSING_TEMPLATE,
-        `Unknown template "${slideData.template}". Available: ${[...templateMap.keys()].join(', ')}`,
-        { slide: slideIdx }
-      );
     }
     const effectiveGrid = mergeGridConfigs(processed.grid, templateDef?.grid);
 

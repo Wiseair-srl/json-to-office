@@ -3,7 +3,10 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { ColorValueSchema } from '@json-to-office/shared/schemas/slide-content';
+import {
+  ColorValueSchema,
+  GradientFillSchema,
+} from '@json-to-office/shared/schemas/slide-content';
 
 export {
   PptxAlignmentSchema,
@@ -67,6 +70,7 @@ export const PositionSchema = Type.Object(
 export const SlideBackgroundSchema = Type.Object(
   {
     color: Type.Optional(ColorValueSchema),
+    gradient: Type.Optional(GradientFillSchema),
     image: Type.Optional(
       Type.Object(
         {

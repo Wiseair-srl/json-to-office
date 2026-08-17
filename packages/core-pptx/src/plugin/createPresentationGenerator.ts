@@ -10,6 +10,7 @@ import type {
   PresentationComponentDefinition,
   PipelineWarning,
   PptxThemeConfig,
+  PendingXmlFill,
 } from '../types';
 import type {
   ExtendedPresentationComponent,
@@ -450,11 +451,13 @@ function createBuilderImpl<
         customThemes: effectiveCustomThemes,
         services: state.services,
       });
-      const pptx = await renderPresentation(processed, warnings);
+      const pendingFills: PendingXmlFill[] = [];
+      const pptx = await renderPresentation(processed, warnings, pendingFills);
       const data = await pptx.write({ outputType: 'nodebuffer' });
       const buffer = await packagePresentationBuffer(data as Buffer, {
         deterministic: options?.deterministic ?? state.packaging.deterministic,
         generatedAt: options?.generatedAt ?? state.packaging.generatedAt,
+        pendingFills,
       });
 
       return { buffer, warnings };

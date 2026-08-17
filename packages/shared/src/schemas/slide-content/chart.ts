@@ -43,6 +43,29 @@ const ChartDataSeriesSchema = Type.Object(
   { additionalProperties: false }
 );
 
+const ChartGridLineSchema = Type.Object(
+  {
+    style: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal('solid'),
+          Type.Literal('dash'),
+          Type.Literal('dot'),
+          Type.Literal('none'),
+        ],
+        { description: 'Grid line style' }
+      )
+    ),
+    size: Type.Optional(
+      Type.Number({ minimum: 0, description: 'Grid line width (points)' })
+    ),
+    color: Type.Optional(
+      Type.String({ description: 'Grid line color (hex or semantic)' })
+    ),
+  },
+  { additionalProperties: false, description: 'Axis grid line styling' }
+);
+
 export const PptxChartPropsSchema = Type.Object(
   {
     type: ChartTypeSchema,
@@ -87,6 +110,25 @@ export const PptxChartPropsSchema = Type.Object(
       })
     ),
 
+    // Data element border (bars/slices/areas)
+    dataBorder: Type.Optional(
+      Type.Object(
+        {
+          pt: Type.Number({
+            minimum: 0,
+            description: 'Border width (points)',
+          }),
+          color: Type.String({
+            description: 'Border color (hex or semantic)',
+          }),
+        },
+        {
+          additionalProperties: false,
+          description: 'Outline on data elements (bars, slices, areas)',
+        }
+      )
+    ),
+
     // Legend
     legendPos: Type.Optional(
       Type.Union(
@@ -128,6 +170,10 @@ export const PptxChartPropsSchema = Type.Object(
         description: 'Category axis label color (hex or semantic)',
       })
     ),
+    catAxisLabelFontFace: Type.Optional(
+      Type.String({ description: 'Category axis label font face' })
+    ),
+    catGridLine: Type.Optional(ChartGridLineSchema),
 
     // Value axis
     valAxisTitle: Type.Optional(
@@ -152,6 +198,19 @@ export const PptxChartPropsSchema = Type.Object(
     ),
     valAxisLabelColor: Type.Optional(
       Type.String({ description: 'Value axis label color (hex or semantic)' })
+    ),
+    valAxisLabelFontFace: Type.Optional(
+      Type.String({ description: 'Value axis label font face' })
+    ),
+    valAxisLabelFontSize: Type.Optional(
+      Type.Number({ description: 'Value axis label font size' })
+    ),
+    valGridLine: Type.Optional(ChartGridLineSchema),
+    catAxisLineShow: Type.Optional(
+      Type.Boolean({ description: 'Show the category axis line' })
+    ),
+    valAxisLineShow: Type.Optional(
+      Type.Boolean({ description: 'Show the value axis line' })
     ),
 
     // Bar-specific
@@ -178,6 +237,14 @@ export const PptxChartPropsSchema = Type.Object(
         description: 'Bar gap width (0-500%)',
       })
     ),
+    barOverlapPct: Type.Optional(
+      Type.Number({
+        minimum: -100,
+        maximum: 100,
+        description:
+          'Overlap between series bars (-100 to 100%). 100 = fully overlapped, negative = gap.',
+      })
+    ),
 
     // Line-specific
     lineSmooth: Type.Optional(Type.Boolean({ description: 'Smooth lines' })),
@@ -197,6 +264,13 @@ export const PptxChartPropsSchema = Type.Object(
     ),
     lineSize: Type.Optional(
       Type.Number({ description: 'Line width (points)' })
+    ),
+    lineDataSymbolSize: Type.Optional(
+      Type.Number({
+        minimum: 2,
+        maximum: 72,
+        description: 'Line data point marker size (points)',
+      })
     ),
 
     // Pie/doughnut-specific

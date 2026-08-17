@@ -32,6 +32,8 @@ interface ChartComponentProps {
 
   chartColors?: string[];
 
+  dataBorder?: { pt: number; color: string };
+
   legendPos?: string;
   legendFontSize?: number;
   legendFontFace?: string;
@@ -42,6 +44,8 @@ interface ChartComponentProps {
   catAxisLabelRotate?: number;
   catAxisLabelFontSize?: number;
   catAxisLabelColor?: string;
+  catAxisLabelFontFace?: string;
+  catGridLine?: { style?: string; size?: number; color?: string };
 
   valAxisTitle?: string;
   valAxisHidden?: boolean;
@@ -50,14 +54,21 @@ interface ChartComponentProps {
   valAxisLabelFormatCode?: string;
   valAxisMajorUnit?: number;
   valAxisLabelColor?: string;
+  valAxisLabelFontFace?: string;
+  valAxisLabelFontSize?: number;
+  valGridLine?: { style?: string; size?: number; color?: string };
+  catAxisLineShow?: boolean;
+  valAxisLineShow?: boolean;
 
   barDir?: string;
   barGrouping?: string;
   barGapWidthPct?: number;
+  barOverlapPct?: number;
 
   lineSmooth?: boolean;
   lineDataSymbol?: string;
   lineSize?: number;
+  lineDataSymbolSize?: number;
 
   firstSliceAng?: number;
   holeSize?: number;
@@ -88,6 +99,19 @@ const CHART_TYPE_MAP: Record<string, string> = {
   radar: 'radar',
   scatter: 'scatter',
 };
+
+function resolveGridLine(
+  gridLine: { style?: string; size?: number; color?: string },
+  theme: PptxThemeConfig,
+  warnings?: PipelineWarning[]
+): Record<string, unknown> {
+  const resolved: Record<string, unknown> = {};
+  if (gridLine.style !== undefined) resolved.style = gridLine.style;
+  if (gridLine.size !== undefined) resolved.size = gridLine.size;
+  if (gridLine.color !== undefined)
+    resolved.color = resolveColor(gridLine.color, theme, warnings);
+  return resolved;
+}
 
 export function renderChartComponent(
   slide: PptxGenJS.Slide,
@@ -181,6 +205,20 @@ export function renderChartComponent(
   opts.valAxisLabelColor = props.valAxisLabelColor
     ? resolveColor(props.valAxisLabelColor, theme, warnings)
     : themeTextColor;
+  if (props.valAxisLabelFontSize !== undefined)
+    opts.valAxisLabelFontSize = props.valAxisLabelFontSize;
+  if (props.catAxisLineShow !== undefined)
+    opts.catAxisLineShow = props.catAxisLineShow;
+  if (props.valAxisLineShow !== undefined)
+    opts.valAxisLineShow = props.valAxisLineShow;
+
+  // Data element border (bars/slices/areas)
+  if (props.dataBorder !== undefined) {
+    opts.dataBorder = {
+      pt: props.dataBorder.pt,
+      color: resolveColor(props.dataBorder.color, theme, warnings),
+    };
+  }
 
   // Display toggles
   if (props.showLegend !== undefined) opts.showLegend = props.showLegend;
@@ -215,6 +253,10 @@ export function renderChartComponent(
     opts.catAxisLabelRotate = props.catAxisLabelRotate;
   if (props.catAxisLabelFontSize !== undefined)
     opts.catAxisLabelFontSize = props.catAxisLabelFontSize;
+  if (props.catAxisLabelFontFace !== undefined)
+    opts.catAxisLabelFontFace = props.catAxisLabelFontFace;
+  if (props.catGridLine !== undefined)
+    opts.catGridLine = resolveGridLine(props.catGridLine, theme, warnings);
 
   // Value axis
   if (props.valAxisTitle !== undefined) {
@@ -231,18 +273,26 @@ export function renderChartComponent(
     opts.valAxisLabelFormatCode = props.valAxisLabelFormatCode;
   if (props.valAxisMajorUnit !== undefined)
     opts.valAxisMajorUnit = props.valAxisMajorUnit;
+  if (props.valAxisLabelFontFace !== undefined)
+    opts.valAxisLabelFontFace = props.valAxisLabelFontFace;
+  if (props.valGridLine !== undefined)
+    opts.valGridLine = resolveGridLine(props.valGridLine, theme, warnings);
 
   // Bar-specific
   if (props.barDir !== undefined) opts.barDir = props.barDir;
   if (props.barGrouping !== undefined) opts.barGrouping = props.barGrouping;
   if (props.barGapWidthPct !== undefined)
     opts.barGapWidthPct = props.barGapWidthPct;
+  if (props.barOverlapPct !== undefined)
+    opts.barOverlapPct = props.barOverlapPct;
 
   // Line-specific
   if (props.lineSmooth !== undefined) opts.lineSmooth = props.lineSmooth;
   if (props.lineDataSymbol !== undefined)
     opts.lineDataSymbol = props.lineDataSymbol;
   if (props.lineSize !== undefined) opts.lineSize = props.lineSize;
+  if (props.lineDataSymbolSize !== undefined)
+    opts.lineDataSymbolSize = props.lineDataSymbolSize;
 
   // Pie/doughnut
   if (props.firstSliceAng !== undefined)

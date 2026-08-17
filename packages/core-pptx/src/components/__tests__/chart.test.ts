@@ -97,6 +97,44 @@ describe('renderChartComponent theme palette', () => {
     expect(warnings).toEqual([]);
   });
 
+  it('passes styling options through with resolved colors', () => {
+    const warnings: PipelineWarning[] = [];
+    const opts = chartOpts({ colors: baseColors }, warnings, {
+      dataBorder: { pt: 0.75, color: 'primary' },
+      catGridLine: { style: 'none' },
+      valGridLine: { style: 'dash', size: 0.5, color: 'accent' },
+      catAxisLabelFontFace: 'Inter',
+      valAxisLabelFontFace: 'Inter Light',
+      lineDataSymbolSize: 8,
+      barOverlapPct: -10,
+    });
+
+    expect(opts.dataBorder).toEqual({ pt: 0.75, color: '0066cc' });
+    expect(opts.catGridLine).toEqual({ style: 'none' });
+    expect(opts.valGridLine).toEqual({
+      style: 'dash',
+      size: 0.5,
+      color: '17a2b8',
+    });
+    expect(opts.catAxisLabelFontFace).toBe('Inter');
+    expect(opts.valAxisLabelFontFace).toBe('Inter Light');
+    expect(opts.lineDataSymbolSize).toBe(8);
+    expect(opts.barOverlapPct).toBe(-10);
+    expect(warnings).toEqual([]);
+  });
+
+  it('leaves the styling passthrough opts unset when absent', () => {
+    const opts = chartOpts({ colors: baseColors });
+
+    expect(opts.dataBorder).toBeUndefined();
+    expect(opts.catGridLine).toBeUndefined();
+    expect(opts.valGridLine).toBeUndefined();
+    expect(opts.catAxisLabelFontFace).toBeUndefined();
+    expect(opts.valAxisLabelFontFace).toBeUndefined();
+    expect(opts.lineDataSymbolSize).toBeUndefined();
+    expect(opts.barOverlapPct).toBeUndefined();
+  });
+
   it('leaves chartColors unset when no token resolves', () => {
     // pptxgenjs indexes `chartColors[i % length]`; an empty array yields
     // undefined and paints every series black without a warning. Omitting the
@@ -108,5 +146,25 @@ describe('renderChartComponent theme palette', () => {
     );
 
     expect(opts.chartColors).toBeUndefined();
+  });
+});
+
+describe('renderChartComponent axis passthrough', () => {
+  it('passes axis line visibility and val label font size through', () => {
+    const opts = chartOpts({ colors: baseColors }, undefined, {
+      catAxisLineShow: false,
+      valAxisLineShow: false,
+      valAxisLabelFontSize: 12,
+    });
+    expect(opts.catAxisLineShow).toBe(false);
+    expect(opts.valAxisLineShow).toBe(false);
+    expect(opts.valAxisLabelFontSize).toBe(12);
+  });
+
+  it('leaves axis line options unset when not given', () => {
+    const opts = chartOpts({ colors: baseColors });
+    expect(opts.catAxisLineShow).toBeUndefined();
+    expect(opts.valAxisLineShow).toBeUndefined();
+    expect(opts.valAxisLabelFontSize).toBeUndefined();
   });
 });

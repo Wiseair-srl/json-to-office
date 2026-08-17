@@ -10,9 +10,14 @@ export {
   PresentationPropsSchema,
   SlidePropsSchema,
   TextPropsSchema,
+  TextRunSchema,
   PptxImagePropsSchema,
   ShapePropsSchema,
   ShapeTypeSchema,
+  GradientStopSchema,
+  GradientFillSchema,
+  PatternFillSchema,
+  PATTERN_FILL_PRESETS,
   PptxTablePropsSchema,
   PptxHighchartsPropsSchema,
   PptxStandardComponentDefinitionSchema,
@@ -29,10 +34,14 @@ export type {
   PresentationProps,
   SlideProps,
   TextProps,
+  TextRun,
   PptxImageProps,
   ShapeType,
   ShapeProps,
   TextSegment,
+  GradientStop,
+  GradientFill,
+  PatternFill,
   PptxTableProps,
   PptxHighchartsProps,
   PptxComponentDefinition,
@@ -121,6 +130,9 @@ export {
   collectImageSourceConflicts,
   presentImageSources,
 } from './validation/image-source-conflicts';
+
+// Text content conflict detection (text/runs mutual exclusivity)
+export { collectTextContentConflicts } from './validation/text-content-conflicts';
 
 // Unified validation facade (deep, path-aware validation of whole presentations
 // and themes) — the API the CLI's `pptx validate` consumes.

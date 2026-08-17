@@ -11,6 +11,7 @@ import type { ValidationError } from '@json-to-office/shared';
 import { transformValueErrors } from '@json-to-office/shared';
 import { ThemeConfigSchema } from '../../schemas/theme';
 import { collectImageSourceConflicts } from '../image-source-conflicts';
+import { collectTextContentConflicts } from '../text-content-conflicts';
 import {
   comprehensiveValidatePresentation,
   type DeepValidateOptions,
@@ -64,6 +65,7 @@ export function validatePresentationDocument(
 ): PptxValidationResult {
   const errors = comprehensiveValidatePresentation(data, [], opts);
   errors.push(...collectImageSourceConflicts(data));
+  errors.push(...collectTextContentConflicts(data));
   const valid = errors.length === 0;
   return {
     valid,

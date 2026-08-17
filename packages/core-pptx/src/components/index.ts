@@ -52,7 +52,7 @@ export async function renderComponent(
       );
       break;
     case 'shape':
-      renderShapeComponent(slide, p, theme, pptx, warnings);
+      renderShapeComponent(slide, p, theme, pptx, warnings, ctx);
       break;
     case 'table':
       renderTableComponent(slide, p, theme, pptx, warnings);
