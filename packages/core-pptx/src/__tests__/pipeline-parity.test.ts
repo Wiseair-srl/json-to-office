@@ -1,12 +1,12 @@
 /**
  * Entry-point parity for PPTX, mirroring the DOCX suite.
  *
- * `generateBufferFromJson` and `createPresentationGenerator` each own a copy of
- * the generation prologue — theme resolution (including inline theme objects),
- * export-mode pre-pass and cache-key scoping. In DOCX that duplication silently
- * dropped a root-level prop from the plugin path (#133). PPTX is not unified
- * yet (#132); until it is, these tests fail the moment the two prologues
- * disagree about a document.
+ * `generateBufferFromJson` and `createPresentationGenerator` share the
+ * generation prologue — theme resolution (including inline theme objects),
+ * export-mode pre-pass and cache-key scoping — via
+ * `core/generationContext.ts` (#134). In DOCX the duplicated prologue
+ * silently dropped a root-level prop from the plugin path (#133); these
+ * tests fail the moment the two entry points disagree about a document.
  */
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
@@ -101,5 +101,179 @@ describe('generateBufferFromJson vs createPresentationGenerator', () => {
     expect(plugin).toContain('231F20');
     expect(plugin).toContain('E6E620');
     expect(plugin).toEqual(core);
+  });
+});
+
+describe('root props defaulting', () => {
+  // The PPTX validator rejects a missing root `props`, so the divergence
+  // lived behind `validation: { enabled: false }`: the core path died with a
+  // raw TypeError inside processPresentation, the plugin path with one at its
+  // first `props.theme` read. The shared context defaults `props: {}`
+  // (`undefined` only) so both render with the default theme instead.
+  const V_OFF = { validation: { enabled: false as const } };
+  const noProps = () => ({
+    name: 'pptx',
+    children: [
+      {
+        name: 'slide',
+        props: {},
+        children: [
+          {
+            name: 'text',
+            props: { text: 'No root props', x: 1, y: 1, w: 6, h: 1 },
+          },
+        ],
+      },
+    ],
+  });
+
+  it('renders a document with no root props identically on both paths', async () => {
+    const viaCore = await generateBufferFromJson(noProps() as never, V_OFF);
+    const { buffer: viaPlugin } = await createPresentationGenerator(
+      V_OFF
+    ).generateBuffer(noProps() as never);
+    const core = await slideXml(viaCore as Buffer);
+    const plugin = await slideXml(viaPlugin);
+    expect(core).toContain('No root props');
+    expect(plugin).toEqual(core);
+  });
+
+  it('rejects props: null with the same clear message, not a TypeError', async () => {
+    const doc = { ...noProps(), props: null };
+    await expect(
+      generateBufferFromJson(structuredClone(doc) as never, V_OFF)
+    ).rejects.toThrow(/props` is null/);
+    await expect(
+      createPresentationGenerator(V_OFF).generateBuffer(
+        structuredClone(doc) as never
+      )
+    ).rejects.toThrow(/props` is null/);
+  });
+});
+
+describe('image-source / text-content conflict gate', () => {
+  // Structural conflicts (image path+base64, text text+runs) are collected by
+  // both validators, so with validation off only the core path used to reject
+  // them — the plugin path handed the conflict to the renderer, which resolved
+  // it by runtime precedence. Both paths now run the same unconditional gate;
+  // the plugin runs it on the expanded tree, the tree that actually reaches
+  // the renderer, so payloads emitted by custom components are held to the
+  // same rules as authored ones.
+  const V_OFF = { validation: { enabled: false as const } };
+  const conflicted = () => ({
+    name: 'pptx',
+    props: { theme: 'minimal' },
+    children: [
+      {
+        name: 'slide',
+        props: {},
+        children: [
+          {
+            name: 'image',
+            props: {
+              path: 'a.png',
+              base64:
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+              x: 1,
+              y: 1,
+              w: 2,
+              h: 2,
+            },
+          },
+        ],
+      },
+    ],
+  });
+
+  it('rejects conflicting image sources on both paths with validation off', async () => {
+    await expect(
+      generateBufferFromJson(structuredClone(conflicted()) as never, V_OFF)
+    ).rejects.toThrow(/Document validation failed/);
+    await expect(
+      createPresentationGenerator(V_OFF).generateBuffer(
+        structuredClone(conflicted()) as never
+      )
+    ).rejects.toThrow(/Document validation failed/);
+  });
+
+  it('rejects a conflict emitted by a custom component', async () => {
+    // Authored tree is clean — the conflict only exists after expansion, so
+    // only the expanded-tree gate can see it.
+    const gen = createPresentationGenerator(V_OFF).addComponent({
+      name: 'badImage',
+      versions: {
+        '1.0.0': {
+          propsSchema: { type: 'object', properties: {} } as never,
+          render: () => ({
+            name: 'image',
+            props: {
+              path: 'a.png',
+              base64:
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+              x: 1,
+              y: 1,
+              w: 2,
+              h: 2,
+            },
+          }),
+        },
+      },
+    } as never);
+    await expect(
+      gen.generateBuffer({
+        name: 'pptx',
+        props: { theme: 'minimal' },
+        children: [
+          {
+            name: 'slide',
+            props: {},
+            children: [{ name: 'badImage', props: {} }],
+          },
+        ],
+      } as never)
+    ).rejects.toThrow(/Document validation failed/);
+  });
+});
+
+describe('constructor default theme', () => {
+  // A constructor-supplied string theme fills in when the document names no
+  // theme. Before the shared context, the injected customThemes entry was
+  // keyed under that name while `props.theme` stayed undefined, so slide
+  // processing re-resolved to 'default' — fonts resolved against the
+  // constructor theme, slides rendered without it. The context normalizes
+  // `props.theme` to the effective name, closing the gap.
+  it('applies a constructor string theme naming a customThemes entry', async () => {
+    const corporate = {
+      name: 'corporate',
+      colors: {
+        primary: '#112233',
+        secondary: '#445566',
+        accent: '#AB12CD',
+        background: '#FFFFFF',
+        text: '#101010',
+      },
+      fonts: { heading: 'Georgia', body: 'Georgia' },
+      defaults: { fontSize: 18, fontColor: '#101010' },
+    };
+    const { buffer } = await createPresentationGenerator({
+      theme: 'corporate',
+      customThemes: { corporate },
+    }).generateBuffer({
+      name: 'pptx',
+      props: {},
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [
+            {
+              name: 'text',
+              props: { text: 'T', x: 1, y: 1, w: 4, h: 1, color: 'accent' },
+            },
+          ],
+        },
+      ],
+    } as never);
+    expect(await slideXml(buffer)).toContain('AB12CD');
   });
 });
