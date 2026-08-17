@@ -198,7 +198,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s1.jpg",
+            "path": "templates/media/management-plan/crop_s1.jpg",
             "x": 6.138,
             "y": 0,
             "w": 3.862,
@@ -799,7 +799,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s3.jpg",
+            "path": "templates/media/management-plan/crop_s3.jpg",
             "x": 5.611,
             "y": 0,
             "w": 4.389,
@@ -1360,7 +1360,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s5.jpg",
+            "path": "templates/media/management-plan/crop_s5.jpg",
             "x": 5.0,
             "y": 3.055,
             "w": 1.892,
@@ -2314,7 +2314,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s9.jpg",
+            "path": "templates/media/management-plan/crop_s9.jpg",
             "x": 5.0,
             "y": 0.532,
             "w": 4.5,
@@ -2662,7 +2662,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s10.jpg",
+            "path": "templates/media/management-plan/crop_s10.jpg",
             "x": 1.595,
             "y": 0.565,
             "w": 3.767,
@@ -2672,7 +2672,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s10.jpg",
+            "path": "templates/media/management-plan/crop_s10.jpg",
             "x": 1.595,
             "y": 3.051,
             "w": 3.767,
@@ -2933,7 +2933,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s11.jpg",
+            "path": "templates/media/management-plan/crop_s11.jpg",
             "x": 6.123,
             "y": 0,
             "w": 3.877,
@@ -3227,7 +3227,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s12.jpg",
+            "path": "templates/media/management-plan/crop_s12.jpg",
             "x": 5.0,
             "y": 0.565,
             "w": 2.282,
@@ -3609,7 +3609,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s13.jpg",
+            "path": "templates/media/management-plan/crop_s13.jpg",
             "x": 0.6,
             "y": 1.877,
             "w": 2.039,
@@ -3619,7 +3619,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s13.jpg",
+            "path": "templates/media/management-plan/crop_s13.jpg",
             "x": 2.85,
             "y": 1.877,
             "w": 2.039,
@@ -3629,7 +3629,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s13.jpg",
+            "path": "templates/media/management-plan/crop_s13.jpg",
             "x": 5.1,
             "y": 1.877,
             "w": 2.039,
@@ -3639,7 +3639,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s13.jpg",
+            "path": "templates/media/management-plan/crop_s13.jpg",
             "x": 7.361,
             "y": 1.877,
             "w": 2.039,
@@ -3827,7 +3827,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s14.jpg",
+            "path": "templates/media/management-plan/crop_s14.jpg",
             "x": 5.43,
             "y": 0.55,
             "w": 4.07,
@@ -4056,7 +4056,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s15.jpg",
+            "path": "templates/media/management-plan/crop_s15.jpg",
             "x": 0,
             "y": 2.812,
             "w": 6.142,
@@ -4500,7 +4500,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s16.jpg",
+            "path": "templates/media/management-plan/crop_s16.jpg",
             "x": 0,
             "y": 0,
             "w": 5.0,
@@ -5040,7 +5040,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s18a.jpg",
+            "path": "templates/media/management-plan/crop_s18a.jpg",
             "x": 0.499,
             "y": 1.125,
             "w": 2.007,
@@ -5050,7 +5050,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s18b.jpg",
+            "path": "templates/media/management-plan/crop_s18b.jpg",
             "x": 3.09,
             "y": 1.125,
             "w": 2.087,
@@ -5633,7 +5633,7 @@
         {
           "name": "image",
           "props": {
-            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s19.jpg",
+            "path": "templates/media/management-plan/crop_s19.jpg",
             "x": 5.0,
             "y": 3.414,
             "w": 5.0,
