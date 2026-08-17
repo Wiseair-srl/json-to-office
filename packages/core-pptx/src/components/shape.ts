@@ -106,6 +106,10 @@ export function applyShapeFill(
     );
     pattern = undefined;
   }
+  // An unrecognised preset degrades to the pattern's own foreground, so the
+  // shape still reads as authored rather than picking up the pptxgenjs
+  // default. `fill.color`, when set, stays authoritative.
+  let unknownPresetForeground: string | undefined;
   if (
     pattern &&
     !(PATTERN_FILL_PRESETS as readonly string[]).includes(pattern.preset)
@@ -116,6 +120,7 @@ export function applyShapeFill(
       `Unknown pattern preset "${pattern.preset}" — falling back to solid foreground`,
       { component: 'shape' }
     );
+    unknownPresetForeground = pattern.foreground;
     pattern = undefined;
   }
 
@@ -145,8 +150,9 @@ export function applyShapeFill(
     return;
   }
 
-  if (fill.color !== undefined) {
-    opts.fill = { color: resolveColor(fill.color, theme, warnings) };
+  const solid = fill.color ?? unknownPresetForeground;
+  if (solid !== undefined) {
+    opts.fill = { color: resolveColor(solid, theme, warnings) };
     if (fill.transparency !== undefined) {
       (opts.fill as Record<string, unknown>).transparency = fill.transparency;
     }

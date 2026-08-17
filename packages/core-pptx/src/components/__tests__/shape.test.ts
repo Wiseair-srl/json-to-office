@@ -188,6 +188,25 @@ describe('renderShapeComponent pattern fill', () => {
     expect(warnings.some((w) => w.code === 'UNKNOWN_PATTERN_PRESET')).toBe(
       true
     );
+    // The warning promises the foreground; without this the shape silently
+    // took the pptxgenjs default instead.
+    expect(opts.fill).toEqual({ color: '0066cc' });
+  });
+
+  it('prefers an explicit fill.color over the foreground fallback', () => {
+    const opts = shapeOpts({
+      type: 'rect',
+      fill: {
+        color: 'accent',
+        pattern: {
+          preset: 'polkaDots',
+          foreground: 'primary',
+          background: 'FFFFFF',
+        },
+      },
+    });
+
+    expect(opts.fill).toEqual({ color: '17a2b8' });
   });
 
   it('numbers sentinel names sequentially across a generation', () => {
