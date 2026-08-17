@@ -1,0 +1,3837 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Minimalist Pitch Deck",
+    "author": "json-to-office",
+    "slideWidth": 10,
+    "slideHeight": 5.625,
+    "theme": {
+      "name": "minimalist-pitch",
+      "colors": {
+        "primary": "#3C44E3",
+        "secondary": "#F0CDC4",
+        "accent": "#3C44E3",
+        "background": "#FFFFFF",
+        "background2": "#EBEBED",
+        "text": "#000000",
+        "text2": "#0C0C0C"
+      },
+      "fonts": {
+        "heading": "Montserrat",
+        "body": "Inter"
+      },
+      "defaults": {
+        "fontSize": 18,
+        "fontColor": "#333333"
+      },
+      "styles": {
+        "title": {
+          "fontSize": 45,
+          "lineSpacing": 48.6
+        },
+        "subtitle": {
+          "fontSize": 54,
+          "fontFace": "Montserrat"
+        },
+        "heading1": {
+          "fontSize": 15
+        },
+        "heading2": {
+          "fontSize": 14
+        },
+        "heading3": {
+          "fontSize": 12
+        },
+        "body": {
+          "fontSize": 9,
+          "lineSpacing": 14
+        },
+        "caption": {
+          "fontSize": 7
+        }
+      }
+    },
+    "componentDefaults": {
+      "text": {
+        "align": "left",
+        "margin": [5.4, 5.4, 2.7, 2.7],
+        "color": "text"
+      }
+    },
+    "templates": [
+      {
+        "name": "veil-bottom-right",
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "bottomRight",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "primary",
+                "pos": 79
+              },
+              {
+                "color": "secondary",
+                "pos": 100
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "veil-top-left",
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "topLeft",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "primary",
+                "pos": 79
+              },
+              {
+                "color": "secondary",
+                "pos": 100
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "dawn-diagonal",
+        "background": {
+          "gradient": {
+            "type": "linear",
+            "angle": 110,
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "secondary",
+                "pos": 23
+              },
+              {
+                "color": "background2",
+                "pos": 73
+              },
+              {
+                "color": "background2",
+                "pos": 100
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "haze-bottom-left",
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "bottomLeft",
+            "stops": [
+              {
+                "color": "secondary",
+                "pos": 0
+              },
+              {
+                "color": "background2",
+                "pos": 38
+              },
+              {
+                "color": "background2",
+                "pos": 100
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "topLeft",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "secondary",
+                "pos": 39
+              },
+              {
+                "color": "background2",
+                "pos": 100
+              }
+            ]
+          }
+        },
+        "notes": "Cover slide: Minimalist Pitch Deck, 2025."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 5.008,
+            "y": 3.223,
+            "w": 4.61,
+            "h": 1.893,
+            "runs": [
+              {
+                "text": "Minimalist Pitch ",
+                "color": "text"
+              },
+              {
+                "text": "Deck",
+                "color": "primary"
+              }
+            ],
+            "lineSpacing": 64.8,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 4.17,
+            "w": 3.751,
+            "h": 0.692,
+            "fontSize": 11,
+            "text": "This proposal outlines our \ncomprehensive digital marketing strategy designed to strengthen your brand visibility.",
+            "lineSpacing": 15.8
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "bottomRight",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "secondary",
+                "pos": 26
+              },
+              {
+                "color": "background2",
+                "pos": 100
+              }
+            ]
+          }
+        },
+        "notes": "Table of contents."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.39,
+            "y": 3.412,
+            "w": 3.026,
+            "h": 1.59,
+            "runs": [
+              {
+                "text": "Table Of ",
+                "color": "text"
+              },
+              {
+                "text": "Content",
+                "color": "primary"
+              }
+            ],
+            "lineSpacing": 54.0,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.839,
+            "y": 1.842,
+            "w": 3.5,
+            "h": 0.33,
+            "text": "Introduction",
+            "bullet": true,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.839,
+            "y": 2.284,
+            "w": 3.5,
+            "h": 0.33,
+            "text": "Project Lifecycle Stages",
+            "bullet": true,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.839,
+            "y": 2.741,
+            "w": 3.5,
+            "h": 0.33,
+            "text": "Roles & Responsibilities",
+            "bullet": true,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.839,
+            "y": 3.227,
+            "w": 3.5,
+            "h": 0.33,
+            "text": "Core Project Elements",
+            "bullet": true,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.839,
+            "y": 3.713,
+            "w": 3.5,
+            "h": 0.33,
+            "text": "Communication",
+            "bullet": true,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.839,
+            "y": 4.17,
+            "w": 3.5,
+            "h": 0.33,
+            "text": "Tools & Methodologies",
+            "bullet": true,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.839,
+            "y": 4.656,
+            "w": 3.5,
+            "h": 0.33,
+            "text": "Conclusion",
+            "bullet": true,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "veil-bottom-right",
+        "notes": "Welcome slide with stat and image."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 5.566,
+            "y": 0.635,
+            "w": 4.159,
+            "h": 1.439,
+            "text": "Welcome \nTo Our Pitch",
+            "color": "background",
+            "style": "title"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.92\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"4.15\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"3.53\"/></svg>",
+            "x": 4.81,
+            "y": 0.806,
+            "w": 0.502,
+            "h": 0.502
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.566,
+            "y": 3.475,
+            "w": 2.81,
+            "h": 0.303,
+            "text": "Minimalist Design Focuses",
+            "color": "background",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.566,
+            "y": 3.854,
+            "w": 3.27,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "x": 5.633,
+            "y": 4.831,
+            "w": 1.189,
+            "h": 0.325,
+            "rectRadius": 0.163,
+            "fill": {
+              "color": "secondary"
+            },
+            "text": "Learn More",
+            "fontSize": 11,
+            "fontFace": "Montserrat",
+            "fontColor": "text",
+            "align": "center",
+            "valign": "middle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.417,
+            "y": 0.676,
+            "w": 1.39,
+            "h": 0.682,
+            "fontSize": 36,
+            "text": "231K",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.417,
+            "y": 1.275,
+            "w": 1.712,
+            "h": 0.552,
+            "fontSize": 8,
+            "text": "Lorem ipsum dolor sit onsectetur adipiscing elit. Proin bibendum risus sit.",
+            "color": "background",
+            "lineSpacing": 12.5
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 0.5,
+            "y": 3.212,
+            "w": 3.399,
+            "h": 1.944,
+            "sizing": {
+              "type": "cover",
+              "w": 3.399,
+              "h": 1.944
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "veil-top-left",
+        "notes": "Vision statement with stat and two square images."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.434,
+            "y": 0.761,
+            "w": 3.519,
+            "h": 1.439,
+            "text": "Vision Statement",
+            "color": "background",
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.431,
+            "y": 3.494,
+            "w": 1.244,
+            "h": 0.303,
+            "text": "Our Vision",
+            "color": "background",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.431,
+            "y": 3.826,
+            "w": 0.2,
+            "h": 0.2,
+            "fontSize": 8,
+            "text": "•",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.571,
+            "y": 3.826,
+            "w": 3.622,
+            "h": 0.6,
+            "fontSize": 8,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper sit amet venen atis tristique. ",
+            "color": "background",
+            "lineSpacing": 12.5
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.431,
+            "y": 4.518,
+            "w": 0.2,
+            "h": 0.2,
+            "fontSize": 8,
+            "text": "•",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.571,
+            "y": 4.518,
+            "w": 3.622,
+            "h": 0.45,
+            "fontSize": 8,
+            "text": "Lorem ipsum dolor sit ame consectetur adipiscing elit. Proin dum risus sit amet venen atistristique. Morbi tortor justo",
+            "color": "background",
+            "lineSpacing": 12.5
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.92\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"4.15\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"3.53\"/></svg>",
+            "x": 5.256,
+            "y": 0.761,
+            "w": 0.502,
+            "h": 0.502
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.951,
+            "y": 3.46,
+            "w": 2.156,
+            "h": 0.985,
+            "fontSize": 54,
+            "text": "234+",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.951,
+            "y": 4.353,
+            "w": 2.774,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit amet venen atis tristique. Morbi.",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 6.047,
+            "y": 0.761,
+            "w": 1.525,
+            "h": 1.589,
+            "sizing": {
+              "type": "cover",
+              "w": 1.525,
+              "h": 1.589
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 7.975,
+            "y": 0.761,
+            "w": 1.525,
+            "h": 1.589,
+            "sizing": {
+              "type": "cover",
+              "w": 1.525,
+              "h": 1.589
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "dawn-diagonal",
+        "notes": "Problem and solution overview."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 3.549,
+            "w": 4.83,
+            "h": 1.439,
+            "runs": [
+              {
+                "text": "The Challenge ",
+                "color": "text"
+              },
+              {
+                "text": "We Solve",
+                "color": "primary"
+              }
+            ],
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.298,
+            "y": 2.4,
+            "w": 3.27,
+            "h": 0.303,
+            "text": "People Are Overwhelmed",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.298,
+            "y": 2.779,
+            "w": 3.27,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.298,
+            "y": 3.977,
+            "w": 2.81,
+            "h": 0.303,
+            "text": "Our Solution Brings Clarity",
+            "color": "primary",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.298,
+            "y": 4.356,
+            "w": 3.27,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"46.98\" fill=\"none\" stroke=\"#000000\" stroke-width=\"6.04\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#000000\" stroke-width=\"5.13\"/></svg>",
+            "x": 0.62,
+            "y": 1.224,
+            "w": 0.345,
+            "h": 0.345
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 1.093,
+            "y": 1.154,
+            "w": 3.815,
+            "h": 0.451,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit amet venen atis tristique. Morbi.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "bottomRight",
+            "stops": [
+              {
+                "color": "secondary",
+                "pos": 0
+              },
+              {
+                "color": "background2",
+                "pos": 38
+              },
+              {
+                "color": "background2",
+                "pos": 100
+              }
+            ]
+          }
+        },
+        "notes": "Market gap line chart, hand-built."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.405,
+            "y": 0.692,
+            "w": 2.645,
+            "h": 2.121,
+            "runs": [
+              {
+                "text": "The Market ",
+                "color": "text"
+              },
+              {
+                "text": "Gap",
+                "color": "primary"
+              }
+            ],
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.405,
+            "y": 4.079,
+            "w": 2.81,
+            "h": 0.303,
+            "text": "Minimalist Design Focuses",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.405,
+            "y": 4.382,
+            "w": 3.27,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.41\" fill=\"none\" stroke=\"#000000\" stroke-width=\"5.17\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#3C44E3\" stroke-width=\"4.39\"/></svg>",
+            "x": 2.04,
+            "y": 2.235,
+            "w": 0.403,
+            "h": 0.403
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.677,
+            "y": 3.944,
+            "w": 1.222,
+            "h": 0.48,
+            "fontSize": 24,
+            "fontFace": "Montserrat",
+            "text": "30%"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.677,
+            "y": 4.423,
+            "w": 1.524,
+            "h": 0.606,
+            "text": "Lorem ipsum dolor sit amet, consectetur sed do adipiscing",
+            "lineSpacing": 13.0,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.071,
+            "y": 3.944,
+            "w": 1.222,
+            "h": 0.48,
+            "fontSize": 24,
+            "fontFace": "Montserrat",
+            "runs": [
+              {
+                "text": "30%",
+                "color": "primary"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.071,
+            "y": 4.423,
+            "w": 1.524,
+            "h": 0.606,
+            "text": "Lorem ipsum dolor sit amet, consectetur sed do adipiscing",
+            "lineSpacing": 13.0,
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 347 184\"><line x1=\"0\" y1=\"0.0\" x2=\"347\" y2=\"0.0\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"18.44\" x2=\"347\" y2=\"18.44\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"36.88\" x2=\"347\" y2=\"36.88\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"55.32\" x2=\"347\" y2=\"55.32\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"73.76\" x2=\"347\" y2=\"73.76\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"92.2\" x2=\"347\" y2=\"92.2\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"110.64\" x2=\"347\" y2=\"110.64\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"129.08\" x2=\"347\" y2=\"129.08\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"147.52\" x2=\"347\" y2=\"147.52\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"165.96\" x2=\"347\" y2=\"165.96\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"184.4\" x2=\"347\" y2=\"184.4\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"0\" x2=\"0\" y2=\"184\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><polyline points=\"42,6 140,123 231,150 332,73\" fill=\"none\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><polyline points=\"42,77 137,29 234,92 331,150\" fill=\"none\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/><circle cx=\"42\" cy=\"6\" r=\"3\" fill=\"#E7AFA1\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><circle cx=\"140\" cy=\"123\" r=\"3\" fill=\"#E7AFA1\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><circle cx=\"231\" cy=\"150\" r=\"3\" fill=\"#E7AFA1\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><circle cx=\"332\" cy=\"73\" r=\"3\" fill=\"#E7AFA1\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><circle cx=\"42\" cy=\"77\" r=\"3\" fill=\"#3C44E3\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/><circle cx=\"137\" cy=\"29\" r=\"3\" fill=\"#3C44E3\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/><circle cx=\"234\" cy=\"92\" r=\"3\" fill=\"#3C44E3\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/><circle cx=\"331\" cy=\"150\" r=\"3\" fill=\"#3C44E3\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/></svg>",
+            "x": 6.01,
+            "y": 0.75,
+            "w": 3.471,
+            "h": 1.844
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 0.709,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "5,0",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 0.885,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "4,5",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 1.058,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "4,0",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 1.233,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "3,5",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 1.407,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "3,0",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 1.582,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "2,5",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 1.757,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "2,0",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 1.931,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "1,5",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 2.106,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "1,0",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 2.279,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "0,5",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.5,
+            "y": 2.454,
+            "w": 0.5,
+            "h": 0.19,
+            "align": "right",
+            "text": "0,0",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.294,
+            "y": 2.583,
+            "w": 0.388,
+            "h": 0.189,
+            "text": "2015",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.218,
+            "y": 2.583,
+            "w": 0.418,
+            "h": 0.189,
+            "text": "2020",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.169,
+            "y": 2.583,
+            "w": 0.407,
+            "h": 0.189,
+            "text": "2025",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 9.106,
+            "y": 2.583,
+            "w": 0.418,
+            "h": 0.189,
+            "text": "2030",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.183,
+            "y": 0.606,
+            "w": 0.491,
+            "h": 0.189,
+            "align": "center",
+            "text": "4,5",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.261,
+            "y": 1.231,
+            "w": 0.347,
+            "h": 0.189,
+            "align": "center",
+            "text": "3",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.265,
+            "y": 1.74,
+            "w": 0.347,
+            "h": 0.189,
+            "align": "center",
+            "text": "2",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.077,
+            "y": 2.011,
+            "w": 0.456,
+            "h": 0.189,
+            "align": "center",
+            "text": "1,5",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 9.053,
+            "y": 1.998,
+            "w": 0.456,
+            "h": 0.189,
+            "align": "center",
+            "text": "1,5",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 9.13,
+            "y": 1.236,
+            "w": 0.347,
+            "h": 0.189,
+            "align": "center",
+            "text": "3",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.113,
+            "y": 1.431,
+            "w": 0.478,
+            "h": 0.189,
+            "align": "center",
+            "text": "2,7",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.197,
+            "y": 0.795,
+            "w": 0.352,
+            "h": 0.189,
+            "align": "center",
+            "text": "4",
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "bottomLeft",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "secondary",
+                "pos": 10
+              },
+              {
+                "color": "background2",
+                "pos": 100
+              }
+            ]
+          }
+        },
+        "notes": "Phone mockup with two feature columns."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 0.833,
+            "y": 0.741,
+            "w": 1.992,
+            "h": 4.334,
+            "sizing": {
+              "type": "cover",
+              "w": 1.992,
+              "h": 4.334
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image3.png",
+            "x": 0.683,
+            "y": 0.65,
+            "w": 2.317,
+            "h": 4.519,
+            "sizing": {
+              "type": "cover",
+              "w": 2.317,
+              "h": 4.519
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 4.733,
+            "y": 3.73,
+            "w": 4.998,
+            "h": 1.439,
+            "runs": [
+              {
+                "text": "A Clear, Simple ",
+                "color": "text"
+              },
+              {
+                "text": "Answer",
+                "color": "primary"
+              }
+            ],
+            "style": "title"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"48.04\" fill=\"none\" stroke=\"#000000\" stroke-width=\"3.92\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#000000\" stroke-width=\"3.33\"/></svg>",
+            "x": 4.026,
+            "y": 3.872,
+            "w": 0.531,
+            "h": 0.531
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.876,
+            "y": 0.741,
+            "w": 1.992,
+            "h": 0.303,
+            "text": "Minimalist Design",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.876,
+            "y": 1.044,
+            "w": 2.652,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, cons\nectetur adipiscing elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.936,
+            "y": 0.741,
+            "w": 1.992,
+            "h": 0.303,
+            "text": "Minimalist Design",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.936,
+            "y": 1.044,
+            "w": 2.652,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, cons\nectetur adipiscing elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "veil-bottom-right",
+        "notes": "Product overview with right image band."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 6.987,
+            "y": 0.0,
+            "w": 3.013,
+            "h": 5.625,
+            "sizing": {
+              "type": "cover",
+              "w": 3.013,
+              "h": 5.625
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 6.977,
+            "y": 0.0,
+            "w": 3.013,
+            "h": 5.625,
+            "fill": {
+              "color": "text2",
+              "transparency": 70.2
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.392,
+            "y": 3.622,
+            "w": 3.271,
+            "h": 1.439,
+            "text": "Product Overview",
+            "color": "background",
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.967,
+            "y": 0.564,
+            "w": 2.033,
+            "h": 0.303,
+            "text": "Minimalist Design",
+            "color": "background",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.967,
+            "y": 0.867,
+            "w": 2.582,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.47\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"5.06\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"4.3\"/></svg>",
+            "x": 4.064,
+            "y": 1.976,
+            "w": 0.412,
+            "h": 0.412
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 4.048,
+            "y": 3.521,
+            "w": 2.156,
+            "h": 0.985,
+            "text": "234+",
+            "color": "background",
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 4.048,
+            "y": 4.414,
+            "w": 2.774,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit amet venen atis tristique. Morbi.",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "veil-top-left",
+        "notes": "Three product feature images."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 0.5,
+            "y": 2.812,
+            "w": 2.671,
+            "h": 1.77,
+            "sizing": {
+              "type": "cover",
+              "w": 2.671,
+              "h": 1.77
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 3.665,
+            "y": 2.812,
+            "w": 2.671,
+            "h": 1.77,
+            "sizing": {
+              "type": "cover",
+              "w": 2.671,
+              "h": 1.77
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 6.829,
+            "y": 2.812,
+            "w": 2.671,
+            "h": 1.77,
+            "sizing": {
+              "type": "cover",
+              "w": 2.671,
+              "h": 1.77
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.412,
+            "y": 0.709,
+            "w": 5.923,
+            "h": 0.757,
+            "text": "Product Features",
+            "color": "background",
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 4.687,
+            "w": 2.909,
+            "h": 0.303,
+            "text": "Every Feature Is Intentional",
+            "color": "background",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.628,
+            "y": 4.687,
+            "w": 2.708,
+            "h": 0.303,
+            "text": "No Extras, No Distractions",
+            "color": "background",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.807,
+            "y": 4.687,
+            "w": 2.708,
+            "h": 0.303,
+            "text": "Just Powerful Essentials.",
+            "color": "background",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.381,
+            "y": 0.861,
+            "w": 2.119,
+            "h": 0.451,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.37\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"5.26\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"4.47\"/></svg>",
+            "x": 6.847,
+            "y": 0.916,
+            "w": 0.396,
+            "h": 0.396
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "dawn-diagonal",
+        "notes": "Arc timeline with four cases."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.425,
+            "y": 0.699,
+            "w": 4.829,
+            "h": 0.757,
+            "runs": [
+              {
+                "text": "How We ",
+                "color": "text"
+              },
+              {
+                "text": "Work",
+                "color": "primary"
+              }
+            ],
+            "style": "title"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "arc",
+            "x": -0.362,
+            "y": 2.611,
+            "w": 10.762,
+            "h": 3.191,
+            "angleRange": [185.4, 353.0],
+            "fill": {
+              "color": "background",
+              "transparency": 100
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 0.489,
+            "y": 3.233,
+            "w": 0.161,
+            "h": 0.161,
+            "fill": {
+              "gradient": {
+                "type": "linear",
+                "angle": 110,
+                "stops": [
+                  {
+                    "color": "primary",
+                    "pos": 0
+                  },
+                  {
+                    "color": "secondary",
+                    "pos": 100
+                  }
+                ]
+              }
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 2.663,
+            "y": 2.685,
+            "w": 0.161,
+            "h": 0.161,
+            "fill": {
+              "gradient": {
+                "type": "linear",
+                "angle": 110,
+                "stops": [
+                  {
+                    "color": "primary",
+                    "pos": 0
+                  },
+                  {
+                    "color": "secondary",
+                    "pos": 100
+                  }
+                ]
+              }
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.094,
+            "y": 2.524,
+            "w": 0.161,
+            "h": 0.161,
+            "fill": {
+              "gradient": {
+                "type": "linear",
+                "angle": 110,
+                "stops": [
+                  {
+                    "color": "primary",
+                    "pos": 0
+                  },
+                  {
+                    "color": "secondary",
+                    "pos": 100
+                  }
+                ]
+              }
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 7.451,
+            "y": 2.713,
+            "w": 0.161,
+            "h": 0.161,
+            "fill": {
+              "gradient": {
+                "type": "linear",
+                "angle": 110,
+                "stops": [
+                  {
+                    "color": "primary",
+                    "pos": 0
+                  },
+                  {
+                    "color": "secondary",
+                    "pos": 100
+                  }
+                ]
+              }
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.432,
+            "y": 3.775,
+            "w": 1.529,
+            "h": 0.278,
+            "text": "Case 01",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.432,
+            "y": 4.147,
+            "w": 1.74,
+            "h": 0.328,
+            "text": "Your Text here",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.432,
+            "y": 4.482,
+            "w": 1.74,
+            "h": 0.606,
+            "text": "Lorem ipsum dolor sit amet, consectetur sed do adipiscing elit, sed do",
+            "lineSpacing": 13.0,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 2.663,
+            "y": 3.186,
+            "w": 1.529,
+            "h": 0.278,
+            "text": "Case 02",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 2.663,
+            "y": 3.563,
+            "w": 1.74,
+            "h": 0.328,
+            "text": "Your Text here",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 2.663,
+            "y": 3.898,
+            "w": 1.74,
+            "h": 0.788,
+            "text": "Lorem ipsum dolor sit amet, consectetur sed do adipiscing elit, sed do eiusmod tempor",
+            "lineSpacing": 13.0,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.056,
+            "y": 3.066,
+            "w": 1.529,
+            "h": 0.278,
+            "text": "Case 03",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.075,
+            "y": 3.443,
+            "w": 1.74,
+            "h": 0.328,
+            "text": "Your Text here",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.075,
+            "y": 3.778,
+            "w": 1.74,
+            "h": 0.788,
+            "text": "Lorem ipsum dolor sit amet, consectetur sed do adipiscing elit, sed do eiusmod tempor",
+            "lineSpacing": 13.0,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.429,
+            "y": 3.522,
+            "w": 1.529,
+            "h": 0.278,
+            "text": "Case 04",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.438,
+            "y": 3.898,
+            "w": 1.74,
+            "h": 0.328,
+            "text": "Your Text here",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.429,
+            "y": 4.233,
+            "w": 1.74,
+            "h": 0.606,
+            "text": "Lorem ipsum dolor sit amet, consectetur sed do adipiscing elit, sed do",
+            "lineSpacing": 13.0,
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"46.98\" fill=\"none\" stroke=\"#000000\" stroke-width=\"6.04\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#000000\" stroke-width=\"5.13\"/></svg>",
+            "x": 6.557,
+            "y": 0.905,
+            "w": 0.345,
+            "h": 0.345
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.029,
+            "y": 0.834,
+            "w": 2.818,
+            "h": 0.451,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "haze-bottom-left",
+        "notes": "Market overview pies."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.793,
+            "w": 3.392,
+            "h": 1.439,
+            "runs": [
+              {
+                "text": "Market ",
+                "color": "text"
+              },
+              {
+                "text": "Overview",
+                "color": "primary"
+              }
+            ],
+            "style": "title"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.87,
+            "y": 0.794,
+            "w": 1.405,
+            "h": 1.405,
+            "fill": {
+              "color": "primary",
+              "transparency": 90.2
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "pie",
+            "x": 5.87,
+            "y": 0.793,
+            "w": 1.405,
+            "h": 1.405,
+            "angleRange": [122.8, 270],
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.87,
+            "y": 3.525,
+            "w": 1.405,
+            "h": 1.405,
+            "fill": {
+              "color": "primary",
+              "transparency": 90.2
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "pie",
+            "x": 5.87,
+            "y": 3.525,
+            "w": 1.405,
+            "h": 1.405,
+            "angleRange": [335.4, 270],
+            "fill": {
+              "gradient": {
+                "type": "linear",
+                "angle": 45,
+                "stops": [
+                  {
+                    "color": "primary",
+                    "pos": 0
+                  },
+                  {
+                    "color": "secondary",
+                    "pos": 85
+                  },
+                  {
+                    "color": "secondary",
+                    "pos": 100
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.637,
+            "y": 0.648,
+            "w": 1.613,
+            "h": 0.53,
+            "fontSize": 27,
+            "fontFace": "Montserrat",
+            "runs": [
+              {
+                "text": "44,3",
+                "color": "primary",
+                "fontSize": 27
+              },
+              {
+                "text": "%",
+                "color": "primary",
+                "fontSize": 18
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.637,
+            "y": 1.2,
+            "w": 1.519,
+            "h": 0.278,
+            "text": "Item 01 Sale",
+            "color": "text2",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.637,
+            "y": 1.503,
+            "w": 1.999,
+            "h": 0.792,
+            "text": "Lorem ipsum dolor sit amet, consectetur adiiscing elit, sed do eiusmod tempor incididunt ut labore et.",
+            "lineSpacing": 13.0,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.637,
+            "y": 3.525,
+            "w": 1.613,
+            "h": 0.53,
+            "fontSize": 27,
+            "fontFace": "Montserrat",
+            "runs": [
+              {
+                "text": "70,3",
+                "color": "secondary",
+                "fontSize": 27
+              },
+              {
+                "text": "%",
+                "color": "secondary",
+                "fontSize": 18
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.637,
+            "y": 4.076,
+            "w": 1.519,
+            "h": 0.278,
+            "text": "Item 01 Sale",
+            "color": "text2",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.637,
+            "y": 4.38,
+            "w": 1.999,
+            "h": 0.792,
+            "text": "Lorem ipsum dolor sit amet, consectetur adiiscing elit, sed do eiusmod tempor incididunt ut labore et.",
+            "lineSpacing": 13.0,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.405,
+            "y": 4.079,
+            "w": 2.81,
+            "h": 0.303,
+            "text": "Minimalist Design Focuses",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.405,
+            "y": 4.382,
+            "w": 3.27,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "topRight",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "secondary",
+                "pos": 10
+              },
+              {
+                "color": "background2",
+                "pos": 100
+              }
+            ]
+          }
+        },
+        "notes": "Target audience with photo strips."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 0.0,
+            "y": 0.0,
+            "w": 2.5,
+            "h": 5.625,
+            "sizing": {
+              "type": "cover",
+              "w": 2.5,
+              "h": 5.625
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 2.5,
+            "y": 0.0,
+            "w": 2.5,
+            "h": 5.625,
+            "sizing": {
+              "type": "cover",
+              "w": 2.5,
+              "h": 5.625
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.0,
+            "y": 0.0,
+            "w": 2.5,
+            "h": 5.625,
+            "fill": {
+              "color": "text2",
+              "transparency": 70.2
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 2.5,
+            "y": 0.0,
+            "w": 2.5,
+            "h": 5.625,
+            "fill": {
+              "color": "text2",
+              "transparency": 70.2
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.5,
+            "y": 4.66,
+            "w": 1.738,
+            "h": 0.53,
+            "text": "Minimalist Design Focuses",
+            "color": "background",
+            "lineSpacing": 16.8,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.0,
+            "y": 4.66,
+            "w": 1.738,
+            "h": 0.53,
+            "text": "Minimalist Design Focuses",
+            "color": "background",
+            "lineSpacing": 16.8,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.291,
+            "y": 0.698,
+            "w": 3.209,
+            "h": 1.439,
+            "runs": [
+              {
+                "text": "Target ",
+                "color": "text"
+              },
+              {
+                "text": "Audience",
+                "color": "primary"
+              }
+            ],
+            "style": "title"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.47\" fill=\"none\" stroke=\"#000000\" stroke-width=\"5.06\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#000000\" stroke-width=\"4.3\"/></svg>",
+            "x": 5.608,
+            "y": 3.417,
+            "w": 0.412,
+            "h": 0.412
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.291,
+            "y": 3.32,
+            "w": 2.746,
+            "h": 0.303,
+            "text": "Minimalist Design",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.291,
+            "y": 3.623,
+            "w": 2.582,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.291,
+            "y": 4.525,
+            "w": 1.678,
+            "h": 0.631,
+            "fontSize": 33,
+            "fontFace": "Montserrat",
+            "runs": [
+              {
+                "text": "2341+",
+                "color": "primary"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "veil-bottom-right",
+        "notes": "Competitive landscape stats and images."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 0.5,
+            "y": 0.741,
+            "w": 2.5,
+            "h": 2.769,
+            "sizing": {
+              "type": "cover",
+              "w": 2.5,
+              "h": 2.769
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 3.388,
+            "y": 0.741,
+            "w": 1.612,
+            "h": 1.56,
+            "sizing": {
+              "type": "cover",
+              "w": 1.612,
+              "h": 1.56
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.5,
+            "y": 3.741,
+            "w": 1.275,
+            "h": 0.53,
+            "fontSize": 27,
+            "fontFace": "Montserrat",
+            "runs": [
+              {
+                "text": "74,3",
+                "color": "background",
+                "fontSize": 27
+              },
+              {
+                "text": "%",
+                "color": "background",
+                "fontSize": 18
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.455,
+            "y": 4.306,
+            "w": 2.545,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit amet venen atis tristique. Morbi.",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.406,
+            "y": 2.391,
+            "w": 1.275,
+            "h": 0.48,
+            "fontSize": 24,
+            "fontFace": "Montserrat",
+            "runs": [
+              {
+                "text": "44,3",
+                "color": "background",
+                "fontSize": 24
+              },
+              {
+                "text": "%",
+                "color": "background",
+                "fontSize": 15
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.361,
+            "y": 2.87,
+            "w": 1.861,
+            "h": 0.576,
+            "fontSize": 8,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit amet.",
+            "color": "background",
+            "lineSpacing": 12.5
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.974,
+            "y": 0.716,
+            "w": 3.27,
+            "h": 0.303,
+            "text": "People Are Overwhelmed",
+            "color": "background",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.974,
+            "y": 1.094,
+            "w": 3.27,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.974,
+            "y": 3.651,
+            "w": 3.662,
+            "h": 1.303,
+            "fontSize": 41,
+            "fontFace": "Montserrat",
+            "text": "Competitive Landscape",
+            "color": "background",
+            "lineSpacing": 44.3
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.47\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"5.06\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"4.3\"/></svg>",
+            "x": 5.355,
+            "y": 3.761,
+            "w": 0.412,
+            "h": 0.412
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "veil-top-left",
+        "notes": "Laptop mockup slide."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 501 262\"><rect x=\"46\" y=\"0\" width=\"410\" height=\"16\" rx=\"7\" fill=\"#3C44E3\"/><rect x=\"46\" y=\"2\" width=\"410\" height=\"249\" rx=\"7\" fill=\"#F0CDC4\"/><rect x=\"48\" y=\"4\" width=\"406\" height=\"239\" fill=\"#000000\"/><rect x=\"48\" y=\"243\" width=\"406\" height=\"7\" fill=\"#212121\"/><rect x=\"46\" y=\"250\" width=\"410\" height=\"1\" fill=\"#131313\"/><rect x=\"0\" y=\"251\" width=\"209\" height=\"3.5\" fill=\"#A7A7A7\"/><rect x=\"208\" y=\"251\" width=\"84\" height=\"3.5\" fill=\"#838180\"/><rect x=\"292\" y=\"251\" width=\"209\" height=\"3.5\" fill=\"#818181\"/><rect x=\"0\" y=\"254\" width=\"501\" height=\"8\" rx=\"4\" fill=\"#575554\"/></svg>",
+            "x": 5.0,
+            "y": 2.71,
+            "w": 5.013,
+            "h": 2.615
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 5.559,
+            "y": 2.867,
+            "w": 3.895,
+            "h": 2.221,
+            "sizing": {
+              "type": "cover",
+              "w": 3.895,
+              "h": 2.221
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.419,
+            "y": 0.859,
+            "w": 3.932,
+            "h": 1.439,
+            "text": "The Engine Behind Us",
+            "color": "background",
+            "style": "title"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.47\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"5.06\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"4.3\"/></svg>",
+            "x": 4.272,
+            "y": 1.018,
+            "w": 0.412,
+            "h": 0.42
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.658,
+            "y": 0.736,
+            "w": 1.138,
+            "h": 0.985,
+            "text": "23",
+            "color": "background",
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.746,
+            "y": 0.794,
+            "w": 1.784,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.405,
+            "y": 4.079,
+            "w": 2.81,
+            "h": 0.303,
+            "text": "Minimalist Design Focuses",
+            "color": "background",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.405,
+            "y": 4.382,
+            "w": 3.27,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "dawn-diagonal",
+        "notes": "Values list and percent column."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 0.5,
+            "y": 0.869,
+            "w": 2.46,
+            "h": 1.653,
+            "sizing": {
+              "type": "cover",
+              "w": 2.46,
+              "h": 1.653
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.401,
+            "y": 3.519,
+            "w": 3.481,
+            "h": 1.439,
+            "runs": [
+              {
+                "text": "Our ",
+                "color": "text"
+              },
+              {
+                "text": "Approach",
+                "color": "primary"
+              }
+            ],
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.475,
+            "y": 2.812,
+            "w": 2.531,
+            "h": 2.138,
+            "fontSize": 21,
+            "fontFace": "Playfair Display",
+            "text": "Example → Fairness → Honesty → \nResponsibility →",
+            "lineSpacing": 37.8
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.552,
+            "y": 2.991,
+            "w": 1.046,
+            "h": 0.38,
+            "fontSize": 18,
+            "align": "right",
+            "text": "+83%"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.552,
+            "y": 3.52,
+            "w": 1.046,
+            "h": 0.38,
+            "fontSize": 18,
+            "align": "right",
+            "text": "+93%"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.552,
+            "y": 4.024,
+            "w": 1.046,
+            "h": 0.38,
+            "fontSize": 18,
+            "align": "right",
+            "text": "+92%"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.552,
+            "y": 4.543,
+            "w": 1.046,
+            "h": 0.38,
+            "fontSize": 18,
+            "align": "right",
+            "text": "+100%"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.046,
+            "y": 0.848,
+            "w": 3.058,
+            "h": 0.303,
+            "text": "Minimalist Design Focuses",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.046,
+            "y": 1.151,
+            "w": 3.713,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"46.98\" fill=\"none\" stroke=\"#000000\" stroke-width=\"6.04\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#000000\" stroke-width=\"5.13\"/></svg>",
+            "x": 5.475,
+            "y": 0.905,
+            "w": 0.345,
+            "h": 0.345
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "haze-bottom-left",
+        "notes": "Revenue KPIs."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.411,
+            "y": 0.708,
+            "w": 5.814,
+            "h": 0.757,
+            "runs": [
+              {
+                "text": "Revenue ",
+                "color": "text"
+              },
+              {
+                "text": "Streams",
+                "color": "primary"
+              }
+            ],
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.381,
+            "y": 0.861,
+            "w": 2.119,
+            "h": 0.451,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin",
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.37\" fill=\"none\" stroke=\"#000000\" stroke-width=\"5.26\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#000000\" stroke-width=\"4.47\"/></svg>",
+            "x": 6.847,
+            "y": 0.916,
+            "w": 0.396,
+            "h": 0.396
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.397,
+            "y": 3.595,
+            "w": 1.888,
+            "h": 0.757,
+            "fontSize": 41,
+            "fontFace": "Montserrat",
+            "text": "+13%"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.508,
+            "y": 3.595,
+            "w": 2.592,
+            "h": 0.757,
+            "fontSize": 41,
+            "fontFace": "Montserrat",
+            "runs": [
+              {
+                "text": "+122K$",
+                "color": "primary"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.108,
+            "y": 3.595,
+            "w": 2.119,
+            "h": 0.757,
+            "fontSize": 41,
+            "fontFace": "Montserrat",
+            "text": "+111M"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.829,
+            "y": 4.392,
+            "w": 1.888,
+            "h": 0.652,
+            "text": "Lorem ipsum dolor sit, consectetur adipiscing elit. Proin bibendum risus sit",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.913,
+            "y": 4.392,
+            "w": 2.505,
+            "h": 0.652,
+            "text": "Lorem ipsum dolor sit amettetur adipiscing elit. Proin bibendum risus sit amet venen atis tristique. ",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.497,
+            "y": 4.392,
+            "w": 2.086,
+            "h": 0.652,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum risus sit",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "topRight",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "secondary",
+                "pos": 20
+              },
+              {
+                "color": "background2",
+                "pos": 72
+              },
+              {
+                "color": "background2",
+                "pos": 100
+              }
+            ]
+          }
+        },
+        "notes": "Concentric circles diagram."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.42,
+            "y": 0.755,
+            "w": 3.833,
+            "h": 1.439,
+            "runs": [
+              {
+                "text": "Financial ",
+                "color": "text"
+              },
+              {
+                "text": "Projections",
+                "color": "primary"
+              }
+            ],
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.405,
+            "y": 4.079,
+            "w": 2.81,
+            "h": 0.303,
+            "text": "Minimalist Design Focuses",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.405,
+            "y": 4.382,
+            "w": 3.27,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "style": "body"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.0,
+            "y": 0.8,
+            "w": 4.356,
+            "h": 4.356,
+            "fill": {
+              "color": "background",
+              "transparency": 100
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.473,
+            "y": 1.705,
+            "w": 3.452,
+            "h": 3.452,
+            "fill": {
+              "color": "background",
+              "transparency": 100
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.965,
+            "y": 2.688,
+            "w": 2.468,
+            "h": 2.468,
+            "fill": {
+              "color": "background",
+              "transparency": 100
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 6.435,
+            "y": 3.608,
+            "w": 1.548,
+            "h": 1.548,
+            "fill": {
+              "color": "background",
+              "transparency": 100
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.369,
+            "y": 1.101,
+            "w": 1.681,
+            "h": 0.328,
+            "align": "center",
+            "text": "Development",
+            "color": "primary",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.48,
+            "y": 2.085,
+            "w": 1.458,
+            "h": 0.328,
+            "align": "center",
+            "text": "Marketing",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.48,
+            "y": 3.068,
+            "w": 1.458,
+            "h": 0.328,
+            "align": "center",
+            "text": "Operations",
+            "color": "primary",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.48,
+            "y": 4.23,
+            "w": 1.458,
+            "h": 0.328,
+            "align": "center",
+            "text": "Funding",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "topRight",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "primary",
+                "pos": 79
+              },
+              {
+                "color": "secondary",
+                "pos": 100
+              }
+            ]
+          }
+        },
+        "notes": "Team slide with three photos."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.823,
+            "w": 2.106,
+            "h": 2.121,
+            "text": "Meet The Team",
+            "color": "background",
+            "style": "title"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.47\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"5.06\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"4.3\"/></svg>",
+            "x": 0.537,
+            "y": 3.093,
+            "w": 0.412,
+            "h": 0.412
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 2.939,
+            "y": 0.869,
+            "w": 2.483,
+            "h": 3.29,
+            "sizing": {
+              "type": "cover",
+              "w": 2.483,
+              "h": 3.29
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 5.992,
+            "y": 0.869,
+            "w": 1.433,
+            "h": 1.899,
+            "sizing": {
+              "type": "cover",
+              "w": 1.433,
+              "h": 1.899
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 7.825,
+            "y": 0.869,
+            "w": 1.433,
+            "h": 1.899,
+            "sizing": {
+              "type": "cover",
+              "w": 1.433,
+              "h": 1.899
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 2.939,
+            "y": 4.276,
+            "w": 1.745,
+            "h": 0.429,
+            "fontSize": 21,
+            "fontFace": "Montserrat",
+            "text": "Your Name ",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.926,
+            "y": 2.843,
+            "w": 1.345,
+            "h": 0.328,
+            "text": "Your Name ",
+            "color": "background",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.825,
+            "y": 2.843,
+            "w": 1.345,
+            "h": 0.328,
+            "text": "Your Name ",
+            "color": "background",
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.978,
+            "y": 4.079,
+            "w": 2.81,
+            "h": 0.303,
+            "text": "Minimalist Design Focuses",
+            "color": "background",
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.978,
+            "y": 4.382,
+            "w": 3.27,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "bottomLeft",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "primary",
+                "pos": 79
+              },
+              {
+                "color": "secondary",
+                "pos": 100
+              }
+            ]
+          }
+        },
+        "notes": "Contact information slide."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.415,
+            "y": 0.667,
+            "w": 3.743,
+            "h": 0.757,
+            "text": "Contact us ",
+            "color": "background",
+            "style": "title"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"47.47\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"5.06\"/><path d=\"M37 63 L61 39 M42 37 L63 37 L63 58\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"4.3\"/></svg>",
+            "x": 4.158,
+            "y": 0.84,
+            "w": 0.412,
+            "h": 0.412
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.415,
+            "y": 1.424,
+            "w": 3.813,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas porttitor congue massa. Fusce posuere, magna sed pulvinar ultricies, purus lectus.",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/minimalist-pitch-deck/image1.jpg",
+            "x": 0.5,
+            "y": 3.253,
+            "w": 3.275,
+            "h": 1.653,
+            "sizing": {
+              "type": "cover",
+              "w": 3.275,
+              "h": 1.653
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.71,
+            "y": 3.349,
+            "w": 1.109,
+            "h": 0.286,
+            "fontSize": 11,
+            "fontFace": "Montserrat",
+            "text": "Phone",
+            "color": "background",
+            "lineSpacing": 17.2
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.014,
+            "y": 3.349,
+            "w": 1.486,
+            "h": 0.286,
+            "fontSize": 11,
+            "fontFace": "Montserrat",
+            "text": "Website",
+            "color": "background",
+            "lineSpacing": 17.2
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.71,
+            "y": 4.355,
+            "w": 1.109,
+            "h": 0.283,
+            "fontSize": 11,
+            "fontFace": "Montserrat",
+            "text": "Email",
+            "color": "background",
+            "lineSpacing": 17.2
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.71,
+            "y": 3.669,
+            "w": 1.109,
+            "h": 0.254,
+            "text": "+1234567890",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.014,
+            "y": 3.669,
+            "w": 1.486,
+            "h": 0.254,
+            "text": "https://www.web.com",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.71,
+            "y": 4.675,
+            "w": 1.109,
+            "h": 0.254,
+            "text": "mail@mail.com",
+            "color": "background",
+            "style": "body"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "x": 8.113,
+            "y": 4.55,
+            "w": 1.328,
+            "h": 0.355,
+            "rectRadius": 0.177,
+            "fill": {
+              "color": "secondary"
+            },
+            "text": "Learn More",
+            "fontSize": 11,
+            "fontFace": "Montserrat",
+            "fontColor": "text",
+            "align": "center",
+            "valign": "middle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "color": "background",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "gradient": {
+            "type": "radial",
+            "focus": "topRight",
+            "stops": [
+              {
+                "color": "primary",
+                "pos": 0
+              },
+              {
+                "color": "secondary",
+                "pos": 23
+              },
+              {
+                "color": "background2",
+                "pos": 100
+              }
+            ]
+          }
+        },
+        "notes": "Thank you closing slide."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.391,
+            "y": 1.73,
+            "w": 6.609,
+            "h": 1.2,
+            "fontSize": 72,
+            "fontFace": "Montserrat",
+            "text": "Thank You",
+            "lineSpacing": 77.8
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.391,
+            "y": 2.81,
+            "w": 6.609,
+            "h": 1.1,
+            "fontSize": 66,
+            "fontFace": "Montserrat",
+            "text": "For Watching",
+            "lineSpacing": 71.3
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 137 188\"><path fill=\"#000000\" d=\"M68.5 0C30.6 0 0 30.6 0 68.5 C0 119.9 68.5 188 68.5 188 C68.5 188 137 119.9 137 68.5 C137 30.6 106.4 0 68.5 0 Z\"/><circle cx=\"68.5\" cy=\"66\" r=\"27\" fill=\"#ECEAEB\"/></svg>",
+            "x": 0.5,
+            "y": 4.832,
+            "w": 0.228,
+            "h": 0.311
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.832,
+            "y": 4.739,
+            "w": 3.374,
+            "h": 0.451,
+            "text": "Main Street 233, Building A, 4th Floor, Suite 405, Near City Park, Florida, 32801, United States",
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.25,
+            "y": 4.739,
+            "w": 1.308,
+            "h": 0.379,
+            "fontSize": 18,
+            "fontFace": "Montserrat",
+            "align": "right",
+            "text": "End slide"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.433,
+            "y": 0.156,
+            "w": 1.314,
+            "h": 0.313,
+            "text": "YOUR LOGO",
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 8.788,
+            "y": 0.083,
+            "w": 0.848,
+            "h": 0.372,
+            "align": "center",
+            "text": "2025",
+            "color": "background",
+            "style": "heading1"
+          }
+        }
+      ]
+    }
+  ]
+}

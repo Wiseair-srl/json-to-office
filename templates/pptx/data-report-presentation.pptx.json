@@ -1,0 +1,3160 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Data Report Presentation",
+    "author": "json-to-office",
+    "slideWidth": 13.333,
+    "slideHeight": 7.5,
+    "theme": {
+      "name": "data-report",
+      "colors": {
+        "primary": "#6C35EA",
+        "secondary": "#C497FE",
+        "accent": "#C4F484",
+        "background": "#FFFFFF",
+        "text": "#000000",
+        "text2": "#262626",
+        "background2": "#D9D9D9",
+        "accent4": "#FF4F06",
+        "accent5": "#01AD65",
+        "accent6": "#0D0D0D"
+      },
+      "fonts": {
+        "heading": "Space Grotesk Medium",
+        "body": "Space Grotesk"
+      },
+      "defaults": {
+        "fontSize": 18,
+        "fontColor": "#000000"
+      },
+      "styles": {
+        "title": {
+          "fontSize": 72,
+          "fontColor": "background"
+        },
+        "heading1": {
+          "fontSize": 54,
+          "fontColor": "background"
+        },
+        "heading2": {
+          "fontSize": 24,
+          "fontColor": "text"
+        },
+        "heading3": {
+          "fontSize": 14,
+          "fontColor": "accent6"
+        },
+        "subtitle": {
+          "fontSize": 18,
+          "fontFace": "Space Grotesk Medium",
+          "fontColor": "background"
+        },
+        "body": {
+          "fontSize": 12,
+          "fontColor": "text2"
+        },
+        "caption": {
+          "fontSize": 10.5,
+          "fontColor": "text2"
+        }
+      },
+      "componentDefaults": {
+        "shape": {
+          "line": {
+            "color": "text",
+            "width": 0.75
+          }
+        },
+        "chart": {
+          "showLegend": false,
+          "catGridLine": {
+            "style": "none"
+          }
+        }
+      }
+    },
+    "templates": [
+      {
+        "name": "chrome-ink",
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 0.5,
+              "y": 6.869,
+              "w": 12.292,
+              "h": 0
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "DATA\nREPORT",
+              "x": 0.486,
+              "y": 6.978,
+              "w": 1.02,
+              "h": 0.404,
+              "fontSize": 9,
+              "fontFace": "Space Grotesk Medium",
+              "color": "text"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "PRESENTATION",
+              "x": 5.79,
+              "y": 7.062,
+              "w": 1.7530000000000001,
+              "h": 0.252,
+              "fontSize": 9,
+              "fontFace": "Space Grotesk Medium",
+              "color": "text2",
+              "align": "center"
+            }
+          }
+        ]
+      },
+      {
+        "name": "chrome-paper",
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 0.5,
+              "y": 6.869,
+              "w": 12.292,
+              "h": 0,
+              "line": {
+                "color": "background"
+              }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "DATA\nREPORT",
+              "x": 0.486,
+              "y": 6.978,
+              "w": 1.02,
+              "h": 0.404,
+              "fontSize": 9,
+              "fontFace": "Space Grotesk Medium",
+              "color": "background"
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "PRESENTATION",
+              "x": 5.79,
+              "y": 7.062,
+              "w": 1.7530000000000001,
+              "h": 0.252,
+              "fontSize": 9,
+              "fontFace": "Space Grotesk Medium",
+              "color": "background",
+              "align": "center"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "Cover — Data Report, asset infographic template."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "DATA REPORT",
+            "x": 4.09,
+            "y": 1.84,
+            "w": 5.407,
+            "h": 3.015,
+            "fontSize": 96,
+            "color": "text",
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 4.139,
+            "y": 4.901,
+            "w": 5.747,
+            "h": 0
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "ASSET INFOGRAPHIC TEMPLATE",
+            "x": 4.141,
+            "y": 5.283,
+            "w": 6.681,
+            "h": 0.375,
+            "color": "accent6",
+            "charSpacing": 6,
+            "lineSpacingMultiple": 0.9,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0,
+            "y": 0,
+            "w": 1.354,
+            "h": 1.354,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 1.359,
+            "y": 1.367,
+            "w": 0.683,
+            "h": 0.683,
+            "fill": {
+              "color": "secondary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 12.731,
+            "y": 5.975,
+            "w": 0.602,
+            "h": 0.602,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 11.815,
+            "y": 6.581,
+            "w": 0.919,
+            "h": 0.919,
+            "fill": {
+              "color": "accent5"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "secondary"
+        },
+        "notes": "Trend analysis — staircase bars 25/60/85%.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "TREND ANALYSIS",
+            "x": 0.503,
+            "y": 1.05,
+            "w": 5.407,
+            "h": 2.53,
+            "fontSize": 80,
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Key Metrics",
+            "x": 4.2459999999999996,
+            "y": 1.512,
+            "w": 1.4200000000000002,
+            "h": 0.3,
+            "fontSize": 12,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data-Driven",
+            "x": 4.2459999999999996,
+            "y": 3.419,
+            "w": 1.4200000000000002,
+            "h": 0.3,
+            "fontSize": 12,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Your Subtitle Text Here ",
+            "x": 0.503,
+            "y": 4.655,
+            "w": 4.179,
+            "h": 0.375,
+            "lineSpacingMultiple": 0.9,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip",
+            "x": 0.503,
+            "y": 5.079,
+            "w": 4.964,
+            "h": 1.232,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 6.33,
+            "y": 4.49,
+            "w": 2.16,
+            "h": 1.93,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 8.48,
+            "y": 3.27,
+            "w": 2.16,
+            "h": 3.15,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 10.64,
+            "y": 1.63,
+            "w": 2.16,
+            "h": 4.79,
+            "fill": {
+              "color": "accent4"
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "25%",
+            "x": 6.447,
+            "y": 3.621,
+            "w": 1.758,
+            "h": 0.77,
+            "fontSize": 44,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "align": "right",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "60%",
+            "x": 8.577,
+            "y": 2.377,
+            "w": 1.758,
+            "h": 0.77,
+            "fontSize": 44,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "align": "right",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "85%",
+            "x": 10.777,
+            "y": 0.797,
+            "w": 1.758,
+            "h": 0.77,
+            "fontSize": 44,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "align": "right",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed",
+            "x": 6.577,
+            "y": 5.373,
+            "w": 1.6280000000000001,
+            "h": 0.843,
+            "align": "right",
+            "lineSpacingMultiple": 1.4,
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed",
+            "x": 8.707,
+            "y": 5.373,
+            "w": 1.6280000000000001,
+            "h": 0.843,
+            "align": "right",
+            "lineSpacingMultiple": 1.4,
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed",
+            "x": 10.907,
+            "y": 5.373,
+            "w": 1.6280000000000001,
+            "h": 0.843,
+            "align": "right",
+            "lineSpacingMultiple": 1.4,
+            "style": "caption"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "2",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "accent"
+        },
+        "notes": "Areas for growth — three numbered banner cards.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "AREAS FOR GROWTH",
+            "x": 0.503,
+            "y": 0.771,
+            "w": 6.938000000000001,
+            "h": 2.53,
+            "fontSize": 80,
+            "color": "text",
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Smarter Decisions",
+            "x": 5.296,
+            "y": 2.502,
+            "w": 1.082,
+            "h": 0.526,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Your Subtitle Text Here ",
+            "x": 7.592,
+            "y": 1.047,
+            "w": 4.179,
+            "h": 0.375,
+            "color": "accent6",
+            "lineSpacingMultiple": 0.9,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip",
+            "x": 7.592,
+            "y": 1.788,
+            "w": 4.964,
+            "h": 1.232,
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 3.563,
+            "w": 2.576,
+            "h": 2.854,
+            "fill": {
+              "color": "accent5"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 3.076,
+            "y": 3.563,
+            "w": 3.209,
+            "h": 2.854,
+            "fill": {
+              "color": "background"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 6.284,
+            "y": 3.563,
+            "w": 6.494,
+            "h": 2.854,
+            "fill": {
+              "color": "secondary"
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "#01",
+            "x": 0.944,
+            "y": 3.971,
+            "w": 1.52,
+            "h": 0.45,
+            "fontSize": 20,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Subtitle Here",
+            "x": 0.944,
+            "y": 4.812,
+            "w": 1.52,
+            "h": 0.32,
+            "color": "text",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 0.944,
+            "y": 5.183,
+            "w": 1.25,
+            "h": 0.949,
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "#02",
+            "x": 3.51,
+            "y": 3.971,
+            "w": 1.52,
+            "h": 0.45,
+            "fontSize": 20,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Subtitle Here",
+            "x": 3.51,
+            "y": 4.812,
+            "w": 1.52,
+            "h": 0.32,
+            "color": "text",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 3.51,
+            "y": 5.183,
+            "w": 1.25,
+            "h": 0.949,
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "#03",
+            "x": 6.7989999999999995,
+            "y": 3.971,
+            "w": 1.52,
+            "h": 0.45,
+            "fontSize": 20,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Subtitle Here",
+            "x": 6.7989999999999995,
+            "y": 4.812,
+            "w": 1.52,
+            "h": 0.32,
+            "color": "text",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 6.7989999999999995,
+            "y": 5.183,
+            "w": 1.25,
+            "h": 0.949,
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "3",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "accent4"
+        },
+        "notes": "Revenue model — stacked column chart.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "chart",
+          "props": {
+            "type": "bar",
+            "barDir": "col",
+            "barGrouping": "stacked",
+            "barGapWidthPct": 150,
+            "barOverlapPct": 100,
+            "x": 0.405,
+            "y": 0.658,
+            "w": 6.873,
+            "h": 5.759,
+            "chartColors": ["secondary", "accent", "accent5"],
+            "dataBorder": {
+              "pt": 0.75,
+              "color": "text"
+            },
+            "valAxisHidden": true,
+            "valGridLine": {
+              "style": "solid",
+              "size": 0.25,
+              "color": "text"
+            },
+            "catAxisLabelFontSize": 10,
+            "catAxisLabelColor": "text",
+            "catAxisLabelFontFace": "Space Grotesk",
+            "data": [
+              {
+                "name": "S1",
+                "labels": ["Point", "Point", "Point", "Point"],
+                "values": [4.3, 2.5, 3.5, 4.5]
+              },
+              {
+                "name": "S2",
+                "labels": ["Point", "Point", "Point", "Point"],
+                "values": [2.4, 4.4, 1.8, 2.8]
+              },
+              {
+                "name": "S3",
+                "labels": ["Point", "Point", "Point", "Point"],
+                "values": [2, 2, 3, 5]
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data Overview",
+            "x": 7.915,
+            "y": 0.736,
+            "w": 1.82,
+            "h": 0.3,
+            "color": "background",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "REVENUE MODEL",
+            "x": 7.8709999999999996,
+            "y": 1.0819999999999999,
+            "w": 4.831,
+            "h": 2.287,
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et",
+            "x": 7.8709999999999996,
+            "y": 3.855,
+            "w": 4.5280000000000005,
+            "h": 0.666,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "2,5K",
+            "x": 7.8709999999999996,
+            "y": 5.469,
+            "w": 1.758,
+            "h": 0.922,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+            "x": 9.845,
+            "y": 5.547,
+            "w": 2.856,
+            "h": 0.666,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "4",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "primary"
+        },
+        "notes": "Current data trend — overlapping area chart.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.5,
+            "y": 0.56,
+            "w": 12.29,
+            "h": 0,
+            "line": {
+              "width": 0.5
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.5,
+            "y": 0.94,
+            "w": 12.29,
+            "h": 0,
+            "line": {
+              "width": 0.5
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.5,
+            "y": 1.32,
+            "w": 12.29,
+            "h": 0,
+            "line": {
+              "width": 0.5
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.5,
+            "y": 1.7,
+            "w": 12.29,
+            "h": 0,
+            "line": {
+              "width": 0.5
+            }
+          }
+        },
+        {
+          "name": "chart",
+          "props": {
+            "type": "area",
+            "x": -0.82,
+            "y": 0.675,
+            "w": 14.98,
+            "h": 3.255,
+            "valAxisMinVal": 0,
+            "valAxisMaxVal": 15,
+            "valAxisMajorUnit": 2,
+            "chartColors": ["accent", "secondary"],
+            "dataBorder": {
+              "pt": 0.75,
+              "color": "text"
+            },
+            "valAxisHidden": true,
+            "valGridLine": {
+              "style": "none"
+            },
+            "catAxisLabelFontSize": 10.5,
+            "catAxisLabelColor": "text",
+            "catAxisLabelFontFace": "Space Grotesk Medium",
+            "data": [
+              {
+                "name": "A",
+                "labels": ["0", "2", "4", "6", "9", "10"],
+                "values": [15, 12, 10, 9, 10, 5]
+              },
+              {
+                "name": "B",
+                "labels": ["0", "2", "4", "6", "9", "10"],
+                "values": [2, 3, 6, 8, 6, 12]
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "01",
+            "x": 0.45699999999999996,
+            "y": 4.328,
+            "w": 1.02,
+            "h": 0.922,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "ST",
+            "x": 1.26,
+            "y": 4.44,
+            "w": 0.6,
+            "h": 0.4,
+            "color": "background",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor",
+            "x": 2.274,
+            "y": 4.408,
+            "w": 3.421,
+            "h": 0.666,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "02",
+            "x": 0.45699999999999996,
+            "y": 5.619,
+            "w": 1.02,
+            "h": 0.922,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "ND",
+            "x": 1.29,
+            "y": 5.73,
+            "w": 0.6,
+            "h": 0.4,
+            "color": "background",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor",
+            "x": 2.274,
+            "y": 5.699,
+            "w": 3.421,
+            "h": 0.666,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "CURRENT DATA TREND",
+            "x": 6.508,
+            "y": 4.29,
+            "w": 6.346,
+            "h": 2.287,
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "5",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "text"
+        },
+        "notes": "Graphic data — two-series line chart on black.",
+        "template": "chrome-paper"
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "GRAPHIC DATA",
+            "x": 0.503,
+            "y": 0.91,
+            "w": 5.28,
+            "h": 2.53,
+            "fontSize": 80,
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Report Company",
+            "x": 3.5999999999999996,
+            "y": 2.616,
+            "w": 1.1700000000000002,
+            "h": 0.6,
+            "color": "background",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Measuring Progress and Performance Trends",
+            "x": 0.503,
+            "y": 3.762,
+            "w": 4.255,
+            "h": 0.647,
+            "lineSpacingMultiple": 0.9,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip",
+            "x": 0.503,
+            "y": 5.244,
+            "w": 4.964,
+            "h": 1.232,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "chart",
+          "props": {
+            "type": "line",
+            "x": 6.405,
+            "y": 1.418,
+            "w": 6.54,
+            "h": 5.025,
+            "chartColors": ["primary", "accent"],
+            "lineSize": 3.25,
+            "lineSmooth": false,
+            "lineDataSymbol": "none",
+            "valAxisMinVal": 50,
+            "valAxisMaxVal": 160,
+            "valAxisMajorUnit": 50,
+            "valAxisLabelColor": "background",
+            "valAxisLabelFontFace": "Space Grotesk",
+            "valGridLine": {
+              "style": "solid",
+              "size": 0.25,
+              "color": "595959"
+            },
+            "catAxisLabelFontSize": 12,
+            "catAxisLabelColor": "background",
+            "catAxisLabelFontFace": "Space Grotesk",
+            "data": [
+              {
+                "name": "A",
+                "labels": ["Jan", "Feb", "March", "Apr"],
+                "values": [150, 80, 150, 125]
+              },
+              {
+                "name": "B",
+                "labels": ["Jan", "Feb", "March", "Apr"],
+                "values": [125, 160, 70, 150]
+              }
+            ],
+            "catAxisLineShow": false,
+            "valAxisLineShow": false
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "6",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "accent5"
+        },
+        "notes": "Reveal about progress — three overlapping circles.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 0.5,
+            "y": 0.59,
+            "w": 3.188,
+            "h": 3.188,
+            "fill": {
+              "color": "accent4"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 3.152,
+            "y": 0.59,
+            "w": 3.188,
+            "h": 3.188,
+            "fill": {
+              "color": "secondary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.834,
+            "y": 0.59,
+            "w": 3.188,
+            "h": 3.188,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 61 12\"><path d=\"M0 6 H59\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M48 1.5 L60 6 L48 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 1.154,
+            "y": 1.291,
+            "w": 0.614,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 61 12\"><path d=\"M0 6 H59\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M48 1.5 L60 6 L48 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 3.829,
+            "y": 1.291,
+            "w": 0.614,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 61 12\"><path d=\"M0 6 H59\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M48 1.5 L60 6 L48 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 6.512,
+            "y": 1.291,
+            "w": 0.614,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Subtitle Here",
+            "x": 1.1440000000000001,
+            "y": 1.879,
+            "w": 1.72,
+            "h": 0.32,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Subtitle Here",
+            "x": 3.819,
+            "y": 1.879,
+            "w": 1.72,
+            "h": 0.32,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Subtitle Here",
+            "x": 6.502,
+            "y": 1.879,
+            "w": 1.72,
+            "h": 0.32,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 1.1440000000000001,
+            "y": 2.25,
+            "w": 1.25,
+            "h": 0.949,
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 3.819,
+            "y": 2.25,
+            "w": 1.25,
+            "h": 0.949,
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 6.502,
+            "y": 2.25,
+            "w": 1.25,
+            "h": 0.949,
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 9.802999999999999,
+            "y": 2.921,
+            "w": 2.899,
+            "h": 0.587,
+            "fontSize": 16,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Key Metrics",
+            "x": 9.802999999999999,
+            "y": 3.901,
+            "w": 1.4200000000000002,
+            "h": 0.3,
+            "fontSize": 12,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Smarter Decisions",
+            "x": 6.1899999999999995,
+            "y": 5.978,
+            "w": 1.72,
+            "h": 0.3,
+            "fontSize": 12,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud",
+            "x": 0.515,
+            "y": 4.453,
+            "w": 3.558,
+            "h": 1.75,
+            "fontSize": 14,
+            "fontFace": "Space Grotesk",
+            "color": "background",
+            "lineSpacingMultiple": 1.4
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "REVEAL ABOUT PROGRESS",
+            "x": 5.4399999999999995,
+            "y": 4.24,
+            "w": 7.414000000000001,
+            "h": 2.287,
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "7",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "Dive into data insights — horizontal bars (per-bar colors).",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "Told Through Data",
+            "x": 0.486,
+            "y": 0.513,
+            "w": 2.32,
+            "h": 0.3,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "DIVE INTO DATA INSIGHTS",
+            "x": 0.507,
+            "y": 0.883,
+            "w": 7.203,
+            "h": 2.287,
+            "color": "text",
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data Overview",
+            "x": 5.303,
+            "y": 1.529,
+            "w": 1.82,
+            "h": 0.3,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Your Subtitle Text Here ",
+            "x": 8.645,
+            "y": 1.047,
+            "w": 4.179,
+            "h": 0.375,
+            "color": "accent6",
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis",
+            "x": 8.443999999999999,
+            "y": 1.91,
+            "w": 4.38,
+            "h": 0.949,
+            "align": "right",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 1.3,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 2.55,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 3.8,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 5.05,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.3,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 7.55,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 8.8,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 10.05,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 11.3,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 12.55,
+            "y": 3.4,
+            "w": 0,
+            "h": 2.97,
+            "line": {
+              "color": "background2"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 1.3,
+            "y": 3.54,
+            "w": 10,
+            "h": 0.46,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 1.3,
+            "y": 4.29,
+            "w": 8.75,
+            "h": 0.46,
+            "fill": {
+              "color": "accent4"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 1.3,
+            "y": 5.04,
+            "w": 8.125,
+            "h": 0.46,
+            "fill": {
+              "color": "accent5"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 1.3,
+            "y": 5.78,
+            "w": 7.125,
+            "h": 0.46,
+            "fill": {
+              "color": "secondary"
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Title 4",
+            "x": 0.35,
+            "y": 3.63,
+            "w": 0.87,
+            "h": 0.3,
+            "color": "text",
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Title 3",
+            "x": 0.35,
+            "y": 4.38,
+            "w": 0.87,
+            "h": 0.3,
+            "color": "text",
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Title 2",
+            "x": 0.35,
+            "y": 5.13,
+            "w": 0.87,
+            "h": 0.3,
+            "color": "text",
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Title 1",
+            "x": 0.35,
+            "y": 5.87,
+            "w": 0.87,
+            "h": 0.3,
+            "color": "text",
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "8",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "accent"
+        },
+        "notes": "Into data insights — nested circles 33B/85M/17M.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 0.665,
+            "y": 0.744,
+            "w": 5.702,
+            "h": 5.702,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 1.64,
+            "y": 2.694,
+            "w": 3.752,
+            "h": 3.752,
+            "fill": {
+              "color": "background"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 2.399,
+            "y": 4.212,
+            "w": 2.234,
+            "h": 2.234,
+            "fill": {
+              "color": "accent4"
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "+33B",
+            "x": 2.046,
+            "y": 1.328,
+            "w": 2.9379999999999997,
+            "h": 0.774,
+            "fontSize": 42,
+            "fontFace": "Space Grotesk Medium",
+            "color": "accent6",
+            "bold": true,
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Company B",
+            "x": 2.046,
+            "y": 2.36,
+            "w": 2.9379999999999997,
+            "h": 0.35,
+            "fontSize": 15,
+            "fontFace": "Space Grotesk",
+            "color": "accent6",
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "+85M",
+            "x": 2.131,
+            "y": 3.135,
+            "w": 2.77,
+            "h": 0.62,
+            "fontSize": 34,
+            "fontFace": "Space Grotesk Medium",
+            "color": "accent6",
+            "bold": true,
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Company B",
+            "x": 2.131,
+            "y": 3.73,
+            "w": 2.77,
+            "h": 0.3,
+            "fontSize": 12.5,
+            "fontFace": "Space Grotesk",
+            "color": "accent6",
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "17M",
+            "x": 2.131,
+            "y": 4.93,
+            "w": 2.77,
+            "h": 0.55,
+            "fontSize": 30,
+            "fontFace": "Space Grotesk Medium",
+            "color": "accent6",
+            "bold": true,
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Company A",
+            "x": 2.131,
+            "y": 5.48,
+            "w": 2.77,
+            "h": 0.3,
+            "fontSize": 12.5,
+            "fontFace": "Space Grotesk",
+            "color": "accent6",
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud",
+            "x": 7.067,
+            "y": 1.162,
+            "w": 5.5,
+            "h": 1.091,
+            "fontSize": 14,
+            "fontFace": "Space Grotesk",
+            "color": "text",
+            "lineSpacingMultiple": 1.4
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data Horizons Emerging Trends and Strategic Recommendations",
+            "x": 7.067,
+            "y": 2.8209999999999997,
+            "w": 5.438000000000001,
+            "h": 0.587,
+            "fontSize": 16,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data Overview",
+            "x": 7.067,
+            "y": 3.947,
+            "w": 1.82,
+            "h": 0.3,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "INTO DATA INSIGHTS",
+            "x": 7.067,
+            "y": 4.316,
+            "w": 5.337000000000001,
+            "h": 2.287,
+            "color": "text",
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data Review",
+            "x": 11.603,
+            "y": 5.858,
+            "w": 0.9200000000000002,
+            "h": 0.6,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "9",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "text"
+        },
+        "notes": "Three doughnut gauges — 17M / 35M / 85M.",
+        "template": "chrome-paper"
+      },
+      "children": [
+        {
+          "name": "chart",
+          "props": {
+            "type": "doughnut",
+            "x": 0.394,
+            "y": 0.736,
+            "w": 3.42,
+            "h": 3.42,
+            "holeSize": 55,
+            "firstSliceAng": 0,
+            "chartColors": ["202020", "accent4"],
+            "dataBorder": {
+              "pt": 0.75,
+              "color": "text"
+            },
+            "showValue": false,
+            "showLabel": false,
+            "showPercent": false,
+            "data": [
+              {
+                "name": "d",
+                "labels": ["a", "b"],
+                "values": [50, 30]
+              }
+            ]
+          }
+        },
+        {
+          "name": "chart",
+          "props": {
+            "type": "doughnut",
+            "x": 4.955,
+            "y": 0.736,
+            "w": 3.42,
+            "h": 3.42,
+            "holeSize": 55,
+            "firstSliceAng": 0,
+            "chartColors": ["202020", "accent"],
+            "dataBorder": {
+              "pt": 0.75,
+              "color": "text"
+            },
+            "showValue": false,
+            "showLabel": false,
+            "showPercent": false,
+            "data": [
+              {
+                "name": "d",
+                "labels": ["a", "b"],
+                "values": [30, 50]
+              }
+            ]
+          }
+        },
+        {
+          "name": "chart",
+          "props": {
+            "type": "doughnut",
+            "x": 9.506,
+            "y": 0.736,
+            "w": 3.42,
+            "h": 3.42,
+            "holeSize": 55,
+            "firstSliceAng": 0,
+            "chartColors": ["202020", "secondary"],
+            "dataBorder": {
+              "pt": 0.75,
+              "color": "text"
+            },
+            "showValue": false,
+            "showLabel": false,
+            "showPercent": false,
+            "data": [
+              {
+                "name": "d",
+                "labels": ["a", "b"],
+                "values": [20, 80]
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "17M",
+            "x": 1.6560000000000001,
+            "y": 2.27,
+            "w": 0.913,
+            "h": 0.572,
+            "fontSize": 28,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "35M",
+            "x": 6.21,
+            "y": 2.27,
+            "w": 0.913,
+            "h": 0.572,
+            "fontSize": 28,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "85M",
+            "x": 10.76,
+            "y": 2.27,
+            "w": 0.913,
+            "h": 0.572,
+            "fontSize": 28,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Your Subtitle Text Here ",
+            "x": 0.622,
+            "y": 4.568,
+            "w": 2.98,
+            "h": 0.375,
+            "align": "center",
+            "lineSpacingMultiple": 0.9,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Your Subtitle Text Here ",
+            "x": 5.177,
+            "y": 4.568,
+            "w": 2.98,
+            "h": 0.375,
+            "align": "center",
+            "lineSpacingMultiple": 0.9,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Your Subtitle Text Here ",
+            "x": 9.725999999999999,
+            "y": 4.568,
+            "w": 2.98,
+            "h": 0.375,
+            "align": "center",
+            "lineSpacingMultiple": 0.9,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut",
+            "x": 0.59,
+            "y": 5.013,
+            "w": 3.045,
+            "h": 1.232,
+            "color": "background",
+            "align": "center",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut",
+            "x": 5.039,
+            "y": 5.013,
+            "w": 3.255,
+            "h": 1.232,
+            "color": "background",
+            "align": "center",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut",
+            "x": 9.602,
+            "y": 5.013,
+            "w": 3.2279999999999998,
+            "h": 1.232,
+            "color": "background",
+            "align": "center",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "10",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "secondary"
+        },
+        "notes": "Story told through — four stadium pills, options one to four.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 702 110.8\"><path d=\"M55.4 0.5 L702 0.5 L702 110.3 L55.4 110.3 A54.9 54.9 0 0 1 55.4 0.5 Z\" fill=\"#6C35EA\" stroke=\"#000000\" stroke-width=\"1\"/></svg>",
+            "x": 6.47,
+            "y": 0.64,
+            "w": 7.0200000000000005,
+            "h": 1.108
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 617 110.8\"><path d=\"M55.4 0.5 L617 0.5 L617 110.3 L55.4 110.3 A54.9 54.9 0 0 1 55.4 0.5 Z\" fill=\"#C4F484\" stroke=\"#000000\" stroke-width=\"1\"/></svg>",
+            "x": 7.31,
+            "y": 2.15,
+            "w": 6.17,
+            "h": 1.108
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 540 110.8\"><path d=\"M55.4 0.5 L540 0.5 L540 110.3 L55.4 110.3 A54.9 54.9 0 0 1 55.4 0.5 Z\" fill=\"#FF4F06\" stroke=\"#000000\" stroke-width=\"1\"/></svg>",
+            "x": 8.08,
+            "y": 3.65,
+            "w": 5.4,
+            "h": 1.108
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 453 110.8\"><path d=\"M55.4 0.5 L453 0.5 L453 110.3 L55.4 110.3 A54.9 54.9 0 0 1 55.4 0.5 Z\" fill=\"#01AD65\" stroke=\"#000000\" stroke-width=\"1\"/></svg>",
+            "x": 9.14,
+            "y": 5.16,
+            "w": 4.53,
+            "h": 1.108
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "OPTION ONE",
+            "x": 10.068,
+            "y": 1.041,
+            "w": 2.698,
+            "h": 0.466,
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "OPTION TWO",
+            "x": 10.068,
+            "y": 2.541,
+            "w": 2.698,
+            "h": 0.466,
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "OPTION THREE",
+            "x": 10.068,
+            "y": 4.019,
+            "w": 2.698,
+            "h": 0.466,
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "OPTION FOUR",
+            "x": 10.068,
+            "y": 5.541,
+            "w": 2.698,
+            "h": 0.466,
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 61 12\"><path d=\"M0 6 H59\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M48 1.5 L60 6 L48 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 6.854,
+            "y": 1.196,
+            "w": 0.614,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 61 12\"><path d=\"M0 6 H59\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M48 1.5 L60 6 L48 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 7.765,
+            "y": 2.701,
+            "w": 0.614,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 61 12\"><path d=\"M0 6 H59\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M48 1.5 L60 6 L48 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 8.509,
+            "y": 4.207,
+            "w": 0.614,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 61 12\"><path d=\"M0 6 H59\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M48 1.5 L60 6 L48 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 9.376,
+            "y": 5.713,
+            "w": 0.614,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "8.7B",
+            "x": 0.607,
+            "y": 0.892,
+            "w": 1.76,
+            "h": 0.92,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud",
+            "x": 2.582,
+            "y": 0.915,
+            "w": 3.028,
+            "h": 1.515,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data Horizons Emerging Trends and Strategic Recommendations",
+            "x": 0.563,
+            "y": 3.01,
+            "w": 5.438000000000001,
+            "h": 0.587,
+            "fontSize": 16,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "STORY TOLD THROUGH",
+            "x": 0.563,
+            "y": 4.341,
+            "w": 6.058000000000001,
+            "h": 2.287,
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data Review",
+            "x": 5.514,
+            "y": 5.869,
+            "w": 0.9200000000000002,
+            "h": 0.6,
+            "color": "background",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "11",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "accent4"
+        },
+        "notes": "Three angle data — inverted triangle with diagonal value bands.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 611 528.7\">\n<polygon points=\"0,0 122.1,0 61.1,105.7\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\"/>\n<polygon points=\"122.1,0 244.3,0 122.2,211.4 61.1,105.7\" fill=\"#6C35EA\" stroke=\"#000000\" stroke-width=\"1\"/>\n<polygon points=\"244.3,0 366.4,0 183.3,317.2 122.2,211.4\" fill=\"#01AD65\" stroke=\"#000000\" stroke-width=\"1\"/>\n<polygon points=\"366.4,0 488.5,0 244.4,422.9 183.3,317.2\" fill=\"#C497FE\" stroke=\"#000000\" stroke-width=\"1\"/>\n<polygon points=\"488.5,0 611,0 306,528.7 244.4,422.9\" fill=\"#C4F484\" stroke=\"#000000\" stroke-width=\"1\"/>\n</svg>",
+            "x": 3.601,
+            "y": 0.863,
+            "w": 6.11,
+            "h": 5.287
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "VALUE ONE",
+            "x": 6.366,
+            "y": 3.08,
+            "w": 2.698,
+            "h": 0.466,
+            "align": "center",
+            "rotate": 300,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "VALUE TWO",
+            "x": 5.4719999999999995,
+            "y": 2.573,
+            "w": 2.698,
+            "h": 0.466,
+            "align": "center",
+            "rotate": 300,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "VALUE THREE",
+            "x": 4.555,
+            "y": 2.007,
+            "w": 2.698,
+            "h": 0.466,
+            "align": "center",
+            "rotate": 300,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "FOUR",
+            "x": 4.513,
+            "y": 1.4649999999999999,
+            "w": 0.9830000000000001,
+            "h": 0.466,
+            "align": "center",
+            "rotate": 300,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading2"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 61 12\"><path d=\"M0 6 H59\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M48 1.5 L60 6 L48 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 0.866,
+            "y": 0.903,
+            "w": 0.614,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "50.5K",
+            "x": 0.7999999999999999,
+            "y": 2.795,
+            "w": 2.7199999999999998,
+            "h": 0.92,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data Horizons Emerging Trends and Strategic Recommendations",
+            "x": 0.7999999999999999,
+            "y": 4.043,
+            "w": 3.28,
+            "h": 0.829,
+            "fontSize": 16,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud",
+            "x": 0.7999999999999999,
+            "y": 4.987,
+            "w": 4.134,
+            "h": 1.42,
+            "fontSize": 14,
+            "fontFace": "Space Grotesk",
+            "color": "background",
+            "lineSpacingMultiple": 1.4
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "THREE ANGLE DATA",
+            "x": 8.504,
+            "y": 2.8409999999999997,
+            "w": 4.198,
+            "h": 3.741,
+            "fontSize": 80,
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "12",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "background"
+        },
+        "notes": "Our data grow — pac-man circles with callout leaders 50/25/10%.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 338 338\"><path d=\"M169 169 L0 169 A169 169 0 1 1 5.6 212.2 Z\" fill=\"#C4F484\" stroke=\"#000000\" stroke-width=\"1\"/></svg>",
+            "x": 4.443,
+            "y": 2.556,
+            "w": 3.38,
+            "h": 3.38
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 338 338\"><path d=\"M169 169 L338 169 A169 169 0 1 0 332.4 212.2 Z\" fill=\"#FF4F06\" stroke=\"#000000\" stroke-width=\"1\"/></svg>",
+            "x": 6.957,
+            "y": 2.556,
+            "w": 3.38,
+            "h": 3.38
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 338 288.5\"><path d=\"M169 119.5 L49.5 0.6 A169 169 0 1 0 288.5 0.6 Z\" fill=\"#C497FE\" stroke=\"#000000\" stroke-width=\"1\"/></svg>",
+            "x": 5.7,
+            "y": 0.733,
+            "w": 3.38,
+            "h": 2.885
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 6.458,
+            "y": 2.46,
+            "w": 1.8739999999999999,
+            "h": 0.666,
+            "align": "center",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 5.107,
+            "y": 4.66,
+            "w": 1.3,
+            "h": 0.949,
+            "align": "center",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur",
+            "x": 7.784,
+            "y": 4.66,
+            "w": 1.3,
+            "h": 0.949,
+            "align": "center",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 334.1 14.8\"><circle cx=\"8\" cy=\"7.4\" r=\"7\" fill=\"#000000\"/><path d=\"M8 7.4 H334\" stroke=\"#000000\" stroke-width=\"1.5\" fill=\"none\"/></svg>",
+            "x": 8.541,
+            "y": 1.889,
+            "w": 3.341,
+            "h": 0.148
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 284.1 14.8\"><circle cx=\"8\" cy=\"7.4\" r=\"7\" fill=\"#000000\"/><path d=\"M8 7.4 H284\" stroke=\"#000000\" stroke-width=\"1.5\" fill=\"none\"/></svg>",
+            "x": 9.914,
+            "y": 3.783,
+            "w": 2.841,
+            "h": 0.148
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 530.7 114.5\"><circle cx=\"10\" cy=\"7\" r=\"7\" fill=\"#000000\"/><path d=\"M10 7 L158 113 H530\" stroke=\"#000000\" stroke-width=\"1.5\" fill=\"none\"/></svg>",
+            "x": 6.671,
+            "y": 5.184,
+            "w": 5.307,
+            "h": 1.145
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "50%",
+            "x": 10.373,
+            "y": 1.1119999999999999,
+            "w": 1.522,
+            "h": 0.831,
+            "fontSize": 48,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "align": "right",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "25%",
+            "x": 11.225999999999999,
+            "y": 2.9899999999999998,
+            "w": 1.522,
+            "h": 0.831,
+            "fontSize": 48,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "align": "right",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "10%",
+            "x": 10.373,
+            "y": 5.45,
+            "w": 1.522,
+            "h": 0.831,
+            "fontSize": 48,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "align": "right",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "OUR DATA GROW",
+            "x": 0.59,
+            "y": 0.8480000000000001,
+            "w": 3.6359999999999997,
+            "h": 3.377,
+            "color": "text",
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud",
+            "x": 0.59,
+            "y": 4.953,
+            "w": 3.028,
+            "h": 1.515,
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "13",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "accent5"
+        },
+        "notes": "Understanding model — growing circles 5/15/50%.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "UNDER-\nSTANDING\nMODEL",
+            "x": 0.59,
+            "y": 0.67,
+            "w": 4.801,
+            "h": 3.104,
+            "fontSize": 66,
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea",
+            "x": 7.9559999999999995,
+            "y": 0.67,
+            "w": 4.746,
+            "h": 1.232,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Horizons Emerging Trends and Strategic Recommendations",
+            "x": 0.59,
+            "y": 5.543,
+            "w": 2.808,
+            "h": 0.92,
+            "lineSpacingMultiple": 0.9,
+            "style": "subtitle"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 4.418,
+            "y": 4.015,
+            "w": 1.485,
+            "h": 1.485,
+            "fill": {
+              "color": "secondary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 7.023,
+            "y": 3.815,
+            "w": 1.885,
+            "h": 1.885,
+            "fill": {
+              "color": "accent4"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 9.834,
+            "y": 3.278,
+            "w": 2.958,
+            "h": 2.958,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "5%",
+            "x": 4.677,
+            "y": 4.519,
+            "w": 0.9670000000000001,
+            "h": 0.6,
+            "fontSize": 36,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "15%",
+            "x": 7.328,
+            "y": 4.466,
+            "w": 1.2750000000000001,
+            "h": 0.72,
+            "fontSize": 44,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "50%",
+            "x": 10.552,
+            "y": 4.423,
+            "w": 1.522,
+            "h": 0.8,
+            "fontSize": 48,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text",
+            "align": "center",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 43 12\"><path d=\"M0 6 H41\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M30 1.5 L42 6 L30 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 6.334,
+            "y": 4.757,
+            "w": 0.433,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 43 12\"><path d=\"M0 6 H41\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\"/><path d=\"M30 1.5 L42 6 L30 10.5\" stroke=\"#000000\" stroke-width=\"1.1\" fill=\"none\" stroke-linejoin=\"miter\"/></svg>",
+            "x": 9.142,
+            "y": 4.757,
+            "w": 0.433,
+            "h": 0.12
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Subtitle Here",
+            "x": 4.321,
+            "y": 5.734,
+            "w": 1.72,
+            "h": 0.3,
+            "color": "text",
+            "align": "center",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Subtitle Here",
+            "x": 7.234,
+            "y": 5.893,
+            "w": 1.47,
+            "h": 0.3,
+            "color": "text",
+            "align": "center",
+            "lineSpacingMultiple": 0.9,
+            "style": "heading3"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "14",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "primary"
+        },
+        "notes": "Review of our data — clustered columns with white line overlay.",
+        "template": "chrome-ink"
+      },
+      "children": [
+        {
+          "name": "chart",
+          "props": {
+            "type": "bar",
+            "barDir": "col",
+            "barGrouping": "clustered",
+            "barGapWidthPct": 150,
+            "barOverlapPct": 0,
+            "x": 0.372,
+            "y": 0.576,
+            "w": 8.522,
+            "h": 3.407,
+            "chartColors": ["secondary", "accent"],
+            "dataBorder": {
+              "pt": 0.75,
+              "color": "text"
+            },
+            "valAxisMinVal": 0,
+            "valAxisMaxVal": 6,
+            "valAxisMajorUnit": 2,
+            "valAxisLabelColor": "background",
+            "valAxisLabelFontFace": "Space Grotesk",
+            "valGridLine": {
+              "style": "solid",
+              "size": 0.5,
+              "color": "1A1145"
+            },
+            "catAxisLabelFontSize": 12,
+            "catAxisLabelColor": "background",
+            "catAxisLabelFontFace": "Space Grotesk",
+            "data": [
+              {
+                "name": "A",
+                "labels": ["2020", "2021", "2022", "2023", "2024"],
+                "values": [4.3, 2.5, 3.5, 4.5, 2]
+              },
+              {
+                "name": "B",
+                "labels": ["2020", "2021", "2022", "2023", "2024"],
+                "values": [2, 2, 3, 5, 4]
+              }
+            ],
+            "valAxisLineShow": false,
+            "catAxisLineShow": false
+          }
+        },
+        {
+          "name": "chart",
+          "props": {
+            "type": "line",
+            "x": 0.753,
+            "y": 0.719,
+            "w": 7.963,
+            "h": 2.856,
+            "chartColors": ["background"],
+            "lineSize": 3,
+            "lineSmooth": false,
+            "lineDataSymbol": "circle",
+            "lineDataSymbolSize": 10,
+            "valAxisHidden": true,
+            "catAxisHidden": true,
+            "valAxisMinVal": 0,
+            "valAxisMaxVal": 6,
+            "valAxisMajorUnit": 2,
+            "valGridLine": {
+              "style": "none"
+            },
+            "data": [
+              {
+                "name": "L",
+                "labels": ["2020", "2021", "2022", "2023", "2024"],
+                "values": [2.4, 4.4, 1.8, 2.8, 4]
+              }
+            ],
+            "valAxisLineShow": false,
+            "catAxisLineShow": false
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor",
+            "x": 10.001,
+            "y": 0.614,
+            "w": 2.7009999999999996,
+            "h": 1.091,
+            "fontSize": 14,
+            "fontFace": "Space Grotesk",
+            "color": "background",
+            "align": "right",
+            "lineSpacingMultiple": 1.4
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Data Horizons Emerging Trends and Strategic",
+            "x": 10.09,
+            "y": 3.01,
+            "w": 2.6119999999999997,
+            "h": 0.587,
+            "fontSize": 16,
+            "fontFace": "Space Grotesk Medium",
+            "color": "background",
+            "align": "right",
+            "lineSpacingMultiple": 0.9
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "25$",
+            "x": 0.502,
+            "y": 4.517,
+            "w": 1.76,
+            "h": 0.92,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor",
+            "x": 0.534,
+            "y": 5.414,
+            "w": 2.409,
+            "h": 0.949,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "55$",
+            "x": 4.5569999999999995,
+            "y": 4.517,
+            "w": 1.76,
+            "h": 0.92,
+            "lineSpacingMultiple": 0.9,
+            "style": "heading1"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor",
+            "x": 4.59,
+            "y": 5.414,
+            "w": 2.409,
+            "h": 0.949,
+            "color": "background",
+            "lineSpacingMultiple": 1.4,
+            "style": "body"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "REVIEW OF OUR DATA",
+            "x": 6.942,
+            "y": 4.4719999999999995,
+            "w": 5.759,
+            "h": 2.105,
+            "fontSize": 66,
+            "align": "right",
+            "lineSpacingMultiple": 0.9,
+            "style": "title"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "15",
+            "x": 12.368,
+            "y": 7.008,
+            "w": 0.333,
+            "h": 0.252,
+            "fontSize": 9,
+            "fontFace": "Space Grotesk Medium",
+            "color": "text2",
+            "align": "right"
+          }
+        }
+      ]
+    }
+  ]
+}
