@@ -29,7 +29,8 @@ import { renderPresentation } from '../core/render';
 import { getPptxTheme } from '../themes';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from '../core/fontResolution';
-import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
+import { resolveThemeContext } from '../core/generationContext';
+import { assertNoContentConflicts } from '../core/generator';
 import {
   packagePresentationBuffer,
   type PresentationPackagingOptions,
@@ -294,60 +295,35 @@ function createBuilderImpl<
         throw new Error('Top-level component must be a pptx component');
       }
 
-      // An inline theme object (self-contained document) is normalized to a
-      // name + resolved theme so font-mode scoping and the name-keyed
-      // customThemes re-resolution below work unchanged.
-      let inlineTheme: PptxThemeConfig | undefined;
-      if (
-        typeof internalDocument.props.theme === 'object' &&
-        internalDocument.props.theme !== null
-      ) {
-        inlineTheme = internalDocument.props.theme as PptxThemeConfig;
-        internalDocument = {
-          ...internalDocument,
-          props: {
-            ...internalDocument.props,
-            theme: inlineTheme.name || 'inline-theme',
-          },
-        };
-      }
-
-      // Resolve theme: doc-level `props.theme` wins (matches non-plugin path
-      // and DOCX). A constructor-supplied `state.theme` object only acts as
-      // the fallback when the doc names a theme we can't find — otherwise a
-      // playground/CLI default theme would silently shadow customThemes
-      // entries (e.g. `props.theme: "wiseair"` rendering as `themes.minimal`).
-      const docThemeName = internalDocument.props.theme as string | undefined;
-      const baseThemeName =
-        docThemeName ??
-        (typeof state.theme === 'string' ? state.theme : 'default');
-      let resolvedTheme =
-        inlineTheme ??
-        state.customThemes?.[baseThemeName] ??
-        (typeof state.theme === 'object' && state.theme !== null
-          ? state.theme
-          : getPptxTheme(baseThemeName));
-
       const warnings: PipelineWarning[] = [];
 
-      // Export-mode pre-pass runs BEFORE custom-component expansion so
-      // any component that reads `theme.fonts.*` during render sees the
-      // substituted names, not the original non-safe ones. Otherwise the
-      // rewritten tree would still contain pre-substitute family strings
-      // baked in by custom components.
-      const mode = applyExportMode({
-        doc: internalDocument,
-        theme: resolvedTheme,
+      // Props defaulting, inline-theme normalization, theme resolution
+      // (customThemes → constructor theme → built-in), export-mode pre-pass
+      // and cache-key scoping — shared with the core pipeline so the two
+      // cannot drift (see core/generationContext.ts). The pre-pass runs
+      // BEFORE custom-component expansion so any component that reads
+      // `theme.fonts.*` during render sees the substituted names, not the
+      // original non-safe ones.
+      //
+      // Theme precedence: doc-level `props.theme` wins (matches non-plugin
+      // path and DOCX). A constructor-supplied `state.theme` object only acts
+      // as the fallback when the customThemes lookup misses — otherwise a
+      // playground/CLI default theme would silently shadow customThemes
+      // entries (e.g. `props.theme: "wiseair"` rendering as `themes.minimal`).
+      const context = resolveThemeContext(internalDocument, {
+        customThemes: state.customThemes,
         fonts: state.fonts,
+        warnings,
+        defaultThemeName:
+          typeof state.theme === 'string' ? state.theme : undefined,
+        resolveNamedTheme: (name) =>
+          state.customThemes?.[name] ??
+          (typeof state.theme === 'object' && state.theme !== null
+            ? state.theme
+            : getPptxTheme(name)),
       });
-      resolvedTheme = mode.theme;
-      for (const w of mode.warnings) {
-        warnings.push({
-          code: w.code,
-          message: w.message,
-          component: 'fontRegistry',
-        });
-      }
+      const modedRoot = context.document;
+      const resolvedTheme = context.theme;
 
       // A custom render() creates a new, previously unseen boundary in the
       // component tree. Validate its output in the authored parent context so
@@ -358,10 +334,10 @@ function createBuilderImpl<
           : (emitted, componentLabel, parentName) => {
               let validationDocument: PresentationComponentDefinition;
               if (parentName === 'pptx') {
-                validationDocument = { ...mode.doc, children: emitted };
+                validationDocument = { ...modedRoot, children: emitted };
               } else if (parentName === 'slide') {
                 validationDocument = {
-                  ...mode.doc,
+                  ...modedRoot,
                   children: [{ name: 'slide', props: {}, children: emitted }],
                 };
               } else {
@@ -387,29 +363,19 @@ function createBuilderImpl<
             };
 
       // Process custom components in all slide children
-      const processedChildren = mode.doc.children
+      const processedChildren = modedRoot.children
         ? await processAllSlides(
-            mode.doc.children,
+            modedRoot.children,
             warnings,
             resolvedTheme,
             validateEmitted
           )
         : [];
 
-      // Scope the theme key by mode so any future theme-name-keyed cache
-      // in PPTX can't leak a custom-mode layout into a substitute-mode run
-      // (or vice versa). Matches the DOCX plugin path.
-      const themeName = scopedThemeName(baseThemeName, state.fonts?.mode);
-      const docWithScopedTheme: PresentationComponentDefinition =
-        themeName !== baseThemeName
-          ? {
-              ...mode.doc,
-              props: { ...mode.doc.props, theme: themeName },
-              children: processedChildren,
-            }
-          : { ...mode.doc, children: processedChildren };
-
-      const processedDocument = docWithScopedTheme;
+      const processedDocument: PresentationComponentDefinition = {
+        ...modedRoot,
+        children: processedChildren,
+      };
 
       // Validate the fully expanded tree once more. This covers output from
       // nested custom containers whose intermediate parent semantics are
@@ -439,13 +405,22 @@ function createBuilderImpl<
         state.fonts
       );
 
-      // processPresentation re-resolves the theme from `props.theme`; inject
-      // the post-substitute theme under the scoped name so substitute-mode
-      // rewrites survive into slide processing instead of being overwritten
-      // by a fresh `getPptxTheme()` lookup.
+      // Unconditional conflict gate on the expanded tree — the tree that
+      // reaches the renderer, so it also covers payloads emitted by custom
+      // components. The validators above collect the same conflicts with
+      // richer paths when validation is enabled; this is the net for
+      // `validation: { enabled: false }`, where the core path already threw
+      // and this path silently resolved by runtime precedence.
+      assertNoContentConflicts(processedDocument);
+
+      // processPresentation re-resolves the theme from `props.theme`
+      // (normalized to context.themeName); inject the post-substitute theme
+      // under that name so substitute-mode rewrites survive into slide
+      // processing instead of being overwritten by a fresh `getPptxTheme()`
+      // lookup.
       const effectiveCustomThemes = {
         ...(state.customThemes ?? {}),
-        [themeName]: resolvedTheme,
+        [context.themeName]: resolvedTheme,
       };
       const processed = processPresentation(processedDocument, {
         customThemes: effectiveCustomThemes,

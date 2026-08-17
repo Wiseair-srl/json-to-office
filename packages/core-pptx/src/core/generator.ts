@@ -15,9 +15,8 @@ import { isPresentationComponent } from '../types';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { processPresentation } from './structure';
 import { renderPresentation } from './render';
-import { getPptxTheme } from '../themes/defaults';
 import { resolveDocumentFonts } from './fontResolution';
-import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
+import { resolveThemeContext } from './generationContext';
 import {
   collectImageSourceConflicts,
   collectTextContentConflicts,
@@ -92,6 +91,32 @@ function assertValidPresentation(
 }
 
 /**
+ * Structural rules the per-component schema can't express: image sources
+ * (path/base64/svg) are mutually exclusive, and text components carry
+ * exactly one of text/runs. Reject conflicting payloads before rendering so
+ * they can't be silently resolved by runtime precedence. Matches core-docx,
+ * which fails generation on the same image conflict.
+ *
+ * Runs unconditionally — the validators also collect these conflicts, so this
+ * is the net for `validation: { enabled: false }`. Shared with the plugin
+ * path, which checks the expanded tree (custom components can emit
+ * conflicting payloads too).
+ */
+export function assertNoContentConflicts(document: unknown): void {
+  const sourceConflicts = [
+    ...collectImageSourceConflicts(document),
+    ...collectTextContentConflicts(document),
+  ];
+  if (sourceConflicts.length > 0) {
+    throw new Error(
+      `Document validation failed:\n${sourceConflicts
+        .map((e) => `  - ${e.path}: ${e.message}`)
+        .join('\n')}`
+    );
+  }
+}
+
+/**
  * Type guard for presentation component
  */
 export function isPresentationComponentDefinition(
@@ -117,22 +142,7 @@ export async function generatePresentation(
     throw new Error('Top-level component must be a pptx component');
   }
 
-  // Structural rules the per-component schema can't express: image sources
-  // (path/base64/svg) are mutually exclusive, and text components carry
-  // exactly one of text/runs. Reject conflicting payloads before rendering so
-  // they can't be silently resolved by runtime precedence. Matches core-docx,
-  // which fails generation on the same image conflict.
-  const sourceConflicts = [
-    ...collectImageSourceConflicts(document),
-    ...collectTextContentConflicts(document),
-  ];
-  if (sourceConflicts.length > 0) {
-    throw new Error(
-      `Document validation failed:\n${sourceConflicts
-        .map((e) => `  - ${e.path}: ${e.message}`)
-        .join('\n')}`
-    );
-  }
+  assertNoContentConflicts(document);
 
   const processed = processPresentation(document, options);
   return await renderPresentation(processed, warnings, pendingFills);
@@ -172,73 +182,32 @@ export async function generateBufferWithWarnings(
 
   const warnings: PipelineWarning[] = [];
 
-  // An inline theme object (self-contained document) is normalized to a named
-  // customThemes entry up front so the rest of the pipeline — font-mode
-  // scoping and processPresentation's name-keyed re-resolution — works
-  // unchanged.
-  if (
-    typeof component.props?.theme === 'object' &&
-    component.props.theme !== null
-  ) {
-    const inlineTheme = component.props.theme as PptxThemeConfig;
-    const inlineName = inlineTheme.name || 'inline-theme';
-    component = {
-      ...component,
-      props: { ...component.props, theme: inlineName },
-    };
-    options = {
-      ...options,
-      customThemes: {
-        ...(options?.customThemes ?? {}),
-        [inlineName]: inlineTheme,
-      },
-    };
-  }
-
-  const baseThemeName = (component.props?.theme ?? 'default') as string;
-  let resolvedTheme =
-    options?.customThemes?.[baseThemeName] ?? getPptxTheme(baseThemeName);
-  // Export-mode pre-pass: substitute rewrites non-safe families in place;
-  // custom leaves refs untouched and resolution short-circuits to empty.
-  const mode = applyExportMode({
-    doc: component,
-    theme: resolvedTheme,
+  // Props defaulting, inline-theme normalization, theme resolution,
+  // export-mode pre-pass and cache-key scoping — shared with the plugin
+  // pipeline so the two cannot drift (see core/generationContext.ts).
+  const context = resolveThemeContext(component, {
+    customThemes: options?.customThemes,
     fonts: options?.fonts,
+    warnings,
   });
-  component = mode.doc;
-  resolvedTheme = mode.theme;
-  for (const w of mode.warnings) {
-    warnings.push({
-      code: w.code,
-      message: w.message,
-      component: 'fontRegistry',
-    });
-  }
+  component = context.document;
   // resolveDocumentFonts fires `fonts.onResolved` internally when a
   // listener is registered (LibreOffice preview stager). The PPTX itself
   // never embeds bytes.
   await resolveDocumentFonts(
     component,
-    resolvedTheme,
+    context.theme,
     warnings,
     options?.fonts
   );
-  // Scope the theme key by mode so any future theme-name-keyed cache in
-  // PPTX can't leak a custom-mode layout into a substitute-mode run (or
-  // vice versa). Matches the DOCX path. processPresentation re-resolves
-  // the theme from `props.theme`, so we rewrite it on the component too.
-  const themeName = scopedThemeName(baseThemeName, options?.fonts?.mode);
-  if (themeName !== baseThemeName) {
-    component = {
-      ...component,
-      props: { ...component.props, theme: themeName },
-    };
-  }
+  // processPresentation re-resolves the theme from `props.theme` (normalized
+  // to context.themeName), so the resolved theme is registered under that
+  // name for it to find.
   const effectiveOptions: GenerationOptions = {
     ...options,
     customThemes: {
       ...(options?.customThemes ?? {}),
-      [themeName]: resolvedTheme,
+      [context.themeName]: context.theme,
     },
   };
   // Gradient/pattern fills render as sentinel solid fills during generation;
