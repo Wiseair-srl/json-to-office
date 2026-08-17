@@ -94,7 +94,7 @@ export function generateUnifiedDocumentSchema(
   } = options;
 
   // Captured from inside the recursive callback for the root's children.
-  let capturedSectionSchema: TSchema | undefined;
+  let capturedRootChildSchemas: TSchema[] = [];
   let capturedPluginSchemas: TSchema[] = [];
 
   // Create a recursive component definition schema
@@ -190,9 +190,21 @@ export function generateUnifiedDocumentSchema(
         ? createAllComponentSchemasNarrowed(This, pluginSchemas)
         : { schemas: [] as TSchema[], byName: new Map<string, TSchema>() };
 
-      // Capture the narrowed section schema + plugins for the root's children.
-      // Must happen inside the callback while standardSchemas is available.
-      capturedSectionSchema = byName.get('section');
+      // Capture the root's permitted children + plugins. Must happen inside
+      // the callback while standardSchemas is available.
+      //
+      // The root accepts `section` *and* everything a section accepts: the
+      // runtime validator and generator both take content components placed
+      // directly under `docx` (examples/contract-v1.docx.json is written that
+      // way), so a section-only schema reddened valid documents in
+      // schema-driven editors.
+      const sectionComponent = getStandardComponent('section');
+      capturedRootChildSchemas = [
+        'section',
+        ...(sectionComponent?.allowedChildren ?? []),
+      ]
+        .map((componentName) => byName.get(componentName))
+        .filter((schema): schema is TSchema => schema !== undefined);
       capturedPluginSchemas = pluginSchemas;
 
       const componentSchemas = [...standardSchemas, ...pluginSchemas];
@@ -217,16 +229,18 @@ export function generateUnifiedDocumentSchema(
     { $id: 'ComponentDefinition' }
   );
 
-  // Build root docx schema with narrowed children (section only).
-  // ComponentDefinition is embedded in `definitions` so that $refs inside
-  // section header/footer and table cell content resolve correctly.
+  // Build root docx schema with narrowed children (section + section's own
+  // permitted content). ComponentDefinition is embedded in `definitions` so
+  // that $refs inside section header/footer and table cell content resolve.
   const reportComponent = getStandardComponent('docx');
   if (!reportComponent) {
     throw new Error('Docx root component not found in registry');
   }
 
-  if (!capturedSectionSchema) {
-    throw new Error('Section schema not found in narrowed standard schemas');
+  if (capturedRootChildSchemas.length === 0) {
+    throw new Error(
+      'Root child schemas not found in narrowed standard schemas'
+    );
   }
 
   return Type.Object(
@@ -240,9 +254,9 @@ export function generateUnifiedDocumentSchema(
       props: Type.Optional(reportComponent.propsSchema),
       children: Type.Optional(
         Type.Array(
-          capturedPluginSchemas.length > 0
-            ? Type.Union([capturedSectionSchema, ...capturedPluginSchemas])
-            : capturedSectionSchema
+          Type.Union([...capturedRootChildSchemas, ...capturedPluginSchemas], {
+            discriminator: { propertyName: 'name' },
+          })
         )
       ),
     },

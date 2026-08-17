@@ -19,6 +19,26 @@ import {
 } from '../../lib/monaco-collapse-strings';
 import { ValidationPanel, ValidationStatusBar } from './validation-panel';
 import { monacoThemeFor, registerMonacoThemes } from '../../lib/monaco-theme';
+import { FORMAT } from '../../lib/env';
+
+/**
+ * Ensure defaultPath matches the document schema's fileMatch (*.FORMAT.json).
+ *
+ * Documents are discovered with their extension stripped, so `name` is
+ * `contract-v2`, not `contract-v2.docx.json`. A model URI of `contract-v2.json`
+ * matches no registered schema, leaving Monaco's JSON worker on its
+ * schema-less path: no validation, no hovers, and "completions" that are just
+ * values already present in the file. Mirrors resolveThemeDefaultPath.
+ */
+function resolveDocumentDefaultPath(name: string): string {
+  const ext = `.${FORMAT}.json`;
+  if (name.endsWith(ext)) return name;
+  const base = name
+    .replace(/\.\w+\.theme\.json$/, '')
+    .replace(/\.\w+\.json$/, '')
+    .replace(/\.json$/, '');
+  return base + ext;
+}
 
 interface EditorMonacoJsonProps {
   name: string;
@@ -352,7 +372,7 @@ function EditorMonacoJson({
           height="100%"
           defaultLanguage="json"
           theme={monacoThemeFor(resolvedTheme)}
-          defaultPath={name.endsWith('.json') ? name : `${name}.json`}
+          defaultPath={resolveDocumentDefaultPath(name)}
           value={editorValue}
           beforeMount={handleEditorWillMount}
           onMount={handleEditorDidMount}
