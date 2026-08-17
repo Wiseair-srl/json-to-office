@@ -1,4 +1,4 @@
-import { TextRun, ExternalHyperlink, InternalHyperlink } from 'docx';
+import { TextRun, ExternalHyperlink, InternalHyperlink, Tab } from 'docx';
 import {
   processTextWithPlaceholders,
   type PlaceholderChild,
@@ -34,6 +34,10 @@ export interface TextStyle {
       | 'wavyDouble';
     color?: string;
   }; // docx library expects an object or undefined, not boolean
+  // Character width scaling in percent (w:w). 100 is normal.
+  scale?: number;
+  // Letter tracking (w:spacing) in twentieths of a point (signed).
+  characterSpacing?: number;
   // Proofing language (BCP-47) for the run, e.g. { value: 'fr-FR' }
   language?: {
     value?: string;
@@ -268,6 +272,10 @@ function createTextRunsWithNewlines(
         ...(runStyle.bold !== undefined && { bold: runStyle.bold }),
         ...(runStyle.italics !== undefined && { italics: runStyle.italics }),
         ...(baseStyle.underline && { underline: baseStyle.underline }),
+        ...(baseStyle.scale && { scale: baseStyle.scale }),
+        ...(baseStyle.characterSpacing && {
+          characterSpacing: baseStyle.characterSpacing,
+        }),
         ...(baseStyle.language && { language: baseStyle.language }),
       };
 
@@ -278,23 +286,42 @@ function createTextRunsWithNewlines(
 
       // The line break belongs only on the first run of the line.
       let firstSegment = true;
-      const lineRuns = splitByNoProofWords(
-        line,
-        (segment, matched) => {
-          const segNoProof = matched || wholeRunNoProof;
-          const run = new TextRun({
-            text: segment,
-            ...commonProps,
-            ...((matched || baseStyle.noProof !== undefined) && {
-              noProof: segNoProof,
-            }),
-            ...(needsLineBreak && firstSegment && { break: 1 }),
-          });
+      const lineRuns: TextRun[] = [];
+      // Tab characters become real <w:tab/> runs (a tab char inside <w:t>
+      // would be silently dropped by Word), so paragraph tabStops apply.
+      const tabSegments = line.split('\t');
+      tabSegments.forEach((tabSegment, tabIndex) => {
+        if (tabIndex > 0) {
+          lineRuns.push(
+            new TextRun({
+              children: [new Tab()],
+              ...commonProps,
+              ...(needsLineBreak && firstSegment && { break: 1 }),
+            })
+          );
           firstSegment = false;
-          return run;
-        },
-        wordsForLine
-      );
+        }
+        if (!tabSegment && tabSegments.length > 1) return;
+        lineRuns.push(
+          ...splitByNoProofWords(
+            tabSegment,
+            (segment, matched) => {
+              const segNoProof = matched || wholeRunNoProof;
+              const run = new TextRun({
+                text: segment,
+                ...commonProps,
+                ...((matched || baseStyle.noProof !== undefined) && {
+                  noProof: segNoProof,
+                }),
+                ...(needsLineBreak && firstSegment && { break: 1 }),
+              });
+              firstSegment = false;
+              return run;
+            },
+            wordsForLine
+          )
+        );
+      });
       runs.push(...lineRuns);
     }
   }

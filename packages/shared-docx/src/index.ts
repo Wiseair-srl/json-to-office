@@ -214,6 +214,11 @@ export {
   SpacingSchema,
   LineSpacingSchema,
   IndentSchema,
+  ParagraphIndentSchema,
+  TabStopTypeSchema,
+  TabStopLeaderSchema,
+  TabStopSchema,
+  TabStopsSchema,
   NumberingSchema,
   BorderSchema,
   MarginsSchema,
@@ -257,6 +262,11 @@ export type {
   Spacing,
   LineSpacing,
   Indent,
+  ParagraphIndent,
+  TabStopType,
+  TabStopLeader,
+  TabStop,
+  TabStops,
   Numbering,
 } from './schemas/components';
 

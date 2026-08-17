@@ -36,6 +36,7 @@ export {
 export {
   deepValidateDocument,
   comprehensiveValidateDocument,
+  collectIndentConflicts,
 } from './deep-validator';
 
 // Format-agnostic schema utilities re-exported from @json-to-office/shared

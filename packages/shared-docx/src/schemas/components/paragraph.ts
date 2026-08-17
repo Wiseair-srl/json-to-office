@@ -3,9 +3,10 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { SpacingSchema } from './common';
+import { SpacingSchema, ParagraphIndentSchema, TabStopsSchema } from './common';
 import {
   FontDefinitionSchema,
+  HexColorSchema,
   LanguageSchema,
   NoProofSchema,
   NoProofWordsSchema,
@@ -180,12 +181,17 @@ export const ParagraphPropsSchema = Type.Object(
     noProof: Type.Optional(NoProofSchema),
     // Known-words allowlist for this paragraph (merged with the document list)
     noProofWords: Type.Optional(NoProofWordsSchema),
-    // Rich-text decoration color for bold segments (kept as top-level behavior option)
-    boldColor: Type.Optional(Type.String()),
+    // Rich-text decoration color for bold segments (kept as top-level behavior
+    // option). Same value space as font.color: hex or theme color token.
+    boldColor: Type.Optional(HexColorSchema),
     // Paragraph spacing (in points) — limited paragraph-level option allowed
     spacing: Type.Optional(SpacingSchema),
     // Paragraph alignment (moved from font to config level)
     alignment: Type.Optional(AlignmentSchema),
+    // Paragraph indentation (w:ind) in twips
+    indent: Type.Optional(ParagraphIndentSchema),
+    // Tab stops (w:tabs); tab characters (\t) in text jump to these positions
+    tabStops: Type.Optional(TabStopsSchema),
     pageBreak: Type.Optional(
       Type.Boolean({
         description: 'Insert page break before paragraph',

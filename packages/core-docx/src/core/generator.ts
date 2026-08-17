@@ -12,13 +12,12 @@ import {
   isReportComponent,
 } from '../types';
 import { ThemeConfig } from '../styles';
-import { resolveBuiltInTheme } from '../styles/theme-resolver';
+import { resolveThemeContext } from './generationContext';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { processDocument } from './structure';
 import { applyLayout } from './layout';
 import { renderDocument } from './render';
 import { resolveDocumentFonts } from './fontResolution';
-import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
 import {
   packageDocument,
   resolveGenerationDate,
@@ -149,61 +148,14 @@ async function generateDocumentWithCustomThemes(
   warnings?: GenerationWarning[],
   generationDate?: Date
 ): Promise<Document> {
-  // Alias so we can reassign after the export-mode pre-pass swaps doc +
-  // theme references to the rewritten versions. A root written without a
-  // `props` key validates clean, so default it to `{}` here — otherwise every
-  // downstream `document.props.*` read (theme, componentDefaults,
-  // noProofWords, trackRevisions, language, metadata) throws. Only `undefined`
-  // is defaulted: `props: null` is malformed and must reach the validator,
-  // which rejects it, rather than being quietly rewritten into a valid shape.
-  let document =
-    documentIn.props === undefined ? { ...documentIn, props: {} } : documentIn;
-  // Get theme configuration with custom theme support (theme is always a string name)
-  let themeName = document.props.theme || 'minimal';
-  let theme: ThemeConfig;
-
-  // Check custom themes first with case-insensitive matching, then fall back to built-in
-  if (customThemes) {
-    // Try exact match first
-    if (customThemes[themeName]) {
-      theme = customThemes[themeName];
-    } else {
-      // Try case-insensitive match
-      const themeNameLower = themeName.toLowerCase();
-      const matchingThemeKey = Object.keys(customThemes).find(
-        (key) => key.toLowerCase() === themeNameLower
-      );
-      if (matchingThemeKey) {
-        theme = customThemes[matchingThemeKey];
-      } else {
-        theme = resolveBuiltInTheme(themeName, { customThemes, warnings });
-      }
-    }
-  } else {
-    theme = resolveBuiltInTheme(themeName, { warnings });
-  }
-
-  // Export-mode pre-pass: substitute (default) rewrites non-safe families
-  // to safe equivalents; custom keeps refs as-is.
-  const mode = applyExportMode({ doc: document, theme, fonts });
-  document = mode.doc;
-  theme = mode.theme;
-  // Scope cache key by mode: substitute rewrites the theme in place, so
-  // structure/layout caches must not share slots with custom-mode runs.
-  themeName = scopedThemeName(themeName, fonts?.mode);
-  for (const w of mode.warnings) {
-    if (warnings) {
-      warnings.push({
-        component: 'fontRegistry',
-        message: w.message,
-        severity: 'warning',
-        context: { code: w.code },
-      });
-    } else {
-      // eslint-disable-next-line no-console
-      console.warn(`[json-to-docx] [${w.code}] ${w.message}`);
-    }
-  }
+  // Props defaulting, theme resolution, in-document overrides, export-mode
+  // pre-pass and cache-key scoping — shared with the plugin pipeline so the
+  // two cannot drift (see core/generationContext.ts).
+  const { document, theme, themeName } = resolveThemeContext(documentIn, {
+    customThemes,
+    fonts,
+    warnings,
+  });
 
   // Resolve fonts for the LibreOffice preview stager (side-channel).
   // resolveDocumentFonts fires `fonts.onResolved` internally when a

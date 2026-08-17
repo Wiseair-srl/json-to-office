@@ -71,7 +71,7 @@ export const NoProofWordsSchema = Type.Array(Type.String({ minLength: 1 }), {
  */
 export const TextFormattingPropertiesSchema = Type.Object(
   {
-    size: Type.Optional(Type.Number({ minimum: 8, maximum: 72 })),
+    size: Type.Optional(Type.Number({ minimum: 8, maximum: 120 })),
     color: Type.Optional(HexColorSchema),
     bold: Type.Optional(Type.Boolean()),
     fontWeight: Type.Optional(
@@ -119,6 +119,14 @@ export const TextFormattingPropertiesSchema = Type.Object(
         },
         { additionalProperties: false }
       )
+    ),
+    scale: Type.Optional(
+      Type.Number({
+        minimum: 1,
+        maximum: 600,
+        description:
+          'Character width scaling in percent (w:w). 100 is normal; values below compress glyphs, above expand them (e.g. 55, 115).',
+      })
     ),
   },
   { additionalProperties: false }

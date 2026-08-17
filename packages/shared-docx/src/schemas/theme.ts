@@ -377,6 +377,45 @@ export {
 // Theme Config Schema
 // ============================================================================
 
+export const ThemeColorsSchema = Type.Object(
+  {
+    primary: HexColorSchema,
+    secondary: HexColorSchema,
+    accent: HexColorSchema,
+    text: HexColorSchema,
+    background: HexColorSchema,
+    border: HexColorSchema,
+    // Additional semantic color names
+    textPrimary: HexColorSchema,
+    textSecondary: HexColorSchema,
+    textMuted: HexColorSchema,
+    borderPrimary: HexColorSchema,
+    borderSecondary: HexColorSchema,
+    backgroundPrimary: HexColorSchema,
+    backgroundSecondary: HexColorSchema,
+    // Extra chart-series slots, named to match the PPTX theme so both
+    // formats share one palette vocabulary. Optional: the bundled DOCX
+    // themes leave them unset and charts skip the empty slots.
+    accent4: Type.Optional(HexColorSchema),
+    accent5: Type.Optional(HexColorSchema),
+    accent6: Type.Optional(HexColorSchema),
+  },
+  { additionalProperties: false }
+);
+
+export const ThemeOverridesSchema = Type.Object(
+  {
+    colors: Type.Optional(Type.Partial(ThemeColorsSchema)),
+    fonts: Type.Optional(Type.Partial(FontsSchema)),
+    styles: Type.Optional(StyleDefinitionsSchema),
+  },
+  {
+    additionalProperties: false,
+    description:
+      'Partial theme deep-merged over the resolved named theme: define or override palette tokens, font roles, and named styles in-document.',
+  }
+);
+
 export const ThemeConfigSchema = Type.Object(
   {
     $schema: Type.Optional(Type.String()),

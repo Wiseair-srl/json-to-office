@@ -135,6 +135,82 @@ export const IndentSchema = Type.Object(
   { description: 'Indentation configuration', additionalProperties: false }
 );
 
+export const ParagraphIndentSchema = Type.Object(
+  {
+    left: Type.Optional(
+      Type.Number({
+        description: 'Left indentation in twips (1/20 of a point)',
+      })
+    ),
+    right: Type.Optional(
+      Type.Number({
+        description: 'Right indentation in twips (1/20 of a point)',
+      })
+    ),
+    hanging: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        description:
+          'Hanging indent in twips: first line stays at the left indent, following lines are indented. Mutually exclusive with firstLine.',
+      })
+    ),
+    firstLine: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        description:
+          'First-line indent in twips: only the first line is indented. Mutually exclusive with hanging.',
+      })
+    ),
+  },
+  {
+    description:
+      'Paragraph indentation (w:ind) in twips. Use either hanging or firstLine, not both.',
+    additionalProperties: false,
+  }
+);
+
+export const TabStopTypeSchema = Type.Union(
+  [
+    Type.Literal('left'),
+    Type.Literal('right'),
+    Type.Literal('center'),
+    Type.Literal('decimal'),
+    Type.Literal('bar'),
+  ],
+  { description: 'Tab stop alignment type' }
+);
+
+export const TabStopLeaderSchema = Type.Union(
+  [
+    Type.Literal('dot'),
+    Type.Literal('hyphen'),
+    Type.Literal('underscore'),
+    Type.Literal('middleDot'),
+    Type.Literal('none'),
+  ],
+  { description: 'Leader character filling the space before the tab stop' }
+);
+
+export const TabStopSchema = Type.Object(
+  {
+    type: TabStopTypeSchema,
+    position: Type.Number({
+      minimum: 0,
+      description: 'Tab stop position in twips (1/20 of a point)',
+    }),
+    leader: Type.Optional(TabStopLeaderSchema),
+  },
+  {
+    description: 'Tab stop definition (w:tab in w:tabs)',
+    additionalProperties: false,
+  }
+);
+
+export const TabStopsSchema = Type.Array(TabStopSchema, {
+  description:
+    'Tab stops for the paragraph. Tab characters (\\t) in the text jump to these positions.',
+});
+
 // ============================================================================
 // Floating Positioning Schemas (shared between image, text-box components)
 // ============================================================================
@@ -433,6 +509,11 @@ export type Spacing = Static<typeof SpacingSchema>;
 export type ListSpacing = Static<typeof ListSpacingSchema>;
 export type LineSpacing = Static<typeof LineSpacingSchema>;
 export type Indent = Static<typeof IndentSchema>;
+export type ParagraphIndent = Static<typeof ParagraphIndentSchema>;
+export type TabStopType = Static<typeof TabStopTypeSchema>;
+export type TabStopLeader = Static<typeof TabStopLeaderSchema>;
+export type TabStop = Static<typeof TabStopSchema>;
+export type TabStops = Static<typeof TabStopsSchema>;
 export type Numbering = Static<typeof NumberingSchema>;
 export type Margins = Static<typeof MarginsSchema>;
 export type Border = Static<typeof BorderSchema>;

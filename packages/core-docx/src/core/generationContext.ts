@@ -1,0 +1,120 @@
+/**
+ * Shared generation prologue.
+ *
+ * Both entry points — `generateBufferFromJson` (core) and
+ * `createDocumentGenerator` (plugin) — must resolve the same theme, apply the
+ * same in-document overrides, and derive the same cache key before the
+ * structure → layout → render engine runs. Keeping two copies of that meant
+ * `props.themeOverrides` reached only one of them (#133); this module is the
+ * single definition so the next root-level prop cannot diverge (#132).
+ *
+ * The prologue deliberately stops before font resolution: the core path
+ * resolves fonts straight after this, while the plugin path must first expand
+ * custom components (which can introduce new families).
+ */
+
+import type { ReportComponentDefinition } from '../types';
+import type { ThemeConfig } from '../styles';
+import type {
+  FontRuntimeOpts,
+  GenerationWarning,
+} from '@json-to-office/shared';
+import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
+import { resolveBuiltInTheme } from '../styles/theme-resolver';
+import { applyThemeOverrides, themeOverridesDigest } from '../themes/overrides';
+
+export interface ThemeContextOptions {
+  customThemes?: { [key: string]: ThemeConfig };
+  fonts?: FontRuntimeOpts;
+  warnings?: GenerationWarning[];
+  /**
+   * Theme lookup for the base `props.theme` name. The plugin builder passes
+   * its own (customThemes → constructor-supplied theme → built-in); omit it to
+   * use customThemes → built-in.
+   */
+  resolveNamedTheme?: (
+    name: string,
+    warnings?: GenerationWarning[]
+  ) => ThemeConfig;
+}
+
+export interface GenerationThemeContext {
+  /** The document after the export-mode pre-pass rewrote font references. */
+  document: ReportComponentDefinition;
+  theme: ThemeConfig;
+  /** Cache key: base theme name + override digest + export-mode scope. */
+  themeName: string;
+}
+
+/** customThemes lookup with the case-insensitive fallback, then built-ins. */
+function defaultNamedThemeLookup(
+  themeName: string,
+  customThemes: { [key: string]: ThemeConfig } | undefined,
+  warnings?: GenerationWarning[]
+): ThemeConfig {
+  if (customThemes) {
+    if (customThemes[themeName]) return customThemes[themeName];
+    const themeNameLower = themeName.toLowerCase();
+    const matchingThemeKey = Object.keys(customThemes).find(
+      (key) => key.toLowerCase() === themeNameLower
+    );
+    if (matchingThemeKey) return customThemes[matchingThemeKey];
+    return resolveBuiltInTheme(themeName, { customThemes, warnings });
+  }
+  return resolveBuiltInTheme(themeName, { warnings });
+}
+
+export function resolveThemeContext(
+  documentIn: ReportComponentDefinition,
+  options: ThemeContextOptions = {}
+): GenerationThemeContext {
+  const { customThemes, fonts, warnings, resolveNamedTheme } = options;
+
+  // A root written without a `props` key validates clean, so default it here —
+  // otherwise every downstream `document.props.*` read (theme, componentDefaults,
+  // noProofWords, trackRevisions, language, metadata) throws. Only `undefined`
+  // is defaulted: `props: null` is malformed and must reach the validator,
+  // which rejects it, rather than being quietly rewritten into a valid shape.
+  const document =
+    documentIn.props === undefined ? { ...documentIn, props: {} } : documentIn;
+
+  const baseThemeName = document.props.theme || 'minimal';
+  let theme = resolveNamedTheme
+    ? resolveNamedTheme(baseThemeName, warnings)
+    : defaultNamedThemeLookup(baseThemeName, customThemes, warnings);
+
+  // In-document partial theme, merged before the export-mode pre-pass so a
+  // font-family override is visible to it. The digest joins the cache key so
+  // two documents sharing a theme name but not overrides never share slots.
+  const themeOverrides = document.props.themeOverrides;
+  let themeName = baseThemeName;
+  if (themeOverrides) {
+    theme = applyThemeOverrides(theme, themeOverrides);
+    themeName = `${themeName}+ov:${themeOverridesDigest(themeOverrides)}`;
+  }
+
+  // Export-mode pre-pass: substitute (default) rewrites non-safe families to
+  // safe equivalents; custom keeps refs as-is.
+  const mode = applyExportMode({ doc: document, theme, fonts });
+  for (const w of mode.warnings) {
+    if (warnings) {
+      warnings.push({
+        component: 'fontRegistry',
+        message: w.message,
+        severity: 'warning',
+        context: { code: w.code },
+      });
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn(`[json-to-docx] [${w.code}] ${w.message}`);
+    }
+  }
+
+  return {
+    document: mode.doc,
+    theme: mode.theme,
+    // Scope by mode too: substitute rewrites the theme in place, so caches
+    // must not share slots with custom-mode runs keyed on the same name.
+    themeName: scopedThemeName(themeName, fonts?.mode),
+  };
+}

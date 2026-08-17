@@ -224,7 +224,7 @@ describe('deep prop validation in nested containers and regions', () => {
             {
               name: 'text-box',
               props: { width: 200, height: 100 },
-              // font.size is capped at 72; deep inside a text-box this was
+              // font.size is capped at 120; deep inside a text-box this was
               // silently accepted before the whole-tree walk.
               children: [
                 {
@@ -241,7 +241,7 @@ describe('deep prop validation in nested containers and regions', () => {
     expect(result.valid).toBe(false);
     expect(
       (result.errors ?? []).some(
-        (e) => e.path.includes('/font/size') && /72/.test(e.message)
+        (e) => e.path.includes('/font/size') && /120/.test(e.message)
       )
     ).toBe(true);
   });
@@ -516,7 +516,7 @@ describe('deep prop validation in nested containers and regions', () => {
         (e) =>
           e.path ===
             '/children/0/children/0/props/columns/0/cells/0/content/props/font/size' &&
-          /72/.test(e.message)
+          /120/.test(e.message)
       )
     ).toBe(true);
   });
@@ -608,7 +608,7 @@ describe('deep prop validation in nested containers and regions', () => {
     expect(
       (result.errors ?? []).some(
         (e) =>
-          e.path.endsWith('/content/props/font/size') && /72/.test(e.message)
+          e.path.endsWith('/content/props/font/size') && /120/.test(e.message)
       )
     ).toBe(true);
   });
@@ -661,5 +661,42 @@ describe('deep prop validation in nested containers and regions', () => {
       e.path.includes('/props/columns/')
     );
     expect(tableErrors).toEqual([]);
+  });
+});
+
+describe('paragraph boldColor accepts the same values as font.color', () => {
+  const docWith = (boldColor: string) =>
+    JSON.stringify({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'paragraph',
+          props: { text: 'a **b**', boldColor, font: { color: 'primary' } },
+        },
+      ],
+    });
+
+  it('accepts a theme color token', () => {
+    const result = validate.jsonDocument(docWith('primary'));
+
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('accepts a hex value', () => {
+    const result = validate.jsonDocument(docWith('#25408F'));
+
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects a value that is neither hex nor a token name', () => {
+    const result = validate.jsonDocument(docWith('not a color'));
+
+    expect(result.valid).toBe(false);
+    expect(
+      (result.errors ?? []).some((e) => e.path.includes('boldColor'))
+    ).toBe(true);
   });
 });

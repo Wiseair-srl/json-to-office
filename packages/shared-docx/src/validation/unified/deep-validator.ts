@@ -99,6 +99,57 @@ export function collectImageSourceConflicts(data: unknown): ValidationError[] {
   return errors;
 }
 
+// Components that accept a paragraph-style `indent` prop with the mutually
+// exclusive hanging/firstLine pair.
+const INDENT_COMPONENT_NAMES = new Set(['paragraph', 'heading']);
+
+/**
+ * Collect "hanging and firstLine both set" indent conflicts anywhere in a
+ * document.
+ *
+ * `hanging` and `firstLine` are mutually exclusive on `props.indent` (they both
+ * map to the same w:ind axis — Word keeps only one), but each is an optional
+ * field on a single object schema, so a payload carrying both passes TypeBox's
+ * structural check. Like the image-source walk above, this runs unconditionally
+ * and traverses every nested value, so paragraphs inside columns, table cells,
+ * text boxes, headers/footers, and sections are all covered.
+ */
+export function collectIndentConflicts(data: unknown): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  const visit = (node: any, path: string): void => {
+    if (Array.isArray(node)) {
+      node.forEach((item, i) => visit(item, `${path}/${i}`));
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+
+    if (INDENT_COMPONENT_NAMES.has(node.name)) {
+      const indent = node.props?.indent;
+      if (
+        indent &&
+        typeof indent === 'object' &&
+        indent.hanging !== undefined &&
+        indent.firstLine !== undefined
+      ) {
+        errors.push({
+          path: `${path}/props/indent`,
+          message:
+            'Indent accepts either "hanging" or "firstLine", not both. Use exactly one of the two.',
+          code: 'mutually_exclusive',
+        });
+      }
+    }
+
+    for (const key of Object.keys(node)) {
+      visit(node[key], `${path}/${key}`);
+    }
+  };
+
+  visit(data, '');
+  return errors;
+}
+
 /**
  * Deep validate a document to collect ALL errors, not just union-level errors
  */

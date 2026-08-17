@@ -135,6 +135,10 @@ export interface TextOptions {
   fontWeight?: number;
   italic?: boolean;
   underline?: boolean;
+  // Character width scaling in percent (w:w). 100 is normal.
+  scale?: number;
+  // Letter tracking (w:spacing) — value in twentieths of a point.
+  characterSpacing?: { type: 'condensed' | 'expanded'; value: number };
   // Per-run language (BCP-47) for spell/grammar checking. Overrides the
   // document default for these runs.
   language?: string;
@@ -172,6 +176,20 @@ export interface TextOptions {
   keepNext?: boolean;
   // Keep all lines of paragraph together
   keepLines?: boolean;
+  // Paragraph indentation (w:ind) in twips. hanging and firstLine are
+  // mutually exclusive (validated upstream).
+  indent?: {
+    left?: number;
+    right?: number;
+    hanging?: number;
+    firstLine?: number;
+  };
+  // Tab stops (w:tabs). Tab characters (\t) in text jump to these positions.
+  tabStops?: {
+    type: 'left' | 'right' | 'center' | 'decimal' | 'bar';
+    position: number;
+    leader?: 'dot' | 'hyphen' | 'underscore' | 'middleDot' | 'none';
+  }[];
   // Tracked-change segments: when present, text is rendered from these
   // (as native Word revisions) instead of the plain content string
   revision?: Revision;
@@ -323,6 +341,15 @@ export function createText(
     ...(options.underline !== undefined && {
       underline: options.underline ? { type: 'single' as const } : undefined,
     }),
+    // Character width scaling in percent (w:w)
+    ...(options.scale && { scale: options.scale }),
+    // Letter tracking (w:spacing, twentieths of a point; negative = condensed)
+    ...(options.characterSpacing && {
+      characterSpacing:
+        options.characterSpacing.type === 'condensed'
+          ? -options.characterSpacing.value
+          : options.characterSpacing.value,
+    }),
     // Proofing: per-run language and/or no-proof. Omitting language lets the
     // run inherit the document default set on docDefaults.
     ...(options.language && { language: { value: options.language } }),
@@ -352,7 +379,9 @@ export function createText(
   } else {
     // Add text content - parseTextWithDecorators handles both decorators and newlines
     const textRuns = parseTextWithDecorators(normalizedContent, baseTextStyle, {
-      boldColor: options.boldColor,
+      boldColor: options.boldColor
+        ? resolveColor(options.boldColor, theme)
+        : undefined,
       enableHyperlinks: true,
       noProofWords: resolveNoProofWords(theme, options.noProofWords),
     });
@@ -397,6 +426,9 @@ export function createText(
     ...(frameOptions && { frame: frameOptions }),
     ...(options.keepNext !== undefined && { keepNext: options.keepNext }),
     ...(options.keepLines !== undefined && { keepLines: options.keepLines }),
+    ...(options.indent && { indent: options.indent }),
+    ...(options.tabStops &&
+      options.tabStops.length > 0 && { tabStops: options.tabStops }),
   });
 }
 
@@ -564,6 +596,15 @@ export function createHeading(
     ...(options.underline !== undefined && {
       underline: options.underline ? { type: 'single' as const } : undefined,
     }),
+    // Character width scaling in percent (w:w)
+    ...(options.scale && { scale: options.scale }),
+    // Letter tracking (w:spacing, twentieths of a point; negative = condensed)
+    ...(options.characterSpacing && {
+      characterSpacing:
+        options.characterSpacing.type === 'condensed'
+          ? -options.characterSpacing.value
+          : options.characterSpacing.value,
+    }),
     // Proofing: per-run language and/or no-proof (see createText).
     ...(options.language && { language: { value: options.language } }),
     ...(options.noProof !== undefined && { noProof: options.noProof }),
@@ -618,7 +659,9 @@ export function createHeading(
     if (hasDecorators) {
       // For headings with decorators, parse text runs first
       const textRuns = parseTextWithDecorators(normalizedText, baseTextStyle, {
-        boldColor: options.boldColor,
+        boldColor: options.boldColor
+          ? resolveColor(options.boldColor, theme)
+          : undefined,
         enableHyperlinks: true,
         noProofWords: headingNoProofWords,
       });
@@ -640,7 +683,9 @@ export function createHeading(
     if (hasDecorators) {
       // For headings with decorators, parse and add text runs
       const textRuns = parseTextWithDecorators(normalizedText, baseTextStyle, {
-        boldColor: options.boldColor,
+        boldColor: options.boldColor
+          ? resolveColor(options.boldColor, theme)
+          : undefined,
         enableHyperlinks: true,
         noProofWords: headingNoProofWords,
       });
@@ -659,6 +704,7 @@ export function createHeading(
     spacing: hasExplicitSpacing ? spacing : undefined,
     ...(options.keepNext !== undefined && { keepNext: options.keepNext }),
     ...(options.keepLines !== undefined && { keepLines: options.keepLines }),
+    ...(options.indent && { indent: options.indent }),
   });
 }
 

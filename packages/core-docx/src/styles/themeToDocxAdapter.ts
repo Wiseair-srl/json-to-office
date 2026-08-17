@@ -48,6 +48,7 @@ interface StyleProperties {
     after?: number;
   };
   characterSpacing?: { type: 'condensed' | 'expanded'; value: number };
+  scale?: number;
   priority?: number;
   baseStyle?: string;
   followingStyle?: string;
@@ -229,6 +230,7 @@ function convertRunProperties(
           ? -merged.characterSpacing.value
           : merged.characterSpacing.value,
     }),
+    ...(merged.scale && { scale: merged.scale }),
   };
 }
 
@@ -358,6 +360,7 @@ export function createWordStyles(
           italic: normalStyle?.italic,
           underline: normalStyle?.underline,
           characterSpacing: normalStyle?.characterSpacing,
+          scale: normalStyle?.scale,
         });
 
         return convertRunProperties(merged, theme, theme.colors.text);
@@ -405,6 +408,7 @@ export function createWordStyles(
             italic: headingStyle.italic,
             underline: headingStyle.underline,
             characterSpacing: headingStyle.characterSpacing,
+            scale: headingStyle.scale,
           });
 
           return convertRunProperties(merged, theme, theme.colors.primary, 20);
@@ -482,6 +486,7 @@ export function createWordStyles(
             italic: headingStyle.italic,
             underline: headingStyle.underline,
             characterSpacing: headingStyle.characterSpacing,
+            scale: headingStyle.scale,
           });
 
           return convertRunProperties(merged, theme, theme.colors.primary, 20);
@@ -557,6 +562,7 @@ export function createWordStyles(
           italic: titleStyle.italic,
           underline: titleStyle.underline,
           characterSpacing: titleStyle.characterSpacing,
+          scale: titleStyle.scale,
         });
 
         return convertRunProperties(merged, theme, theme.colors.primary, 20);
@@ -625,6 +631,7 @@ export function createWordStyles(
           italic: subtitleStyle.italic,
           underline: subtitleStyle.underline,
           characterSpacing: subtitleStyle.characterSpacing,
+          scale: subtitleStyle.scale,
         });
 
         return convertRunProperties(merged, theme, theme.colors.secondary);
@@ -798,6 +805,7 @@ export function createWordStyles(
             italic: customStyle.italic,
             underline: customStyle.underline,
             characterSpacing: customStyle.characterSpacing,
+            scale: customStyle.scale,
           });
 
           return convertRunProperties(merged, theme, theme.colors.text);
