@@ -49,6 +49,7 @@ export function renderHeadingComponent(
       italic: config.font?.italic,
       underline: config.font?.underline,
       scale: config.font?.scale,
+      characterSpacing: config.font?.characterSpacing,
       // Proofing: local language override + no-proof toggle + known-words list
       language: config.language,
       noProof: config.noProof,

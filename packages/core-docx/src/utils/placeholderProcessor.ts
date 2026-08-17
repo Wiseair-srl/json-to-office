@@ -307,6 +307,9 @@ function createTextRunsWithNewlines(
         italics: baseStyle.italics,
         underline: baseStyle.underline,
         ...(baseStyle.scale && { scale: baseStyle.scale }),
+        ...(baseStyle.characterSpacing && {
+          characterSpacing: baseStyle.characterSpacing,
+        }),
         ...(baseStyle.language && { language: baseStyle.language }),
       };
       const wholeRunNoProof = baseStyle.noProof === true;

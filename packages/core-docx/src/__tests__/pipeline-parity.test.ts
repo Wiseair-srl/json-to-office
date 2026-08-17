@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import { generateBufferFromJson } from '../core/generator';
+import { generateBufferFromJson, generateDocument } from '../core/generator';
 import { createDocumentGenerator } from './../plugin/createDocumentGenerator';
 
 /**
@@ -111,5 +111,29 @@ describe('generateBufferFromJson vs createDocumentGenerator', () => {
     const { core, plugin } = await bothPipelines(docWith({}, 'primary'));
     expect(plugin.doc).toEqual(core.doc);
     expect(plugin.styles).toEqual(core.styles);
+  });
+});
+
+describe('root props defaulting', () => {
+  // `props` is optional in the schema, but every downstream read assumes an
+  // object. `generateDocument` on a document without `$schema` runs no
+  // validator, so a null here used to surface as `Cannot read properties of
+  // null (reading 'theme')` from deep inside theme resolution.
+  it('accepts a document with no props at all', async () => {
+    const doc = await generateDocument({
+      name: 'docx',
+      children: [{ name: 'paragraph', props: { text: 'No root props.' } }],
+    } as never);
+    expect(doc).toBeDefined();
+  });
+
+  it('rejects props: null with a clear message, not a TypeError', async () => {
+    await expect(
+      generateDocument({
+        name: 'docx',
+        props: null,
+        children: [],
+      } as never)
+    ).rejects.toThrow(/props` is null/);
   });
 });

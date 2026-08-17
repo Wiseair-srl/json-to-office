@@ -73,8 +73,19 @@ export function resolveThemeContext(
   // A root written without a `props` key validates clean, so default it here —
   // otherwise every downstream `document.props.*` read (theme, componentDefaults,
   // noProofWords, trackRevisions, language, metadata) throws. Only `undefined`
-  // is defaulted: `props: null` is malformed and must reach the validator,
-  // which rejects it, rather than being quietly rewritten into a valid shape.
+  // is defaulted: `props: null` is malformed and must be rejected rather than
+  // quietly rewritten into a valid shape.
+  //
+  // Both JSON entry points validate before reaching here, so null is already
+  // a validation error there. `generateDocument` on a document without
+  // `$schema` runs no validator at all, and used to surface this as
+  // `Cannot read properties of null` from the theme read below.
+  if (documentIn.props === null) {
+    throw new Error(
+      'Document `props` is null. Omit it, or provide an object — ' +
+        'a null props cannot carry a theme.'
+    );
+  }
   const document =
     documentIn.props === undefined ? { ...documentIn, props: {} } : documentIn;
 
