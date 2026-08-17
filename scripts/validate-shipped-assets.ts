@@ -10,7 +10,8 @@
  *
  * Covers:
  *   - `*.docx.json`, `*.pptx.json`, `*.docx.theme.json`, `*.pptx.theme.json`
- *     under `packages/` and `examples/` — format and kind come from the filename.
+ *     under `packages/`, `examples/` and `templates/` — format and kind come
+ *     from the filename.
  *   - ```json fences in `docs/**\/*.md` that are full document samples — a
  *     `docx`/`pptx` root with a `children` array. Fragments (a lone component,
  *     a props object, a `$schema` line) are skipped: they are not documents and
@@ -33,7 +34,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const ASSET_ROOTS = ['packages', 'examples'];
+const ASSET_ROOTS = ['packages', 'examples', 'templates'];
 const DOCS_ROOT = 'docs';
 const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.turbo', 'build']);
 
@@ -178,6 +179,52 @@ function collectDocsSnippets(): { targets: Target[]; skipped: string[] } {
 }
 
 // ----------------------------------------------------------------------------
+// Portability
+// ----------------------------------------------------------------------------
+
+/**
+ * A machine-local absolute path in a shipped asset is schema-valid but broken
+ * for everyone else: image lookups resolve against `process.cwd()`, and the
+ * PPTX renderer additionally refuses anything outside it. The template rebuilds
+ * shipped 65 such paths under `/Users/<name>/...`, which also leaked the
+ * author's home directory into every generated deck's image `descr`. Schema
+ * validation cannot see this, so it gets its own gate.
+ *
+ * Matches POSIX absolute (`/x`), home-relative (`~/x`) and Windows drive
+ * (`C:\x`) values. Protocol-relative (`//host`) and URLs are not local paths.
+ *
+ * Only file-reference keys are inspected: prose legitimately starts with a
+ * slash ("/month", "/webhooks — Event subscriptions"), so testing every string
+ * would flag copy as a broken path.
+ */
+const LOCAL_PATH = /^(?:\/(?!\/)|~[/\\]|[A-Za-z]:[\\/])/;
+const FILE_KEYS = new Set(['path', 'src', 'file', 'fontPath', 'imagePath']);
+
+function collectLocalPaths(json: string): string[] {
+  const found = new Set<string>();
+
+  const walkValue = (value: unknown, key: string): void => {
+    if (typeof value === 'string') {
+      if (FILE_KEYS.has(key) && LOCAL_PATH.test(value)) found.add(value);
+    } else if (Array.isArray(value)) {
+      // Arrays inherit their property's key: `paths: ["/a", "/b"]`.
+      value.forEach((item) => walkValue(item, key));
+    } else if (value && typeof value === 'object') {
+      for (const [childKey, child] of Object.entries(value)) {
+        walkValue(child, childKey);
+      }
+    }
+  };
+
+  try {
+    walkValue(JSON.parse(json), '<root>');
+  } catch {
+    // Unparseable JSON is the schema validator's failure to report, not ours.
+  }
+  return [...found];
+}
+
+// ----------------------------------------------------------------------------
 // Validation
 // ----------------------------------------------------------------------------
 
@@ -227,6 +274,11 @@ async function main() {
     }
   }
 
+  // Assets only: docs may legitimately illustrate an absolute path in prose.
+  const portability = assets
+    .map((asset) => ({ asset, paths: collectLocalPaths(asset.json) }))
+    .filter((entry) => entry.paths.length > 0);
+
   console.log(
     `Validated ${assets.length} shipped asset(s) and ${snippets.length} docs sample(s).`
   );
@@ -236,6 +288,22 @@ async function main() {
     for (const label of skipped) console.log(`  - ${label}`);
   }
 
+  if (portability.length > 0) {
+    console.error(
+      `\n${portability.length} shipped asset(s) reference machine-local paths.` +
+        ` Use repo-relative paths — these resolve against the process CWD and` +
+        ` break for every other checkout:\n`
+    );
+    for (const { asset, paths } of portability) {
+      console.error(`  ${asset.label}`);
+      for (const p of paths.slice(0, 5)) console.error(`      ${p}`);
+      if (paths.length > 5) {
+        console.error(`      ... and ${paths.length - 5} more`);
+      }
+      console.error('');
+    }
+  }
+
   if (failures.length > 0) {
     console.error(`\n${failures.length} file(s) failed validation:\n`);
     for (const failure of failures) {
@@ -243,8 +311,9 @@ async function main() {
       for (const error of failure.errors) console.error(`      ${error}`);
       console.error('');
     }
-    process.exit(1);
   }
+
+  if (failures.length > 0 || portability.length > 0) process.exit(1);
 
   console.log('All shipped assets and docs samples are valid.');
 }
