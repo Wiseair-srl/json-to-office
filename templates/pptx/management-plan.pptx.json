@@ -1,0 +1,5923 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Management Plan",
+    "author": "json-to-office",
+    "slideWidth": 10,
+    "slideHeight": 5.625,
+    "theme": {
+      "name": "management-plan",
+      "colors": {
+        "primary": "#2959E8",
+        "secondary": "#CCFC51",
+        "accent": "#FAF5F0",
+        "background": "#FFFFFF",
+        "background2": "#F2F2F2",
+        "text": "#000000",
+        "text2": "#0C0C0C"
+      },
+      "fonts": {
+        "heading": "Archivo",
+        "body": "Inter"
+      },
+      "defaults": {
+        "fontSize": 18,
+        "fontColor": "#000000"
+      },
+      "styles": {
+        "title": {
+          "fontFace": "Archivo",
+          "fontSize": 41,
+          "lineSpacing": 49.2,
+          "align": "left",
+          "fontColor": "text"
+        },
+        "subtitle": {
+          "fontFace": "Archivo",
+          "fontSize": 45,
+          "lineSpacing": 54.0,
+          "align": "center",
+          "fontColor": "text"
+        },
+        "heading1": {
+          "fontFace": "Archivo",
+          "fontSize": 24,
+          "lineSpacing": 28.8,
+          "align": "left",
+          "fontColor": "text"
+        },
+        "heading2": {
+          "fontFace": "Archivo",
+          "fontSize": 15,
+          "lineSpacing": 18.0,
+          "align": "left",
+          "fontColor": "text"
+        },
+        "heading3": {
+          "fontFace": "Archivo",
+          "fontSize": 14,
+          "lineSpacing": 16.8,
+          "align": "left",
+          "fontColor": "text"
+        },
+        "body": {
+          "fontFace": "Inter",
+          "fontSize": 9,
+          "lineSpacing": 14.04,
+          "align": "left",
+          "fontColor": "text"
+        },
+        "caption": {
+          "fontFace": "Inter",
+          "fontSize": 7,
+          "lineSpacing": 8.4,
+          "align": "right",
+          "fontColor": "background"
+        }
+      }
+    },
+    "templates": [
+      {
+        "name": "grid",
+        "background": {
+          "color": "background"
+        },
+        "objects": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 0,
+              "y": 0.689,
+              "w": 10,
+              "h": 0,
+              "line": {
+                "color": "background2",
+                "width": 1
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 0,
+              "y": 2.813,
+              "w": 10,
+              "h": 0,
+              "line": {
+                "color": "background2",
+                "width": 1
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 0,
+              "y": 4.937,
+              "w": 10,
+              "h": 0,
+              "line": {
+                "color": "background2",
+                "width": 1
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 0.712,
+              "y": 0,
+              "w": 0,
+              "h": 5.625,
+              "line": {
+                "color": "background2",
+                "width": 1
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 3.575,
+              "y": 0,
+              "w": 0,
+              "h": 5.625,
+              "line": {
+                "color": "background2",
+                "width": 1
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 6.438,
+              "y": 0,
+              "w": 0,
+              "h": 5.625,
+              "line": {
+                "color": "background2",
+                "width": 1
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 9.304,
+              "y": 0,
+              "w": 0,
+              "h": 5.625,
+              "line": {
+                "color": "background2",
+                "width": 1
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "secondary"
+        },
+        "notes": "Cover \u2014 Management Plan 2025."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s1.jpg",
+            "x": 6.138,
+            "y": 0,
+            "w": 3.862,
+            "h": 2.811
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.248,
+            "y": 2.811,
+            "w": 1.125,
+            "h": 1.14,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 4.998,
+            "y": 0,
+            "w": 0,
+            "h": 5.625,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.123,
+            "y": 2.811,
+            "w": 0,
+            "h": 2.814,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 7.248,
+            "y": 2.811,
+            "w": 0,
+            "h": 1.123,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 8.373,
+            "y": 2.811,
+            "w": 0,
+            "h": 1.123,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.498,
+            "y": 2.811,
+            "w": 0,
+            "h": 1.123,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.499,
+            "y": 2.812,
+            "w": 0,
+            "h": 2.813,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 1.624,
+            "y": 2.812,
+            "w": 0,
+            "h": 1.138,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 2.748,
+            "y": 2.812,
+            "w": 0,
+            "h": 1.122,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 3.873,
+            "y": 2.812,
+            "w": 0,
+            "h": 2.813,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 2.811,
+            "w": 10,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 3.951,
+            "w": 10,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 5.089,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 3.873,
+            "y": 5.089,
+            "w": 2.25,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#FFFFFF\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 7.57,
+            "y": 3.155,
+            "w": 0.482,
+            "h": 0.434
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.6,
+            "y": 0.737,
+            "w": 5.166,
+            "h": 1.575,
+            "fontSize": 50,
+            "fontFace": "Archivo",
+            "lineSpacing": 54.0,
+            "text": "MANAGEMENT\nPLAN",
+            "color": "text"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 59 37\" fill=\"none\"><path d=\"M5 32 L20.5 16.5 L32 26 L54 5\" stroke=\"#33363F\" stroke-width=\"9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
+            "x": 2.78,
+            "y": 1.689,
+            "w": 0.587,
+            "h": 0.367
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.688,
+            "y": 4.286,
+            "w": 2.465,
+            "h": 1.186,
+            "fontSize": 66,
+            "fontFace": "Archivo",
+            "align": "right",
+            "lineSpacing": 79.2,
+            "text": "2025",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 1.016,
+            "y": 4.397,
+            "w": 2.276,
+            "h": 0.783,
+            "fontSize": 11,
+            "fontFace": "Inter",
+            "lineSpacing": 13.2,
+            "text": "This proposal outlines our\ncomprehensive digital\nmarketing strategy designed to\nstrengthen your brand\nvisibility.",
+            "color": "text"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Key objectives \u2014 01 Efficiency, 02 Accountability, 03 Coordination, 04 Growth."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 1.785,
+            "y": 0.604,
+            "w": 4.152,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "subtitle",
+            "x": 0.452,
+            "y": 0.549,
+            "w": 5.444,
+            "h": 0.833,
+            "align": "left",
+            "text": "KEY OBJECTIVES"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0,
+            "y": 2.068,
+            "w": 7.248,
+            "h": 1.135,
+            "fill": {
+              "color": "secondary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.248,
+            "y": 2.068,
+            "w": 2.25,
+            "h": 1.135,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 4.998,
+            "y": 0,
+            "w": 0,
+            "h": 5.625,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.499,
+            "y": 2.063,
+            "w": 0,
+            "h": 1.14,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 2.748,
+            "y": 2.063,
+            "w": 0,
+            "h": 1.14,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 4.998,
+            "y": 2.063,
+            "w": 0,
+            "h": 1.14,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 7.248,
+            "y": 2.063,
+            "w": 0,
+            "h": 1.14,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.498,
+            "y": 2.063,
+            "w": 0,
+            "h": 1.14,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 2.063,
+            "w": 10,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 3.203,
+            "w": 10,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.81,
+            "y": 2.337,
+            "w": 0.601,
+            "h": 0.631,
+            "fontSize": 33,
+            "fontFace": "Archivo",
+            "lineSpacing": 39.6,
+            "text": "01",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.06,
+            "y": 2.337,
+            "w": 0.601,
+            "h": 0.631,
+            "fontSize": 33,
+            "fontFace": "Archivo",
+            "lineSpacing": 39.6,
+            "text": "02",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.31,
+            "y": 2.337,
+            "w": 0.601,
+            "h": 0.631,
+            "fontSize": 33,
+            "fontFace": "Archivo",
+            "lineSpacing": 39.6,
+            "text": "03",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.56,
+            "y": 2.337,
+            "w": 0.601,
+            "h": 0.631,
+            "fontSize": 33,
+            "fontFace": "Archivo",
+            "lineSpacing": 39.6,
+            "text": "04",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.713,
+            "y": 3.958,
+            "w": 1.9,
+            "h": 0.33,
+            "text": "EFFICIENCY"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.713,
+            "y": 4.387,
+            "w": 1.65,
+            "h": 0.65,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 2.913,
+            "y": 3.958,
+            "w": 1.9,
+            "h": 0.33,
+            "text": "ACCOUNTABILITY"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 2.913,
+            "y": 4.387,
+            "w": 1.65,
+            "h": 0.65,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 5.269,
+            "y": 3.958,
+            "w": 1.9,
+            "h": 0.33,
+            "text": "COORDINATION"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 5.269,
+            "y": 4.387,
+            "w": 1.65,
+            "h": 0.65,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 7.51,
+            "y": 3.958,
+            "w": 1.9,
+            "h": 0.33,
+            "text": "GROWTH"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.51,
+            "y": 4.387,
+            "w": 1.65,
+            "h": 0.65,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "What is a management plan \u2014 definition, purpose, importance."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s3.jpg",
+            "x": 5.611,
+            "y": 0,
+            "w": 4.389,
+            "h": 5.625
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 1.273,
+            "w": 4.5,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.687,
+            "y": 0.583,
+            "w": 4.454,
+            "h": 2.121,
+            "text": "WHAT IS A\nMANAGEMENT\nPLAN?"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 3.066,
+            "w": 5.111,
+            "h": 1.738,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.865,
+            "y": 3.334,
+            "w": 2.594,
+            "h": 0.581,
+            "text": "DEFINITION, PURPOSE,\nIMPORTANCE"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.865,
+            "y": 3.918,
+            "w": 4.386,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscingelit. Proin dum risus sit\namet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper sit\namet venen atis Proin dum risus sit.",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 8.875,
+            "y": 4.485,
+            "w": 1.125,
+            "h": 1.14,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 8.875,
+            "y": 4.486,
+            "w": 0,
+            "h": 1.123,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.993,
+            "y": 4.486,
+            "w": 0,
+            "h": 1.123,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#FFFFFF\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 9.196,
+            "y": 4.829,
+            "w": 0.482,
+            "h": 0.434
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Vision and mission connection \u2014 company vision vs mission."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "x": 0.732,
+            "y": 0.83,
+            "w": 1.991,
+            "h": 1.002,
+            "fontSize": 11,
+            "fontFace": "Inter",
+            "lineSpacing": 13.2,
+            "text": "This proposal outlines our\ncomprehensive digital\nmarketing strategy\ndesigned to strengthen\nyour brand visibility.",
+            "color": "text"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.37,
+            "y": 1.273,
+            "w": 4.13,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 3.501,
+            "y": 0.59,
+            "w": 5.89,
+            "h": 1.439,
+            "align": "right",
+            "text": "VISION AND MISSION\nCONNECTION"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 2.81,
+            "w": 4.5,
+            "h": 2.278,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.865,
+            "y": 3.213,
+            "w": 3.05,
+            "h": 0.4,
+            "text": "COMPANY\u2019S VISION"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.629,
+            "y": 3.656,
+            "w": 4.033,
+            "h": 1.041,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscingelit. Proin dum risus sit amet venen atis tristique. Morbi tortor\n justo, p eget sequat ac, semper sit amet venen atis Proin dum risus sit.\nsit amet venen atis tristique. Morbi tortor justo, p",
+            "bullet": true
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 0.872,
+            "y": 3.724,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "text"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 0.872,
+            "y": 4.114,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "text"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 0.872,
+            "y": 4.504,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "text"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.0,
+            "y": 2.81,
+            "w": 4.5,
+            "h": 2.278,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 5.365,
+            "y": 3.213,
+            "w": 3.05,
+            "h": 0.4,
+            "text": "COMPANY\u2019S MISSION",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 5.129,
+            "y": 3.656,
+            "w": 4.033,
+            "h": 1.041,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscingelit. Proin dum risus sit amet venen atis tristique. Morbi tortor\n justo, p eget sequat ac, semper sit amet venen atis Proin dum risus sit.\nsit amet venen atis tristique. Morbi tortor justo, p",
+            "color": "background",
+            "bullet": true
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.372,
+            "y": 3.724,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "background"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.372,
+            "y": 4.114,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "background"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.372,
+            "y": 4.504,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "background"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.499,
+            "y": 2.812,
+            "w": 0,
+            "h": 2.812,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 2.812,
+            "w": 0,
+            "h": 2.812,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 2.811,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.5,
+            "y": 2.811,
+            "w": 0.5,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 3.951,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.5,
+            "y": 3.951,
+            "w": 0.5,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 5.089,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.5,
+            "y": 5.089,
+            "w": 0.5,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Strategic priorities \u2014 +122% with short/medium/long-term cards."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 1.273,
+            "w": 3.525,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.646,
+            "y": 0.59,
+            "w": 3.375,
+            "h": 1.439,
+            "text": "STRATEGIC\nPRIORITIES"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.737,
+            "y": 2.574,
+            "w": 3.375,
+            "h": 1.287,
+            "fontSize": 72,
+            "fontFace": "Archivo",
+            "lineSpacing": 86.4,
+            "runs": [
+              {
+                "text": "+122",
+                "fontSize": 72,
+                "color": "text",
+                "fontFace": "Archivo"
+              },
+              {
+                "text": "%",
+                "fontSize": 50,
+                "color": "text",
+                "fontFace": "Archivo"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.737,
+            "y": 4.038,
+            "w": 2.815,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, consectetur\nadipiscing elit. Proin bibendum risus sit amet\nvenen atis tristique. Morbi tortor justo, p eget\nconsequat ac, semper sit"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.0,
+            "y": 0.817,
+            "w": 1.892,
+            "h": 1.753,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.389,
+            "y": 0.817,
+            "w": 1.892,
+            "h": 1.753,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s5.jpg",
+            "x": 5.0,
+            "y": 3.055,
+            "w": 1.892,
+            "h": 1.753
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.389,
+            "y": 3.055,
+            "w": 1.892,
+            "h": 1.753,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\" fill=\"none\"><g stroke=\"#0C0C0C\" stroke-linecap=\"round\"><rect x=\"5\" y=\"5\" width=\"38\" height=\"38\" rx=\"9\" stroke-width=\"4.5\"/><path d=\"M17 22 V31\" stroke-width=\"4\"/><path d=\"M24 17 V31\" stroke-width=\"4\"/><path d=\"M31 14 V31\" stroke-width=\"4\"/></g></svg>",
+            "x": 5.185,
+            "y": 0.96,
+            "w": 0.33,
+            "h": 0.33
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\" fill=\"none\"><g stroke=\"#0C0C0C\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"5\" y=\"5\" width=\"38\" height=\"38\" rx=\"9\" stroke-width=\"4.5\"/><path d=\"M14 31 L21 22.5 L26.5 27 L34 16\" stroke-width=\"4.5\"/></g></svg>",
+            "x": 7.574,
+            "y": 0.96,
+            "w": 0.33,
+            "h": 0.33
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 26\" fill=\"none\"><path d=\"M4.5 24 A15.5 15.5 0 0 1 35.5 24\" stroke=\"#FFFFFF\" stroke-width=\"9\"/><g stroke=\"#2959E8\" stroke-width=\"3\"><path d=\"M20 24 L9 13\"/><path d=\"M20 24 V8\"/><path d=\"M20 24 L31 13\"/></g></svg>",
+            "x": 7.596,
+            "y": 3.264,
+            "w": 0.36,
+            "h": 0.24
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 5.243,
+            "y": 1.472,
+            "w": 1.55,
+            "h": 0.3,
+            "text": "SHORT-TERM"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.626,
+            "y": 1.472,
+            "w": 1.55,
+            "h": 0.3,
+            "text": "MEDIUM-TERM"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.626,
+            "y": 3.71,
+            "w": 1.55,
+            "h": 0.3,
+            "text": "LONG-TERM",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 5.243,
+            "y": 1.767,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.626,
+            "y": 1.767,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.626,
+            "y": 4.004,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "background"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "secondary"
+        },
+        "notes": "Operational workflow \u2014 4 steps with arrows."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.686,
+            "y": 0.624,
+            "w": 4.166,
+            "h": 1.439,
+            "text": "OPERATIONAL\nWORKFLOW"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.719,
+            "y": 2.459,
+            "w": 1.377,
+            "h": 1.183,
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 3.114,
+            "y": 2.459,
+            "w": 1.377,
+            "h": 1.183,
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.509,
+            "y": 2.459,
+            "w": 1.377,
+            "h": 1.183,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.904,
+            "y": 2.459,
+            "w": 1.377,
+            "h": 1.183,
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 36 46\" fill=\"none\"><g stroke=\"#0C0C0C\" stroke-width=\"3.8\" stroke-linecap=\"round\"><path d=\"M10 4 V13\"/><path d=\"M10 31 V42\"/><rect x=\"5\" y=\"13\" width=\"10\" height=\"18\" rx=\"2\"/><path d=\"M27 10 V23\"/><path d=\"M27 37 V44\"/><rect x=\"22\" y=\"23\" width=\"10\" height=\"14\" rx=\"2\"/></g></svg>",
+            "x": 1.185,
+            "y": 2.72,
+            "w": 0.445,
+            "h": 0.57
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 50 45\" fill=\"none\"><g stroke=\"#0C0C0C\"><circle cx=\"34.5\" cy=\"14.5\" r=\"9.3\" stroke-width=\"5\"/><circle cx=\"10.5\" cy=\"13.5\" r=\"5.8\" stroke-width=\"4.2\"/><circle cx=\"18.5\" cy=\"34\" r=\"7\" stroke-width=\"4.6\"/></g></svg>",
+            "x": 3.505,
+            "y": 2.77,
+            "w": 0.66,
+            "h": 0.58
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#FFFFFF\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 5.957,
+            "y": 2.834,
+            "w": 0.482,
+            "h": 0.434
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 46 44\" fill=\"none\"><g stroke=\"#0C0C0C\" stroke-width=\"4.0\" stroke-linecap=\"round\"><path d=\"M11 33 V19.5 a4.5 4.5 0 0 1 9 0 V33\"/><path d=\"M28 33 V10 a4.5 4.5 0 0 1 9 0 V33\"/><path d=\"M4.5 41 H41.5\"/></g></svg>",
+            "x": 8.29,
+            "y": 2.75,
+            "w": 0.61,
+            "h": 0.585
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 25 12\" fill=\"none\"><path d=\"M1 6 H15\" stroke=\"#000000\" stroke-width=\"3.4\"/><path d=\"M14 0.8 L24.6 6 L14 11.2 L17.2 6 Z\" fill=\"#000000\"/></svg>",
+            "x": 2.507,
+            "y": 3.026,
+            "w": 0.25,
+            "h": 0.125
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 25 12\" fill=\"none\"><path d=\"M1 6 H15\" stroke=\"#000000\" stroke-width=\"3.4\"/><path d=\"M14 0.8 L24.6 6 L14 11.2 L17.2 6 Z\" fill=\"#000000\"/></svg>",
+            "x": 4.875,
+            "y": 3.026,
+            "w": 0.25,
+            "h": 0.125
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 25 12\" fill=\"none\"><path d=\"M1 6 H15\" stroke=\"#000000\" stroke-width=\"3.4\"/><path d=\"M14 0.8 L24.6 6 L14 11.2 L17.2 6 Z\" fill=\"#000000\"/></svg>",
+            "x": 7.277,
+            "y": 3.026,
+            "w": 0.25,
+            "h": 0.125
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 0.713,
+            "y": 3.966,
+            "w": 1.55,
+            "h": 0.3,
+            "text": "STREAMLINED"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.713,
+            "y": 4.28,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 3.116,
+            "y": 3.966,
+            "w": 1.55,
+            "h": 0.3,
+            "text": "STREAMLINED"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 3.116,
+            "y": 4.28,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 5.495,
+            "y": 3.966,
+            "w": 1.55,
+            "h": 0.3,
+            "text": "STREAMLINED"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 5.495,
+            "y": 4.28,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.9,
+            "y": 3.966,
+            "w": 1.55,
+            "h": 0.3,
+            "text": "STREAMLINED"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.9,
+            "y": 4.28,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Managing resources \u2014 25M total resource donut gauge."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 1.273,
+            "w": 3.839,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.62,
+            "y": 0.613,
+            "w": 3.859,
+            "h": 2.121,
+            "text": "MANAGING\nRESOURCES\nEFFECTIVELY"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 360.7 360.7\" fill=\"none\"><path d=\"M180.35 180.35 L179.51 1.04 A179.31 179.31 0 1 1 26.90 273.10 Z\" fill=\"#2959E8\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><path d=\"M180.35 180.35 L266.79 337.45 A179.31 179.31 0 1 1 359.02 195.51 Z\" fill=\"#CCFC51\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><circle cx=\"180.35\" cy=\"180.35\" r=\"147\" fill=\"#FFFFFF\" stroke=\"#000000\" stroke-width=\"1.3888888888888888\"/></svg>",
+            "x": 5.727,
+            "y": 1.009,
+            "w": 3.607,
+            "h": 3.607
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.339,
+            "y": 2.061,
+            "w": 2.339,
+            "h": 1.186,
+            "fontSize": 66,
+            "fontFace": "Archivo",
+            "align": "center",
+            "lineSpacing": 79.2,
+            "text": "25M",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 6.53,
+            "y": 3.096,
+            "w": 2.0,
+            "h": 0.35,
+            "align": "center",
+            "text": "TOTAL RESOURCE"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 8.17,
+            "y": 1.254,
+            "w": 0.717,
+            "h": 0.717,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#FFFFFF\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 8.382,
+            "y": 1.463,
+            "w": 0.293,
+            "h": 0.264
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.622,
+            "y": 3.623,
+            "w": 0.407,
+            "h": 0.367,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.622,
+            "y": 3.623,
+            "w": 0.407,
+            "h": 0.367,
+            "fontSize": 9,
+            "fontFace": "Archivo",
+            "align": "center",
+            "valign": "middle",
+            "lineSpacing": 10.8,
+            "text": "01",
+            "color": "text"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.622,
+            "y": 4.349,
+            "w": 0.407,
+            "h": 0.367,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.622,
+            "y": 4.349,
+            "w": 0.407,
+            "h": 0.367,
+            "fontSize": 9,
+            "fontFace": "Archivo",
+            "align": "center",
+            "valign": "middle",
+            "lineSpacing": 10.8,
+            "text": "02",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 1.283,
+            "y": 3.618,
+            "w": 3.801,
+            "h": 0.451,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin\nbibendum risus sit amet venen atis tristique."
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 1.283,
+            "y": 4.344,
+            "w": 3.801,
+            "h": 0.451,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin\nbibendum risus sit amet venen atis tristique."
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Process grid 01-06 with flow arrows."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.719,
+            "y": 0.693,
+            "w": 2.224,
+            "h": 1.804,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "subtitle",
+            "x": 0.719,
+            "y": 0.791,
+            "w": 2.224,
+            "h": 0.833,
+            "text": "01"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 0.719,
+            "y": 1.593,
+            "w": 2.224,
+            "h": 0.3,
+            "align": "center",
+            "text": "PROCESS 01"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.719,
+            "y": 1.908,
+            "w": 2.224,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit amet\nconsec adipiscing elit",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 3.888,
+            "y": 0.693,
+            "w": 2.224,
+            "h": 1.804,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "subtitle",
+            "x": 3.888,
+            "y": 0.791,
+            "w": 2.224,
+            "h": 0.833,
+            "text": "02"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 3.888,
+            "y": 1.593,
+            "w": 2.224,
+            "h": 0.3,
+            "align": "center",
+            "text": "PROCESS 02"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 3.888,
+            "y": 1.908,
+            "w": 2.224,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit amet\nconsec adipiscing elit",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.057,
+            "y": 0.693,
+            "w": 2.224,
+            "h": 1.804,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "subtitle",
+            "x": 7.057,
+            "y": 0.791,
+            "w": 2.224,
+            "h": 0.833,
+            "text": "03",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.057,
+            "y": 1.593,
+            "w": 2.224,
+            "h": 0.3,
+            "align": "center",
+            "text": "PROCESS 03",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.057,
+            "y": 1.908,
+            "w": 2.224,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit amet\nconsec adipiscing elit",
+            "color": "background"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.719,
+            "y": 3.133,
+            "w": 2.224,
+            "h": 1.804,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "subtitle",
+            "x": 0.719,
+            "y": 3.231,
+            "w": 2.224,
+            "h": 0.833,
+            "text": "06",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 0.719,
+            "y": 4.033,
+            "w": 2.224,
+            "h": 0.3,
+            "align": "center",
+            "text": "PROCESS 06",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.719,
+            "y": 4.348,
+            "w": 2.224,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit amet\nconsec adipiscing elit",
+            "color": "background"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 3.888,
+            "y": 3.133,
+            "w": 2.224,
+            "h": 1.804,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "subtitle",
+            "x": 3.888,
+            "y": 3.231,
+            "w": 2.224,
+            "h": 0.833,
+            "text": "05"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 3.888,
+            "y": 4.033,
+            "w": 2.224,
+            "h": 0.3,
+            "align": "center",
+            "text": "PROCESS 05"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 3.888,
+            "y": 4.348,
+            "w": 2.224,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit amet\nconsec adipiscing elit",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.057,
+            "y": 3.133,
+            "w": 2.224,
+            "h": 1.804,
+            "fill": {
+              "color": "accent"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "subtitle",
+            "x": 7.057,
+            "y": 3.231,
+            "w": 2.224,
+            "h": 0.833,
+            "text": "04"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.057,
+            "y": 4.033,
+            "w": 2.224,
+            "h": 0.3,
+            "align": "center",
+            "text": "PROCESS 04"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.057,
+            "y": 4.348,
+            "w": 2.224,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit amet\nconsec adipiscing elit",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 25 12\" fill=\"none\"><path d=\"M1 6 H15\" stroke=\"#000000\" stroke-width=\"2.2\"/><path d=\"M14 0.8 L24.6 6 L14 11.2 L17.2 6 Z\" fill=\"#000000\"/></svg>",
+            "x": 3.324,
+            "y": 1.534,
+            "w": 0.235,
+            "h": 0.118
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 25 12\" fill=\"none\"><path d=\"M1 6 H15\" stroke=\"#000000\" stroke-width=\"2.2\"/><path d=\"M14 0.8 L24.6 6 L14 11.2 L17.2 6 Z\" fill=\"#000000\"/></svg>",
+            "x": 6.486,
+            "y": 1.534,
+            "w": 0.235,
+            "h": 0.118
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 12 25\" fill=\"none\"><path d=\"M6 1 V15\" stroke=\"#000000\" stroke-width=\"2.2\"/><path d=\"M0.8 14 L6 24.6 L11.2 14 L6 17.2 Z\" fill=\"#000000\"/></svg>",
+            "x": 8.11,
+            "y": 2.7,
+            "w": 0.118,
+            "h": 0.25
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 25 12\" fill=\"none\"><path d=\"M24 6 H10\" stroke=\"#000000\" stroke-width=\"2.2\"/><path d=\"M11 0.8 L0.4 6 L11 11.2 L7.8 6 Z\" fill=\"#000000\"/></svg>",
+            "x": 3.324,
+            "y": 4.034,
+            "w": 0.235,
+            "h": 0.118
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 25 12\" fill=\"none\"><path d=\"M24 6 H10\" stroke=\"#000000\" stroke-width=\"2.2\"/><path d=\"M11 0.8 L0.4 6 L11 11.2 L7.8 6 Z\" fill=\"#000000\"/></svg>",
+            "x": 6.486,
+            "y": 4.034,
+            "w": 0.235,
+            "h": 0.118
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Internal & external communication; 5K stat tile."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s9.jpg",
+            "x": 5.0,
+            "y": 0.532,
+            "w": 4.5,
+            "h": 2.278
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 5.338,
+            "y": 0.935,
+            "w": 3.35,
+            "h": 0.4,
+            "text": "EXTERNAL COMMUNICATION",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 5.102,
+            "y": 1.377,
+            "w": 4.033,
+            "h": 1.041,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscingelit. Proin dum risus sit amet venen atis tristique. Morbi tortor\n justo, p eget sequat ac, semper sit amet venen atis Proin dum risus sit.\nsit amet venen atis tristique. Morbi tortor justo, p",
+            "color": "background",
+            "bullet": true
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.345,
+            "y": 1.445,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "background"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.345,
+            "y": 1.835,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "background"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 5.345,
+            "y": 2.225,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "background"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 1.273,
+            "w": 3.356,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.626,
+            "y": 0.583,
+            "w": 3.45,
+            "h": 1.439,
+            "text": "INTERNAL &\nEXTERNAL"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 2.81,
+            "w": 4.5,
+            "h": 2.278,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.865,
+            "y": 3.213,
+            "w": 3.35,
+            "h": 0.4,
+            "text": "INTERNAL COMMUNICATION"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.629,
+            "y": 3.656,
+            "w": 4.033,
+            "h": 1.041,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscingelit. Proin dum risus sit amet venen atis tristique. Morbi tortor\n justo, p eget sequat ac, semper sit amet venen atis Proin dum risus sit.\nsit amet venen atis tristique. Morbi tortor justo, p",
+            "bullet": true
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 0.872,
+            "y": 3.724,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "text"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 0.872,
+            "y": 4.114,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "text"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 0.872,
+            "y": 4.504,
+            "w": 0.042,
+            "h": 0.042,
+            "fill": {
+              "color": "text"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.432,
+            "y": 3.176,
+            "w": 1.952,
+            "h": 1.599,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.432,
+            "y": 3.306,
+            "w": 1.952,
+            "h": 1.2,
+            "fontSize": 72,
+            "fontFace": "Archivo",
+            "align": "center",
+            "lineSpacing": 86.4,
+            "text": "5K",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.831,
+            "y": 3.442,
+            "w": 1.414,
+            "h": 1.141,
+            "fontSize": 8,
+            "fontFace": "Inter",
+            "lineSpacing": 12.48,
+            "text": "Lorem ipsum dolor sit\namet, consectetur\nadipiscing elit. Proin dum\nrisus sit amet venen atis\ntristique. Morbi tortor\njusto, p eget sequat ac,",
+            "color": "text"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.499,
+            "y": 2.812,
+            "w": 0,
+            "h": 2.812,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 2.811,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 3.951,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 5.089,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 0.534,
+            "w": 0,
+            "h": 5.091,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 0.533,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 1.672,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 2.81,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Mitigating risks \u2014 photos, who we serve, +122%."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s10.jpg",
+            "x": 1.595,
+            "y": 0.565,
+            "w": 3.767,
+            "h": 2.009
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s10.jpg",
+            "x": 1.595,
+            "y": 3.051,
+            "w": 3.767,
+            "h": 2.009
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 0.565,
+            "w": 1.095,
+            "h": 0.94,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#FFFFFF\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 0.806,
+            "y": 0.818,
+            "w": 0.482,
+            "h": 0.434
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 3.051,
+            "w": 1.095,
+            "h": 0.94,
+            "fill": {
+              "color": "secondary"
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\" fill=\"none\"><g stroke=\"#0C0C0C\"><circle cx=\"24\" cy=\"24\" r=\"19.5\" stroke-width=\"5\"/><circle cx=\"24\" cy=\"24\" r=\"8\" stroke-width=\"5\"/><path d=\"M24 16 V5\" stroke-width=\"4.5\"/><path d=\"M16.5 27 L6 32\" stroke-width=\"4.5\"/><path d=\"M30 29.5 L38 38\" stroke-width=\"4.5\"/></g></svg>",
+            "x": 0.818,
+            "y": 3.285,
+            "w": 0.472,
+            "h": 0.472
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.941,
+            "y": 1.273,
+            "w": 2.108,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 6.101,
+            "y": 0.602,
+            "w": 3.324,
+            "h": 1.439,
+            "text": "MITIGATING\nRISKS"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 6.101,
+            "y": 2.973,
+            "w": 2.85,
+            "h": 0.35,
+            "text": "WHO WE SERVE"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 6.101,
+            "y": 3.325,
+            "w": 3.155,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, consectetur\nadipiscingelit. Proin dum risus sit amet venen atis\ntristique. Morbi tortor justo, p eget sequat ac, semper\nsit amet venen atis Proin dum risus sit."
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 6.129,
+            "y": 4.389,
+            "w": 1.168,
+            "h": 0.355,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.129,
+            "y": 4.389,
+            "w": 1.168,
+            "h": 0.355,
+            "fontSize": 9,
+            "fontFace": "Archivo",
+            "align": "center",
+            "valign": "middle",
+            "lineSpacing": 10.8,
+            "text": "LEARN MORE",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.875,
+            "y": 4.295,
+            "w": 1.339,
+            "h": 0.581,
+            "fontSize": 30,
+            "fontFace": "Archivo",
+            "align": "right",
+            "lineSpacing": 36.0,
+            "runs": [
+              {
+                "text": "+122",
+                "fontSize": 30,
+                "color": "text",
+                "fontFace": "Archivo"
+              },
+              {
+                "text": "%",
+                "fontSize": 18,
+                "color": "text",
+                "fontFace": "Archivo"
+              }
+            ]
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.499,
+            "y": 0,
+            "w": 0,
+            "h": 3.138,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.499,
+            "y": 3.051,
+            "w": 0,
+            "h": 2.574,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 0.565,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 1.505,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 3.051,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 3.991,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "secondary"
+        },
+        "notes": "Adapting to change \u2014 short-term 46K-55K card over photo."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s11.jpg",
+            "x": 6.123,
+            "y": 0,
+            "w": 3.877,
+            "h": 5.625
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 4.998,
+            "y": 0,
+            "w": 1.125,
+            "h": 2.811,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#FFFFFF\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 5.265,
+            "y": 1.947,
+            "w": 0.6,
+            "h": 0.54
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 4.998,
+            "y": 0,
+            "w": 0,
+            "h": 5.625,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.123,
+            "y": 0,
+            "w": 0,
+            "h": 5.625,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.499,
+            "y": 2.812,
+            "w": 0,
+            "h": 2.813,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 3.873,
+            "y": 2.812,
+            "w": 0,
+            "h": 2.813,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 1.624,
+            "y": 2.812,
+            "w": 0,
+            "h": 1.138,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 2.748,
+            "y": 2.812,
+            "w": 0,
+            "h": 1.122,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.057,
+            "y": 2.811,
+            "w": 6.066,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 3.95,
+            "w": 6.123,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 5.089,
+            "w": 0.499,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 3.873,
+            "y": 5.089,
+            "w": 2.25,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.679,
+            "y": 0.748,
+            "w": 3.555,
+            "h": 1.439,
+            "text": "ADAPTING\nTO CHANGE"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 1.016,
+            "y": 4.397,
+            "w": 2.276,
+            "h": 0.783,
+            "fontSize": 11,
+            "fontFace": "Inter",
+            "lineSpacing": 13.2,
+            "text": "This proposal outlines our\ncomprehensive digital\nmarketing strategy designed to\nstrengthen your brand\nvisibility.",
+            "color": "text"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 6.952,
+            "y": 3.338,
+            "w": 2.22,
+            "h": 2.288,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.357,
+            "y": 3.747,
+            "w": 0.8,
+            "h": 0.62,
+            "text": "SHORT-TERM",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.357,
+            "y": 4.117,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.357,
+            "y": 4.847,
+            "w": 1.75,
+            "h": 0.4,
+            "fontSize": 21,
+            "fontFace": "Archivo",
+            "lineSpacing": 25.2,
+            "text": "46K \u2013 55K",
+            "color": "background"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Budget & forecasting \u2014 76K/46K/56K stats and cards."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.512,
+            "y": 1.273,
+            "w": 4.488,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.653,
+            "y": 0.626,
+            "w": 4.272,
+            "h": 1.456,
+            "text": "BUDGET &\nFORECASTING"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s12.jpg",
+            "x": 5.0,
+            "y": 0.565,
+            "w": 2.282,
+            "h": 4.505
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 2.976,
+            "y": 3.985,
+            "w": 0.992,
+            "h": 1.084,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.692,
+            "y": 2.597,
+            "w": 3.05,
+            "h": 0.35,
+            "text": "TREATY OF VERSAILLES"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.692,
+            "y": 2.911,
+            "w": 3.047,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, consectetur\nadipiscingelit. Proin dum risus sit amet venen atis\ntristique. Morbi tortor justo, p eget sequat ac, sem\nper sit amet venen atis Proin dum risus sit."
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading1",
+            "x": 0.704,
+            "y": 4.149,
+            "w": 0.85,
+            "h": 0.45,
+            "text": "76K"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.704,
+            "y": 4.608,
+            "w": 0.8,
+            "h": 0.35,
+            "fontSize": 9,
+            "fontFace": "Inter",
+            "lineSpacing": 10.8,
+            "text": "Marketing\nSales",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading1",
+            "x": 1.934,
+            "y": 4.149,
+            "w": 0.85,
+            "h": 0.45,
+            "text": "46K"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 1.934,
+            "y": 4.608,
+            "w": 0.8,
+            "h": 0.35,
+            "fontSize": 9,
+            "fontFace": "Inter",
+            "lineSpacing": 10.8,
+            "text": "Marketing\nSales",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading1",
+            "x": 3.164,
+            "y": 4.149,
+            "w": 0.85,
+            "h": 0.45,
+            "text": "56K"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.164,
+            "y": 4.608,
+            "w": 0.8,
+            "h": 0.35,
+            "fontSize": 9,
+            "fontFace": "Inter",
+            "lineSpacing": 10.8,
+            "text": "Marketing\nSales",
+            "color": "text"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.282,
+            "y": 0.555,
+            "w": 2.22,
+            "h": 2.288,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.688,
+            "y": 0.963,
+            "w": 1.6,
+            "h": 0.3,
+            "text": "SHORT-TERM"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.688,
+            "y": 1.258,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.688,
+            "y": 2.065,
+            "w": 1.75,
+            "h": 0.4,
+            "fontSize": 21,
+            "fontFace": "Archivo",
+            "lineSpacing": 25.2,
+            "text": "46K \u2013 55K",
+            "color": "text"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.282,
+            "y": 2.844,
+            "w": 2.22,
+            "h": 2.226,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.688,
+            "y": 3.212,
+            "w": 1.6,
+            "h": 0.3,
+            "text": "SHORT-TERM",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.688,
+            "y": 3.507,
+            "w": 1.58,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit\namet consec adipiscing\nelit sed do eiusmod",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.688,
+            "y": 4.315,
+            "w": 1.75,
+            "h": 0.4,
+            "fontSize": 21,
+            "fontFace": "Archivo",
+            "lineSpacing": 25.2,
+            "text": "46K \u2013 55K",
+            "color": "background"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 0,
+            "w": 0,
+            "h": 5.625,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.438,
+            "y": 1.689,
+            "w": 0,
+            "h": 1.122,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.43,
+            "y": 3.93,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 0.55,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 1.49,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 2.84,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 3.98,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 5.08,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Change management \u2014 4 photo/caption columns."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 3.195,
+            "y": 0.604,
+            "w": 4.413,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.675,
+            "y": 0.59,
+            "w": 6.995,
+            "h": 0.766,
+            "text": "CHANGE MANAGEMENT"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s13.jpg",
+            "x": 0.6,
+            "y": 1.877,
+            "w": 2.039,
+            "h": 1.973
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s13.jpg",
+            "x": 2.85,
+            "y": 1.877,
+            "w": 2.039,
+            "h": 1.973
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s13.jpg",
+            "x": 5.1,
+            "y": 1.877,
+            "w": 2.039,
+            "h": 1.973
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s13.jpg",
+            "x": 7.361,
+            "y": 1.877,
+            "w": 2.039,
+            "h": 1.973
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.6,
+            "y": 3.849,
+            "w": 2.039,
+            "h": 1.17,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 0.6,
+            "y": 4.118,
+            "w": 2.039,
+            "h": 0.3,
+            "align": "center",
+            "text": "PREPARING"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.6,
+            "y": 4.4,
+            "w": 2.039,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit am\net consec adipiscing elit",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 2.85,
+            "y": 3.849,
+            "w": 2.039,
+            "h": 1.17,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 2.85,
+            "y": 4.118,
+            "w": 2.039,
+            "h": 0.3,
+            "align": "center",
+            "text": "MANAGING"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 2.85,
+            "y": 4.4,
+            "w": 2.039,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit am\net consec adipiscing elit",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.1,
+            "y": 3.849,
+            "w": 2.039,
+            "h": 1.17,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 5.1,
+            "y": 4.118,
+            "w": 2.039,
+            "h": 0.3,
+            "align": "center",
+            "text": "SUSTAINING",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 5.1,
+            "y": 4.4,
+            "w": 2.039,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit am\net consec adipiscing elit",
+            "color": "background"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.35,
+            "y": 3.849,
+            "w": 2.039,
+            "h": 1.17,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.35,
+            "y": 4.118,
+            "w": 2.039,
+            "h": 0.3,
+            "align": "center",
+            "text": "PARTNERS"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.35,
+            "y": 4.4,
+            "w": 2.039,
+            "h": 0.5,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit am\net consec adipiscing elit",
+            "color": "text2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Sustainable practices \u2014 two banners 01/02."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s14.jpg",
+            "x": 5.43,
+            "y": 0.55,
+            "w": 4.07,
+            "h": 4.505
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 9.098,
+            "y": 0,
+            "w": 0.902,
+            "h": 0.914,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#FFFFFF\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 9.338,
+            "y": 0.259,
+            "w": 0.415,
+            "h": 0.36
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.098,
+            "y": 0,
+            "w": 0,
+            "h": 0.914,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.512,
+            "y": 1.273,
+            "w": 3.581,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.647,
+            "y": 0.59,
+            "w": 4.153,
+            "h": 1.439,
+            "text": "SUSTAINABLE\nPRACTICES"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 2.52,
+            "w": 5.946,
+            "h": 1.169,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.815,
+            "y": 2.746,
+            "w": 4.05,
+            "h": 0.35,
+            "text": "DEFINITION, PURPOSE, IMPORTANCE"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.815,
+            "y": 3.079,
+            "w": 4.41,
+            "h": 0.451,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscingelit. Proin dum risus sit\namet venen atis tristique. Morbi tortor justo, p eget sequat",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.497,
+            "y": 2.803,
+            "w": 0.751,
+            "h": 0.631,
+            "fontSize": 33,
+            "fontFace": "Archivo",
+            "align": "center",
+            "lineSpacing": 39.6,
+            "text": "01",
+            "color": "text"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.5,
+            "y": 3.878,
+            "w": 5.946,
+            "h": 1.169,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.815,
+            "y": 4.104,
+            "w": 4.05,
+            "h": 0.35,
+            "text": "DEFINITION, PURPOSE, IMPORTANCE",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.815,
+            "y": 4.437,
+            "w": 4.41,
+            "h": 0.451,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscingelit. Proin dum risus sit\namet venen atis tristique. Morbi tortor justo, p eget sequat",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.454,
+            "y": 4.201,
+            "w": 0.751,
+            "h": 0.631,
+            "fontSize": 33,
+            "fontFace": "Archivo",
+            "align": "center",
+            "lineSpacing": 39.6,
+            "text": "02",
+            "color": "background"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "secondary"
+        },
+        "notes": "Growing our people \u2014 photo band and blue bar chart card."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.719,
+            "y": 0.803,
+            "w": 4.329,
+            "h": 1.439,
+            "text": "GROWING OUR\nPEOPLE"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 36 46\" fill=\"none\"><g stroke=\"#0C0C0C\" stroke-width=\"3.8\" stroke-linecap=\"round\"><path d=\"M10 4 V13\"/><path d=\"M10 31 V42\"/><rect x=\"5\" y=\"13\" width=\"10\" height=\"18\" rx=\"2\"/><path d=\"M27 10 V23\"/><path d=\"M27 37 V44\"/><rect x=\"22\" y=\"23\" width=\"10\" height=\"14\" rx=\"2\"/></g></svg>",
+            "x": 6.396,
+            "y": 1.023,
+            "w": 0.415,
+            "h": 0.563
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.076,
+            "y": 0.907,
+            "w": 2.049,
+            "h": 1.041,
+            "text": "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit. Proin\nbibendum risus sit amet venen atis\ntristique. Morbi tortor justo, p eget\nconsequat ac, semper sit"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s15.jpg",
+            "x": 0,
+            "y": 2.812,
+            "w": 6.142,
+            "h": 2.263
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.719,
+            "y": 4.112,
+            "w": 4.05,
+            "h": 0.35,
+            "text": "DEFINITION, PURPOSE, IMPORTANCE",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.719,
+            "y": 4.446,
+            "w": 4.41,
+            "h": 0.451,
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscingelit. Proin dum risus sit\namet venen atis tristique. Morbi tortor justo, p eget sequat",
+            "color": "background"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 6.142,
+            "y": 2.812,
+            "w": 3.358,
+            "h": 2.263,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.73,
+            "y": 3.24,
+            "w": 2.49,
+            "h": 0,
+            "line": {
+              "color": "background2",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.73,
+            "y": 3.485,
+            "w": 2.49,
+            "h": 0,
+            "line": {
+              "color": "background2",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.73,
+            "y": 3.73,
+            "w": 2.49,
+            "h": 0,
+            "line": {
+              "color": "background2",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.73,
+            "y": 3.975,
+            "w": 2.49,
+            "h": 0,
+            "line": {
+              "color": "background2",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.73,
+            "y": 4.22,
+            "w": 2.49,
+            "h": 0,
+            "line": {
+              "color": "background2",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.73,
+            "y": 4.465,
+            "w": 2.49,
+            "h": 0,
+            "line": {
+              "color": "background2",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.73,
+            "y": 4.71,
+            "w": 2.49,
+            "h": 0,
+            "line": {
+              "color": "background2",
+              "width": 1
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "6",
+            "x": 6.3,
+            "y": 3.09,
+            "w": 0.35,
+            "h": 0.18
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "5",
+            "x": 6.3,
+            "y": 3.325,
+            "w": 0.35,
+            "h": 0.18
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "4",
+            "x": 6.3,
+            "y": 3.56,
+            "w": 0.35,
+            "h": 0.18
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "3",
+            "x": 6.3,
+            "y": 3.795,
+            "w": 0.35,
+            "h": 0.18
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "2",
+            "x": 6.3,
+            "y": 4.03,
+            "w": 0.35,
+            "h": 0.18
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "1",
+            "x": 6.3,
+            "y": 4.265,
+            "w": 0.35,
+            "h": 0.18
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "0",
+            "x": 6.3,
+            "y": 4.5,
+            "w": 0.35,
+            "h": 0.18
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 6.899,
+            "y": 4.33,
+            "w": 0.17,
+            "h": 0.357,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.398,
+            "y": 4.019,
+            "w": 0.17,
+            "h": 0.654,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.895,
+            "y": 3.692,
+            "w": 0.17,
+            "h": 0.988,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 8.394,
+            "y": 3.529,
+            "w": 0.17,
+            "h": 1.148,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 8.893,
+            "y": 3.363,
+            "w": 0.17,
+            "h": 1.31,
+            "fill": {
+              "color": "accent"
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "1",
+            "x": 6.884,
+            "y": 4.696,
+            "w": 0.2,
+            "h": 0.18,
+            "align": "center"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "2",
+            "x": 7.383,
+            "y": 4.696,
+            "w": 0.2,
+            "h": 0.18,
+            "align": "center"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "3",
+            "x": 7.88,
+            "y": 4.696,
+            "w": 0.2,
+            "h": 0.18,
+            "align": "center"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "4",
+            "x": 8.379,
+            "y": 4.696,
+            "w": 0.2,
+            "h": 0.18,
+            "align": "center"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "caption",
+            "text": "5",
+            "x": 8.878,
+            "y": 4.696,
+            "w": 0.2,
+            "h": 0.18,
+            "align": "center"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 0,
+            "w": 0,
+            "h": 5.625,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 0.48,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 1.44,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 2.77,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 3.96,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.503,
+            "y": 5.07,
+            "w": 0.497,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Compliance framework \u2014 25M, 20/43/78%, +43,43% potential risks."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s16.jpg",
+            "x": 0,
+            "y": 0,
+            "w": 5.0,
+            "h": 3.375
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.0,
+            "y": 0,
+            "w": 3.86,
+            "h": 5.625,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.0,
+            "y": 3.375,
+            "w": 3.86,
+            "h": 2.25,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.385,
+            "y": 0.107,
+            "w": 1.627,
+            "h": 0.984,
+            "fontSize": 54,
+            "fontFace": "Archivo",
+            "lineSpacing": 64.8,
+            "text": "25M",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 7.266,
+            "y": 0.3,
+            "w": 1.184,
+            "h": 0.6,
+            "fontSize": 8,
+            "fontFace": "Inter",
+            "lineSpacing": 12.48,
+            "text": "Lorem ipsum dolor sit\namet, consectetur adi\npiscing elit.",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.433,
+            "y": 1.543,
+            "w": 0.665,
+            "h": 0.379,
+            "fontSize": 18,
+            "fontFace": "Archivo",
+            "lineSpacing": 21.6,
+            "text": "20%",
+            "color": "text",
+            "bold": true
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.433,
+            "y": 2.059,
+            "w": 0.665,
+            "h": 0.379,
+            "fontSize": 18,
+            "fontFace": "Archivo",
+            "lineSpacing": 21.6,
+            "text": "43%",
+            "color": "text",
+            "bold": true
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.433,
+            "y": 2.604,
+            "w": 0.665,
+            "h": 0.379,
+            "fontSize": 18,
+            "fontFace": "Archivo",
+            "lineSpacing": 21.6,
+            "text": "78%",
+            "color": "text",
+            "bold": true
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.657,
+            "y": 1.529,
+            "w": 1.891,
+            "h": 0.424,
+            "fontSize": 9,
+            "fontFace": "Inter",
+            "lineSpacing": 12.96,
+            "text": "Lorem ipsum dolor sit amet,\nconsectetur",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.657,
+            "y": 2.055,
+            "w": 1.891,
+            "h": 0.424,
+            "fontSize": 9,
+            "fontFace": "Inter",
+            "lineSpacing": 12.96,
+            "text": "Lorem ipsum dolor sit amet,\nconsectetur",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.657,
+            "y": 2.573,
+            "w": 1.891,
+            "h": 0.424,
+            "fontSize": 9,
+            "fontFace": "Inter",
+            "lineSpacing": 12.96,
+            "text": "Lorem ipsum dolor sit amet,\nconsectetur",
+            "color": "text"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.512,
+            "y": 4.347,
+            "w": 4.15,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.636,
+            "y": 3.664,
+            "w": 3.951,
+            "h": 1.439,
+            "text": "COMPLIANCE\nFRAMEWORK"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.385,
+            "y": 3.815,
+            "w": 2.857,
+            "h": 0.909,
+            "fontSize": 50,
+            "fontFace": "Archivo",
+            "lineSpacing": 60.0,
+            "text": "+43,43%",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 5.751,
+            "y": 4.687,
+            "w": 2.386,
+            "h": 0.404,
+            "fontSize": 20,
+            "fontFace": "Archivo",
+            "lineSpacing": 24.0,
+            "text": "POTENTIAL\nRISKS",
+            "color": "background"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#2959E8\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 9.168,
+            "y": 4.795,
+            "w": 0.515,
+            "h": 0.488
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading1",
+            "x": 9.214,
+            "y": 0.372,
+            "w": 0.55,
+            "h": 0.4,
+            "text": "15"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 5,
+            "y": 1.125,
+            "w": 5,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 8.861,
+            "y": 3.375,
+            "w": 1.139,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.43,
+            "y": 3.93,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.438,
+            "y": 1.689,
+            "w": 0,
+            "h": 1.122,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.99,
+            "y": 0,
+            "w": 0,
+            "h": 5.625,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Tracking progress \u2014 20/40/60/76% donut gauges."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 4.811,
+            "y": 0.604,
+            "w": 3.429,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 1.835,
+            "y": 0.599,
+            "w": 6.567,
+            "h": 0.766,
+            "text": "TRACKING PROGRESS"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 156.8 156.8\" fill=\"none\"><path d=\"M78.40 78.40 L78.04 1.04 A77.36 77.36 0 1 1 12.20 118.42 Z\" fill=\"#CCFC51\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><path d=\"M78.40 78.40 L155.69 81.53 A77.36 77.36 0 1 1 124.37 16.18 Z\" fill=\"#2959E8\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><circle cx=\"78.4\" cy=\"78.4\" r=\"63.95\" fill=\"#FFFFFF\" stroke=\"#000000\" stroke-width=\"1.3888888888888888\"/></svg>",
+            "x": 0.812,
+            "y": 2.058,
+            "w": 1.568,
+            "h": 1.568
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading1",
+            "x": 0.812,
+            "y": 2.62,
+            "w": 1.568,
+            "h": 0.4,
+            "align": "center",
+            "text": "20%"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 156.8 156.8\" fill=\"none\"><path d=\"M78.40 78.40 L78.04 1.04 A77.36 77.36 0 1 1 12.20 118.42 Z\" fill=\"#CCFC51\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><path d=\"M78.40 78.40 L124.21 140.74 A77.36 77.36 0 1 1 124.37 16.18 Z\" fill=\"#2959E8\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><circle cx=\"78.4\" cy=\"78.4\" r=\"63.95\" fill=\"#FFFFFF\" stroke=\"#000000\" stroke-width=\"1.3888888888888888\"/></svg>",
+            "x": 3.075,
+            "y": 2.058,
+            "w": 1.568,
+            "h": 1.568
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading1",
+            "x": 3.075,
+            "y": 2.62,
+            "w": 1.568,
+            "h": 0.4,
+            "align": "center",
+            "text": "40%"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 156.8 156.8\" fill=\"none\"><path d=\"M78.40 78.40 L78.04 1.04 A77.36 77.36 0 1 1 12.20 118.42 Z\" fill=\"#2959E8\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><path d=\"M78.40 78.40 L12.08 118.23 A77.36 77.36 0 0 1 77.67 1.05 Z\" fill=\"#CCFC51\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><circle cx=\"78.4\" cy=\"78.4\" r=\"63.95\" fill=\"#FFFFFF\" stroke=\"#000000\" stroke-width=\"1.3888888888888888\"/></svg>",
+            "x": 5.393,
+            "y": 2.058,
+            "w": 1.568,
+            "h": 1.568
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading1",
+            "x": 5.393,
+            "y": 2.62,
+            "w": 1.568,
+            "h": 0.4,
+            "align": "center",
+            "text": "60%"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 156.8 156.8\" fill=\"none\"><path d=\"M78.40 78.40 L78.04 1.04 A77.36 77.36 0 1 1 5.80 51.69 Z\" fill=\"#CCFC51\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><path d=\"M78.40 78.40 L3.79 57.96 A77.36 77.36 0 0 1 77.67 1.05 Z\" fill=\"#2959E8\" stroke=\"#000000\" stroke-width=\"2.083333333333333\"/><circle cx=\"78.4\" cy=\"78.4\" r=\"63.95\" fill=\"#FFFFFF\" stroke=\"#000000\" stroke-width=\"1.3888888888888888\"/></svg>",
+            "x": 7.662,
+            "y": 2.058,
+            "w": 1.568,
+            "h": 1.568
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading1",
+            "x": 7.662,
+            "y": 2.62,
+            "w": 1.568,
+            "h": 0.4,
+            "align": "center",
+            "text": "76%"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 0.765,
+            "y": 3.854,
+            "w": 1.709,
+            "h": 0.55,
+            "align": "center",
+            "text": "REGULAR\nREVIEWS"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.765,
+            "y": 4.36,
+            "w": 1.709,
+            "h": 0.45,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit am\net consec adipiscing elit",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 3.015,
+            "y": 3.854,
+            "w": 1.709,
+            "h": 0.55,
+            "align": "center",
+            "text": "FEEDBACK\nLOOPS"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 3.015,
+            "y": 4.36,
+            "w": 1.709,
+            "h": 0.45,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit am\net consec adipiscing elit",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 5.265,
+            "y": 3.854,
+            "w": 1.709,
+            "h": 0.55,
+            "align": "center",
+            "text": "REGULAR\nREVIEWS"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 5.265,
+            "y": 4.36,
+            "w": 1.709,
+            "h": 0.45,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit am\net consec adipiscing elit",
+            "color": "text2"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 7.563,
+            "y": 3.854,
+            "w": 1.709,
+            "h": 0.55,
+            "align": "center",
+            "text": "FEEDBACK\nLOOPS"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 7.563,
+            "y": 4.36,
+            "w": 1.709,
+            "h": 0.45,
+            "align": "center",
+            "text": "Lorem ipsum dolor sit am\net consec adipiscing elit",
+            "color": "text2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Team member \u2014 portraits and blue info card."
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s18a.jpg",
+            "x": 0.499,
+            "y": 1.125,
+            "w": 2.007,
+            "h": 2.517
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s18b.jpg",
+            "x": 3.09,
+            "y": 1.125,
+            "w": 2.087,
+            "h": 2.517
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.504,
+            "y": 3.837,
+            "w": 2.25,
+            "h": 0.35,
+            "text": "YOUR NAME HERE"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 3.123,
+            "y": 3.837,
+            "w": 2.25,
+            "h": 0.35,
+            "text": "YOUR NAME HERE"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.512,
+            "y": 4.207,
+            "w": 2.033,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, cons\nectetur adipiscingelit. Proin dum\nrisus sit amet venen"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 3.14,
+            "y": 4.207,
+            "w": 2.033,
+            "h": 0.647,
+            "text": "Lorem ipsum dolor sit amet, cons\nectetur adipiscingelit. Proin dum\nrisus sit amet venen"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.71,
+            "y": 0,
+            "w": 3.158,
+            "h": 2.25,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 6.094,
+            "y": 0.625,
+            "w": 2.7,
+            "h": 1.5,
+            "text": "TEAM\nMEMBER"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.71,
+            "y": 2.25,
+            "w": 3.158,
+            "h": 3.375,
+            "fill": {
+              "color": "primary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 6.143,
+            "y": 2.597,
+            "w": 2.385,
+            "h": 0.65,
+            "text": "TREATY OF\nVERSAILLES",
+            "color": "background"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 6.143,
+            "y": 3.359,
+            "w": 2.385,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, consectetur\nadipiscingelit. Proin dum risus sit amet\nvenen atis tristique. Morbi tortor justo, p\neget sequat",
+            "color": "background"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 6.129,
+            "y": 4.5,
+            "w": 1.168,
+            "h": 0.355,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.129,
+            "y": 4.5,
+            "w": 1.168,
+            "h": 0.355,
+            "fontSize": 9,
+            "fontFace": "Archivo",
+            "align": "center",
+            "valign": "middle",
+            "lineSpacing": 10.8,
+            "text": "LEARN MORE",
+            "color": "text"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 8.86,
+            "y": 4.5,
+            "w": 1.139,
+            "h": 1.125,
+            "fill": {
+              "color": "secondary"
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#2959E8\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 9.168,
+            "y": 4.795,
+            "w": 0.542,
+            "h": 0.488
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading1",
+            "x": 9.214,
+            "y": 0.372,
+            "w": 0.55,
+            "h": 0.4,
+            "text": "18"
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 8.877,
+            "y": 1.125,
+            "w": 1.123,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 8.861,
+            "y": 3.375,
+            "w": 1.139,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.43,
+            "y": 3.93,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.438,
+            "y": 1.689,
+            "w": 0,
+            "h": 1.122,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.99,
+            "y": 0,
+            "w": 0,
+            "h": 5.625,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "template": "grid",
+        "notes": "Moving forward \u2014 contact strip and photo."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.512,
+            "y": 1.273,
+            "w": 3.27,
+            "h": 0.698,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "title",
+            "x": 0.647,
+            "y": 0.598,
+            "w": 3.271,
+            "h": 1.439,
+            "text": "MOVING\nFORWARD"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading2",
+            "x": 0.718,
+            "y": 2.973,
+            "w": 2.85,
+            "h": 0.35,
+            "text": "WHO WE SERVE"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 0.718,
+            "y": 3.325,
+            "w": 3.155,
+            "h": 0.844,
+            "text": "Lorem ipsum dolor sit amet, consectetur\nadipiscingelit. Proin dum risus sit amet venen atis\ntristique. Morbi tortor justo, p eget sequat ac, semper\nsit amet venen atis Proin dum risus sit."
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 0.746,
+            "y": 4.389,
+            "w": 1.168,
+            "h": 0.355,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.746,
+            "y": 4.389,
+            "w": 1.168,
+            "h": 0.355,
+            "fontSize": 9,
+            "fontFace": "Archivo",
+            "align": "center",
+            "valign": "middle",
+            "lineSpacing": 10.8,
+            "text": "LEARN MORE",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 2.492,
+            "y": 4.295,
+            "w": 1.339,
+            "h": 0.581,
+            "fontSize": 30,
+            "fontFace": "Archivo",
+            "align": "right",
+            "lineSpacing": 36.0,
+            "runs": [
+              {
+                "text": "+122",
+                "fontSize": 30,
+                "color": "text",
+                "fontFace": "Archivo"
+              },
+              {
+                "text": "%",
+                "fontSize": 18,
+                "color": "text",
+                "fontFace": "Archivo"
+              }
+            ]
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 4.999,
+            "y": 0,
+            "w": 0,
+            "h": 2.277,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.124,
+            "y": 0,
+            "w": 0,
+            "h": 2.277,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 7.248,
+            "y": 0,
+            "w": 0,
+            "h": 2.277,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 8.373,
+            "y": 0,
+            "w": 0,
+            "h": 2.277,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.498,
+            "y": 0,
+            "w": 0,
+            "h": 2.277,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 5,
+            "y": 1.139,
+            "w": 5,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 5,
+            "y": 2.277,
+            "w": 5,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 4.997,
+            "y": 1.137,
+            "w": 1.125,
+            "h": 1.14,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 54\" fill=\"none\"><path d=\"M20 4 C11 4 4 11.2 4 20.2 C4 31 20 49 20 49 C20 49 36 31 36 20.2 C36 11.2 29 4 20 4 Z\" stroke=\"#FFFFFF\" stroke-width=\"5.5\" stroke-linejoin=\"round\"/><circle cx=\"20\" cy=\"20\" r=\"6.5\" stroke=\"#FFFFFF\" stroke-width=\"4.5\"/><circle cx=\"20\" cy=\"20\" r=\"2.2\" fill=\"#FFFFFF\"/></svg>",
+            "x": 5.364,
+            "y": 1.441,
+            "w": 0.391,
+            "h": 0.533
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 4.998,
+            "y": 2.278,
+            "w": 5.002,
+            "h": 1.136,
+            "fill": {
+              "color": "secondary"
+            },
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 5.425,
+            "y": 2.608,
+            "w": 1.05,
+            "h": 0.3,
+            "text": "PHONE"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 6.729,
+            "y": 2.608,
+            "w": 1.05,
+            "h": 0.3,
+            "text": "WEBSITE"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "heading3",
+            "x": 8.555,
+            "y": 2.608,
+            "w": 1.05,
+            "h": 0.3,
+            "text": "EMAIL"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 5.425,
+            "y": 2.955,
+            "w": 1.5,
+            "h": 0.3,
+            "text": "+1234567890"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 6.729,
+            "y": 2.955,
+            "w": 1.5,
+            "h": 0.3,
+            "text": "https://www.web.com"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 8.555,
+            "y": 2.955,
+            "w": 1.5,
+            "h": 0.3,
+            "text": "mail@mail.com"
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "path": "/Users/paolobarbato/Documents/Development/json-to-office/templates/media/management-plan/crop_s19.jpg",
+            "x": 5.0,
+            "y": 3.414,
+            "w": 5.0,
+            "h": 2.21
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "background": {
+          "color": "secondary"
+        },
+        "notes": "Thank you for watching \u2014 contact info."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 0.585,
+            "w": 10,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0,
+            "y": 1.724,
+            "w": 10,
+            "h": 0,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.499,
+            "y": 0.585,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 1.624,
+            "y": 0.585,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 2.748,
+            "y": 0.585,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 3.873,
+            "y": 0.585,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.123,
+            "y": 0.585,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 7.248,
+            "y": 0.585,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 8.373,
+            "y": 0.585,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 9.498,
+            "y": 0.585,
+            "w": 0,
+            "h": 1.139,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 4.998,
+            "y": 0,
+            "w": 0,
+            "h": 5.625,
+            "line": {
+              "color": "text",
+              "width": 0.75
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.248,
+            "y": 0.585,
+            "w": 1.125,
+            "h": 1.14,
+            "fill": {
+              "color": "primary"
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 43\" fill=\"none\"><g stroke=\"#FFFFFF\" stroke-width=\"4.6\" stroke-linecap=\"round\"><path d=\"M1.5 39.5 H46\"/><path d=\"M6 27 V33\"/><path d=\"M15 13 V33\"/><path d=\"M24 9 V18\"/><path d=\"M33 15 V24\"/><path d=\"M42 1.5 V33\"/></g></svg>",
+            "x": 7.57,
+            "y": 0.929,
+            "w": 0.482,
+            "h": 0.434
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.6,
+            "y": 2.268,
+            "w": 7.841,
+            "h": 2.257,
+            "fontSize": 72,
+            "fontFace": "Archivo",
+            "lineSpacing": 77.76,
+            "text": "THANK YOU\nFOR WATCHING",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 0.728,
+            "y": 4.658,
+            "w": 0.7,
+            "h": 0.3,
+            "fontSize": 11,
+            "fontFace": "Archivo",
+            "lineSpacing": 13.2,
+            "text": "Phone:",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 3.107,
+            "y": 4.658,
+            "w": 0.8,
+            "h": 0.3,
+            "fontSize": 11,
+            "fontFace": "Archivo",
+            "lineSpacing": 13.2,
+            "text": "Website :",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "x": 6.254,
+            "y": 4.658,
+            "w": 0.4,
+            "h": 0.6,
+            "fontSize": 11,
+            "fontFace": "Archivo",
+            "lineSpacing": 13.2,
+            "text": "Email :",
+            "color": "text"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 1.419,
+            "y": 4.642,
+            "w": 1.25,
+            "h": 0.3,
+            "text": "+1234567890"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 3.879,
+            "y": 4.642,
+            "w": 1.65,
+            "h": 0.3,
+            "text": "https://www.web.com"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "style": "body",
+            "x": 6.849,
+            "y": 4.642,
+            "w": 1.35,
+            "h": 0.3,
+            "text": "mail@mail.com"
+          }
+        }
+      ]
+    }
+  ]
+}
