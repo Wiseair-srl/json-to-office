@@ -306,14 +306,18 @@ describe('standalone render server', () => {
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      results: Array<{ ok: boolean; error?: string }>;
+      results: Array<{ ok: boolean; error?: string; stage?: string }>;
     };
     // Build errors are the caller's own JSON problem — surfaced verbatim.
     expect(body.results[0].error).toBe(
       'Top-level component must be a pptx component'
     );
+    expect(body.results[0].stage).toBe('build');
     // Tooling errors carry host paths — replaced with a generic message.
     expect(body.results[1].error).toBe('Slide rasterization failed');
+    // The failure stage itself is not sensitive; clients use it to tell
+    // invalid slide input from renderer failures.
+    expect(body.results[1].stage).toBe('convert');
     expect(JSON.stringify(body)).not.toContain('/var/tmp');
   });
 
