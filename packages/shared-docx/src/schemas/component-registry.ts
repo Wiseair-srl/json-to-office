@@ -280,6 +280,18 @@ export function isStandardComponent(name: string): boolean {
 // ============================================================================
 
 /**
+ * True when a props schema rejects `{}`, i.e. the `props` key cannot be omitted.
+ *
+ * Only object schemas are inspected. Anything else (a union, a bare ref) is
+ * treated as demanding props, preserving the previous stricter behavior for
+ * shapes this cannot reason about.
+ */
+function demandsProps(propsSchema: TSchema): boolean {
+  const schema = propsSchema as { type?: string; required?: readonly string[] };
+  return schema.type !== 'object' || (schema.required?.length ?? 0) > 0;
+}
+
+/**
  * Generate TypeBox schema object for a component.
  *
  * @param component - Component definition from the registry
@@ -311,14 +323,33 @@ export function createComponentSchemaObject(
 
   // selfRef (full union) is intentionally passed to createPropsSchema so that
   // header/footer sub-schemas and table cell content can reference any component.
-  schema.props =
+  const propsSchema =
     component.createPropsSchema && selfRef
       ? component.createPropsSchema(selfRef)
       : component.propsSchema;
 
-  // Add children support if applicable
+  // `props` is required only when the props schema itself demands a field.
+  // The runtime validator treats an omitted `props` as `{}` and lets the props
+  // schema decide (see deep-validator.ts), so `section`, `toc`, `image` and
+  // `text-box` are legal without the key. Exporting `props` as unconditionally
+  // required reddened documents that build: the playground flagged all 23
+  // propless sections in the shipped tech-report template while every runtime
+  // gate stayed green. The root `docx` node already carried this fix locally in
+  // generator.ts; this generalizes it to every component.
+  schema.props = demandsProps(propsSchema)
+    ? propsSchema
+    : Type.Optional(propsSchema);
+
+  // Add children support if applicable. The root component requires its
+  // `children` array — deep-validator.ts enforces the same rule, but only on
+  // the fallback path it takes when the TypeBox check already failed. That
+  // made the rule fire only as a side effect of `props` being required, so
+  // relaxing `props` above would silently retire it. Nested containers may
+  // legitimately be empty.
   if (component.hasChildren && childrenType) {
-    schema.children = Type.Optional(Type.Array(childrenType));
+    schema.children = component.special?.hasSchemaField
+      ? Type.Array(childrenType)
+      : Type.Optional(Type.Array(childrenType));
   }
 
   return Type.Object(schema, { additionalProperties: false });

@@ -105,11 +105,24 @@ jobs:
         shell: bash
         run: pnpm validate:assets
 
-      - name: Check generated schemas against smoke examples
+      - name: Check generated schemas against smoke examples and stock templates
         shell: bash
         run: |
           node packages/jto-cli/dist/cli.js docx validate examples/invoice.docx.json --quiet --schema .schema-smoke/docx/document.schema.json
           node packages/jto-cli/dist/cli.js pptx validate examples/quarterly-review.pptx.json --quiet --schema .schema-smoke/pptx/presentation.schema.json
+          # The two examples above write `props` on every node, so they never
+          # exercised the exported schema's optionality. The stock templates do:
+          # tech-report has 23 propless `section` nodes that the runtime accepts
+          # and the exported schema rejected, and nothing in CI could see it —
+          # `validate:assets` above uses the runtime validator, which reaches the
+          # same verdict by a different path. These are the documents the
+          # playground actually opens, so they gate the schema editors consume.
+          for file in packages/jto/src/client/public/templates/*.docx.json; do
+            node packages/jto-cli/dist/cli.js docx validate "$file" --quiet --schema .schema-smoke/docx/document.schema.json
+          done
+          for file in packages/jto/src/client/public/templates/*.pptx.json; do
+            node packages/jto-cli/dist/cli.js pptx validate "$file" --quiet --schema .schema-smoke/pptx/presentation.schema.json
+          done
 
       - name: Render dependency-free smoke examples
         shell: bash
