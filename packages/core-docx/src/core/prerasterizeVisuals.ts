@@ -49,6 +49,37 @@ export interface PrerasterizeOptions {
   concurrency?: number;
 }
 
+/** Cumulative pre-pass counters for cache observability (#156). */
+export interface VisualPrepassStats {
+  /** Documents that entered the pre-pass with at least one visual. */
+  documents: number;
+  /** Enabled visuals collected across those documents. */
+  collected: number;
+  /** Unique rasterization units after dedupe (identical content+dpi). */
+  unique: number;
+}
+
+const prepassStats: VisualPrepassStats = {
+  documents: 0,
+  collected: 0,
+  unique: 0,
+};
+
+/**
+ * Get cumulative per-document pre-pass counters. `collected - unique` is the
+ * work the dedupe saved — the `visual` cache benefit the component cache
+ * stats can never show, since `visual` bypasses that cache by design.
+ */
+export function getVisualPrepassStats(): VisualPrepassStats {
+  return { ...prepassStats };
+}
+
+export function resetVisualPrepassStats(): void {
+  prepassStats.documents = 0;
+  prepassStats.collected = 0;
+  prepassStats.unique = 0;
+}
+
 /** One unique rasterization unit collected from the document. */
 interface VisualRasterTarget {
   key: string;
@@ -197,6 +228,10 @@ export async function prerasterizeVisuals(
     }
   }
   if (targets.size === 0) return map;
+
+  prepassStats.documents++;
+  prepassStats.collected += visuals.length;
+  prepassStats.unique += targets.size;
 
   const unique = [...targets.values()];
   const limit = createLimiter(

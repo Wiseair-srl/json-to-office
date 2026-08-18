@@ -13,6 +13,9 @@ export {
 export {
   createLibreOfficePptxRasterizer,
   createLibreOfficePptxBatchRasterizer,
+  getRasterizerCacheStats,
+  clearRasterizerCache,
+  type RasterizerCacheStats,
 } from './pptx-rasterizer.js';
 
 // Generator factory

@@ -910,8 +910,8 @@ function PreviewHeader({
           <DialogHeader>
             <DialogTitle>Clear all caches?</DialogTitle>
             <DialogDescription>
-              This will clear document and component caches. Next generation
-              will be uncached.
+              This will clear the document, component, and rasterized-visual
+              caches. Next generation will be uncached.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

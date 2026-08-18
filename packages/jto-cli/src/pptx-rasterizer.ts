@@ -156,6 +156,107 @@ function resolvePdftoppm(): Promise<string> {
   return pdftoppmPromise;
 }
 
+/**
+ * Process-wide rasterizer cache counters (#156). The disk cache had zero
+ * observability even though `visual` — the component family with the
+ * heaviest cache benefit — lives here rather than in the component cache
+ * (which bypasses `visual` by design).
+ */
+export interface RasterizerCacheStats {
+  /** Slides served from the content-addressed PNG disk cache. */
+  diskHits: number;
+  /** Unique slides that missed the disk cache and needed the engine. */
+  diskMisses: number;
+  /** diskHits / (diskHits + diskMisses), 0 when no lookups. */
+  hitRate: number;
+  /** Requests resolved by batch-internal dedupe (duplicate slides). */
+  dedupedRequests: number;
+  /** Slides successfully rendered by the engine (LibreOffice + pdftoppm). */
+  rendered: number;
+  /** Slides that failed at any engine stage. */
+  failed: number;
+  /** PNG files currently in the disk cache directories. */
+  entries: number;
+  /** Total bytes of those PNG files. */
+  bytes: number;
+}
+
+const rasterizerCounters = {
+  diskHits: 0,
+  diskMisses: 0,
+  dedupedRequests: 0,
+  rendered: 0,
+  failed: 0,
+};
+
+/** Cache directories any engine run has used (for the disk scan). */
+const knownCacheDirs = new Set<string>();
+
+/**
+ * Get rasterizer cache statistics: process-lifetime counters plus a live
+ * scan of the disk cache directories (default dir included, so entries from
+ * previous processes are visible too).
+ */
+export async function getRasterizerCacheStats(): Promise<RasterizerCacheStats> {
+  const dirs = new Set(knownCacheDirs);
+  const defaultDir = resolveCacheDir();
+  if (defaultDir) dirs.add(defaultDir);
+
+  let entries = 0;
+  let bytes = 0;
+  for (const dir of dirs) {
+    try {
+      const files = await fs.readdir(dir);
+      for (const file of files) {
+        if (!file.endsWith('.png')) continue;
+        try {
+          const stat = await fs.stat(path.join(dir, file));
+          entries++;
+          bytes += stat.size;
+        } catch {}
+      }
+    } catch {
+      // Missing dir — nothing cached there.
+    }
+  }
+
+  const lookups = rasterizerCounters.diskHits + rasterizerCounters.diskMisses;
+  return {
+    ...rasterizerCounters,
+    hitRate: lookups > 0 ? rasterizerCounters.diskHits / lookups : 0,
+    entries,
+    bytes,
+  };
+}
+
+/**
+ * Delete every cached PNG in the known cache directories (default dir
+ * included) and reset the counters. Backs "Clear all caches" (#156) — the
+ * disk cache used to survive it.
+ */
+export async function clearRasterizerCache(): Promise<void> {
+  const dirs = new Set(knownCacheDirs);
+  const defaultDir = resolveCacheDir();
+  if (defaultDir) dirs.add(defaultDir);
+
+  for (const dir of dirs) {
+    try {
+      const files = await fs.readdir(dir);
+      await Promise.all(
+        files
+          .filter((file) => file.endsWith('.png'))
+          .map((file) => fs.rm(path.join(dir, file), { force: true }))
+      );
+    } catch {}
+  }
+
+  rasterizerCounters.diskHits = 0;
+  rasterizerCounters.diskMisses = 0;
+  rasterizerCounters.dedupedRequests = 0;
+  rasterizerCounters.rendered = 0;
+  rasterizerCounters.failed = 0;
+}
+
 const PNG_SIGNATURE = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
@@ -279,6 +380,7 @@ async function rasterizeSlidesWithEngine(
   cacheDir: string | null
 ): Promise<EngineSlideResult[]> {
   const results: EngineSlideResult[] = new Array(slides.length);
+  if (cacheDir) knownCacheDirs.add(cacheDir);
 
   // 1. Dedupe by content-addressed key: identical slides build, convert, and
   //    hit the cache exactly once, then fan out to every requesting index.
@@ -306,12 +408,15 @@ async function rasterizeSlidesWithEngine(
     }
   }
 
+  rasterizerCounters.dedupedRequests += slides.length - jobsByKey.size;
+
   const fail = (
     job: SlideJob,
     stage: PptxRasterizeFailureStage,
     error: string,
     cause?: unknown
   ) => {
+    rasterizerCounters.failed++;
     for (const i of job.indexes)
       results[i] = { ok: false, error, stage, cause };
   };
@@ -328,6 +433,7 @@ async function rasterizeSlidesWithEngine(
         if (cached) {
           const size = parsePngSize(cached);
           if (size) {
+            rasterizerCounters.diskHits++;
             succeed(job, { base64DataUri: toDataUri(cached), ...size });
             return;
           }
@@ -335,6 +441,7 @@ async function rasterizeSlidesWithEngine(
           // it and re-render rather than embed a broken image.
           await fs.rm(job.cachePath, { force: true }).catch(() => {});
         }
+        rasterizerCounters.diskMisses++;
       }
       uncached.push(job);
     })
@@ -492,6 +599,7 @@ async function rasterizeSlidesWithEngine(
         if (job.cachePath) {
           await writeCacheAtomic(cacheDir!, job.cachePath, png);
         }
+        rasterizerCounters.rendered++;
         succeed(job, { base64DataUri: toDataUri(png), ...size });
       } catch (error) {
         fail(job, 'rasterize', errorMessage(error), error);
