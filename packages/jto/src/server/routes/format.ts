@@ -29,6 +29,7 @@ import {
   LibreOfficeOutputNotFoundError,
   LibreOfficeTimeoutError,
 } from '../services/libreoffice-converter.js';
+import { inlineTemplateMedia } from '../services/template-media-inliner.js';
 
 export function createFormatRouter(adapter: FormatAdapter) {
   const router = new Hono<AppEnv>();
@@ -71,6 +72,26 @@ export function createFormatRouter(adapter: FormatAdapter) {
     }
   };
 
+  // In safe mode, relative media of a server-discovered document is inlined
+  // as data URLs so bundled templates pass source validation and survive the
+  // trip to the remote rasterizer. Development mode keeps filesystem
+  // resolution (and the path-keyed visual cache) untouched.
+  const inlineDiscoveredMedia = async (
+    jsonDefinition: unknown,
+    baseDir: string | undefined
+  ): Promise<unknown> => {
+    if (
+      baseDir === undefined ||
+      config.outboundSources.mode === 'development'
+    ) {
+      return jsonDefinition;
+    }
+    return inlineTemplateMedia(jsonDefinition, baseDir, {
+      maxFileBytes: config.requestLimits.maxFileSize,
+      maxTotalBytes: config.requestLimits.maxBodySize,
+    });
+  };
+
   const contentTypeMw = async (c: any, next: () => Promise<void>) => {
     const contentType = c.req.header('content-type');
     if (!contentType || !contentType.includes('application/json')) {
@@ -101,7 +122,16 @@ export function createFormatRouter(adapter: FormatAdapter) {
       const requestId = c.get('requestId');
 
       try {
-        assertRequestSources(jsonDefinition, 'jsonDefinition');
+        // Resolve the trusted sourceName -> baseDir mapping first so bundled
+        // template media can be inlined as data URLs before safe-mode source
+        // validation (which rejects relative paths from HTTP clients).
+        const baseDir = await resolveSourceBaseDir(options);
+        const effectiveDefinition = await inlineDiscoveredMedia(
+          jsonDefinition,
+          baseDir
+        );
+
+        assertRequestSources(effectiveDefinition, 'jsonDefinition');
         assertRequestSources(customThemes, 'customThemes');
         assertRequestSources(options, 'options');
 
@@ -127,8 +157,6 @@ export function createFormatRouter(adapter: FormatAdapter) {
           sanitizedFonts = rawFonts;
         }
 
-        const baseDir = await resolveSourceBaseDir(options);
-
         // `baseDir` selects the directory local media paths resolve against —
         // never accept it from the HTTP client. Only the server-side
         // sourceName mapping above may set it.
@@ -136,7 +164,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
         delete clientOptions.baseDir;
 
         const result = await generatorService.generate({
-          jsonDefinition,
+          jsonDefinition: effectiveDefinition,
           customThemes,
           options: {
             ...clientOptions,
@@ -471,16 +499,20 @@ export function createFormatRouter(adapter: FormatAdapter) {
       }>(c, 'json');
 
       try {
-        assertRequestSources(jsonDefinition, 'jsonDefinition');
-        assertRequestSources(customThemes, 'customThemes');
-        assertRequestSources(options, 'options');
-
         // Same server-side sourceName -> baseDir mapping as /generate, so
         // previews resolve relative asset paths the way downloads do (#142).
         const baseDir = await resolveSourceBaseDir(options);
+        const effectiveDefinition = await inlineDiscoveredMedia(
+          jsonDefinition,
+          baseDir
+        );
+
+        assertRequestSources(effectiveDefinition, 'jsonDefinition');
+        assertRequestSources(customThemes, 'customThemes');
+        assertRequestSources(options, 'options');
 
         const generated = await generatorService.generate({
-          jsonDefinition,
+          jsonDefinition: effectiveDefinition,
           customThemes,
           options: {
             bypassCache: true,
