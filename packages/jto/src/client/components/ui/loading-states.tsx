@@ -188,11 +188,7 @@ export function DocumentGenerationLoader({
   const hintIndex = Math.floor(Math.max(0, elapsed - 3) / 5) % hints.length;
 
   return (
-    <div
-      className={cn('p-6 max-w-lg mx-auto space-y-5', className)}
-      role="status"
-      aria-live="polite"
-    >
+    <div className={cn('p-6 max-w-lg mx-auto space-y-5', className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <Spinner size="md" />
@@ -202,12 +198,22 @@ export function DocumentGenerationLoader({
                 ? `Generating “${summary.title}”`
                 : 'Generating document'}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
+            {/* The live region covers only the stage message — putting it on
+                the container would re-announce the whole loader every 100ms
+                elapsed-timer tick. */}
+            <p
+              className="text-xs text-muted-foreground truncate"
+              role="status"
+              aria-live="polite"
+            >
               {message || `${stageLabels[currentStage]}...`}
             </p>
           </div>
         </div>
-        <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground tabular-nums">
+        <span
+          className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground tabular-nums"
+          aria-hidden="true"
+        >
           {elapsed.toFixed(1)}s
         </span>
       </div>
@@ -318,15 +324,18 @@ export function GenerationOverlay({
         'flex flex-col items-center gap-2 rounded-md border bg-background/95 px-6 py-4 shadow-sm',
         className
       )}
-      role="status"
-      aria-live="polite"
     >
       <div className="flex items-center gap-2">
         <Spinner size="md" />
-        <p className="text-sm font-medium">
+        {/* Live region on the label only — the elapsed badge ticks every
+            100ms and must not retrigger screen-reader announcements. */}
+        <p className="text-sm font-medium" role="status" aria-live="polite">
           {mode === 'generating' ? 'Generating' : 'Rendering'}
         </p>
-        <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground tabular-nums">
+        <span
+          className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground tabular-nums"
+          aria-hidden="true"
+        >
           {elapsed.toFixed(1)}s
         </span>
       </div>
