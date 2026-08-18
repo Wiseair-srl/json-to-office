@@ -95,6 +95,20 @@ describe('collectVisualProps', () => {
     });
     expect(collectVisualProps([nested])).toHaveLength(1);
   });
+
+  it('survives cyclic objects and cyclic arrays', () => {
+    const section: Record<string, unknown> = {
+      name: 'section',
+      children: [visual('in-cycle')],
+    };
+    section.owner = section;
+    const cyclicArray: unknown[] = [section];
+    cyclicArray.push(cyclicArray);
+    const found = collectVisualProps(cyclicArray);
+    expect(found.map((p: any) => p.elements[0].props.text)).toEqual([
+      'in-cycle',
+    ]);
+  });
 });
 
 describe('prerasterizeVisuals (in-process batch)', () => {

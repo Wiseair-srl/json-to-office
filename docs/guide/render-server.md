@@ -184,12 +184,12 @@ Content-Type: application/json
 {
   "results": [
     { "ok": true, "base64DataUri": "data:image/png;base64,...", "width": 480, "height": 240 },
-    { "ok": false, "error": "Top-level component must be a pptx component" }
+    { "ok": false, "error": "Top-level component must be a pptx component", "stage": "build" }
   ]
 }
 ```
 
-`results` is index-aligned with `slides`. A bad slide fails **per item** (`ok: false`) without discarding its siblings: errors caused by the slide's own JSON are returned verbatim, while internal tooling failures come back as a generic `Slide rasterization failed` (full detail goes to the server log). Batch-level problems (validation, missing binaries) use the same `400`/`503` mapping as `/rasterize`. Both routes share one rate-limit bucket, body limit, auth, and source policy, enforce an estimated pixel budget (64 MP per slide, 256 MP per batch), and key the PNG cache per slide — identically to `/rasterize` — so mixing the two endpoints never re-renders unchanged visuals.
+`results` is index-aligned with `slides`. A bad slide fails **per item** (`ok: false`) without discarding its siblings: errors caused by the slide's own JSON (`stage: "build"`) are returned verbatim, while internal tooling failures (`stage: "convert"` or `"rasterize"`) come back as a generic `Slide rasterization failed` (full detail goes to the server log). Batch-level problems (validation, missing binaries) use the same `400`/`503` mapping as `/rasterize`. Both routes share one rate-limit bucket, body limit, auth, and source policy, enforce an estimated pixel budget (64 MP per slide, 256 MP per batch), and key the PNG cache per slide — identically to `/rasterize` — so mixing the two endpoints never re-renders unchanged visuals.
 
 DOCX generation uses this automatically: the renderer collects a document's visuals up front, sends them as batches, and **falls back to per-visual `/rasterize` calls if the batch endpoint is unavailable** (e.g. an older render server), so clients and servers can upgrade independently.
 

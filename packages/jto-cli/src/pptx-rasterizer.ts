@@ -374,14 +374,19 @@ async function rasterizeSlidesWithEngine(
     //    the multi-second cost being amortized). The timeout scales with the
     //    slide count so a large batch is not misread as a hang, and the whole
     //    engine run gets a deadline of one batch window + one pdftoppm window
-    //    — bounded work no matter how conversions misbehave, sized to stay
-    //    inside the HTTP client's own batch timeout.
+    //    per slide — bounded work no matter how conversions misbehave. The
+    //    PNG phase is sequential over every slide, so its share must scale
+    //    with the slide count like the soffice window does; otherwise a slow
+    //    soffice launch drains the budget and slides whose PDFs converted
+    //    fine fail spuriously. An HTTP client that gives up sooner falls
+    //    back to per-visual calls on its own.
     const batchTimeoutMs = Math.min(
       SOFFICE_TIMEOUT_MS +
         SOFFICE_BATCH_EXTRA_PER_SLIDE_MS * (built.length - 1),
       SOFFICE_BATCH_TIMEOUT_CAP_MS
     );
-    const deadlineAt = Date.now() + batchTimeoutMs + PDFTOPPM_TIMEOUT_MS;
+    const deadlineAt =
+      Date.now() + batchTimeoutMs + PDFTOPPM_TIMEOUT_MS * built.length;
     const remainingMs = () => deadlineAt - Date.now();
 
     let batchError: unknown;

@@ -299,8 +299,12 @@ export function registerRasterizeRoute(
           if (slide.ok) return slide;
           options.onError?.(new Error(slide.error));
           return slide.stage === 'build'
-            ? { ok: false as const, error: slide.error }
-            : { ok: false as const, error: 'Slide rasterization failed' };
+            ? { ok: false as const, error: slide.error, stage: slide.stage }
+            : {
+                ok: false as const,
+                error: 'Slide rasterization failed',
+                stage: slide.stage,
+              };
         }),
       });
     }

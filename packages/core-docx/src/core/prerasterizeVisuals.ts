@@ -68,12 +68,18 @@ interface VisualRasterTarget {
  */
 export function collectVisualProps(root: unknown): VisualProps[] {
   const found: VisualProps[] = [];
+  // Guards against cyclic inputs (the walk accepts arbitrary objects, not
+  // just parsed JSON); registered before the array branch so
+  // self-referential arrays are covered too.
+  const seen = new WeakSet<object>();
   const visit = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    if (seen.has(node)) return;
+    seen.add(node);
     if (Array.isArray(node)) {
       for (const item of node) visit(item);
       return;
     }
-    if (!node || typeof node !== 'object') return;
     const obj = node as Record<string, unknown>;
     // Only component-shaped nodes carry `enabled`; a disabled subtree never
     // renders (mirrors the render-time filters).
