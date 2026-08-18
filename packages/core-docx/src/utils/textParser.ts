@@ -237,13 +237,99 @@ export function parseTextWithDecorators(
 }
 
 /**
- * Helper function to create TextRuns with newlines from text
+ * Run-level properties shared by every run produced for a piece of text.
+ * Single assembly point for both the plain-text and placeholder paths — a
+ * prop forwarded here reaches both, so the two cannot drift (issue #137).
  */
-function createTextRunsWithNewlines(
-  text: string,
+export function buildRunCommonProps(
   baseStyle: TextStyle,
-  options: TextDecoratorOptions,
-  overrideStyle?: { bold?: boolean; italics?: boolean }
+  overrides?: { bold?: boolean; italics?: boolean; boldColor?: string }
+) {
+  const bold = overrides?.bold ?? baseStyle.bold;
+  const italics = overrides?.italics ?? baseStyle.italics;
+  return {
+    ...(baseStyle.font && { font: baseStyle.font }),
+    ...(baseStyle.size && { size: baseStyle.size }),
+    ...(baseStyle.color && {
+      color:
+        bold && overrides?.boldColor ? overrides.boldColor : baseStyle.color,
+    }),
+    ...(bold !== undefined && { bold }),
+    ...(italics !== undefined && { italics }),
+    ...(baseStyle.underline && { underline: baseStyle.underline }),
+    ...(baseStyle.scale && { scale: baseStyle.scale }),
+    ...(baseStyle.characterSpacing && {
+      characterSpacing: baseStyle.characterSpacing,
+    }),
+    ...(baseStyle.language && { language: baseStyle.language }),
+  };
+}
+
+/**
+ * Build the runs for a single line of text: split on `\t` into real
+ * `<w:tab/>` runs (a tab char inside <w:t> would be silently dropped by
+ * Word, and paragraph tabStops only apply to real tab runs), emit no-proof
+ * word runs, and attach the line break to the first emitted run only.
+ */
+function buildLineRuns(
+  line: string,
+  commonProps: ReturnType<typeof buildRunCommonProps>,
+  opts: { needsLineBreak: boolean; noProof?: boolean; noProofWords?: string[] }
+): TextRun[] {
+  const { needsLineBreak, noProof } = opts;
+  // When the whole run is already no-proof, there's nothing to single out,
+  // so skip word splitting and emit one run for the line.
+  const wholeRunNoProof = noProof === true;
+  const wordsForLine = wholeRunNoProof ? undefined : opts.noProofWords;
+
+  // The line break belongs only on the first run of the line.
+  let firstSegment = true;
+  const lineRuns: TextRun[] = [];
+  const tabSegments = line.split('\t');
+  tabSegments.forEach((tabSegment, tabIndex) => {
+    if (tabIndex > 0) {
+      lineRuns.push(
+        new TextRun({
+          children: [new Tab()],
+          ...commonProps,
+          ...(needsLineBreak && firstSegment && { break: 1 }),
+        })
+      );
+      firstSegment = false;
+    }
+    if (!tabSegment && tabSegments.length > 1) return;
+    lineRuns.push(
+      ...splitByNoProofWords(
+        tabSegment,
+        (segment, matched) => {
+          const run = new TextRun({
+            text: segment,
+            ...commonProps,
+            ...((matched || noProof !== undefined) && {
+              noProof: matched || wholeRunNoProof,
+            }),
+            ...(needsLineBreak && firstSegment && { break: 1 }),
+          });
+          firstSegment = false;
+          return run;
+        },
+        wordsForLine
+      )
+    );
+  });
+  return lineRuns;
+}
+
+/**
+ * Turn multi-line text into TextRuns: `\n` becomes a run break, `\t` a real
+ * tab run, no-proof words their own runs. Shared by the plain-text path
+ * (textParser) and the placeholder path (placeholderProcessor) so run-level
+ * properties cannot diverge between them.
+ */
+export function buildTextRuns(
+  text: string,
+  commonProps: ReturnType<typeof buildRunCommonProps>,
+  opts: { noProof?: boolean; noProofWords?: string[] } = {}
 ): TextRun[] {
   const runs: TextRun[] = [];
   const lines = text.split('\n');
@@ -252,81 +338,35 @@ function createTextRunsWithNewlines(
     const line = lines[lineIndex];
     const needsLineBreak = lineIndex > 0;
 
+    // Create runs even for empty lines if they need a break
     if (line || needsLineBreak) {
-      // Create run even for empty lines if they need a break
-      const runStyle = {
-        bold: overrideStyle?.bold ?? baseStyle.bold,
-        italics: overrideStyle?.italics ?? baseStyle.italics,
-      };
-
-      // Properties shared by every run produced for this line.
-      const commonProps = {
-        ...(baseStyle.font && { font: baseStyle.font }),
-        ...(baseStyle.size && { size: baseStyle.size }),
-        ...(baseStyle.color && {
-          color:
-            runStyle.bold && options.boldColor
-              ? options.boldColor
-              : baseStyle.color,
-        }),
-        ...(runStyle.bold !== undefined && { bold: runStyle.bold }),
-        ...(runStyle.italics !== undefined && { italics: runStyle.italics }),
-        ...(baseStyle.underline && { underline: baseStyle.underline }),
-        ...(baseStyle.scale && { scale: baseStyle.scale }),
-        ...(baseStyle.characterSpacing && {
-          characterSpacing: baseStyle.characterSpacing,
-        }),
-        ...(baseStyle.language && { language: baseStyle.language }),
-      };
-
-      // When the whole run is already no-proof, there's nothing to single out,
-      // so skip word splitting and emit one run for the line.
-      const wholeRunNoProof = baseStyle.noProof === true;
-      const wordsForLine = wholeRunNoProof ? undefined : options.noProofWords;
-
-      // The line break belongs only on the first run of the line.
-      let firstSegment = true;
-      const lineRuns: TextRun[] = [];
-      // Tab characters become real <w:tab/> runs (a tab char inside <w:t>
-      // would be silently dropped by Word), so paragraph tabStops apply.
-      const tabSegments = line.split('\t');
-      tabSegments.forEach((tabSegment, tabIndex) => {
-        if (tabIndex > 0) {
-          lineRuns.push(
-            new TextRun({
-              children: [new Tab()],
-              ...commonProps,
-              ...(needsLineBreak && firstSegment && { break: 1 }),
-            })
-          );
-          firstSegment = false;
-        }
-        if (!tabSegment && tabSegments.length > 1) return;
-        lineRuns.push(
-          ...splitByNoProofWords(
-            tabSegment,
-            (segment, matched) => {
-              const segNoProof = matched || wholeRunNoProof;
-              const run = new TextRun({
-                text: segment,
-                ...commonProps,
-                ...((matched || baseStyle.noProof !== undefined) && {
-                  noProof: segNoProof,
-                }),
-                ...(needsLineBreak && firstSegment && { break: 1 }),
-              });
-              firstSegment = false;
-              return run;
-            },
-            wordsForLine
-          )
-        );
-      });
-      runs.push(...lineRuns);
+      runs.push(
+        ...buildLineRuns(line, commonProps, { needsLineBreak, ...opts })
+      );
     }
   }
 
   return runs;
+}
+
+/**
+ * Helper function to create TextRuns with newlines from text
+ */
+function createTextRunsWithNewlines(
+  text: string,
+  baseStyle: TextStyle,
+  options: TextDecoratorOptions,
+  overrideStyle?: { bold?: boolean; italics?: boolean }
+): TextRun[] {
+  return buildTextRuns(
+    text,
+    buildRunCommonProps(baseStyle, {
+      bold: overrideStyle?.bold,
+      italics: overrideStyle?.italics,
+      boldColor: options.boldColor,
+    }),
+    { noProof: baseStyle.noProof, noProofWords: options.noProofWords }
+  );
 }
 
 /**
