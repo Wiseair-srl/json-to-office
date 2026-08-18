@@ -500,7 +500,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 0.5,
             "y": 3.212,
             "w": 3.399,
@@ -657,7 +657,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 6.047,
             "y": 0.761,
             "w": 1.525,
@@ -672,7 +672,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 7.975,
             "y": 0.761,
             "w": 1.525,
@@ -1297,7 +1297,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 0.833,
             "y": 0.741,
             "w": 1.992,
@@ -1312,7 +1312,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image3.png",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image3.png",
             "x": 0.683,
             "y": 0.65,
             "w": 2.317,
@@ -1433,7 +1433,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 6.987,
             "y": 0.0,
             "w": 3.013,
@@ -1566,7 +1566,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 0.5,
             "y": 2.812,
             "w": 2.671,
@@ -1581,7 +1581,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 3.665,
             "y": 2.812,
             "w": 2.671,
@@ -1596,7 +1596,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 6.829,
             "y": 2.812,
             "w": 2.671,
@@ -2324,7 +2324,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 0.0,
             "y": 0.0,
             "w": 2.5,
@@ -2339,7 +2339,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 2.5,
             "y": 0.0,
             "w": 2.5,
@@ -2510,7 +2510,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 0.5,
             "y": 0.741,
             "w": 2.5,
@@ -2525,7 +2525,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 3.388,
             "y": 0.741,
             "w": 1.612,
@@ -2703,7 +2703,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 5.559,
             "y": 2.867,
             "w": 3.895,
@@ -2822,7 +2822,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 0.5,
             "y": 0.869,
             "w": 2.46,
@@ -3391,7 +3391,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 2.939,
             "y": 0.869,
             "w": 2.483,
@@ -3406,7 +3406,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 5.992,
             "y": 0.869,
             "w": 1.433,
@@ -3421,7 +3421,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 7.825,
             "y": 0.869,
             "w": 1.433,
@@ -3584,7 +3584,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/minimalist-pitch-deck/image1.jpg",
+            "path": "packages/jto/src/client/public/templates/media/minimalist-pitch-deck/image1.jpg",
             "x": 0.5,
             "y": 3.253,
             "w": 3.275,

@@ -10,8 +10,10 @@
  *
  * Covers:
  *   - `*.docx.json`, `*.pptx.json`, `*.docx.theme.json`, `*.pptx.theme.json`
- *     under `packages/`, `examples/` and `templates/` — format and kind come
- *     from the filename.
+ *     under `packages/` and `examples/` — format and kind come from the
+ *     filename. The stock templates live under
+ *     `packages/jto/src/client/public/templates/`, so the `packages/` walk
+ *     covers them.
  *   - ```json fences in `docs/**\/*.md` that are full document samples — a
  *     `docx`/`pptx` root with a `children` array. Fragments (a lone component,
  *     a props object, a `$schema` line) are skipped: they are not documents and
@@ -34,7 +36,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const ASSET_ROOTS = ['packages', 'examples', 'templates'];
+const ASSET_ROOTS = ['packages', 'examples'];
 const DOCS_ROOT = 'docs';
 const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.turbo', 'build']);
 

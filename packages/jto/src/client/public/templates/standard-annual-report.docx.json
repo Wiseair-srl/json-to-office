@@ -6719,7 +6719,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/standard-annual-report/image23.png",
+            "path": "packages/jto/src/client/public/templates/media/standard-annual-report/image23.png",
             "width": 755,
             "height": 504,
             "floating": {
@@ -7005,7 +7005,7 @@
         {
           "name": "image",
           "props": {
-            "path": "templates/media/standard-annual-report/image25.png",
+            "path": "packages/jto/src/client/public/templates/media/standard-annual-report/image25.png",
             "width": 301,
             "height": 453,
             "floating": {
