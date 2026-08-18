@@ -78,6 +78,8 @@ function EditorComponent() {
     new Map()
   );
   const buildTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  // Debounce timer for Run-button builds (150ms to coalesce rapid clicks).
+  const flushBuildTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastBuildRequestIdRef = useRef<string>('');
   const documentVersionsRef = useRef<Map<string, number>>(new Map());
 
@@ -87,12 +89,26 @@ function EditorComponent() {
   // fetch.
   const cancelActiveBuild = useCallback(() => {
     lastBuildRequestIdRef.current = `cancelled-${Date.now()}`;
+    // Also drop queued debounced builds — without this, a pending auto-build
+    // timer could start a new generation right after the user cancelled.
+    for (const timeout of buildTimeoutsRef.current.values()) {
+      clearTimeout(timeout);
+    }
+    buildTimeoutsRef.current.clear();
+    if (flushBuildTimerRef.current) {
+      clearTimeout(flushBuildTimerRef.current);
+      flushBuildTimerRef.current = null;
+    }
     for (const controller of buildAbortControllersRef.current.values()) {
       controller.abort();
     }
     buildAbortControllersRef.current.clear();
     cancelGeneration();
-    setOutput({ isGenerating: false, generationProgress: undefined });
+    setOutput({
+      isGenerating: false,
+      generationProgress: undefined,
+      generationStartedAt: undefined,
+    });
   }, [cancelGeneration, setOutput]);
 
   useEffect(() => {
@@ -203,7 +219,11 @@ function EditorComponent() {
 
         if (signal.aborted || lastBuildRequestIdRef.current !== id) {
           console.log('Theme build cancelled for:', doc.name);
-          setOutput({ isGenerating: false, generationProgress: undefined });
+          setOutput({
+            isGenerating: false,
+            generationProgress: undefined,
+            generationStartedAt: undefined,
+          });
           return;
         }
 
@@ -229,6 +249,7 @@ function EditorComponent() {
             isGenerating: false,
             isPreviewStale: false,
             generationProgress: undefined,
+            generationStartedAt: undefined,
             lastBuiltSequence: outputStore.getState().editSequence,
             cacheStatus: (result as any).cacheStatus as
               | 'HIT'
@@ -243,7 +264,11 @@ function EditorComponent() {
       } catch (error) {
         if (signal.aborted || lastBuildRequestIdRef.current !== id) {
           console.log('Theme build cancelled with error for:', doc.name);
-          setOutput({ isGenerating: false, generationProgress: undefined });
+          setOutput({
+            isGenerating: false,
+            generationProgress: undefined,
+            generationStartedAt: undefined,
+          });
           return;
         }
 
@@ -255,6 +280,7 @@ function EditorComponent() {
           globalError: `Theme rebuild failed: ${errorMessage}`,
           isGenerating: false,
           generationProgress: undefined,
+          generationStartedAt: undefined,
         });
         setBuildError(doc.name, errorMessage);
       } finally {
@@ -372,7 +398,11 @@ function EditorComponent() {
       // Check if this is still the latest request
       if (lastBuildRequestIdRef.current !== id) {
         console.log('Skipping outdated build request for:', doc.name);
-        setOutput({ isGenerating: false, generationProgress: undefined });
+        setOutput({
+          isGenerating: false,
+          generationProgress: undefined,
+          generationStartedAt: undefined,
+        });
         return;
       }
 
@@ -469,7 +499,11 @@ function EditorComponent() {
 
         if (signal.aborted || lastBuildRequestIdRef.current !== id) {
           console.log('Build cancelled for:', doc.name);
-          setOutput({ isGenerating: false, generationProgress: undefined });
+          setOutput({
+            isGenerating: false,
+            generationProgress: undefined,
+            generationStartedAt: undefined,
+          });
           return;
         }
 
@@ -496,6 +530,7 @@ function EditorComponent() {
             isGenerating: false,
             isPreviewStale: false,
             generationProgress: undefined,
+            generationStartedAt: undefined,
             lastBuiltSequence: outputStore.getState().editSequence,
             cacheStatus: (result as any).cacheStatus as
               | 'HIT'
@@ -510,7 +545,11 @@ function EditorComponent() {
       } catch (error) {
         if (signal.aborted || lastBuildRequestIdRef.current !== id) {
           console.log('Build cancelled with error for:', doc.name);
-          setOutput({ isGenerating: false, generationProgress: undefined });
+          setOutput({
+            isGenerating: false,
+            generationProgress: undefined,
+            generationStartedAt: undefined,
+          });
           return;
         }
 
@@ -521,6 +560,7 @@ function EditorComponent() {
           globalError: errorMessage,
           isGenerating: false,
           generationProgress: undefined,
+          generationStartedAt: undefined,
         });
 
         setBuildError(doc.name, errorMessage);
@@ -827,7 +867,6 @@ function EditorComponent() {
 
   // Flush debounces and immediately build — triggered by Run button via custom event
   // Debounced at 150ms to coalesce rapid clicks
-  const flushBuildTimerRef = useRef<NodeJS.Timeout | null>(null);
   // Stable refs so the event handler never goes stale and doesn't need
   // reactive deps that would cause cleanup to cancel the pending timeout
   const buildDocumentRef = useRef(buildDocument);
