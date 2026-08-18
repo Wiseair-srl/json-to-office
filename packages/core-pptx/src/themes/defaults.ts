@@ -5,13 +5,13 @@
 import type { PptxThemeConfig, TextStyle, StyleName } from '../types';
 
 const DEFAULT_STYLES: Partial<Record<StyleName, TextStyle>> = {
-  title:    { fontSize: 36, bold: true, fontColor: 'text', align: 'center' },
+  title: { fontSize: 36, bold: true, fontColor: 'text', align: 'center' },
   subtitle: { fontSize: 20, italic: true, fontColor: 'text2', align: 'center' },
   heading1: { fontSize: 28, bold: true, fontColor: 'primary' },
   heading2: { fontSize: 22, bold: true, fontColor: 'primary' },
   heading3: { fontSize: 18, bold: true, fontColor: 'text' },
-  body:     { fontSize: 14 },
-  caption:  { fontSize: 10, italic: true, fontColor: 'text2' },
+  body: { fontSize: 14 },
+  caption: { fontSize: 10, italic: true, fontColor: 'text2' },
 };
 
 export const DEFAULT_PPTX_THEME: PptxThemeConfig = {
@@ -93,6 +93,15 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
 
 export function getPptxTheme(name: string): PptxThemeConfig {
   return PPTX_THEMES[name] || DEFAULT_PPTX_THEME;
+}
+
+/**
+ * Whether `name` is a known built-in theme. `getPptxTheme` never misses (it
+ * falls back to the default theme), so callers that need to distinguish "a
+ * real built-in" from "an unknown name" must check here first.
+ */
+export function hasPptxTheme(name: string): boolean {
+  return Object.prototype.hasOwnProperty.call(PPTX_THEMES, name);
 }
 
 export const pptxThemes = PPTX_THEMES;

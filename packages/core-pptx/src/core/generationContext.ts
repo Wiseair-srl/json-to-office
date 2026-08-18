@@ -37,10 +37,14 @@ export interface ThemeContextOptions {
   defaultThemeName?: string;
   /**
    * Theme lookup for the base `props.theme` name. The plugin builder passes
-   * its own (customThemes → constructor theme object → built-in); omit it to
-   * use customThemes → built-in.
+   * its own (customThemes → doc-named built-in → constructor theme object →
+   * built-in); omit it to use customThemes → built-in. `authored` is true
+   * when the name came from the document's own `props.theme` (as opposed to
+   * `defaultThemeName` or the 'default' fallback), so the lookup can honor
+   * an explicitly doc-named built-in without the constructor object
+   * swallowing the default name too (#141).
    */
-  resolveNamedTheme?: (name: string) => PptxThemeConfig;
+  resolveNamedTheme?: (name: string, authored: boolean) => PptxThemeConfig;
 }
 
 export interface GenerationThemeContext {
@@ -97,15 +101,15 @@ export function resolveThemeContext(
     inlineTheme = document.props.theme as PptxThemeConfig;
   }
 
+  const authoredThemeName =
+    typeof document.props.theme === 'string' ? document.props.theme : undefined;
   const baseThemeName = inlineTheme
     ? inlineTheme.name || 'inline-theme'
-    : (document.props.theme as string | undefined) ??
-      defaultThemeName ??
-      'default';
+    : authoredThemeName ?? defaultThemeName ?? 'default';
   let theme =
     inlineTheme ??
     (resolveNamedTheme
-      ? resolveNamedTheme(baseThemeName)
+      ? resolveNamedTheme(baseThemeName, authoredThemeName !== undefined)
       : customThemes?.[baseThemeName] ?? getPptxTheme(baseThemeName));
 
   // Export-mode pre-pass: substitute rewrites non-safe families in place;

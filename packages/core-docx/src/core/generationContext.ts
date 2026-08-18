@@ -29,12 +29,16 @@ export interface ThemeContextOptions {
   warnings?: GenerationWarning[];
   /**
    * Theme lookup for the base `props.theme` name. The plugin builder passes
-   * its own (customThemes → constructor-supplied theme → built-in); omit it to
-   * use customThemes → built-in.
+   * its own (customThemes → doc-named built-in → constructor-supplied theme →
+   * built-in); omit it to use customThemes → built-in. `authored` is true when
+   * the name came from the document's own `props.theme` (not the 'minimal'
+   * fallback), so the lookup can honor an explicitly doc-named built-in
+   * without the constructor theme being shadowed for unnamed docs (#141).
    */
   resolveNamedTheme?: (
     name: string,
-    warnings?: GenerationWarning[]
+    warnings: GenerationWarning[] | undefined,
+    authored: boolean
   ) => ThemeConfig;
 }
 
@@ -89,9 +93,14 @@ export function resolveThemeContext(
   const document =
     documentIn.props === undefined ? { ...documentIn, props: {} } : documentIn;
 
-  const baseThemeName = document.props.theme || 'minimal';
+  const authoredThemeName = document.props.theme || undefined;
+  const baseThemeName = authoredThemeName ?? 'minimal';
   let theme = resolveNamedTheme
-    ? resolveNamedTheme(baseThemeName, warnings)
+    ? resolveNamedTheme(
+        baseThemeName,
+        warnings,
+        authoredThemeName !== undefined
+      )
     : defaultNamedThemeLookup(baseThemeName, customThemes, warnings);
 
   // In-document partial theme, merged before the export-mode pre-pass so a

@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { generateBufferFromJson, generateDocument } from '../core/generator';
 import { createDocumentGenerator } from './../plugin/createDocumentGenerator';
+import { corporateTheme } from '../templates/themes';
 
 /**
  * Both parts matter: run/paragraph colors land in document.xml, while theme
@@ -135,5 +136,62 @@ describe('root props defaulting', () => {
         children: [],
       } as never)
     ).rejects.toThrow(/props` is null/);
+  });
+});
+
+describe('constructor theme precedence (#141)', () => {
+  // Plugin-only semantics (core has no constructor-theme input), pinned here
+  // so a change is a conscious decision: a document explicitly naming a known
+  // built-in gets it; the constructor `theme` object fills in when the doc
+  // names nothing or names something nothing recognizes. Mirrors the PPTX
+  // pins in core-pptx/src/__tests__/pipeline-parity.test.ts.
+  //
+  // Signal: corporate's heading font is Georgia; minimal has no Georgia
+  // anywhere, so its presence in styles.xml marks which theme rendered.
+  const ctorTheme = () =>
+    structuredClone(corporateTheme) as unknown as Parameters<
+      typeof createDocumentGenerator
+    >[0]['theme'];
+
+  const headingDoc = (theme?: string) => ({
+    name: 'docx',
+    props: theme === undefined ? {} : { theme },
+    children: [{ name: 'heading', props: { text: 'H', level: 1 } }],
+  });
+
+  async function stylesXml(doc: unknown, options: Record<string, unknown>) {
+    const result = await createDocumentGenerator(options).generateBuffer(
+      doc as never
+    );
+    return (await parts(result.buffer)).styles;
+  }
+
+  it('a doc-named built-in beats the constructor theme object', async () => {
+    const styles = await stylesXml(headingDoc('minimal'), {
+      theme: ctorTheme(),
+    });
+    expect(styles).not.toContain('Georgia');
+  });
+
+  it('constructor theme object applies when the doc names no theme', async () => {
+    const styles = await stylesXml(headingDoc(), { theme: ctorTheme() });
+    expect(styles).toContain('Georgia');
+  });
+
+  it('constructor theme object fills in for a doc-named unknown theme', async () => {
+    // resolveBuiltInTheme never misses (it falls back to minimal), so without
+    // this rule an unknown name would silently render minimal instead of the
+    // app's theme.
+    const styles = await stylesXml(headingDoc('wiseair'), {
+      theme: ctorTheme(),
+    });
+    expect(styles).toContain('Georgia');
+  });
+
+  it('a customThemes entry sharing a built-in name still wins', async () => {
+    const styles = await stylesXml(headingDoc('minimal'), {
+      customThemes: { minimal: ctorTheme() },
+    });
+    expect(styles).toContain('Georgia');
   });
 });

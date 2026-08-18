@@ -3,6 +3,7 @@ import type { CustomComponent } from './createComponent';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
 import { type ThemeConfig } from '../styles';
 import { resolveBuiltInTheme } from '../styles/theme-resolver';
+import { hasTheme } from '../templates/themes';
 import { resolveThemeContext } from '../core/generationContext';
 import type { GenerationWarning } from '@json-to-office/shared-docx';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
@@ -91,11 +92,21 @@ function createBuilderImpl<
   const componentMap = new Map(state.components.map((c) => [c.name, c]));
 
   /**
-   * Resolve theme for a document: customThemes → built-in → constructor fallback
+   * Resolve theme for a document: customThemes → doc-named built-in →
+   * constructor theme → built-in resolver fallback.
+   *
+   * A document explicitly naming a known built-in gets it; the constructor
+   * `theme` object fills in when the document names nothing or names
+   * something nothing recognizes (#141). The `authored` guard on the
+   * built-in step matters twice over: the unauthored 'minimal' fallback
+   * must not shadow the constructor theme, and an authored UNKNOWN name
+   * must still reach the constructor theme rather than silently rendering
+   * the resolver's minimal fallback.
    */
   function resolveDocumentTheme(
     themeName: string,
-    warnings?: GenerationWarning[]
+    warnings: GenerationWarning[] | undefined,
+    authored: boolean
   ): ThemeConfig {
     if (state.customThemes) {
       if (state.customThemes[themeName]) {
@@ -107,6 +118,12 @@ function createBuilderImpl<
       if (key) {
         return state.customThemes[key];
       }
+    }
+    if (authored && hasTheme(themeName)) {
+      return resolveBuiltInTheme(themeName, {
+        customThemes: state.customThemes,
+        warnings,
+      });
     }
     if (state.theme) {
       return state.theme;
@@ -452,8 +469,9 @@ function createBuilderImpl<
       // Initialize warnings collector
       const warnings: GenerationWarning[] = [];
 
-      // Props defaulting, theme resolution (customThemes → constructor theme →
-      // built-in), in-document overrides, export-mode pre-pass and cache-key
+      // Props defaulting, theme resolution (customThemes → doc-named
+      // built-in → constructor theme → built-in fallback, see
+      // resolveDocumentTheme), in-document overrides, export-mode pre-pass and cache-key
       // scoping — shared with the core pipeline so the two cannot drift (see
       // core/generationContext.ts). The pre-pass runs BEFORE custom-component
       // expansion so components reading `theme.fonts.*` during render see the
