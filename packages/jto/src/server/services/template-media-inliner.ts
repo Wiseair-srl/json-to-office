@@ -60,12 +60,15 @@ async function toDataUrl(
   baseDir: string,
   state: InlineState
 ): Promise<string | null> {
-  const cached = state.cache.get(source);
-  if (cached !== undefined) return cached;
-
+  // Key the cache by canonical path so equivalent spellings of the same file
+  // (`media/logo.png` vs `media/./logo.png`) share one budget charge.
+  let cacheKey = source;
   let result: string | null = null;
   try {
     const resolved = await fs.realpath(path.resolve(baseDir, source));
+    cacheKey = resolved;
+    const cached = state.cache.get(cacheKey);
+    if (cached !== undefined) return cached;
     const contained =
       resolved === state.baseDirReal ||
       resolved.startsWith(state.baseDirReal + path.sep);
@@ -88,7 +91,7 @@ async function toDataUrl(
     // Missing or unreadable file: leave the reference for the policy layer,
     // whose error message names the offending JSON path.
   }
-  state.cache.set(source, result);
+  state.cache.set(cacheKey, result);
   return result;
 }
 
@@ -145,6 +148,16 @@ export async function inlineTemplateMedia(
   baseDir: string,
   options: InlineTemplateMediaOptions = {}
 ): Promise<unknown> {
+  // The generation schema also accepts a JSON string definition; parse it so
+  // its media inlines too (the generator accepts either form downstream).
+  if (typeof jsonDefinition === 'string') {
+    try {
+      jsonDefinition = JSON.parse(jsonDefinition);
+    } catch {
+      // Structural validation owns malformed JSON reporting.
+      return jsonDefinition;
+    }
+  }
   if (!jsonDefinition || typeof jsonDefinition !== 'object') {
     return jsonDefinition;
   }
