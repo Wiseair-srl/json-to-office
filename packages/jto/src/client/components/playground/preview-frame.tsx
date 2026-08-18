@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { DocumentGenerationLoader, PreviewLoading } from '../ui/loading-states';
-import { Spinner } from '../ui/spinner';
+import {
+  DocumentGenerationLoader,
+  GenerationOverlay,
+  PreviewLoading,
+} from '../ui/loading-states';
 import { FORMAT_LABEL } from '../../lib/env';
 
 const PreviewFrame = React.forwardRef<
@@ -14,6 +17,12 @@ const PreviewFrame = React.forwardRef<
       stage: 'parsing' | 'building' | 'rendering' | 'finalizing';
       message?: string;
     };
+    /** Source JSON being built — feeds the loader's content summary. */
+    generationDocumentText?: string;
+    /** Date.now() when the build started — feeds the elapsed timer. */
+    generationStartedAt?: number;
+    /** Aborts the in-flight build; renders a Cancel button when present. */
+    onCancelGeneration?: () => void;
   }
 >(
   (
@@ -23,6 +32,9 @@ const PreviewFrame = React.forwardRef<
       iframeSrcDoc,
       isGenerating,
       generationProgress,
+      generationDocumentText,
+      generationStartedAt,
+      onCancelGeneration,
     },
     ref
   ) => {
@@ -59,6 +71,9 @@ const PreviewFrame = React.forwardRef<
           <DocumentGenerationLoader
             currentStage={generationProgress?.stage}
             message={generationProgress?.message}
+            documentText={generationDocumentText}
+            startedAt={generationStartedAt}
+            onCancel={onCancelGeneration}
           />
         </div>
       );
@@ -89,12 +104,12 @@ const PreviewFrame = React.forwardRef<
           {/* Generating/Rendering overlay on top of existing content */}
           {(isGenerating || isLoading) && (
             <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center z-20 transition-opacity duration-200">
-              <div className="flex flex-col items-center gap-2">
-                <Spinner size="lg" />
-                <p className="text-sm text-muted-foreground">
-                  {isGenerating ? 'Generating...' : 'Rendering...'}
-                </p>
-              </div>
+              <GenerationOverlay
+                mode={isGenerating ? 'generating' : 'rendering'}
+                message={isGenerating ? generationProgress?.message : undefined}
+                startedAt={isGenerating ? generationStartedAt : undefined}
+                onCancel={isGenerating ? onCancelGeneration : undefined}
+              />
             </div>
           )}
           {/* Key forces remount when switching between srcDoc (sandboxed) and

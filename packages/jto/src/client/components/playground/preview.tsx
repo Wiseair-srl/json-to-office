@@ -80,6 +80,8 @@ export function Preview() {
     blob,
     isGenerating,
     generationProgress,
+    generationStartedAt,
+    cancelGeneration,
     globalError,
     cacheStatus,
     cacheHitRate,
@@ -385,6 +387,9 @@ export function Preview() {
                   }
                 : generationProgress;
             })()}
+            generationDocumentText={editorDocumentText ?? text}
+            generationStartedAt={generationStartedAt}
+            onCancelGeneration={cancelGeneration}
           />
         )}
       </div>
