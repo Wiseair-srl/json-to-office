@@ -226,6 +226,10 @@ export interface FormatAdapter {
 
   getComponentCacheStats?(): Promise<any>;
   getComponentCacheAnalytics?(): Promise<any>;
+  /** Cumulative visual pre-pass dedupe counters (DOCX only) (#156). */
+  getVisualPrepassStats?(): Promise<any>;
+  /** Clear the in-process component render cache (DOCX only) (#156). */
+  clearComponentCache?(): Promise<void>;
 }
 
 export class DocxFormatAdapter implements FormatAdapter {
@@ -514,39 +518,69 @@ export class DocxFormatAdapter implements FormatAdapter {
       const core = await import('@json-to-office/core-docx');
       const stats = core.getComponentCacheStats?.();
       if (!stats) return null;
+      // "Uncached by design" render counters exist even when the cache map
+      // itself was never initialized (#156).
+      const bypassedComponents = Array.isArray(
+        (stats as any).bypassedComponents
+      )
+        ? (stats as any).bypassedComponents
+        : [];
+      const statsMap = (stats as any).componentStats as
+        | Map<string, any>
+        | undefined;
       // Convert componentStats Map to serializable format matching client's ComponentCacheData
-      const componentStats = Array.from(
-        (stats.componentStats as Map<string, any>).entries()
-      ).map(([, s]: [string, any]) => {
-        const total = s.hits + s.misses;
-        const hitRate = total > 0 ? s.hits / total : 0;
-        return {
-          type: s.name,
-          hits: s.hits,
-          misses: s.misses,
-          avgProcessTime: s.avgProcessTime,
-          avgSize: s.avgSize,
-          entries: s.entries,
-          hitRate,
-          missRate: total > 0 ? s.misses / total : 0,
-          totalRequests: total,
-          memoryUsage: s.entries * s.avgSize,
-          efficiencyScore: Math.round(hitRate * 100),
-        };
-      });
+      const componentStats = statsMap
+        ? Array.from(statsMap.entries()).map(([, s]: [string, any]) => {
+            const total = s.hits + s.misses;
+            const hitRate = total > 0 ? s.hits / total : 0;
+            return {
+              type: s.name,
+              hits: s.hits,
+              misses: s.misses,
+              avgProcessTime: s.avgProcessTime,
+              avgSize: s.avgSize,
+              entries: s.entries,
+              hitRate,
+              missRate: total > 0 ? s.misses / total : 0,
+              totalRequests: total,
+              memoryUsage: s.entries * s.avgSize,
+              efficiencyScore: Math.round(hitRate * 100),
+            };
+          })
+        : [];
       return {
-        entries: stats.entries,
-        totalSize: stats.totalSize,
-        hitRate: stats.hitRate,
-        missRate: stats.missRate,
-        totalHits: stats.totalHits,
-        totalMisses: stats.totalMisses,
-        avgResponseTime: stats.avgResponseTime,
-        evictions: stats.evictions,
+        entries: (stats as any).entries ?? 0,
+        totalSize: (stats as any).totalSize ?? 0,
+        hitRate: (stats as any).hitRate ?? 0,
+        missRate: (stats as any).missRate ?? 0,
+        totalHits: (stats as any).totalHits ?? 0,
+        totalMisses: (stats as any).totalMisses ?? 0,
+        avgResponseTime: (stats as any).avgResponseTime ?? 0,
+        evictions: (stats as any).evictions ?? 0,
         componentStats,
+        bypassedComponents,
       };
     } catch {
       return null;
+    }
+  }
+
+  async getVisualPrepassStats(): Promise<any> {
+    try {
+      const core = await import('@json-to-office/core-docx');
+      return core.getVisualPrepassStats?.() ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async clearComponentCache(): Promise<void> {
+    try {
+      const core = await import('@json-to-office/core-docx');
+      await core.clearComponentCache?.();
+      core.resetVisualPrepassStats?.();
+    } catch {
+      // Cache clearing is best-effort.
     }
   }
 
@@ -554,9 +588,10 @@ export class DocxFormatAdapter implements FormatAdapter {
     try {
       const core = await import('@json-to-office/core-docx');
       const stats = core.getComponentCacheStats?.();
-      if (!stats) return null;
+      // Bypass-only stats (cache never initialized) carry nothing to analyze.
+      if (!stats || !(stats as any).componentStats) return null;
       const analytics = new core.ComponentCacheAnalytics();
-      const report = analytics.analyzeCache(stats);
+      const report = analytics.analyzeCache(stats as any);
       // Remap componentMetrics field names for client compatibility
       return {
         ...report,

@@ -15,11 +15,86 @@ import {
 import { renderComponent } from './render';
 import { componentHasRevision } from '../utils/revisionUtils';
 import { getBaseDir, getGenerationDate } from '../utils/generationContext';
+import { PlaceholderRegistry } from '../utils/placeholderProcessor';
 import { createHash } from 'crypto';
 
 // Global component cache instance
 let componentCache: MemoryCache | null = null;
 let cacheKeyGen: CacheKeyGenerator | null = null;
+
+/** Why a component type is never cached (see renderComponentWithCache). */
+export type ComponentBypassReason =
+  | 'dynamic-context'
+  | 'bookmark-id'
+  | 'revision-ids';
+
+export interface ComponentBypassStats {
+  /** Component type name. */
+  type: string;
+  /** Renders that skipped the cache by design. */
+  renders: number;
+  /** The (first observed) reason this type bypasses the cache. */
+  reason: ComponentBypassReason;
+}
+
+/**
+ * Per-type counters for renders that deliberately skip the cache. Without
+ * them the Module Breakdown is structurally blind to `toc`, `section`,
+ * `visual`, `heading`, `list`, `paragraph`, and id/revision-bearing nodes —
+ * they return before any cache.get, so the cache's own stats never see them
+ * (#156). Only design bypasses are recorded; a caller's `bypassCache` flag
+ * and a disabled cache are per-render choices, not properties of the type.
+ */
+const bypassStats = new Map<
+  string,
+  { renders: number; reason: ComponentBypassReason }
+>();
+
+function recordBypass(type: string, reason: ComponentBypassReason): void {
+  const entry = bypassStats.get(type);
+  if (entry) {
+    entry.renders++;
+  } else {
+    bypassStats.set(type, { renders: 1, reason });
+  }
+}
+
+/**
+ * Get per-type "uncached by design" render counters.
+ */
+export function getComponentBypassStats(): ComponentBypassStats[] {
+  return Array.from(bypassStats.entries()).map(([type, s]) => ({
+    type,
+    renders: s.renders,
+    reason: s.reason,
+  }));
+}
+
+/**
+ * Placeholders that resolve from the generation date. `{PAGE}` and
+ * `{TOTAL_PAGES}` are Word field codes — date-independent — while every
+ * other registered placeholder (DATE, DATETIME, YEAR, custom registrations)
+ * may read the date, so their presence keeps the date in the cache key.
+ */
+const DATE_INDEPENDENT_PLACEHOLDERS = new Set(['PAGE', 'TOTAL_PAGES']);
+
+/**
+ * True when the serialized props/children reference a registered placeholder
+ * whose output can vary with the generation date. Components without one
+ * render identically across dates, so their cache keys must not embed the
+ * per-render timestamp — that's what made cross-render hits impossible for
+ * date-less documents (#156).
+ */
+export function usesDateSensitivePlaceholder(serialized: string): boolean {
+  const placeholderRegex = /\{([^}{]+)\}/g;
+  let match: RegExpExecArray | null;
+  while ((match = placeholderRegex.exec(serialized)) !== null) {
+    const name = match[1].toUpperCase();
+    if (DATE_INDEPENDENT_PLACEHOLDERS.has(name)) continue;
+    if (PlaceholderRegistry.has(name)) return true;
+  }
+  return false;
+}
 
 /**
  * Create a hash of the theme configuration for cache key generation
@@ -78,6 +153,7 @@ export async function clearComponentCache(): Promise<void> {
   if (componentCache) {
     await componentCache.clear();
   }
+  bypassStats.clear();
 }
 
 /**
@@ -102,31 +178,38 @@ export async function renderComponentWithCache(
   //   props alone could serve a stale image when the rasterizer differs across
   //   renders. The rasterizer keeps its own content-addressed disk cache, so an
   //   identical visual is still cheap to re-resolve.
-  const forceBypassForType =
-    component.name === 'toc' ||
-    component.name === 'section' ||
-    component.name === 'visual' ||
-    component.name === 'heading' ||
-    // Both explicit lists and markdown-list paragraphs register numbering in
-    // the current document scope. Cached paragraphs can otherwise reference
-    // definitions that only existed in a previous render.
-    component.name === 'list' ||
-    component.name === 'paragraph' ||
-    'id' in component ||
-    componentHasRevision(component);
+  const bypassReason: ComponentBypassReason | null = componentHasRevision(
+    component
+  )
+    ? 'revision-ids'
+    : 'id' in component
+      ? 'bookmark-id'
+      : component.name === 'toc' ||
+          component.name === 'section' ||
+          component.name === 'visual' ||
+          component.name === 'heading' ||
+          // Both explicit lists and markdown-list paragraphs register
+          // numbering in the current document scope. Cached paragraphs can
+          // otherwise reference definitions that only existed in a previous
+          // render.
+          component.name === 'list' ||
+          component.name === 'paragraph'
+        ? 'dynamic-context'
+        : null;
 
   // Initialize cache if needed
   if (!componentCache) {
     initializeComponentCache();
   }
 
-  // If cache is disabled or bypassed, render directly
-  if (
-    !componentCache ||
-    bypassCache ||
-    forceBypassForType ||
-    !componentCache.getConfig().enabled
-  ) {
+  // If cache is disabled or bypassed, render directly. Design bypasses are
+  // counted so cache observability covers every component type, not only
+  // the cacheable ones (#156).
+  if (bypassReason !== null) {
+    recordBypass(component.name, bypassReason);
+    return renderComponent(component, theme, themeName, context);
+  }
+  if (!componentCache || bypassCache || !componentCache.getConfig().enabled) {
     return renderComponent(component, theme, themeName, context);
   }
 
@@ -140,11 +223,6 @@ export async function renderComponentWithCache(
   const contextKey = context?.section
     ? `${context.section.currentLayout}:${context.section.columnCount}`
     : 'no-section';
-  // Placeholder resolution is scoped to the document metadata/generatedAt
-  // date. Include it for every cacheable component because dynamic text can
-  // appear inside nested container props (for example a table cell), not only
-  // in top-level paragraph components.
-  const generationDateKey = getGenerationDate().toISOString();
   // Components that read local assets (images) resolve relative paths against
   // the active baseDir; identical props from different document directories
   // must not share cached bytes (#142).
@@ -156,6 +234,18 @@ export async function renderComponentWithCache(
     'children' in component && component.children
       ? `:children:${JSON.stringify(component.children)}`
       : '';
+
+  // Placeholder resolution is scoped to the document metadata/generatedAt
+  // date — but only for components that actually reference a date-sensitive
+  // placeholder (anywhere in props or children: dynamic text can hide inside
+  // a table cell). Unconditionally embedding the per-render timestamp made
+  // every cross-render lookup miss for date-less documents, reducing the
+  // cache to an intra-render dedupe (#156).
+  const generationDateKey = usesDateSensitivePlaceholder(
+    componentProps + childrenKey
+  )
+    ? getGenerationDate().toISOString()
+    : 'no-date';
 
   const cacheKey = `component:${component.name}:${themeHash}:${contextKey}:${generationDateKey}:${baseDirKey}:${componentProps}${childrenKey}`;
 
@@ -233,14 +323,18 @@ export async function warmComponentCache(
 }
 
 /**
- * Get component cache statistics
+ * Get component cache statistics, extended with per-type "uncached by
+ * design" render counters (#156). The bypass counters exist even before the
+ * cache is initialized — a document full of bypassed types never triggers
+ * initialization, yet its renders are exactly what needs surfacing.
  */
 export function getComponentCacheStats() {
+  const bypassedComponents = getComponentBypassStats();
   if (!componentCache) {
-    return null;
+    return bypassedComponents.length > 0 ? { bypassedComponents } : null;
   }
 
-  return componentCache.getStats();
+  return { ...componentCache.getStats(), bypassedComponents };
 }
 
 /**

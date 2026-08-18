@@ -14,6 +14,7 @@ interface CacheStats {
     enabled: boolean;
   };
   components?: ComponentCacheData;
+  rasterizer?: RasterizerCacheData;
 }
 
 interface ComponentStatistics {
@@ -28,6 +29,12 @@ interface ComponentStatistics {
   memoryUsage?: number;
 }
 
+interface BypassedComponentStatistics {
+  type: string;
+  renders: number;
+  reason: string;
+}
+
 interface ComponentCacheData {
   entries: number;
   totalSize: number;
@@ -37,7 +44,30 @@ interface ComponentCacheData {
   avgResponseTime: number;
   evictions: number;
   componentStats: ComponentStatistics[];
+  bypassedComponents?: BypassedComponentStatistics[];
 }
+
+interface RasterizerCacheData {
+  diskHits: number;
+  diskMisses: number;
+  hitRate: number;
+  dedupedRequests: number;
+  rendered: number;
+  failed: number;
+  entries: number;
+  bytes: number;
+  prepass?: {
+    documents: number;
+    collected: number;
+    unique: number;
+  };
+}
+
+const BYPASS_REASON_LABELS: Record<string, string> = {
+  'dynamic-context': 'depends on render-time context',
+  'bookmark-id': 'carries a bookmark id',
+  'revision-ids': 'carries revision ids',
+};
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -120,7 +150,9 @@ export function CacheMetrics() {
       <div className="flex items-center gap-6 text-sm">
         <div>
           <span className="text-muted-foreground">Hit Rate</span>{' '}
-          <span className="font-semibold text-base">{hitRatePct.toFixed(1)}%</span>
+          <span className="font-semibold text-base">
+            {hitRatePct.toFixed(1)}%
+          </span>
           <span className="text-muted-foreground ml-1">
             ({doc.hits} hits / {doc.misses} misses)
           </span>
@@ -137,18 +169,26 @@ export function CacheMetrics() {
         </Badge>
       </div>
 
-      <Progress value={hitRatePct} className="h-2" aria-label="Cache hit rate" />
+      <Progress
+        value={hitRatePct}
+        className="h-2"
+        aria-label="Cache hit rate"
+      />
 
       {/* Module-level breakdown (docx only) */}
       {FORMAT === 'docx' && stats.components && (
         <ComponentBreakdown data={stats.components} />
       )}
+
+      {/* Visual rasterizer caches (disk PNG cache + batch dedupe) */}
+      {stats.rasterizer && <RasterizerBreakdown data={stats.rasterizer} />}
     </div>
   );
 }
 
 function ComponentBreakdown({ data }: { data: ComponentCacheData }) {
-  if (data.componentStats.length === 0) return null;
+  const bypassed = data.bypassedComponents ?? [];
+  if (data.componentStats.length === 0 && bypassed.length === 0) return null;
 
   return (
     <div className="space-y-2">
@@ -173,6 +213,78 @@ function ComponentBreakdown({ data }: { data: ComponentCacheData }) {
             </div>
           );
         })}
+        {/* Types that skip the cache on purpose — rendered so the breakdown
+            covers every component the document used, not only cacheable
+            ones. No hit-rate bar: there is nothing to hit. */}
+        {bypassed.map((stat) => (
+          <div key={`bypass-${stat.type}`} className="px-3 py-1.5 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-muted-foreground">
+                {stat.type}
+              </span>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>
+                  uncached by design
+                  {BYPASS_REASON_LABELS[stat.reason]
+                    ? ` — ${BYPASS_REASON_LABELS[stat.reason]}`
+                    : ''}
+                </span>
+                <span>{stat.renders} renders</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RasterizerBreakdown({ data }: { data: RasterizerCacheData }) {
+  const lookups = data.diskHits + data.diskMisses;
+  const activity =
+    lookups + data.dedupedRequests + data.rendered + data.entries;
+  if (activity === 0) return null;
+
+  const hitRatePct = data.hitRate * 100;
+  const dedupeSaved = data.prepass
+    ? data.prepass.collected - data.prepass.unique
+    : data.dedupedRequests;
+
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-medium">Visual Rasterizer</h4>
+      <div className="px-3 py-1.5 text-sm space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Disk cache</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>
+              {lookups > 0 ? `${hitRatePct.toFixed(0)}% hit` : 'no lookups'}
+            </span>
+            <span>
+              ({data.diskHits} hits / {data.diskMisses} misses)
+            </span>
+            <span>
+              {data.entries} PNGs, {formatBytes(data.bytes)}
+            </span>
+          </div>
+        </div>
+        <Progress
+          value={hitRatePct}
+          className="h-1.5"
+          aria-label="Rasterizer disk cache hit rate"
+        />
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            {data.rendered} rendered
+            {data.failed > 0 ? `, ${data.failed} failed` : ''}
+          </span>
+          <span>
+            {dedupeSaved} duplicate visual{dedupeSaved === 1 ? '' : 's'} deduped
+            {data.prepass
+              ? ` (${data.prepass.collected} collected → ${data.prepass.unique} unique)`
+              : ''}
+          </span>
+        </div>
       </div>
     </div>
   );

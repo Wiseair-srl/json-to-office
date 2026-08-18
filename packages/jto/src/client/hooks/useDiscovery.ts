@@ -172,7 +172,7 @@ export function useDiscoveredDocuments(): {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  } {
+} {
   const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -226,7 +226,7 @@ export function useDiscoveredThemes(): {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  } {
+} {
   const [themes, setThemes] = useState<ThemeMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -270,6 +270,30 @@ export function useDiscoveredThemes(): {
   };
 }
 
+// Shared across every hook instance: overlapping load-plugins calls (strict
+// mode double effects, multiple mounts) collapse into one request. The
+// server also dedupes unchanged sets, but not even sending the burst is
+// cheaper (#156).
+let loadPluginsInFlight: Promise<number> | null = null;
+
+async function requestLoadPlugins(): Promise<number> {
+  const response = await fetch('/api/discovery/load-plugins', {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load plugins: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to load plugins');
+  }
+
+  return result.data.loaded as number;
+}
+
 /**
  * Hook to load plugins into the registry for presentation generation
  */
@@ -278,7 +302,7 @@ export function useLoadPlugins(): {
   loading: boolean;
   error: string | null;
   loadedCount: number;
-  } {
+} {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadedCount, setLoadedCount] = useState(0);
@@ -288,21 +312,13 @@ export function useLoadPlugins(): {
     setError(null);
 
     try {
-      const response = await fetch('/api/discovery/load-plugins', {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load plugins: ${response.statusText}`);
+      if (!loadPluginsInFlight) {
+        loadPluginsInFlight = requestLoadPlugins().finally(() => {
+          loadPluginsInFlight = null;
+        });
       }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to load plugins');
-      }
-
-      setLoadedCount(result.data.loaded);
+      const loaded = await loadPluginsInFlight;
+      setLoadedCount(loaded);
       return true;
     } catch (err) {
       console.error('Plugin loading error:', err);

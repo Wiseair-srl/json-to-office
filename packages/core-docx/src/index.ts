@@ -53,8 +53,16 @@ export {
   getComponentCache,
   clearComponentCache,
   getComponentCacheStats,
+  getComponentBypassStats,
   warmComponentCache,
+  type ComponentBypassReason,
+  type ComponentBypassStats,
 } from './core/cached-render';
+export {
+  getVisualPrepassStats,
+  resetVisualPrepassStats,
+  type VisualPrepassStats,
+} from './core/prerasterizeVisuals';
 
 // Legacy class-based API is now removed - use functional API above
 

@@ -647,6 +647,20 @@ export function createFormatRouter(adapter: FormatAdapter) {
       const cacheService = getContainer().get('cacheService');
       const stats = cacheService.getStats();
       const components = (await adapter.getComponentCacheStats?.()) ?? null;
+      // Rasterizer cache observability (#156): the disk cache + batch dedupe
+      // are where `visual` caching actually lives — the component cache
+      // bypasses `visual` by design.
+      const rasterizer = await (async () => {
+        try {
+          const cli = await import('@json-to-office/jto-cli');
+          const engine = await cli.getRasterizerCacheStats?.();
+          if (!engine) return null;
+          const prepass = (await adapter.getVisualPrepassStats?.()) ?? null;
+          return { ...engine, ...(prepass ? { prepass } : {}) };
+        } catch {
+          return null;
+        }
+      })();
       return c.json({
         success: true,
         data: {
@@ -659,6 +673,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
             enabled: stats.enabled,
           },
           ...(components ? { components } : {}),
+          ...(rasterizer ? { rasterizer } : {}),
         },
         meta: { timestamp: new Date().toISOString() },
       });
@@ -699,8 +714,12 @@ export function createFormatRouter(adapter: FormatAdapter) {
     try {
       const cacheService = getContainer().get('cacheService');
       cacheService.clear();
-      const { invalidateAllCaches } = await import('@json-to-office/jto-cli');
-      invalidateAllCaches();
+      const cli = await import('@json-to-office/jto-cli');
+      cli.invalidateAllCaches();
+      // "Clear all caches" means all of them: the component render cache and
+      // the rasterizer's PNG disk cache used to survive this call (#156).
+      await adapter.clearComponentCache?.();
+      await cli.clearRasterizerCache?.();
       return c.json({
         success: true,
         data: { message: 'Cache cleared successfully' },
