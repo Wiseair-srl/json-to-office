@@ -1,6 +1,9 @@
 import { ISectionOptions } from 'docx';
 import type { ThemeName } from '../styles';
-import type { ServicesConfig } from '@json-to-office/shared';
+import type {
+  ServicesConfig,
+  PptxRasterizeBatchSlideResult,
+} from '@json-to-office/shared';
 
 // Import types from shared-docx that core needs for its internal use
 import type {
@@ -219,4 +222,10 @@ export interface RenderContext {
   depth: number;
   custom?: Record<string, unknown>;
   services?: ServicesConfig;
+  /**
+   * Per-document pre-rasterized visual results, keyed by `visualRasterKey`
+   * (#153). Seeded by the renderDocument pre-pass; `renderVisualComponent`
+   * consults it first and falls back to per-visual rasterization on a miss.
+   */
+  visualRasterResults?: ReadonlyMap<string, PptxRasterizeBatchSlideResult>;
 }

@@ -18,18 +18,28 @@ import {
   clampVisualDpi,
   DEFAULT_VISUAL_DPI,
   type PptxRasterizer,
+  type PptxBatchRasterizer,
 } from '@json-to-office/shared';
 import type { VisualProps } from '@json-to-office/shared-docx';
 import {
   buildVisualPresentation,
+  visualRasterKey,
   visualToImageProps,
 } from '../components/visual';
+import { createLimiter } from '../utils/promiseLimiter';
+import { prerasterizeVisuals } from './prerasterizeVisuals';
 
 const DEFAULT_CONCURRENCY = 4;
 
 export interface FlattenVisualsOptions {
   /** Rasterizer that turns a single-slide pptx presentation into a PNG. */
   rasterize: PptxRasterizer;
+  /**
+   * Batch rasterizer (#153). When provided, all visuals are collected and
+   * rasterized together up front; `rasterize` remains the per-visual
+   * fallback for batch failures and anything the collection missed.
+   */
+  rasterizeBatch?: PptxBatchRasterizer;
   /** Default DPI applied when a `visual` does not specify one (default 200). */
   dpi?: number;
   /** Max concurrent rasterizations (default 4). */
@@ -48,29 +58,11 @@ interface FlattenCtx {
   limit: <T>(fn: () => Promise<T>) => Promise<T>;
 }
 
-/** Minimal promise pool bounding concurrent rasterizations. */
-function createLimiter(max: number): <T>(fn: () => Promise<T>) => Promise<T> {
-  let active = 0;
-  const queue: Array<() => void> = [];
-  const release = () => {
-    active--;
-    queue.shift()?.();
-  };
-  return async function limit<T>(fn: () => Promise<T>): Promise<T> {
-    if (active >= max)
-      await new Promise<void>((resolve) => queue.push(resolve));
-    active++;
-    try {
-      return await fn();
-    } finally {
-      release();
-    }
-  };
-}
-
 /**
  * Return a deep copy of `doc` with every `visual` node replaced by the `image`
- * node it rasterizes to. Visuals rasterize with bounded concurrency. A
+ * node it rasterizes to. With `rasterizeBatch`, visuals are pre-rasterized in
+ * batches and the tree walk resolves from the batch results; otherwise (and
+ * for any batch miss) visuals rasterize per-node with bounded concurrency. A
  * `visual` with `enabled: false` is left untouched (it's filtered out at render
  * anyway, so rasterizing it would be wasted work). Non-visual nodes are copied
  * structurally and otherwise unchanged.
@@ -79,8 +71,40 @@ export async function flattenVisuals<T = unknown>(
   doc: T,
   options: FlattenVisualsOptions
 ): Promise<T> {
+  let rasterize = options.rasterize;
+
+  if (options.rasterizeBatch) {
+    // The pre-pass keys results exactly like the walk below computes its
+    // requests (in-process semantics: no serverUrl), so hits are exact. A
+    // pre-pass failure must not fail the flatten — misses below rasterize
+    // per-visual exactly as they did before batching existed.
+    const preRasterized = await prerasterizeVisuals(
+      doc,
+      {
+        render: options.rasterize,
+        renderBatch: options.rasterizeBatch,
+        dpi: options.dpi,
+      },
+      { baseDir: options.baseDir, concurrency: options.concurrency }
+    ).catch(() => new Map<string, never>());
+    rasterize = async (request) => {
+      const hit = preRasterized.get(
+        visualRasterKey(request.presentation, request.dpi)
+      );
+      if (hit) {
+        if (!hit.ok) throw new Error(hit.error);
+        return {
+          base64DataUri: hit.base64DataUri,
+          width: hit.width,
+          height: hit.height,
+        };
+      }
+      return options.rasterize(request);
+    };
+  }
+
   const ctx: FlattenCtx = {
-    rasterize: options.rasterize,
+    rasterize,
     dpi: options.dpi,
     baseDir: options.baseDir,
     limit: createLimiter(

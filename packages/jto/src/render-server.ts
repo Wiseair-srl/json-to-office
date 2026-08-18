@@ -7,7 +7,10 @@ import { bodyLimit } from 'hono/body-limit';
 import { HTTPException } from 'hono/http-exception';
 import { secureHeaders } from 'hono/secure-headers';
 import type { StatusCode } from 'hono/utils/http-status';
-import type { PptxRasterizer } from '@json-to-office/shared';
+import type {
+  PptxRasterizer,
+  PptxBatchRasterizer,
+} from '@json-to-office/shared';
 import { registerRasterizeRoute } from './server/rasterize-route.js';
 import { rateLimiter } from './server/middleware/hono/rate-limit.js';
 import { concurrencyLimiter } from './server/middleware/hono/concurrency-limit.js';
@@ -50,6 +53,7 @@ export interface RenderServerOptions {
   sourcePolicy?: OutboundSourcePolicy;
   fetch?: FetchImplementation;
   getRasterizer?: () => PptxRasterizer;
+  getBatchRasterizer?: () => PptxBatchRasterizer;
 }
 
 class UpstreamResponseTooLargeError extends Error {}
@@ -313,6 +317,7 @@ export function createRenderServerApp(options: RenderServerOptions = {}): Hono {
   // attempt, leaving API-key guessing unbounded.
   registerRasterizeRoute(app, {
     getRasterizer: options.getRasterizer,
+    getBatchRasterizer: options.getBatchRasterizer,
     preMiddleware: [
       rateLimiter({
         limit:
@@ -432,7 +437,7 @@ export function createRenderServerApp(options: RenderServerOptions = {}): Hono {
     }
   );
 
-  for (const route of ['/export', '/rasterize']) {
+  for (const route of ['/export', '/rasterize', '/rasterize/batch']) {
     app.all(route, (c) => {
       c.header('Allow', 'POST');
       return c.json({ success: false, error: 'Method not allowed' }, 405);

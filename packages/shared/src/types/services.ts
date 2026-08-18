@@ -80,6 +80,70 @@ export type PptxRasterizer = (
   request: PptxRasterizeRequest
 ) => Promise<PptxRasterizeResult>;
 
+// ============================================================================
+// Batch rasterization (#153) — one request rasterizes many independent slides.
+//
+// Each slide is a complete single-slide presentation (the exact shape a
+// single {@link PptxRasterizeRequest} carries), NOT a slide fragment of one
+// merged deck. This keeps slides independent — each may use its own canvas
+// size, theme, and dpi, so callers never need to group visuals — and lets
+// implementations key per-slide caches identically to the single-slide path.
+// ============================================================================
+
+/**
+ * Maximum slides accepted in one batch request. Shared by the HTTP surface
+ * (request validation) and clients (chunk size) so the two cannot drift.
+ * Bounds per-request work and response size the same way rate limits bound
+ * request counts.
+ */
+export const MAX_RASTERIZE_BATCH_SLIDES = 32;
+
+/** One slide in a batch: a single-slide presentation plus its resolution. */
+export interface PptxRasterizeBatchSlide {
+  /** A pptx presentation component definition ({ name: 'pptx', ... }) with one slide */
+  presentation: unknown;
+  /** Target raster resolution in dots-per-inch (absent → service default) */
+  dpi?: number;
+}
+
+/** Request handed to a batch pptx rasterizer. */
+export interface PptxRasterizeBatchRequest {
+  /** Slides to rasterize; results come back index-aligned with this array. */
+  slides: PptxRasterizeBatchSlide[];
+  /** Base directory for relative asset paths, shared by every slide (#142). */
+  baseDir?: string;
+}
+
+/**
+ * Pipeline stage a slide failed in. `build` failures are caused by the
+ * slide's own JSON (safe to surface verbatim to callers); `convert` and
+ * `rasterize` failures are environment/tooling errors whose raw messages may
+ * carry host paths — HTTP surfaces sanitize those.
+ */
+export type PptxRasterizeFailureStage = 'build' | 'convert' | 'rasterize';
+
+/**
+ * Per-slide outcome. A batch response is 200-with-item-errors rather than
+ * all-or-nothing: one bad visual must not discard its siblings' pixels.
+ */
+export type PptxRasterizeBatchSlideResult =
+  | ({ ok: true } & PptxRasterizeResult)
+  | { ok: false; error: string; stage?: PptxRasterizeFailureStage };
+
+/** Result returned by a batch pptx rasterizer. */
+export interface PptxRasterizeBatchResult {
+  /** Index-aligned with the request's `slides` (same length, same order). */
+  results: PptxRasterizeBatchSlideResult[];
+}
+
+/**
+ * In-process batch rasterizer callback. Batch-level failures (missing
+ * binaries, bad request) throw; per-slide failures land in `results`.
+ */
+export type PptxBatchRasterizer = (
+  request: PptxRasterizeBatchRequest
+) => Promise<PptxRasterizeBatchResult>;
+
 /**
  * Configuration for the pptx rasterization service backing `visual` components.
  *
@@ -93,6 +157,12 @@ export interface PptxServiceConfig {
    * Ideal for tests (no binaries) and single-process hosts.
    */
   render?: PptxRasterizer;
+  /**
+   * In-process batch rasterizer. When provided, the docx renderer coalesces a
+   * document's visuals into batch calls (#153) instead of one `render` call
+   * per visual. Like `render`, takes precedence over `serverUrl`.
+   */
+  renderBatch?: PptxBatchRasterizer;
   /**
    * HTTP rasterization service URL. The service receives
    * `{ presentation, dpi }` and returns a {@link PptxRasterizeResult}.

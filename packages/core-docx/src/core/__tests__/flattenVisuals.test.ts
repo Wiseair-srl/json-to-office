@@ -179,6 +179,64 @@ describe('flattenVisuals', () => {
     expect(rasterize).not.toHaveBeenCalled();
   });
 
+  describe('rasterizeBatch (#153)', () => {
+    it('rasterizes every visual through one batch call; the single rasterizer stays idle', async () => {
+      const rasterize = fakeRasterizer();
+      const rasterizeBatch = vi.fn(async (req: any) => ({
+        results: req.slides.map(() => ({
+          ok: true,
+          base64DataUri: PNG,
+          width: 960,
+          height: 640,
+        })),
+      }));
+      const doc = {
+        name: 'docx',
+        props: {},
+        children: [
+          {
+            name: 'section',
+            props: { header: [visualNode('hdr')] },
+            children: [visualNode('a'), visualNode('b')],
+          },
+        ],
+      };
+
+      const out: any = await flattenVisuals(doc, { rasterize, rasterizeBatch });
+
+      expect(rasterizeBatch).toHaveBeenCalledOnce();
+      // All three visuals share identical props (`id` is not part of the
+      // rasterization identity), so they dedupe into a single slide.
+      expect(rasterizeBatch.mock.calls[0][0].slides).toHaveLength(1);
+      expect(rasterize).not.toHaveBeenCalled();
+      expect(out.children[0].children.map((c: any) => c.name)).toEqual([
+        'image',
+        'image',
+      ]);
+      expect(out.children[0].props.header[0].name).toBe('image');
+      expect(out.children[0].children[0].props.base64).toBe(PNG);
+    });
+
+    it('surfaces a per-slide batch error when that visual is flattened', async () => {
+      const rasterize = fakeRasterizer();
+      const rasterizeBatch = vi.fn(async () => ({
+        results: [{ ok: false, error: 'poisoned slide' }],
+      }));
+      const doc = {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'section', props: {}, children: [visualNode('bad')] },
+        ],
+      };
+
+      await expect(
+        flattenVisuals(doc, { rasterize, rasterizeBatch })
+      ).rejects.toThrow('poisoned slide');
+      expect(rasterize).not.toHaveBeenCalled();
+    });
+  });
+
   it('clamps an out-of-range dpi before calling the rasterizer', async () => {
     const rasterize = fakeRasterizer();
     const doc = {
