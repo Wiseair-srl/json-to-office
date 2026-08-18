@@ -1,5 +1,5 @@
 ---
-'@json-to-office/core-pptx': patch
+'@json-to-office/core-pptx': minor
 ---
 
 Hand the resolved theme to `processPresentation` by value.

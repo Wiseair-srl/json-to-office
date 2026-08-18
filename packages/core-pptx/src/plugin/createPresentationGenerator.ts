@@ -305,11 +305,15 @@ function createBuilderImpl<
       // `theme.fonts.*` during render sees the substituted names, not the
       // original non-safe ones.
       //
-      // Theme precedence: doc-level `props.theme` wins (matches non-plugin
-      // path and DOCX). A constructor-supplied `state.theme` object only acts
-      // as the fallback when the customThemes lookup misses — otherwise a
-      // playground/CLI default theme would silently shadow customThemes
-      // entries (e.g. `props.theme: "wiseair"` rendering as `themes.minimal`).
+      // Theme precedence: customThemes[name] → constructor `state.theme`
+      // object → built-in, with the lookup name taken from doc-level
+      // `props.theme` (or `defaultThemeName` when the doc names none). The
+      // constructor object fills in for ANY customThemes miss — a doc-named
+      // built-in included — matching the DOCX plugin (resolveDocumentTheme)
+      // exactly; it never shadows a customThemes entry (a doc naming
+      // "wiseair" must not render as `themes.minimal`). Whether a doc-named
+      // built-in should instead beat the constructor object is #141 — a
+      // cross-format decision, not taken here.
       const context = resolveThemeContext(internalDocument, {
         customThemes: state.customThemes,
         fonts: state.fonts,

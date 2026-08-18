@@ -313,4 +313,55 @@ describe('constructor default theme', () => {
     } as never);
     expect(await slideXml(buffer)).toContain('AB12CD');
   });
+
+  // Constructor OBJECT precedence — plugin-only semantics (core has no
+  // constructor-theme input), pinned here so a change is a conscious decision:
+  // the object fills in for any customThemes miss, doc-named built-ins
+  // included, matching the DOCX plugin's resolveDocumentTheme. Revisited
+  // cross-format in #141.
+  const ctorObject = {
+    name: 'app-theme',
+    colors: {
+      primary: '#112233',
+      secondary: '#445566',
+      accent: '#0FA958',
+      background: '#FFFFFF',
+      text: '#101010',
+    },
+    fonts: { heading: 'Georgia', body: 'Georgia' },
+    defaults: { fontSize: 18, fontColor: '#101010' },
+  };
+  const accentText = (theme?: unknown) => ({
+    name: 'pptx',
+    props: theme === undefined ? {} : { theme },
+    children: [
+      {
+        name: 'slide',
+        props: {},
+        children: [
+          {
+            name: 'text',
+            props: { text: 'T', x: 1, y: 1, w: 4, h: 1, color: 'accent' },
+          },
+        ],
+      },
+    ],
+  });
+
+  it('constructor theme object beats a doc-named built-in (current contract, #141)', async () => {
+    const { buffer } = await createPresentationGenerator({
+      theme: ctorObject,
+    }).generateBuffer(accentText('minimal') as never);
+    expect(await slideXml(buffer)).toContain('0FA958');
+  });
+
+  it('constructor theme object fills in for a doc-named unknown theme', async () => {
+    // The playground/CLI fallback: getPptxTheme never misses (it falls back
+    // to the default theme), so without this rule an unknown name would
+    // silently render default instead of the app's theme.
+    const { buffer } = await createPresentationGenerator({
+      theme: ctorObject,
+    }).generateBuffer(accentText('wiseair') as never);
+    expect(await slideXml(buffer)).toContain('0FA958');
+  });
 });
