@@ -428,6 +428,11 @@ function PreviewHeader({
         },
         body: JSON.stringify({
           jsonDefinition: copySourceText,
+          customThemes: getFreshThemeData(),
+          // sourceName lets the server inline a discovered document's bundled
+          // media before safe-mode source validation — without it, templates
+          // referencing relative media paths 400 here while rendering fine.
+          options: { sourceName: name },
         }),
       });
 
@@ -435,7 +440,9 @@ function PreviewHeader({
         let description = `Request failed with status ${response.status}`;
         try {
           const errorData = await response.json();
-          if (errorData.message) description = errorData.message;
+          // The server error handler serializes HTTPExceptions as `error`.
+          const message = errorData.error ?? errorData.message;
+          if (typeof message === 'string' && message) description = message;
         } catch {}
         throw new Error(description);
       }
@@ -499,7 +506,7 @@ function PreviewHeader({
         setIsCopyingStandardComponents(false);
       }
     })();
-  }, [copySourceText, toast]);
+  }, [copySourceText, name, getFreshThemeData, toast]);
 
   const handleCopyFromFallbackDialog = useCallback(async () => {
     if (standardComponentsFallbackJson == null) return;

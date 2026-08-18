@@ -565,22 +565,32 @@ export function createFormatRouter(adapter: FormatAdapter) {
     contentTypeMw,
     tbValidator(LooseDocumentGenerationRequestSchema),
     async (c) => {
-      const { jsonDefinition, customThemes } = getValidated<{
+      const { jsonDefinition, customThemes, options } = getValidated<{
         jsonDefinition: any;
         customThemes?: Record<string, any>;
+        options?: { sourceName?: string };
       }>(c, 'json');
       const requestId = c.get('requestId');
 
       try {
-        assertRequestSources(jsonDefinition, 'jsonDefinition');
+        // Same prologue as /generate: inline a discovered document's bundled
+        // media before safe-mode source validation, otherwise templates that
+        // reference relative media paths 400 here while rendering fine there.
+        const baseDir = await resolveSourceBaseDir(options);
+        const effectiveDefinition = await inlineDiscoveredMedia(
+          jsonDefinition,
+          baseDir
+        );
+
+        assertRequestSources(effectiveDefinition, 'jsonDefinition');
         assertRequestSources(customThemes, 'customThemes');
 
         let config: unknown;
         try {
           config =
-            typeof jsonDefinition === 'string'
-              ? JSON.parse(jsonDefinition)
-              : jsonDefinition;
+            typeof effectiveDefinition === 'string'
+              ? JSON.parse(effectiveDefinition)
+              : effectiveDefinition;
         } catch {
           throw new HTTPException(400, {
             message: 'jsonDefinition is not valid JSON',
@@ -592,7 +602,8 @@ export function createFormatRouter(adapter: FormatAdapter) {
         if (registry.hasPlugins()) {
           const plugins = registry.getPlugins();
           const generatorResult = await adapter.createGenerator(plugins, {
-            theme: customThemes ? Object.values(customThemes)[0] : undefined,
+            customThemes,
+            baseDir,
           });
 
           // Expansion-only path: resolves custom components to the standard
