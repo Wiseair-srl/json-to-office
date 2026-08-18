@@ -12,7 +12,7 @@ import type {
   PipelineWarning,
 } from '../types';
 import { resolveColor } from '../utils/color';
-import { resolveLocalPath } from '../utils/imageSource';
+import { safeLocalPath } from '../utils/imageSource';
 
 export function buildSlideTemplateProps(
   def: TemplateSlideDefinition,
@@ -29,9 +29,8 @@ export function buildSlideTemplateProps(
       };
     } else if (def.background.image) {
       if (def.background.image.path) {
-        result.background = {
-          path: resolveLocalPath(def.background.image.path),
-        };
+        const bgPath = safeLocalPath(def.background.image.path);
+        if (bgPath !== undefined) result.background = { path: bgPath };
       } else if (def.background.image.base64) {
         result.background = { data: def.background.image.base64 };
       }

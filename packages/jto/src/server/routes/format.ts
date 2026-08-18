@@ -43,6 +43,34 @@ export function createFormatRouter(adapter: FormatAdapter) {
     }
   };
 
+  // Map a discovered-document name to its directory so relative asset paths
+  // resolve against the document's own location (#142). Only names are
+  // accepted from clients; unknown names fall back to cwd-relative resolution.
+  const resolveSourceBaseDir = async (
+    options: unknown
+  ): Promise<string | undefined> => {
+    const sourceName = (options as { sourceName?: unknown } | undefined)
+      ?.sourceName;
+    if (typeof sourceName !== 'string' || sourceName.length === 0) {
+      return undefined;
+    }
+    try {
+      const discovery = new PluginDiscoveryService({
+        maxDepth: 10,
+        includeNodeModules: false,
+        verbose: false,
+      });
+      const documents = await discovery.discoverDocuments(
+        adapter.name as 'docx' | 'pptx'
+      );
+      const match = documents.find((doc) => doc.name === sourceName);
+      return match ? dirname(match.path) : undefined;
+    } catch {
+      // Discovery is best-effort here; generation proceeds cwd-relative.
+      return undefined;
+    }
+  };
+
   const contentTypeMw = async (c: any, next: () => Promise<void>) => {
     const contentType = c.req.header('content-type');
     if (!contentType || !contentType.includes('application/json')) {
@@ -99,35 +127,19 @@ export function createFormatRouter(adapter: FormatAdapter) {
           sanitizedFonts = rawFonts;
         }
 
-        // Map a discovered-document name to its directory so relative asset
-        // paths resolve against the document's own location (#142). Only
-        // names are accepted from the client; unknown names simply fall back
-        // to cwd-relative resolution.
-        let baseDir: string | undefined;
-        const sourceName = (options as { sourceName?: unknown } | undefined)
-          ?.sourceName;
-        if (typeof sourceName === 'string' && sourceName.length > 0) {
-          try {
-            const discovery = new PluginDiscoveryService({
-              maxDepth: 10,
-              includeNodeModules: false,
-              verbose: false,
-            });
-            const documents = await discovery.discoverDocuments(
-              adapter.name as 'docx' | 'pptx'
-            );
-            const match = documents.find((doc) => doc.name === sourceName);
-            if (match) baseDir = dirname(match.path);
-          } catch {
-            // Discovery is best-effort here; generation proceeds cwd-relative.
-          }
-        }
+        const baseDir = await resolveSourceBaseDir(options);
+
+        // `baseDir` selects the directory local media paths resolve against —
+        // never accept it from the HTTP client. Only the server-side
+        // sourceName mapping above may set it.
+        const clientOptions = { ...(options as Record<string, unknown>) };
+        delete clientOptions.baseDir;
 
         const result = await generatorService.generate({
           jsonDefinition,
           customThemes,
           options: {
-            ...options,
+            ...clientOptions,
             ...(sanitizedFonts !== undefined && { fonts: sanitizedFonts }),
             ...(baseDir !== undefined && { baseDir }),
             bypassCache,
@@ -452,19 +464,28 @@ export function createFormatRouter(adapter: FormatAdapter) {
       const libreOfficeService = getContainer().get(
         'libreOfficeConverterService'
       );
-      const { jsonDefinition, customThemes } = getValidated<{
+      const { jsonDefinition, customThemes, options } = getValidated<{
         jsonDefinition: any;
         customThemes?: Record<string, any>;
+        options?: { sourceName?: string };
       }>(c, 'json');
 
       try {
         assertRequestSources(jsonDefinition, 'jsonDefinition');
         assertRequestSources(customThemes, 'customThemes');
+        assertRequestSources(options, 'options');
+
+        // Same server-side sourceName -> baseDir mapping as /generate, so
+        // previews resolve relative asset paths the way downloads do (#142).
+        const baseDir = await resolveSourceBaseDir(options);
 
         const generated = await generatorService.generate({
           jsonDefinition,
           customThemes,
-          options: { bypassCache: true },
+          options: {
+            bypassCache: true,
+            ...(baseDir !== undefined && { baseDir }),
+          },
         });
 
         const pdfBuffer = await libreOfficeService.convertToPdf(

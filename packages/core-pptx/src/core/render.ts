@@ -16,7 +16,7 @@ import { resolveComponentGridPosition, mergeGridConfigs } from './grid';
 import { resolveColor } from '../utils/color';
 import { warn, W } from '../utils/warn';
 import { buildSlideTemplateProps } from './template';
-import { resolveLocalPath } from '../utils/imageSource';
+import { safeLocalPath } from '../utils/imageSource';
 import { getDefaultsForType } from '../utils/componentDefaults';
 import { resolveComponentDefaults } from '../utils/resolveComponentTree';
 import { mergeWithDefaults } from '@json-to-office/shared';
@@ -136,9 +136,8 @@ export async function renderPresentation(
         };
       } else if (slideData.background.image) {
         if (slideData.background.image.path) {
-          slide.background = {
-            path: resolveLocalPath(slideData.background.image.path),
-          };
+          const bgPath = safeLocalPath(slideData.background.image.path);
+          if (bgPath !== undefined) slide.background = { path: bgPath };
         } else if (slideData.background.image.base64) {
           slide.background = { data: slideData.background.image.base64 };
         }

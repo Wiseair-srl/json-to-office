@@ -14,7 +14,7 @@ import {
 } from '../cache';
 import { renderComponent } from './render';
 import { componentHasRevision } from '../utils/revisionUtils';
-import { getGenerationDate } from '../utils/generationContext';
+import { getBaseDir, getGenerationDate } from '../utils/generationContext';
 import { createHash } from 'crypto';
 
 // Global component cache instance
@@ -145,6 +145,10 @@ export async function renderComponentWithCache(
   // appear inside nested container props (for example a table cell), not only
   // in top-level paragraph components.
   const generationDateKey = getGenerationDate().toISOString();
+  // Components that read local assets (images) resolve relative paths against
+  // the active baseDir; identical props from different document directories
+  // must not share cached bytes (#142).
+  const baseDirKey = getBaseDir() ?? '';
 
   // For container components (columns, section, etc.), include children in cache key
   // This ensures cache invalidation when child component content changes
@@ -153,7 +157,7 @@ export async function renderComponentWithCache(
       ? `:children:${JSON.stringify(component.children)}`
       : '';
 
-  const cacheKey = `component:${component.name}:${themeHash}:${contextKey}:${generationDateKey}:${componentProps}${childrenKey}`;
+  const cacheKey = `component:${component.name}:${themeHash}:${contextKey}:${generationDateKey}:${baseDirKey}:${componentProps}${childrenKey}`;
 
   // Try to get from cache
   const cached = await componentCache.get(cacheKey);
