@@ -70,6 +70,7 @@ export function usePresentationGenerator() {
           customThemes?: { [key: string]: unknown };
           options?: {
             bypassCache?: boolean;
+            sourceName?: string;
             fonts?: {
               mode?: 'substitute' | 'custom';
               substitution?: Record<string, string>;
@@ -78,7 +79,9 @@ export function usePresentationGenerator() {
           };
         } = {
           jsonDefinition,
-          options: options || {},
+          // sourceName lets the server resolve relative asset paths against
+          // the discovered document's own directory (#142).
+          options: { ...options, sourceName: name },
         };
 
         requestBody.customThemes = customThemes ?? {};

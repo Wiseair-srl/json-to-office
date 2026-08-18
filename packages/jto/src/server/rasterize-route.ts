@@ -31,6 +31,7 @@ export const RasterizeRequestSchema = Type.Object(
     dpi: Type.Optional(
       Type.Number({ minimum: MIN_VISUAL_DPI, maximum: MAX_VISUAL_DPI })
     ),
+    baseDir: Type.Optional(Type.String()),
   },
   { additionalProperties: false }
 );
@@ -85,9 +86,10 @@ export function registerRasterizeRoute(
     jsonOnly,
     tbValidator(RasterizeRequestSchema),
     async (c) => {
-      const { presentation, dpi } = getValidated<{
+      const { presentation, dpi, baseDir } = getValidated<{
         presentation: unknown;
         dpi?: number;
+        baseDir?: string;
       }>(c, 'json');
 
       try {
@@ -101,6 +103,7 @@ export function registerRasterizeRoute(
         const result = await getRasterizer()({
           presentation,
           dpi: clampVisualDpi(dpi ?? DEFAULT_VISUAL_DPI),
+          baseDir,
         });
         return c.json(result);
       } catch (error) {

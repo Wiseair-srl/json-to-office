@@ -6,8 +6,13 @@
  * the unified component pipeline and are rendered per-slide in render.ts.
  */
 
-import type { TemplateSlideDefinition, PptxThemeConfig, PipelineWarning } from '../types';
+import type {
+  TemplateSlideDefinition,
+  PptxThemeConfig,
+  PipelineWarning,
+} from '../types';
 import { resolveColor } from '../utils/color';
+import { resolveLocalPath } from '../utils/imageSource';
 
 export function buildSlideTemplateProps(
   def: TemplateSlideDefinition,
@@ -19,10 +24,14 @@ export function buildSlideTemplateProps(
   // Background
   if (def.background) {
     if (def.background.color) {
-      result.background = { color: resolveColor(def.background.color, theme, warnings) };
+      result.background = {
+        color: resolveColor(def.background.color, theme, warnings),
+      };
     } else if (def.background.image) {
       if (def.background.image.path) {
-        result.background = { path: def.background.image.path };
+        result.background = {
+          path: resolveLocalPath(def.background.image.path),
+        };
       } else if (def.background.image.base64) {
         result.background = { data: def.background.image.base64 };
       }
@@ -38,10 +47,18 @@ export function buildSlideTemplateProps(
       x: def.slideNumber.x,
       y: def.slideNumber.y,
     };
-    if (def.slideNumber.w !== undefined) result.slideNumber.w = def.slideNumber.w;
-    if (def.slideNumber.h !== undefined) result.slideNumber.h = def.slideNumber.h;
-    if (def.slideNumber.color) result.slideNumber.color = resolveColor(def.slideNumber.color, theme, warnings);
-    if (def.slideNumber.fontSize) result.slideNumber.fontSize = def.slideNumber.fontSize;
+    if (def.slideNumber.w !== undefined)
+      result.slideNumber.w = def.slideNumber.w;
+    if (def.slideNumber.h !== undefined)
+      result.slideNumber.h = def.slideNumber.h;
+    if (def.slideNumber.color)
+      result.slideNumber.color = resolveColor(
+        def.slideNumber.color,
+        theme,
+        warnings
+      );
+    if (def.slideNumber.fontSize)
+      result.slideNumber.fontSize = def.slideNumber.fontSize;
   }
 
   return result;

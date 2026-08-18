@@ -17,6 +17,7 @@ import {
 import { ThemeConfig } from '../styles';
 import { createImage, type ImageOptions } from '../core/content';
 import { isNodeEnvironment } from '../utils/environment';
+import { getBaseDir } from '../utils/generationContext';
 import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 import type { VisualProps } from '@json-to-office/shared-docx';
@@ -113,7 +114,8 @@ async function rasterize(
   presentation: Record<string, unknown>,
   dpi: number,
   propsServerUrl: string | undefined,
-  serviceConfig: PptxServiceConfig | undefined
+  serviceConfig: PptxServiceConfig | undefined,
+  baseDir: string | undefined
 ): Promise<PptxRasterizeResult> {
   if (!isNodeEnvironment()) {
     throw new Error(
@@ -124,7 +126,7 @@ async function rasterize(
 
   // In-process renderer wins (ideal for tests and single-process hosts).
   if (serviceConfig?.render) {
-    return serviceConfig.render({ presentation, dpi });
+    return serviceConfig.render({ presentation, dpi, baseDir });
   }
 
   const serverUrl = resolveServiceUrl(
@@ -136,7 +138,7 @@ async function rasterize(
   const response = await postJsonToService({
     url: serverUrl,
     path: '/rasterize',
-    body: { presentation, dpi },
+    body: { presentation, dpi, ...(baseDir !== undefined && { baseDir }) },
     headers: serviceConfig?.headers,
     serviceLabel: 'PPTX rasterization service',
     onUnreachable: (url, cause) =>
@@ -180,11 +182,15 @@ export async function renderVisualComponent(
     props.dpi ?? serviceConfig?.dpi ?? DEFAULT_VISUAL_DPI
   );
 
+  // Relative asset paths inside the visual's nested presentation must
+  // resolve against the same base directory as the docx document itself —
+  // the rasterizer runs in another process/cwd (#142).
   const result = await rasterize(
     presentation,
     dpi,
     props.serverUrl,
-    serviceConfig
+    serviceConfig,
+    getBaseDir()
   );
 
   // Size and placement options are derived once in visualToImageOptions (shared

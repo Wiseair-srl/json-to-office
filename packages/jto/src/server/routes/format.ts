@@ -11,7 +11,12 @@ import { tbValidator, getValidated } from '../lib/typebox-validator.js';
 import { logger } from '../utils/logger.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
 import { AppEnv } from '../types/hono.js';
-import { type FormatAdapter, PluginRegistry } from '@json-to-office/jto-cli';
+import {
+  type FormatAdapter,
+  PluginRegistry,
+  PluginDiscoveryService,
+} from '@json-to-office/jto-cli';
+import { dirname } from 'node:path';
 import { registerRasterizeRoute } from '../rasterize-route.js';
 import { config } from '../config/index.js';
 import {
@@ -94,12 +99,37 @@ export function createFormatRouter(adapter: FormatAdapter) {
           sanitizedFonts = rawFonts;
         }
 
+        // Map a discovered-document name to its directory so relative asset
+        // paths resolve against the document's own location (#142). Only
+        // names are accepted from the client; unknown names simply fall back
+        // to cwd-relative resolution.
+        let baseDir: string | undefined;
+        const sourceName = (options as { sourceName?: unknown } | undefined)
+          ?.sourceName;
+        if (typeof sourceName === 'string' && sourceName.length > 0) {
+          try {
+            const discovery = new PluginDiscoveryService({
+              maxDepth: 10,
+              includeNodeModules: false,
+              verbose: false,
+            });
+            const documents = await discovery.discoverDocuments(
+              adapter.name as 'docx' | 'pptx'
+            );
+            const match = documents.find((doc) => doc.name === sourceName);
+            if (match) baseDir = dirname(match.path);
+          } catch {
+            // Discovery is best-effort here; generation proceeds cwd-relative.
+          }
+        }
+
         const result = await generatorService.generate({
           jsonDefinition,
           customThemes,
           options: {
             ...options,
             ...(sanitizedFonts !== undefined && { fonts: sanitizedFonts }),
+            ...(baseDir !== undefined && { baseDir }),
             bypassCache,
           },
         });

@@ -360,7 +360,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/hatch-1.88x2.13.png",
+                  "path": "media/modern-annual-report-2/hatch-1.88x2.13.png",
                   "x": 0.63,
                   "y": 8.43,
                   "w": 1.88,
@@ -1559,7 +1559,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/hatch-3.53x4.22.png",
+                  "path": "media/modern-annual-report-2/hatch-3.53x4.22.png",
                   "x": 0.5,
                   "y": 1.49,
                   "w": 3.53,
@@ -2511,7 +2511,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/hatch-2.19x2.61.png",
+                  "path": "media/modern-annual-report-2/hatch-2.19x2.61.png",
                   "x": 0.53,
                   "y": 8.62,
                   "w": 2.19,
@@ -3985,7 +3985,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/image2.png",
+                  "path": "media/modern-annual-report-2/image2.png",
                   "x": 0.53,
                   "y": 1.91,
                   "w": 7.28,
@@ -4624,7 +4624,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/hatch-2.57x2.91.png",
+                  "path": "media/modern-annual-report-2/hatch-2.57x2.91.png",
                   "x": 5.17,
                   "y": 0.55,
                   "w": 2.57,
@@ -10651,7 +10651,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/hatch-2.78x3.03.png",
+                  "path": "media/modern-annual-report-2/hatch-2.78x3.03.png",
                   "x": 4.97,
                   "y": 0.44,
                   "w": 2.78,
@@ -12075,7 +12075,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/hatch-3.8x5.41.png",
+                  "path": "media/modern-annual-report-2/hatch-3.8x5.41.png",
                   "x": 0.45,
                   "y": 0.41,
                   "w": 3.8,
@@ -12535,7 +12535,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/image4.png",
+                  "path": "media/modern-annual-report-2/image4.png",
                   "x": 0.48,
                   "y": 7.24,
                   "w": 7.27,
@@ -13049,7 +13049,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/hatch-2.22x2.88.png",
+                  "path": "media/modern-annual-report-2/hatch-2.22x2.88.png",
                   "x": 2.99,
                   "y": 6.26,
                   "w": 2.22,
@@ -14376,7 +14376,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/image6.png",
+                  "path": "media/modern-annual-report-2/image6.png",
                   "x": 0.44,
                   "y": 0.49,
                   "w": 7.27,
@@ -14386,7 +14386,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/hatch-1.86x2.03.png",
+                  "path": "media/modern-annual-report-2/hatch-1.86x2.03.png",
                   "x": 0.45,
                   "y": 9.18,
                   "w": 1.86,
@@ -14940,7 +14940,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-2/hatch-4.46x6.42.png",
+                  "path": "media/modern-annual-report-2/hatch-4.46x6.42.png",
                   "x": 3.34,
                   "y": 0.52,
                   "w": 4.46,

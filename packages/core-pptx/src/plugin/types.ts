@@ -147,6 +147,13 @@ export interface GenerationValidationOptions {
 
 export interface GenerateOptions extends PresentationPackagingOptions {
   validation?: GenerationValidationOptions;
+  /**
+   * Directory that relative asset paths (image `path` props, slide
+   * background images) resolve against for this call. Overrides the
+   * constructor `baseDir`; defaults to `process.cwd()` when neither is
+   * set (#142).
+   */
+  baseDir?: string;
 }
 
 export type GenerateFileOptions = GenerateOptions;

@@ -34,11 +34,17 @@ export interface FlattenVisualsOptions {
   dpi?: number;
   /** Max concurrent rasterizations (default 4). */
   concurrency?: number;
+  /**
+   * Directory that relative asset paths inside visuals resolve against —
+   * the document's own directory. Absent → the rasterizer's cwd (#142).
+   */
+  baseDir?: string;
 }
 
 interface FlattenCtx {
   rasterize: PptxRasterizer;
   dpi?: number;
+  baseDir?: string;
   limit: <T>(fn: () => Promise<T>) => Promise<T>;
 }
 
@@ -76,6 +82,7 @@ export async function flattenVisuals<T = unknown>(
   const ctx: FlattenCtx = {
     rasterize: options.rasterize,
     dpi: options.dpi,
+    baseDir: options.baseDir,
     limit: createLimiter(
       Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY)
     ),
@@ -90,7 +97,11 @@ async function rasterizeVisual(
   const props = obj.props as VisualProps;
   const dpi = clampVisualDpi(props.dpi ?? ctx.dpi ?? DEFAULT_VISUAL_DPI);
   const result = await ctx.limit(() =>
-    ctx.rasterize({ presentation: buildVisualPresentation(props), dpi })
+    ctx.rasterize({
+      presentation: buildVisualPresentation(props),
+      dpi,
+      baseDir: ctx.baseDir,
+    })
   );
   const image: Record<string, unknown> = {
     name: 'image',

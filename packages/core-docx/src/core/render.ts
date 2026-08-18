@@ -86,12 +86,20 @@ import { mapFloatingOptions } from '../utils/docxImagePositioning';
 import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
 import { globalNumberingRegistry } from '../utils/numberingConfig';
 import { globalRevisionIdRegistry } from '../utils/revisionUtils';
-import { runWithGenerationDate } from '../utils/generationContext';
+import {
+  runWithGenerationDate,
+  runWithBaseDir,
+} from '../utils/generationContext';
 
 interface RenderDocumentOptions {
   cache?: MemoryCache;
   bypassCache?: boolean;
   services?: ServicesConfig;
+  /**
+   * Directory that relative asset paths (image `path` props) resolve
+   * against. Defaults to `process.cwd()` when absent (#142).
+   */
+  baseDir?: string;
 }
 
 /**
@@ -163,10 +171,12 @@ export async function renderDocument(
   options?: RenderDocumentOptions
 ): Promise<Document> {
   return runWithGenerationDate(structure.metadata.date, () =>
-    globalBookmarkRegistry.runScoped(() =>
-      globalRevisionIdRegistry.runScoped(() =>
-        globalNumberingRegistry.runScoped(() =>
-          renderDocumentScoped(structure, layout, options)
+    runWithBaseDir(options?.baseDir, () =>
+      globalBookmarkRegistry.runScoped(() =>
+        globalRevisionIdRegistry.runScoped(() =>
+          globalNumberingRegistry.runScoped(() =>
+            renderDocumentScoped(structure, layout, options)
+          )
         )
       )
     )

@@ -63,6 +63,12 @@ export interface DocumentGeneratorOptions {
   deterministic?: boolean;
   /** Default build timestamp for generated metadata. */
   generatedAt?: string | Date;
+  /**
+   * Directory that relative asset paths (image `path` props) resolve against.
+   * Per-call `options.baseDir` overrides it; defaults to `process.cwd()`
+   * when neither is set (#142).
+   */
+  baseDir?: string;
 }
 
 /**
@@ -80,6 +86,7 @@ interface BuilderState {
   validation?: GenerationValidationOptions;
   deterministic: boolean;
   generatedAt?: string | Date;
+  baseDir?: string;
 }
 
 /**
@@ -364,6 +371,7 @@ function createBuilderImpl<
       validation: state.validation,
       deterministic: state.deterministic,
       generatedAt: state.generatedAt,
+      baseDir: state.baseDir,
     };
 
     // Return NEW builder with expanded type
@@ -528,6 +536,7 @@ function createBuilderImpl<
       const generatedDocument = await renderDocument(structure, layout, {
         services: state.services,
         bypassCache: !state.enableCache,
+        baseDir: options?.baseDir ?? state.baseDir,
       });
 
       // Build preservedDefinition iff the caller opted in. Reuses the same
@@ -727,6 +736,7 @@ export function createDocumentGenerator(
     validation: options.validation,
     deterministic: options.deterministic ?? true,
     generatedAt: options.generatedAt,
+    baseDir: options.baseDir,
   };
 
   return createBuilderImpl<readonly []>(initialState);

@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { basename, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 import chalk from 'chalk';
 import type { FormatAdapter, GeneratorResult } from '../format-adapter.js';
 import { PluginRegistry } from '../services/plugin-registry.js';
@@ -217,6 +217,9 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
               validation: mergedConfig.validation,
               deterministic: options.deterministic,
               generatedAt: parseGeneratedAt(options.generatedAt),
+              // Relative asset paths resolve against the document's own
+              // directory, not the invocation cwd (#142).
+              baseDir: dirname(inputPath),
               fonts: {
                 strict: options.strictFonts,
                 ...(extraEntries.length > 0 && { extraEntries }),

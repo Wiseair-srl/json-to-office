@@ -24,6 +24,7 @@ import {
   validatePresentationDocument,
   type ValidationError,
 } from '@json-to-office/shared-pptx';
+import { runWithBaseDir } from '../utils/baseDirContext';
 import {
   packagePresentationBuffer,
   type PresentationPackagingOptions,
@@ -50,6 +51,12 @@ export interface GenerationOptions extends PresentationPackagingOptions {
   services?: ServicesConfig;
   fonts?: FontRuntimeOpts;
   validation?: GenerationValidationOptions;
+  /**
+   * Directory that relative asset paths (image `path` props, slide
+   * background images) resolve against. Defaults to `process.cwd()` when
+   * absent (#142).
+   */
+  baseDir?: string;
 }
 
 // Font resolution shared with the plugin path — see ./fontResolution.ts
@@ -150,8 +157,13 @@ export async function generatePresentation(
 
   assertNoContentConflicts(document);
 
-  const processed = processPresentation(document, options);
-  return await renderPresentation(processed, warnings, pendingFills);
+  // Scope the document base directory over process+render: relative asset
+  // paths are rewritten eagerly here — pptxgenjs reads them later, during
+  // write(), from whatever cwd it happens to have (#142).
+  return runWithBaseDir(options?.baseDir, async () => {
+    const processed = processPresentation(document, options);
+    return await renderPresentation(processed, warnings, pendingFills);
+  });
 }
 
 /**

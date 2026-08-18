@@ -122,6 +122,7 @@ interface GeneratorBuilder {
       deterministic?: boolean;
       generatedAt?: string | Date;
       validation?: { allowUnknownFields?: boolean };
+      baseDir?: string;
     }
   ): Promise<{ buffer: Buffer; warnings: any }>;
   /** @deprecated Read `standardDefinition` off `generate(...)` instead. */
@@ -139,6 +140,11 @@ export interface GeneratorOptions {
   fonts?: FontRuntimeOpts;
   deterministic?: boolean;
   generatedAt?: string | Date;
+  /**
+   * Directory that relative asset paths in the document resolve against —
+   * normally the input document's own directory (#142).
+   */
+  baseDir?: string;
 }
 
 export interface GeneratorResult {
@@ -229,6 +235,7 @@ export class DocxFormatAdapter implements FormatAdapter {
       },
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
+      baseDir: options.baseDir,
       warnings,
     });
     emitGenerationWarnings(warnings);
@@ -269,6 +276,7 @@ export class DocxFormatAdapter implements FormatAdapter {
             },
             deterministic: options.deterministic,
             generatedAt: options.generatedAt,
+            baseDir: options.baseDir,
             warnings,
           });
           emitGenerationWarnings(warnings);
@@ -296,6 +304,7 @@ export class DocxFormatAdapter implements FormatAdapter {
       },
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
+      baseDir: options.baseDir,
     });
 
     for (const plugin of plugins) {
@@ -317,6 +326,7 @@ export class DocxFormatAdapter implements FormatAdapter {
           },
           deterministic: options.deterministic,
           generatedAt: options.generatedAt,
+          baseDir: options.baseDir,
         });
         emitGenerationWarnings(result.warnings ?? []);
         return result.buffer;
@@ -561,6 +571,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       },
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
+      baseDir: options.baseDir,
     });
   }
 
@@ -597,6 +608,7 @@ export class PptxFormatAdapter implements FormatAdapter {
             },
             deterministic: options.deterministic,
             generatedAt: options.generatedAt,
+            baseDir: options.baseDir,
           });
         },
         hasPlugins: false,
@@ -621,6 +633,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       },
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
+      baseDir: options.baseDir,
     });
 
     for (const plugin of plugins) {
@@ -642,6 +655,7 @@ export class PptxFormatAdapter implements FormatAdapter {
           },
           deterministic: options.deterministic,
           generatedAt: options.generatedAt,
+          baseDir: options.baseDir,
         });
         return result.buffer;
       },
