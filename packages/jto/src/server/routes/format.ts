@@ -698,6 +698,9 @@ export function createFormatRouter(adapter: FormatAdapter) {
       rateLimiter({
         limit: process.env.NODE_ENV === 'production' ? 10 : 1000,
         window: 15 * 60 * 1000,
+        // One bucket for /rasterize AND /rasterize/batch — without a shared
+        // namespace the default per-path key would double the budget.
+        namespace: 'rasterize',
         trustProxy: config.rateLimit.trustProxy,
       }),
     ],

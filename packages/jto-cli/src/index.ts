@@ -10,7 +10,10 @@ export {
 } from './format-adapter.js';
 
 // PPTX rasterizer (backs docx `visual` components)
-export { createLibreOfficePptxRasterizer } from './pptx-rasterizer.js';
+export {
+  createLibreOfficePptxRasterizer,
+  createLibreOfficePptxBatchRasterizer,
+} from './pptx-rasterizer.js';
 
 // Generator factory
 export { GeneratorFactory } from './services/generator-factory.js';

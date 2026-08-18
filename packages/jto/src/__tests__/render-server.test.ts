@@ -220,4 +220,133 @@ describe('standalone render server', () => {
     ).toBe(400);
     expect(rasterizer).not.toHaveBeenCalled();
   });
+
+  it('mounts /rasterize/batch with the same auth, policy, and per-slide results (#153)', async () => {
+    const batchRasterizer = vi.fn(async (req: { slides: unknown[] }) => ({
+      results: req.slides.map(() => ({
+        ok: true as const,
+        base64DataUri: 'data:image/png;base64,AA==',
+        width: 1,
+        height: 1,
+      })),
+    }));
+    const app = createRenderServerApp({
+      auth: { mode: 'required', apiKey: 'secret' },
+      sourcePolicy: { mode: 'safe', allowedHosts: [] },
+      getBatchRasterizer: () => batchRasterizer,
+    });
+    const safeSlide = { presentation: { name: 'pptx', children: [] } };
+    const unsafeSlide = {
+      presentation: {
+        name: 'pptx',
+        children: [{ name: 'image', props: { path: '/etc/passwd' } }],
+      },
+    };
+
+    // No key → 401; unsafe source in ANY slide → 400 before rasterizing.
+    expect(
+      (await post(app, '/rasterize/batch', { slides: [safeSlide] })).status
+    ).toBe(401);
+    expect(
+      (
+        await post(
+          app,
+          '/rasterize/batch',
+          { slides: [safeSlide, unsafeSlide] },
+          { 'x-api-key': 'secret' }
+        )
+      ).status
+    ).toBe(400);
+    expect(batchRasterizer).not.toHaveBeenCalled();
+
+    const ok = await post(
+      app,
+      '/rasterize/batch',
+      { slides: [safeSlide, safeSlide] },
+      { 'x-api-key': 'secret' }
+    );
+    expect(ok.status).toBe(200);
+    const body = (await ok.json()) as { results: Array<{ ok: boolean }> };
+    expect(body.results).toHaveLength(2);
+    expect(batchRasterizer).toHaveBeenCalledOnce();
+
+    // Method guard matches the other public routes.
+    const wrongMethod = await app.request('/rasterize/batch', {
+      method: 'GET',
+    });
+    expect(wrongMethod.status).toBe(405);
+  });
+
+  it('sanitizes non-build per-slide errors but preserves content errors (#153 C2)', async () => {
+    const app = createRenderServerApp({
+      auth: { mode: 'disabled' },
+      sourcePolicy: { mode: 'development', allowedHosts: [] },
+      getBatchRasterizer: () => async () => ({
+        results: [
+          {
+            ok: false as const,
+            error: 'Top-level component must be a pptx component',
+            stage: 'build' as const,
+          },
+          {
+            ok: false as const,
+            error:
+              'Command failed: /usr/bin/soffice --outdir /var/tmp/jto-visual-x1',
+            stage: 'convert' as const,
+          },
+        ],
+      }),
+    });
+
+    const res = await post(app, '/rasterize/batch', {
+      slides: [
+        { presentation: { name: 'pptx' } },
+        { presentation: { name: 'pptx' } },
+      ],
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      results: Array<{ ok: boolean; error?: string }>;
+    };
+    // Build errors are the caller's own JSON problem — surfaced verbatim.
+    expect(body.results[0].error).toBe(
+      'Top-level component must be a pptx component'
+    );
+    // Tooling errors carry host paths — replaced with a generic message.
+    expect(body.results[1].error).toBe('Slide rasterization failed');
+    expect(JSON.stringify(body)).not.toContain('/var/tmp');
+  });
+
+  it('rejects oversized raster budgets up front (400)', async () => {
+    const rasterizer = vi.fn();
+    const batchRasterizer = vi.fn();
+    const app = createRenderServerApp({
+      auth: { mode: 'disabled' },
+      sourcePolicy: { mode: 'development', allowedHosts: [] },
+      getRasterizer: () => rasterizer,
+      getBatchRasterizer: () => batchRasterizer,
+    });
+
+    // One slide over the per-slide pixel budget (100in × 60in @ 600 dpi).
+    const huge = {
+      presentation: {
+        name: 'pptx',
+        props: { slideWidth: 100, slideHeight: 60 },
+      },
+      dpi: 600,
+    };
+    expect((await post(app, '/rasterize', huge)).status).toBe(400);
+
+    // Many individually-legal slides breaching the aggregate budget.
+    const big = {
+      presentation: { name: 'pptx', props: { slideWidth: 13, slideHeight: 7 } },
+      dpi: 600,
+    };
+    const res = await post(app, '/rasterize/batch', {
+      slides: Array.from({ length: 10 }, () => big),
+    });
+    expect(res.status).toBe(400);
+    expect(rasterizer).not.toHaveBeenCalled();
+    expect(batchRasterizer).not.toHaveBeenCalled();
+  });
 });

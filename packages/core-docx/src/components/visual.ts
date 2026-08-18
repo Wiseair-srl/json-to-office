@@ -8,6 +8,7 @@
  * plain `image`.
  */
 
+import { createHash } from 'crypto';
 import { Paragraph, Table } from 'docx';
 import {
   ComponentDefinition,
@@ -28,7 +29,7 @@ import {
   type PptxRasterizeResult,
 } from '@json-to-office/shared';
 
-const DEFAULT_RASTERIZE_SERVER_URL = 'http://localhost:7802';
+export const DEFAULT_RASTERIZE_SERVER_URL = 'http://localhost:7802';
 /** 1 inch = 96 CSS pixels — used to size the embedded image at its physical canvas size. */
 const PIXELS_PER_INCH = 96;
 
@@ -107,10 +108,46 @@ export function visualToImageProps(
 }
 
 /**
+ * Identity of one visual rasterization: content + resolution + (for HTTP
+ * services) the target server. Keys the per-document pre-rasterization map
+ * (#153); the pre-pass and the render-time lookup MUST use this one function
+ * so the two sides cannot drift.
+ */
+export function visualRasterKey(
+  presentation: unknown,
+  dpi: number,
+  serverUrl?: string
+): string {
+  return createHash('sha256')
+    .update(JSON.stringify({ p: presentation, d: dpi, u: serverUrl ?? null }))
+    .digest('hex');
+}
+
+/**
+ * The serverUrl that actually differentiates a visual's rasterization. An
+ * in-process `render` callback takes precedence over any serverUrl —
+ * per-visual or config — so overrides only matter when rasterization would
+ * go over HTTP. Deliberately keyed on `render` alone (NOT `renderBatch`):
+ * per-visual fallbacks always go through `rasterizeVisualSlide`, which only
+ * consults `render`, and pre-pass inclusion must match what a fallback would
+ * actually do or the same visual could rasterize against two different
+ * services depending on cache luck.
+ */
+export function effectiveVisualServerUrl(
+  props: VisualProps,
+  serviceConfig: PptxServiceConfig | undefined
+): string | undefined {
+  if (serviceConfig?.render) return undefined;
+  return props.serverUrl;
+}
+
+/**
  * Rasterize a single-slide presentation to a PNG via the configured service.
  * An in-process `render` callback takes precedence over an HTTP `serverUrl`.
+ * Exported for the pre-rasterization pass, whose per-visual fallback must
+ * behave exactly like render-time rasterization.
  */
-async function rasterize(
+export async function rasterizeVisualSlide(
   presentation: Record<string, unknown>,
   dpi: number,
   propsServerUrl: string | undefined,
@@ -182,16 +219,35 @@ export async function renderVisualComponent(
     props.dpi ?? serviceConfig?.dpi ?? DEFAULT_VISUAL_DPI
   );
 
-  // Relative asset paths inside the visual's nested presentation must
-  // resolve against the same base directory as the docx document itself —
-  // the rasterizer runs in another process/cwd (#142).
-  const result = await rasterize(
-    presentation,
-    dpi,
-    props.serverUrl,
-    serviceConfig,
-    getBaseDir()
+  // The per-document pre-pass batch-rasterizes visuals ahead of rendering
+  // (#153). A hit uses those pixels; a recorded per-visual failure surfaces
+  // here, where the error is attributable to this component. Any miss falls
+  // through to per-visual rasterization, so the pre-pass can never make a
+  // render worse than the sequential path.
+  const preRasterized = context?.visualRasterResults?.get(
+    visualRasterKey(
+      presentation,
+      dpi,
+      effectiveVisualServerUrl(props, serviceConfig)
+    )
   );
+
+  let result: PptxRasterizeResult;
+  if (preRasterized) {
+    if (!preRasterized.ok) throw new Error(preRasterized.error);
+    result = preRasterized;
+  } else {
+    // Relative asset paths inside the visual's nested presentation must
+    // resolve against the same base directory as the docx document itself —
+    // the rasterizer runs in another process/cwd (#142).
+    result = await rasterizeVisualSlide(
+      presentation,
+      dpi,
+      props.serverUrl,
+      serviceConfig,
+      getBaseDir()
+    );
+  }
 
   // Size and placement options are derived once in visualToImageOptions (shared
   // with the flatten transform): default width = canvas physical inches; height

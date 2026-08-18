@@ -11,7 +11,11 @@ vi.mock('../../core/content', async () => {
   };
 });
 
-import { renderVisualComponent } from '../visual';
+import {
+  renderVisualComponent,
+  visualRasterKey,
+  buildVisualPresentation,
+} from '../visual';
 import { createImage } from '../../core/content';
 
 const mockCreateImage = createImage as any;
@@ -46,13 +50,11 @@ describe('components/visual', () => {
     vi.clearAllMocks();
     mockFetch.mockResolvedValue({
       ok: true,
-      json: vi
-        .fn()
-        .mockResolvedValue({
-          base64DataUri: PNG_DATA_URI,
-          width: 1200,
-          height: 800,
-        }),
+      json: vi.fn().mockResolvedValue({
+        base64DataUri: PNG_DATA_URI,
+        width: 1200,
+        height: 800,
+      }),
     });
   });
 
@@ -61,13 +63,11 @@ describe('components/visual', () => {
   });
 
   it('rasterizes via an in-process render callback and desugars to an image', async () => {
-    const render = vi
-      .fn()
-      .mockResolvedValue({
-        base64DataUri: PNG_DATA_URI,
-        width: 1200,
-        height: 800,
-      });
+    const render = vi.fn().mockResolvedValue({
+      base64DataUri: PNG_DATA_URI,
+      width: 1200,
+      height: 800,
+    });
 
     const context = { services: { pptx: { render } } } as any;
 
@@ -95,13 +95,11 @@ describe('components/visual', () => {
   });
 
   it('builds a single-slide pptx presentation from canvas + elements', async () => {
-    const render = vi
-      .fn()
-      .mockResolvedValue({
-        base64DataUri: PNG_DATA_URI,
-        width: 10,
-        height: 10,
-      });
+    const render = vi.fn().mockResolvedValue({
+      base64DataUri: PNG_DATA_URI,
+      width: 10,
+      height: 10,
+    });
 
     await renderVisualComponent(
       visualComponent({
@@ -228,5 +226,108 @@ describe('components/visual', () => {
         TEST_THEME_NAME
       )
     ).rejects.toThrow(/services\.pptx/s);
+  });
+
+  describe('pre-rasterized results map (#153)', () => {
+    const mapKeyFor = (component: any, dpi = 200, serverUrl?: string) =>
+      visualRasterKey(buildVisualPresentation(component.props), dpi, serverUrl);
+
+    it('uses a pre-rasterized result without calling any service', async () => {
+      const render = vi.fn();
+      const component = visualComponent();
+      const context = {
+        services: { pptx: { render } },
+        visualRasterResults: new Map([
+          [
+            mapKeyFor(component),
+            { ok: true, base64DataUri: PNG_DATA_URI, width: 1200, height: 800 },
+          ],
+        ]),
+      } as any;
+
+      await renderVisualComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
+      );
+
+      expect(render).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockCreateImage).toHaveBeenCalledWith(
+        PNG_DATA_URI,
+        expect.anything(),
+        TEST_THEME_NAME,
+        expect.objectContaining({ width: 576 })
+      );
+    });
+
+    it('throws a recorded pre-rasterization error for this visual', async () => {
+      const component = visualComponent();
+      const context = {
+        visualRasterResults: new Map([
+          [mapKeyFor(component), { ok: false, error: 'slide 3 is broken' }],
+        ]),
+      } as any;
+
+      await expect(
+        renderVisualComponent(
+          component,
+          createMockTheme(),
+          TEST_THEME_NAME,
+          context
+        )
+      ).rejects.toThrow('slide 3 is broken');
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('falls back to per-visual rasterization on a map miss', async () => {
+      const component = visualComponent();
+      const context = {
+        services: { pptx: { serverUrl: 'http://localhost:9000' } },
+        visualRasterResults: new Map(), // empty — pre-pass missed this visual
+      } as any;
+
+      await renderVisualComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:9000/rasterize',
+        expect.any(Object)
+      );
+    });
+
+    it('keys a serverUrl-overridden visual distinctly under an HTTP config', async () => {
+      const component = visualComponent({
+        serverUrl: 'http://prop-server:1234',
+      });
+      // Entry stored WITHOUT the override url must not be picked up.
+      const context = {
+        services: { pptx: { serverUrl: 'http://services:5555' } },
+        visualRasterResults: new Map([
+          [
+            mapKeyFor(component),
+            { ok: true, base64DataUri: PNG_DATA_URI, width: 1, height: 1 },
+          ],
+        ]),
+      } as any;
+
+      await renderVisualComponent(
+        component,
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
+      );
+
+      // Miss → rasterized against its own override server.
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://prop-server:1234/rasterize',
+        expect.any(Object)
+      );
+    });
   });
 });

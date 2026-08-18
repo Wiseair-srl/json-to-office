@@ -89,7 +89,9 @@ import { globalRevisionIdRegistry } from '../utils/revisionUtils';
 import {
   runWithGenerationDate,
   runWithBaseDir,
+  getBaseDir,
 } from '../utils/generationContext';
+import { prerasterizeVisuals } from './prerasterizeVisuals';
 
 interface RenderDocumentOptions {
   cache?: MemoryCache;
@@ -205,6 +207,27 @@ async function renderDocumentScoped(
     structure.themeName
   );
   context.services = options?.services;
+
+  // Coalesce the document's visual rasterizations into batched service calls
+  // before the (strictly sequential) component walk begins (#153). Purely an
+  // accelerator: renderVisualComponent falls back to per-visual rasterization
+  // for anything the pre-pass missed, so a pre-pass failure can slow a render
+  // but never break one.
+  try {
+    const visualRasterResults = await prerasterizeVisuals(
+      layout.sections,
+      options?.services?.pptx,
+      { baseDir: getBaseDir() }
+    );
+    if (visualRasterResults.size > 0) {
+      context.visualRasterResults = visualRasterResults;
+    }
+  } catch (error) {
+    console.warn(
+      '[core-docx] Visual pre-rasterization failed; falling back to per-visual rasterization:',
+      error instanceof Error ? error.message : error
+    );
+  }
 
   // Initialize bookmark counter for this document (scoped to renderDocument call)
   let sectionBookmarkCounter = 0;

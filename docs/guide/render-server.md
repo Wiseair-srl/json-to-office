@@ -55,9 +55,10 @@ See the [API reference](/reference/api) for the full options object and the [cha
 
   - `GET /health` — probes the internal Highcharts server (2 s timeout). Returns `ok` on success, otherwise `503 { status: 'degraded', ... }`. Reporting 503 while Highcharts is down keeps a load balancer from routing `/export` traffic to a half-up instance.
   - `POST /rasterize` — the pptx-slide-to-PNG endpoint (rate-limited to 30 requests / 15 min in production).
+  - `POST /rasterize/batch` — up to 32 independent slides per request, one LibreOffice launch, per-slide results; shares `/rasterize`'s rate limiter, limits, and auth. This is what lets one document ≈ one request.
   - `POST /export` — the Highcharts Export Server protocol, proxied to the internal upstream after strict validation. Only base64 PNG exports are accepted (`type: "png"`, `b64: true`), unknown top-level fields are rejected, and the effective raster size is capped.
 
-  There is no catch-all proxy: any other path returns `404`, and a wrong method on `/export` or `/rasterize` returns `405`. Upstream `Set-Cookie` headers are stripped from responses.
+  There is no catch-all proxy: any other path returns `404`, and a wrong method on `/export`, `/rasterize`, or `/rasterize/batch` returns `405`. Upstream `Set-Cookie` headers are stripped from responses.
 
 - A **Highcharts Export Server** (`highcharts-export-server@5.1.0`, Puppeteer + Chromium) runs internally on `127.0.0.1:7801` and is never exposed directly.
 
@@ -162,6 +163,36 @@ Contract details, enforced by a handler shared between the render server and the
 - The presentation is checked against the [outbound source policy](#environment-variables-front-server) before rendering, so local file paths and non-allowlisted hosts fail with `400` rather than being fetched.
 - Errors: missing binaries map to `503`, invalid presentations to `400`, everything else to `500`.
 
+### POST /rasterize/batch
+
+One document usually carries many visuals, so the batch endpoint rasterizes up to **32 independent slides per request** — one LibreOffice launch instead of one per visual. Each slide is a complete single-slide presentation with its own optional `dpi` (slides are never merged, so sizes and themes may differ freely):
+
+```json
+POST /rasterize/batch
+Content-Type: application/json
+
+{
+  "slides": [
+    { "presentation": { "name": "pptx", "...": "..." }, "dpi": 120 },
+    { "presentation": { "name": "pptx", "...": "..." } }
+  ]
+}
+```
+
+```json
+200 OK
+{
+  "results": [
+    { "ok": true, "base64DataUri": "data:image/png;base64,...", "width": 480, "height": 240 },
+    { "ok": false, "error": "Top-level component must be a pptx component" }
+  ]
+}
+```
+
+`results` is index-aligned with `slides`. A bad slide fails **per item** (`ok: false`) without discarding its siblings: errors caused by the slide's own JSON are returned verbatim, while internal tooling failures come back as a generic `Slide rasterization failed` (full detail goes to the server log). Batch-level problems (validation, missing binaries) use the same `400`/`503` mapping as `/rasterize`. Both routes share one rate-limit bucket, body limit, auth, and source policy, enforce an estimated pixel budget (64 MP per slide, 256 MP per batch), and key the PNG cache per slide — identically to `/rasterize` — so mixing the two endpoints never re-renders unchanged visuals.
+
+DOCX generation uses this automatically: the renderer collects a document's visuals up front, sends them as batches, and **falls back to per-visual `/rasterize` calls if the batch endpoint is unavailable** (e.g. an older render server), so clients and servers can upgrade independently.
+
 ## Deploying the playgrounds
 
 The repo's root `Dockerfile` builds the [playground](/guide/playground) as a Docker image. The key insight: **the deployed playground is the dev server** — the container simply runs the CLI's `dev` command:
@@ -220,7 +251,7 @@ export JTO_PPTX_RASTERIZER_URL=https://render.example.com
 
 ### In-process LibreOffice fallback
 
-When `JTO_PPTX_RASTERIZER_URL` is **not** set, the DOCX CLI wires `services.pptx.render` to an in-process rasterizer (`createLibreOfficePptxRasterizer`, also exported from `@json-to-office/jto-cli`). Its pipeline:
+When `JTO_PPTX_RASTERIZER_URL` is **not** set, the DOCX CLI wires `services.pptx.render` and `services.pptx.renderBatch` to in-process rasterizers (`createLibreOfficePptxRasterizer` / `createLibreOfficePptxBatchRasterizer`, both exported from `@json-to-office/jto-cli`). A document's visuals are collected up front and batch-rasterized — one `soffice` launch converts every cache-missing slide, each as its own single-slide deck. The per-slide pipeline:
 
 1. Render the visual's slide JSON to a `.pptx` with core-pptx.
 2. `soffice --headless --convert-to pdf` with an isolated user profile (60 s timeout).

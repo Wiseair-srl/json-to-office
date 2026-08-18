@@ -89,3 +89,82 @@ describe('/api/pptx/rasterize', () => {
     30000
   );
 });
+
+describe('/api/pptx/rasterize/batch', () => {
+  let app: Hono;
+
+  beforeAll(() => {
+    Container.initialize(new PptxFormatAdapter());
+    app = new Hono();
+    app.route('/', createFormatRouter(new PptxFormatAdapter()) as any);
+  });
+
+  it('rejects an empty slides array (400)', async () => {
+    const res = await post(app, '/rasterize/batch', { slides: [] });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a batch above MAX_RASTERIZE_BATCH_SLIDES (400)', async () => {
+    const res = await post(app, '/rasterize/batch', {
+      slides: Array.from({ length: 33 }, () => ({ presentation: slide() })),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a slide with an out-of-range dpi (400)', async () => {
+    const res = await post(app, '/rasterize/batch', {
+      slides: [{ presentation: slide(), dpi: 5 }],
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it.skipIf(!HAS_BINARIES)(
+    'rasterizes independent slides (own sizes and dpi) in order, in one request',
+    async () => {
+      const wide = {
+        ...slide(),
+        props: { slideWidth: 6, slideHeight: 3 },
+      };
+      const res = await post(app, '/rasterize/batch', {
+        slides: [
+          { presentation: slide(), dpi: 120 },
+          { presentation: wide, dpi: 96 },
+        ],
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        results: Array<
+          | { ok: true; base64DataUri: string; width: number; height: number }
+          | { ok: false; error: string }
+        >;
+      };
+      expect(body.results).toHaveLength(2);
+      const [first, second] = body.results;
+      // 4in × 2in @120dpi → 480 × 240; 6in × 3in @96dpi → 576 × 288.
+      expect(first).toMatchObject({ ok: true, width: 480, height: 240 });
+      expect(second).toMatchObject({ ok: true, width: 576, height: 288 });
+    },
+    60000
+  );
+
+  it.skipIf(!HAS_BINARIES)(
+    'reports a broken slide per-item without failing its siblings',
+    async () => {
+      const res = await post(app, '/rasterize/batch', {
+        slides: [
+          { presentation: slide(), dpi: 96 },
+          // Invalid pptx definition: the builder rejects it per-slide.
+          { presentation: { name: 'not-pptx' } },
+        ],
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        results: Array<{ ok: boolean; error?: string }>;
+      };
+      expect(body.results[0].ok).toBe(true);
+      expect(body.results[1].ok).toBe(false);
+      expect(body.results[1].error).toBeTruthy();
+    },
+    60000
+  );
+});

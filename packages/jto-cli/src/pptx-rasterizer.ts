@@ -6,8 +6,20 @@
  * dimensions. Results are content-addressed and cached on disk so repeated
  * builds of an unchanged visual skip the (multi-second) LibreOffice run.
  *
- * This is injected via `services.pptx.render`; the published engine packages
- * never depend on these binaries.
+ * Single and batch rasterization share one engine (#153). A batch keeps one
+ * .pptx per slide and converts them all in a single `soffice` launch — the
+ * launch is the dominant cost, and per-file conversion keeps slides fully
+ * independent: each has its own PDF and PNG (no page↔slide index mapping),
+ * its own dpi, and a cache key identical to the single-slide path, so both
+ * paths share the same disk cache.
+ *
+ * Every engine run works against a wall-clock deadline (one batch-scaled
+ * soffice window plus one pdftoppm window) so a wedged conversion fails the
+ * remaining slides quickly instead of holding the caller — and its
+ * concurrency slot — for minutes.
+ *
+ * This is injected via `services.pptx.render` / `services.pptx.renderBatch`;
+ * the published engine packages never depend on these binaries.
  */
 
 import { execFile } from 'node:child_process';
@@ -15,13 +27,28 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import type {
-  PptxRasterizer,
-  PptxRasterizeRequest,
-  PptxRasterizeResult,
+import {
+  DEFAULT_VISUAL_DPI,
+  type PptxRasterizer,
+  type PptxBatchRasterizer,
+  type PptxRasterizeRequest,
+  type PptxRasterizeResult,
+  type PptxRasterizeBatchSlideResult,
+  type PptxRasterizeFailureStage,
 } from '@json-to-office/shared';
 
 const SOFFICE_TIMEOUT_MS = 60000;
+/** Extra soffice budget per additional slide in a batch launch. */
+const SOFFICE_BATCH_EXTRA_PER_SLIDE_MS = 15000;
+/** Hard ceiling for one batch soffice launch. */
+const SOFFICE_BATCH_TIMEOUT_CAP_MS = 300000;
+/**
+ * Max isolated single-file launches after a batch launch left PDFs missing.
+ * Covers the realistic case (one poisoned slide crashed the batch; its
+ * successors are fine) without letting a broken environment turn one request
+ * into dozens of sequential 60s timeouts.
+ */
+const MAX_ISOLATED_RETRIES = 3;
 const PDFTOPPM_TIMEOUT_MS = 30000;
 const PROBE_TIMEOUT_MS = 5000;
 const MAX_BUFFER = 64 * 1024 * 1024;
@@ -171,7 +198,11 @@ async function writeCacheAtomic(
   }
 }
 
-function cacheKey(request: PptxRasterizeRequest): string {
+function cacheKey(request: {
+  presentation: unknown;
+  dpi: number;
+  baseDir?: string;
+}): string {
   return (
     crypto
       .createHash('sha256')
@@ -192,6 +223,290 @@ function toDataUri(png: Buffer): string {
   return `data:image/png;base64,${png.toString('base64')}`;
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Engine-internal result: the wire shape plus the original error object. */
+type EngineSlideResult = PptxRasterizeBatchSlideResult & { cause?: unknown };
+
+/** One unique unit of work: a slide deck plus every request index it serves. */
+interface SlideJob {
+  presentation: unknown;
+  dpi: number;
+  /** Request indexes resolved by this job (batch-internal dedup). */
+  indexes: number[];
+  cachePath: string | null;
+  pptxPath: string;
+  pdfPath: string;
+  pngPrefix: string;
+}
+
+const sofficeArgs = (
+  profileDir: string,
+  outDir: string,
+  files: string[]
+): string[] => [
+  '--headless',
+  '--norestore',
+  '--nolockcheck',
+  '--nodefault',
+  `-env:UserInstallation=file://${profileDir.replace(/\\/g, '/')}`,
+  '--convert-to',
+  'pdf:impress_pdf_Export',
+  '--outdir',
+  outDir,
+  ...files,
+];
+
+/**
+ * Rasterize N independent single-slide presentations, amortizing the soffice
+ * launch across every cache miss. Returns per-slide results (index-aligned);
+ * only environment-level failures (missing binaries) throw.
+ */
+async function rasterizeSlidesWithEngine(
+  slides: Array<{ presentation: unknown; dpi: number }>,
+  baseDir: string | undefined,
+  cacheDir: string | null
+): Promise<EngineSlideResult[]> {
+  const results: EngineSlideResult[] = new Array(slides.length);
+
+  // 1. Dedupe by content-addressed key: identical slides build, convert, and
+  //    hit the cache exactly once, then fan out to every requesting index.
+  const jobsByKey = new Map<string, SlideJob>();
+  for (let i = 0; i < slides.length; i++) {
+    const slide = slides[i];
+    const key = cacheKey({
+      presentation: slide.presentation,
+      dpi: slide.dpi,
+      baseDir,
+    });
+    const existing = jobsByKey.get(key);
+    if (existing) {
+      existing.indexes.push(i);
+    } else {
+      jobsByKey.set(key, {
+        presentation: slide.presentation,
+        dpi: slide.dpi,
+        indexes: [i],
+        cachePath: cacheDir ? path.join(cacheDir, `${key}.png`) : null,
+        pptxPath: '',
+        pdfPath: '',
+        pngPrefix: '',
+      });
+    }
+  }
+
+  const fail = (
+    job: SlideJob,
+    stage: PptxRasterizeFailureStage,
+    error: string,
+    cause?: unknown
+  ) => {
+    for (const i of job.indexes)
+      results[i] = { ok: false, error, stage, cause };
+  };
+  const succeed = (job: SlideJob, result: PptxRasterizeResult) => {
+    for (const i of job.indexes) results[i] = { ok: true, ...result };
+  };
+
+  // 2. Resolve cache hits for the unique jobs in parallel.
+  const uncached: SlideJob[] = [];
+  await Promise.all(
+    [...jobsByKey.values()].map(async (job) => {
+      if (job.cachePath) {
+        const cached = await fs.readFile(job.cachePath).catch(() => null);
+        if (cached) {
+          const size = parsePngSize(cached);
+          if (size) {
+            succeed(job, { base64DataUri: toDataUri(cached), ...size });
+            return;
+          }
+          // Corrupt/partial cache file (e.g. a killed prior render) — discard
+          // it and re-render rather than embed a broken image.
+          await fs.rm(job.cachePath, { force: true }).catch(() => {});
+        }
+      }
+      uncached.push(job);
+    })
+  );
+  if (uncached.length === 0) return results;
+
+  // 3. JSON → .pptx (in-process, pure JS). A build failure is a per-slide
+  //    content error; the remaining slides still convert.
+  const corePptx = await import('@json-to-office/core-pptx');
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-visual-'));
+  try {
+    const built: SlideJob[] = [];
+    for (let j = 0; j < uncached.length; j++) {
+      const job = uncached[j];
+      job.pptxPath = path.join(tempDir, `slide-${j}.pptx`);
+      job.pdfPath = path.join(tempDir, `slide-${j}.pdf`);
+      job.pngPrefix = path.join(tempDir, `slide-${j}`);
+      try {
+        const pptxBuffer = await corePptx.generateBufferFromJson(
+          job.presentation as any,
+          { baseDir }
+        );
+        await fs.writeFile(job.pptxPath, pptxBuffer);
+        built.push(job);
+      } catch (error) {
+        fail(job, 'build', errorMessage(error), error);
+      }
+    }
+    if (built.length === 0) return results;
+
+    const [soffice, pdftoppm] = await Promise.all([
+      resolveSoffice(),
+      resolvePdftoppm(),
+    ]);
+
+    // 4. .pptx → PDF: ONE soffice launch converts every deck (the launch is
+    //    the multi-second cost being amortized). The timeout scales with the
+    //    slide count so a large batch is not misread as a hang, and the whole
+    //    engine run gets a deadline of one batch window + one pdftoppm window
+    //    — bounded work no matter how conversions misbehave, sized to stay
+    //    inside the HTTP client's own batch timeout.
+    const batchTimeoutMs = Math.min(
+      SOFFICE_TIMEOUT_MS +
+        SOFFICE_BATCH_EXTRA_PER_SLIDE_MS * (built.length - 1),
+      SOFFICE_BATCH_TIMEOUT_CAP_MS
+    );
+    const deadlineAt = Date.now() + batchTimeoutMs + PDFTOPPM_TIMEOUT_MS;
+    const remainingMs = () => deadlineAt - Date.now();
+
+    let batchError: unknown;
+    try {
+      await exec(
+        soffice,
+        sofficeArgs(
+          path.join(tempDir, 'profile'),
+          tempDir,
+          built.map((job) => job.pptxPath)
+        ),
+        batchTimeoutMs
+      );
+    } catch (error) {
+      batchError = error;
+    }
+
+    // 5. Per-slide PDF check. soffice reports batch conversion coarsely (it
+    //    can skip a file or die mid-run), so the PDFs on disk are the truth.
+    //    A missing PDF gets an isolated single-file launch — salvaging slides
+    //    left unprocessed by a mid-batch crash and pinning the error on the
+    //    slide that caused it — but only within MAX_ISOLATED_RETRIES and the
+    //    deadline, and not when nothing at all converted (an environmental
+    //    failure that a retry would only repeat).
+    const converted: SlideJob[] = [];
+    const missing: SlideJob[] = [];
+    for (const job of built) {
+      ((await fileExists(job.pdfPath)) ? converted : missing).push(job);
+    }
+
+    let retriesLeft =
+      missing.length > 0 &&
+      built.length > 1 &&
+      (batchError === undefined || converted.length > 0)
+        ? MAX_ISOLATED_RETRIES
+        : 0;
+    for (const [r, job] of missing.entries()) {
+      const retryBudget = Math.min(SOFFICE_TIMEOUT_MS, remainingMs());
+      if (retriesLeft > 0 && retryBudget > 1000) {
+        retriesLeft--;
+        let retryError: unknown;
+        try {
+          await exec(
+            soffice,
+            sofficeArgs(path.join(tempDir, `profile-retry-${r}`), tempDir, [
+              job.pptxPath,
+            ]),
+            retryBudget
+          );
+        } catch (error) {
+          retryError = error;
+        }
+        if (await fileExists(job.pdfPath)) {
+          converted.push(job);
+          continue;
+        }
+        batchError ??= retryError;
+      }
+      const cause = batchError;
+      fail(
+        job,
+        'convert',
+        `LibreOffice failed to convert the slide to PDF${
+          cause ? `: ${errorMessage(cause)}` : '.'
+        }`,
+        cause
+      );
+    }
+
+    // 6. PDF → PNG at each slide's own dpi (single page, no page suffix).
+    //    pdftoppm is cheap per file; each conversion still respects the
+    //    engine deadline so a pathological PDF cannot stack 30s timeouts.
+    for (const job of converted) {
+      const budget = Math.min(PDFTOPPM_TIMEOUT_MS, remainingMs());
+      if (budget <= 1000) {
+        fail(
+          job,
+          'rasterize',
+          'Rasterization deadline exceeded before this slide could be converted to PNG.'
+        );
+        continue;
+      }
+      try {
+        await exec(
+          pdftoppm,
+          [
+            '-r',
+            String(job.dpi),
+            '-png',
+            '-singlefile',
+            job.pdfPath,
+            job.pngPrefix,
+          ],
+          budget
+        );
+        const png = await fs.readFile(`${job.pngPrefix}.png`);
+        const size = parsePngSize(png);
+        if (!size) {
+          throw new Error(
+            'Rasterization produced an invalid PNG (empty or truncated output from pdftoppm).'
+          );
+        }
+        if (job.cachePath) {
+          await writeCacheAtomic(cacheDir!, job.cachePath, png);
+        }
+        succeed(job, { base64DataUri: toDataUri(png), ...size });
+      } catch (error) {
+        fail(job, 'rasterize', errorMessage(error), error);
+      }
+    }
+
+    return results;
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+function resolveCacheDir(options?: {
+  cacheDir?: string | null;
+}): string | null {
+  return options?.cacheDir === undefined
+    ? path.join(os.tmpdir(), 'jto-visual-cache')
+    : options.cacheDir;
+}
+
 /**
  * Build a LibreOffice-backed pptx rasterizer.
  *
@@ -201,88 +516,60 @@ function toDataUri(png: Buffer): string {
 export function createLibreOfficePptxRasterizer(options?: {
   cacheDir?: string | null;
 }): PptxRasterizer {
-  const cacheDir =
-    options?.cacheDir === undefined
-      ? path.join(os.tmpdir(), 'jto-visual-cache')
-      : options.cacheDir;
+  const cacheDir = resolveCacheDir(options);
 
   return async function rasterize(
     request: PptxRasterizeRequest
   ): Promise<PptxRasterizeResult> {
-    const key = cacheKey(request);
-    const cachePath = cacheDir ? path.join(cacheDir, `${key}.png`) : null;
-
-    if (cachePath) {
-      const cached = await fs.readFile(cachePath).catch(() => null);
-      if (cached) {
-        const size = parsePngSize(cached);
-        if (size) return { base64DataUri: toDataUri(cached), ...size };
-        // Corrupt/partial cache file (e.g. a killed prior render) — discard it
-        // and re-render rather than embed a broken image.
-        await fs.rm(cachePath, { force: true }).catch(() => {});
-      }
-    }
-
-    // 1. JSON → .pptx (in-process, pure JS)
-    const corePptx = await import('@json-to-office/core-pptx');
-    const pptxBuffer = await corePptx.generateBufferFromJson(
-      request.presentation as any,
-      { baseDir: request.baseDir }
+    const [result] = await rasterizeSlidesWithEngine(
+      [{ presentation: request.presentation, dpi: request.dpi }],
+      request.baseDir,
+      cacheDir
     );
-
-    const [soffice, pdftoppm] = await Promise.all([
-      resolveSoffice(),
-      resolvePdftoppm(),
-    ]);
-
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-visual-'));
-    try {
-      const pptxPath = path.join(tempDir, 'visual.pptx');
-      const pdfPath = path.join(tempDir, 'visual.pdf');
-      const pngPrefix = path.join(tempDir, 'visual');
-      await fs.writeFile(pptxPath, pptxBuffer);
-
-      // 2. .pptx → PDF (single slide → single page)
-      const userProfile = `file://${path.join(tempDir, 'profile').replace(/\\/g, '/')}`;
-      await exec(
-        soffice,
-        [
-          '--headless',
-          '--norestore',
-          '--nolockcheck',
-          '--nodefault',
-          `-env:UserInstallation=${userProfile}`,
-          '--convert-to',
-          'pdf:impress_pdf_Export',
-          '--outdir',
-          tempDir,
-          pptxPath,
-        ],
-        SOFFICE_TIMEOUT_MS
-      );
-
-      // 3. PDF → PNG at the requested DPI (single page, no page suffix)
-      await exec(
-        pdftoppm,
-        ['-r', String(request.dpi), '-png', '-singlefile', pdfPath, pngPrefix],
-        PDFTOPPM_TIMEOUT_MS
-      );
-
-      const png = await fs.readFile(`${pngPrefix}.png`);
-      const size = parsePngSize(png);
-      if (!size) {
-        throw new Error(
-          'Rasterization produced an invalid PNG (empty or truncated output from pdftoppm).'
-        );
-      }
-
-      if (cachePath) {
-        await writeCacheAtomic(cacheDir!, cachePath, png);
-      }
-
-      return { base64DataUri: toDataUri(png), ...size };
-    } finally {
-      await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    if (!result) throw new Error('Rasterization produced no result.');
+    if (!result.ok) {
+      const error = new Error(result.error) as Error & { cause?: unknown };
+      // Preserve the original failure (exec exit code/signal, fs error) for
+      // programmatic consumers — parity with the pre-batch implementation
+      // that threw the underlying error directly.
+      if (result.cause !== undefined) error.cause = result.cause;
+      throw error;
     }
+    return {
+      base64DataUri: result.base64DataUri,
+      width: result.width,
+      height: result.height,
+    };
+  };
+}
+
+/**
+ * Build a LibreOffice-backed BATCH pptx rasterizer (#153): many independent
+ * single-slide presentations, one soffice launch, per-slide results. Shares
+ * the content-addressed disk cache with the single-slide rasterizer — the
+ * per-slide cache key is identical on both paths.
+ */
+export function createLibreOfficePptxBatchRasterizer(options?: {
+  cacheDir?: string | null;
+}): PptxBatchRasterizer {
+  const cacheDir = resolveCacheDir(options);
+
+  return async function rasterizeBatch(request) {
+    const engineResults = await rasterizeSlidesWithEngine(
+      request.slides.map((slide) => ({
+        presentation: slide.presentation,
+        dpi: slide.dpi ?? DEFAULT_VISUAL_DPI,
+      })),
+      request.baseDir,
+      cacheDir
+    );
+    // Strip the engine-internal `cause` (non-serializable) from the results.
+    return {
+      results: engineResults.map((result) =>
+        result.ok
+          ? result
+          : { ok: false, error: result.error, stage: result.stage }
+      ),
+    };
   };
 }

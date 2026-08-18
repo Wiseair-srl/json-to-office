@@ -12,11 +12,18 @@ export type {
   PptxRasterizeRequest,
   PptxRasterizeResult,
   PptxRasterizer,
+  PptxRasterizeBatchSlide,
+  PptxRasterizeBatchRequest,
+  PptxRasterizeBatchSlideResult,
+  PptxRasterizeBatchResult,
+  PptxRasterizeFailureStage,
+  PptxBatchRasterizer,
 } from './types/services';
 export {
   DEFAULT_VISUAL_DPI,
   MIN_VISUAL_DPI,
   MAX_VISUAL_DPI,
+  MAX_RASTERIZE_BATCH_SLIDES,
   clampVisualDpi,
 } from './types/services';
 

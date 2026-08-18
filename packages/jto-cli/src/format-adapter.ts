@@ -5,11 +5,15 @@ import type {
   ServicesConfig,
   FontRuntimeOpts,
   PptxRasterizer,
+  PptxBatchRasterizer,
   GenerationWarning,
 } from '@json-to-office/shared';
 import { validatePresentationDocument } from '@json-to-office/shared-pptx';
 import { validate as validateDocx } from '@json-to-office/shared-docx';
-import { createLibreOfficePptxRasterizer } from './pptx-rasterizer.js';
+import {
+  createLibreOfficePptxRasterizer,
+  createLibreOfficePptxBatchRasterizer,
+} from './pptx-rasterizer.js';
 import { emitDiagnostic } from './services/diagnostics.js';
 
 /** Forward structured warnings collected during generation to the terminal. */
@@ -71,15 +75,23 @@ function buildServicesFromEnv(): ServicesConfig | undefined {
   };
 }
 
-// Lazily-constructed LibreOffice rasterizer, shared across docx generations.
-// Constructing it is cheap (no binaries touched); it only spawns LibreOffice
-// when a document actually contains a `visual` component.
+// Lazily-constructed LibreOffice rasterizers, shared across docx generations.
+// Constructing them is cheap (no binaries touched); they only spawn
+// LibreOffice when a document actually contains a `visual` component. Single
+// and batch share the same content-addressed disk cache.
 let cachedRasterizer: PptxRasterizer | undefined;
 function getPptxRasterizer(): PptxRasterizer {
   if (!cachedRasterizer) {
     cachedRasterizer = createLibreOfficePptxRasterizer();
   }
   return cachedRasterizer;
+}
+let cachedBatchRasterizer: PptxBatchRasterizer | undefined;
+function getPptxBatchRasterizer(): PptxBatchRasterizer {
+  if (!cachedBatchRasterizer) {
+    cachedBatchRasterizer = createLibreOfficePptxBatchRasterizer();
+  }
+  return cachedBatchRasterizer;
 }
 
 /**
@@ -105,7 +117,10 @@ function buildDocxServices(): ServicesConfig {
           serverUrl,
           ...(apiKey && { headers: { [apiKeyHeader]: apiKey } }),
         }
-      : { render: getPptxRasterizer() },
+      : {
+          render: getPptxRasterizer(),
+          renderBatch: getPptxBatchRasterizer(),
+        },
   };
 }
 
