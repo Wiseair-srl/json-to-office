@@ -252,12 +252,12 @@ export function generateUnifiedDocumentSchema(
       // the generator, both of which treat a propless root as `props: {}`.
       // Schema-driven editors would otherwise flag a document that builds.
       props: Type.Optional(reportComponent.propsSchema),
-      children: Type.Optional(
-        Type.Array(
-          Type.Union([...capturedRootChildSchemas, ...capturedPluginSchemas], {
-            discriminator: { propertyName: 'name' },
-          })
-        )
+      // Required, matching the runtime validator: a root without `children`
+      // is rejected (deep-validator.ts), so the exported schema says so too.
+      children: Type.Array(
+        Type.Union([...capturedRootChildSchemas, ...capturedPluginSchemas], {
+          discriminator: { propertyName: 'name' },
+        })
       ),
     },
     {
