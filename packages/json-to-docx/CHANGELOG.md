@@ -1,5 +1,12 @@
 # @json-to-office/json-to-docx
 
+## 0.31.0
+
+### Patch Changes
+
+- Updated dependencies [6b0545a]
+  - @json-to-office/core-docx@0.31.0
+
 ## 0.30.0
 
 ### Patch Changes
