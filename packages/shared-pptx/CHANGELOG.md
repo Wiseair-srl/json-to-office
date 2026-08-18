@@ -1,5 +1,12 @@
 # @json-to-office/shared-pptx
 
+## 0.28.0
+
+### Patch Changes
+
+- Updated dependencies [a033a8b]
+  - @json-to-office/shared@0.28.0
+
 ## 0.25.0
 
 ### Minor Changes

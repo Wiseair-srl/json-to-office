@@ -1,5 +1,14 @@
 # @json-to-office/json-to-docx
 
+## 0.28.0
+
+### Patch Changes
+
+- Updated dependencies [a033a8b]
+  - @json-to-office/core-docx@0.28.0
+  - @json-to-office/shared@0.28.0
+  - @json-to-office/shared-docx@0.28.0
+
 ## 0.27.0
 
 ### Patch Changes
