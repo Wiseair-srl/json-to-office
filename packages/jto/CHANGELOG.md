@@ -1,5 +1,24 @@
 # @json-to-office/jto
 
+## 0.26.0
+
+### Patch Changes
+
+- fae67ed: Ship the eight stock templates with the playground.
+
+  They lived in the repo-root `templates/` directory, which the Docker image
+  never copies, so the deployed DOCX and PPTX playgrounds listed none of them.
+  Moved the documents and their media under
+  `packages/jto/src/client/public/templates/`, next to the Company deck
+  templates that already reach the deployed playgrounds, and rewrote the image
+  paths to match — they resolve against the process CWD, which is the repo root
+  locally and `/app` in the container.
+
+- Updated dependencies [df039c1]
+- Updated dependencies [6aa719e]
+  - @json-to-office/core-pptx@0.26.0
+  - @json-to-office/jto-cli@0.26.0
+
 ## 0.25.0
 
 ### Patch Changes
