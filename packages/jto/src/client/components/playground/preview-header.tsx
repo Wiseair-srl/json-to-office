@@ -36,6 +36,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
 import {
   Select,
   SelectContent,
@@ -84,6 +85,7 @@ function PreviewHeader({
   onShowSchemas,
   onShowFonts,
   documentText,
+  editorDocumentText,
   warnings,
   renderingLibrary,
   setRenderingLibrary,
@@ -105,6 +107,12 @@ function PreviewHeader({
   onShowSchemas?: () => void;
   onShowFonts?: () => void;
   documentText?: string;
+  /**
+   * The active editor document's text. Drives "Copy standard components":
+   * unlike `documentText` (the last generated output's source), it exists
+   * before the first Run (#155).
+   */
+  editorDocumentText?: string;
   warnings?: GenerationWarning[] | null;
   renderingLibrary?: RenderingLibrary;
   setRenderingLibrary?: (lib: RenderingLibrary) => void;
@@ -121,6 +129,10 @@ function PreviewHeader({
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isCopyingStandardComponents, setIsCopyingStandardComponents] =
     useState(false);
+  // Non-null when the async clipboard write was denied: the dialog re-offers
+  // the fetched JSON behind a button whose click is a fresh user gesture.
+  const [standardComponentsFallbackJson, setStandardComponentsFallbackJson] =
+    useState<string | null>(null);
   const { toast } = useToast();
   // The hook is format-agnostic (dispatches on FORMAT env); alias to a
   // neutral name so DOCX call sites don't read as if they're calling a
@@ -377,8 +389,17 @@ function PreviewHeader({
     }
   }, [toast]);
 
-  const handleCopyStandardComponents = useCallback(async () => {
-    if (!documentText) {
+  // The text "Copy standard components" operates on: the active editor
+  // document when available (works before the first Run), else the last
+  // generated output's source (#155).
+  const copySourceText = editorDocumentText ?? documentText;
+
+  const handleCopyStandardComponents = useCallback(() => {
+    // NOT async: navigator.clipboard.write must be invoked while the click's
+    // user activation is still live. The server round trip rides inside the
+    // ClipboardItem as a promise payload; awaiting it before writing is what
+    // used to kill the write with NotAllowedError (#155).
+    if (!copySourceText) {
       toast({
         title: 'No document available',
         description: 'Please select a document to copy standard components',
@@ -386,16 +407,27 @@ function PreviewHeader({
       });
       return;
     }
+    try {
+      JSON.parse(copySourceText);
+    } catch {
+      toast({
+        title: 'Document is not valid JSON',
+        description: 'Fix the JSON errors in the editor, then copy again',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsCopyingStandardComponents(true);
-    try {
+
+    const jsonPromise = (async () => {
       const response = await fetch(`/api/${FORMAT}/standard-components`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          jsonDefinition: documentText,
+          jsonDefinition: copySourceText,
         }),
       });
 
@@ -405,37 +437,87 @@ function PreviewHeader({
           const errorData = await response.json();
           if (errorData.message) description = errorData.message;
         } catch {}
-        toast({
-          title: 'Failed to get standard components',
-          description,
-          variant: 'destructive',
-        });
-        return;
+        throw new Error(description);
       }
 
       const result = await response.json();
-      const standardComponentsJson = JSON.stringify(result.data, null, 2);
+      return JSON.stringify(result.data, null, 2);
+    })();
 
-      await navigator.clipboard.writeText(standardComponentsJson);
+    // Start the clipboard write synchronously (gesture still live), then
+    // settle the UI asynchronously.
+    let writePromise: Promise<void>;
+    if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+      writePromise = navigator.clipboard.write([
+        new ClipboardItem({
+          // Promise-of-Blob payload: accepted by Chromium and Safari even
+          // when it resolves after the activation window has passed.
+          'text/plain': jsonPromise.then(
+            (text) => new Blob([text], { type: 'text/plain' })
+          ),
+        }),
+      ]);
+    } else if (navigator.clipboard?.writeText) {
+      writePromise = jsonPromise.then((text) =>
+        navigator.clipboard.writeText(text)
+      );
+    } else {
+      writePromise = Promise.reject(
+        new Error('Clipboard is not available in this context')
+      );
+    }
 
+    void (async () => {
+      try {
+        await writePromise;
+        toast({
+          title: 'Copied to clipboard',
+          description: 'Standard components JSON has been copied',
+        });
+      } catch (error) {
+        // Disambiguate: a rejected fetch means there is nothing to copy —
+        // report it. A denied/unavailable clipboard write with a good payload
+        // falls back to a dialog whose Copy button gets a fresh gesture.
+        let json: string | null = null;
+        try {
+          json = await jsonPromise;
+        } catch (fetchError) {
+          console.error('Error fetching standard components:', fetchError);
+          toast({
+            title: 'Failed to get standard components',
+            description:
+              fetchError instanceof Error
+                ? fetchError.message
+                : 'Request failed',
+            variant: 'destructive',
+          });
+          return;
+        }
+        console.error('Clipboard write failed:', error);
+        setStandardComponentsFallbackJson(json);
+      } finally {
+        setIsCopyingStandardComponents(false);
+      }
+    })();
+  }, [copySourceText, toast]);
+
+  const handleCopyFromFallbackDialog = useCallback(async () => {
+    if (standardComponentsFallbackJson == null) return;
+    try {
+      await navigator.clipboard.writeText(standardComponentsFallbackJson);
       toast({
         title: 'Copied to clipboard',
         description: 'Standard components JSON has been copied',
       });
-    } catch (error) {
-      console.error('Error copying standard components:', error);
+      setStandardComponentsFallbackJson(null);
+    } catch {
       toast({
-        title: 'Error',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Failed to copy standard components',
+        title: 'Clipboard unavailable',
+        description: 'Select the JSON in the dialog and copy it manually',
         variant: 'destructive',
       });
-    } finally {
-      setIsCopyingStandardComponents(false);
     }
-  }, [documentText, toast]);
+  }, [standardComponentsFallbackJson, toast]);
 
   return (
     <>
@@ -668,15 +750,35 @@ function PreviewHeader({
                   View cache metrics
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem
-                onClick={handleCopyStandardComponents}
-                disabled={!documentText || isCopyingStandardComponents}
-              >
-                <Code2 className="h-4 w-4 mr-2" />
-                {isCopyingStandardComponents
-                  ? 'Copying...'
-                  : 'Copy standard components'}
-              </DropdownMenuItem>
+              {copySourceText ? (
+                <DropdownMenuItem
+                  onClick={handleCopyStandardComponents}
+                  disabled={isCopyingStandardComponents}
+                >
+                  <Code2 className="h-4 w-4 mr-2" />
+                  {isCopyingStandardComponents
+                    ? 'Copying...'
+                    : 'Copy standard components'}
+                </DropdownMenuItem>
+              ) : (
+                <Tooltip>
+                  {/* Disabled items swallow pointer events; the wrapper span
+                      keeps hover alive so the disabled state explains itself. */}
+                  <TooltipTrigger asChild>
+                    <span className="block">
+                      <DropdownMenuItem disabled>
+                        <Code2 className="h-4 w-4 mr-2" />
+                        Copy standard components
+                      </DropdownMenuItem>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>
+                      No document selected — open or select a document first
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => setShowClearConfirm(true)}
@@ -764,6 +866,43 @@ function PreviewHeader({
         nonSafeFonts={nonSafeFonts}
         onChoose={handleDownloadWithMode}
       />
+
+      {/* Clipboard-denied fallback: the browser refused the async write, so
+          re-offer the JSON behind a fresh click. */}
+      <Dialog
+        open={standardComponentsFallbackJson != null}
+        onOpenChange={(open) => {
+          if (!open) setStandardComponentsFallbackJson(null);
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Standard components</DialogTitle>
+            <DialogDescription>
+              The browser blocked the automatic clipboard write. Copy the JSON
+              from here instead.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            readOnly
+            value={standardComponentsFallbackJson ?? ''}
+            className="h-64 font-mono text-xs"
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStandardComponentsFallbackJson(null)}
+            >
+              Close
+            </Button>
+            <Button size="sm" onClick={handleCopyFromFallbackDialog}>
+              Copy to clipboard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Clear cache confirmation */}
       <Dialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>

@@ -50,6 +50,7 @@ export {
   type GenerationResult,
   type BufferGenerationResult,
   type FileGenerationResult,
+  type StandardDefinitionResult,
   type ValidationResult,
   type ExtractCustomComponentType,
   type CustomComponentUnion,

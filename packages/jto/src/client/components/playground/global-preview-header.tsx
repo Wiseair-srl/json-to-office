@@ -38,6 +38,15 @@ export function GlobalPreviewHeader({
     activeTab && documentTypes[activeTab] === 'application/json+theme'
       ? 'theme'
       : 'document';
+  // The editor's active document text (not the last generated output) so
+  // "Copy standard components" works before the first Run (#155). Themes are
+  // excluded — they have no standard-components expansion. The selector
+  // returns a string, so Zustand's equality check keeps renders cheap.
+  const editorDocumentText = useDocumentsStore((s) =>
+    s.activeTab && s.documentTypes[s.activeTab] !== 'application/json+theme'
+      ? s.documents.find((d) => d.name === s.activeTab)?.text
+      : undefined
+  );
 
   const chatOpen = __AI_ENABLED__ ? useChatStore((s) => s.chatOpen) : false;
 
@@ -87,6 +96,7 @@ export function GlobalPreviewHeader({
         onShowSchemas={() => setSchemaOpen(true)}
         onShowFonts={() => openFontPicker()}
         documentText={text}
+        editorDocumentText={editorDocumentText}
         warnings={warnings}
         renderingLibrary={renderingLibrary}
         setRenderingLibrary={(lib) =>

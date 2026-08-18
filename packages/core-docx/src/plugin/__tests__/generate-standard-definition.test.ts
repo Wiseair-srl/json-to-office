@@ -295,6 +295,89 @@ describe('generate().standardDefinition', () => {
     expect(result.standardDefinition.children!.length).toBe(2);
   });
 
+  it('expandStandardDefinition returns the same tree as generate() without rendering', async () => {
+    const generator = createDocumentGenerator({
+      theme: testTheme,
+    })
+      .addComponent(greetingComponent)
+      .addComponent(summaryComponent);
+
+    const document = {
+      name: 'docx' as const,
+      props: { metadata: { title: 'Expansion Only' }, theme: 'minimal' },
+      children: [
+        { name: 'greeting' as const, props: { name: 'Eve' } },
+        {
+          name: 'summary' as const,
+          props: { title: 'Points', points: ['a', 'b'] },
+        },
+      ],
+    };
+
+    const expanded = await generator.expandStandardDefinition(document);
+    const generated = await generator.generate(document);
+
+    expect(expanded.standardDefinition).toEqual(generated.standardDefinition);
+    // Not a GenerationResult: nothing rendered, no document produced.
+    expect(expanded).not.toHaveProperty('document');
+  });
+
+  it('expandStandardDefinition validates like generate()', async () => {
+    const generator = createDocumentGenerator({
+      theme: testTheme,
+    }).addComponent(greetingComponent);
+
+    await expect(
+      generator.expandStandardDefinition({
+        name: 'docx',
+        props: { metadata: { title: 'Invalid' } },
+        children: [{ name: 'greeting', props: {} as any }],
+      })
+    ).rejects.toThrow();
+  });
+
+  it('expandStandardDefinition never invokes rendering services', async () => {
+    // A visual component would hit services.pptx during generate(); the
+    // expansion-only path must not touch it (#155 — the whole point is
+    // skipping LibreOffice).
+    const renderSpy = { called: false };
+    const generator = createDocumentGenerator({
+      theme: testTheme,
+      services: {
+        pptx: {
+          render: async () => {
+            renderSpy.called = true;
+            return {
+              base64DataUri: 'data:image/png;base64,',
+              width: 1,
+              height: 1,
+            };
+          },
+        },
+      } as any,
+    }).addComponent(greetingComponent);
+
+    const { standardDefinition } = await generator.expandStandardDefinition({
+      name: 'docx',
+      props: { metadata: { title: 'No Render' } },
+      children: [
+        { name: 'greeting', props: { name: 'Frank' } },
+        {
+          name: 'visual',
+          props: {
+            canvas: { width: 6, height: 4 },
+            elements: [
+              { name: 'text', props: { text: 'Hi', x: 1, y: 1, w: 4, h: 1 } },
+            ],
+          },
+        },
+      ] as any,
+    });
+
+    expect(standardDefinition.children!.length).toBe(2);
+    expect(renderSpy.called).toBe(false);
+  });
+
   it('should throw DuplicateComponentError when same component name is registered twice', () => {
     const duplicateGreetingComponent = createComponent({
       name: 'greeting',

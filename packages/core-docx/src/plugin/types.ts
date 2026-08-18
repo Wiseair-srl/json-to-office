@@ -235,6 +235,17 @@ export interface FileGenerationResult<
 }
 
 /**
+ * Result of `expandStandardDefinition` — the post-expansion JSON tree without
+ * any of the rendering work.
+ */
+export interface StandardDefinitionResult {
+  /** Post-expansion, post-normalization standard JSON tree (custom plugins resolved). */
+  standardDefinition: ReportComponentDefinition;
+  /** Warnings collected during expansion, null if no warnings */
+  warnings: GenerationWarning[] | null;
+}
+
+/**
  * Result of document validation
  */
 export interface ValidationResult {
@@ -270,6 +281,17 @@ export interface DocumentGenerator<
     outputPath: string,
     options?: GenerateFileOptions
   ) => Promise<FileGenerationResult<TCustomComponents>>;
+
+  /**
+   * Compute only the post-expansion standard definition: validation, theme
+   * resolution, custom-component expansion, and normalization — no font
+   * resolution, no layout, no rendering, no packaging, no external services.
+   * Use this instead of `generate()` when you only need the JSON tree.
+   */
+  expandStandardDefinition: (
+    document: ExtendedReportComponent<TCustomComponents>,
+    options?: GenerateOptions
+  ) => Promise<StandardDefinitionResult>;
 
   getComponentNames: () => string[];
 
