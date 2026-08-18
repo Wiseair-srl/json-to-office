@@ -8,11 +8,11 @@ import {
   PageNumber,
   ExternalHyperlink,
   InternalHyperlink,
-  Tab,
 } from 'docx';
 import {
   parseTextWithDecorators,
-  splitByNoProofWords,
+  buildRunCommonProps,
+  buildTextRuns,
   TextStyle,
 } from './textParser';
 import { normalizeUnicodeText } from './unicode';
@@ -291,71 +291,10 @@ function createTextRunsWithNewlines(
   baseStyle: TextStyle,
   noProofWords?: string[]
 ): TextRun[] {
-  const runs: TextRun[] = [];
-  const lines = text.split('\n');
-
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-    const line = lines[lineIndex];
-    const needsLineBreak = lineIndex > 0;
-
-    if (line || needsLineBreak) {
-      const commonProps = {
-        font: baseStyle.font,
-        size: baseStyle.size,
-        color: baseStyle.color,
-        bold: baseStyle.bold,
-        italics: baseStyle.italics,
-        underline: baseStyle.underline,
-        ...(baseStyle.scale && { scale: baseStyle.scale }),
-        ...(baseStyle.characterSpacing && {
-          characterSpacing: baseStyle.characterSpacing,
-        }),
-        ...(baseStyle.language && { language: baseStyle.language }),
-      };
-      const wholeRunNoProof = baseStyle.noProof === true;
-      const wordsForLine = wholeRunNoProof ? undefined : noProofWords;
-
-      let firstSegment = true;
-      const lineRuns: TextRun[] = [];
-      // Tab characters become real <w:tab/> runs (see textParser) so
-      // paragraph tabStops apply.
-      const tabSegments = line.split('\t');
-      tabSegments.forEach((tabSegment, tabIndex) => {
-        if (tabIndex > 0) {
-          lineRuns.push(
-            new TextRun({
-              children: [new Tab()],
-              ...commonProps,
-              break: needsLineBreak && firstSegment ? 1 : undefined,
-            })
-          );
-          firstSegment = false;
-        }
-        if (!tabSegment && tabSegments.length > 1) return;
-        lineRuns.push(
-          ...splitByNoProofWords(
-            tabSegment,
-            (segment, matched) => {
-              const run = new TextRun({
-                text: segment,
-                ...commonProps,
-                ...((matched || baseStyle.noProof !== undefined) && {
-                  noProof: matched || wholeRunNoProof,
-                }),
-                break: needsLineBreak && firstSegment ? 1 : undefined,
-              });
-              firstSegment = false;
-              return run;
-            },
-            wordsForLine
-          )
-        );
-      });
-      runs.push(...lineRuns);
-    }
-  }
-
-  return runs;
+  return buildTextRuns(text, buildRunCommonProps(baseStyle), {
+    noProof: baseStyle.noProof,
+    noProofWords,
+  });
 }
 
 /**

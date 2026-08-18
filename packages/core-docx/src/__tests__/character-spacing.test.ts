@@ -91,3 +91,94 @@ describe('font.characterSpacing (w:spacing)', () => {
     expect(await documentXml(buf)).toMatch(/<w:spacing w:val="30"/);
   });
 });
+
+/**
+ * The plain-text and placeholder paths now share one run builder
+ * (buildRunCommonProps / buildTextRuns in textParser). This suite pins the
+ * invariant that builder exists to guarantee: every run-level property
+ * renders identically whether or not the text contains a placeholder.
+ */
+describe('run-property parity between plain and placeholder paths', () => {
+  const cases: Array<{
+    label: string;
+    props: Record<string, unknown>;
+    pattern: RegExp;
+  }> = [
+    {
+      label: 'font family (w:rFonts)',
+      props: { font: { family: 'Courier New' } },
+      pattern: /<w:rFonts [^>]*w:ascii="Courier New"/,
+    },
+    {
+      label: 'font size (w:sz)',
+      props: { font: { size: 13 } },
+      pattern: /<w:sz w:val="26"/,
+    },
+    {
+      label: 'color (w:color)',
+      props: { font: { color: 'FF6600' } },
+      pattern: /<w:color w:val="FF6600"/,
+    },
+    {
+      label: 'bold (w:b)',
+      props: { font: { bold: true } },
+      pattern: /<w:b\/>/,
+    },
+    {
+      label: 'italic (w:i)',
+      props: { font: { italic: true } },
+      pattern: /<w:i\/>/,
+    },
+    {
+      label: 'underline (w:u)',
+      props: { font: { underline: true } },
+      pattern: /<w:u w:val="single"/,
+    },
+    {
+      label: 'scale (w:w)',
+      props: { font: { scale: 150 } },
+      pattern: /<w:w w:val="150"/,
+    },
+    {
+      label: 'characterSpacing (w:spacing)',
+      props: {
+        font: { characterSpacing: { type: 'expanded', value: 30 } },
+      },
+      pattern: /<w:spacing w:val="30"/,
+    },
+    {
+      label: 'language (w:lang)',
+      props: { language: 'fr-FR' },
+      pattern: /<w:lang [^>]*w:val="fr-FR"/,
+    },
+    {
+      label: 'noProof (w:noProof)',
+      props: { noProof: true },
+      pattern: /<w:noProof\/>/,
+    },
+  ];
+
+  async function renderParagraph(
+    text: string,
+    props: Record<string, unknown>
+  ): Promise<string> {
+    const buf = await generateBufferFromJson({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [{ name: 'paragraph', props: { text, ...props } }],
+    } as never);
+    return documentXml(buf);
+  }
+
+  for (const { label, props, pattern } of cases) {
+    it(`forwards ${label} on both paths`, async () => {
+      const plain = await renderParagraph('Alpha beta gamma.', props);
+      const withPlaceholder = await renderParagraph(
+        'Alpha {DATE} gamma.',
+        props
+      );
+      expect(plain).toMatch(pattern);
+      expect(withPlaceholder).toMatch(pattern);
+    });
+  }
+});
