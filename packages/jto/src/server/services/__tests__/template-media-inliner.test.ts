@@ -116,6 +116,31 @@ describe('inlineTemplateMedia', () => {
     expect(result.children[1].props.path).toBe('media/big.png');
   });
 
+  it('charges equivalent path spellings of one file only once', async () => {
+    const doc = {
+      children: [
+        { name: 'image', props: { path: 'media/logo.png' } },
+        { name: 'image', props: { path: 'media/./logo.png' } },
+      ],
+    };
+    const result = (await inlineTemplateMedia(doc, baseDir, {
+      maxTotalBytes: PNG_BYTES.length,
+    })) as typeof doc;
+    expect(result.children[0].props.path).toBe(PNG_DATA_URL);
+    expect(result.children[1].props.path).toBe(PNG_DATA_URL);
+  });
+
+  it('parses string definitions and inlines their media', async () => {
+    const doc = JSON.stringify({
+      children: [{ name: 'image', props: { path: 'media/logo.png' } }],
+    });
+    const result = (await inlineTemplateMedia(doc, baseDir)) as any;
+    expect(typeof result).toBe('object');
+    expect(result.children[0].props.path).toBe(PNG_DATA_URL);
+    // malformed strings pass through for structural validation
+    expect(await inlineTemplateMedia('{oops', baseDir)).toBe('{oops');
+  });
+
   it('reuses cached data for repeated references without double-charging', async () => {
     const doc = {
       children: [
