@@ -575,10 +575,17 @@ export function createFormatRouter(adapter: FormatAdapter) {
         assertRequestSources(jsonDefinition, 'jsonDefinition');
         assertRequestSources(customThemes, 'customThemes');
 
-        const config =
-          typeof jsonDefinition === 'string'
-            ? JSON.parse(jsonDefinition)
-            : jsonDefinition;
+        let config: unknown;
+        try {
+          config =
+            typeof jsonDefinition === 'string'
+              ? JSON.parse(jsonDefinition)
+              : jsonDefinition;
+        } catch {
+          throw new HTTPException(400, {
+            message: 'jsonDefinition is not valid JSON',
+          });
+        }
 
         // If plugins are loaded, use plugin-aware generator to resolve custom components
         const registry = PluginRegistry.getInstance();
@@ -588,9 +595,12 @@ export function createFormatRouter(adapter: FormatAdapter) {
             theme: customThemes ? Object.values(customThemes)[0] : undefined,
           });
 
-          if (generatorResult.getStandardComponentsDefinition) {
+          // Expansion-only path: resolves custom components to the standard
+          // tree without fonts/layout/rendering (#155) — the old deprecated
+          // wrapper ran a full generation, LibreOffice rasterization included.
+          if (generatorResult.getStandardDefinition) {
             const standardComponents =
-              await generatorResult.getStandardComponentsDefinition(config);
+              await generatorResult.getStandardDefinition(config);
             return c.json({
               success: true,
               data: standardComponents,
@@ -611,6 +621,19 @@ export function createFormatRouter(adapter: FormatAdapter) {
           requestId,
         });
         if (error instanceof HTTPException) throw error;
+        // Mirror /generate's mapping so document mistakes read as client
+        // errors, not server faults.
+        if (error instanceof Error) {
+          const msg = error.message.toLowerCase();
+          if (
+            msg.includes('invalid') ||
+            msg.includes('validation') ||
+            msg.includes('missing required') ||
+            msg.includes('unknown component')
+          ) {
+            throw new HTTPException(400, { message: error.message });
+          }
+        }
         throw new HTTPException(500, {
           message: 'Failed to get standard components definition',
         });

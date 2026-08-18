@@ -16,6 +16,7 @@ import type {
   GenerationResult,
   BufferGenerationResult,
   FileGenerationResult,
+  StandardDefinitionResult,
   ValidationResult,
   GenerationValidationOptions,
 } from './types';
@@ -404,6 +405,168 @@ function createBuilderImpl<
   }
 
   /**
+   * Shared front half of the pipeline: validate, resolve theme context,
+   * expand custom components, normalize. Everything `standardDefinition`
+   * needs and nothing more — fonts, structure, layout, rendering (and the
+   * visual rasterization that rides on it) all happen after this point.
+   */
+  async function expandDocument(
+    document: ExtendedReportComponent<TComponents>,
+    options?: GenerateOptions
+  ): Promise<{
+    modedRoot: ReportComponentDefinition;
+    modedTheme: ThemeConfig;
+    themeName: string;
+    processed: {
+      standard: ComponentDefinition[];
+      preserved: ComponentDefinition[];
+    };
+    modedDoc: ReportComponentDefinition;
+    warnings: GenerationWarning[];
+    preserveSet: ReadonlySet<string> | undefined;
+  }> {
+    const preserveSet = resolvePreserveSet(options);
+
+    // Cast to ReportComponentDefinition for internal processing. A root
+    // written without a `props` key validates clean, so default it to `{}`
+    // — otherwise every downstream `props.*` read throws. Only `undefined`
+    // is defaulted, so a malformed `props: null` still reaches the
+    // validator. Matches core/generator.ts.
+    const rootIn = document as unknown as ReportComponentDefinition;
+    const internalDocument: ReportComponentDefinition =
+      rootIn.props === undefined ? { ...rootIn, props: {} } : rootIn;
+
+    // Validate the document first (plugin-aware), unless disabled. Throwing
+    // here stops a malformed document from silently building into a corrupt
+    // or incomplete DOCX.
+    const vOpts: GenerationValidationOptions = {
+      ...state.validation,
+      ...options?.validation,
+    };
+    if (vOpts.enabled !== false) {
+      const result = validateDocument(
+        internalDocument,
+        state.components as unknown as CustomComponent<TSchema>[],
+        { allowUnknownFields: vOpts.allowUnknownFields }
+      );
+      if (!result.valid) {
+        throw new ComponentValidationError(
+          (result.errors ?? []).map((e) => ({
+            path: e.path ?? '',
+            message: e.message,
+          })),
+          internalDocument
+        );
+      }
+    }
+
+    // Re-apply the same gate to the tree each custom component's render()
+    // emits. The pre-expansion pass above only saw authored nodes, so a
+    // standard component produced by a plugin would otherwise reach
+    // standardDefinition unchecked. We validate the emitted nodes in their
+    // pre-normalization form — exactly how authored nodes are validated —
+    // by reusing the already-validated document props as a wrapper, so the
+    // only new errors come from the emitted children. Undefined when
+    // validation is disabled, which short-circuits the boundary check.
+    const validateEmitted =
+      vOpts.enabled === false
+        ? undefined
+        : (emitted: ComponentDefinition[], componentLabel: string) => {
+            const result = validateDocument(
+              { ...internalDocument, children: emitted },
+              state.components as unknown as CustomComponent<TSchema>[],
+              { allowUnknownFields: vOpts.allowUnknownFields }
+            );
+            if (!result.valid) {
+              throw new ComponentValidationError(
+                (result.errors ?? []).map((e) => ({
+                  path: e.path ?? '',
+                  message: `custom component '${componentLabel}' emitted invalid output — ${e.message}`,
+                })),
+                emitted
+              );
+            }
+          };
+
+    // Initialize warnings collector
+    const warnings: GenerationWarning[] = [];
+
+    // Props defaulting, theme resolution (customThemes → doc-named
+    // built-in → constructor theme → built-in fallback, see
+    // resolveDocumentTheme), in-document overrides, export-mode pre-pass and cache-key
+    // scoping — shared with the core pipeline so the two cannot drift (see
+    // core/generationContext.ts). The pre-pass runs BEFORE custom-component
+    // expansion so components reading `theme.fonts.*` during render see the
+    // substituted names, not the original non-safe ones.
+    const {
+      document: modedRoot,
+      theme: modedTheme,
+      themeName,
+    } = resolveThemeContext(internalDocument, {
+      customThemes: state.customThemes,
+      fonts: state.fonts,
+      warnings,
+      resolveNamedTheme: resolveDocumentTheme,
+    });
+
+    // Process custom components to convert them to standard components.
+    // Builds standard (fully expanded) and preserved (partial) trees in one pass.
+    const processed = await processDocumentComponents(
+      modedRoot.children || [],
+      preserveSet,
+      warnings,
+      modedTheme,
+      validateEmitted
+    );
+
+    // Create a new document definition with processed components
+    const processedDocument: ReportComponentDefinition = {
+      ...modedRoot,
+      children: processed.standard,
+    };
+
+    // Normalize components (handle shorthand notations and nested structures)
+    // We bypass JSON validation since we've already validated with custom schemas
+    const [modedDoc] = normalizeDocument(processedDocument);
+
+    return {
+      modedRoot,
+      modedTheme,
+      themeName,
+      processed,
+      modedDoc,
+      warnings,
+      preserveSet,
+    };
+  }
+
+  /**
+   * Compute only the post-expansion standard definition. Runs validation,
+   * theme resolution, custom-component expansion, and normalization — but
+   * skips font resolution, layout, rendering, and packaging, so it never
+   * touches external services (no visual rasterization, no chart export).
+   * Orders of magnitude cheaper than `generate()` when you only need the
+   * JSON tree.
+   */
+  async function expandStandardDefinition(
+    document: ExtendedReportComponent<TComponents>,
+    options?: GenerateOptions
+  ): Promise<StandardDefinitionResult> {
+    try {
+      const { modedDoc, warnings } = await expandDocument(document, options);
+      return {
+        standardDefinition: modedDoc,
+        warnings: warnings.length > 0 ? warnings : null,
+      };
+    } catch (error) {
+      if (state.debug) {
+        console.error('Document expansion error:', error);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Generate a document
    */
   async function generate(
@@ -411,109 +574,15 @@ function createBuilderImpl<
     options?: GenerateOptions
   ): Promise<GenerationResult<TComponents>> {
     try {
-      const preserveSet = resolvePreserveSet(options);
-
-      // Cast to ReportComponentDefinition for internal processing. A root
-      // written without a `props` key validates clean, so default it to `{}`
-      // — otherwise every downstream `props.*` read throws. Only `undefined`
-      // is defaulted, so a malformed `props: null` still reaches the
-      // validator. Matches core/generator.ts.
-      const rootIn = document as unknown as ReportComponentDefinition;
-      const internalDocument: ReportComponentDefinition =
-        rootIn.props === undefined ? { ...rootIn, props: {} } : rootIn;
-
-      // Validate the document first (plugin-aware), unless disabled. Throwing
-      // here stops a malformed document from silently building into a corrupt
-      // or incomplete DOCX.
-      const vOpts: GenerationValidationOptions = {
-        ...state.validation,
-        ...options?.validation,
-      };
-      if (vOpts.enabled !== false) {
-        const result = validateDocument(
-          internalDocument,
-          state.components as unknown as CustomComponent<TSchema>[],
-          { allowUnknownFields: vOpts.allowUnknownFields }
-        );
-        if (!result.valid) {
-          throw new ComponentValidationError(
-            (result.errors ?? []).map((e) => ({
-              path: e.path ?? '',
-              message: e.message,
-            })),
-            internalDocument
-          );
-        }
-      }
-
-      // Re-apply the same gate to the tree each custom component's render()
-      // emits. The pre-expansion pass above only saw authored nodes, so a
-      // standard component produced by a plugin would otherwise reach
-      // standardDefinition unchecked. We validate the emitted nodes in their
-      // pre-normalization form — exactly how authored nodes are validated —
-      // by reusing the already-validated document props as a wrapper, so the
-      // only new errors come from the emitted children. Undefined when
-      // validation is disabled, which short-circuits the boundary check.
-      const validateEmitted =
-        vOpts.enabled === false
-          ? undefined
-          : (emitted: ComponentDefinition[], componentLabel: string) => {
-              const result = validateDocument(
-                { ...internalDocument, children: emitted },
-                state.components as unknown as CustomComponent<TSchema>[],
-                { allowUnknownFields: vOpts.allowUnknownFields }
-              );
-              if (!result.valid) {
-                throw new ComponentValidationError(
-                  (result.errors ?? []).map((e) => ({
-                    path: e.path ?? '',
-                    message: `custom component '${componentLabel}' emitted invalid output — ${e.message}`,
-                  })),
-                  emitted
-                );
-              }
-            };
-
-      // Initialize warnings collector
-      const warnings: GenerationWarning[] = [];
-
-      // Props defaulting, theme resolution (customThemes → doc-named
-      // built-in → constructor theme → built-in fallback, see
-      // resolveDocumentTheme), in-document overrides, export-mode pre-pass and cache-key
-      // scoping — shared with the core pipeline so the two cannot drift (see
-      // core/generationContext.ts). The pre-pass runs BEFORE custom-component
-      // expansion so components reading `theme.fonts.*` during render see the
-      // substituted names, not the original non-safe ones.
       const {
-        document: modedRoot,
-        theme: modedTheme,
-        themeName,
-      } = resolveThemeContext(internalDocument, {
-        customThemes: state.customThemes,
-        fonts: state.fonts,
-        warnings,
-        resolveNamedTheme: resolveDocumentTheme,
-      });
-
-      // Process custom components to convert them to standard components.
-      // Builds standard (fully expanded) and preserved (partial) trees in one pass.
-      const processed = await processDocumentComponents(
-        modedRoot.children || [],
-        preserveSet,
-        warnings,
+        modedRoot,
         modedTheme,
-        validateEmitted
-      );
-
-      // Create a new document definition with processed components
-      const processedDocument: ReportComponentDefinition = {
-        ...modedRoot,
-        children: processed.standard,
-      };
-
-      // Normalize components (handle shorthand notations and nested structures)
-      // We bypass JSON validation since we've already validated with custom schemas
-      const [modedDoc] = normalizeDocument(processedDocument);
+        themeName,
+        processed,
+        modedDoc,
+        warnings,
+        preserveSet,
+      } = await expandDocument(document, options);
 
       // Resolve fonts (reads document + resolved theme). The helper fires
       // `fonts.onResolved` internally when a listener is registered
@@ -710,6 +779,7 @@ function createBuilderImpl<
     generate,
     generateBuffer,
     generateFile,
+    expandStandardDefinition,
     getComponentNames,
     validate,
     generateSchema,

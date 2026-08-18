@@ -94,6 +94,13 @@ export function Preview() {
   } = useOutputStore((state) => state);
   const activeTab = useDocumentsStore((state) => state.activeTab);
   const documentTypes = useDocumentsStore((state) => state.documentTypes);
+  // Editor text for "Copy standard components" — exists before the first Run,
+  // unlike the output store's `text` (#155). Themes have no expansion.
+  const editorDocumentText = useDocumentsStore((s) =>
+    s.activeTab && s.documentTypes[s.activeTab] !== 'application/json+theme'
+      ? s.documents.find((d) => d.name === s.activeTab)?.text
+      : undefined
+  );
   // Select the raw map (stable reference until themes mutate), then memoize
   // the transform. A selector that returns a freshly-constructed object on
   // every call would burn through Zustand's Object.is equality and retrigger
@@ -254,6 +261,7 @@ export function Preview() {
             isRendering={isRendering}
             onShowCacheMetrics={() => setShowCacheMetrics(true)}
             documentText={text}
+            editorDocumentText={editorDocumentText}
             warnings={warnings}
             renderingLibrary={renderingLibrary}
             setRenderingLibrary={(lib) =>

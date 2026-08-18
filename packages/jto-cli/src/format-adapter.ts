@@ -140,8 +140,14 @@ interface GeneratorBuilder {
       baseDir?: string;
     }
   ): Promise<{ buffer: Buffer; warnings: any }>;
-  /** @deprecated Read `standardDefinition` off `generate(...)` instead. */
-  getStandardComponentsDefinition?: (document: any) => Promise<any>;
+  /**
+   * Cheap standard-definition path: expansion + normalization only, no
+   * rendering (DOCX generators expose it; PPTX ones may not).
+   */
+  expandStandardDefinition?: (
+    document: any,
+    options?: { validation?: { allowUnknownFields?: boolean } }
+  ) => Promise<{ standardDefinition: any; warnings: any }>;
 }
 
 export interface GeneratorOptions {
@@ -164,8 +170,12 @@ export interface GeneratorOptions {
 
 export interface GeneratorResult {
   generateBuffer: (document: any) => Promise<Buffer>;
-  /** @deprecated Will be removed once consumers migrate to `generate().standardDefinition`. */
-  getStandardComponentsDefinition?: (config: any) => Promise<any>;
+  /**
+   * Post-expansion standard JSON tree without any rendering work — no fonts,
+   * no layout, no visual rasterization. Present when the underlying generator
+   * supports it (plugin-aware DOCX generation does).
+   */
+  getStandardDefinition?: (config: any) => Promise<any>;
   hasPlugins: boolean;
   pluginNames: string[];
   /**
@@ -346,8 +356,26 @@ export class DocxFormatAdapter implements FormatAdapter {
         emitGenerationWarnings(result.warnings ?? []);
         return result.buffer;
       },
-      getStandardComponentsDefinition: generator.getStandardComponentsDefinition
-        ? (config: any) => generator.getStandardComponentsDefinition!(config)
+      getStandardDefinition: generator.expandStandardDefinition
+        ? async (config: any) => {
+            const parsed =
+              typeof config === 'string' ? JSON.parse(config) : config;
+            const { document: docDefinition } = withRequestedTheme(
+              parsed,
+              requestedTheme,
+              customThemes
+            );
+            const result = await generator.expandStandardDefinition!(
+              docDefinition,
+              {
+                validation: {
+                  allowUnknownFields: options.validation?.allowUnknownFields,
+                },
+              }
+            );
+            emitGenerationWarnings(result.warnings ?? []);
+            return result.standardDefinition;
+          }
         : undefined,
       hasPlugins: true,
       pluginNames,
