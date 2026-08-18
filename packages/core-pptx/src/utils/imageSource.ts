@@ -6,7 +6,8 @@
  * `svg > base64 > path`. Raw SVG markup is wrapped into an `image/svg+xml`
  * data URI so it embeds as a vector (PowerPoint 2016+).
  */
-import { resolveFromBaseDir } from './baseDirContext';
+import path from 'node:path';
+import { getBaseDir, resolveFromBaseDir } from './baseDirContext';
 
 /** A source field counts only when it carries a non-empty (non-whitespace) value. */
 const hasValue = (v?: string): v is string =>
@@ -29,13 +30,27 @@ export function resolveImageSource(props: {
 }
 
 /**
+ * Local files must live under the document base directory (when set) or CWD —
+ * path-traversal guard (#142). `resolved` must already be absolute.
+ */
+export function isAllowedLocalPath(resolved: string): boolean {
+  const baseDir = getBaseDir();
+  const allowedRoots = baseDir ? [baseDir, process.cwd()] : [process.cwd()];
+  return allowedRoots.some(
+    (root) => resolved.startsWith(root + path.sep) || resolved === root
+  );
+}
+
+/**
  * Resolve a source string that may be a URL, data URI, or local file path:
  * URLs and data URIs pass through; local paths resolve against the active
- * document base directory when the generation scope set one (#142). The
- * rewrite is eager because pptxgenjs reads `path` entries during write(),
- * outside the generation scope.
+ * document base directory when the generation scope set one, eagerly —
+ * pptxgenjs reads `path` entries during write(), outside the generation
+ * scope. Returns `undefined` when a local path escapes the allowed roots, so
+ * out-of-root paths never reach pptxgenjs (#142).
  */
-export function resolveLocalPath(source: string): string {
+export function safeLocalPath(source: string): string | undefined {
   if (/^(https?:\/\/|data:)/.test(source)) return source;
-  return resolveFromBaseDir(source);
+  const resolved = path.resolve(resolveFromBaseDir(source));
+  return isAllowedLocalPath(resolved) ? resolved : undefined;
 }

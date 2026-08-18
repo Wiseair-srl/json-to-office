@@ -62,6 +62,10 @@ async function renderWithLibreOffice(
     const body: Record<string, unknown> = {
       jsonDefinition,
       customThemes: customThemes ?? {},
+      // sourceName lets the server resolve relative asset paths against the
+      // discovered document's own directory (#142). Names only — the server
+      // maps them to paths itself.
+      options: { sourceName: name },
     };
     response = await fetch(API_ENDPOINTS.preview.libreofficeFromJson, {
       method: 'POST',

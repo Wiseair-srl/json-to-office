@@ -48,7 +48,10 @@ const doc = {
 
 async function hasEmbeddedImage(buf: Buffer): Promise<boolean> {
   const zip = await JSZip.loadAsync(buf);
-  return Object.keys(zip.files).some((name) => name.startsWith('ppt/media/'));
+  // pptxgenjs always emits the ppt/media/ directory entry; only real files count.
+  return Object.values(zip.files).some(
+    (f) => f.name.startsWith('ppt/media/') && !f.dir
+  );
 }
 
 describe('baseDir image resolution (#142)', () => {
@@ -64,6 +67,25 @@ describe('baseDir image resolution (#142)', () => {
       baseDir: docDir,
     }).generateBuffer(structuredClone(doc) as never);
     expect(await hasEmbeddedImage(result.buffer)).toBe(true);
+  });
+
+  it('rejects a path that escapes the allowed roots even with explicit w+h', async () => {
+    // With both w and h set the intrinsic-size probe is skipped, so the
+    // allowed-root check must also run before opts.path is handed to
+    // pptxgenjs (which reads the file during write()).
+    const outsideDir = mkdtempSync(join(tmpdir(), 'jto-outside-'));
+    writeFileSync(join(outsideDir, 'secret.png'), PNG_1X1);
+    try {
+      const escaping = structuredClone(doc) as any;
+      escaping.children[0].children[0].props.path = join(
+        outsideDir,
+        'secret.png'
+      );
+      const buf = await generateBufferFromJson(escaping, { baseDir: docDir });
+      expect(await hasEmbeddedImage(buf)).toBe(false);
+    } finally {
+      rmSync(outsideDir, { recursive: true, force: true });
+    }
   });
 
   it('per-call baseDir overrides the constructor', async () => {

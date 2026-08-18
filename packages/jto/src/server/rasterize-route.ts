@@ -5,6 +5,7 @@
  * mapping. Renders a single-slide pptx presentation to a PNG.
  */
 
+import path from 'node:path';
 import type { Hono, MiddlewareHandler } from 'hono';
 import { Type } from '@sinclair/typebox';
 import { bodyLimit } from 'hono/body-limit';
@@ -92,6 +93,24 @@ export function registerRasterizeRoute(
         baseDir?: string;
       }>(c, 'json');
 
+      // `baseDir` selects the directory local media paths resolve against.
+      // An unrestricted value would let any HTTP caller point the rasterizer
+      // at arbitrary server directories and exfiltrate readable files as
+      // rendered pixels, so it must stay inside the server's own working
+      // tree. Callers rendering documents that live elsewhere should run the
+      // server from that tree (or use an in-process rasterizer).
+      let safeBaseDir: string | undefined;
+      if (baseDir !== undefined) {
+        const resolved = path.resolve(baseDir);
+        const cwd = process.cwd();
+        if (resolved !== cwd && !resolved.startsWith(cwd + path.sep)) {
+          throw new HTTPException(400, {
+            message: 'baseDir must be inside the server working directory',
+          });
+        }
+        safeBaseDir = resolved;
+      }
+
       try {
         if (options.sourcePolicy) {
           assertSafeOutboundSources(
@@ -103,7 +122,7 @@ export function registerRasterizeRoute(
         const result = await getRasterizer()({
           presentation,
           dpi: clampVisualDpi(dpi ?? DEFAULT_VISUAL_DPI),
-          baseDir,
+          baseDir: safeBaseDir,
         });
         return c.json(result);
       } catch (error) {

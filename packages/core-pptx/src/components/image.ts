@@ -7,8 +7,12 @@ import probe from 'probe-image-size';
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
-import { resolveImageSource, resolveLocalPath } from '../utils/imageSource';
-import { getBaseDir, resolveFromBaseDir } from '../utils/baseDirContext';
+import {
+  resolveImageSource,
+  isAllowedLocalPath,
+  safeLocalPath,
+} from '../utils/imageSource';
+import { resolveFromBaseDir } from '../utils/baseDirContext';
 import { warn, W } from '../utils/warn';
 import { applyHyperlink, type HyperlinkProps } from '../utils/hyperlink';
 
@@ -89,14 +93,7 @@ async function probeImageSize(
     // Local file — restrict to the document base directory (when set) or
     // CWD to prevent path traversal (#142).
     const resolved = path.resolve(resolveFromBaseDir(imagePath));
-    const baseDir = getBaseDir();
-    const allowedRoots = baseDir ? [baseDir, process.cwd()] : [process.cwd()];
-    if (
-      !allowedRoots.some(
-        (root) => resolved.startsWith(root + path.sep) || resolved === root
-      )
-    )
-      return undefined;
+    if (!isAllowedLocalPath(resolved)) return undefined;
     const { createReadStream } = await import('fs');
     const result = await probe(createReadStream(resolved));
     return result ? { width: result.width, height: result.height } : undefined;
@@ -154,7 +151,21 @@ export async function renderImageComponent(
   if (source.startsWith('data:')) {
     opts.data = source;
   } else {
-    opts.path = resolveLocalPath(source);
+    // Enforce the allowed-root policy before handing the path to pptxgenjs —
+    // it reads the file during write() regardless of whether we probed it
+    // here (explicit w+h skips the probe), so the probe-time check alone is
+    // not enough (#142).
+    const resolved = safeLocalPath(source);
+    if (resolved === undefined) {
+      warn(
+        warnings,
+        W.IMAGE_PATH_OUTSIDE_ROOTS,
+        `Image path resolves outside the document base directory: ${source}`,
+        { component: 'image' }
+      );
+      return;
+    }
+    opts.path = resolved;
   }
 
   // Position
