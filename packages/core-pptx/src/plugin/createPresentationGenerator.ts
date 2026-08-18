@@ -26,7 +26,7 @@ import { validatePresentation, cleanComponentProps } from './validation';
 import { generatePluginPresentationSchema, exportPluginSchema } from './schema';
 import { processPresentation } from '../core/structure';
 import { renderPresentation } from '../core/render';
-import { getPptxTheme } from '../themes';
+import { getPptxTheme, hasPptxTheme } from '../themes';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from '../core/fontResolution';
 import { resolveThemeContext } from '../core/generationContext';
@@ -305,23 +305,27 @@ function createBuilderImpl<
       // `theme.fonts.*` during render sees the substituted names, not the
       // original non-safe ones.
       //
-      // Theme precedence: customThemes[name] → constructor `state.theme`
-      // object → built-in, with the lookup name taken from doc-level
-      // `props.theme` (or `defaultThemeName` when the doc names none). The
-      // constructor object fills in for ANY customThemes miss — a doc-named
-      // built-in included — matching the DOCX plugin (resolveDocumentTheme)
-      // exactly; it never shadows a customThemes entry (a doc naming
-      // "wiseair" must not render as `themes.minimal`). Whether a doc-named
-      // built-in should instead beat the constructor object is #141 — a
-      // cross-format decision, not taken here.
+      // Theme precedence: customThemes[name] → doc-named built-in →
+      // constructor `state.theme` object → built-in, with the lookup name
+      // taken from doc-level `props.theme` (or `defaultThemeName` when the
+      // doc names none). A document explicitly naming a known built-in gets
+      // it; the constructor object fills in when the doc names nothing or
+      // names something nothing recognizes (#141). The `authored` guard on
+      // the built-in step matters twice over: an unauthored default name
+      // must not shadow the constructor object, and an authored UNKNOWN name
+      // must still reach the constructor object (getPptxTheme never misses —
+      // a doc naming "wiseair" must render the app's theme, not silently
+      // fall back to default). Matches the DOCX plugin
+      // (resolveDocumentTheme) exactly.
       const context = resolveThemeContext(internalDocument, {
         customThemes: state.customThemes,
         fonts: state.fonts,
         warnings,
         defaultThemeName:
           typeof state.theme === 'string' ? state.theme : undefined,
-        resolveNamedTheme: (name) =>
+        resolveNamedTheme: (name, authored) =>
           state.customThemes?.[name] ??
+          (authored && hasPptxTheme(name) ? getPptxTheme(name) : undefined) ??
           (typeof state.theme === 'object' && state.theme !== null
             ? state.theme
             : getPptxTheme(name)),

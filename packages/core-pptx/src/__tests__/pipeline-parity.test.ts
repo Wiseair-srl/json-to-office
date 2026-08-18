@@ -316,9 +316,9 @@ describe('constructor default theme', () => {
 
   // Constructor OBJECT precedence — plugin-only semantics (core has no
   // constructor-theme input), pinned here so a change is a conscious decision:
-  // the object fills in for any customThemes miss, doc-named built-ins
-  // included, matching the DOCX plugin's resolveDocumentTheme. Revisited
-  // cross-format in #141.
+  // a document explicitly naming a known built-in gets it; the object fills
+  // in when the doc names nothing or names something nothing recognizes
+  // (#141), matching the DOCX plugin's resolveDocumentTheme.
   const ctorObject = {
     name: 'app-theme',
     colors: {
@@ -348,9 +348,27 @@ describe('constructor default theme', () => {
     ],
   });
 
-  it('constructor theme object beats a doc-named built-in (current contract, #141)', async () => {
+  it('a doc-named built-in beats the constructor theme object (#141)', async () => {
     const { buffer } = await createPresentationGenerator({
       theme: ctorObject,
+    }).generateBuffer(accentText('minimal') as never);
+    // themes.minimal accent, not the constructor object's
+    expect(await slideXml(buffer)).toContain('999999');
+  });
+
+  it('constructor theme object applies when the doc names no theme', async () => {
+    const { buffer } = await createPresentationGenerator({
+      theme: ctorObject,
+    }).generateBuffer(accentText() as never);
+    expect(await slideXml(buffer)).toContain('0FA958');
+  });
+
+  it('a customThemes entry sharing a built-in name still wins', async () => {
+    const { buffer } = await createPresentationGenerator({
+      theme: ctorObject,
+      customThemes: {
+        minimal: { ...ctorObject, name: 'minimal' },
+      },
     }).generateBuffer(accentText('minimal') as never);
     expect(await slideXml(buffer)).toContain('0FA958');
   });
