@@ -290,6 +290,17 @@
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-progress-indeterminate: progress-indeterminate 1.4s ease-in-out infinite;
+
+  /* Indeterminate progress: a 40%-wide bar sweeping across its track. */
+  @keyframes progress-indeterminate {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(350%);
+    }
+  }
 
   @keyframes accordion-down {
     from {

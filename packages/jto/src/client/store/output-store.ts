@@ -18,6 +18,8 @@ export type OutputState = {
     stage: 'parsing' | 'building' | 'rendering' | 'finalizing';
     message?: string;
   };
+  generationStartedAt?: number; // Date.now() when the current build started
+  cancelGeneration?: () => void; // registered by the editor; aborts the in-flight build
   cacheStatus?: 'HIT' | 'MISS' | 'UNKNOWN'; // cache hit/miss status
   cacheHitRate?: string; // cache hit rate percentage
   warnings?: GenerationWarning[] | null; // warnings from custom component processing

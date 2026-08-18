@@ -81,6 +81,24 @@ function EditorComponent() {
   const lastBuildRequestIdRef = useRef<string>('');
   const documentVersionsRef = useRef<Map<string, number>>(new Map());
 
+  // User-initiated cancel from the loading UI: invalidate the current request
+  // id first (so both build paths take their quiet "cancelled" exit instead of
+  // surfacing a global error), then abort the controllers and the in-flight
+  // fetch.
+  const cancelActiveBuild = useCallback(() => {
+    lastBuildRequestIdRef.current = `cancelled-${Date.now()}`;
+    for (const controller of buildAbortControllersRef.current.values()) {
+      controller.abort();
+    }
+    buildAbortControllersRef.current.clear();
+    cancelGeneration();
+    setOutput({ isGenerating: false, generationProgress: undefined });
+  }, [cancelGeneration, setOutput]);
+
+  useEffect(() => {
+    setOutput({ cancelGeneration: cancelActiveBuild });
+  }, [cancelActiveBuild, setOutput]);
+
   // Get or create a document version number
   const getDocumentVersion = useCallback((docName: string) => {
     const currentVersion = documentVersionsRef.current.get(docName) || 0;
@@ -149,6 +167,7 @@ function EditorComponent() {
       setOutput({
         globalError: undefined,
         isGenerating: true,
+        generationStartedAt: Date.now(),
         generationProgress: {
           stage: 'parsing',
           message: 'Rebuilding with updated theme...',
@@ -360,6 +379,7 @@ function EditorComponent() {
       setOutput({
         globalError: undefined,
         isGenerating: true,
+        generationStartedAt: Date.now(),
         generationProgress: {
           stage: 'parsing',
           message: 'Validating JSON structure...',
