@@ -1,25 +1,14 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { isAbsolute, resolve } from 'node:path';
 
-const generationDateStorage = new AsyncLocalStorage<Date>();
-
-/** Scope render-time values without leaking them across concurrent documents. */
-export function runWithGenerationDate<T>(date: Date, callback: () => T): T {
-  return generationDateStorage.run(date, callback);
-}
-
-/** Current document date, falling back to the wall clock outside generation. */
-export function getGenerationDate(): Date {
-  return generationDateStorage.getStore() ?? new Date();
-}
-
 const baseDirStorage = new AsyncLocalStorage<string>();
 
 /**
  * Scope the document base directory for a generation run, so relative asset
- * paths (`image.props.path` et al.) resolve against the document's own
- * location rather than `process.cwd()` (#142). No baseDir → plain callback,
- * preserving the historical cwd-relative behavior.
+ * paths (`image.props.path`, slide background images) resolve against the
+ * document's own location rather than `process.cwd()` (#142). No baseDir →
+ * plain callback, preserving the historical cwd-relative behavior. Mirrors
+ * core-docx/src/utils/generationContext.ts.
  */
 export function runWithBaseDir<T>(
   baseDir: string | undefined,
@@ -38,7 +27,9 @@ export function getBaseDir(): string | undefined {
 /**
  * Resolve a relative file path against the active base directory. Absolute
  * paths pass through; with no active baseDir the path is returned as-is,
- * which downstream `fs` calls resolve against cwd — the legacy behavior.
+ * which pptxgenjs / `fs` resolve against cwd — the legacy behavior. The
+ * rewrite must happen eagerly at render time: pptxgenjs reads `path` entries
+ * later, during `write()`, outside any generation scope.
  */
 export function resolveFromBaseDir(filePath: string): string {
   const base = baseDirStorage.getStore();

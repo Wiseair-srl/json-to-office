@@ -43,6 +43,11 @@ export const LooseDocumentGenerationRequestSchema = Type.Object(
           bypassCache: Type.Optional(Type.Boolean()),
           returnUrl: Type.Optional(Type.Boolean()),
           fonts: Type.Optional(FontOptionsSchema),
+          // Name of the discovered document this definition came from; the
+          // server maps it to that document's directory so relative asset
+          // paths resolve against it (#142). Names, never paths — a client
+          // cannot point the server at an arbitrary directory.
+          sourceName: Type.Optional(Type.String()),
         },
         { additionalProperties: true }
       )

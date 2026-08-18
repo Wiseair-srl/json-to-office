@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import probe from 'probe-image-size';
+import { resolveFromBaseDir } from './generationContext';
 import { ImageRun, IFloating } from 'docx';
 import { parsePercentageStringToFraction } from './widthUtils';
 
@@ -322,8 +323,9 @@ export async function getImageBuffer(
   if (isValidUrl(imagePath)) {
     return await downloadImageFromUrl(imagePath);
   }
-  // Otherwise treat as local file path
-  return { buffer: readFileSync(imagePath) };
+  // Otherwise treat as local file path, relative to the document's base
+  // directory when the generation scope set one (falls back to cwd, #142).
+  return { buffer: readFileSync(resolveFromBaseDir(imagePath)) };
 }
 
 /**

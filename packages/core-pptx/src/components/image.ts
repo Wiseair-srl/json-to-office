@@ -7,7 +7,8 @@ import probe from 'probe-image-size';
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor } from '../utils/color';
-import { resolveImageSource } from '../utils/imageSource';
+import { resolveImageSource, resolveLocalPath } from '../utils/imageSource';
+import { getBaseDir, resolveFromBaseDir } from '../utils/baseDirContext';
 import { warn, W } from '../utils/warn';
 import { applyHyperlink, type HyperlinkProps } from '../utils/hyperlink';
 
@@ -85,9 +86,17 @@ async function probeImageSize(
       return { width: result.width, height: result.height };
     }
 
-    // Local file — restrict to CWD to prevent path traversal
-    const resolved = path.resolve(imagePath);
-    if (!resolved.startsWith(process.cwd())) return undefined;
+    // Local file — restrict to the document base directory (when set) or
+    // CWD to prevent path traversal (#142).
+    const resolved = path.resolve(resolveFromBaseDir(imagePath));
+    const baseDir = getBaseDir();
+    const allowedRoots = baseDir ? [baseDir, process.cwd()] : [process.cwd()];
+    if (
+      !allowedRoots.some(
+        (root) => resolved.startsWith(root + path.sep) || resolved === root
+      )
+    )
+      return undefined;
     const { createReadStream } = await import('fs');
     const result = await probe(createReadStream(resolved));
     return result ? { width: result.width, height: result.height } : undefined;
@@ -138,11 +147,14 @@ export async function renderImageComponent(
     );
     return;
   }
-  // pptxgenjs routes data URIs through `data` and file paths/URLs through `path`.
+  // pptxgenjs routes data URIs through `data` and file paths/URLs through
+  // `path`. Local paths resolve against the document's base directory when
+  // the generation scope set one (falls back to cwd, #142) — eagerly,
+  // because pptxgenjs reads the file later, during write().
   if (source.startsWith('data:')) {
     opts.data = source;
   } else {
-    opts.path = source;
+    opts.path = resolveLocalPath(source);
   }
 
   // Position

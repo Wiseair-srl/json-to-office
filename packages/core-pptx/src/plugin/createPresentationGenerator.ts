@@ -30,6 +30,7 @@ import { getPptxTheme, hasPptxTheme } from '../themes';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from '../core/fontResolution';
 import { resolveThemeContext } from '../core/generationContext';
+import { runWithBaseDir } from '../utils/baseDirContext';
 import { assertNoContentConflicts } from '../core/generator';
 import {
   packagePresentationBuffer,
@@ -53,6 +54,12 @@ export interface PresentationGeneratorOptions
   fonts?: FontRuntimeOpts;
   /** Default validation behavior; per-call options take precedence. */
   validation?: GenerationValidationOptions;
+  /**
+   * Directory that relative asset paths (image `path` props, slide
+   * background images) resolve against. Per-call `options.baseDir`
+   * overrides it; defaults to `process.cwd()` when neither is set (#142).
+   */
+  baseDir?: string;
 }
 
 /**
@@ -68,6 +75,7 @@ interface BuilderState {
   fonts?: FontRuntimeOpts;
   validation?: GenerationValidationOptions;
   packaging: PresentationPackagingOptions;
+  baseDir?: string;
 }
 
 type ValidateEmitted = (
@@ -260,6 +268,7 @@ function createBuilderImpl<
       fonts: state.fonts,
       validation: state.validation,
       packaging: state.packaging,
+      baseDir: state.baseDir,
     };
 
     return createBuilderImpl<readonly [...TComponents, TNewComponent]>(
@@ -424,12 +433,25 @@ function createBuilderImpl<
       // processPresentation takes the resolved (post-substitute) theme by
       // value — the document's `props.theme` stays as authored and is not
       // consulted again.
-      const processed = processPresentation(processedDocument, {
-        theme: resolvedTheme,
-        services: state.services,
-      });
-      const pendingFills: PendingXmlFill[] = [];
-      const pptx = await renderPresentation(processed, warnings, pendingFills);
+      // Scope the document base directory over process+render: relative
+      // asset paths are rewritten eagerly there — pptxgenjs reads them
+      // later, during write() (#142). Matches the core pipeline.
+      const { pendingFills, pptx } = await runWithBaseDir(
+        options?.baseDir ?? state.baseDir,
+        async () => {
+          const processed = processPresentation(processedDocument, {
+            theme: resolvedTheme,
+            services: state.services,
+          });
+          const pendingFills: PendingXmlFill[] = [];
+          const pptx = await renderPresentation(
+            processed,
+            warnings,
+            pendingFills
+          );
+          return { pendingFills, pptx };
+        }
+      );
       const data = await pptx.write({ outputType: 'nodebuffer' });
       const buffer = await packagePresentationBuffer(data as Buffer, {
         deterministic: options?.deterministic ?? state.packaging.deterministic,
@@ -604,6 +626,7 @@ export function createPresentationGenerator(
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
     },
+    baseDir: options.baseDir,
   };
 
   return createBuilderImpl<readonly []>(initialState);

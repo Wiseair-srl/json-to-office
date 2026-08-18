@@ -347,6 +347,11 @@ export class GeneratorService {
     // custom runs (same config+themes) don't collide on a single buffer
     // slot. `extraEntries` already forces bypassCache, so only need
     // mode/substitution/strict in the key for the non-bypass path.
+    const baseDir =
+      typeof (options as { baseDir?: unknown } | undefined)?.baseDir ===
+      'string'
+        ? (options as { baseDir: string }).baseDir
+        : undefined;
     const cacheKeyData = {
       config,
       customThemes:
@@ -356,6 +361,8 @@ export class GeneratorService {
       fontMode: fontMode ?? null,
       fontSubstitution: fontSubstitution ?? null,
       fontStrict: callerStrict ?? null,
+      // Same definition, different source directory → different local assets.
+      baseDir: baseDir ?? null,
     };
     const cacheKey = this.cacheService.generateCacheKey(cacheKeyData);
     const hasDynamicContent = this.cacheService.hasDynamicContent(config);
@@ -411,12 +418,14 @@ export class GeneratorService {
       const generator = await this.adapter.createGenerator(plugins, {
         customThemes,
         fonts: fontOpts,
+        baseDir,
       });
       buffer = await generator.generateBuffer(config);
     } else {
       buffer = await this.adapter.generateBuffer(config, {
         customThemes,
         fonts: fontOpts,
+        baseDir,
       });
     }
 

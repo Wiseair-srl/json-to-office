@@ -5,6 +5,7 @@
 
 import { Document } from 'docx';
 import { writeFileSync } from 'fs';
+import { dirname, resolve } from 'path';
 import {
   ComponentDefinition,
   ReportProps,
@@ -65,6 +66,12 @@ export interface JsonGenerationOptions {
   deterministic?: boolean;
   /** Build timestamp for metadata; defaults to a stable epoch. */
   generatedAt?: string | Date;
+  /**
+   * Directory that relative asset paths (image `path` props) resolve against.
+   * File entry points default it to the document's own directory; elsewhere
+   * it falls back to `process.cwd()` (#142).
+   */
+  baseDir?: string;
 }
 
 // Font resolution shared with the plugin path — see ./fontResolution.ts
@@ -114,7 +121,8 @@ export async function generateDocument(
     options?.services,
     options?.fonts,
     options?.warnings,
-    resolveGenerationDate(options)
+    resolveGenerationDate(options),
+    options?.baseDir
   );
 }
 
@@ -146,7 +154,8 @@ async function generateDocumentWithCustomThemes(
   services?: ServicesConfig,
   fonts?: FontRuntimeOpts,
   warnings?: GenerationWarning[],
-  generationDate?: Date
+  generationDate?: Date,
+  baseDir?: string
 ): Promise<Document> {
   // Props defaulting, theme resolution, in-document overrides, export-mode
   // pre-pass and cache-key scoping — shared with the plugin pipeline so the
@@ -173,6 +182,7 @@ async function generateDocumentWithCustomThemes(
   const renderedDocument = await renderDocument(structure, layout, {
     bypassCache: false,
     services,
+    baseDir,
   });
 
   return renderedDocument;
@@ -240,7 +250,8 @@ export async function generateDocumentFromJson(
     options?.services,
     options?.fonts,
     options?.warnings,
-    resolveGenerationDate(options)
+    resolveGenerationDate(options),
+    options?.baseDir
   );
 }
 
@@ -286,7 +297,11 @@ export async function generateDocumentFromFile(
   const jsonDefinition = await loadJsonDefinition(filePath);
   // loadJsonDefinition returns ComponentDefinition from shared (JSON schema type)
   // generateDocumentFromJson now accepts the JSON schema type directly
-  return await generateDocumentFromJson(jsonDefinition, options);
+  // The document's own directory is the natural base for its relative assets.
+  return await generateDocumentFromJson(jsonDefinition, {
+    baseDir: dirname(resolve(filePath)),
+    ...options,
+  });
 }
 
 /**

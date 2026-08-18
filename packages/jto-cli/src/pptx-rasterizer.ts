@@ -172,10 +172,20 @@ async function writeCacheAtomic(
 }
 
 function cacheKey(request: PptxRasterizeRequest): string {
-  return crypto
-    .createHash('sha256')
-    .update(JSON.stringify({ p: request.presentation, dpi: request.dpi }))
-    .digest('hex');
+  return (
+    crypto
+      .createHash('sha256')
+      // baseDir joins the key: the same relative asset path means different
+      // pixels under different base directories (#142).
+      .update(
+        JSON.stringify({
+          p: request.presentation,
+          dpi: request.dpi,
+          base: request.baseDir,
+        })
+      )
+      .digest('hex')
+  );
 }
 
 function toDataUri(png: Buffer): string {
@@ -216,7 +226,8 @@ export function createLibreOfficePptxRasterizer(options?: {
     // 1. JSON → .pptx (in-process, pure JS)
     const corePptx = await import('@json-to-office/core-pptx');
     const pptxBuffer = await corePptx.generateBufferFromJson(
-      request.presentation as any
+      request.presentation as any,
+      { baseDir: request.baseDir }
     );
 
     const [soffice, pdftoppm] = await Promise.all([

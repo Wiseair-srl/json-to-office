@@ -86,7 +86,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-7054x10363-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-7054x10363-v2.png",
                   "x": 0.61,
                   "y": 0.67,
                   "w": 7.054,
@@ -432,7 +432,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-1817x2117-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-1817x2117-v2.png",
                   "x": 5.98,
                   "y": 1.57,
                   "w": 1.817,
@@ -840,7 +840,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-2544x3221-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-2544x3221-v2.png",
                   "x": 0.51,
                   "y": 7.22,
                   "w": 2.544,
@@ -1621,7 +1621,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-2084x2506-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-2084x2506-v2.png",
                   "x": 3.1,
                   "y": 3.06,
                   "w": 2.084,
@@ -1896,7 +1896,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-1312x1574-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-1312x1574-v2.png",
                   "x": 6.43,
                   "y": 2.1,
                   "w": 1.312,
@@ -3132,7 +3132,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-1618x1597-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-1618x1597-v2.png",
                   "x": 0.52,
                   "y": 5.62,
                   "w": 1.618,
@@ -7603,7 +7603,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-1822x2099-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-1822x2099-v2.png",
                   "x": 5.92,
                   "y": 4.96,
                   "w": 1.822,
@@ -9110,7 +9110,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-7253x2778-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-7253x2778-v2.png",
                   "x": 0.52,
                   "y": 5.26,
                   "w": 7.253,
@@ -9403,7 +9403,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-1874x2077-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-1874x2077-v2.png",
                   "x": 4.22,
                   "y": 0.5,
                   "w": 1.874,
@@ -10199,7 +10199,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-7256x6807-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-7256x6807-v2.png",
                   "x": 0.48,
                   "y": 0.45,
                   "w": 7.256,
@@ -10752,7 +10752,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-1308x1454-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-1308x1454-v2.png",
                   "x": 5.52,
                   "y": 4.2,
                   "w": 1.308,
@@ -11382,7 +11382,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-1660x1818-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-1660x1818-v2.png",
                   "x": 0.61,
                   "y": 9.24,
                   "w": 1.66,
@@ -12381,7 +12381,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-2622x3017-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-2622x3017-v2.png",
                   "x": 0.5,
                   "y": 5.08,
                   "w": 2.622,
@@ -12763,7 +12763,7 @@
               {
                 "name": "image",
                 "props": {
-                  "path": "packages/jto/src/client/public/templates/media/modern-annual-report-3/pct30-7054x10363-v2.png",
+                  "path": "media/modern-annual-report-3/pct30-7054x10363-v2.png",
                   "x": 0.6,
                   "y": 0.61,
                   "w": 7.054,

@@ -52,6 +52,12 @@ export interface PptxRasterizeRequest {
   presentation: unknown;
   /** Target raster resolution in dots-per-inch */
   dpi: number;
+  /**
+   * Directory that relative asset paths inside the presentation resolve
+   * against — the originating document's own directory. Absent → the
+   * rasterizer's cwd, the legacy behavior (#142).
+   */
+  baseDir?: string;
 }
 
 /**

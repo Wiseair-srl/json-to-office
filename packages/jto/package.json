@@ -17,7 +17,6 @@
   },
   "files": [
     "dist",
-    "templates",
     "LICENSE"
   ],
   "scripts": {

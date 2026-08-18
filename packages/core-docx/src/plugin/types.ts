@@ -144,6 +144,12 @@ export interface GenerateOptions {
   deterministic?: boolean;
   /** Build timestamp for metadata; defaults to a stable epoch. */
   generatedAt?: string | Date;
+  /**
+   * Directory that relative asset paths (image `path` props) resolve against
+   * for this call. Overrides the constructor `baseDir`; defaults to
+   * `process.cwd()` when neither is set (#142).
+   */
+  baseDir?: string;
 }
 
 /**
