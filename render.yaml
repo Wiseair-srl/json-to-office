@@ -22,6 +22,15 @@ services:
       # listed here too.
       - key: OUTBOUND_HOST_ALLOWLIST
         value: ik.imagekit.io,placehold.co
+      # One docx render fans out into one /rasterize call per `visual`
+      # component; bundled templates carry ~25 each, so the 30/15min
+      # production default starved a single document. Callers are the
+      # authenticated playgrounds (RENDER_AUTH_MODE=required), so a generous
+      # ceiling is safe; the same applies to chart-heavy docs on /export.
+      - key: RASTERIZE_RATE_LIMIT
+        value: '600'
+      - key: EXPORT_RATE_LIMIT
+        value: '600'
     healthCheckPath: /health
 
   - type: web
