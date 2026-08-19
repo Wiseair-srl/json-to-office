@@ -161,6 +161,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "background": {
           "gradient": {
             "type": "radial",
@@ -833,6 +836,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Market gap chart"
+        },
         "background": {
           "gradient": {
             "type": "radial",
@@ -1708,6 +1714,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Case timeline"
+        },
         "template": "dawn-diagonal",
         "notes": "Arc timeline with four cases."
       },
@@ -2057,6 +2066,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Market overview"
+        },
         "template": "haze-bottom-left",
         "notes": "Market overview pies."
       },
@@ -2298,6 +2310,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Target audience"
+        },
         "background": {
           "gradient": {
             "type": "radial",
@@ -2503,6 +2518,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Competitive landscape"
+        },
         "template": "veil-bottom-right",
         "notes": "Competitive landscape stats and images."
       },
@@ -2686,6 +2704,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Laptop mockup"
+        },
         "template": "veil-top-left",
         "notes": "Laptop mockup slide."
       },
@@ -2815,6 +2836,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Values"
+        },
         "template": "dawn-diagonal",
         "notes": "Values list and percent column."
       },
@@ -2976,6 +3000,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Revenue KPIs"
+        },
         "template": "haze-bottom-left",
         "notes": "Revenue KPIs."
       },
@@ -3123,6 +3150,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Focus areas diagram"
+        },
         "background": {
           "gradient": {
             "type": "radial",
@@ -3724,6 +3754,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Thank you"
+        },
         "background": {
           "gradient": {
             "type": "radial",

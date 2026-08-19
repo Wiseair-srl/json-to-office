@@ -82,8 +82,13 @@ function arrayItems(n: Node | undefined): Node[] {
   return n?.type === 'array' && n.children ? n.children : [];
 }
 
-function truncate(raw: string, max = LABEL_MAX): string {
-  const clean = raw.replace(SENTINEL_RE, '…').split('\n')[0].trim();
+function truncate(raw: string, max = LABEL_MAX, joinLines = false): string {
+  const flat = raw.replace(SENTINEL_RE, '…');
+  // Titles read better joined ("WHAT IS A\nMANAGEMENT PLAN" → one label);
+  // body text keeps its first line only.
+  const clean = joinLines
+    ? flat.replace(/\s*\n\s*/g, ' ').trim()
+    : flat.split('\n')[0].trim();
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 
@@ -276,12 +281,44 @@ function buildChildren(childrenArr: Node | undefined): OutlineNode[] {
 }
 
 /**
- * Best slide title: first `text` child styled 'title', else the first
- * 'heading*' style, else the first text at all. Looks one container level
- * deep so grouped layouts still label their slide.
+ * Best slide title, in priority order: the authoring label `meta.title`, then
+ * a 'title' placeholder or `text` child styled 'title', then
+ * 'subtitle'/'heading*', then any text. Children are scanned one container
+ * level deep so grouped layouts still label their slide; multi-line titles
+ * are joined onto one line.
  */
 function slideLabel(slideEl: Node): string | undefined {
+  const props = propValue(slideEl, 'props');
+  const metaTitle = stringValue(propValue(propValue(props, 'meta'), 'title'));
+  if (metaTitle) return truncate(metaTitle, 48, true);
+
   let best: { rank: number; text: string } | undefined;
+  const offer = (rank: number, text: string | undefined) => {
+    if (text && (!best || rank < best.rank)) best = { rank, text };
+  };
+
+  // Template-driven decks carry their text in props.placeholders.
+  const placeholders = propValue(props, 'placeholders');
+  if (placeholders?.type === 'object' && placeholders.children) {
+    for (const prop of placeholders.children) {
+      if (prop.type !== 'property' || !prop.children) continue;
+      const [key, valueNode] = prop.children;
+      const keyName = typeof key?.value === 'string' ? key.value : '';
+      const info = valueNode ? componentInfo(valueNode) : null;
+      const text = info
+        ? stringValue(propValue(info.props, 'text'))
+        : undefined;
+      offer(
+        keyName === 'title'
+          ? 0
+          : keyName === 'subtitle' || keyName.startsWith('heading')
+            ? 1
+            : 2,
+        text
+      );
+    }
+  }
+
   const consider = (el: Node, depth: number) => {
     const info = componentInfo(el);
     if (!info) return;
@@ -289,9 +326,10 @@ function slideLabel(slideEl: Node): string | undefined {
       const text = stringValue(propValue(info.props, 'text'));
       if (text) {
         const style = stringValue(propValue(info.props, 'style')) ?? '';
-        const rank =
-          style === 'title' ? 0 : style.startsWith('heading') ? 1 : 2;
-        if (!best || rank < best.rank) best = { rank, text };
+        offer(
+          style === 'title' ? 0 : style.startsWith('heading') ? 1 : 2,
+          text
+        );
       }
     }
     if (depth < 1) {
@@ -300,7 +338,7 @@ function slideLabel(slideEl: Node): string | undefined {
     }
   };
   for (const el of arrayItems(propValue(slideEl, 'children'))) consider(el, 0);
-  return best ? truncate(best.text, 48) : undefined;
+  return best ? truncate(best.text, 48, true) : undefined;
 }
 
 function buildPptxOutline(root: Node): OutlineNode[] {

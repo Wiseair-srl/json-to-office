@@ -4253,6 +4253,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "template": "COVER_TEMPLATE",
         "notes": "Cover slide — customize title, subtitle, and date",
         "placeholders": {
@@ -4281,6 +4284,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Section divider (azure)"
+        },
         "template": "SECTION_AZURE_TEMPLATE",
         "notes": "Section divider (azure) — use to introduce major sections",
         "placeholders": {
@@ -4309,6 +4315,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Text + visual split"
+        },
         "template": "TEXT_VISUAL_TEMPLATE",
         "notes": "Text + visual split — narrative left, visual right on dark panel",
         "placeholders": {
@@ -4337,6 +4346,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Three-column features"
+        },
         "template": "THREE_COL_TEMPLATE",
         "notes": "Three-column feature cards with icons",
         "placeholders": {
@@ -4463,6 +4475,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "KPI dashboard"
+        },
         "template": "METRICS_TEMPLATE",
         "notes": "KPI / metrics dashboard — dark background with 4 metric cards",
         "placeholders": {
@@ -4596,6 +4611,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Two-column content"
+        },
         "template": "TWO_COL_TEMPLATE",
         "notes": "Two-column content — narrative left, custom bullets right",
         "placeholders": {
@@ -4647,6 +4665,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Bar chart"
+        },
         "template": "CHART_TEMPLATE",
         "notes": "Bar chart — revenue growth by quarter",
         "placeholders": {
@@ -4699,6 +4720,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Quote"
+        },
         "template": "QUOTE_TEMPLATE",
         "notes": "Quote / testimonial — centered on dark slate background",
         "placeholders": {
@@ -4727,6 +4751,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Timeline"
+        },
         "template": "TIMELINE_TEMPLATE",
         "notes": "Timeline / process — four-step horizontal flow",
         "placeholders": {
@@ -4820,6 +4847,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Section divider (light)"
+        },
         "template": "SECTION_LIGHT_TEMPLATE",
         "notes": "Section divider (light blue) — alternate section break",
         "placeholders": {
@@ -4848,6 +4878,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Image + text split"
+        },
         "template": "IMG_TEXT_TEMPLATE",
         "notes": "Image + text split — visual left, narrative and stats right",
         "placeholders": {
@@ -4947,6 +4980,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Comparison table"
+        },
         "template": "COMPARISON_TEMPLATE",
         "notes": "Comparison table — competitive differentiation",
         "placeholders": {
@@ -5162,6 +5198,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Team grid"
+        },
         "template": "TEAM_TEMPLATE",
         "notes": "Team grid — four team member cards with avatars and bios",
         "placeholders": {
@@ -5279,6 +5318,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Big stat"
+        },
         "template": "BIG_STAT_TEMPLATE",
         "notes": "Big stat — single dramatic metric for maximum impact",
         "placeholders": {
@@ -5312,6 +5354,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Closing"
+        },
         "template": "CLOSING_TEMPLATE",
         "notes": "Closing slide — thank you with contact details",
         "placeholders": {

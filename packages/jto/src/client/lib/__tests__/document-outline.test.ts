@@ -83,7 +83,7 @@ describe('buildOutline (pptx)', () => {
   it('lists slides with title-derived labels', () => {
     expect(outline).toHaveLength(3);
     expect(outline[0].kind).toBe('slide');
-    expect(outline[0].label).toBe('Q2 Review');
+    expect(outline[0].label).toBe('Q2 Review Subline');
     expect(outline[1].label).toBe('Performance');
     expect(outline[2].label).toBe('Slide 3');
   });
@@ -114,6 +114,46 @@ describe('buildOutline (pptx)', () => {
     const groups = new Set(outline.map((n) => n.reorder?.groupId));
     expect(groups.size).toBe(1);
     expect([...groups][0]).toBeTruthy();
+  });
+
+  it('prefers meta.title over content-derived labels', () => {
+    const doc = JSON.stringify({
+      name: 'pptx',
+      children: [
+        {
+          name: 'slide',
+          props: { meta: { title: 'Cover' } },
+          children: [
+            { name: 'text', props: { text: 'Something else', style: 'title' } },
+          ],
+        },
+      ],
+    });
+    const slides = buildOutline(doc, 'pptx', 'document');
+    expect(slides[0].label).toBe('Cover');
+  });
+
+  it('labels template-driven slides from their title placeholder', () => {
+    const doc = JSON.stringify({
+      name: 'pptx',
+      children: [
+        {
+          name: 'slide',
+          props: {
+            template: 'COVER_TEMPLATE',
+            placeholders: {
+              subtitle: { name: 'text', props: { text: 'The subtitle' } },
+              title: {
+                name: 'text',
+                props: { text: 'Slide system\nshowcase' },
+              },
+            },
+          },
+        },
+      ],
+    });
+    const slides = buildOutline(doc, 'pptx', 'document');
+    expect(slides[0].label).toBe('Slide system showcase');
   });
 });
 
@@ -221,7 +261,7 @@ describe('error tolerance', () => {
     const broken = pptxDoc.replace('"type": "bar",', '"type": "bar",,');
     const outline = buildOutline(broken, 'pptx', 'document');
     expect(outline.length).toBe(3);
-    expect(outline[0].label).toBe('Q2 Review');
+    expect(outline[0].label).toBe('Q2 Review Subline');
   });
 
   it('returns [] for empty or hopeless input', () => {
@@ -265,7 +305,7 @@ describe('computeReorderEdit', () => {
     const next = apply(pptxDoc, edit!);
     const parsed = JSON.parse(next);
     const labels = buildOutline(next, 'pptx', 'document').map((n) => n.label);
-    expect(labels).toEqual(['Performance', 'Slide 2', 'Q2 Review']);
+    expect(labels).toEqual(['Performance', 'Slide 2', 'Q2 Review Subline']);
     expect(parsed.children).toHaveLength(3);
   });
 

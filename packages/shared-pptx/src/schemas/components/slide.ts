@@ -7,6 +7,22 @@ import { SlideBackgroundSchema, TransitionSchema } from './common';
 
 export const SlidePropsSchema = Type.Object(
   {
+    meta: Type.Optional(
+      Type.Object(
+        {
+          title: Type.Optional(
+            Type.String({
+              description:
+                'Authoring label for this slide, shown in editors and outlines. Never rendered — slide content is unaffected.',
+            })
+          ),
+        },
+        {
+          additionalProperties: false,
+          description: 'Authoring metadata; has no effect on the presentation.',
+        }
+      )
+    ),
     background: Type.Optional(SlideBackgroundSchema),
     transition: Type.Optional(TransitionSchema),
     notes: Type.Optional(
