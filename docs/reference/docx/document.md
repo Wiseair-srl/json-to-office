@@ -108,10 +108,10 @@ Sections also used to accept `title`/`level` props that rendered a heading at th
 
 ### `page` override
 
-| Field     | Type                                                               | Description                                                                                                                   |
-| --------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `size`    | `'A4'` \| `'A3'` \| `'LETTER'` \| `'LEGAL'` \| `{ width, height }` | Page size preset or explicit dimensions.                                                                                      |
-| `margins` | `{ top?, bottom?, left?, right?, header?, footer?, gutter? }`      | Margins in **twips** (1440 twips = 1 inch), each ≥ 0. `header`/`footer` set the distance of header/footer from the page edge. |
+| Field     | Type                                                               | Description                                                                                                                                                                      |
+| --------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `size`    | `'A4'` \| `'A3'` \| `'LETTER'` \| `'LEGAL'` \| `{ width, height }` | Page size preset or explicit dimensions. A preset also emits the OOXML paper code (`w:pgSz/@w:code`) that printer drivers use to pick a tray; explicit dimensions carry no code. |
+| `margins` | `{ top?, bottom?, left?, right?, header?, footer?, gutter? }`      | Margins in **twips** (1440 twips = 1 inch), each ≥ 0. `header`/`footer` set the distance of header/footer from the page edge.                                                    |
 
 When `page` is omitted, the section inherits the theme's `page` block (the `minimal` theme uses A4 with 1440-twip top/bottom and 1080-twip left/right margins). See [the theme schema](/reference/theme-schema).
 

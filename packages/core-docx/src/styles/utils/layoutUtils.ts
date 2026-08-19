@@ -48,25 +48,41 @@ const resolveTableParagraphSpacing = (style?: TableParagraphStyle) => {
 };
 
 /**
- * Standard page sizes in twips (1/20 of a point, 1/1440 of an inch)
+ * Standard page sizes in twips (1/20 of a point, 1/1440 of an inch).
+ *
+ * `code` is the OOXML `w:pgSz/@w:code` paper-size code — the Windows DEVMODE
+ * `dmPaperSize` value that printer drivers key off (from `wingdi.h`:
+ * DMPAPER_LETTER 1, DMPAPER_LEGAL 5, DMPAPER_A3 8, DMPAPER_A4 9). Without it a
+ * driver has to infer the tray from the dimensions.
  */
 export const PAGE_SIZES = {
-  A4: { width: 11906, height: 16838 },
-  A3: { width: 16838, height: 23811 },
-  LETTER: { width: 12240, height: 15840 },
-  LEGAL: { width: 12240, height: 20160 },
+  A4: { width: 11906, height: 16838, code: 9 },
+  A3: { width: 16838, height: 23811, code: 8 },
+  LETTER: { width: 12240, height: 15840, code: 1 },
+  LEGAL: { width: 12240, height: 20160, code: 5 },
 } as const;
 
+export interface PageDimensions {
+  width: number;
+  height: number;
+  /** Present only for a named size; a custom size has no paper code. */
+  code?: number;
+}
+
 /**
- * Get page dimensions from size (string or object)
+ * Get page dimensions from size (string or object).
+ *
+ * A custom `{ width, height }` deliberately returns no `code`: it is not one of
+ * the standard papers, and claiming a code would send the driver to the wrong
+ * tray.
  */
 export function getPageDimensions(
   size: 'A4' | 'A3' | 'LETTER' | 'LEGAL' | { width: number; height: number }
-): { width: number; height: number } {
+): PageDimensions {
   if (typeof size === 'string') {
     return PAGE_SIZES[size];
   }
-  return size;
+  return { width: size.width, height: size.height };
 }
 
 /**
@@ -225,6 +241,7 @@ export const getPageSetup = (theme?: ThemeConfig, themeName?: string) => {
       size: {
         width: dimensions.width,
         height: dimensions.height,
+        ...(dimensions.code !== undefined && { code: dimensions.code }),
       },
       margin: {
         top: margins.top ?? defaultMargins.top ?? 1440,
@@ -240,6 +257,7 @@ export const getPageSetup = (theme?: ThemeConfig, themeName?: string) => {
     size: {
       width: PAGE_SIZES.A4.width, // 210mm in twips (A4)
       height: PAGE_SIZES.A4.height, // 297mm in twips (A4)
+      code: PAGE_SIZES.A4.code,
     },
     margin: {
       top: defaultMargins.top ?? 1440,
