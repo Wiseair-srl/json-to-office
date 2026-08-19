@@ -278,7 +278,7 @@ Bulleted or numbered lists with up to nine nesting levels and fully configurable
 | `levels`    | `Level[]` (1–9 items)                               | no       | —              | Per-level configuration (see below)                                      |
 | `format`    | LevelFormat \| `'numbered'` \| `'none'`             | no       | bullets        | Shorthand for the level-0 format                                         |
 | `bullet`    | `string`                                            | no       | —              | Custom bullet character                                                  |
-| `start`     | `number` (≥ 1)                                      | no       | `1`            | Level-0 starting number                                                  |
+| `start`     | `number` (≥ 1)                                      | no       | `1`            | Level-0 starting number (applies with or without `levels`)               |
 | `spacing`   | `{ before?, after?, item? }` (points)               | no       | —              | `item` = spacing between items                                           |
 | `alignment` | `'left'` \| `'center'` \| `'right'` \| `'justify'`  | no       | —              |                                                                          |
 | `indent`    | `number` \| `{ left?, hanging? }`                   | no       | —              |                                                                          |
@@ -293,13 +293,19 @@ Bulleted or numbered lists with up to nine nesting levels and fully configurable
 | `alignment` | `'start'` \| `'end'` \| `'left'` \| `'right'` \| `'center'` | no       | —       | Number alignment                                                                                                                                                                                                   |
 | `indent`    | `{ left?, hanging? }`                                       | no       | —       | Points, converted internally (e.g. `left: 36` ≈ 0.5 in)                                                                                                                                                            |
 | `start`     | `number` (≥ 1)                                              | no       | `1`     | Starting value                                                                                                                                                                                                     |
+| `font`      | `{ family?, size?, color?, bold?, italic?, underline? }`    | no       | —       | Styles the marker glyph (the number or bullet) only — the list text is unaffected. `size` in points, `color` accepts a hex value or a theme colour token                                                           |
 
 ```json
 {
   "name": "list",
   "props": {
     "levels": [
-      { "level": 0, "format": "upperRoman", "text": "%1." },
+      {
+        "level": 0,
+        "format": "upperRoman",
+        "text": "%1.",
+        "font": { "color": "primary", "bold": true }
+      },
       { "level": 1, "format": "decimal", "text": "%1.%2" }
     ],
     "spacing": { "item": 3 },

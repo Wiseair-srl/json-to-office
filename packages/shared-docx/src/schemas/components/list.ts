@@ -8,6 +8,7 @@ import {
   JustifiedAlignmentSchema,
   IndentSchema,
 } from './common';
+import { HexColorSchema } from '../font';
 import { RevisionSchema } from './revision';
 
 /**
@@ -83,6 +84,30 @@ export const LevelFormatSchema = Type.Union(
 );
 
 /**
+ * Font applied to the marker glyph itself (the number or bullet), independent
+ * of the list text. Maps to the numbering level's `w:rPr`.
+ */
+export const ListMarkerFontSchema = Type.Object(
+  {
+    family: Type.Optional(Type.String({ description: 'Font family name' })),
+    size: Type.Optional(
+      Type.Number({ minimum: 1, description: 'Marker size in points' })
+    ),
+    color: Type.Optional(HexColorSchema),
+    bold: Type.Optional(Type.Boolean({ description: 'Bold marker' })),
+    italic: Type.Optional(Type.Boolean({ description: 'Italic marker' })),
+    underline: Type.Optional(
+      Type.Boolean({ description: 'Underlined marker' })
+    ),
+  },
+  {
+    description:
+      'Styling for the number/bullet glyph only. The list text is unaffected.',
+    additionalProperties: false,
+  }
+);
+
+/**
  * Configuration for a single numbering level
  */
 export const ListLevelPropsSchema = Type.Object(
@@ -120,6 +145,7 @@ export const ListLevelPropsSchema = Type.Object(
         description: 'Starting number for this level (default: 1)',
       })
     ),
+    font: Type.Optional(ListMarkerFontSchema),
   },
   {
     description: 'Configuration for a single list level',
@@ -201,5 +227,6 @@ export const ListPropsSchema = Type.Object(
 );
 
 export type LevelFormat = Static<typeof LevelFormatSchema>;
+export type ListMarkerFont = Static<typeof ListMarkerFontSchema>;
 export type ListLevelProps = Static<typeof ListLevelPropsSchema>;
 export type ListProps = Static<typeof ListPropsSchema>;
