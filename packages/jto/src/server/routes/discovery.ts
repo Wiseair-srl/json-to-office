@@ -33,7 +33,10 @@ function getSelectedPlugins(pluginNames?: string[]) {
   const registry = PluginRegistry.getInstance();
   if (!registry.hasPlugins()) return [];
 
-  const plugins = pluginNames?.length
+  // An explicit array is an exact selection — [] means "no plugins", so a
+  // playground with every plugin toggled off gets the plugin-free schema.
+  // Only an absent selection falls back to every registered plugin.
+  const plugins = pluginNames
     ? pluginNames.map((n) => registry.getPlugin(n)).filter(Boolean)
     : registry.getPlugins();
 
@@ -292,9 +295,12 @@ discoveryRouter.get('/schemas/document', async (c) => {
   try {
     const adapter = Container.getAdapter();
     const pluginsParam = c.req.query('plugins');
-    const pluginNames = pluginsParam
-      ? pluginsParam.split(',').filter(Boolean)
-      : undefined;
+    // `?plugins=` (empty) is an explicit "no plugins"; only a missing param
+    // means "all registered plugins".
+    const pluginNames =
+      pluginsParam !== undefined
+        ? pluginsParam.split(',').filter(Boolean)
+        : undefined;
     const schema = await generateDocumentSchema(adapter.name, pluginNames);
     return c.json({ success: true, data: schema });
   } catch (error: any) {

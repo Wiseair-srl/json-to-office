@@ -352,7 +352,10 @@ export function createComponentSchemaObject(
       : Type.Optional(Type.Array(childrenType));
   }
 
-  return Type.Object(schema, { additionalProperties: false });
+  return Type.Object(schema, {
+    additionalProperties: false,
+    description: component.description,
+  });
 }
 
 /**

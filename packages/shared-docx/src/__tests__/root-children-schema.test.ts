@@ -12,14 +12,16 @@ import { Value } from '@sinclair/typebox/value';
 import { generateUnifiedDocumentSchema } from '../schemas/generator';
 import { convertToJsonSchema } from '../schemas/export';
 import { getStandardComponent } from '../schemas/component-registry';
+import { unionBranches } from '@json-to-office/shared';
 
 function rootChildNames(): string[] {
   const json = convertToJsonSchema(
     generateUnifiedDocumentSchema({ customComponents: [] })
   ) as Record<string, any>;
   const items = json.properties.children.items;
-  const variants = items.anyOf ?? items.oneOf ?? [items];
-  return variants
+  const variants = unionBranches(items);
+  const branches = variants.length > 0 ? variants : [items];
+  return branches
     .map((v: any) => v?.properties?.name?.const)
     .filter(Boolean) as string[];
 }

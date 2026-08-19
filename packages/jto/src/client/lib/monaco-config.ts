@@ -12,6 +12,7 @@ import {
 import { schemaService } from './schema-service';
 import { registerFontCodeLens } from './monaco-fonts-codelens';
 import { registerMonacoThemes } from './monaco-theme';
+import { unionBranches } from '@json-to-office/shared';
 
 let isConfigured = false;
 let completionDisposable: { dispose(): void } | null = null;
@@ -188,11 +189,9 @@ function injectCustomThemeNames(schema: any, themeNames: string[]): void {
   // Direct path (docx schema)
   inject(schema?.properties?.props?.properties?.theme);
 
-  // anyOf branches (pptx schema)
-  if (Array.isArray(schema?.anyOf)) {
-    for (const branch of schema.anyOf) {
-      inject(branch?.properties?.props?.properties?.theme);
-    }
+  // Union branches (pptx schema) — flat anyOf or restructured if/then dispatch
+  for (const branch of unionBranches(schema)) {
+    inject((branch as any)?.properties?.props?.properties?.theme);
   }
 }
 

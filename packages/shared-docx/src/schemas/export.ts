@@ -6,6 +6,7 @@
  */
 
 import { TSchema } from '@sinclair/typebox';
+import { restructureNameDiscriminatedUnions } from '@json-to-office/shared';
 import { getContainerComponents } from './component-registry';
 
 /**
@@ -180,6 +181,9 @@ export function convertToJsonSchema(
 
   // Fix any remaining recursive references
   fixSchemaReferences(jsonSchema);
+
+  // Canonical if/then dispatch for `name`-discriminated unions (editor UX)
+  restructureNameDiscriminatedUnions(jsonSchema);
 
   return jsonSchema;
 }

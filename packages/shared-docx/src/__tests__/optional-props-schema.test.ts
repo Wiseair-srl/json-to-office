@@ -18,6 +18,7 @@ import { Value } from '@sinclair/typebox/value';
 import { generateUnifiedDocumentSchema } from '../schemas/generator';
 import { convertToJsonSchema } from '../schemas/export';
 import { validateStrict } from '../validation/unified';
+import { unionBranches } from '@json-to-office/shared';
 
 const exported = generateUnifiedDocumentSchema({ customComponents: [] });
 
@@ -28,12 +29,14 @@ function inSection(child: Record<string, unknown>) {
 
 function variantRequired(name: string): string[] {
   const json = convertToJsonSchema(exported) as Record<string, any>;
-  const variants = json.definitions.ComponentDefinition.anyOf;
+  // Exported unions are restructured into if/then dispatch — iterate the
+  // branch objects shape-agnostically.
+  const variants = unionBranches(json.definitions.ComponentDefinition);
   const variant = variants.find(
     (v: any) => v?.properties?.name?.const === name
   );
   expect(variant, `no exported variant for "${name}"`).toBeDefined();
-  return variant.required ?? [];
+  return (variant as any).required ?? [];
 }
 
 // Props schemas with no required field: a bare `{ name }` is a valid node.
