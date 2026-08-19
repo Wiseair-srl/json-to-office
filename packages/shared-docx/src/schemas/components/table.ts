@@ -4,6 +4,7 @@
 
 import { Type, Static, TSchema } from '@sinclair/typebox';
 import { HexColorSchema, HexColorOrTransparentSchema } from '../font';
+import { CommentSchema } from './comment';
 
 // Define Cell type - can be plain text or a component definition
 const CellContentSchema = Type.Recursive((This) =>
@@ -192,6 +193,7 @@ export function createTablePropsSchema(componentRef: TSchema): TSchema {
     height: Type.Optional(
       Type.Number({ minimum: 0, description: 'Cell height in points' })
     ),
+    comment: Type.Optional(CommentSchema),
   };
 
   const headerSchema = Type.Object(

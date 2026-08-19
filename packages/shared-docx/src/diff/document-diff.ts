@@ -325,9 +325,12 @@ function diffTextComponent(
   const oldText = plainText(oldNode);
   const newText = plainText(newNode);
 
+  // `comment` joins `revision` here: both are review metadata rather than
+  // formatting, so a changed comment must not be reported as an untracked
+  // formatting change.
   const propsChanged = !deepEqual(
-    propsWithout(oldNode.props, 'text', 'revision'),
-    propsWithout(newNode.props, 'text', 'revision')
+    propsWithout(oldNode.props, 'text', 'revision', 'comment'),
+    propsWithout(newNode.props, 'text', 'revision', 'comment')
   );
   if (propsChanged) {
     ctx.summary.untracked.push({

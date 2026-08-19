@@ -18,14 +18,31 @@ import { SectionPropsSchema } from './components/section';
 import { ColumnsPropsSchema } from './components/columns';
 import { ListPropsSchema } from './components/list';
 
-// Create component defaults by making all fields optional (Type.Partial).
-// `revision` (tracked-change segments) is per-instance data and must never
-// be a shared default — it would silently replace every component's text.
+/**
+ * Props that describe one specific occurrence of a component and can never be
+ * a shared default.
+ *
+ * `revision` would silently replace every component's text with the same
+ * tracked change; `comment` would attach the same review comment to every
+ * component and make the registry allocate a fresh id for each copy.
+ * `ComponentDefaultsSchema` is embedded in every theme, so either leak is
+ * theme-wide.
+ *
+ * Anything added here must also be added to the table in
+ * `__tests__/component-defaults-per-instance.test.ts`, which is driven by this
+ * list.
+ */
+export const PER_INSTANCE_PROPS = ['revision', 'comment'] as const;
+
+export type PerInstanceProp = (typeof PER_INSTANCE_PROPS)[number];
+
+// Create component defaults by making all fields optional (Type.Partial),
+// minus the per-instance props above.
 export const HeadingComponentDefaultsSchema = Type.Partial(
-  Type.Omit(HeadingPropsSchema, ['revision'])
+  Type.Omit(HeadingPropsSchema, PER_INSTANCE_PROPS)
 );
 export const ParagraphComponentDefaultsSchema = Type.Partial(
-  Type.Omit(ParagraphPropsSchema, ['revision'])
+  Type.Omit(ParagraphPropsSchema, PER_INSTANCE_PROPS)
 );
 export const ImageComponentDefaultsSchema = Type.Partial(ImagePropsSchema);
 export const StatisticComponentDefaultsSchema =
@@ -33,7 +50,9 @@ export const StatisticComponentDefaultsSchema =
 export const TableComponentDefaultsSchema = Type.Partial(TablePropsSchema);
 export const SectionComponentDefaultsSchema = Type.Partial(SectionPropsSchema);
 export const ColumnsComponentDefaultsSchema = Type.Partial(ColumnsPropsSchema);
-export const ListComponentDefaultsSchema = Type.Partial(ListPropsSchema);
+export const ListComponentDefaultsSchema = Type.Partial(
+  Type.Omit(ListPropsSchema, PER_INSTANCE_PROPS)
+);
 
 export const ComponentDefaultsSchema = Type.Object(
   {

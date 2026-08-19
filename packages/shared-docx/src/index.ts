@@ -236,6 +236,8 @@ export {
   TocPropsSchema,
   RevisionSchema,
   RevisionSegmentSchema,
+  CommentSchema,
+  ListMarkerFontSchema,
   StandardComponentDefinitionSchema,
   ComponentDefinitionSchema,
 } from './schemas/components';
@@ -256,6 +258,8 @@ export type {
   TocProps,
   Revision,
   RevisionSegment,
+  Comment,
+  ListMarkerFont,
   Alignment,
   JustifiedAlignment,
   HeadingLevel,

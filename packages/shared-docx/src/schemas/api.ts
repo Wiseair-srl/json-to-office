@@ -24,7 +24,10 @@ export const GenerateDocumentRequestSchema = Type.Object(
       Type.Object(
         {
           includeMetadata: Type.Optional(Type.Boolean()),
-          includeComments: Type.Optional(Type.Boolean()),
+          // No `includeComments`: comments are authored on the components that
+          // carry them, so there is nothing for a request-level toggle to mean.
+          // The object stays `additionalProperties: true`, so old callers that
+          // still send one are unaffected.
           trackChanges: Type.Optional(Type.Boolean()),
         },
         { additionalProperties: true }

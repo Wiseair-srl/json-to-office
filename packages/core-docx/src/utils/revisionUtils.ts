@@ -12,6 +12,10 @@ import { normalizeUnicodeText } from './unicode';
 import { processTextWithPlaceholders } from './placeholderProcessor';
 import type { TextStyle } from './textParser';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import {
+  componentHasAnnotation,
+  type MaybeComponent,
+} from './componentAnnotations';
 
 export const DEFAULT_REVISION_AUTHOR = 'json-to-office';
 // Deterministic fallback so identical inputs produce byte-identical XML
@@ -140,65 +144,11 @@ export function createRevisionRuns(
   return runs;
 }
 
-type MaybeComponent = { props?: unknown; children?: unknown[] };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-/** True when `value` is an object carrying a truthy `revision`. */
-function hasOwnRevision(value: unknown): boolean {
-  return isRecord(value) && Boolean(value.revision);
-}
-
 /**
- * True when a table cell (or header cell) carries a revision, either on the
- * cell itself or on a component nested in its `content`.
- */
-function cellHasRevision(cell: unknown): boolean {
-  if (!isRecord(cell)) return false;
-  if (hasOwnRevision(cell)) return true;
-  const content = cell.content;
-  return isRecord(content) && componentHasRevision(content as MaybeComponent);
-}
-
-/**
- * True when a component carries revision data anywhere in its subtree
- * (own props, list items, table cells, or any descendant), meaning its render
- * output embeds document-scoped revision ids and must not be served from the
- * cross-document component cache.
- *
- * Tables are cacheable, and the table model is column-major, so cells reached
- * only through `props.columns[]` need an explicit descent: without it a cached
- * table would replay dead w:ins/w:del ids into later documents.
+ * True when a component carries revision data anywhere in its subtree,
+ * meaning its render output embeds document-scoped w:ins/w:del ids and must not
+ * be served from the cross-document component cache.
  */
 export function componentHasRevision(component: MaybeComponent): boolean {
-  const props = component.props as Record<string, unknown> | undefined;
-  if (props) {
-    if (props.revision) return true;
-    const items = props.items;
-    if (Array.isArray(items) && items.some(hasOwnRevision)) return true;
-    // Row-parallel structural revisions (row insert/delete) live outside the
-    // column-major cell grid.
-    const rows = props.rows;
-    if (Array.isArray(rows) && rows.some(hasOwnRevision)) return true;
-    const columns = props.columns;
-    if (Array.isArray(columns)) {
-      const columnHasRevision = columns.some((column) => {
-        if (!isRecord(column)) return false;
-        if (cellHasRevision(column.header)) return true;
-        const cells = column.cells;
-        return Array.isArray(cells) && cells.some(cellHasRevision);
-      });
-      if (columnHasRevision) return true;
-    }
-  }
-  const children = component.children;
-  if (Array.isArray(children)) {
-    return children.some(
-      (child) =>
-        isRecord(child) && componentHasRevision(child as MaybeComponent)
-    );
-  }
-  return false;
+  return componentHasAnnotation(component, 'revision');
 }

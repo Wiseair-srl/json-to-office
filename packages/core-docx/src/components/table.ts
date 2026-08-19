@@ -7,6 +7,7 @@ import { Table } from 'docx';
 import { ComponentDefinition, isTableComponent } from '../types';
 import { ThemeConfig } from '../styles';
 import { createTable } from '../core/content';
+import type { Comment } from '@json-to-office/shared-docx';
 
 type CellContent = string | ComponentDefinition;
 
@@ -72,9 +73,11 @@ type TableConfig = {
     width?: number | string;
     cellDefaults?: CellDefaults;
     header?: CellDefaults & {
+      comment?: Comment;
       content?: CellContent;
     };
     cells?: (CellDefaults & {
+      comment?: Comment;
       content?: CellContent;
     })[];
   }[];

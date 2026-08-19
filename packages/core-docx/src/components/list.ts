@@ -244,5 +244,7 @@ export function renderListComponent(
     numberingReference: reference,
     spacing: resolvedConfig.spacing,
     alignment: resolvedConfig.alignment,
+    // Review comment spanning the whole list
+    comment: resolvedConfig.comment,
   });
 }

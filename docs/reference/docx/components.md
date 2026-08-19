@@ -66,6 +66,7 @@ A document heading. Headings feed the [table of contents](#toc) and Word's navig
 | `keepNext`     | `boolean`                                                                            | no       | —                   | Keep with the next paragraph                                          |
 | `keepLines`    | `boolean`                                                                            | no       | —                   | Keep all lines on one page                                            |
 | `revision`     | `Revision`                                                                           | no       | —                   | Tracked-change segments (see [Revisions](#revisions-tracked-changes)) |
+| `comment`      | `Comment`                                                                            | no       | —                   | Review comment (see [Comments](#comments))                            |
 
 ```json
 {
@@ -96,6 +97,7 @@ Body text. The workhorse component — also used inside headers, footers, table 
 | `keepLines`    | `boolean`                                          | no       | —                   |                                                             |
 | `id`           | `string`                                           | no       | —                   | Bookmark anchor targeted by internal links `[text](#id)`    |
 | `revision`     | `Revision`                                         | no       | —                   | Tracked-change segments                                     |
+| `comment`      | `Comment`                                          | no       | —                   | Review comment (see [Comments](#comments))                  |
 
 The `floating` frame object: `horizontalPosition` / `verticalPosition` as `{ relative: 'margin' | 'page' | 'text', align?, offset? }` (offsets in twips or `"%"` strings), `wrap.type` (`'around'` \| `'none'` \| `'notBeside'` \| `'through'` \| `'tight'` \| `'auto'`), `lockAnchor`, and `width`/`height` in twips.
 
@@ -235,6 +237,7 @@ The header row emits `<w:tblHeader/>` unless `repeatHeaderOnPageBreak` is explic
 | `borderColor` / `borderSize` | `string` / `number` (points)                                  | Per-cell border override                                                           |
 | `padding`                    | `number` \| `{ top?, bottom?, left?, right? }` (points)       |                                                                                    |
 | `height`                     | `number` (points)                                             | Minimum row height contribution                                                    |
+| `comment`                    | `Comment`                                                     | Review comment wrapping the cell's content (see [Comments](#comments))             |
 
 Cell `color` and `backgroundColor` are resolved the same way paragraph and heading `font.color` are: `#RRGGBB` is normalized to bare uppercase hex, and a theme color name (`primary`, `accent`, `text`, ...) resolves to that theme's value. A bare hex without `#` still works for backwards compatibility, but only when it starts with a letter (`F0FDF4`) — a digit-leading one such as `0F0FDF` fails validation, because the shared color pattern accepts only `#RRGGBB` or an identifier.
 
@@ -282,6 +285,7 @@ Bulleted or numbered lists with up to nine nesting levels and fully configurable
 | `spacing`   | `{ before?, after?, item? }` (points)               | no       | —              | `item` = spacing between items                                           |
 | `alignment` | `'left'` \| `'center'` \| `'right'` \| `'justify'`  | no       | —              |                                                                          |
 | `indent`    | `number` \| `{ left?, hanging? }`                   | no       | —              |                                                                          |
+| `comment`   | `Comment`                                           | no       | —              | Review comment spanning the whole list (see [Comments](#comments))       |
 
 **Level**
 
@@ -531,3 +535,36 @@ Once registered, it takes `{ text: string, spaceAfter?: number }` — the text t
 ```
 
 Set `trackRevisions: true` on the [`docx` root](/reference/docx/document#docx-root) to open the document with track-changes mode active (redlines produced by `diffDocuments` do this automatically). `revision` is deliberately excluded from `componentDefaults` — revisions describe specific edits and cannot be defaulted.
+
+## Comments
+
+`heading`, `paragraph`, `list` and table cells (header and body alike) can carry a `comment` prop: a Word review comment anchored to that component's text. The text itself is unchanged — the runs are wrapped in a comment range and the body goes to `word/comments.xml`, so a reader that ignores comments sees exactly the same document.
+
+Comments are unthreaded: one comment per component, no replies.
+
+**Comment**
+
+| Field      | Type                | Required | Default                               | Description                                       |
+| ---------- | ------------------- | -------- | ------------------------------------- | ------------------------------------------------- |
+| `text`     | `string` (min 1)    | **yes**  | —                                     | Comment body; newlines become separate paragraphs |
+| `author`   | `string`            | no       | `"json-to-office"`                    | Shown in Word's review pane                       |
+| `initials` | `string`            | no       | derived from `author`                 | Shown on the comment bubble                       |
+| `date`     | `string` (ISO 8601) | no       | Unix epoch (for deterministic output) | Comment timestamp                                 |
+
+```json
+{
+  "name": "paragraph",
+  "props": {
+    "text": "Revenue grew 12% year over year.",
+    "comment": {
+      "text": "Confirm this figure with finance before circulating.",
+      "author": "Reviewer One",
+      "date": "2026-06-09T10:00:00Z"
+    }
+  }
+}
+```
+
+On a `list` the comment anchors to the list as a whole: the range opens on the first rendered item and closes on the last. On a table cell it wraps whatever the cell renders, string or component.
+
+Comment ids live in their own OOXML namespace, separate from the `w:ins`/`w:del` ids used by revisions, and are allocated per render. Like `revision`, `comment` is deliberately excluded from `componentDefaults` — a shared default would attach the same comment to every component.

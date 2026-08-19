@@ -217,6 +217,8 @@ export function renderParagraphComponent(
     bookmarkId: resolvedConfig.id,
     // Tracked-change segments (rendered as native Word revisions)
     revision: resolvedConfig.revision,
+    // Review comment anchored to this paragraph's text
+    comment: resolvedConfig.comment,
   });
 
   return [text];

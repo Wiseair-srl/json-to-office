@@ -10,6 +10,7 @@ import {
 } from './common';
 import { HexColorSchema } from '../font';
 import { RevisionSchema } from './revision';
+import { CommentSchema } from './comment';
 
 /**
  * Level format options for docx numbering
@@ -219,6 +220,9 @@ export const ListPropsSchema = Type.Object(
     indent: Type.Optional(
       Type.Union([Type.Number({ minimum: 0 }), IndentSchema])
     ),
+    // Anchored to the list as a whole: the range opens on the first rendered
+    // item and closes on the last.
+    comment: Type.Optional(CommentSchema),
   },
   {
     description: 'List component props',
