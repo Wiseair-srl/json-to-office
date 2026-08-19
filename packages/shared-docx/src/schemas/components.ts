@@ -17,6 +17,7 @@ import {
 // Re-export all schemas from individual component files
 export * from './components/common';
 export * from './components/revision';
+export * from './components/comment';
 export * from './components/report';
 export * from './components/section';
 export * from './components/columns';

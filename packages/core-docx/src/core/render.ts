@@ -86,6 +86,7 @@ import { mapFloatingOptions } from '../utils/docxImagePositioning';
 import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
 import { globalNumberingRegistry } from '../utils/numberingConfig';
 import { globalRevisionIdRegistry } from '../utils/revisionUtils';
+import { globalCommentRegistry } from '../utils/commentRegistry';
 import {
   runWithGenerationDate,
   runWithBaseDir,
@@ -180,7 +181,13 @@ export async function renderDocument(
         globalRevisionIdRegistry.runScoped(() =>
           globalNumberingRegistry.runScoped(() =>
             globalSectionBookmarkRegistry.runScoped(() =>
-              renderDocumentScoped(structure, layout, options)
+              // Comment ids are a separate OOXML namespace from w:ins/w:del,
+              // but they need the same per-render isolation: outside this nest
+              // concurrent generations would interleave counters and an anchor
+              // would point at another document's comment body.
+              globalCommentRegistry.runScoped(() =>
+                renderDocumentScoped(structure, layout, options)
+              )
             )
           )
         )
@@ -312,6 +319,8 @@ async function renderDocumentScoped(
 
   // Get all numbering configurations from the registry (already imported above)
   const numberingConfigs = globalNumberingRegistry.getAll();
+  // Comment bodies collected while rendering the anchors
+  const comments = globalCommentRegistry.getAll();
 
   return new Document({
     styles: createWordStyles(structure.theme, structure.language),
@@ -322,6 +331,8 @@ async function renderDocumentScoped(
       // Word opens the document in review mode (further edits are tracked)
       ...(structure.trackRevisions && { trackRevisions: true }),
     },
+    // word/comments.xml, emitted only when something was actually commented
+    ...(comments.length > 0 && { comments: { children: comments } }),
     // Add numbering configurations if any lists were rendered
     ...(numberingConfigs.length > 0 && {
       numbering: {

@@ -12,6 +12,7 @@ import {
   NoProofWordsSchema,
 } from '../font';
 import { RevisionSchema } from './revision';
+import { CommentSchema } from './comment';
 
 // Frame wrapping type schema
 const FrameWrapTypeSchema = Type.Union(
@@ -219,6 +220,7 @@ export const ParagraphPropsSchema = Type.Object(
       })
     ),
     revision: Type.Optional(RevisionSchema),
+    comment: Type.Optional(CommentSchema),
   },
   {
     description:

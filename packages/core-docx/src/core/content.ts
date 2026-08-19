@@ -47,7 +47,8 @@ import { normalizeUnicodeText } from '../utils/unicode';
 import { getStyleIdForLevel } from '../styles/themeToDocxAdapter';
 import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
 import { createRevisionRuns } from '../utils/revisionUtils';
-import type { Revision } from '@json-to-office/shared-docx';
+import { openCommentRange, closeCommentRange } from '../utils/commentAnchors';
+import type { Comment, Revision } from '@json-to-office/shared-docx';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import { synthesizeFamilyName } from '@json-to-office/shared';
 import {
@@ -194,6 +195,9 @@ export interface TextOptions {
   // Tracked-change segments: when present, text is rendered from these
   // (as native Word revisions) instead of the plain content string
   revision?: Revision;
+  // Review comment anchored to this text. The text itself is unchanged; the
+  // runs are wrapped in a comment range and followed by a reference.
+  comment?: Comment;
 }
 
 export interface ImageOptions {
@@ -263,6 +267,9 @@ export interface StatisticOptions {
 export interface ListOptions {
   // Reference to the numbering configuration in the Document
   numberingReference?: string;
+  // Review comment spanning the whole list: the range opens on the first
+  // rendered item and closes on the last.
+  comment?: Comment;
   spacing?: {
     before?: number; // in points
     after?: number; // in points
@@ -300,16 +307,18 @@ export function createText(
   }
 
   // Build children array
-  const children: (
-    | PlaceholderChild
-    | ColumnBreak
-    | Bookmark
-    | import('../utils/revisionUtils').RevisionRun
-  )[] = [];
+  const children: ParagraphChild[] = [];
 
   // Add column break if requested
   if (options.columnBreak) {
     children.push(new ColumnBreak());
+  }
+
+  // Open the comment range before the text runs so the anchor covers exactly
+  // the commented content (and not a preceding column break).
+  const commentAnchor = openCommentRange(options.comment);
+  if (commentAnchor) {
+    children.push(commentAnchor.start);
   }
 
   // Resolve the effective family so fontWeight can be aliased even when the
@@ -407,6 +416,10 @@ export function createText(
       // No bookmark, add text runs directly
       children.push(...textRuns);
     }
+  }
+
+  if (commentAnchor) {
+    children.push(...closeCommentRange(commentAnchor.id));
   }
 
   // Build frame options for floating text
@@ -565,6 +578,12 @@ export function createHeading(
     children.push(new ColumnBreak());
   }
 
+  // Open the comment range around the heading text only.
+  const commentAnchor = openCommentRange(options.comment);
+  if (commentAnchor) {
+    children.push(commentAnchor.start);
+  }
+
   // Check if text has decorators (bold/italic markers)
   const hasDecorators = /(\*\*\*|___|(\*\*|__)|(\*|_))/.test(normalizedText);
 
@@ -695,6 +714,10 @@ export function createHeading(
       // For simple headings, add single text run (split on known words)
       children.push(...makeHeadingRuns(normalizedText));
     }
+  }
+
+  if (commentAnchor) {
+    children.push(...closeCommentRange(commentAnchor.id));
   }
 
   return new Paragraph({
@@ -941,6 +964,20 @@ export function createList(
 
   const paragraphs: Paragraph[] = [];
 
+  // A list-level comment spans the whole list, so its range opens on the first
+  // paragraph that actually renders and closes on the last. Empty items are
+  // skipped below, so neither end can be read off the item index — and docx
+  // copies `children` at construction, so both ends must be known up front.
+  const rendersAt = items.map((item) => {
+    const text = typeof item === 'string' ? item : item.text;
+    const revision = typeof item === 'object' ? item.revision : undefined;
+    return Boolean(text.trim()) || Boolean(revision);
+  });
+  const firstRendered = rendersAt.indexOf(true);
+  const lastRendered = rendersAt.lastIndexOf(true);
+  const commentAnchor =
+    firstRendered === -1 ? undefined : openCommentRange(options.comment);
+
   items.forEach((item, index) => {
     // Handle both string and object items
     const itemText = typeof item === 'string' ? item : item.text;
@@ -977,9 +1014,19 @@ export function createList(
     }
 
     // Create the paragraph with proper numbering reference
+    const paragraphChildren: ParagraphChild[] = [
+      ...(commentAnchor && index === firstRendered
+        ? [commentAnchor.start]
+        : []),
+      ...textRuns,
+      ...(commentAnchor && index === lastRendered
+        ? closeCommentRange(commentAnchor.id)
+        : []),
+    ];
+
     const paragraph = new Paragraph({
       style: 'Normal', // Apply Normal style for font inheritance
-      children: textRuns,
+      children: paragraphChildren,
       alignment: options.alignment
         ? getAlignment(options.alignment)
         : AlignmentType.LEFT,
@@ -1087,9 +1134,11 @@ type TableConfig = {
     width?: number | string;
     cellDefaults?: CellDefaults;
     header?: CellDefaults & {
+      comment?: Comment;
       content?: string | ComponentDefinition;
     };
     cells?: (CellDefaults & {
+      comment?: Comment;
       content?: string | ComponentDefinition;
     })[];
   }[];
@@ -1692,9 +1741,11 @@ export async function createTable(
   const processCellContent = async (
     cell: string | ComponentDefinition | undefined,
     cellDefaults: NormalizedCellDefaults,
-    baseCellStyle: typeof tableStyle.tableCell
-    // ParagraphChild rather than PlaceholderChild: a revised cell paragraph
-    // contributes w:ins / w:del runs, which sit outside the placeholder union.
+    baseCellStyle: typeof tableStyle.tableCell,
+    comment?: Comment
+    // ParagraphChild rather than PlaceholderChild: a revised or commented cell
+    // paragraph contributes w:ins / w:del and comment-range elements, which sit
+    // outside the placeholder union.
   ): Promise<ParagraphChild[]> => {
     let cellChildren: ParagraphChild[] = [];
 
@@ -1838,6 +1889,17 @@ export async function createTable(
       });
     }
 
+    // The comment lives on the cell, so it wraps whatever the cell rendered —
+    // string, paragraph or image alike.
+    const commentAnchor = openCommentRange(comment);
+    if (commentAnchor) {
+      cellChildren = [
+        commentAnchor.start,
+        ...cellChildren,
+        ...closeCommentRange(commentAnchor.id),
+      ];
+    }
+
     return cellChildren;
   };
 
@@ -1907,7 +1969,8 @@ export async function createTable(
         const cellChildren = await processCellContent(
           headerCell?.content,
           mergedDefaults,
-          tableStyle.tableHeader
+          tableStyle.tableHeader,
+          headerCell?.comment
         );
 
         const horizontalAlignment = mergedDefaults.horizontalAlignment!;
@@ -2100,7 +2163,8 @@ export async function createTable(
             const cellChildren = await processCellContent(
               cell.content,
               mergedDefaults,
-              tableStyle.tableCell
+              tableStyle.tableCell,
+              cell.comment
             );
 
             const horizontalAlignment = mergedDefaults.horizontalAlignment!;

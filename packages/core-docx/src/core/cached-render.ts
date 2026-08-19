@@ -14,6 +14,7 @@ import {
 } from '../cache';
 import { renderComponent } from './render';
 import { componentHasRevision } from '../utils/revisionUtils';
+import { componentHasAnnotation } from '../utils/componentAnnotations';
 import { getBaseDir, getGenerationDate } from '../utils/generationContext';
 import { PlaceholderRegistry } from '../utils/placeholderProcessor';
 import { createHash } from 'crypto';
@@ -26,7 +27,8 @@ let cacheKeyGen: CacheKeyGenerator | null = null;
 export type ComponentBypassReason =
   | 'dynamic-context'
   | 'bookmark-id'
-  | 'revision-ids';
+  | 'revision-ids'
+  | 'comment-ids';
 
 export interface ComponentBypassStats {
   /** Component type name. */
@@ -196,6 +198,9 @@ export function componentBypassReason(
   // Revision-bearing components embed document-scoped w:ins/w:del ids from a
   // per-render counter; caching would leak ids across documents.
   if (componentHasRevision(component)) return 'revision-ids';
+  // Comments do the same with their own (separate) id namespace, and a cached
+  // anchor would also point at a body that lives in another document.
+  if (componentHasAnnotation(component, 'comment')) return 'comment-ids';
   if ('id' in component) return 'bookmark-id';
   if (DYNAMIC_CONTEXT_COMPONENTS.has(component.name)) return 'dynamic-context';
   return null;

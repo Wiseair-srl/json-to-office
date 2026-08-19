@@ -17,6 +17,7 @@ import {
   ParagraphIndentSchema,
 } from './common';
 import { RevisionSchema } from './revision';
+import { CommentSchema } from './comment';
 
 export const HeadingPropsSchema = Type.Object(
   {
@@ -66,6 +67,7 @@ export const HeadingPropsSchema = Type.Object(
       })
     ),
     revision: Type.Optional(RevisionSchema),
+    comment: Type.Optional(CommentSchema),
   },
   {
     description: 'Heading component props',
