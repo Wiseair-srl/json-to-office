@@ -33,6 +33,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -410,6 +413,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Table of contents"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -823,6 +829,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "CEO message"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -1146,6 +1155,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Company overview"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -1614,6 +1626,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "About us"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -1894,6 +1909,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Business focus"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -2464,6 +2482,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Global presence"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -3140,6 +3161,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Vision & milestones"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -3775,6 +3799,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Operational framework"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -4175,6 +4202,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Performance overview"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -4910,6 +4940,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Financial highlights"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -5896,6 +5929,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Income statement"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -7041,6 +7077,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Shareholding structure"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -7518,6 +7557,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Balance sheet"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -8299,6 +8341,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Shareholder breakdown"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -9119,6 +9164,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Risk management"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -9456,6 +9504,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Environmental initiatives"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -9853,6 +9904,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Growth outlook"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -10262,6 +10316,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Stakeholder engagement"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -10501,6 +10558,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Human capital development"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -10825,6 +10885,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Awards"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -11265,6 +11328,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Key financial ratios"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -12425,6 +12491,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Auditor's summary"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -12838,6 +12907,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Back cover"
+        },
         "page": {
           "size": "A4",
           "margins": {

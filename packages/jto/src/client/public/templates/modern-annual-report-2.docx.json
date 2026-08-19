@@ -35,6 +35,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -634,6 +637,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Table of contents"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -1473,6 +1479,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "CEO message"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -1907,6 +1916,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Company overview"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -2454,6 +2466,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "About us"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -2830,6 +2845,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Business focus"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -3393,6 +3411,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Global presence"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -4011,6 +4032,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Mission & long-term value"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -4578,6 +4602,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Business model & strategy"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -5108,6 +5135,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Performance overview"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -5842,6 +5872,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Financial highlights"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -6906,6 +6939,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Income statement"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -7882,6 +7918,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Shareholding structure"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -8708,6 +8747,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Financial summary"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -9798,6 +9840,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Shareholder breakdown"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -10694,6 +10739,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "ESG pillars"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -11126,6 +11174,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Sustainability & ESG"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -11737,6 +11788,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Market outlook"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -12200,6 +12254,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Stakeholder engagement"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -12669,6 +12726,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Human capital development"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -12981,6 +13041,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Awards"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -13601,6 +13664,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Future outlook"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -14537,6 +14603,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Auditor's summary"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -14933,6 +15002,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Back cover"
+        },
         "page": {
           "size": "A4",
           "margins": {
