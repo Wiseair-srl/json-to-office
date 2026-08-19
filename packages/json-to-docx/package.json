@@ -42,7 +42,7 @@
     "@json-to-office/shared-docx": "workspace:^"
   },
   "peerDependencies": {
-    "docx": "9.5.1"
+    "docx": "9.7.1"
   },
   "devDependencies": {
     "@types/node": "20.11.0",
