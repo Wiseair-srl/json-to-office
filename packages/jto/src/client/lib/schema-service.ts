@@ -27,7 +27,7 @@ class SchemaService {
     // is cached apart from the "unspecified" default, which the server
     // resolves to every registered plugin.
     const cacheKey = pluginNames
-      ? `document-${pluginNames.sort().join(',')}`
+      ? `document-${[...pluginNames].sort().join(',')}`
       : 'document';
 
     // Check cache first
