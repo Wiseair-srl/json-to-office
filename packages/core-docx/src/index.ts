@@ -55,6 +55,7 @@ export {
   getComponentCacheStats,
   getComponentBypassStats,
   warmComponentCache,
+  componentBypassReason,
   type ComponentBypassReason,
   type ComponentBypassStats,
 } from './core/cached-render';

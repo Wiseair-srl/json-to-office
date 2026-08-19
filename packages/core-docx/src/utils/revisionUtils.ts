@@ -140,41 +140,64 @@ export function createRevisionRuns(
   return runs;
 }
 
+type MaybeComponent = { props?: unknown; children?: unknown[] };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/** True when `value` is an object carrying a truthy `revision`. */
+function hasOwnRevision(value: unknown): boolean {
+  return isRecord(value) && Boolean(value.revision);
+}
+
+/**
+ * True when a table cell (or header cell) carries a revision, either on the
+ * cell itself or on a component nested in its `content`.
+ */
+function cellHasRevision(cell: unknown): boolean {
+  if (!isRecord(cell)) return false;
+  if (hasOwnRevision(cell)) return true;
+  const content = cell.content;
+  return isRecord(content) && componentHasRevision(content as MaybeComponent);
+}
+
 /**
  * True when a component carries revision data anywhere in its subtree
- * (own props, list items, or any descendant), meaning its render output
- * embeds document-scoped revision ids and must not be served from the
+ * (own props, list items, table cells, or any descendant), meaning its render
+ * output embeds document-scoped revision ids and must not be served from the
  * cross-document component cache.
+ *
+ * Tables are cacheable, and the table model is column-major, so cells reached
+ * only through `props.columns[]` need an explicit descent: without it a cached
+ * table would replay dead w:ins/w:del ids into later documents.
  */
-export function componentHasRevision(component: {
-  props?: unknown;
-  children?: unknown[];
-}): boolean {
+export function componentHasRevision(component: MaybeComponent): boolean {
   const props = component.props as Record<string, unknown> | undefined;
   if (props) {
     if (props.revision) return true;
     const items = props.items;
-    if (Array.isArray(items)) {
-      if (
-        items.some(
-          (item) =>
-            typeof item === 'object' &&
-            item !== null &&
-            'revision' in item &&
-            (item as { revision?: unknown }).revision
-        )
-      ) {
-        return true;
-      }
+    if (Array.isArray(items) && items.some(hasOwnRevision)) return true;
+    // Row-parallel structural revisions (row insert/delete) live outside the
+    // column-major cell grid.
+    const rows = props.rows;
+    if (Array.isArray(rows) && rows.some(hasOwnRevision)) return true;
+    const columns = props.columns;
+    if (Array.isArray(columns)) {
+      const columnHasRevision = columns.some((column) => {
+        if (!isRecord(column)) return false;
+        if (cellHasRevision(column.header)) return true;
+        const cells = column.cells;
+        return Array.isArray(cells) && cells.some(cellHasRevision);
+      });
+      if (columnHasRevision) return true;
     }
   }
   const children = component.children;
   if (Array.isArray(children)) {
     return children.some(
       (child) =>
-        typeof child === 'object' &&
-        child !== null &&
-        componentHasRevision(child as { props?: unknown; children?: unknown[] })
+        isRecord(child) && componentHasRevision(child as MaybeComponent)
     );
   }
   return false;

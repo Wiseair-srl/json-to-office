@@ -157,6 +157,51 @@ export async function clearComponentCache(): Promise<void> {
 }
 
 /**
+ * Component types whose render output depends on per-render state that is not
+ * part of the cache key.
+ *
+ * - 'toc' depends on section bookmark ids generated at render time; caching
+ *   can produce stale references to non-existent bookmarks on re-render.
+ * - 'section' generates document-scoped bookmarks internally; caching would
+ *   duplicate bookmark ids across sections.
+ * - 'visual' rasterizes via the injected services.pptx (an in-process render
+ *   fn or an HTTP serverUrl) which is NOT part of the cache key; caching by
+ *   props alone could serve a stale image when the rasterizer differs across
+ *   renders. The rasterizer keeps its own content-addressed disk cache, so an
+ *   identical visual is still cheap to re-resolve.
+ * - 'heading', 'list' and 'paragraph': both explicit lists and markdown-list
+ *   paragraphs register numbering in the current document scope. Cached
+ *   paragraphs can otherwise reference definitions that only existed in a
+ *   previous render.
+ */
+const DYNAMIC_CONTEXT_COMPONENTS = new Set([
+  'toc',
+  'section',
+  'visual',
+  'heading',
+  'list',
+  'paragraph',
+]);
+
+/**
+ * Why this component must skip the cross-document component cache, or `null`
+ * when it is safe to cache.
+ *
+ * Kept as one named predicate so a new reason is a new clause here rather
+ * than a restructuring of an inline conditional ladder.
+ */
+export function componentBypassReason(
+  component: ComponentDefinition
+): ComponentBypassReason | null {
+  // Revision-bearing components embed document-scoped w:ins/w:del ids from a
+  // per-render counter; caching would leak ids across documents.
+  if (componentHasRevision(component)) return 'revision-ids';
+  if ('id' in component) return 'bookmark-id';
+  if (DYNAMIC_CONTEXT_COMPONENTS.has(component.name)) return 'dynamic-context';
+  return null;
+}
+
+/**
  * Render a component with caching
  */
 export async function renderComponentWithCache(
@@ -166,36 +211,7 @@ export async function renderComponentWithCache(
   context: RenderContext,
   bypassCache = false
 ): Promise<(Paragraph | Table | TableOfContents | Textbox)[]> {
-  // Certain components depend on dynamic runtime context and must not be cached.
-  // - 'toc' depends on section bookmark IDs generated at render time; caching
-  //   can produce stale references to non-existent bookmarks on re-render.
-  // - 'section' generates document-scoped bookmarks internally; caching would
-  //   duplicate bookmark IDs across sections.
-  // - revision-bearing components embed document-scoped w:ins/w:del ids from
-  //   a per-render counter; caching would leak ids across documents.
-  // - 'visual' rasterizes via the injected services.pptx (an in-process render
-  //   fn or an HTTP serverUrl) which is NOT part of the cache key; caching by
-  //   props alone could serve a stale image when the rasterizer differs across
-  //   renders. The rasterizer keeps its own content-addressed disk cache, so an
-  //   identical visual is still cheap to re-resolve.
-  const bypassReason: ComponentBypassReason | null = componentHasRevision(
-    component
-  )
-    ? 'revision-ids'
-    : 'id' in component
-      ? 'bookmark-id'
-      : component.name === 'toc' ||
-          component.name === 'section' ||
-          component.name === 'visual' ||
-          component.name === 'heading' ||
-          // Both explicit lists and markdown-list paragraphs register
-          // numbering in the current document scope. Cached paragraphs can
-          // otherwise reference definitions that only existed in a previous
-          // render.
-          component.name === 'list' ||
-          component.name === 'paragraph'
-        ? 'dynamic-context'
-        : null;
+  const bypassReason = componentBypassReason(component);
 
   // Initialize cache if needed
   if (!componentCache) {
