@@ -92,6 +92,8 @@ import {
   getBaseDir,
 } from '../utils/generationContext';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
+import { computeSectionOrdinals } from './sectionOrdinals';
+import { globalSectionBookmarkRegistry } from './sectionBookmarks';
 
 interface RenderDocumentOptions {
   cache?: MemoryCache;
@@ -177,7 +179,9 @@ export async function renderDocument(
       globalBookmarkRegistry.runScoped(() =>
         globalRevisionIdRegistry.runScoped(() =>
           globalNumberingRegistry.runScoped(() =>
-            renderDocumentScoped(structure, layout, options)
+            globalSectionBookmarkRegistry.runScoped(() =>
+              renderDocumentScoped(structure, layout, options)
+            )
           )
         )
       )
@@ -229,8 +233,17 @@ async function renderDocumentScoped(
     );
   }
 
-  // Initialize bookmark counter for this document (scoped to renderDocument call)
-  let sectionBookmarkCounter = 0;
+  /**
+   * Resolve every layout chunk's bookmark ordinal up front.
+   *
+   * When a user-defined Section spans multiple layout chunks (a columns
+   * transition starts a new one), all chunks must share one bookmark id for
+   * TOC scoping to work: start in the first chunk, end in the last, same
+   * stable name throughout. The ordinal is a fold over the chunk list, so it
+   * lives in its own pure function rather than as a counter carried through
+   * this loop's header/footer bookkeeping.
+   */
+  const sectionOrdinals = computeSectionOrdinals(layout.sections);
 
   // Track previous section's headers/footers for 'linkToPrevious' functionality
   let previousHeader: ComponentDefinition[] | undefined = undefined;
@@ -239,30 +252,8 @@ async function renderDocumentScoped(
   // Render all layout sections
   for (let idx = 0; idx < layout.sections.length; idx++) {
     const layoutSection = layout.sections[idx];
+    const { ordinal: sectionOrdinal, closeBookmark } = sectionOrdinals[idx];
 
-    /**
-     * Compute stable section ordinal for user-defined sections.
-     *
-     * When a user-defined Section component spans multiple layout chunks (e.g., due to
-     * column transitions), all chunks must share the same bookmark ID for TOC scoping
-     * to work correctly. This ensures:
-     * 1. Bookmark start appears only in the first chunk
-     * 2. All chunks use the same stable bookmark ID (no timestamp)
-     * 3. Bookmark end appears only in the last chunk
-     *
-     * Previously used Date.now() in bookmark IDs, which caused different IDs per chunk.
-     * Now we use a stable ordinal that's consistent across all chunks of the same section.
-     */
-    let sectionOrdinal: number | undefined = undefined;
-    if (layoutSection.belongsToUserSection) {
-      if (layoutSection.isUserSection) {
-        // First chunk of this user-defined section: assign ordinal as next index
-        sectionOrdinal = sectionBookmarkCounter + 1;
-      } else {
-        // Subsequent chunk: reuse last assigned ordinal
-        sectionOrdinal = sectionBookmarkCounter; // previous value already incremented after first chunk
-      }
-    }
     // Handle 'linkToPrevious' value for headers
     let headerToUse: ComponentDefinition[] | undefined;
     if (layoutSection.header === 'linkToPrevious') {
@@ -304,16 +295,6 @@ async function renderDocumentScoped(
       footer: footerToUse,
     };
 
-    // Determine if we should close the bookmark in this chunk.
-    // Close when this is the last chunk belonging to the same user-defined section.
-    let closeBookmark = false;
-    if (layoutSection.belongsToUserSection && sectionOrdinal !== undefined) {
-      const next = layout.sections[idx + 1];
-      if (!next || !next.belongsToUserSection || next.isUserSection) {
-        closeBookmark = true;
-      }
-    }
-
     const rendered = await renderSection(
       sectionToRender,
       structure.theme,
@@ -323,11 +304,6 @@ async function renderDocumentScoped(
       closeBookmark,
       options?.bypassCache === true
     );
-
-    // Increment counter if this section created a bookmark
-    if (layoutSection.isUserSection) {
-      sectionBookmarkCounter++;
-    }
 
     if (rendered.children.length > 0) {
       sections.push(rendered);
@@ -602,11 +578,14 @@ export async function renderSection(
   // Update context for this section
   // Generate a unique bookmark for this section so TOCs can scope to it
   const isFirstLayoutOfUserSection = section.isUserSection;
-  // Use a stable bookmark ID across all layout sections of the same user-defined section
-  const sharedLinkId =
-    section.belongsToUserSection && sectionOrdinal ? sectionOrdinal : undefined;
-  const sectionBookmarkId =
-    sharedLinkId !== undefined ? `_Section_${sharedLinkId}` : undefined;
+  // Every layout chunk of one user-defined section resolves to the same
+  // bookmark; the registry owns the id format for both producers.
+  const bookmark =
+    section.belongsToUserSection && sectionOrdinal
+      ? globalSectionBookmarkRegistry.forLayoutSection(sectionOrdinal)
+      : undefined;
+  const sharedLinkId = bookmark?.linkId;
+  const sectionBookmarkId = bookmark?.id;
 
   const sectionContext: RenderContext = {
     ...context,

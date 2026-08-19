@@ -11,29 +11,7 @@ import {
 } from '../types';
 import { ThemeConfig } from '../styles';
 import { renderComponent } from '../core/render';
-
-interface SectionBookmarkState {
-  next: number;
-}
-
-/** Generate a document-scoped, reproducible bookmark ID. */
-function generateSectionBookmarkId(context: RenderContext): {
-  id: string;
-  linkId: number;
-} {
-  const custom = (context.custom ??= {});
-  const state = (custom.sectionBookmarks ??= {
-    next: 1,
-  }) as SectionBookmarkState;
-  const ordinal = state.next++;
-  // Keep nested component IDs away from the low ordinals used by layout
-  // section bookmarks in core/render.ts.
-  const linkId = 1_000_000 + ordinal;
-  return {
-    id: `_NestedSection_${ordinal}`,
-    linkId,
-  };
-}
+import { globalSectionBookmarkRegistry } from '../core/sectionBookmarks';
 
 /**
  * Render section component with bookmark support for scoped TOCs
@@ -48,9 +26,10 @@ export async function renderSectionComponent(
 
   const elements: (Paragraph | Table)[] = [];
 
-  // Generate unique bookmark ID for this section
+  // Resolve this section's bookmark from the single producer, keyed by
+  // component identity so re-resolving the same node never allocates twice.
   const { id: sectionBookmarkId, linkId: bookmarkLinkId } =
-    generateSectionBookmarkId(context);
+    globalSectionBookmarkRegistry.forSectionComponent(component);
 
   // Add bookmark in a zero-spacing paragraph at section start
   // This prevents visual gaps while maintaining bookmark functionality
