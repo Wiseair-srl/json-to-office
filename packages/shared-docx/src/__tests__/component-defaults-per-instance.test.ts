@@ -21,6 +21,7 @@ import {
 const SAMPLES: Record<PerInstanceProp, unknown> = {
   revision: { segments: [{ type: 'insert', text: 'INJECTED' }] },
   comment: { text: 'INJECTED' },
+  footnotes: [{ id: 'x', text: 'INJECTED' }],
 };
 
 /** Components carrying per-instance props, with a minimal valid props object. */
@@ -37,7 +38,7 @@ const COMPONENTS: {
   {
     name: 'paragraph',
     props: { text: 'real text' },
-    carries: ['revision', 'comment'],
+    carries: ['revision', 'comment', 'footnotes'],
   },
   { name: 'list', props: { items: ['One'] }, carries: ['comment'] },
 ];

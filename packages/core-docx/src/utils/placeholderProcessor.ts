@@ -8,6 +8,7 @@ import {
   PageNumber,
   ExternalHyperlink,
   InternalHyperlink,
+  FootnoteReferenceRun,
 } from 'docx';
 import {
   parseTextWithDecorators,
@@ -19,7 +20,12 @@ import { normalizeUnicodeText } from './unicode';
 import { getGenerationDate } from './generationContext';
 
 // Type alias for elements that can appear in a paragraph
-export type PlaceholderChild = TextRun | ExternalHyperlink | InternalHyperlink;
+export type PlaceholderChild =
+  | TextRun
+  | ExternalHyperlink
+  | InternalHyperlink
+  // A `[^id]` footnote marker resolves to a reference run mid-text.
+  | FootnoteReferenceRun;
 
 /**
  * Placeholder handler function type

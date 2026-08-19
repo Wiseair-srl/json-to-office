@@ -87,6 +87,7 @@ import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
 import { globalNumberingRegistry } from '../utils/numberingConfig';
 import { globalRevisionIdRegistry } from '../utils/revisionUtils';
 import { globalCommentRegistry } from '../utils/commentRegistry';
+import { globalNoteRegistry } from '../utils/noteRegistry';
 import {
   runWithGenerationDate,
   runWithBaseDir,
@@ -186,7 +187,11 @@ export async function renderDocument(
               // concurrent generations would interleave counters and an anchor
               // would point at another document's comment body.
               globalCommentRegistry.runScoped(() =>
-                renderDocumentScoped(structure, layout, options)
+                // Footnote ids are document-scoped too: a reference resolved
+                // against another render's counter points at the wrong body.
+                globalNoteRegistry.runScoped(() =>
+                  renderDocumentScoped(structure, layout, options)
+                )
               )
             )
           )
@@ -321,6 +326,8 @@ async function renderDocumentScoped(
   const numberingConfigs = globalNumberingRegistry.getAll();
   // Comment bodies collected while rendering the anchors
   const comments = globalCommentRegistry.getAll();
+  // Footnote bodies collected while rendering their markers
+  const footnotes = globalNoteRegistry.getFootnotes();
 
   return new Document({
     styles: createWordStyles(structure.theme, structure.language),
@@ -333,6 +340,8 @@ async function renderDocumentScoped(
     },
     // word/comments.xml, emitted only when something was actually commented
     ...(comments.length > 0 && { comments: { children: comments } }),
+    // word/footnotes.xml bodies, keyed by the id their references carry
+    ...(Object.keys(footnotes).length > 0 && { footnotes }),
     // Add numbering configurations if any lists were rendered
     ...(numberingConfigs.length > 0 && {
       numbering: {
