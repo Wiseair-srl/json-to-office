@@ -12,9 +12,22 @@
     {
       "name": "section",
       "props": {
-        "title": "Weather Information"
+        "meta": {
+          "title": "Weather Information"
+        }
       },
       "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Weather Information",
+            "level": 1,
+            "spacing": {
+              "before": 0,
+              "after": 0
+            }
+          }
+        },
         {
           "name": "paragraph",
           "props": {
@@ -42,9 +55,22 @@
     {
       "name": "section",
       "props": {
-        "title": "Sales Data"
+        "meta": {
+          "title": "Sales Data"
+        }
       },
       "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Sales Data",
+            "level": 1,
+            "spacing": {
+              "before": 0,
+              "after": 0
+            }
+          }
+        },
         {
           "name": "paragraph",
           "props": {
@@ -65,9 +91,22 @@
     {
       "name": "section",
       "props": {
-        "title": "Quick Links"
+        "meta": {
+          "title": "Quick Links"
+        }
       },
       "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Quick Links",
+            "level": 1,
+            "spacing": {
+              "before": 0,
+              "after": 0
+            }
+          }
+        },
         {
           "name": "paragraph",
           "props": {
@@ -79,9 +118,22 @@
     {
       "name": "section",
       "props": {
-        "title": "More Data Examples"
+        "meta": {
+          "title": "More Data Examples"
+        }
       },
       "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "More Data Examples",
+            "level": 1,
+            "spacing": {
+              "before": 0,
+              "after": 0
+            }
+          }
+        },
         {
           "name": "dataTable",
           "props": {

@@ -12,7 +12,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Platform Integration Guide"
+        },
         "header": [
           {
             "name": "paragraph",
@@ -89,7 +91,8 @@
             "depth": {
               "from": 1,
               "to": 2
-            }
+            },
+            "scope": "document"
           }
         }
       ]
@@ -97,7 +100,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Getting Started"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -307,7 +312,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Authentication"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -558,7 +565,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "API Reference"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -961,7 +970,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Webhooks"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -1345,7 +1356,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Error Handling"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -1597,7 +1610,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Troubleshooting"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"

@@ -12,7 +12,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Cloud Migration Proposal"
+        },
         "header": [
           {
             "name": "paragraph",
@@ -35,7 +37,10 @@
       "children": [
         {
           "name": "heading",
-          "props": { "text": "Cloud Migration Proposal", "level": 1 }
+          "props": {
+            "text": "Cloud Migration Proposal",
+            "level": 1
+          }
         },
         {
           "name": "heading",
@@ -48,10 +53,18 @@
           "name": "paragraph",
           "props": {
             "text": "Prepared by Apex Consulting — April 2026",
-            "font": { "italic": true, "color": "textSecondary" }
+            "font": {
+              "italic": true,
+              "color": "textSecondary"
+            }
           }
         },
-        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": ""
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -60,7 +73,12 @@
             "caption": "Figure: Apex Consulting — Enterprise Cloud Advisory"
           }
         },
-        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": ""
+          }
+        },
         {
           "name": "paragraph",
           "props": {
@@ -73,13 +91,24 @@
             "text": "Apex Consulting brings 14 years of experience in financial services cloud transformations, having successfully migrated 23 regulated financial institutions to cloud-native architectures. Our team holds AWS Advanced Consulting Partner status and specializes in PCI-DSS and SOC 2 compliant migrations."
           }
         },
-        { "name": "toc", "props": { "depth": { "from": 1, "to": 2 } } }
+        {
+          "name": "toc",
+          "props": {
+            "depth": {
+              "from": 1,
+              "to": 2
+            },
+            "scope": "document"
+          }
+        }
       ]
     },
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Executive Summary"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -87,7 +116,10 @@
       "children": [
         {
           "name": "heading",
-          "props": { "text": "Executive Summary", "level": 1 }
+          "props": {
+            "text": "Executive Summary",
+            "level": 1
+          }
         },
         {
           "name": "paragraph",
@@ -97,7 +129,10 @@
         },
         {
           "name": "columns",
-          "props": { "columns": 3, "gap": 0.4 },
+          "props": {
+            "columns": 3,
+            "gap": 0.4
+          },
           "children": [
             {
               "name": "statistic",
@@ -133,7 +168,10 @@
         },
         {
           "name": "heading",
-          "props": { "text": "Strategic Objectives", "level": 2 }
+          "props": {
+            "text": "Strategic Objectives",
+            "level": 2
+          }
         },
         {
           "name": "list",
@@ -153,7 +191,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Current State Assessment"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -161,7 +201,10 @@
       "children": [
         {
           "name": "heading",
-          "props": { "text": "Current State Assessment", "level": 1 }
+          "props": {
+            "text": "Current State Assessment",
+            "level": 1
+          }
         },
         {
           "name": "paragraph",
@@ -171,7 +214,10 @@
         },
         {
           "name": "columns",
-          "props": { "columns": 2, "gap": 0.5 },
+          "props": {
+            "columns": 2,
+            "gap": 0.5
+          },
           "children": [
             {
               "name": "statistic",
@@ -193,82 +239,182 @@
         },
         {
           "name": "heading",
-          "props": { "text": "Infrastructure Inventory", "level": 2 }
+          "props": {
+            "text": "Infrastructure Inventory",
+            "level": 2
+          }
         },
         {
           "name": "table",
           "props": {
             "headerCellDefaults": {
-              "font": { "bold": true, "size": 10 },
-              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
             },
             "cellDefaults": {
-              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
               "verticalAlignment": "middle",
-              "font": { "size": 10 }
+              "font": {
+                "size": 10
+              }
             },
             "borderColor": "D6DAE0",
             "borderSize": 1,
-            "hideBorders": { "insideVertical": true },
+            "hideBorders": {
+              "insideVertical": true
+            },
             "columns": [
               {
-                "header": { "content": "Component" },
+                "header": {
+                  "content": "Component"
+                },
                 "cells": [
-                  { "content": "Application Servers" },
-                  { "content": "Database Cluster" },
-                  { "content": "Storage" },
-                  { "content": "Network" },
-                  { "content": "Disaster Recovery" },
-                  { "content": "Load Balancers" },
-                  { "content": "Message Queue" }
+                  {
+                    "content": "Application Servers"
+                  },
+                  {
+                    "content": "Database Cluster"
+                  },
+                  {
+                    "content": "Storage"
+                  },
+                  {
+                    "content": "Network"
+                  },
+                  {
+                    "content": "Disaster Recovery"
+                  },
+                  {
+                    "content": "Load Balancers"
+                  },
+                  {
+                    "content": "Message Queue"
+                  }
                 ]
               },
               {
-                "header": { "content": "Current Configuration" },
+                "header": {
+                  "content": "Current Configuration"
+                },
                 "cells": [
-                  { "content": "12 physical Dell R740xd" },
-                  { "content": "3-node Oracle RAC 19c" },
-                  { "content": "NetApp FAS8200, 48TB" },
-                  { "content": "Cisco Catalyst 9300 stack" },
-                  { "content": "Tape backup, 24hr RPO" },
-                  { "content": "F5 BIG-IP pair (active/passive)" },
-                  { "content": "RabbitMQ 3.8 (single node)" }
+                  {
+                    "content": "12 physical Dell R740xd"
+                  },
+                  {
+                    "content": "3-node Oracle RAC 19c"
+                  },
+                  {
+                    "content": "NetApp FAS8200, 48TB"
+                  },
+                  {
+                    "content": "Cisco Catalyst 9300 stack"
+                  },
+                  {
+                    "content": "Tape backup, 24hr RPO"
+                  },
+                  {
+                    "content": "F5 BIG-IP pair (active/passive)"
+                  },
+                  {
+                    "content": "RabbitMQ 3.8 (single node)"
+                  }
                 ]
               },
               {
-                "header": { "content": "Age" },
+                "header": {
+                  "content": "Age"
+                },
                 "cells": [
-                  { "content": "5-7 years" },
-                  { "content": "6 years" },
-                  { "content": "4 years" },
-                  { "content": "8 years" },
-                  { "content": "N/A" },
-                  { "content": "5 years" },
-                  { "content": "3 years" }
+                  {
+                    "content": "5-7 years"
+                  },
+                  {
+                    "content": "6 years"
+                  },
+                  {
+                    "content": "4 years"
+                  },
+                  {
+                    "content": "8 years"
+                  },
+                  {
+                    "content": "N/A"
+                  },
+                  {
+                    "content": "5 years"
+                  },
+                  {
+                    "content": "3 years"
+                  }
                 ]
               },
               {
-                "header": { "content": "Risk Level" },
+                "header": {
+                  "content": "Risk Level"
+                },
                 "cells": [
-                  { "content": "High" },
-                  { "content": "Critical" },
-                  { "content": "Medium" },
-                  { "content": "High" },
-                  { "content": "Critical" },
-                  { "content": "Medium" },
-                  { "content": "Low" }
+                  {
+                    "content": "High"
+                  },
+                  {
+                    "content": "Critical"
+                  },
+                  {
+                    "content": "Medium"
+                  },
+                  {
+                    "content": "High"
+                  },
+                  {
+                    "content": "Critical"
+                  },
+                  {
+                    "content": "Medium"
+                  },
+                  {
+                    "content": "Low"
+                  }
                 ]
               },
               {
-                "header": { "content": "EoL Date" },
+                "header": {
+                  "content": "EoL Date"
+                },
                 "cells": [
-                  { "content": "Sep 2026" },
-                  { "content": "Dec 2026" },
-                  { "content": "Mar 2028" },
-                  { "content": "Jun 2025 (past)" },
-                  { "content": "N/A" },
-                  { "content": "Mar 2027" },
-                  { "content": "Jun 2029" }
+                  {
+                    "content": "Sep 2026"
+                  },
+                  {
+                    "content": "Dec 2026"
+                  },
+                  {
+                    "content": "Mar 2028"
+                  },
+                  {
+                    "content": "Jun 2025 (past)"
+                  },
+                  {
+                    "content": "N/A"
+                  },
+                  {
+                    "content": "Mar 2027"
+                  },
+                  {
+                    "content": "Jun 2029"
+                  }
                 ]
               }
             ]
@@ -276,7 +422,10 @@
         },
         {
           "name": "heading",
-          "props": { "text": "Key Pain Points", "level": 2 }
+          "props": {
+            "text": "Key Pain Points",
+            "level": 2
+          }
         },
         {
           "name": "list",
@@ -294,7 +443,10 @@
         },
         {
           "name": "heading",
-          "props": { "text": "Compliance Gap Analysis", "level": 2 }
+          "props": {
+            "text": "Compliance Gap Analysis",
+            "level": 2
+          }
         },
         {
           "name": "paragraph",
@@ -306,56 +458,121 @@
           "name": "table",
           "props": {
             "headerCellDefaults": {
-              "font": { "bold": true, "size": 10 },
-              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
             },
             "cellDefaults": {
-              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
               "verticalAlignment": "middle",
-              "font": { "size": 10 }
+              "font": {
+                "size": 10
+              }
             },
             "borderColor": "D6DAE0",
             "borderSize": 1,
-            "hideBorders": { "insideVertical": true },
+            "hideBorders": {
+              "insideVertical": true
+            },
             "columns": [
               {
-                "header": { "content": "Requirement" },
+                "header": {
+                  "content": "Requirement"
+                },
                 "cells": [
-                  { "content": "Encryption at rest" },
-                  { "content": "Key rotation" },
-                  { "content": "Audit logging" },
-                  { "content": "Access controls" },
-                  { "content": "Vulnerability scanning" }
+                  {
+                    "content": "Encryption at rest"
+                  },
+                  {
+                    "content": "Key rotation"
+                  },
+                  {
+                    "content": "Audit logging"
+                  },
+                  {
+                    "content": "Access controls"
+                  },
+                  {
+                    "content": "Vulnerability scanning"
+                  }
                 ]
               },
               {
-                "header": { "content": "Current State" },
+                "header": {
+                  "content": "Current State"
+                },
                 "cells": [
-                  { "content": "Partial (DB only)" },
-                  { "content": "Manual, annual" },
-                  { "content": "Application-level only" },
-                  { "content": "LDAP, no MFA" },
-                  { "content": "Quarterly manual scans" }
+                  {
+                    "content": "Partial (DB only)"
+                  },
+                  {
+                    "content": "Manual, annual"
+                  },
+                  {
+                    "content": "Application-level only"
+                  },
+                  {
+                    "content": "LDAP, no MFA"
+                  },
+                  {
+                    "content": "Quarterly manual scans"
+                  }
                 ]
               },
               {
-                "header": { "content": "Required State" },
+                "header": {
+                  "content": "Required State"
+                },
                 "cells": [
-                  { "content": "All data stores" },
-                  { "content": "Automated, 90-day" },
-                  { "content": "Infrastructure + app" },
-                  { "content": "SSO + MFA + RBAC" },
-                  { "content": "Continuous automated" }
+                  {
+                    "content": "All data stores"
+                  },
+                  {
+                    "content": "Automated, 90-day"
+                  },
+                  {
+                    "content": "Infrastructure + app"
+                  },
+                  {
+                    "content": "SSO + MFA + RBAC"
+                  },
+                  {
+                    "content": "Continuous automated"
+                  }
                 ]
               },
               {
-                "header": { "content": "Gap Severity" },
+                "header": {
+                  "content": "Gap Severity"
+                },
                 "cells": [
-                  { "content": "High" },
-                  { "content": "Medium" },
-                  { "content": "Critical" },
-                  { "content": "High" },
-                  { "content": "Critical" }
+                  {
+                    "content": "High"
+                  },
+                  {
+                    "content": "Medium"
+                  },
+                  {
+                    "content": "Critical"
+                  },
+                  {
+                    "content": "High"
+                  },
+                  {
+                    "content": "Critical"
+                  }
                 ]
               }
             ]
@@ -366,7 +583,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Proposed Solution"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -374,7 +593,10 @@
       "children": [
         {
           "name": "heading",
-          "props": { "text": "Proposed Solution", "level": 1 }
+          "props": {
+            "text": "Proposed Solution",
+            "level": 1
+          }
         },
         {
           "name": "paragraph",
@@ -392,7 +614,10 @@
         },
         {
           "name": "heading",
-          "props": { "text": "Phase 1: Foundation (Weeks 1-8)", "level": 2 }
+          "props": {
+            "text": "Phase 1: Foundation (Weeks 1-8)",
+            "level": 2
+          }
         },
         {
           "name": "paragraph",
@@ -430,56 +655,121 @@
           "name": "table",
           "props": {
             "headerCellDefaults": {
-              "font": { "bold": true, "size": 10 },
-              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
             },
             "cellDefaults": {
-              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
               "verticalAlignment": "middle",
-              "font": { "size": 10 }
+              "font": {
+                "size": 10
+              }
             },
             "borderColor": "D6DAE0",
             "borderSize": 1,
-            "hideBorders": { "insideVertical": true },
+            "hideBorders": {
+              "insideVertical": true
+            },
             "columns": [
               {
-                "header": { "content": "Workload" },
+                "header": {
+                  "content": "Workload"
+                },
                 "cells": [
-                  { "content": "Trading Platform API" },
-                  { "content": "Client Portal" },
-                  { "content": "Risk Engine" },
-                  { "content": "Reporting Service" },
-                  { "content": "Notification System" }
+                  {
+                    "content": "Trading Platform API"
+                  },
+                  {
+                    "content": "Client Portal"
+                  },
+                  {
+                    "content": "Risk Engine"
+                  },
+                  {
+                    "content": "Reporting Service"
+                  },
+                  {
+                    "content": "Notification System"
+                  }
                 ]
               },
               {
-                "header": { "content": "Strategy" },
+                "header": {
+                  "content": "Strategy"
+                },
                 "cells": [
-                  { "content": "Re-platform to ECS Fargate" },
-                  { "content": "Re-platform to ECS Fargate" },
-                  { "content": "Re-architect to Lambda + Step Functions" },
-                  { "content": "Re-platform to ECS + Aurora" },
-                  { "content": "Re-architect to SNS + SQS + Lambda" }
+                  {
+                    "content": "Re-platform to ECS Fargate"
+                  },
+                  {
+                    "content": "Re-platform to ECS Fargate"
+                  },
+                  {
+                    "content": "Re-architect to Lambda + Step Functions"
+                  },
+                  {
+                    "content": "Re-platform to ECS + Aurora"
+                  },
+                  {
+                    "content": "Re-architect to SNS + SQS + Lambda"
+                  }
                 ]
               },
               {
-                "header": { "content": "Downtime Window" },
+                "header": {
+                  "content": "Downtime Window"
+                },
                 "cells": [
-                  { "content": "Zero (blue-green)" },
-                  { "content": "Zero (blue-green)" },
-                  { "content": "4 hours (weekend)" },
-                  { "content": "2 hours (weekend)" },
-                  { "content": "Zero (parallel run)" }
+                  {
+                    "content": "Zero (blue-green)"
+                  },
+                  {
+                    "content": "Zero (blue-green)"
+                  },
+                  {
+                    "content": "4 hours (weekend)"
+                  },
+                  {
+                    "content": "2 hours (weekend)"
+                  },
+                  {
+                    "content": "Zero (parallel run)"
+                  }
                 ]
               },
               {
-                "header": { "content": "Week" },
+                "header": {
+                  "content": "Week"
+                },
                 "cells": [
-                  { "content": "9-12" },
-                  { "content": "11-14" },
-                  { "content": "13-16" },
-                  { "content": "15-18" },
-                  { "content": "17-20" }
+                  {
+                    "content": "9-12"
+                  },
+                  {
+                    "content": "11-14"
+                  },
+                  {
+                    "content": "13-16"
+                  },
+                  {
+                    "content": "15-18"
+                  },
+                  {
+                    "content": "17-20"
+                  }
                 ]
               }
             ]
@@ -487,7 +777,10 @@
         },
         {
           "name": "heading",
-          "props": { "text": "Phase 3: Optimization (Weeks 21-26)", "level": 2 }
+          "props": {
+            "text": "Phase 3: Optimization (Weeks 21-26)",
+            "level": 2
+          }
         },
         {
           "name": "paragraph",
@@ -513,7 +806,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Investment & ROI"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -521,11 +816,16 @@
       "children": [
         {
           "name": "heading",
-          "props": { "text": "Investment & ROI", "level": 1 }
+          "props": {
+            "text": "Investment & ROI",
+            "level": 1
+          }
         },
         {
           "name": "columns",
-          "props": { "columns": 3 },
+          "props": {
+            "columns": 3
+          },
           "children": [
             {
               "name": "statistic",
@@ -555,72 +855,152 @@
         },
         {
           "name": "heading",
-          "props": { "text": "Migration Cost Breakdown", "level": 2 }
+          "props": {
+            "text": "Migration Cost Breakdown",
+            "level": 2
+          }
         },
         {
           "name": "table",
           "props": {
             "headerCellDefaults": {
-              "font": { "bold": true, "size": 10 },
-              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
             },
             "cellDefaults": {
-              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
               "verticalAlignment": "middle",
-              "font": { "size": 10 }
+              "font": {
+                "size": 10
+              }
             },
             "borderColor": "D6DAE0",
             "borderSize": 1,
-            "hideBorders": { "insideVertical": true },
+            "hideBorders": {
+              "insideVertical": true
+            },
             "columns": [
               {
-                "header": { "content": "Phase" },
+                "header": {
+                  "content": "Phase"
+                },
                 "cells": [
-                  { "content": "Phase 1: Foundation" },
-                  { "content": "Phase 2: Core Migration" },
-                  { "content": "Phase 3: Optimization" },
-                  { "content": "Contingency (15%)" },
-                  { "content": "Total" }
+                  {
+                    "content": "Phase 1: Foundation"
+                  },
+                  {
+                    "content": "Phase 2: Core Migration"
+                  },
+                  {
+                    "content": "Phase 3: Optimization"
+                  },
+                  {
+                    "content": "Contingency (15%)"
+                  },
+                  {
+                    "content": "Total"
+                  }
                 ]
               },
               {
-                "header": { "content": "Duration" },
+                "header": {
+                  "content": "Duration"
+                },
                 "cells": [
-                  { "content": "8 weeks" },
-                  { "content": "12 weeks" },
-                  { "content": "6 weeks" },
-                  { "content": "—" },
-                  { "content": "26 weeks" }
+                  {
+                    "content": "8 weeks"
+                  },
+                  {
+                    "content": "12 weeks"
+                  },
+                  {
+                    "content": "6 weeks"
+                  },
+                  {
+                    "content": "—"
+                  },
+                  {
+                    "content": "26 weeks"
+                  }
                 ]
               },
               {
-                "header": { "content": "Apex Fees" },
+                "header": {
+                  "content": "Apex Fees"
+                },
                 "cells": [
-                  { "content": "$140K" },
-                  { "content": "$280K" },
-                  { "content": "$90K" },
-                  { "content": "$76.5K" },
-                  { "content": "$586.5K" }
+                  {
+                    "content": "$140K"
+                  },
+                  {
+                    "content": "$280K"
+                  },
+                  {
+                    "content": "$90K"
+                  },
+                  {
+                    "content": "$76.5K"
+                  },
+                  {
+                    "content": "$586.5K"
+                  }
                 ]
               },
               {
-                "header": { "content": "AWS Costs" },
+                "header": {
+                  "content": "AWS Costs"
+                },
                 "cells": [
-                  { "content": "$12K" },
-                  { "content": "$38K" },
-                  { "content": "$18K" },
-                  { "content": "$10.2K" },
-                  { "content": "$78.2K" }
+                  {
+                    "content": "$12K"
+                  },
+                  {
+                    "content": "$38K"
+                  },
+                  {
+                    "content": "$18K"
+                  },
+                  {
+                    "content": "$10.2K"
+                  },
+                  {
+                    "content": "$78.2K"
+                  }
                 ]
               },
               {
-                "header": { "content": "Tooling/Licensing" },
+                "header": {
+                  "content": "Tooling/Licensing"
+                },
                 "cells": [
-                  { "content": "$8K" },
-                  { "content": "$4K" },
-                  { "content": "$3.5K" },
-                  { "content": "—" },
-                  { "content": "$15.5K" }
+                  {
+                    "content": "$8K"
+                  },
+                  {
+                    "content": "$4K"
+                  },
+                  {
+                    "content": "$3.5K"
+                  },
+                  {
+                    "content": "—"
+                  },
+                  {
+                    "content": "$15.5K"
+                  }
                 ]
               }
             ]
@@ -628,52 +1008,111 @@
         },
         {
           "name": "heading",
-          "props": { "text": "Annual Cost Comparison", "level": 2 }
+          "props": {
+            "text": "Annual Cost Comparison",
+            "level": 2
+          }
         },
         {
           "name": "columns",
-          "props": { "columns": 2, "gap": 0.5 },
+          "props": {
+            "columns": 2,
+            "gap": 0.5
+          },
           "children": [
             {
               "name": "table",
               "props": {
                 "headerCellDefaults": {
-                  "font": { "bold": true, "size": 9 },
-                  "padding": { "top": 6, "right": 8, "bottom": 6, "left": 8 }
+                  "font": {
+                    "bold": true,
+                    "size": 9
+                  },
+                  "padding": {
+                    "top": 6,
+                    "right": 8,
+                    "bottom": 6,
+                    "left": 8
+                  }
                 },
                 "cellDefaults": {
-                  "padding": { "top": 4, "right": 8, "bottom": 4, "left": 8 },
+                  "padding": {
+                    "top": 4,
+                    "right": 8,
+                    "bottom": 4,
+                    "left": 8
+                  },
                   "verticalAlignment": "middle",
-                  "font": { "size": 9 }
+                  "font": {
+                    "size": 9
+                  }
                 },
                 "borderColor": "D6DAE0",
                 "borderSize": 1,
-                "hideBorders": { "insideVertical": true },
+                "hideBorders": {
+                  "insideVertical": true
+                },
                 "columns": [
                   {
-                    "header": { "content": "Current (On-Premise)" },
+                    "header": {
+                      "content": "Current (On-Premise)"
+                    },
                     "cells": [
-                      { "content": "Hardware depreciation" },
-                      { "content": "Data center lease" },
-                      { "content": "Ops staff (3 FTE)" },
-                      { "content": "Oracle licensing" },
-                      { "content": "VMware licensing" },
-                      { "content": "Network maintenance" },
-                      { "content": "DR infrastructure" },
-                      { "content": "Total" }
+                      {
+                        "content": "Hardware depreciation"
+                      },
+                      {
+                        "content": "Data center lease"
+                      },
+                      {
+                        "content": "Ops staff (3 FTE)"
+                      },
+                      {
+                        "content": "Oracle licensing"
+                      },
+                      {
+                        "content": "VMware licensing"
+                      },
+                      {
+                        "content": "Network maintenance"
+                      },
+                      {
+                        "content": "DR infrastructure"
+                      },
+                      {
+                        "content": "Total"
+                      }
                     ]
                   },
                   {
-                    "header": { "content": "Annual Cost" },
+                    "header": {
+                      "content": "Annual Cost"
+                    },
                     "cells": [
-                      { "content": "$525K" },
-                      { "content": "$240K" },
-                      { "content": "$420K" },
-                      { "content": "$210K" },
-                      { "content": "$100K" },
-                      { "content": "$65K" },
-                      { "content": "$85K" },
-                      { "content": "$1,645K" }
+                      {
+                        "content": "$525K"
+                      },
+                      {
+                        "content": "$240K"
+                      },
+                      {
+                        "content": "$420K"
+                      },
+                      {
+                        "content": "$210K"
+                      },
+                      {
+                        "content": "$100K"
+                      },
+                      {
+                        "content": "$65K"
+                      },
+                      {
+                        "content": "$85K"
+                      },
+                      {
+                        "content": "$1,645K"
+                      }
                     ]
                   }
                 ]
@@ -683,42 +1122,95 @@
               "name": "table",
               "props": {
                 "headerCellDefaults": {
-                  "font": { "bold": true, "size": 9 },
-                  "padding": { "top": 6, "right": 8, "bottom": 6, "left": 8 }
+                  "font": {
+                    "bold": true,
+                    "size": 9
+                  },
+                  "padding": {
+                    "top": 6,
+                    "right": 8,
+                    "bottom": 6,
+                    "left": 8
+                  }
                 },
                 "cellDefaults": {
-                  "padding": { "top": 4, "right": 8, "bottom": 4, "left": 8 },
+                  "padding": {
+                    "top": 4,
+                    "right": 8,
+                    "bottom": 4,
+                    "left": 8
+                  },
                   "verticalAlignment": "middle",
-                  "font": { "size": 9 }
+                  "font": {
+                    "size": 9
+                  }
                 },
                 "borderColor": "D6DAE0",
                 "borderSize": 1,
-                "hideBorders": { "insideVertical": true },
+                "hideBorders": {
+                  "insideVertical": true
+                },
                 "columns": [
                   {
-                    "header": { "content": "Proposed (AWS)" },
+                    "header": {
+                      "content": "Proposed (AWS)"
+                    },
                     "cells": [
-                      { "content": "Compute (ECS Fargate)" },
-                      { "content": "Database (Aurora)" },
-                      { "content": "Storage (S3 + EBS)" },
-                      { "content": "Network (Direct Connect)" },
-                      { "content": "Ops staff (1 FTE)" },
-                      { "content": "Monitoring (CloudWatch)" },
-                      { "content": "Security tooling" },
-                      { "content": "Total" }
+                      {
+                        "content": "Compute (ECS Fargate)"
+                      },
+                      {
+                        "content": "Database (Aurora)"
+                      },
+                      {
+                        "content": "Storage (S3 + EBS)"
+                      },
+                      {
+                        "content": "Network (Direct Connect)"
+                      },
+                      {
+                        "content": "Ops staff (1 FTE)"
+                      },
+                      {
+                        "content": "Monitoring (CloudWatch)"
+                      },
+                      {
+                        "content": "Security tooling"
+                      },
+                      {
+                        "content": "Total"
+                      }
                     ]
                   },
                   {
-                    "header": { "content": "Annual Cost" },
+                    "header": {
+                      "content": "Annual Cost"
+                    },
                     "cells": [
-                      { "content": "$142K" },
-                      { "content": "$96K" },
-                      { "content": "$28K" },
-                      { "content": "$48K" },
-                      { "content": "$140K" },
-                      { "content": "$18K" },
-                      { "content": "$32K" },
-                      { "content": "$504K" }
+                      {
+                        "content": "$142K"
+                      },
+                      {
+                        "content": "$96K"
+                      },
+                      {
+                        "content": "$28K"
+                      },
+                      {
+                        "content": "$48K"
+                      },
+                      {
+                        "content": "$140K"
+                      },
+                      {
+                        "content": "$18K"
+                      },
+                      {
+                        "content": "$32K"
+                      },
+                      {
+                        "content": "$504K"
+                      }
                     ]
                   }
                 ]
@@ -737,7 +1229,9 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Risk Mitigation"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
@@ -745,7 +1239,10 @@
       "children": [
         {
           "name": "heading",
-          "props": { "text": "Risk Mitigation", "level": 1 }
+          "props": {
+            "text": "Risk Mitigation",
+            "level": 1
+          }
         },
         {
           "name": "paragraph",
@@ -757,53 +1254,114 @@
           "name": "table",
           "props": {
             "headerCellDefaults": {
-              "font": { "bold": true, "size": 10 },
-              "padding": { "top": 8, "right": 10, "bottom": 8, "left": 10 }
+              "font": {
+                "bold": true,
+                "size": 10
+              },
+              "padding": {
+                "top": 8,
+                "right": 10,
+                "bottom": 8,
+                "left": 10
+              }
             },
             "cellDefaults": {
-              "padding": { "top": 5, "right": 10, "bottom": 5, "left": 10 },
+              "padding": {
+                "top": 5,
+                "right": 10,
+                "bottom": 5,
+                "left": 10
+              },
               "verticalAlignment": "middle",
-              "font": { "size": 10 }
+              "font": {
+                "size": 10
+              }
             },
             "borderColor": "D6DAE0",
             "borderSize": 1,
-            "hideBorders": { "insideVertical": true },
+            "hideBorders": {
+              "insideVertical": true
+            },
             "columns": [
               {
-                "header": { "content": "Risk" },
+                "header": {
+                  "content": "Risk"
+                },
                 "cells": [
-                  { "content": "Data loss during migration" },
-                  { "content": "Extended downtime" },
-                  { "content": "Performance regression" },
-                  { "content": "Security breach during transition" },
-                  { "content": "Budget overrun" },
-                  { "content": "Team knowledge gap" }
+                  {
+                    "content": "Data loss during migration"
+                  },
+                  {
+                    "content": "Extended downtime"
+                  },
+                  {
+                    "content": "Performance regression"
+                  },
+                  {
+                    "content": "Security breach during transition"
+                  },
+                  {
+                    "content": "Budget overrun"
+                  },
+                  {
+                    "content": "Team knowledge gap"
+                  }
                 ]
               },
               {
-                "header": { "content": "Probability" },
+                "header": {
+                  "content": "Probability"
+                },
                 "cells": [
-                  { "content": "Low" },
-                  { "content": "Low" },
-                  { "content": "Medium" },
-                  { "content": "Low" },
-                  { "content": "Medium" },
-                  { "content": "High" }
+                  {
+                    "content": "Low"
+                  },
+                  {
+                    "content": "Low"
+                  },
+                  {
+                    "content": "Medium"
+                  },
+                  {
+                    "content": "Low"
+                  },
+                  {
+                    "content": "Medium"
+                  },
+                  {
+                    "content": "High"
+                  }
                 ]
               },
               {
-                "header": { "content": "Impact" },
+                "header": {
+                  "content": "Impact"
+                },
                 "cells": [
-                  { "content": "Critical" },
-                  { "content": "High" },
-                  { "content": "Medium" },
-                  { "content": "Critical" },
-                  { "content": "Medium" },
-                  { "content": "Medium" }
+                  {
+                    "content": "Critical"
+                  },
+                  {
+                    "content": "High"
+                  },
+                  {
+                    "content": "Medium"
+                  },
+                  {
+                    "content": "Critical"
+                  },
+                  {
+                    "content": "Medium"
+                  },
+                  {
+                    "content": "Medium"
+                  }
                 ]
               },
               {
-                "header": { "content": "Mitigation" },
+                "header": {
+                  "content": "Mitigation"
+                },
                 "cells": [
                   {
                     "content": "Continuous DMS replication with automated validation checksums; dual-write for 2 weeks pre-cutover"
@@ -833,13 +1391,21 @@
     {
       "name": "section",
       "props": {
-        "level": 1,
+        "meta": {
+          "title": "Next Steps"
+        },
         "pageBreak": true,
         "header": "linkToPrevious",
         "footer": "linkToPrevious"
       },
       "children": [
-        { "name": "heading", "props": { "text": "Next Steps", "level": 1 } },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Next Steps",
+            "level": 1
+          }
+        },
         {
           "name": "paragraph",
           "props": {
@@ -860,10 +1426,18 @@
             ]
           }
         },
-        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": ""
+          }
+        },
         {
           "name": "columns",
-          "props": { "columns": 2, "gap": 0.5 },
+          "props": {
+            "columns": 2,
+            "gap": 0.5
+          },
           "children": [
             {
               "name": "statistic",
@@ -883,12 +1457,19 @@
             }
           ]
         },
-        { "name": "paragraph", "props": { "text": "" } },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": ""
+          }
+        },
         {
           "name": "paragraph",
           "props": {
             "text": "For questions or to schedule the discovery sprint, contact:",
-            "font": { "bold": true }
+            "font": {
+              "bold": true
+            }
           }
         },
         {
@@ -896,7 +1477,9 @@
           "props": {
             "text": "Elena Vasquez, Principal Cloud Architect\nsolutions@apexconsulting.io  |  +1 (415) 555-0142",
             "alignment": "left",
-            "font": { "color": "textSecondary" }
+            "font": {
+              "color": "textSecondary"
+            }
           }
         }
       ]
