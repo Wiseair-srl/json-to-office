@@ -13,10 +13,7 @@ import {
 } from '../types';
 import { ThemeConfig } from '../styles';
 import { formatDate } from '../utils/formatters';
-import {
-  resolveComponentTree,
-  resolveComponentDefaults,
-} from '../styles/utils/resolveComponentTree';
+import { resolveComponentTree } from '../styles/utils/resolveComponentTree';
 import { mergeWithDefaults } from '../styles/utils/componentDefaults';
 
 export interface ProcessedDocument {
@@ -42,8 +39,6 @@ export interface DocumentMetadata {
 }
 
 export interface ProcessedSection {
-  title?: string;
-  level?: number;
   components: ComponentDefinition[];
   header?: ComponentDefinition[] | 'linkToPrevious';
   footer?: ComponentDefinition[] | 'linkToPrevious';
@@ -183,43 +178,15 @@ export async function extractSections(
       // Determine if page break should be applied (default to true)
       const shouldPageBreak = component.props?.pageBreak !== false;
 
-      // Add section title as heading component if present
-      if (component.props?.title) {
-        // Ensure level is within valid range (1-6) for heading component
-        const headingLevel = Math.min(
-          Math.max(component.props.level || 1, 1),
-          6
-        ) as 1 | 2 | 3 | 4 | 5 | 6;
-
-        sectionComponents.unshift(
-          resolveComponentDefaults(
-            {
-              name: 'heading',
-              props: {
-                text: component.props.title,
-                level: headingLevel,
-                pageBreak: shouldPageBreak,
-                // Apply zero-spacing to prevent unwanted initial line
-                spacing: {
-                  before: 0,
-                  after: 0,
-                },
-              },
-            },
-            context.fullTheme
-          )
-        );
-      }
-
       sections.push({
-        title: component.props?.title,
-        level: component.props?.level,
         components: sectionComponents,
         header: component.props?.header,
         footer: component.props?.footer,
         isExplicitSection: true,
-        // Store pageBreak for titleless sections to be handled at layout level
-        pageBreak: !component.props?.title ? shouldPageBreak : undefined,
+        // Page break is handled at layout level (sections render no title of
+        // their own — a visible title is an explicit heading child; the
+        // authoring label lives in props.meta.title and is never rendered)
+        pageBreak: shouldPageBreak,
         // Preserve page configuration override if present
         page: component.props?.page,
       });
@@ -257,33 +224,7 @@ export async function flattenComponents(
         children: await flattenComponents(component.children, context),
       });
     } else if (isSectionComponent(component) && component.children) {
-      // Flatten nested sections
-      if (component.props?.title) {
-        // Ensure level is within valid range (1-6) for heading component
-        const headingLevel = Math.min(
-          Math.max(component.props.level || 1, 1),
-          6
-        ) as 1 | 2 | 3 | 4 | 5 | 6;
-
-        // Convert section title to heading
-        flattened.push(
-          resolveComponentDefaults(
-            {
-              name: 'heading',
-              props: {
-                text: component.props.title,
-                level: headingLevel,
-                // Apply zero-spacing to prevent unwanted initial line
-                spacing: {
-                  before: 0,
-                  after: 0,
-                },
-              },
-            },
-            context.fullTheme
-          )
-        );
-      }
+      // Flatten nested sections (their meta is authoring-only, nothing renders)
       flattened.push(...(await flattenComponents(component.children, context)));
     } else {
       // Keep content components as-is

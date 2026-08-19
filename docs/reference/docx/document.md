@@ -93,8 +93,7 @@ A Word section: a run of pages sharing one header, footer, and page setup. Secti
 
 | Prop        | Type                                | Default                                     | Description                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ----------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`     | `string`                            | —                                           | Optional section title, rendered as a heading at the top of the section.                                                                                                                                                                                                                                                                                                |
-| `level`     | `number` (1–9)                      | `1`                                         | Heading level used for `title`.                                                                                                                                                                                                                                                                                                                                         |
+| `meta`      | `{ title? }`                        | —                                           | Authoring metadata; never rendered. `meta.title` labels the section in editors and outlines (e.g. the playground sidebar). For a visible title, add a `heading` child.                                                                                                                                                                                                  |
 | `header`    | `Component[]` \| `'linkToPrevious'` | —                                           | Header content: an array of components (paragraphs, images, tables, ...), or the literal string `'linkToPrevious'` to reuse the previous section's header.                                                                                                                                                                                                              |
 | `footer`    | `Component[]` \| `'linkToPrevious'` | —                                           | Same as `header`, for the footer.                                                                                                                                                                                                                                                                                                                                       |
 | `pageBreak` | `boolean`                           | `true` (schema) / `false` (built-in themes) | Start the section on a new page. The schema default is `true`, but every built-in theme overrides it to `false` via `componentDefaults.section`, so sections flow continuously unless you set `pageBreak: true`. Defaults apply whether or not the node declares `props`: a section written with **no `props` key at all** behaves exactly like one with `"props": {}`. |
@@ -103,6 +102,8 @@ A Word section: a run of pages sharing one header, footer, and page setup. Secti
 
 ::: warning Behavior change
 Earlier versions skipped `componentDefaults` resolution for a node that carried no `props` key at all, so a propless section fell back to the schema default and broke to a new page. It no longer does. If a document relied on that quirk to get its page breaks, set `"pageBreak": true` explicitly.
+
+Sections also used to accept `title`/`level` props that rendered a heading at the top of the section. Those props are gone: name a section with `meta.title` (not rendered) and add an explicit `heading` child for a visible title.
 :::
 
 ### `page` override
@@ -124,8 +125,7 @@ Header and footer text supports the same inline syntax as body text, including t
 {
   "name": "section",
   "props": {
-    "title": "Financial Results",
-    "level": 1,
+    "meta": { "title": "Financial Results" },
     "pageBreak": true,
     "header": [
       {
@@ -158,6 +158,7 @@ Header and footer text supports the same inline syntax as body text, including t
     }
   },
   "children": [
+    { "name": "heading", "props": { "text": "Financial Results", "level": 1 } },
     { "name": "paragraph", "props": { "text": "Revenue for the quarter..." } }
   ]
 }

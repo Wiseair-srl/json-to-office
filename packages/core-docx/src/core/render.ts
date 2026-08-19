@@ -616,8 +616,6 @@ export async function renderSection(
       columnCount: section.properties.column?.count || 1,
       // Always pass the same bookmark ID for all layout chunks of the same section
       sectionBookmarkId: sectionBookmarkId,
-      // Pass section title level for TOC scoping (excludes section title from its own TOC)
-      sectionTitleLevel: section.sectionTitleLevel,
     },
   };
 

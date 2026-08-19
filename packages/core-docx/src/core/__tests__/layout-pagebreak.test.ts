@@ -18,8 +18,7 @@ describe('Layout PageBreak', () => {
         {
           name: 'section',
           props: {
-            title: 'Section 1',
-            level: 1,
+            meta: { title: 'Section 1' },
           },
           children: [
             {
@@ -49,8 +48,7 @@ describe('Layout PageBreak', () => {
         {
           name: 'section',
           props: {
-            title: 'Section 1',
-            level: 1,
+            meta: { title: 'Section 1' },
             pageBreak: false,
           },
           children: [
@@ -80,8 +78,7 @@ describe('Layout PageBreak', () => {
         {
           name: 'section',
           props: {
-            title: 'Section 1',
-            level: 1,
+            meta: { title: 'Section 1' },
             pageBreak: true,
           },
           children: [
@@ -105,8 +102,7 @@ describe('Layout PageBreak', () => {
         {
           name: 'section',
           props: {
-            title: 'Section 1',
-            level: 1,
+            meta: { title: 'Section 1' },
             pageBreak: false,
           },
           children: [{ name: 'paragraph', props: { content: 'Content 1' } }],
@@ -114,8 +110,7 @@ describe('Layout PageBreak', () => {
         {
           name: 'section',
           props: {
-            title: 'Section 2',
-            level: 1,
+            meta: { title: 'Section 2' },
             // default pageBreak: true
           },
           children: [{ name: 'paragraph', props: { content: 'Content 2' } }],
@@ -123,8 +118,7 @@ describe('Layout PageBreak', () => {
         {
           name: 'section',
           props: {
-            title: 'Section 3',
-            level: 1,
+            meta: { title: 'Section 3' },
             pageBreak: false,
           },
           children: [{ name: 'paragraph', props: { content: 'Content 3' } }],
@@ -147,17 +141,17 @@ describe('Layout PageBreak', () => {
       const components: ComponentDefinition[] = [
         {
           name: 'section',
-          props: { title: 'Section 1', level: 1 },
+          props: { meta: { title: 'Section 1' } },
           children: [{ name: 'paragraph', props: { content: 'Content 1' } }],
         },
         {
           name: 'section',
-          props: { title: 'Section 2', level: 1 },
+          props: { meta: { title: 'Section 2' } },
           children: [{ name: 'paragraph', props: { content: 'Content 2' } }],
         },
         {
           name: 'section',
-          props: { title: 'Section 3', level: 1 },
+          props: { meta: { title: 'Section 3' } },
           children: [{ name: 'paragraph', props: { content: 'Content 3' } }],
         },
       ];

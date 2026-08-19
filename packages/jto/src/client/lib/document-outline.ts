@@ -171,7 +171,11 @@ function componentLabel(
       };
     }
     case 'section': {
-      const title = stringValue(propValue(props, 'title'));
+      // meta.title is the authoring label (never rendered); bare `title` is
+      // the pre-meta spelling, still honored so old documents stay navigable.
+      const title =
+        stringValue(propValue(propValue(props, 'meta'), 'title')) ??
+        stringValue(propValue(props, 'title'));
       return { label: title ? truncate(title) : 'section' };
     }
     case 'statistic': {

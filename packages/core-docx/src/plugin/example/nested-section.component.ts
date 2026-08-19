@@ -37,10 +37,13 @@ export const nestedSectionsComponent = createComponent({
         components.push({
           name: 'section',
           props: {
-            title: 'First level 1 section',
-            level: 1,
+            meta: { title: 'First level 1 section' },
           },
           children: [
+            {
+              name: 'heading',
+              props: { text: 'First level 1 section', level: 1 },
+            },
             {
               name: 'heading',
               props: {
@@ -73,10 +76,13 @@ export const nestedSectionsComponent = createComponent({
         components.push({
           name: 'section',
           props: {
-            title: 'Second level 1 section',
-            level: 1,
+            meta: { title: 'Second level 1 section' },
           },
           children: [
+            {
+              name: 'heading',
+              props: { text: 'Second level 1 section', level: 1 },
+            },
             {
               name: 'heading',
               props: {

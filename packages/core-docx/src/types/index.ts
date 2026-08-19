@@ -209,8 +209,6 @@ export interface RenderContext {
     level?: number;
     /** Bookmark ID for section-scoped TOCs (when TOC is inside a section) */
     sectionBookmarkId?: string;
-    /** Heading level of the parent section title (used to exclude it from section-scoped TOCs) */
-    sectionTitleLevel?: number;
   };
   utils: {
     formatDate: (_date: Date) => string;
