@@ -71,6 +71,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -355,6 +358,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Table of contents"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -742,6 +748,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "CEO message"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -975,6 +984,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Company overview"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -1492,6 +1504,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "About us"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -1657,6 +1672,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Business focus"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -1985,6 +2003,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Global presence"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -2471,6 +2492,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Mission & long-term vision"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -3032,6 +3056,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Vision & values"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -3161,6 +3188,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Operational highlights"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -3469,6 +3499,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Achievement overview"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -4050,6 +4083,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Financial metrics"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -4935,6 +4971,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Income statement"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -6048,6 +6087,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Balance sheet"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -6808,6 +6850,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Balance sheet (continued)"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -7262,6 +7307,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Business model & strategy"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -7629,6 +7677,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Shareholding structure"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -8020,6 +8071,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Company statement"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -8258,6 +8312,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Market outlook"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -8498,6 +8555,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Environmental & social"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -8868,6 +8928,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Awards & recognition"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -9386,6 +9449,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Key financial ratios"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -10418,6 +10484,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Closing statement"
+        },
         "page": {
           "size": "A4",
           "margins": {
@@ -10751,6 +10820,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Back cover"
+        },
         "page": {
           "size": "A4",
           "margins": {

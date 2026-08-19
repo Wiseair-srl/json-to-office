@@ -80,6 +80,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "header": [],
         "footer": [],
         "pageBreak": false
@@ -351,7 +354,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Table of contents"
+        }
+      }
     },
     {
       "name": "section",
@@ -756,7 +764,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Contents overview"
+        }
+      }
     },
     {
       "name": "section",
@@ -939,7 +952,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Letter from the CEO"
+        }
+      }
     },
     {
       "name": "section",
@@ -1285,7 +1303,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Company overview"
+        }
+      }
     },
     {
       "name": "section",
@@ -1611,7 +1634,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Key highlights"
+        }
+      }
     },
     {
       "name": "section",
@@ -1902,7 +1930,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Business highlights"
+        }
+      }
     },
     {
       "name": "section",
@@ -2124,7 +2157,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Vision, mission & purpose"
+        }
+      }
     },
     {
       "name": "section",
@@ -2496,7 +2534,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Revenue mix"
+        }
+      }
     },
     {
       "name": "section",
@@ -2784,7 +2827,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Market trends & insights"
+        }
+      }
     },
     {
       "name": "section",
@@ -3065,7 +3113,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Regional presence"
+        }
+      }
     },
     {
       "name": "section",
@@ -3356,7 +3409,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Business segments"
+        }
+      }
     },
     {
       "name": "section",
@@ -3578,7 +3636,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "R&D & innovation"
+        }
+      }
     },
     {
       "name": "section",
@@ -3810,7 +3873,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "ESG & sustainability"
+        }
+      }
     },
     {
       "name": "section",
@@ -4113,7 +4181,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "People & culture"
+        }
+      }
     },
     {
       "name": "section",
@@ -4238,7 +4311,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Financial performance"
+        }
+      }
     },
     {
       "name": "section",
@@ -4634,7 +4712,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Profitability"
+        }
+      }
     },
     {
       "name": "section",
@@ -5010,7 +5093,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Global footprint"
+        }
+      }
     },
     {
       "name": "section",
@@ -5313,7 +5401,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Key deals"
+        }
+      }
     },
     {
       "name": "section",
@@ -5422,7 +5515,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Risk control"
+        }
+      }
     },
     {
       "name": "section",
@@ -5893,7 +5991,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Risk factors"
+        }
+      }
     },
     {
       "name": "section",
@@ -6153,7 +6256,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Future outlook"
+        }
+      }
     },
     {
       "name": "section",
@@ -6318,7 +6426,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Partners & testimonials"
+        }
+      }
     },
     {
       "name": "section",
@@ -6497,7 +6610,12 @@
             }
           }
         }
-      ]
+      ],
+      "props": {
+        "meta": {
+          "title": "Contact information"
+        }
+      }
     }
   ]
 }

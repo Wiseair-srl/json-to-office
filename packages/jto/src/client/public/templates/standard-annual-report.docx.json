@@ -78,6 +78,9 @@
     {
       "name": "section",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "header": [],
         "footer": [],
         "pageBreak": false
@@ -320,7 +323,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Table of contents"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -727,7 +734,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Letter from the CEO"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -931,7 +942,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Key figures"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -1315,7 +1330,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Our culture"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -1709,7 +1728,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Board of directors"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -2051,7 +2074,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Company values"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -2564,7 +2591,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Business management"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -2898,7 +2929,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Client results"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -3330,7 +3365,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Future growth strategies"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -3793,7 +3832,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Revenue by service"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -4146,7 +4189,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Project highlight"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -4483,7 +4530,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Project details"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -4750,7 +4801,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Financial strategy"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -5070,7 +5125,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Market analysis"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -5943,7 +6002,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Targets & projections"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -6355,7 +6418,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Marketing goals"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -6708,7 +6775,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Global market"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -6994,7 +7065,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Looking ahead"
+        }
+      },
       "children": [
         {
           "name": "image",
@@ -7297,7 +7372,11 @@
     },
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Back cover"
+        }
+      },
       "children": [
         {
           "name": "image",

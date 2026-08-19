@@ -11,11 +11,18 @@
   "children": [
     {
       "name": "section",
-      "props": {},
+      "props": {
+        "meta": {
+          "title": "Infographic"
+        }
+      },
       "children": [
         {
           "name": "heading",
-          "props": { "level": 1, "text": "How a brief becomes a document" }
+          "props": {
+            "level": 1,
+            "text": "How a brief becomes a document"
+          }
         },
         {
           "name": "paragraph",
@@ -31,7 +38,9 @@
             "canvas": {
               "width": 7.2,
               "height": 2.6,
-              "background": { "color": "F4F8FF" }
+              "background": {
+                "color": "F4F8FF"
+              }
             },
             "elements": [
               {
@@ -42,7 +51,9 @@
                   "y": 0.7,
                   "w": 2.0,
                   "h": 1.2,
-                  "fill": { "color": "BBD3FF" }
+                  "fill": {
+                    "color": "BBD3FF"
+                  }
                 }
               },
               {
@@ -53,7 +64,9 @@
                   "y": 0.7,
                   "w": 2.0,
                   "h": 1.2,
-                  "fill": { "color": "6FA1F2" }
+                  "fill": {
+                    "color": "6FA1F2"
+                  }
                 }
               },
               {
@@ -64,7 +77,9 @@
                   "y": 0.7,
                   "w": 2.0,
                   "h": 1.2,
-                  "fill": { "color": "2E6BD6" }
+                  "fill": {
+                    "color": "2E6BD6"
+                  }
                 }
               },
               {
@@ -75,7 +90,9 @@
                   "y": 0.7,
                   "w": 2.0,
                   "h": 1.2,
-                  "fill": { "color": "13367F" }
+                  "fill": {
+                    "color": "13367F"
+                  }
                 }
               },
               {
