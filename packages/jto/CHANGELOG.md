@@ -1,5 +1,81 @@
 # @json-to-office/jto
 
+## 0.32.0
+
+### Minor Changes
+
+- e67aa4e: Playground sidebar gains an Outline section — a semantic table of contents
+  for the document in the active editor tab.
+
+  PPTX documents outline as numbered slides labeled by their title text, with
+  per-component rows (text, chart, table, image, shape…) carrying type icons
+  and content snippets. DOCX documents outline as the heading hierarchy —
+  non-heading components nest under their preceding heading, and untitled
+  `section` containers borrow their first heading or paragraph as a label.
+  Theme files outline as their top-level keys with nested keys and value
+  previews one level down.
+
+  The tree is bidirectionally synced with Monaco: clicking a node reveals and
+  flashes its JSON range, and moving the cursor highlights (and auto-expands
+  to) the node it sits inside. Nodes containing schema validation errors show a
+  red dot, propagated to their ancestors. Sibling nodes can be drag-reordered —
+  moving a slide, or a whole DOCX heading section with all its content, as a
+  single undoable text edit that preserves formatting and keeps collapsed
+  long-string chips intact (the collapse controller gained a
+  `resyncDecorations()` primitive that re-anchors chips to their sentinels
+  after text moves).
+
+  The outline is built with jsonc-parser's error-tolerant `parseTree`, so it
+  stays alive while the JSON is temporarily invalid mid-edit.
+
+- b2b0bd3: BREAKING (DOCX): `section` no longer accepts `title`/`level` props. They
+  conflated naming with content — a section title silently synthesized a
+  heading component at the top of the section (and bent TOC scoping and
+  pageBreak handling around it).
+
+  Sections now take `meta.title` instead: a pure authoring label, never
+  rendered, shown by editors and outlines (the playground sidebar uses it as
+  the section's outline label). For a visible title, add an explicit `heading`
+  child — what the synthesized heading was doing anyway, now stated in the
+  document.
+
+  Migration: `"props": { "title": "X", "level": 2 }` becomes
+  `"props": { "meta": { "title": "X" } }` plus, if the rendered heading was
+  wanted, a `{ "name": "heading", "props": { "text": "X", "level": 2 } }`
+  first child. Section-scoped TOCs still work via section bookmarks; they no
+  longer skip a synthesized title level. No stock template or example used
+  `title`.
+
+- 0b021e5: PPTX slides accept `meta.title` — an authoring-only label, symmetric to the
+  DOCX section `meta.title`: never rendered (generated .pptx is byte-identical
+  with or without it), surfaced by editors and the playground outline as the
+  slide's label.
+
+  The outline's derived slide labels also got smarter for documents without
+  explicit labels: template-driven slides now read their `title`/`subtitle`
+  placeholders (previously such decks labeled as "Slide N"), and multi-line
+  titles are joined onto one line instead of truncating at the first line
+  break. All stock pptx templates ship with curated `meta.title` labels where
+  the derived label was weak or duplicated.
+
+### Patch Changes
+
+- d4f93f2: Restructure the modern-annual-report-1/2/3 templates from a single section
+  holding ~400 components into one section per page (24 sections each). The
+  empty pageBreak-carrying delimiter paragraphs are replaced by explicit
+  `section` components with `pageBreak: true`, matching the structure the
+  layout engine was already producing internally (the generated documents
+  carried 24 sectPr before and after). Rendered output is pixel-identical on
+  every page of all three templates; the sidebar outline now shows a navigable,
+  reorderable table of contents for them instead of one opaque section.
+- Updated dependencies [b2b0bd3]
+- Updated dependencies [0b021e5]
+  - @json-to-office/shared-docx@0.32.0
+  - @json-to-office/core-docx@0.32.0
+  - @json-to-office/shared-pptx@0.32.0
+  - @json-to-office/jto-cli@0.32.0
+  - @json-to-office/core-pptx@0.32.0
+
 ## 0.31.1
 
 ### Patch Changes
