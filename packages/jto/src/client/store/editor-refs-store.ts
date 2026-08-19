@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import type { editor as MonacoEditorType } from 'monaco-editor';
 import type { Monaco } from '@monaco-editor/react';
+import type { CollapseController } from '../lib/monaco-collapse-strings';
 
 export interface EditorReference {
   editor: MonacoEditorType.IStandaloneCodeEditor;
@@ -18,6 +19,12 @@ export interface EditorReference {
    * MUST pipe it through this, or sentinels leak into the output.
    */
   toStorageValue: (modelText: string) => string;
+  /**
+   * Long-string collapse controller for this editor, when installed. Consumers
+   * that apply edits which MOVE model text (e.g. the outline drag-reorder)
+   * must call `collapse.resyncDecorations()` afterwards so chips re-anchor.
+   */
+  collapse?: CollapseController;
 }
 
 interface EditorRefsState {
@@ -30,7 +37,8 @@ interface EditorRefsActions {
     documentName: string,
     editor: MonacoEditorType.IStandaloneCodeEditor,
     monaco: Monaco,
-    toStorageValue?: (modelText: string) => string
+    toStorageValue?: (modelText: string) => string,
+    collapse?: CollapseController
   ) => void;
   unregisterEditor: (documentName: string) => void;
   setActiveEditor: (documentName: string | null) => void;
@@ -44,7 +52,7 @@ export const useEditorRefsStore = create<EditorRefsStore>((set, get) => ({
   editors: new Map(),
   activeEditorName: null,
 
-  registerEditor: (documentName, editor, monaco, toStorageValue) => {
+  registerEditor: (documentName, editor, monaco, toStorageValue, collapse) => {
     set((state) => {
       const newEditors = new Map(state.editors);
       newEditors.set(documentName, {
@@ -52,6 +60,7 @@ export const useEditorRefsStore = create<EditorRefsStore>((set, get) => ({
         monaco,
         documentName,
         toStorageValue: toStorageValue ?? ((text) => text),
+        collapse,
       });
       return { editors: newEditors };
     });

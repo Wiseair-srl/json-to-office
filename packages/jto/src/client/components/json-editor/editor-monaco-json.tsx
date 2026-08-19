@@ -89,12 +89,15 @@ function EditorMonacoJson({
   );
 
   // Collapse newly-pasted long strings after typing settles (skips the string
-  // under the cursor so it never yanks text mid-edit).
+  // under the cursor so it never yanks text mid-edit). Re-anchor existing
+  // chips first: undo of an outline reorder moves sentinel text without
+  // moving its decoration.
   const debouncedCollapseNewRef = useRef(
     debounce(() => {
       const editorInstance = editorRef.current;
       const controller = collapseRef.current;
       if (!editorInstance || !controller) return;
+      controller.resyncDecorations();
       const position = editorInstance.getPosition();
       const model = editorInstance.getModel();
       const cursorOffset =
@@ -131,11 +134,6 @@ function EditorMonacoJson({
     editorRef.current = editor;
     monacoRef.current = monaco;
 
-    // Register editor in the refs store. Pass the sentinel reconstructor so any
-    // consumer reading live text (preview/build) expands collapsed strings.
-    registerEditor(name, editor, monaco, toStorageValue);
-    setActiveEditor(name);
-
     // Ensure the model's language is set to JSON for schema validation
     const model = editor.getModel();
     if (model) {
@@ -146,6 +144,12 @@ function EditorMonacoJson({
     // Collapse very long string values (base64, big blobs, …) into clickable chips
     collapseRef.current = installLongStringCollapser(editor, monaco);
     collapseRef.current.recollapse();
+
+    // Register editor in the refs store. Pass the sentinel reconstructor so any
+    // consumer reading live text (preview/build) expands collapsed strings, and
+    // the collapse controller so outline reorders can re-anchor chips.
+    registerEditor(name, editor, monaco, toStorageValue, collapseRef.current);
+    setActiveEditor(name);
 
     // Add context menu action for AI assistant
     editor.addAction({
