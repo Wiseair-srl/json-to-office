@@ -4,7 +4,7 @@
  */
 
 import { AlignmentType, convertInchesToTwip, LevelFormat } from 'docx';
-import type { ILevelsOptions } from 'docx';
+import type { ILevelsOptions, IRunStylePropertiesOptions } from 'docx';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 // Type mapping from schema strings to docx LevelFormat values
@@ -85,6 +85,21 @@ const ALIGNMENT_MAP: Record<
   center: AlignmentType.CENTER,
 };
 
+/**
+ * Styling for the marker glyph itself (`w:lvl/w:rPr`), independent of the list
+ * text. `color` must already be resolved to a 6-char hex without '#'.
+ */
+export interface ListMarkerFontConfig {
+  family?: string;
+  /** Points. */
+  size?: number;
+  /** Resolved hex, no leading '#'. */
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+}
+
 export interface ListLevelConfig {
   level: number;
   format?: string;
@@ -95,6 +110,7 @@ export interface ListLevelConfig {
     hanging?: number;
   };
   start?: number;
+  font?: ListMarkerFontConfig;
 }
 
 export interface NumberingConfig {
@@ -160,6 +176,30 @@ function createDefaultLevel(
 }
 
 /**
+ * Map a marker font onto docx's level run properties. Returns undefined when
+ * nothing was requested, so the emitted level keeps its previous shape.
+ */
+function createMarkerRunStyle(
+  font: ListMarkerFontConfig | undefined
+): IRunStylePropertiesOptions | undefined {
+  if (!font) return undefined;
+
+  const run: IRunStylePropertiesOptions = {
+    ...(font.family && { font: font.family }),
+    // docx run sizes are half-points.
+    ...(font.size !== undefined && { size: font.size * 2 }),
+    ...(font.color && { color: font.color }),
+    ...(font.bold !== undefined && { bold: font.bold }),
+    ...(font.italic !== undefined && { italics: font.italic }),
+    ...(font.underline !== undefined && {
+      underline: font.underline ? { type: 'single' as const } : undefined,
+    }),
+  };
+
+  return Object.keys(run).length > 0 ? run : undefined;
+}
+
+/**
  * Create numbering configuration from list config
  * Returns a single config item that can be added to INumberingOptions.config array
  */
@@ -188,6 +228,8 @@ export function createNumberingConfig(config: NumberingConfig): {
         ? levelConfig.indent.hanging / 72 // Convert points to inches
         : 0.25;
 
+    const markerRun = createMarkerRunStyle(levelConfig.font);
+
     const level: ILevelsOptions = {
       level: levelConfig.level,
       format,
@@ -200,6 +242,9 @@ export function createNumberingConfig(config: NumberingConfig): {
             hanging: convertInchesToTwip(hangingIndent),
           },
         },
+        // The marker glyph carries its own run properties; without this it
+        // inherits whatever the list paragraph resolves to.
+        ...(markerRun && { run: markerRun }),
       },
       // Add start number if specified
       ...(levelConfig.start !== undefined && { start: levelConfig.start }),
