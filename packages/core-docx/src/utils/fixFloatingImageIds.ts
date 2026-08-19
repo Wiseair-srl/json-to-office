@@ -24,12 +24,17 @@ export function fixFloatingImageIdsInBuffer(buffer: Buffer): Buffer {
   }
 
   let idCounter = 1;
+  // `id` is not guaranteed to be the first attribute on wp:docPr: OOXML does
+  // not fix attribute order and docx does not promise to preserve it. Match it
+  // wherever it sits so a library-side reordering cannot silently turn this
+  // pass into a no-op (which would leave every floating image on id="1" and
+  // make Word prompt for repair).
   const documentXml = documentEntry
     .getData()
     .toString('utf8')
-    .replace(/<wp:docPr\s+id="(\d+)"/g, () => {
+    .replace(/(<wp:docPr\b[^>]*?\s)id="\d+"/g, (_match, prefix: string) => {
       const newId = idCounter++;
-      return `<wp:docPr id="${newId}"`;
+      return `${prefix}id="${newId}"`;
     });
 
   zip.updateFile(documentEntry, Buffer.from(documentXml, 'utf8'));
