@@ -288,6 +288,14 @@ export {
   STANDARD_COMPONENTS_SET,
 } from './types/components';
 
+// Component registry — the single source of truth for which components exist,
+// which can hold children, and what those children may be.
+export {
+  STANDARD_COMPONENTS_REGISTRY,
+  getStandardComponent,
+  getAllStandardComponentNames,
+} from './schemas/component-registry';
+
 // Highcharts component schema (standard component)
 export { HighchartsPropsSchema } from './schemas/components/highcharts';
 export type { HighchartsProps } from './schemas/components/highcharts';

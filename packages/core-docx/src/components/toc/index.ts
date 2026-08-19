@@ -11,14 +11,75 @@ import {
   StyleLevel,
 } from 'docx';
 import type { ITableOfContentsOptions } from 'docx';
+
+/**
+ * docx declares `ToCEntry` but does not export it, so mirror the shape it
+ * accepts for `cachedEntries`. `page` and `href` are optional and deliberately
+ * unused — see `selectCachedEntries`.
+ */
+type ToCEntry = {
+  readonly title: string;
+  readonly level: number;
+  readonly page?: number;
+  readonly href?: string;
+};
 import type { TocProps } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../../styles';
 import type { RenderContext } from '../../types';
+import type { TocHeadingEntry } from '../../core/collectTocHeadings';
 
 export interface TocComponentDefinition {
   name: 'toc';
   id?: string;
   props: TocProps;
+}
+
+/**
+ * Select the collected entries this TOC would show, in document order.
+ *
+ * Mirrors what Word's own refresh does with the field switches:
+ * - `\o` outline range: heading entries inside [depthStart, depthEnd].
+ * - `\t` style mappings: paragraphs whose `themeStyle` this TOC maps, at the
+ *   mapped level. Word includes these regardless of the outline range, so they
+ *   are not depth-filtered here either — otherwise a reader pressing F9 would
+ *   see a different TOC than the cached one, the exact disagreement caching is
+ *   meant to avoid.
+ * - `\b` bookmark: when the TOC is section-scoped, only entries from that
+ *   section.
+ */
+function selectCachedEntries(
+  collected: readonly TocHeadingEntry[] | undefined,
+  options: {
+    depthStart: number;
+    depthEnd: number;
+    sectionBookmarkId?: string;
+    styleLevels: ReadonlyMap<string, number>;
+  }
+): ToCEntry[] {
+  if (!collected || collected.length === 0) return [];
+
+  const { depthStart, depthEnd, sectionBookmarkId, styleLevels } = options;
+  const entries: ToCEntry[] = [];
+
+  for (const entry of collected) {
+    if (sectionBookmarkId && entry.sectionBookmarkId !== sectionBookmarkId) {
+      continue;
+    }
+
+    if (entry.styleId !== undefined) {
+      const level = styleLevels.get(entry.styleId);
+      if (level === undefined) continue;
+      entries.push({ title: entry.title, level });
+      continue;
+    }
+
+    if (entry.level < depthStart || entry.level > depthEnd) continue;
+    // `page` is deliberately omitted: nothing in generation paginates, and
+    // Word fills in real numbers the moment it refreshes the field.
+    entries.push({ title: entry.title, level: entry.level });
+  }
+
+  return entries;
 }
 
 /**
@@ -179,8 +240,14 @@ export function renderTocComponent(
 
   // Add custom style mappings if provided
   // These allow arbitrary theme styles to appear in the TOC at specified levels
+  // Style key -> TOC level, for matching the collected entries below. Keyed by
+  // the authored `themeStyle` key, not the Word display name the \t switch
+  // needs.
+  const styleLevels = new Map<string, number>();
+
   if (componentProps.styles && componentProps.styles.length > 0) {
     for (const styleMapping of componentProps.styles) {
+      styleLevels.set(styleMapping.styleId, styleMapping.level);
       // The TOC \t (stylesWithLevels) switch expects Word style DISPLAY NAMES, not IDs.
       // Our theme registers custom styles with:
       //   - id: original key (e.g., "MySpectacularStyle")
@@ -217,6 +284,16 @@ export function renderTocComponent(
   // Calculate heading range for \o switch from the parsed depth config
   const effectiveDepthStart = depthStart;
   const effectiveDepthEnd = depthEnd;
+
+  // Entries collected before rendering. Word repopulates the field on open,
+  // but headless LibreOffice does not — without cached content the PDF export
+  // shows only the TOC title.
+  const cachedEntries = selectCachedEntries(context?.tocHeadings, {
+    depthStart,
+    depthEnd,
+    sectionBookmarkId,
+    styleLevels,
+  });
 
   // Build TOC options
   const tocOptions: ITableOfContentsOptions = {
@@ -274,7 +351,10 @@ export function renderTocComponent(
   // Wrapping TableOfContents inside a Paragraph produces an empty SDT above
   // the actual entries in Word. Adding directly avoids that artifact.
   paragraphs.push(
-    new TableOfContents(componentProps.title ?? 'Table of Contents', tocOptions)
+    new TableOfContents(componentProps.title ?? 'Table of Contents', {
+      ...tocOptions,
+      ...(cachedEntries.length > 0 && { cachedEntries }),
+    })
   );
 
   // Do not append an extra empty paragraph after TOC to avoid

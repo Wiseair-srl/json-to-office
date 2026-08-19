@@ -347,6 +347,19 @@ A native Word table of contents built from headings (and optionally custom style
 }
 ```
 
+### Cached entries
+
+The field is also written with its entries already filled in. Word refreshes it on open regardless, but readers that do not — headless LibreOffice, and therefore the PDF export path — would otherwise show nothing but the TOC title.
+
+The cached entries are collected before rendering: headings inside the `depth` range, plus paragraphs whose `themeStyle` this TOC maps through `styles`, restricted to the TOC's own section when it is section-scoped. Headings in headers and footers never appear (they render as nothing there), and disabled subtrees are pruned.
+
+Two things the cached copy deliberately does not have, and Word supplies on refresh:
+
+- **No page numbers.** Nothing in generation paginates, so any number would be invented.
+- **No entry hyperlinks.**
+
+One divergence worth knowing: when a TOC declares `styles`, `docx` styles _every_ cached entry at a mapped level with that mapped style rather than `TOC{level}`. Word restores the `TOC{level}` styles the moment it refreshes the field.
+
 ## `columns`
 
 Side-by-side column layout. Each child fills the next column. Allowed children: everything a section allows except another `columns`.

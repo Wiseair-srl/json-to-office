@@ -321,6 +321,8 @@ Both colors in that `style` block — `border.<side>.color` and `shading.fill` �
 
 The `toc` component builds a native Word TOC from your headings. It updates like any Word TOC (Word prompts to refresh fields on open, or press F9).
 
+The field ships with its entries already written in, so a reader that never refreshes fields — headless LibreOffice, and therefore PDF export — shows the real contents rather than just the title. Page numbers are the one thing the cached copy omits: nothing in generation paginates, so Word fills those in on the first refresh. See [cached entries](/reference/docx/components#cached-entries).
+
 ```json
 {
   "name": "toc",
