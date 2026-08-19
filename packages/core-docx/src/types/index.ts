@@ -1,5 +1,6 @@
 import { ISectionOptions } from 'docx';
 import type { ThemeName } from '../styles';
+import type { TocHeadingEntry } from '../core/collectTocHeadings';
 import type {
   ServicesConfig,
   PptxRasterizeBatchSlideResult,
@@ -226,4 +227,11 @@ export interface RenderContext {
    * consults it first and falls back to per-visual rasterization on a miss.
    */
   visualRasterResults?: ReadonlyMap<string, PptxRasterizeBatchSlideResult>;
+  /**
+   * Per-document TOC entries collected before rendering (#174). Seeded by the
+   * renderDocument pre-pass; `renderTocComponent` filters them by depth, scope
+   * and style mapping and passes them to docx as `cachedEntries`, so a TOC
+   * field has real content for readers that do not refresh fields.
+   */
+  tocHeadings?: readonly TocHeadingEntry[];
 }

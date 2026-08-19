@@ -95,6 +95,7 @@ import {
 } from '../utils/generationContext';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
 import { computeSectionOrdinals } from './sectionOrdinals';
+import { collectTocHeadings } from './collectTocHeadings';
 import { globalSectionBookmarkRegistry } from './sectionBookmarks';
 
 interface RenderDocumentOptions {
@@ -241,6 +242,22 @@ async function renderDocumentScoped(
   } catch (error) {
     console.warn(
       '[core-docx] Visual pre-rasterization failed; falling back to per-visual rasterization:',
+      error instanceof Error ? error.message : error
+    );
+  }
+
+  // Collect TOC entries before rendering so a TOC field can carry cached
+  // content for readers that never refresh fields (#174). Same
+  // catch-and-degrade discipline as the visual pre-pass: a failure here costs
+  // the cached entries, never the document.
+  try {
+    const tocHeadings = collectTocHeadings(layout.sections);
+    if (tocHeadings.length > 0) {
+      context.tocHeadings = tocHeadings;
+    }
+  } catch (error) {
+    console.warn(
+      '[core-docx] TOC entry collection failed; the TOC field will rely on the reader refreshing it:',
       error instanceof Error ? error.message : error
     );
   }
