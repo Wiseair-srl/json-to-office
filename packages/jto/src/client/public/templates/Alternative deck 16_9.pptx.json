@@ -2133,6 +2133,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Cover with stats"
+        },
         "template": "COVER_STATS_TEMPLATE",
         "notes": "Cover variant with at-a-glance metrics and customer logo strip.",
         "placeholders": {
@@ -2231,6 +2234,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Text + visual split"
+        },
         "template": "TEXT_VISUAL_TEMPLATE",
         "notes": "Text + visual split — narrative left, visual right on dark panel.",
         "placeholders": {
@@ -2259,6 +2265,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Image + text split"
+        },
         "template": "IMG_TEXT_TEMPLATE",
         "notes": "Image + text split — visual left, narrative and stats right.",
         "placeholders": {
@@ -2358,6 +2367,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Timeline"
+        },
         "template": "TIMELINE_TEMPLATE",
         "notes": "Timeline / process — four-step horizontal flow.",
         "placeholders": {
@@ -2451,6 +2463,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Market sizing"
+        },
         "template": "MARKET_TEMPLATE",
         "notes": "Market sizing — three big-stat columns with footnote.",
         "placeholders": {
@@ -2532,6 +2547,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Unit economics"
+        },
         "template": "UNIT_ECONOMICS_TEMPLATE",
         "notes": "Unit economics — six metric tiles on dark canvas.",
         "placeholders": {
@@ -2685,6 +2703,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Revenue breakdown"
+        },
         "template": "REVENUE_BREAKDOWN_TEMPLATE",
         "notes": "Revenue breakdown — chart left, segment cards right.",
         "placeholders": {
@@ -2810,6 +2831,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Pricing tiers"
+        },
         "template": "PRICING_TEMPLATE",
         "notes": "Pricing — three tiers with highlighted middle plan.",
         "placeholders": {
@@ -2943,6 +2967,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Fundraise ask"
+        },
         "template": "FUNDRAISE_TEMPLATE",
         "notes": "Fundraise ask — headline amount with three use-of-funds tiles.",
         "placeholders": {

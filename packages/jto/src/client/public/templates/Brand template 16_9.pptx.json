@@ -1609,6 +1609,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "template": "COVER",
         "placeholders": {
           "preTitle": {
@@ -1642,6 +1645,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Section divider"
+        },
         "template": "SECTION_DIVIDER",
         "placeholders": {
           "ghostNumber": {
@@ -1675,6 +1681,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Content"
+        },
         "template": "CONTENT",
         "placeholders": {
           "section": {
@@ -1711,6 +1720,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Two-column comparison"
+        },
         "template": "TWO_COLUMN",
         "placeholders": {
           "section": {
@@ -1756,6 +1768,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Metrics"
+        },
         "template": "METRICS",
         "placeholders": {
           "section": {
@@ -1901,6 +1916,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Chart"
+        },
         "template": "CHART",
         "placeholders": {
           "section": {
@@ -1958,6 +1976,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Closing"
+        },
         "template": "CLOSING",
         "placeholders": {
           "preheading": {

@@ -167,6 +167,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "background": {
           "color": "background"
         },
@@ -268,6 +271,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Trend analysis"
+        },
         "background": {
           "color": "secondary"
         },
@@ -483,6 +489,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Areas for growth"
+        },
         "background": {
           "color": "accent"
         },
@@ -716,6 +725,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Revenue model"
+        },
         "background": {
           "color": "accent4"
         },
@@ -850,6 +862,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Current data trend"
+        },
         "background": {
           "color": "primary"
         },
@@ -1054,6 +1069,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Graphic data"
+        },
         "background": {
           "color": "text"
         },
@@ -1172,6 +1190,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Progress reveal"
+        },
         "background": {
           "color": "accent5"
         },
@@ -1408,6 +1429,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Data insights"
+        },
         "background": {
           "color": "background"
         },
@@ -1736,6 +1760,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Nested-circles insight"
+        },
         "background": {
           "color": "accent"
         },
@@ -1959,6 +1986,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Doughnut gauges"
+        },
         "background": {
           "color": "text"
         },
@@ -2192,6 +2222,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Four options"
+        },
         "background": {
           "color": "secondary"
         },
@@ -2414,6 +2447,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Three-angle data"
+        },
         "background": {
           "color": "accent4"
         },
@@ -2570,6 +2606,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Our data growth"
+        },
         "background": {
           "color": "background"
         },
@@ -2765,6 +2804,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Understanding model"
+        },
         "background": {
           "color": "accent5"
         },
@@ -2961,6 +3003,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Data review"
+        },
         "background": {
           "color": "primary"
         },

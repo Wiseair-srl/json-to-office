@@ -4567,6 +4567,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Cover"
+        },
         "template": "COVER_TEMPLATE",
         "notes": "Cover slide with mock title and subtitle.",
         "placeholders": {
@@ -4594,6 +4597,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Three columns"
+        },
         "template": "THREE_COL_TEMPLATE",
         "notes": "Three parallel propositions on a light background.",
         "placeholders": {
@@ -4720,6 +4726,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Stacked points (dark)"
+        },
         "template": "STACKED_POINTS_DARK_TEMPLATE",
         "notes": "Three numbered narrative points on a dark background.",
         "placeholders": {
@@ -4798,6 +4807,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Three columns (dark)"
+        },
         "template": "THREE_COL_DARK_TEMPLATE",
         "notes": "Three stacked modules on dark background.",
         "placeholders": {
@@ -4927,6 +4939,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Comparison table"
+        },
         "template": "COMPARISON_TEMPLATE",
         "notes": "Mock table illustrating the comparison layout.",
         "placeholders": {
@@ -5073,6 +5088,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "KPI dashboard"
+        },
         "template": "DASHBOARD_TEMPLATE",
         "notes": "KPI cards above a chart.",
         "placeholders": {
@@ -5190,6 +5208,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Three tiers + narrative"
+        },
         "template": "THREE_COL_NARRATIVE_TEMPLATE",
         "notes": "Three tiered options with a narrative summary below.",
         "placeholders": {
@@ -5340,6 +5361,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Two columns + narrative"
+        },
         "template": "TWO_COL_NARRATIVE_TEMPLATE",
         "notes": "Two contrasting columns with a shared narrative.",
         "placeholders": {
@@ -5398,6 +5422,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Quote"
+        },
         "template": "QUOTE_TEMPLATE",
         "notes": "Standalone testimonial slide.",
         "placeholders": {
@@ -5426,6 +5453,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Logo grid"
+        },
         "template": "LOGO_GRID_TEMPLATE",
         "notes": "Customer logo wall with a footnote. Logos are placeholders.",
         "placeholders": {
@@ -5609,6 +5639,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Doughnut chart"
+        },
         "template": "CHART_TEMPLATE",
         "notes": "Full-width doughnut chart.",
         "placeholders": {
@@ -5660,6 +5693,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Big stat"
+        },
         "template": "BIG_STAT_TEMPLATE",
         "notes": "A single hero statistic.",
         "placeholders": {
@@ -5693,6 +5729,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "KPI cards (dark)"
+        },
         "template": "METRICS_TEMPLATE",
         "notes": "Four KPI cards on a dark background.",
         "placeholders": {
@@ -5794,6 +5833,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Insight + table"
+        },
         "template": "INSIGHT_TEMPLATE",
         "notes": "A sourced insight paired with a defensibility table.",
         "placeholders": {
@@ -5925,6 +5967,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Stacked points"
+        },
         "template": "STACKED_POINTS_TEMPLATE",
         "notes": "Three numbered growth levers on a light background.",
         "placeholders": {
@@ -6007,6 +6052,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Team"
+        },
         "template": "TEAM_TEMPLATE",
         "notes": "Four-person founder/team layout.",
         "placeholders": {
@@ -6124,6 +6172,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Section divider (azure)"
+        },
         "template": "SECTION_AZURE_TEMPLATE",
         "notes": "Section divider (azure) — use to introduce major sections.",
         "placeholders": {
@@ -6152,6 +6203,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Section divider (light)"
+        },
         "template": "SECTION_LIGHT_TEMPLATE",
         "notes": "Section divider (light blue) — alternate section break.",
         "placeholders": {
@@ -6180,6 +6234,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Two-column content"
+        },
         "template": "TWO_COL_TEMPLATE",
         "notes": "Two-column content — narrative left, bullets right.",
         "placeholders": {
@@ -6231,6 +6288,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Closing"
+        },
         "template": "CLOSING_TEMPLATE",
         "notes": "Closing slide with a single call to action.",
         "placeholders": {

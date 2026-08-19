@@ -192,7 +192,7 @@
         "background": {
           "color": "secondary"
         },
-        "notes": "Cover \u2014 Management Plan 2025."
+        "notes": "Cover — Management Plan 2025."
       },
       "children": [
         {
@@ -469,7 +469,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Key objectives \u2014 01 Efficiency, 02 Accountability, 03 Coordination, 04 Growth."
+        "notes": "Key objectives — 01 Efficiency, 02 Accountability, 03 Coordination, 04 Growth."
       },
       "children": [
         {
@@ -793,7 +793,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "What is a management plan \u2014 definition, purpose, importance."
+        "notes": "What is a management plan — definition, purpose, importance."
       },
       "children": [
         {
@@ -931,7 +931,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Vision and mission connection \u2014 company vision vs mission."
+        "notes": "Vision and mission connection — company vision vs mission."
       },
       "children": [
         {
@@ -1002,7 +1002,7 @@
             "y": 3.213,
             "w": 3.05,
             "h": 0.4,
-            "text": "COMPANY\u2019S VISION"
+            "text": "COMPANY’S VISION"
           }
         },
         {
@@ -1081,7 +1081,7 @@
             "y": 3.213,
             "w": 3.05,
             "h": 0.4,
-            "text": "COMPANY\u2019S MISSION",
+            "text": "COMPANY’S MISSION",
             "color": "background"
           }
         },
@@ -1255,7 +1255,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Strategic priorities \u2014 +122% with short/medium/long-term cards."
+        "notes": "Strategic priorities — +122% with short/medium/long-term cards."
       },
       "children": [
         {
@@ -1492,7 +1492,7 @@
         "background": {
           "color": "secondary"
         },
-        "notes": "Operational workflow \u2014 4 steps with arrows."
+        "notes": "Operational workflow — 4 steps with arrows."
       },
       "children": [
         {
@@ -1742,7 +1742,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Managing resources \u2014 25M total resource donut gauge."
+        "notes": "Managing resources — 25M total resource donut gauge."
       },
       "children": [
         {
@@ -1926,6 +1926,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Process grid"
+        },
         "template": "grid",
         "notes": "Process grid 01-06 with flow arrows."
       },
@@ -2307,6 +2310,9 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Communication channels"
+        },
         "template": "grid",
         "notes": "Internal & external communication; 5K stat tile."
       },
@@ -2656,7 +2662,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Mitigating risks \u2014 photos, who we serve, +122%."
+        "notes": "Mitigating risks — photos, who we serve, +122%."
       },
       "children": [
         {
@@ -2927,7 +2933,7 @@
         "background": {
           "color": "secondary"
         },
-        "notes": "Adapting to change \u2014 short-term 46K-55K card over photo."
+        "notes": "Adapting to change — short-term 46K-55K card over photo."
       },
       "children": [
         {
@@ -3183,7 +3189,7 @@
             "fontSize": 21,
             "fontFace": "Archivo",
             "lineSpacing": 25.2,
-            "text": "46K \u2013 55K",
+            "text": "46K – 55K",
             "color": "background"
           }
         }
@@ -3193,7 +3199,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Budget & forecasting \u2014 76K/46K/56K stats and cards."
+        "notes": "Budget & forecasting — 76K/46K/56K stats and cards."
       },
       "children": [
         {
@@ -3398,7 +3404,7 @@
             "fontSize": 21,
             "fontFace": "Archivo",
             "lineSpacing": 25.2,
-            "text": "46K \u2013 55K",
+            "text": "46K – 55K",
             "color": "text"
           }
         },
@@ -3453,7 +3459,7 @@
             "fontSize": 21,
             "fontFace": "Archivo",
             "lineSpacing": 25.2,
-            "text": "46K \u2013 55K",
+            "text": "46K – 55K",
             "color": "background"
           }
         },
@@ -3575,7 +3581,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Change management \u2014 4 photo/caption columns."
+        "notes": "Change management — 4 photo/caption columns."
       },
       "children": [
         {
@@ -3821,7 +3827,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Sustainable practices \u2014 two banners 01/02."
+        "notes": "Sustainable practices — two banners 01/02."
       },
       "children": [
         {
@@ -4018,7 +4024,7 @@
         "background": {
           "color": "secondary"
         },
-        "notes": "Growing our people \u2014 photo band and blue bar chart card."
+        "notes": "Growing our people — photo band and blue bar chart card."
       },
       "children": [
         {
@@ -4494,7 +4500,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Compliance framework \u2014 25M, 20/43/78%, +43,43% potential risks."
+        "notes": "Compliance framework — 25M, 20/43/78%, +43,43% potential risks."
       },
       "children": [
         {
@@ -4809,7 +4815,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Tracking progress \u2014 20/40/60/76% donut gauges."
+        "notes": "Tracking progress — 20/40/60/76% donut gauges."
       },
       "children": [
         {
@@ -5033,8 +5039,11 @@
     {
       "name": "slide",
       "props": {
+        "meta": {
+          "title": "Team member"
+        },
         "template": "grid",
-        "notes": "Team member \u2014 portraits and blue info card."
+        "notes": "Team member — portraits and blue info card."
       },
       "children": [
         {
@@ -5313,7 +5322,7 @@
       "name": "slide",
       "props": {
         "template": "grid",
-        "notes": "Moving forward \u2014 contact strip and photo."
+        "notes": "Moving forward — contact strip and photo."
       },
       "children": [
         {
@@ -5648,7 +5657,7 @@
         "background": {
           "color": "secondary"
         },
-        "notes": "Thank you for watching \u2014 contact info."
+        "notes": "Thank you for watching — contact info."
       },
       "children": [
         {

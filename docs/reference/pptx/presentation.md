@@ -127,15 +127,16 @@ Supported keys: `text`, `image`, `shape`, `table`, `highcharts`, `chart`. Themes
 
 ## Slide props
 
-| Prop           | Type                        | Default | Description                                                                                                                                                                              |
-| -------------- | --------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `background`   | `{ color?, image? }`        | —       | Slide background. `color` is a hex value or semantic theme name; `image` is `{ path? }` or `{ base64? }`.                                                                                |
-| `transition`   | `{ type?, speed? }`         | —       | Slide transition. `type`: `fade` \| `push` \| `wipe` \| `zoom` \| `none`; `speed`: `slow` \| `medium` \| `fast`. **Schema-only for now** — see warning below.                            |
-| `notes`        | string                      | —       | Speaker notes, shown in presenter view.                                                                                                                                                  |
-| `layout`       | string                      | —       | Slide layout name. Accepted by the schema and carried through processing, but not currently consumed by the renderer.                                                                    |
-| `hidden`       | boolean                     | —       | `true` marks the slide as hidden: it stays in the file but is skipped during the slideshow.                                                                                              |
-| `template`     | string                      | —       | Name of a template from the root `templates` array; the template is applied as this slide's master. An unknown name emits a `MISSING_TEMPLATE` warning and the slide renders without it. |
-| `placeholders` | `Record<string, Component>` | —       | Maps placeholder names (defined by the template) to full components that fill them.                                                                                                      |
+| Prop           | Type                        | Default | Description                                                                                                                                                                                  |
+| -------------- | --------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `meta`         | `{ title? }`                | —       | Authoring metadata; never rendered. `meta.title` labels the slide in editors and outlines (e.g. the playground sidebar), overriding the label otherwise derived from the slide's title text. |
+| `background`   | `{ color?, image? }`        | —       | Slide background. `color` is a hex value or semantic theme name; `image` is `{ path? }` or `{ base64? }`.                                                                                    |
+| `transition`   | `{ type?, speed? }`         | —       | Slide transition. `type`: `fade` \| `push` \| `wipe` \| `zoom` \| `none`; `speed`: `slow` \| `medium` \| `fast`. **Schema-only for now** — see warning below.                                |
+| `notes`        | string                      | —       | Speaker notes, shown in presenter view.                                                                                                                                                      |
+| `layout`       | string                      | —       | Slide layout name. Accepted by the schema and carried through processing, but not currently consumed by the renderer.                                                                        |
+| `hidden`       | boolean                     | —       | `true` marks the slide as hidden: it stays in the file but is skipped during the slideshow.                                                                                                  |
+| `template`     | string                      | —       | Name of a template from the root `templates` array; the template is applied as this slide's master. An unknown name emits a `MISSING_TEMPLATE` warning and the slide renders without it.     |
+| `placeholders` | `Record<string, Component>` | —       | Maps placeholder names (defined by the template) to full components that fill them.                                                                                                          |
 
 All props are optional; unknown keys are rejected.
 
