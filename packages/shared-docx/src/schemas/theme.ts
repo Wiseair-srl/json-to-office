@@ -128,26 +128,32 @@ const BorderStyleSchema = Type.Union(
   { description: 'Paragraph border style' }
 );
 
-const BorderDefinitionSchema = Type.Object(
-  {
-    style: BorderStyleSchema,
-    size: Type.Number({
+/** Shared fields so each border slot can carry its own description. */
+const BorderDefinitionFields = {
+  style: BorderStyleSchema,
+  size: Type.Number({
+    minimum: 0,
+    description: 'Width in eighths of a point (docx sz)',
+  }),
+  color: HexColorSchema,
+  space: Type.Optional(
+    Type.Number({
       minimum: 0,
-      description: 'Width in eighths of a point (docx sz)',
-    }),
-    color: HexColorSchema,
-    space: Type.Optional(
-      Type.Number({
-        minimum: 0,
-        description: 'Space between text and border in points',
-      })
-    ),
-  },
-  {
-    additionalProperties: false,
-    description: 'Paragraph border side definition',
-  }
-);
+      description: 'Space between text and border in points',
+    })
+  ),
+};
+
+const BorderDefinitionSchema = Type.Object(BorderDefinitionFields, {
+  additionalProperties: false,
+  description: 'Paragraph border side definition',
+});
+
+const BetweenBorderSchema = Type.Object(BorderDefinitionFields, {
+  additionalProperties: false,
+  description:
+    'Rule drawn between consecutive paragraphs sharing this border set (w:between), in place of their adjoining bottom and top edges',
+});
 
 const BordersSchema = Type.Object(
   {
@@ -155,8 +161,13 @@ const BordersSchema = Type.Object(
     bottom: Type.Optional(BorderDefinitionSchema),
     left: Type.Optional(BorderDefinitionSchema),
     right: Type.Optional(BorderDefinitionSchema),
+    between: Type.Optional(BetweenBorderSchema),
   },
-  { additionalProperties: false, description: 'Paragraph borders (per side)' }
+  {
+    additionalProperties: false,
+    description:
+      'Paragraph borders (per side, plus the between-paragraph rule)',
+  }
 );
 
 // Alignment schema for paragraph-level alignment (used in styles)
