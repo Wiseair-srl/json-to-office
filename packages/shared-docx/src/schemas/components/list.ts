@@ -185,7 +185,7 @@ export const ListPropsSchema = Type.Object(
       Type.Number({
         minimum: 1,
         description:
-          'Starting number for level 0 (simplified option when levels not specified)',
+          'Starting number for level 0. Applies whether or not `levels` is given; a `start` on the level itself wins.',
       })
     ),
     spacing: Type.Optional(ListSpacingSchema),
