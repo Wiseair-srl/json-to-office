@@ -77,6 +77,23 @@ function createLevelsFromSimplifiedProps(props: ListProps): ListLevelConfig[] {
 }
 
 /**
+ * Fold `props.start` into level 0.
+ *
+ * `start` is otherwise only read on the simplified path, so an explicit
+ * `levels` array silently discarded it. A `start` declared on the level itself
+ * is more specific and wins.
+ */
+function applyListStart(
+  levels: ListLevelConfig[],
+  start: number | undefined
+): ListLevelConfig[] {
+  if (start === undefined) return levels;
+  return levels.map((level) =>
+    level.level === 0 && level.start === undefined ? { ...level, start } : level
+  );
+}
+
+/**
  * Get the maximum level used in list items
  */
 function getMaxLevelFromItems(
@@ -179,7 +196,10 @@ export function renderListComponent(
     if (resolvedConfig.levels && resolvedConfig.levels.length > 0) {
       // Use explicit level configurations, filling in missing levels
       levels = fillMissingLevels(
-        resolvedConfig.levels as ListLevelConfig[],
+        applyListStart(
+          resolvedConfig.levels as ListLevelConfig[],
+          resolvedConfig.start
+        ),
         maxLevel
       );
     } else {
