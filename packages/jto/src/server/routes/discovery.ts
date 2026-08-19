@@ -36,37 +36,35 @@ function cleanupTypeBoxIds(schema: any): void {
  * the race (or the POST failed), the registry was empty, the requested
  * plugins were silently dropped, and Monaco kept a plugin-less schema —
  * enabled components neither completed nor validated until a toggle forced a
- * refetch. Requests that need plugins now load them on demand; the
- * registry's load fingerprint makes a repeat discover-and-load a no-op.
+ * refetch. Requests that need plugins now load them on demand; the registry
+ * coalesces concurrent loads and its load fingerprint makes repeats a no-op.
+ *
+ * Dev-playground affordance only: in production, plugin loading stays behind
+ * the authenticated POST /load-plugins (same policy check as that route), so
+ * an unauthenticated schema request cannot trigger discovery — generation
+ * falls back to whatever is already registered.
  */
-let pluginLoadInFlight: Promise<void> | null = null;
-
 async function ensurePluginsRegistered(
   format: 'docx' | 'pptx',
   pluginNames?: string[]
 ): Promise<void> {
+  if (process.env.NODE_ENV === 'production') return;
+
   const registry = PluginRegistry.getInstance();
   const satisfied = pluginNames
     ? pluginNames.every((name) => registry.getPlugin(name))
     : registry.hasPlugins();
   if (satisfied) return;
 
-  if (!pluginLoadInFlight) {
-    registry.setFormat(format);
-    pluginLoadInFlight = registry
-      .discoverAndLoad()
-      .then(() => undefined)
-      .catch((error: any) => {
-        // Schema generation falls back to standard components only.
-        logger.warn('On-demand plugin load for schema generation failed', {
-          error: error?.message,
-        });
-      })
-      .finally(() => {
-        pluginLoadInFlight = null;
-      });
+  registry.setFormat(format);
+  try {
+    await registry.discoverAndLoad();
+  } catch (error: any) {
+    // Schema generation falls back to standard components only.
+    logger.warn('On-demand plugin load for schema generation failed', {
+      error: error?.message,
+    });
   }
-  await pluginLoadInFlight;
 }
 
 function getSelectedPlugins(pluginNames?: string[]) {

@@ -67,4 +67,23 @@ describe('/api/discovery/schemas/document', () => {
     expect(names).not.toContain('weather');
     expect(names).not.toContain('columnsLayout');
   });
+
+  it('does not trigger plugin loading in production', async () => {
+    // Plugin loading stays behind the authenticated POST /load-plugins in
+    // production; an unauthenticated schema request must not reach discovery.
+    PluginRegistry.cleanup();
+    const previousEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const res = await app.request(
+        '/discovery/schemas/document?plugins=weather'
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as any;
+      expect(componentNames(body.data)).not.toContain('weather');
+      expect(PluginRegistry.getInstance().hasPlugins()).toBe(false);
+    } finally {
+      process.env.NODE_ENV = previousEnv;
+    }
+  });
 });
