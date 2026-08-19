@@ -14,7 +14,7 @@ import {
   isTocComponent,
 } from '../types';
 import { ThemeConfig } from '../styles';
-import { getPageSetup } from '../styles';
+import { getPageSetup, getPageDimensions } from '../styles';
 // import { pointsToTwips } from '../styles/utils/styleHelpers';
 import { ProcessedSection } from './structure';
 import {
@@ -405,16 +405,7 @@ export function createSectionProperties(
           ...(pageOverride.size && typeof pageOverride.size === 'object'
             ? pageOverride.size
             : pageOverride.size
-              ? (() => {
-                  // Convert string size to dimensions
-                  const sizes = {
-                    A4: { width: 11906, height: 16838 },
-                    A3: { width: 16838, height: 23811 },
-                    LETTER: { width: 12240, height: 15840 },
-                    LEGAL: { width: 12240, height: 20160 },
-                  };
-                  return sizes[pageOverride.size as keyof typeof sizes];
-                })()
+              ? getPageDimensions(pageOverride.size)
               : {}),
         },
         margin: {
