@@ -28,6 +28,8 @@ interface ThemeBorders {
   bottom?: ThemeBorderDefinition;
   left?: ThemeBorderDefinition;
   right?: ThemeBorderDefinition;
+  /** w:between — the rule between consecutive paragraphs sharing this set. */
+  between?: ThemeBorderDefinition;
 }
 
 // Style properties for various text elements
@@ -280,17 +282,17 @@ function convertParagraphProperties(
 /**
  * Convert theme border definitions to docx paragraph border options
  */
+type ConvertedBorder = {
+  style: string;
+  size: number;
+  color: string;
+  space?: number;
+};
+
 function convertBorders(
   borders: ThemeBorders | undefined,
   theme: ThemeConfig
-):
-  | {
-      top?: { style: string; size: number; color: string; space?: number };
-      bottom?: { style: string; size: number; color: string; space?: number };
-      left?: { style: string; size: number; color: string; space?: number };
-      right?: { style: string; size: number; color: string; space?: number };
-    }
-  | undefined {
+): Partial<Record<keyof ThemeBorders, ConvertedBorder>> | undefined {
   if (!borders) return undefined;
 
   const mapSide = (side?: ThemeBorderDefinition) =>
@@ -303,20 +305,20 @@ function convertBorders(
         }
       : undefined;
 
-  const top = mapSide(borders.top);
-  const bottom = mapSide(borders.bottom);
-  const left = mapSide(borders.left);
-  const right = mapSide(borders.right);
+  const sides: (keyof ThemeBorders)[] = [
+    'top',
+    'bottom',
+    'left',
+    'right',
+    'between',
+  ];
+  const converted: Partial<Record<keyof ThemeBorders, ConvertedBorder>> = {};
+  for (const side of sides) {
+    const value = mapSide(borders[side]);
+    if (value) converted[side] = value;
+  }
 
-  const anyDefined = top || bottom || left || right;
-  return anyDefined
-    ? {
-        ...(top && { top }),
-        ...(bottom && { bottom }),
-        ...(left && { left }),
-        ...(right && { right }),
-      }
-    : undefined;
+  return Object.keys(converted).length > 0 ? converted : undefined;
 }
 
 export interface WordStyleDefinition {
