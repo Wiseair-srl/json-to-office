@@ -91,6 +91,19 @@ describe('restructureNameDiscriminatedUnions', () => {
     expect(conflicting.properties.name).toEqual({ type: 'string' });
   });
 
+  it('skips unions with a sibling additionalProperties', () => {
+    // With no sibling `properties`, `additionalProperties: false` rejects
+    // every key — declaring `name` in the rewrite would start allowing it.
+    const schema: any = {
+      anyOf: [branch('heading'), branch('image')],
+      additionalProperties: false,
+    };
+    restructureNameDiscriminatedUnions(schema);
+    expect(schema.anyOf).toBeDefined();
+    expect(schema.allOf).toBeUndefined();
+    expect(schema.properties).toBeUndefined();
+  });
+
   it('recurses into nested children unions and is idempotent', () => {
     const inner = { anyOf: [branch('heading'), branch('image')] };
     const section = branch('section', {

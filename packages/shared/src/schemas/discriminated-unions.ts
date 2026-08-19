@@ -104,8 +104,9 @@ function nameEntry(name: string, group: SchemaNode[]): NameConstEntry {
  * - every branch is an object with a `name` const that lists `name` as
  *   required (unions containing `$ref` or free-form branches are left alone;
  *   a `$ref`'s target union is restructured where it is defined)
- * - the node declares no `properties`, `allOf`, `if`, `required` or `type`
- *   of its own that the rewrite would have to merge with
+ * - the node declares no `properties`, `allOf`, `if`, `required`,
+ *   `additionalProperties` or `type` of its own that the rewrite would have
+ *   to merge with
  * - at least two distinct names; single-name unions (a versioned plugin's
  *   variants) validate and complete fine as a plain anyOf
  */
@@ -134,6 +135,10 @@ export function restructureNameDiscriminatedUnions(schema: unknown): void {
       obj.allOf === undefined &&
       obj.if === undefined &&
       obj.required === undefined &&
+      // A sibling `additionalProperties` evaluates against the node's own
+      // (absent) `properties`; declaring `name` here would change what it
+      // rejects, so such unions are left alone.
+      obj.additionalProperties === undefined &&
       (obj.type === undefined || obj.type === 'object');
     // Dispatch needs at least two distinct names. Same-name groups (a
     // versioned plugin's variants) stay a plain anyOf — restructuring them
