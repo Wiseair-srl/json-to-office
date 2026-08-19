@@ -40,14 +40,12 @@ export {
   getTableStyle,
   getDocumentMargins,
   getPageSetup,
+  getPageDimensions,
+  PAGE_SIZES,
 } from './utils/layoutUtils';
 
 // Theme configurations
-export {
-  minimalTheme,
-  corporateTheme,
-  modernTheme,
-} from '../templates/themes';
+export { minimalTheme, corporateTheme, modernTheme } from '../templates/themes';
 
 // JSON Theme System (Phase 1 - Foundation complete)
 export {

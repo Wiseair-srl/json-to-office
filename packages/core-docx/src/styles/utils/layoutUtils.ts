@@ -50,7 +50,7 @@ const resolveTableParagraphSpacing = (style?: TableParagraphStyle) => {
 /**
  * Standard page sizes in twips (1/20 of a point, 1/1440 of an inch)
  */
-const PAGE_SIZES = {
+export const PAGE_SIZES = {
   A4: { width: 11906, height: 16838 },
   A3: { width: 16838, height: 23811 },
   LETTER: { width: 12240, height: 15840 },
@@ -60,7 +60,7 @@ const PAGE_SIZES = {
 /**
  * Get page dimensions from size (string or object)
  */
-function getPageDimensions(
+export function getPageDimensions(
   size: 'A4' | 'A3' | 'LETTER' | 'LEGAL' | { width: number; height: number }
 ): { width: number; height: number } {
   if (typeof size === 'string') {
@@ -238,8 +238,8 @@ export const getPageSetup = (theme?: ThemeConfig, themeName?: string) => {
   // Default page setup for all themes
   return {
     size: {
-      width: 11906, // 8.5 inches in twips (Letter size)
-      height: 16838, // 11.7 inches in twips (Letter size)
+      width: PAGE_SIZES.A4.width, // 210mm in twips (A4)
+      height: PAGE_SIZES.A4.height, // 297mm in twips (A4)
     },
     margin: {
       top: defaultMargins.top ?? 1440,
