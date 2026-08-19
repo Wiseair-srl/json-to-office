@@ -762,8 +762,11 @@ export function createWordStyles(
       const customStyle = tocMatch
         ? styleValue
         : resolveStyleWithBaseStyle(theme, styleKey) || styleValue;
-      // Use a namespaced ID for TOC styles to avoid any accidental ID collisions
-      const styleId = tocMatch ? `JTD_TOC${tocMatch[1]}` : styleKey;
+      // Canonical Word style id. docx hardcodes `w:pStyle w:val="TOC{level}"`
+      // when it writes cached TOC entries, so a namespaced id would leave those
+      // entries unstyled. docx's own default styles define no TOC id, so there
+      // is nothing to collide with.
+      const styleId = tocMatch ? `TOC${tocMatch[1]}` : styleKey;
       const styleName = tocMatch
         ? `TOC ${tocMatch[1]}`
         : styleKey.replace(/([A-Z])/g, ' $1').trim(); // Convert camelCase/PascalCase to Title Case
@@ -867,8 +870,8 @@ export function createWordStyles(
     }
 
     paragraphStyles.push({
-      // Use a namespaced ID but canonical display name
-      id: `JTD_TOC${i}`,
+      // Canonical id and display name — see the styleId note above.
+      id: `TOC${i}`,
       name: `TOC ${i}`,
       basedOn: 'Normal',
       next: 'Normal',
