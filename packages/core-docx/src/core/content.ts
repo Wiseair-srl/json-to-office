@@ -22,6 +22,7 @@ import {
   VerticalAlign,
   Bookmark,
 } from 'docx';
+import type { ParagraphChild } from 'docx';
 import {
   calculateImageDimensions,
   getImageBuffer,
@@ -1692,8 +1693,10 @@ export async function createTable(
     cell: string | ComponentDefinition | undefined,
     cellDefaults: NormalizedCellDefaults,
     baseCellStyle: typeof tableStyle.tableCell
-  ): Promise<(PlaceholderChild | ImageRun)[]> => {
-    let cellChildren: (PlaceholderChild | ImageRun)[] = [];
+    // ParagraphChild rather than PlaceholderChild: a revised cell paragraph
+    // contributes w:ins / w:del runs, which sit outside the placeholder union.
+  ): Promise<ParagraphChild[]> => {
+    let cellChildren: ParagraphChild[] = [];
 
     // Handle undefined or empty content
     if (!cell) {
@@ -1750,11 +1753,14 @@ export async function createTable(
             color: resolveColor(paragraphFont.color, theme),
           }),
         };
-        cellChildren = parseTextWithDecorators(
-          textComp.props.text,
-          paragraphStyle,
-          { enableHyperlinks: true }
-        );
+        // Tracked changes take the same revision-aware path createText uses:
+        // segments render as native w:ins/w:del runs (literal text, no markdown
+        // parsing) instead of being silently dropped in favour of props.text.
+        cellChildren = textComp.props.revision
+          ? createRevisionRuns(textComp.props.revision, paragraphStyle)
+          : parseTextWithDecorators(textComp.props.text, paragraphStyle, {
+              enableHyperlinks: true,
+            });
       } else if (isImageComponent(cell)) {
         const imageComp = cell as ImageComponentDefinition;
         try {

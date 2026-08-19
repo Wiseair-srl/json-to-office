@@ -25,6 +25,82 @@ const REVISION = {
 };
 
 describe('tracked-change rendering', () => {
+  it('renders a cell paragraph revision as w:ins / w:del inside w:tc', async () => {
+    const buf = await generateBufferFromJson({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'table',
+          props: {
+            columns: [
+              {
+                header: { content: 'Term' },
+                cells: [
+                  {
+                    content: {
+                      name: 'paragraph',
+                      props: {
+                        text: 'The fee is 12% of revenue.',
+                        revision: REVISION,
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    } as any);
+    const xml = await readZipEntry(buf, 'word/document.xml');
+
+    const cell = xml.match(
+      /<w:tc>(?:(?!<\/w:tc>)[\s\S])*<w:ins [\s\S]*?<\/w:tc>/
+    );
+    expect(cell, 'expected a w:ins inside a table cell').not.toBeNull();
+    expect(cell![0]).toMatch(/<w:ins [^>]*w:author="jto-agent"/);
+    expect(cell![0]).toMatch(/<w:del [^>]*w:author="jto-agent"/);
+    expect(cell![0]).toMatch(/<w:delText[^>]*>10%<\/w:delText>/);
+    expect(cell![0]).toContain('12%');
+  });
+
+  it('renders a header cell paragraph revision as tracked changes', async () => {
+    const buf = await generateBufferFromJson({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'table',
+          props: {
+            columns: [
+              {
+                header: {
+                  content: {
+                    name: 'paragraph',
+                    props: {
+                      text: 'Net fee',
+                      revision: {
+                        segments: [
+                          { type: 'delete', text: 'Gross fee' },
+                          { type: 'insert', text: 'Net fee' },
+                        ],
+                      },
+                    },
+                  },
+                },
+                cells: [{ content: '12%' }],
+              },
+            ],
+          },
+        },
+      ],
+    } as any);
+    const xml = await readZipEntry(buf, 'word/document.xml');
+    expect(xml).toMatch(/<w:delText[^>]*>Gross fee<\/w:delText>/);
+    expect(xml).toContain('<w:ins ');
+  });
+
   it('renders paragraph revision segments as w:ins and w:del', async () => {
     const buf = await generateBufferFromJson({
       name: 'docx',
