@@ -9,18 +9,21 @@ import { SpacingSchema } from './common';
 export const createSectionPropsSchema = (componentRef?: TSchema) =>
   Type.Object(
     {
-      title: Type.Optional(
-        Type.String({
-          description: 'Section title (optional)',
-        })
-      ),
-      level: Type.Optional(
-        Type.Number({
-          minimum: 1,
-          maximum: 9,
-          description: 'Heading level for section title (1-9)',
-          default: 1,
-        })
+      meta: Type.Optional(
+        Type.Object(
+          {
+            title: Type.Optional(
+              Type.String({
+                description:
+                  'Authoring label for this section, shown in editors and outlines. Never rendered — add a heading child for a visible title.',
+              })
+            ),
+          },
+          {
+            additionalProperties: false,
+            description: 'Authoring metadata; has no effect on the document.',
+          }
+        )
       ),
       header: Type.Optional(
         Type.Union([

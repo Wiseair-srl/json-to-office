@@ -169,13 +169,9 @@ export function renderTocComponent(
   // StyleLevel requires styleName (string) and level (number)
   const stylesWithLevels: StyleLevel[] = [];
 
-  // For section-scoped TOCs, exclude heading levels equal to or above the section title level
-  // This prevents the section title from appearing in its own TOC
-  const sectionTitleLevel = context?.section?.sectionTitleLevel;
-  const startLevel =
-    effectiveScope === 'section' && sectionTitleLevel
-      ? sectionTitleLevel // Start from the level after the section title
-      : 0; // Document scope starts from level 1 (index 0)
+  // Sections no longer synthesize a title heading (a visible title is an
+  // explicit heading child), so section-scoped TOCs include every heading
+  // level their bookmark covers.
 
   // Do NOT map built-in heading styles via \t switch.
   // Use headingStyleRange (\o) exclusively for Heading 1..6 to avoid any interference
@@ -218,13 +214,8 @@ export function renderTocComponent(
   // - \z: Hide page numbers in web layout
   // - \u: Use outline levels instead of TC fields
 
-  // Calculate heading range for \o switch
-  // For section-scoped TOCs: start AFTER section title level (e.g., level 2 if section is level 1)
-  // For document-scoped TOCs: use depthStart and depthEnd from parsed depth config
-  const effectiveDepthStart =
-    effectiveScope === 'section' && sectionTitleLevel
-      ? Math.max(depthStart, startLevel + 1) // Skip section title level, but respect user's depthStart
-      : depthStart;
+  // Calculate heading range for \o switch from the parsed depth config
+  const effectiveDepthStart = depthStart;
   const effectiveDepthEnd = depthEnd;
 
   // Build TOC options

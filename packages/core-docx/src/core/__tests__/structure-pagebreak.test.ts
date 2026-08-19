@@ -92,14 +92,13 @@ describe('Structure PageBreak', () => {
     });
   });
 
-  describe('Sections with titles', () => {
-    it('should not set pageBreak flag when section has title', async () => {
+  describe('Sections with meta', () => {
+    it('meta is authoring-only: renders nothing and pageBreak stays at layout level', async () => {
       const components: ComponentDefinition[] = [
         {
           name: 'section',
           props: {
-            title: 'Section Title',
-            level: 1,
+            meta: { title: 'Financial Highlights' },
             pageBreak: true,
           },
           children: [
@@ -114,20 +113,18 @@ describe('Structure PageBreak', () => {
       const sections = await extractSections(components, context);
 
       expect(sections).toHaveLength(1);
-      // pageBreak flag should NOT be set (handled by heading instead)
-      expect(sections[0].pageBreak).toBeUndefined();
-      // Heading should be inserted with pageBreak
-      expect(sections[0].components[0].name).toBe('heading');
-      expect(sections[0].components[0].props.pageBreak).toBe(true);
+      // No synthesized heading — a visible title is an explicit heading child
+      expect(sections[0].components).toHaveLength(1);
+      expect(sections[0].components[0].name).toBe('paragraph');
+      expect(sections[0].pageBreak).toBe(true);
     });
 
-    it('should insert heading with pageBreak: false when specified', async () => {
+    it('meta does not suppress pageBreak: false', async () => {
       const components: ComponentDefinition[] = [
         {
           name: 'section',
           props: {
-            title: 'Section Title',
-            level: 1,
+            meta: { title: 'Annex' },
             pageBreak: false,
           },
           children: [
@@ -142,9 +139,8 @@ describe('Structure PageBreak', () => {
       const sections = await extractSections(components, context);
 
       expect(sections).toHaveLength(1);
-      expect(sections[0].pageBreak).toBeUndefined();
-      expect(sections[0].components[0].name).toBe('heading');
-      expect(sections[0].components[0].props.pageBreak).toBe(false);
+      expect(sections[0].components).toHaveLength(1);
+      expect(sections[0].pageBreak).toBe(false);
     });
   });
 

@@ -184,7 +184,7 @@ describe('generate().standardDefinition', () => {
       children: [
         {
           name: 'section',
-          props: { title: 'Introduction' },
+          props: { meta: { title: 'Introduction' } },
           children: [
             {
               name: 'greeting',

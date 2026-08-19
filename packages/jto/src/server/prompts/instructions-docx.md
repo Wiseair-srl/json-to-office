@@ -33,7 +33,7 @@ A DOCX document is an array of component objects. Use `Report` as the root conta
 ## Design Patterns
 
 - **Heading hierarchy**: use level 1 once (document title), level 2 for major sections, level 3 for subsections
-- **Section grouping**: wrap related content in a `Section` for page break control
+- **Section grouping**: wrap related content in a `Section` for page break control; label it with `"meta": { "title": "..." }` (authoring-only, never rendered) so editors show a navigable outline
 - **Side-by-side content**: use `Columns` for comparisons, before/after, or multi-column layouts
 - **Data presentation**: use `Table` for structured data, `Statistic` for key metrics
 - **Readability**: alternate between Paragraphs, Tables, and Lists — avoid long runs of the same component

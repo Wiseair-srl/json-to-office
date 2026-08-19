@@ -222,7 +222,7 @@ describe('preserveCustomComponents', () => {
         children: [
           {
             name: 'section',
-            props: { title: 'S' },
+            props: { meta: { title: 'S' } },
             children: [
               { name: 'greeting', props: { name: 'Alice' } },
               { name: 'summary', props: { points: ['a'] } },

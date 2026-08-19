@@ -151,6 +151,23 @@ describe('buildOutline (docx)', () => {
     expect(hit?.id).toBe(feesPara.id);
   });
 
+  it('labels sections from meta.title when present', () => {
+    const doc = JSON.stringify({
+      name: 'docx',
+      children: [
+        {
+          name: 'section',
+          props: { meta: { title: 'Financial Highlights' } },
+          children: [
+            { name: 'heading', props: { text: 'Something else', level: 2 } },
+          ],
+        },
+      ],
+    });
+    const sections = buildOutline(doc, 'docx', 'document');
+    expect(sections[0].label).toBe('Financial Highlights');
+  });
+
   it('labels untitled sections from their first heading child', () => {
     const doc = JSON.stringify({
       name: 'docx',

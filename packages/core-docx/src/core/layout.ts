@@ -54,8 +54,6 @@ export interface SectionLayout {
   isUserSection: boolean;
   /** True if this layout chunk belongs to a user-defined Section (all chunks of that section) */
   belongsToUserSection: boolean;
-  /** The heading level of the section title (e.g., 1 for Heading1) - used by TOCs to exclude section title from section-scoped TOCs */
-  sectionTitleLevel?: number;
   /** Page configuration override for this section */
   pageOverride?: {
     size?: 'A4' | 'A3' | 'LETTER' | 'LEGAL' | { width: number; height: number };
@@ -116,7 +114,6 @@ export function applyLayout(
         footer: section.footer,
         isUserSection: isSourceUserSection,
         belongsToUserSection: isSourceUserSection,
-        sectionTitleLevel: section.level,
         pageOverride: section.page,
       });
       continue;
@@ -127,7 +124,8 @@ export function applyLayout(
 
       // Special handling: a single Columns component becomes its own section with explicit column children
       const isSingleColumnsGroup =
-        group.components.length === 1 && isColumnsComponent(group.components[0]);
+        group.components.length === 1 &&
+        isColumnsComponent(group.components[0]);
 
       const columnSettings = isSingleColumnsGroup
         ? createColumnSettingsFromConfig(group.components[0], theme, themeName)
@@ -144,9 +142,12 @@ export function applyLayout(
       // Build content components depending on whether this is an explicit columns group
       const contentComponents = isSingleColumnsGroup
         ? processLayoutComponents(
-          (group.components[0] as unknown as { children?: ComponentDefinition[] })
-            .children || []
-        )
+            (
+              group.components[0] as unknown as {
+                children?: ComponentDefinition[];
+              }
+            ).children || []
+          )
         : processLayoutComponents(group.components);
 
       layoutSections.push({
@@ -168,8 +169,6 @@ export function applyLayout(
         // at the start of column content.
         isUserSection: isSourceUserSection && j === 0,
         belongsToUserSection: isSourceUserSection,
-        // Pass section title level for TOC scoping
-        sectionTitleLevel: section.level,
         // Pass page override for this section
         pageOverride: section.page,
       });
@@ -281,8 +280,8 @@ export function determineComponentLayout(
 
   // Check if component contains children
   if ('children' in component && (component as any).children) {
-    const hasColumns = (component as any).children.some((child: ComponentDefinition) =>
-      isColumnsComponent(child)
+    const hasColumns = (component as any).children.some(
+      (child: ComponentDefinition) => isColumnsComponent(child)
     );
     return hasColumns ? 'multi-column' : 'single';
   }
@@ -360,17 +359,17 @@ export function getColumnSettings(
   layout: 'single' | 'multi-column'
 ): ColumnSettings {
   switch (layout) {
-  case 'multi-column':
-    // Default multi-column layout: 2 equal-width columns
-    // Note: Specific column components will override this with their own settings via createColumnSettingsFromConfig
-    return {
-      count: 2,
-      equalWidth: true,
-      space: 720, // 0.5 inch in twips
-    };
-  case 'single':
-  default:
-    return { count: 1 };
+    case 'multi-column':
+      // Default multi-column layout: 2 equal-width columns
+      // Note: Specific column components will override this with their own settings via createColumnSettingsFromConfig
+      return {
+        count: 2,
+        equalWidth: true,
+        space: 720, // 0.5 inch in twips
+      };
+    case 'single':
+    default:
+      return { count: 1 };
   }
 }
 
@@ -401,28 +400,28 @@ export function createSectionProperties(
   // Apply section-level page overrides if present
   const pageSetup = pageOverride
     ? {
-      size: {
-        ...basePageSetup.size,
-        ...(pageOverride.size && typeof pageOverride.size === 'object'
-          ? pageOverride.size
-          : pageOverride.size
-            ? (() => {
-              // Convert string size to dimensions
-              const sizes = {
-                A4: { width: 11906, height: 16838 },
-                A3: { width: 16838, height: 23811 },
-                LETTER: { width: 12240, height: 15840 },
-                LEGAL: { width: 12240, height: 20160 },
-              };
-              return sizes[pageOverride.size as keyof typeof sizes];
-            })()
-            : {}),
-      },
-      margin: {
-        ...basePageSetup.margin,
-        ...(pageOverride.margins || {}),
-      },
-    }
+        size: {
+          ...basePageSetup.size,
+          ...(pageOverride.size && typeof pageOverride.size === 'object'
+            ? pageOverride.size
+            : pageOverride.size
+              ? (() => {
+                  // Convert string size to dimensions
+                  const sizes = {
+                    A4: { width: 11906, height: 16838 },
+                    A3: { width: 16838, height: 23811 },
+                    LETTER: { width: 12240, height: 15840 },
+                    LEGAL: { width: 12240, height: 20160 },
+                  };
+                  return sizes[pageOverride.size as keyof typeof sizes];
+                })()
+              : {}),
+        },
+        margin: {
+          ...basePageSetup.margin,
+          ...(pageOverride.margins || {}),
+        },
+      }
     : basePageSetup;
 
   const properties: WordSectionProperties = {
