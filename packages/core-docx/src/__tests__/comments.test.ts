@@ -2,7 +2,7 @@
  * Word review comments: anchors in `word/document.xml`, bodies in
  * `word/comments.xml`, and a relationship joining them.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import JSZip from 'jszip';
 import { generateBufferFromJson } from '../core/generator';
 import { componentBypassReason } from '../core/cached-render';
@@ -22,6 +22,8 @@ async function read(zip: JSZip, path: string): Promise<string> {
   if (!entry) throw new Error(`${path} missing`);
   return entry.async('string');
 }
+
+afterEach(() => vi.restoreAllMocks());
 
 const COMMENT = {
   text: 'Confirm this figure with finance.',
@@ -215,6 +217,148 @@ describe('comment anchors and bodies', () => {
     expect(await read(zip, 'word/document.xml')).not.toContain(
       '<w:commentRangeStart'
     );
+  });
+});
+
+describe('comment threads', () => {
+  const THREAD = {
+    text: 'Confirm with finance.',
+    author: 'Ada Lovelace',
+    replies: [
+      { text: 'Confirmed against the accounts.', author: 'Grace Hopper' },
+      { text: 'Thanks.', author: 'Ada Lovelace' },
+    ],
+  };
+
+  it('anchors every comment in the thread over the same range', async () => {
+    const zip = await generate([
+      {
+        name: 'paragraph',
+        props: { text: 'Revenue grew 12%.', comment: THREAD },
+      },
+    ]);
+
+    const document = await read(zip, 'word/document.xml');
+    const order = Array.from(
+      document.matchAll(
+        /<w:comment(RangeStart|RangeEnd|Reference) w:id="(\d+)"\/>/g
+      )
+    ).map(([, kind, id]) => `${kind}:${id}`);
+
+    expect(order).toEqual([
+      'RangeStart:1',
+      'RangeStart:2',
+      'RangeStart:3',
+      'RangeEnd:1',
+      'Reference:1',
+      'RangeEnd:2',
+      'Reference:2',
+      'RangeEnd:3',
+      'Reference:3',
+    ]);
+    // The commented text sits inside the range.
+    expect(document.indexOf('<w:commentRangeStart w:id="1"/>')).toBeLessThan(
+      document.indexOf('Revenue grew 12%.')
+    );
+    expect(document.indexOf('Revenue grew 12%.')).toBeLessThan(
+      document.indexOf('<w:commentRangeEnd w:id="1"/>')
+    );
+  });
+
+  it('derives paraIdParent links in commentsExtended.xml', async () => {
+    const zip = await generate([
+      {
+        name: 'paragraph',
+        props: { text: 'Revenue grew 12%.', comment: THREAD },
+      },
+    ]);
+
+    const extended = await read(zip, 'word/commentsExtended.xml');
+    // docx derives paraId as (id + 1) in 8-char uppercase hex.
+    expect(extended).toContain('<w15:commentEx w15:paraId="00000002"/>');
+    expect(extended).toContain(
+      'w15:paraId="00000003" w15:paraIdParent="00000002"'
+    );
+    expect(extended).toContain(
+      'w15:paraId="00000004" w15:paraIdParent="00000002"'
+    );
+  });
+
+  it('marks the whole thread resolved with w15:done', async () => {
+    const zip = await generate([
+      {
+        name: 'paragraph',
+        props: {
+          text: 'Revenue grew 12%.',
+          comment: { ...THREAD, resolved: true },
+        },
+      },
+    ]);
+
+    const extended = await read(zip, 'word/commentsExtended.xml');
+    expect(extended.match(/w15:done="1"/g)).toHaveLength(3);
+  });
+
+  it('writes done="0" for an explicitly unresolved thread', async () => {
+    const zip = await generate([
+      {
+        name: 'paragraph',
+        props: {
+          text: 'Revenue grew 12%.',
+          comment: { ...THREAD, resolved: false },
+        },
+      },
+    ]);
+
+    const extended = await read(zip, 'word/commentsExtended.xml');
+    expect(extended.match(/w15:done="0"/g)).toHaveLength(3);
+  });
+
+  it('leaves unthreaded comments without a parent', async () => {
+    const zip = await generate([
+      { name: 'paragraph', props: { text: 'A', comment: THREAD } },
+      {
+        name: 'paragraph',
+        props: { text: 'B', comment: { text: 'Standalone' } },
+      },
+    ]);
+
+    const extended = await read(zip, 'word/commentsExtended.xml');
+    // id 4 -> paraId 00000005, the standalone comment.
+    expect(extended).toContain('<w15:commentEx w15:paraId="00000005"/>');
+  });
+
+  it('warns when resolved is set but nothing in the document is threaded', async () => {
+    // docx writes commentsExtended.xml only for threaded comments, so the flag
+    // would be dropped in silence otherwise.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await generate([
+      {
+        name: 'paragraph',
+        props: { text: 'A', comment: { text: 'Handled', resolved: true } },
+      },
+    ]);
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('`resolved`'));
+  });
+
+  it('is deterministic across threads', async () => {
+    const definition = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        { name: 'paragraph', props: { text: 'A', comment: THREAD } },
+        {
+          name: 'paragraph',
+          props: { text: 'B', comment: { text: 'Second' } },
+        },
+      ],
+    };
+    const [first, second] = await Promise.all([
+      generateBufferFromJson(definition as never),
+      generateBufferFromJson(definition as never),
+    ]);
+    expect(first.equals(second)).toBe(true);
   });
 });
 

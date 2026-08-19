@@ -589,8 +589,6 @@ Note text is styled from the theme's `normal` style, two points smaller, through
 
 `heading`, `paragraph`, `list` and table cells (header and body alike) can carry a `comment` prop: a Word review comment anchored to that component's text. The text itself is unchanged — the runs are wrapped in a comment range and the body goes to `word/comments.xml`, so a reader that ignores comments sees exactly the same document.
 
-Comments are unthreaded: one comment per component, no replies.
-
 **Comment**
 
 | Field      | Type                | Required | Default                               | Description                                       |
@@ -599,6 +597,10 @@ Comments are unthreaded: one comment per component, no replies.
 | `author`   | `string`            | no       | `"json-to-office"`                    | Shown in Word's review pane                       |
 | `initials` | `string`            | no       | derived from `author`                 | Shown on the comment bubble                       |
 | `date`     | `string` (ISO 8601) | no       | Unix epoch (for deterministic output) | Comment timestamp                                 |
+| `replies`  | `Reply[]` (min 1)   | no       | —                                     | Replies, in order — Word shows them as one thread |
+| `resolved` | `boolean`           | no       | —                                     | Marks the whole thread resolved (`w15:done`)      |
+
+**Reply**: `{ text, author?, initials?, date? }` — the same fields as a comment, minus threading. Word threads are one level deep, so a reply cannot itself carry replies.
 
 ```json
 {
@@ -608,12 +610,23 @@ Comments are unthreaded: one comment per component, no replies.
     "comment": {
       "text": "Confirm this figure with finance before circulating.",
       "author": "Reviewer One",
-      "date": "2026-06-09T10:00:00Z"
+      "date": "2026-06-09T10:00:00Z",
+      "replies": [
+        {
+          "text": "Confirmed against the audited accounts.",
+          "author": "Reviewer Two"
+        }
+      ],
+      "resolved": true
     }
   }
 }
 ```
 
 On a `list` the comment anchors to the list as a whole: the range opens on the first rendered item and closes on the last. On a table cell it wraps whatever the cell renders, string or component.
+
+Every comment in a thread anchors over the same range, which is how Word groups them. Thread parentage is derived, never authored: the renderer writes `word/commentsExtended.xml` with each reply pointing at its root.
+
+One limitation worth knowing: Word stores the resolved flag in that same part, and `docx` writes the part only when the document contains at least one reply. Setting `resolved` on a comment with no replies anywhere in the document logs a warning and the flag does not survive.
 
 Comment ids live in their own OOXML namespace, separate from the `w:ins`/`w:del` ids used by revisions, and are allocated per render. Like `revision`, `comment` is deliberately excluded from `componentDefaults` — a shared default would attach the same comment to every component.

@@ -15,7 +15,7 @@
 import { Paragraph, TextRun } from 'docx';
 import type { ICommentOptions } from 'docx';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { Comment } from '@json-to-office/shared-docx';
+import type { Comment, CommentReply } from '@json-to-office/shared-docx';
 import { normalizeUnicodeText } from './unicode';
 
 export const DEFAULT_COMMENT_AUTHOR = 'json-to-office';
@@ -25,10 +25,12 @@ export const DEFAULT_COMMENT_DATE = '1970-01-01T00:00:00Z';
 interface CommentState {
   counter: number;
   comments: ICommentOptions[];
+  /** Whether anything in this render asked for a resolved state. */
+  hasResolved: boolean;
 }
 
 function createState(): CommentState {
-  return { counter: 0, comments: [] };
+  return { counter: 0, comments: [], hasResolved: false };
 }
 
 /**
@@ -67,28 +69,75 @@ class CommentRegistry {
   }
 
   /**
-   * Register a comment body and return the id its anchors must use. Ids are
-   * unique and monotonic within a render.
+   * Register a comment thread and return every id its anchors must carry — the
+   * root first, then each reply in order. Word anchors every comment in a
+   * thread over the same range, so all of them need a range and a reference.
+   *
+   * Ids are unique and monotonic within a render. `parentId` is derived here
+   * rather than authored; docx turns it into the `w15:paraIdParent` links in
+   * `word/commentsExtended.xml`.
    */
-  register(comment: Comment): number {
+  register(comment: Comment): number[] {
     const state = this.state;
-    const id = ++state.counter;
-    const author = comment.author || DEFAULT_COMMENT_AUTHOR;
+    const resolved = comment.resolved;
+    const rootId = ++state.counter;
 
     state.comments.push({
+      ...this.toOptions(comment, rootId),
+      ...(resolved !== undefined && { resolved }),
+    });
+
+    const ids = [rootId];
+    for (const reply of comment.replies ?? []) {
+      const replyId = ++state.counter;
+      state.comments.push({
+        ...this.toOptions(reply, replyId),
+        parentId: rootId,
+        // Word resolves a thread as a whole, so the flag rides every member.
+        ...(resolved !== undefined && { resolved }),
+      });
+      ids.push(replyId);
+    }
+
+    if (resolved !== undefined) state.hasResolved = true;
+    return ids;
+  }
+
+  private toOptions(
+    comment: Comment | CommentReply,
+    id: number
+  ): ICommentOptions {
+    const author = comment.author || DEFAULT_COMMENT_AUTHOR;
+    return {
       id,
       author,
       initials: comment.initials || deriveInitials(author),
       date: new Date(comment.date || DEFAULT_COMMENT_DATE),
       children: bodyParagraphs(comment.text),
-    });
-
-    return id;
+    };
   }
 
-  /** Every comment registered in this scope, in id order. */
+  /**
+   * Every comment registered in this scope, in id order.
+   *
+   * docx writes `word/commentsExtended.xml` — and therefore any `w15:done` —
+   * only when at least one comment in the document carries a `parentId`. A
+   * document whose only resolved comment has no replies would silently lose
+   * that state, so say so rather than dropping it quietly.
+   */
   getAll(): ICommentOptions[] {
-    return [...this.state.comments];
+    const state = this.state;
+    if (
+      state.hasResolved &&
+      !state.comments.some((comment) => comment.parentId !== undefined)
+    ) {
+      console.warn(
+        'A comment sets `resolved` but the document has no replies. Word stores ' +
+          'the resolved flag in commentsExtended.xml, which is written only for ' +
+          'threaded comments, so the flag will not survive.'
+      );
+    }
+    return [...state.comments];
   }
 
   /** Test-only: reset the current scope's counter and bodies. */
@@ -97,6 +146,7 @@ class CommentRegistry {
     if (state) {
       state.counter = 0;
       state.comments.length = 0;
+      state.hasResolved = false;
     } else {
       this.fallback = createState();
     }

@@ -322,7 +322,7 @@ export function createText(
   // the commented content (and not a preceding column break).
   const commentAnchor = openCommentRange(options.comment);
   if (commentAnchor) {
-    children.push(commentAnchor.start);
+    children.push(...commentAnchor.start);
   }
 
   // Resolve the effective family so fontWeight can be aliased even when the
@@ -430,7 +430,7 @@ export function createText(
   }
 
   if (commentAnchor) {
-    children.push(...closeCommentRange(commentAnchor.id));
+    children.push(...closeCommentRange(commentAnchor.ids));
   }
 
   // Build frame options for floating text
@@ -592,7 +592,7 @@ export function createHeading(
   // Open the comment range around the heading text only.
   const commentAnchor = openCommentRange(options.comment);
   if (commentAnchor) {
-    children.push(commentAnchor.start);
+    children.push(...commentAnchor.start);
   }
 
   // Check if text has decorators (bold/italic markers)
@@ -728,7 +728,7 @@ export function createHeading(
   }
 
   if (commentAnchor) {
-    children.push(...closeCommentRange(commentAnchor.id));
+    children.push(...closeCommentRange(commentAnchor.ids));
   }
 
   return new Paragraph({
@@ -1026,12 +1026,10 @@ export function createList(
 
     // Create the paragraph with proper numbering reference
     const paragraphChildren: ParagraphChild[] = [
-      ...(commentAnchor && index === firstRendered
-        ? [commentAnchor.start]
-        : []),
+      ...(commentAnchor && index === firstRendered ? commentAnchor.start : []),
       ...textRuns,
       ...(commentAnchor && index === lastRendered
-        ? closeCommentRange(commentAnchor.id)
+        ? closeCommentRange(commentAnchor.ids)
         : []),
     ];
 
@@ -1905,9 +1903,9 @@ export async function createTable(
     const commentAnchor = openCommentRange(comment);
     if (commentAnchor) {
       cellChildren = [
-        commentAnchor.start,
+        ...commentAnchor.start,
         ...cellChildren,
-        ...closeCommentRange(commentAnchor.id),
+        ...closeCommentRange(commentAnchor.ids),
       ];
     }
 
