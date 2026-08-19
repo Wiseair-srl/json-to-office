@@ -45,7 +45,8 @@
           }
         },
         "header": [],
-        "footer": []
+        "footer": [],
+        "pageBreak": false
       },
       "children": [
         {
@@ -394,7 +395,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "\u00a9",
+            "text": "©",
             "font": {
               "size": 28,
               "color": "background",
@@ -627,17 +628,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -1457,17 +1467,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -1653,7 +1672,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "CEO \u2013 Your Company",
+            "text": "CEO – Your Company",
             "font": {
               "size": 18
             },
@@ -1882,17 +1901,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -2420,17 +2448,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -2787,17 +2824,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -3341,17 +3387,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -3950,17 +4005,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -4508,17 +4572,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -5029,17 +5102,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -5362,7 +5444,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "40% OY \u2013 USD 1.42B",
+            "text": "40% OY – USD 1.42B",
             "font": {
               "size": 18,
               "lineSpacing": {
@@ -5754,17 +5836,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -6809,17 +6900,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -7776,17 +7876,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -8593,17 +8702,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -9674,17 +9792,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -10561,17 +10688,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -10984,17 +11120,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -11586,17 +11731,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -11897,7 +12051,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "Grow by 8\u201310% in 2051, driven by rapid adoption of AI, cloud, and cybersecurity solutions.",
+            "text": "Grow by 8–10% in 2051, driven by rapid adoption of AI, cloud, and cybersecurity solutions.",
             "font": {
               "size": 18,
               "color": "primary",
@@ -11956,7 +12110,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "projects revenue growth of 10\u201312% and net profit expansion of 9% in FY2052, supported by scalable platforms, a recurring revenue model, and disciplined capital expenditure.",
+            "text": "projects revenue growth of 10–12% and net profit expansion of 9% in FY2052, supported by scalable platforms, a recurring revenue model, and disciplined capital expenditure.",
             "font": {
               "size": 18,
               "color": "primary",
@@ -12040,17 +12194,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -12390,7 +12553,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "The company\u2019s annual ",
+            "text": "The company’s annual ",
             "font": {
               "size": 18,
               "color": "primary",
@@ -12500,17 +12663,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -12803,17 +12975,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -13414,17 +13595,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -14341,17 +14531,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -14420,7 +14619,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "AUDITOR \u2013 YOUR COMPANY",
+            "text": "AUDITOR – YOUR COMPANY",
             "font": {
               "size": 18,
               "lineSpacing": {
@@ -14666,7 +14865,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "AUDITOR\u2019S",
+            "text": "AUDITOR’S",
             "font": {
               "size": 36,
               "bold": true,
@@ -14728,17 +14927,26 @@
               }
             }
           }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "",
-            "pageBreak": true,
-            "font": {
-              "size": 8
-            }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1440,
+            "right": 1440,
+            "bottom": 1440,
+            "left": 1440
           }
         },
+        "header": [],
+        "footer": [],
+        "pageBreak": true
+      },
+      "children": [
         {
           "name": "visual",
           "props": {
@@ -15094,7 +15302,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "LET\u2019S MOVE TOGETHER",
+            "text": "LET’S MOVE TOGETHER",
             "font": {
               "size": 30,
               "color": "background",
@@ -15305,7 +15513,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "\u00a9",
+            "text": "©",
             "font": {
               "size": 28,
               "color": "background",
