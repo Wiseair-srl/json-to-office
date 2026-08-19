@@ -323,17 +323,18 @@ export function generateMonacoSchemaConfigs(): MonacoSchemaConfig[] {
 function enhanceSchemaDescriptions(schema: any): void {
   if (typeof schema !== 'object' || schema === null) return;
 
-  if (schema.anyOf) {
-    schema.anyOf.forEach((subSchema: any) => {
-      if (subSchema.properties?.name?.const) {
-        const componentType = subSchema.properties.name?.const;
-        subSchema.description = getComponentDescription(componentType);
+  // A component branch — wherever it sits: flat `anyOf` union or the
+  // restructured if/then dispatch (`allOf[].then`).
+  if (typeof schema.properties?.name?.const === 'string') {
+    const componentType = schema.properties.name.const;
+    // Registry descriptions (attached at generation) win; fill gaps only.
+    if (!schema.description) {
+      schema.description = getComponentDescription(componentType);
+    }
 
-        if (subSchema.properties?.props) {
-          enhancePropsDescriptions(componentType, subSchema.properties.props);
-        }
-      }
-    });
+    if (schema.properties?.props) {
+      enhancePropsDescriptions(componentType, schema.properties.props);
+    }
   }
 
   Object.values(schema).forEach((value) => {

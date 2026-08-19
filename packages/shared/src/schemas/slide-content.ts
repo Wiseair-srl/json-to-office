@@ -106,7 +106,7 @@ function createSlideContentComponentSchema<
       ),
       props: component.propsSchema,
     },
-    { additionalProperties: false }
+    { additionalProperties: false, description: component.description }
   );
 }
 

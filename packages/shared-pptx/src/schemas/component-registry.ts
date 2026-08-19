@@ -153,7 +153,10 @@ export function createPptxComponentSchemaObject(
     );
   }
 
-  return Type.Object(schema, { additionalProperties: false });
+  return Type.Object(schema, {
+    additionalProperties: false,
+    description: component.description,
+  });
 }
 
 export function createAllPptxComponentSchemas(

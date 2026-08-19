@@ -36,6 +36,10 @@ export {
   exportSchemaToFile,
 } from './schemas/schema-utils';
 export type { ComponentSchemaConfig } from './schemas/schema-utils';
+export {
+  restructureNameDiscriminatedUnions,
+  unionBranches,
+} from './schemas/discriminated-unions';
 
 // Validation - unified system
 export {

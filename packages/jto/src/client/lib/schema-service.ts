@@ -23,13 +23,15 @@ class SchemaService {
    * @param pluginNames Optional array of plugin names to include in the schema
    */
   async fetchDocumentSchema(pluginNames?: string[]): Promise<any> {
-    // Create cache key based on plugins
-    const cacheKey = pluginNames?.length
+    // Create cache key based on plugins. An explicit selection (even [])
+    // is cached apart from the "unspecified" default, which the server
+    // resolves to every registered plugin.
+    const cacheKey = pluginNames
       ? `document-${pluginNames.sort().join(',')}`
       : 'document';
 
     // Check cache first
-    if (pluginNames?.length) {
+    if (pluginNames) {
       const cached = this.pluginSchemaCache.get(cacheKey);
       if (cached && this.isCacheValid(cacheKey)) {
         return cached;
@@ -39,9 +41,11 @@ class SchemaService {
     }
 
     try {
-      // Build URL with plugin query params
+      // Build URL with plugin query params. An explicit selection is always
+      // sent — `plugins=` (empty) tells the server "no plugins", instead of
+      // silently falling back to the all-plugins default.
       let url = `${API_BASE_URL}/discovery/schemas/document`;
-      if (pluginNames?.length) {
+      if (pluginNames) {
         // eslint-disable-next-line no-undef
         const params = new URLSearchParams();
         params.append('plugins', pluginNames.join(','));
@@ -63,7 +67,7 @@ class SchemaService {
       }
 
       // Cache the schema
-      if (pluginNames?.length) {
+      if (pluginNames) {
         if (this.pluginSchemaCache.size >= this.MAX_PLUGIN_CACHE) {
           const firstKey = this.pluginSchemaCache.keys().next().value;
           if (firstKey) this.pluginSchemaCache.delete(firstKey);

@@ -1,4 +1,5 @@
 import { Type, TSchema } from '@sinclair/typebox';
+import { restructureNameDiscriminatedUnions } from './discriminated-unions';
 import type { ComponentDefinition } from '../types/components';
 
 export interface ComponentSchemaConfig {
@@ -61,8 +62,11 @@ export function fixSchemaReferences(
           schemaValue.items &&
           typeof schemaValue.items === 'object' &&
           '$ref' in schemaValue.items &&
-          typeof (schemaValue.items as Record<string, unknown>).$ref === 'string' &&
-          /^T\d+$/.test((schemaValue.items as Record<string, unknown>).$ref as string)
+          typeof (schemaValue.items as Record<string, unknown>).$ref ===
+            'string' &&
+          /^T\d+$/.test(
+            (schemaValue.items as Record<string, unknown>).$ref as string
+          )
         ) {
           schemaValue.items = {
             $ref: `#/definitions/${rootDefinitionName}`,
@@ -178,6 +182,7 @@ export function convertToJsonSchema(
   }
 
   fixSchemaReferences(jsonSchema);
+  restructureNameDiscriminatedUnions(jsonSchema);
 
   return jsonSchema;
 }

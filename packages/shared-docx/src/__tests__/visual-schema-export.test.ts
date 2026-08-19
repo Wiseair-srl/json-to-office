@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { convertToJsonSchema } from '@json-to-office/shared';
+import { convertToJsonSchema, unionBranches } from '@json-to-office/shared';
 import { generateUnifiedDocumentSchema } from '../schemas/generator';
 
 function collectRefs(value: unknown, refs: string[] = []): string[] {
@@ -24,7 +24,11 @@ describe('visual JSON Schema export', () => {
       Record<string, unknown>
     >;
     const slideContent = definitions.PptxSlideContent;
-    const variants = slideContent.anyOf as Array<Record<string, unknown>>;
+    // Exported unions are restructured into if/then dispatch — iterate the
+    // branch objects shape-agnostically.
+    const variants = unionBranches(slideContent) as Array<
+      Record<string, unknown>
+    >;
 
     expect(
       Object.keys(definitions).filter((name) => name === 'PptxSlideContent')
