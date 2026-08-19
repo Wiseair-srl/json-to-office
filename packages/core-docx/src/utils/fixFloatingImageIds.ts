@@ -1,7 +1,7 @@
 /**
  * Post-processing utility to fix docx.js floating image bugs
  *
- * The docx library (as of v9.5.1) has a known issue with floating images:
+ * The docx library (as of v9.7.1) has a known issue with floating images:
  * 1. Duplicate wp:docPr IDs (GitHub issue #2719)
  *
  * Historical note: We previously also post-processed relativeHeight and

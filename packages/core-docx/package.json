@@ -41,7 +41,7 @@
     "probe-image-size": "7.2.3"
   },
   "peerDependencies": {
-    "docx": "9.5.1"
+    "docx": "9.7.1"
   },
   "devDependencies": {
     "@types/adm-zip": "0.5.7",
