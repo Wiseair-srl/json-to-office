@@ -1,4 +1,10 @@
-import { TextRun, ExternalHyperlink, InternalHyperlink, Tab } from 'docx';
+import {
+  TextRun,
+  ExternalHyperlink,
+  InternalHyperlink,
+  FootnoteReferenceRun,
+  Tab,
+} from 'docx';
 import {
   processTextWithPlaceholders,
   type PlaceholderChild,
@@ -58,7 +64,23 @@ export interface TextDecoratorOptions {
    * text stays spell-checked.
    */
   noProofWords?: string[];
+  /**
+   * Resolve a `[^id]` footnote marker to its document-scoped footnote id, or
+   * undefined to leave the marker as literal text.
+   *
+   * Passing a resolver is what turns `[^…]` into syntax at all: without one,
+   * text that merely looks like a marker (a regex character class in a code
+   * sample, say) is untouched.
+   */
+  footnoteRef?: (id: string) => number | undefined;
 }
+
+/**
+ * Inline footnote marker: `[^id]`, where id has no whitespace or `]`.
+ * Deliberately not global: a shared /g regex carries `lastIndex` between
+ * `.test()` calls and would skip every other marker.
+ */
+const FOOTNOTE_MARKER_REGEX = /\[\^([^\]\s]+)\]/;
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -357,16 +379,67 @@ function createTextRunsWithNewlines(
   baseStyle: TextStyle,
   options: TextDecoratorOptions,
   overrideStyle?: { bold?: boolean; italics?: boolean }
-): TextRun[] {
-  return buildTextRuns(
-    text,
-    buildRunCommonProps(baseStyle, {
-      bold: overrideStyle?.bold,
-      italics: overrideStyle?.italics,
-      boldColor: options.boldColor,
-    }),
-    { noProof: baseStyle.noProof, noProofWords: options.noProofWords }
-  );
+): PlaceholderChild[] {
+  const runs = (segment: string) =>
+    buildTextRuns(
+      segment,
+      buildRunCommonProps(baseStyle, {
+        bold: overrideStyle?.bold,
+        italics: overrideStyle?.italics,
+        boldColor: options.boldColor,
+      }),
+      { noProof: baseStyle.noProof, noProofWords: options.noProofWords }
+    );
+
+  if (!options.footnoteRef) return runs(text);
+  return splitFootnoteMarkers(text, options.footnoteRef, runs);
+}
+
+/**
+ * Replace resolvable `[^id]` markers with footnote reference runs, handing the
+ * text between them to `runs`.
+ *
+ * This runs at the leaf, after decorators have been parsed, so a marker inside
+ * `**bold[^n]**` keeps the surrounding emphasis — splitting earlier would break
+ * the `**` pair across segments and silently drop the formatting.
+ *
+ * A marker whose id the resolver does not know stays literal; the resolver owns
+ * that decision (and any warning), so this never has to guess whether `[^a-z]`
+ * was meant as syntax.
+ */
+function splitFootnoteMarkers(
+  text: string,
+  footnoteRef: (id: string) => number | undefined,
+  runs: (segment: string) => TextRun[]
+): PlaceholderChild[] {
+  const regex = new RegExp(FOOTNOTE_MARKER_REGEX.source, 'g');
+  const out: PlaceholderChild[] = [];
+
+  let lastIndex = 0;
+  let pending = '';
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    const noteId = footnoteRef(match[1]);
+    if (noteId === undefined) {
+      // Unresolved: keep the marker in the text stream verbatim.
+      pending += text.slice(lastIndex, regex.lastIndex);
+      lastIndex = regex.lastIndex;
+      continue;
+    }
+
+    const before = pending + text.slice(lastIndex, match.index);
+    pending = '';
+    if (before) out.push(...runs(before));
+    out.push(new FootnoteReferenceRun(noteId));
+    lastIndex = regex.lastIndex;
+  }
+
+  if (out.length === 0) return runs(text);
+
+  const trailing = pending + text.slice(lastIndex);
+  if (trailing) out.push(...runs(trailing));
+  return out;
 }
 
 /**

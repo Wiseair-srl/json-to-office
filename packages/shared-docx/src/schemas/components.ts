@@ -18,6 +18,7 @@ import {
 export * from './components/common';
 export * from './components/revision';
 export * from './components/comment';
+export * from './components/footnote';
 export * from './components/report';
 export * from './components/section';
 export * from './components/columns';

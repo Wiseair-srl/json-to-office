@@ -892,20 +892,53 @@ export function createWordStyles(
     });
   }
 
+  // Note styles: docx ships built-in FootnoteText / FootnoteReference styles,
+  // but they carry Word's defaults, not the theme's — a footnote in a Georgia
+  // document would otherwise set in Calibri. Both hooks live under the
+  // `default` key, which is why that key is now always built rather than being
+  // emitted only when a document language is set.
+  const noteStyle =
+    resolveStyleWithBaseStyle(theme, 'normal') || theme.styles?.normal;
+  const bodyRun = convertRunProperties(
+    mergeFontAndStyleProperties(resolveFontProperties(theme, noteStyle?.font), {
+      size: noteStyle?.size,
+      color: noteStyle?.color,
+    }),
+    theme,
+    theme.colors.text
+  );
+  // Word's convention is note text two points below body text. `size` is in
+  // half-points here, so that is four — floored so a tiny body size cannot
+  // produce an illegible note.
+  const noteRun = {
+    ...bodyRun,
+    ...(typeof bodyRun.size === 'number' && {
+      size: Math.max(12, bodyRun.size - 4),
+    }),
+  };
+
   return {
     paragraphStyles: paragraphStyles as WordStyleDefinition[], // Cast needed due to docx typing
-    // Document-default proofing language (w:docDefaults/w:rPrDefault). Runs that
-    // don't set their own w:lang inherit this, so Word spell-checks the whole
-    // document in the requested language unless a component overrides it.
-    ...(language && {
-      default: {
+    default: {
+      // Document-default proofing language (w:docDefaults/w:rPrDefault). Runs
+      // that don't set their own w:lang inherit this, so Word spell-checks the
+      // whole document in the requested language unless a component overrides
+      // it.
+      ...(language && {
         document: {
           run: {
             language: { value: language },
           },
         },
+      }),
+      // Run properties only: docx's own FootnoteText paragraph defaults
+      // (single line spacing, no space after) are already what a note wants,
+      // and an empty spacing override would drop its line rule.
+      footnoteText: { run: noteRun },
+      footnoteReference: {
+        run: { ...noteRun, superScript: true },
       },
-    }),
+    },
   };
 }
 

@@ -79,25 +79,26 @@ A document heading. Headings feed the [table of contents](#toc) and Word's navig
 
 Body text. The workhorse component — also used inside headers, footers, table cells, and text boxes.
 
-| Prop           | Type                                               | Required | Default             | Description                                                 |
-| -------------- | -------------------------------------------------- | -------- | ------------------- | ----------------------------------------------------------- |
-| `text`         | `string`                                           | **yes**  | —                   | Paragraph text (inline markdown, placeholders, hyperlinks)  |
-| `font`         | partial font object                                | no       | theme               | Local font override (nested — there are no flat font props) |
-| `themeStyle`   | `string`                                           | no       | —                   | Name of a style from the theme's `styles` map               |
-| `language`     | `string` (BCP-47)                                  | no       | document `language` | Local proofing language                                     |
-| `noProof`      | `boolean`                                          | no       | —                   | Disable proofing                                            |
-| `noProofWords` | `string[]`                                         | no       | —                   | Merged with the document list                               |
-| `boldColor`    | `string`                                           | no       | —                   | Color applied only to `**bold**` segments                   |
-| `spacing`      | `{ before?, after? }` (points)                     | no       | theme               |                                                             |
-| `alignment`    | `'left'` \| `'center'` \| `'right'` \| `'justify'` | no       | theme               |                                                             |
-| `pageBreak`    | `boolean`                                          | no       | —                   | Page break before                                           |
-| `columnBreak`  | `boolean`                                          | no       | —                   | Column break before                                         |
-| `floating`     | frame object                                       | no       | —                   | Render as a positioned text frame (see below)               |
-| `keepNext`     | `boolean`                                          | no       | —                   |                                                             |
-| `keepLines`    | `boolean`                                          | no       | —                   |                                                             |
-| `id`           | `string`                                           | no       | —                   | Bookmark anchor targeted by internal links `[text](#id)`    |
-| `revision`     | `Revision`                                         | no       | —                   | Tracked-change segments                                     |
-| `comment`      | `Comment`                                          | no       | —                   | Review comment (see [Comments](#comments))                  |
+| Prop           | Type                                               | Required | Default             | Description                                                            |
+| -------------- | -------------------------------------------------- | -------- | ------------------- | ---------------------------------------------------------------------- |
+| `text`         | `string`                                           | **yes**  | —                   | Paragraph text (inline markdown, placeholders, hyperlinks)             |
+| `font`         | partial font object                                | no       | theme               | Local font override (nested — there are no flat font props)            |
+| `themeStyle`   | `string`                                           | no       | —                   | Name of a style from the theme's `styles` map                          |
+| `language`     | `string` (BCP-47)                                  | no       | document `language` | Local proofing language                                                |
+| `noProof`      | `boolean`                                          | no       | —                   | Disable proofing                                                       |
+| `noProofWords` | `string[]`                                         | no       | —                   | Merged with the document list                                          |
+| `boldColor`    | `string`                                           | no       | —                   | Color applied only to `**bold**` segments                              |
+| `spacing`      | `{ before?, after? }` (points)                     | no       | theme               |                                                                        |
+| `alignment`    | `'left'` \| `'center'` \| `'right'` \| `'justify'` | no       | theme               |                                                                        |
+| `pageBreak`    | `boolean`                                          | no       | —                   | Page break before                                                      |
+| `columnBreak`  | `boolean`                                          | no       | —                   | Column break before                                                    |
+| `floating`     | frame object                                       | no       | —                   | Render as a positioned text frame (see below)                          |
+| `keepNext`     | `boolean`                                          | no       | —                   |                                                                        |
+| `keepLines`    | `boolean`                                          | no       | —                   |                                                                        |
+| `id`           | `string`                                           | no       | —                   | Bookmark anchor targeted by internal links `[text](#id)`               |
+| `revision`     | `Revision`                                         | no       | —                   | Tracked-change segments                                                |
+| `comment`      | `Comment`                                          | no       | —                   | Review comment (see [Comments](#comments))                             |
+| `footnotes`    | `Footnote[]` (min 1)                               | no       | —                   | Bodies for the `[^id]` markers in `text` (see [Footnotes](#footnotes)) |
 
 The `floating` frame object: `horizontalPosition` / `verticalPosition` as `{ relative: 'margin' | 'page' | 'text', align?, offset? }` (offsets in twips or `"%"` strings), `wrap.type` (`'around'` \| `'none'` \| `'notBeside'` \| `'through'` \| `'tight'` \| `'auto'`), `lockAnchor`, and `width`/`height` in twips.
 
@@ -535,6 +536,41 @@ Once registered, it takes `{ text: string, spaceAfter?: number }` — the text t
 ```
 
 Set `trackRevisions: true` on the [`docx` root](/reference/docx/document#docx-root) to open the document with track-changes mode active (redlines produced by `diffDocuments` do this automatically). `revision` is deliberately excluded from `componentDefaults` — revisions describe specific edits and cannot be defaulted.
+
+## Footnotes
+
+A footnote is authored in two halves: an inline `[^id]` marker in a `paragraph`'s text, and the body declared on that same paragraph.
+
+```json
+{
+  "name": "paragraph",
+  "props": {
+    "text": "Revenue grew 12%[^rev] year over year.",
+    "footnotes": [
+      { "id": "rev", "text": "Source: FY26 audited accounts, page 14." }
+    ]
+  }
+}
+```
+
+The marker renders as a superscript reference; Word numbers the notes and places them at the foot of the page.
+
+**Footnote**
+
+| Field  | Type             | Required | Description                                                       |
+| ------ | ---------------- | -------- | ----------------------------------------------------------------- |
+| `id`   | `string` (min 1) | **yes**  | Referenced from the text as `[^id]`; no whitespace or `]`         |
+| `text` | `string` (min 1) | **yes**  | Body; newlines split it into separate paragraphs at the page foot |
+
+Rules worth knowing:
+
+- **`[^id]` is only syntax where footnotes are declared.** A paragraph with no `footnotes` renders `[^a-z]+` exactly as written, so regexes and character classes in prose are safe.
+- **Numbering follows reference order, not declaration order.** A body that no marker resolves to is not emitted, and a warning names it.
+- **Repeating a marker reuses the same note** rather than duplicating the body.
+- Markers resolve inside decorated text and around links (`**bold[^n]**`, `[a link](https://example.com)[^m]`), but **not** in text that also contains `{PLACEHOLDER}` substitutions — there the marker stays literal and a warning says so.
+- Footnotes are a `paragraph` prop only. Like `revision` and `comment`, they are excluded from `componentDefaults`.
+
+Note text is styled from the theme's `normal` style, two points smaller, through Word's built-in `FootnoteText` and `FootnoteReference` styles.
 
 ## Comments
 
