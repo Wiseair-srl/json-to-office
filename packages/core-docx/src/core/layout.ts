@@ -31,6 +31,11 @@ export interface WordSectionProperties {
     size: {
       width: number;
       height: number;
+      /**
+       * OOXML `w:pgSz/@w:code` — the DEVMODE paper code printer drivers key
+       * off. Set only for a named size; a custom `{width, height}` has none.
+       */
+      code?: number;
     };
     margin: {
       top: number;
@@ -397,17 +402,17 @@ export function createSectionProperties(
   // Get base page setup from theme
   const basePageSetup = getPageSetup(theme, themeName);
 
-  // Apply section-level page overrides if present
+  // Apply section-level page overrides if present.
+  //
+  // The size override replaces the base size wholesale rather than merging
+  // into it: a custom `{width, height}` is not a standard paper, so it must not
+  // inherit the theme's paper code — which a spread over `basePageSetup.size`
+  // would silently do, telling the driver to fetch A4 for a custom page.
   const pageSetup = pageOverride
     ? {
-        size: {
-          ...basePageSetup.size,
-          ...(pageOverride.size && typeof pageOverride.size === 'object'
-            ? pageOverride.size
-            : pageOverride.size
-              ? getPageDimensions(pageOverride.size)
-              : {}),
-        },
+        size: pageOverride.size
+          ? getPageDimensions(pageOverride.size)
+          : basePageSetup.size,
         margin: {
           ...basePageSetup.margin,
           ...(pageOverride.margins || {}),
