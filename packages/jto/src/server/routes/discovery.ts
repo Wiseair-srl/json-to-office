@@ -29,6 +29,46 @@ function cleanupTypeBoxIds(schema: any): void {
   });
 }
 
+/**
+ * Schema generation must not depend on the client having POSTed
+ * `/load-plugins` first. The playground fires that bootstrap POST and the
+ * first schema fetch in parallel on page load; when the schema request won
+ * the race (or the POST failed), the registry was empty, the requested
+ * plugins were silently dropped, and Monaco kept a plugin-less schema —
+ * enabled components neither completed nor validated until a toggle forced a
+ * refetch. Requests that need plugins now load them on demand; the
+ * registry's load fingerprint makes a repeat discover-and-load a no-op.
+ */
+let pluginLoadInFlight: Promise<void> | null = null;
+
+async function ensurePluginsRegistered(
+  format: 'docx' | 'pptx',
+  pluginNames?: string[]
+): Promise<void> {
+  const registry = PluginRegistry.getInstance();
+  const satisfied = pluginNames
+    ? pluginNames.every((name) => registry.getPlugin(name))
+    : registry.hasPlugins();
+  if (satisfied) return;
+
+  if (!pluginLoadInFlight) {
+    registry.setFormat(format);
+    pluginLoadInFlight = registry
+      .discoverAndLoad()
+      .then(() => undefined)
+      .catch((error: any) => {
+        // Schema generation falls back to standard components only.
+        logger.warn('On-demand plugin load for schema generation failed', {
+          error: error?.message,
+        });
+      })
+      .finally(() => {
+        pluginLoadInFlight = null;
+      });
+  }
+  await pluginLoadInFlight;
+}
+
 function getSelectedPlugins(pluginNames?: string[]) {
   const registry = PluginRegistry.getInstance();
   if (!registry.hasPlugins()) return [];
@@ -55,6 +95,7 @@ async function generateDocumentSchema(
   format: string,
   pluginNames?: string[]
 ): Promise<any> {
+  await ensurePluginsRegistered(format as 'docx' | 'pptx', pluginNames);
   const selected = getSelectedPlugins(pluginNames);
 
   if (format === 'docx') {

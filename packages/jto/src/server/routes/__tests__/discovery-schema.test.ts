@@ -1,0 +1,70 @@
+/**
+ * `/discovery/schemas/document` must be self-sufficient: the playground fires
+ * the bootstrap `POST /load-plugins` and the first schema fetch in parallel,
+ * and when the schema request won the race (or the POST failed) the registry
+ * was empty — requested plugins were silently dropped and Monaco kept a
+ * plugin-less schema until a toggle forced a refetch. Enabled components
+ * neither completed nor validated.
+ *
+ * These tests hit the route with a cleared registry and no prior
+ * load-plugins call, exactly the lost-race state.
+ */
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { Hono } from 'hono';
+import { discoveryRouter } from '../discovery';
+import { Container } from '../../container';
+import { DocxFormatAdapter, PluginRegistry } from '@json-to-office/jto-cli';
+import { unionBranches } from '@json-to-office/shared';
+
+// Discovery resolves the workspace root from cwd, so the example plugins
+// under packages/core-docx are reachable from this package's test run.
+
+function componentNames(schema: any): string[] {
+  return unionBranches(schema.definitions.ComponentDefinition)
+    .map((b: any) => b?.properties?.name?.const)
+    .filter(Boolean);
+}
+
+describe('/api/discovery/schemas/document', () => {
+  let app: Hono;
+
+  beforeAll(() => {
+    Container.initialize(new DocxFormatAdapter());
+    PluginRegistry.cleanup();
+    app = new Hono();
+    app.route('/discovery', discoveryRouter as any);
+  });
+
+  afterAll(() => {
+    PluginRegistry.cleanup();
+  });
+
+  it('includes requested plugins with an empty registry (no prior load-plugins)', async () => {
+    expect(PluginRegistry.getInstance().hasPlugins()).toBe(false);
+
+    const res = await app.request(
+      '/discovery/schemas/document?plugins=columnsLayout,weather'
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    const names = componentNames(body.data);
+
+    expect(names).toContain('weather');
+    expect(names).toContain('columnsLayout');
+    expect(names).toContain('heading');
+    // only the requested plugins, not everything discovered
+    expect(names).not.toContain('eldermoor-census');
+  });
+
+  it('keeps an explicit empty selection plugin-free', async () => {
+    // registry is populated from the previous request; selection still wins
+    const res = await app.request('/discovery/schemas/document?plugins=');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    const names = componentNames(body.data);
+
+    expect(names).toContain('heading');
+    expect(names).not.toContain('weather');
+    expect(names).not.toContain('columnsLayout');
+  });
+});
