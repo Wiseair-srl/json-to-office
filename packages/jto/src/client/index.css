@@ -396,3 +396,10 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.4);
 }
+
+/* Brief highlight painted over a JSON node when it's revealed from the
+   sidebar outline. Removed by a timeout, so keep it transition-free. */
+.jto-outline-flash {
+  background: hsl(var(--ring) / 0.16);
+  border-radius: 2px;
+}

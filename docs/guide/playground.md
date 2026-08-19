@@ -16,6 +16,7 @@ Both are deployments of the exact same dev server you get with `jto docx dev` / 
 ## What it offers
 
 - **Monaco JSON editor with schema autocomplete.** The editor is Monaco (the VS Code editor) wired to the generated JSON Schemas, so you get autocomplete for component names and props, inline validation errors, and hover documentation as you type. See [Validation](/guide/validation) for how the same schemas are used outside the playground.
+- **Document outline.** The sidebar shows a semantic table of contents for the active document — numbered slides labeled by their titles (PPTX), the heading hierarchy (DOCX), or top-level keys (themes). Clicking a node jumps the editor to its JSON; moving the cursor highlights the node you're in. Nodes with validation errors get a red dot, and slides or whole heading sections can be reordered by dragging them in the outline.
 - **Live preview.** The preview re-renders as the JSON changes, so you iterate on layout and content without a download-open-check loop.
 - **Template gallery.** Built-in starting templates for each format, so you never begin from an empty `{}`. Browse them in the document sidebar and use them as a base for your own documents.
 - **Theme switching.** Swap the document's theme and watch colors, fonts, and component defaults change instantly. See [Themes & styling](/guide/themes).

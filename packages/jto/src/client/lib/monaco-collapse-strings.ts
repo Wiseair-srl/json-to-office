@@ -60,6 +60,14 @@ export interface CollapseController {
   isApplyingEdits(): boolean;
   /** True if a marker range falls inside a currently-collapsed value. */
   isRangeCollapsed(range: IRange): boolean;
+  /**
+   * Re-anchor chip decorations to their sentinels' current positions. Call
+   * after an edit that MOVES text wholesale (outline drag-reorder, undo of
+   * one): Monaco collapses decorations that sat inside a replaced range, but
+   * the sentinel text itself travels with the edit and carries its id, so the
+   * decoration can always be rebuilt at the sentinel's new location.
+   */
+  resyncDecorations(): void;
   dispose(): void;
 }
 
@@ -521,6 +529,61 @@ export function installLongStringCollapser(
         if (r && rangesOverlap(r, range)) return true;
       }
       return false;
+    },
+
+    resyncDecorations() {
+      const model = editorInstance.getModel();
+      if (!model || tracked.size === 0) return;
+      const text = model.getValue();
+      for (const t of [...tracked.values()]) {
+        if (t.expanded) {
+          // The full value is plain text in the model; if the collapse chip
+          // still marks exactly that text, keep it — otherwise drop the entry
+          // (the value simply stays expanded).
+          const r = model.getDecorationRange(t.decorationId);
+          if (!r || model.getValueInRange(r) !== t.middle) {
+            editorInstance.deltaDecorations([t.decorationId], []);
+            tracked.delete(t.id);
+          }
+          continue;
+        }
+        const sentinel = makeSentinel(t.id);
+        const offset = text.indexOf(sentinel);
+        if (offset === -1) {
+          // Sentinel text was destroyed by an edit; the hidden middle is gone
+          // the same way it would be if the user deleted the chip directly.
+          editorInstance.deltaDecorations([t.decorationId], []);
+          tracked.delete(t.id);
+          continue;
+        }
+        const start = model.getPositionAt(offset);
+        const end = model.getPositionAt(offset + sentinel.length);
+        const current = model.getDecorationRange(t.decorationId);
+        if (
+          current &&
+          current.startLineNumber === start.lineNumber &&
+          current.startColumn === start.column &&
+          current.endLineNumber === end.lineNumber &&
+          current.endColumn === end.column
+        ) {
+          continue; // already anchored correctly
+        }
+        const [decorationId] = editorInstance.deltaDecorations(
+          [t.decorationId],
+          [
+            {
+              range: new monaco.Range(
+                start.lineNumber,
+                start.column,
+                end.lineNumber,
+                end.column
+              ),
+              options: collapsedDecoration(t.middle.length),
+            },
+          ]
+        );
+        t.decorationId = decorationId;
+      }
     },
 
     dispose() {

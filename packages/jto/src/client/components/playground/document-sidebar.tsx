@@ -19,6 +19,7 @@ import { CompareDocumentsDialog } from './compare-documents-dialog';
 import { FORMAT } from '../../lib/env';
 import { DocumentFormDialogContentMemoized } from './document-form-dialog-content';
 import { DocumentMenuItemMemoized } from './document-menu-item';
+import { OutlinePanel } from './outline-panel';
 import { PluginSelector } from './plugin-selector';
 import { SidebarLibrary } from './sidebar-library';
 import {
@@ -586,6 +587,11 @@ function DocumentSidebarComponent({
                       </SidebarMenu>
                     </section>
                   )}
+
+                  {/* Outline of the active document. Hidden while the rail
+                      filter is active — the filter is about files, and the
+                      freed rows go to the matching results. */}
+                  {!q && <OutlinePanel />}
 
                   {/* Project library */}
                   {(libraryDocuments.length > 0 ||

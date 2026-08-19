@@ -8,6 +8,12 @@
       "port": 3003
     },
     {
+      "name": "playground-pptx",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["cli:dev:pptx"],
+      "port": 3004
+    },
+    {
       "name": "docs",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["docs:preview"],
