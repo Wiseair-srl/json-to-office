@@ -48,8 +48,8 @@ import { getStyleIdForLevel } from '../styles/themeToDocxAdapter';
 import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
 import { createRevisionRuns } from '../utils/revisionUtils';
 import { openCommentRange, closeCommentRange } from '../utils/commentAnchors';
-import { createFootnoteResolver } from '../utils/footnoteResolver';
-import type { Comment, Footnote, Revision } from '@json-to-office/shared-docx';
+import { createNoteResolver } from '../utils/noteResolver';
+import type { Comment, Note, Revision } from '@json-to-office/shared-docx';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import { synthesizeFamilyName } from '@json-to-office/shared';
 import {
@@ -199,9 +199,10 @@ export interface TextOptions {
   // Review comment anchored to this text. The text itself is unchanged; the
   // runs are wrapped in a comment range and followed by a reference.
   comment?: Comment;
-  // Footnote bodies bound to `[^id]` markers in this text. Without them a
-  // marker is left as literal text.
-  footnotes?: readonly Footnote[];
+  // Note bodies bound to `[^id]` markers in this text. Without them a marker
+  // is left as literal text.
+  footnotes?: readonly Note[];
+  endnotes?: readonly Note[];
 }
 
 export interface ImageOptions {
@@ -391,10 +392,14 @@ export function createText(
       children.push(...revisionRuns);
     }
   } else {
-    // Footnote bodies reach word/footnotes.xml only when a marker resolves to
-    // them, so the resolver is built once per paragraph, consulted by the
-    // parser as it walks the text, and asked afterwards what went unused.
-    const footnoteResolver = createFootnoteResolver(options.footnotes);
+    // Note bodies reach word/footnotes.xml or word/endnotes.xml only when a
+    // marker resolves to them, so the resolver is built once per paragraph,
+    // consulted by the parser as it walks the text, and asked afterwards what
+    // went unused.
+    const noteResolver = createNoteResolver(
+      options.footnotes,
+      options.endnotes
+    );
 
     // Add text content - parseTextWithDecorators handles both decorators and newlines
     const textRuns = parseTextWithDecorators(normalizedContent, baseTextStyle, {
@@ -403,9 +408,9 @@ export function createText(
         : undefined,
       enableHyperlinks: true,
       noProofWords: resolveNoProofWords(theme, options.noProofWords),
-      footnoteRef: footnoteResolver?.resolve,
+      noteRef: noteResolver?.resolve,
     });
-    footnoteResolver?.reportUnemitted(normalizedContent);
+    noteResolver?.reportUnemitted(normalizedContent);
 
     // If bookmarkId is provided, wrap text runs in a bookmark
     if (options.bookmarkId) {

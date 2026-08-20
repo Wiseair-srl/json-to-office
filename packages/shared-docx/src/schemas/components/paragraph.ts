@@ -13,7 +13,7 @@ import {
 } from '../font';
 import { RevisionSchema } from './revision';
 import { CommentSchema } from './comment';
-import { FootnotesSchema } from './footnote';
+import { EndnotesSchema, FootnotesSchema } from './note';
 
 // Frame wrapping type schema
 const FrameWrapTypeSchema = Type.Union(
@@ -223,6 +223,7 @@ export const ParagraphPropsSchema = Type.Object(
     revision: Type.Optional(RevisionSchema),
     comment: Type.Optional(CommentSchema),
     footnotes: Type.Optional(FootnotesSchema),
+    endnotes: Type.Optional(EndnotesSchema),
   },
   {
     description:

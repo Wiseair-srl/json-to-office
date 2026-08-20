@@ -219,8 +219,9 @@ export function renderParagraphComponent(
     revision: resolvedConfig.revision,
     // Review comment anchored to this paragraph's text
     comment: resolvedConfig.comment,
-    // Footnote bodies for the `[^id]` markers in this paragraph
+    // Note bodies for the `[^id]` markers in this paragraph
     footnotes: resolvedConfig.footnotes,
+    endnotes: resolvedConfig.endnotes,
   });
 
   return [text];

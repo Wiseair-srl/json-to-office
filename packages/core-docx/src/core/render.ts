@@ -343,8 +343,9 @@ async function renderDocumentScoped(
   const numberingConfigs = globalNumberingRegistry.getAll();
   // Comment bodies collected while rendering the anchors
   const comments = globalCommentRegistry.getAll();
-  // Footnote bodies collected while rendering their markers
+  // Note bodies collected while rendering their markers
   const footnotes = globalNoteRegistry.getFootnotes();
+  const endnotes = globalNoteRegistry.getEndnotes();
 
   return new Document({
     styles: createWordStyles(structure.theme, structure.language),
@@ -357,8 +358,10 @@ async function renderDocumentScoped(
     },
     // word/comments.xml, emitted only when something was actually commented
     ...(comments.length > 0 && { comments: { children: comments } }),
-    // word/footnotes.xml bodies, keyed by the id their references carry
+    // word/footnotes.xml and word/endnotes.xml bodies, keyed by the id their
+    // references carry
     ...(Object.keys(footnotes).length > 0 && { footnotes }),
+    ...(Object.keys(endnotes).length > 0 && { endnotes }),
     // Add numbering configurations if any lists were rendered
     ...(numberingConfigs.length > 0 && {
       numbering: {

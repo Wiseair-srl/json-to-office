@@ -3,6 +3,7 @@ import {
   ExternalHyperlink,
   InternalHyperlink,
   FootnoteReferenceRun,
+  EndnoteReferenceRun,
   Tab,
 } from 'docx';
 import {
@@ -65,18 +66,18 @@ export interface TextDecoratorOptions {
    */
   noProofWords?: string[];
   /**
-   * Resolve a `[^id]` footnote marker to its document-scoped footnote id, or
+   * Resolve a `[^id]` note marker to its document-scoped id and kind, or
    * undefined to leave the marker as literal text.
    *
    * Passing a resolver is what turns `[^…]` into syntax at all: without one,
    * text that merely looks like a marker (a regex character class in a code
    * sample, say) is untouched.
    */
-  footnoteRef?: (id: string) => number | undefined;
+  noteRef?: (id: string) => { id: number; endnote: boolean } | undefined;
 }
 
 /**
- * Inline footnote marker: `[^id]`, where id has no whitespace or `]`.
+ * Inline note marker: `[^id]`, where id has no whitespace or `]`.
  * Deliberately not global: a shared /g regex carries `lastIndex` between
  * `.test()` calls and would skip every other marker.
  */
@@ -391,13 +392,13 @@ function createTextRunsWithNewlines(
       { noProof: baseStyle.noProof, noProofWords: options.noProofWords }
     );
 
-  if (!options.footnoteRef) return runs(text);
-  return splitFootnoteMarkers(text, options.footnoteRef, runs);
+  if (!options.noteRef) return runs(text);
+  return splitNoteMarkers(text, options.noteRef, runs);
 }
 
 /**
- * Replace resolvable `[^id]` markers with footnote reference runs, handing the
- * text between them to `runs`.
+ * Replace resolvable `[^id]` markers with footnote or endnote reference runs,
+ * handing the text between them to `runs`.
  *
  * This runs at the leaf, after decorators have been parsed, so a marker inside
  * `**bold[^n]**` keeps the surrounding emphasis — splitting earlier would break
@@ -407,9 +408,9 @@ function createTextRunsWithNewlines(
  * that decision (and any warning), so this never has to guess whether `[^a-z]`
  * was meant as syntax.
  */
-function splitFootnoteMarkers(
+function splitNoteMarkers(
   text: string,
-  footnoteRef: (id: string) => number | undefined,
+  noteRef: (id: string) => { id: number; endnote: boolean } | undefined,
   runs: (segment: string) => TextRun[]
 ): PlaceholderChild[] {
   const regex = new RegExp(FOOTNOTE_MARKER_REGEX.source, 'g');
@@ -420,8 +421,8 @@ function splitFootnoteMarkers(
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(text)) !== null) {
-    const noteId = footnoteRef(match[1]);
-    if (noteId === undefined) {
+    const note = noteRef(match[1]);
+    if (note === undefined) {
       // Unresolved: keep the marker in the text stream verbatim.
       pending += text.slice(lastIndex, regex.lastIndex);
       lastIndex = regex.lastIndex;
@@ -431,7 +432,11 @@ function splitFootnoteMarkers(
     const before = pending + text.slice(lastIndex, match.index);
     pending = '';
     if (before) out.push(...runs(before));
-    out.push(new FootnoteReferenceRun(noteId));
+    out.push(
+      note.endnote
+        ? new EndnoteReferenceRun(note.id)
+        : new FootnoteReferenceRun(note.id)
+    );
     lastIndex = regex.lastIndex;
   }
 
