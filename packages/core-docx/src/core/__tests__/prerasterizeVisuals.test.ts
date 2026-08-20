@@ -338,3 +338,113 @@ describe('prerasterizeVisuals (HTTP)', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });
+
+describe('font forwarding (Area 6)', () => {
+  const fonts = [
+    {
+      family: 'Inter',
+      weight: 400,
+      italic: false,
+      data: 'AAECAw==',
+      format: 'ttf' as const,
+    },
+  ];
+
+  it('puts fonts at the REQUEST level of an in-process batch, never per-slide', async () => {
+    const renderBatch = vi.fn(async () => ({
+      results: [{ ok: true, ...okResult }],
+    }));
+    await prerasterizeVisuals([visual('a')], { renderBatch }, { fonts });
+
+    const request = renderBatch.mock.calls[0][0] as any;
+    expect(request.fonts).toEqual(fonts);
+    // The per-slide object is validated with additionalProperties:false on
+    // the server; it must stay exactly {presentation, dpi}.
+    expect(Object.keys(request.slides[0]).sort()).toEqual([
+      'dpi',
+      'presentation',
+    ]);
+  });
+
+  it('puts fonts at the REQUEST level of the HTTP batch body', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ results: [{ ok: true, ...okResult }] }),
+    });
+    await prerasterizeVisuals(
+      [visual('a')],
+      { serverUrl: 'http://svc:9000' },
+      { fonts }
+    );
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.fonts).toEqual(fonts);
+    expect(Object.keys(body.slides[0]).sort()).toEqual(['dpi', 'presentation']);
+  });
+
+  it('forwards fonts to the per-visual fallback rasterizer', async () => {
+    const render = vi.fn(async () => okResult);
+    await prerasterizeVisuals([visual('a')], { render }, { fonts });
+    expect((render.mock.calls[0][0] as any).fonts).toEqual(fonts);
+  });
+
+  it('emits NO fonts key when options.fonts is absent or empty', async () => {
+    const renderBatch = vi.fn(async () => ({
+      results: [{ ok: true, ...okResult }],
+    }));
+    await prerasterizeVisuals([visual('a')], { renderBatch }, {});
+    expect(renderBatch.mock.calls[0][0]).not.toHaveProperty('fonts');
+
+    renderBatch.mockClear();
+    await prerasterizeVisuals([visual('a')], { renderBatch }, { fonts: [] });
+    expect(renderBatch.mock.calls[0][0]).not.toHaveProperty('fonts');
+  });
+
+  it('retries the HTTP batch once without fonts when a pre-fonts server 400s', async () => {
+    // A render server predating this feature validates the body with
+    // additionalProperties:false, so `fonts` is a hard 400 rather than an
+    // ignored extra. One fontless retry turns that into the old behaviour.
+    mockFetch.mockImplementation(async (_url: string, init: any) => {
+      const body = JSON.parse(init.body);
+      if (body.fonts) return { ok: false, status: 400, text: async () => 'no' };
+      return {
+        ok: true,
+        json: async () => ({ results: [{ ok: true, ...okResult }] }),
+      };
+    });
+
+    const doc = [visual('a')];
+    const map = await prerasterizeVisuals(
+      doc,
+      { serverUrl: 'http://old:9000' },
+      { fonts }
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body).fonts).toEqual(fonts);
+    expect(JSON.parse(mockFetch.mock.calls[1][1].body)).not.toHaveProperty(
+      'fonts'
+    );
+    expect(map.get(keyOf(doc[0].props))).toMatchObject({ ok: true });
+  });
+
+  it('keeps sending fonts when the fontless retry also fails (transport error)', async () => {
+    // Only a SUCCESSFUL fontless retry proves the field was the problem; a
+    // flat-out unreachable server must not silently cost the rest of the
+    // document its font fidelity.
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 503,
+      text: async () => 'down',
+    });
+    const render = vi.fn(async () => okResult);
+
+    await prerasterizeVisuals(
+      [visual('a'), visual('b')],
+      { render, serverUrl: 'http://down:9000' },
+      { fonts }
+    );
+
+    expect((render.mock.calls[0][0] as any).fonts).toEqual(fonts);
+  });
+});

@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { Hono } from 'hono';
 import { createFormatRouter } from '../format';
 import { Container } from '../../container';
 import { PptxFormatAdapter } from '@json-to-office/jto-cli';
+import { MAX_RASTERIZE_FONTS } from '@json-to-office/shared';
+import { registerRasterizeRoute } from '../../rasterize-route';
 
 async function post(app: Hono, url: string, body: unknown) {
   const bodyStr = JSON.stringify(body);
@@ -167,4 +169,119 @@ describe('/api/pptx/rasterize/batch', () => {
     },
     60000
   );
+});
+
+// ---------------------------------------------------------------------------
+// Font payload (Area 6). These mount the shared route registrar directly with
+// injected rasterizers so they assert validation + forwarding without needing
+// LibreOffice on the box.
+// ---------------------------------------------------------------------------
+
+describe('rasterize font payload', () => {
+  const pngResult = {
+    base64DataUri: 'data:image/png;base64,AAAA',
+    width: 10,
+    height: 10,
+  };
+
+  function appWithSpies() {
+    const single = vi.fn(async () => pngResult);
+    const batch = vi.fn(async (req: { slides: unknown[] }) => ({
+      results: req.slides.map(() => ({ ok: true as const, ...pngResult })),
+    }));
+    const router = new Hono();
+    registerRasterizeRoute(router, {
+      getRasterizer: () => single as any,
+      getBatchRasterizer: () => batch as any,
+    });
+    return { app: router, single, batch };
+  }
+
+  const aFace = (overrides: Record<string, unknown> = {}) => ({
+    family: 'Inter',
+    weight: 400,
+    italic: false,
+    data: Buffer.alloc(64, 1).toString('base64'),
+    ...overrides,
+  });
+
+  it('forwards a top-level fonts array to the single rasterizer verbatim', async () => {
+    const { app: a, single } = appWithSpies();
+    const fonts = [aFace(), aFace({ weight: 700, italic: true })];
+    const res = await post(a, '/rasterize', {
+      presentation: slide(),
+      dpi: 96,
+      fonts,
+    });
+    expect(res.status).toBe(200);
+    expect(single).toHaveBeenCalledTimes(1);
+    expect((single.mock.calls[0] as any)[0].fonts).toEqual(fonts);
+  });
+
+  it('forwards a top-level fonts array to the batch rasterizer verbatim', async () => {
+    const { app: a, batch } = appWithSpies();
+    const fonts = [aFace()];
+    const res = await post(a, '/rasterize/batch', {
+      slides: [{ presentation: slide(), dpi: 96 }],
+      fonts,
+    });
+    expect(res.status).toBe(200);
+    expect((batch.mock.calls[0] as any)[0].fonts).toEqual(fonts);
+  });
+
+  it('reaches the rasterizer with NO fonts key when the request omits fonts', async () => {
+    // Guards the cache-key equivalence: a fontless request must produce the
+    // exact same engine input it did before fonts existed.
+    const { app: a, single } = appWithSpies();
+    await post(a, '/rasterize', { presentation: slide(), dpi: 96 });
+    expect((single.mock.calls[0] as any)[0]).not.toHaveProperty('fonts');
+  });
+
+  it('rejects fonts nested inside a batch SLIDE object (400)', async () => {
+    const { app: a } = appWithSpies();
+    const res = await post(a, '/rasterize/batch', {
+      slides: [{ presentation: slide(), dpi: 96, fonts: [aFace()] }],
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects an unknown key inside a font face (400)', async () => {
+    const { app: a } = appWithSpies();
+    const res = await post(a, '/rasterize', {
+      presentation: slide(),
+      fonts: [aFace({ path: '/etc/passwd' })],
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects more than MAX_RASTERIZE_FONTS faces (400)', async () => {
+    const { app: a } = appWithSpies();
+    const res = await post(a, '/rasterize', {
+      presentation: slide(),
+      fonts: Array.from({ length: MAX_RASTERIZE_FONTS + 1 }, () => aFace()),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a font payload above MAX_RASTERIZE_FONT_BYTES (400)', async () => {
+    const { app: a } = appWithSpies();
+    // Each face is just under the per-face schema cap; four of them clear
+    // the 8 MiB decoded budget without tripping the 32 MiB body limit first.
+    const big = 'A'.repeat(3 * 1024 * 1024);
+    const res = await post(a, '/rasterize', {
+      presentation: slide(),
+      fonts: Array.from({ length: 4 }, () => aFace({ data: big })),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain('font payload is too large');
+  });
+
+  it('rejects a malformed face (missing italic) (400)', async () => {
+    const { app: a } = appWithSpies();
+    const res = await post(a, '/rasterize', {
+      presentation: slide(),
+      fonts: [{ family: 'Inter', weight: 400, data: 'AA==' }],
+    });
+    expect(res.status).toBe(400);
+  });
 });

@@ -19,6 +19,9 @@ const commonExternal = [
   'ajv-formats',
   'cosmiconfig',
   'glob',
+  // Native (.node) FFI module, loaded lazily by the Windows font stager.
+  // esbuild must never try to bundle it.
+  'koffi',
 ];
 
 export default defineConfig([

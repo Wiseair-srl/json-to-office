@@ -13,6 +13,13 @@
  * its own dpi, and a cache key identical to the single-slide path, so both
  * paths share the same disk cache.
  *
+ * A request may carry `fonts`: base64 font faces that are staged for the
+ * soffice launches (via the shared FontStager pipeline) so the slide renders
+ * with the document's real families instead of whatever the host happens to
+ * have installed. Those fonts are part of the disk-cache key — the same
+ * slide is genuinely different pixels with and without them, and the cache
+ * is shared process-wide across callers.
+ *
  * Every engine run works against a wall-clock deadline (one batch-scaled
  * soffice window plus one pdftoppm window) so a wedged conversion fails the
  * remaining slides quickly instead of holding the caller — and its
@@ -35,7 +42,11 @@ import {
   type PptxRasterizeResult,
   type PptxRasterizeBatchSlideResult,
   type PptxRasterizeFailureStage,
+  type RasterizeFontFace,
 } from '@json-to-office/shared';
+import { fromRasterizeFontFaces } from '@json-to-office/shared/fonts/node';
+import { getFontStager } from './font-staging/index.js';
+import type { FontStageHandle } from './font-staging/index.js';
 
 const SOFFICE_TIMEOUT_MS = 60000;
 /** Extra soffice budget per additional slide in a batch launch. */
@@ -56,13 +67,26 @@ const MAX_BUFFER = 64 * 1024 * 1024;
 function exec(
   binary: string,
   args: string[],
-  timeoutMs: number
+  timeoutMs: number,
+  /**
+   * Extra env for the child, merged over `process.env`. Carries a font
+   * stager's `envOverrides` (FONTCONFIG_FILE / JTO_FONT_PATHS /
+   * SAL_DISABLE_SKIA). Only the soffice CONVERSION launches get it: the
+   * memoized `--version` probe must not have its resolution polluted, and
+   * pdftoppm has no use for it.
+   */
+  env?: Record<string, string>
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     execFile(
       binary,
       args,
-      { timeout: timeoutMs, maxBuffer: MAX_BUFFER, windowsHide: true },
+      {
+        timeout: timeoutMs,
+        maxBuffer: MAX_BUFFER,
+        windowsHide: true,
+        env: env ? { ...process.env, ...env } : process.env,
+      },
       (error) => (error ? reject(error) : resolve())
     );
   });
@@ -299,21 +323,50 @@ async function writeCacheAtomic(
   }
 }
 
-function cacheKey(request: {
+/**
+ * Identity of a font set for cache-keying. Order-insensitive (the per-face
+ * digests are sorted) and content-addressed (hashes the decoded bytes, not
+ * the base64 blob) so the same faces supplied in a different order, or
+ * re-fetched to identical bytes, still hit the same cache entry.
+ */
+export function fontsDigest(
+  fonts?: readonly RasterizeFontFace[]
+): string | undefined {
+  if (!fonts || fonts.length === 0) return undefined;
+  const parts = fonts
+    .map(
+      (f) =>
+        `${f.family}|${f.weight}|${f.italic ? 'i' : 'r'}|` +
+        crypto.createHash('sha256').update(f.data).digest('hex')
+    )
+    .sort();
+  return crypto.createHash('sha256').update(parts.join('\n')).digest('hex');
+}
+
+export function cacheKey(request: {
   presentation: unknown;
   dpi: number;
   baseDir?: string;
+  fontsKey?: string;
 }): string {
   return (
     crypto
       .createHash('sha256')
       // baseDir joins the key: the same relative asset path means different
       // pixels under different base directories (#142).
+      //
+      // fontsKey joins the key for the same reason: the same slide renders
+      // DIFFERENT pixels with and without the document's fonts staged. This
+      // cache is process-wide, shared by /rasterize and /rasterize/batch,
+      // shared by every caller of the hosted render server, and it survives
+      // restarts — keying without fonts would serve one document's
+      // Inter-rendered PNG to a document that never asked for Inter.
       .update(
         JSON.stringify({
           p: request.presentation,
           dpi: request.dpi,
           base: request.baseDir,
+          f: request.fontsKey ?? null,
         })
       )
       .digest('hex')
@@ -377,10 +430,15 @@ const sofficeArgs = (
 async function rasterizeSlidesWithEngine(
   slides: Array<{ presentation: unknown; dpi: number }>,
   baseDir: string | undefined,
-  cacheDir: string | null
+  cacheDir: string | null,
+  fonts?: readonly RasterizeFontFace[]
 ): Promise<EngineSlideResult[]> {
   const results: EngineSlideResult[] = new Array(slides.length);
   if (cacheDir) knownCacheDirs.add(cacheDir);
+  // Request-level, so every slide in this run shares one font set — which is
+  // exactly why it can join the per-slide cache key without being per-slide
+  // data.
+  const fontsKey = fontsDigest(fonts);
 
   // 1. Dedupe by content-addressed key: identical slides build, convert, and
   //    hit the cache exactly once, then fan out to every requesting index.
@@ -391,6 +449,7 @@ async function rasterizeSlidesWithEngine(
       presentation: slide.presentation,
       dpi: slide.dpi,
       baseDir,
+      fontsKey,
     });
     const existing = jobsByKey.get(key);
     if (existing) {
@@ -452,6 +511,9 @@ async function rasterizeSlidesWithEngine(
   //    content error; the remaining slides still convert.
   const corePptx = await import('@json-to-office/core-pptx');
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-visual-'));
+  // Declared out here so the `finally` can always close it, however the try
+  // exits. Assigned only after we know a soffice launch is actually needed.
+  let stageHandle: FontStageHandle | null = null;
   try {
     const built: SlideJob[] = [];
     for (let j = 0; j < uncached.length; j++) {
@@ -471,6 +533,30 @@ async function rasterizeSlidesWithEngine(
       }
     }
     if (built.length === 0) return results;
+
+    // Stage the request's fonts for the soffice launches. Deliberately AFTER
+    // the cache probe and the build loop: a request whose slides all hit the
+    // disk cache, or whose decks all failed to build, launches no soffice at
+    // all and must not pay for writing N font files (and, on macOS, four
+    // profile trees).
+    //
+    // profileDirs MUST enumerate the isolated-retry profiles too. They are
+    // distinct UserInstallation directories, and the macOS stager's macro is
+    // only reachable from a profile it was seeded into — miss them and a
+    // mid-batch soffice crash yields fontless PNGs for the salvaged slides.
+    const profileDirs = [
+      path.join(tempDir, 'profile'),
+      ...Array.from({ length: MAX_ISOLATED_RETRIES }, (_, r) =>
+        path.join(tempDir, `profile-retry-${r}`)
+      ),
+    ];
+    const stageFonts = fonts?.length ? fromRasterizeFontFaces(fonts) : [];
+    if (stageFonts.length > 0) {
+      stageHandle = await getFontStager().stage(stageFonts, tempDir, {
+        profileDirs,
+      });
+    }
+    const sofficeEnv = stageHandle?.envOverrides;
 
     const [soffice, pdftoppm] = await Promise.all([
       resolveSoffice(),
@@ -501,11 +587,12 @@ async function rasterizeSlidesWithEngine(
       await exec(
         soffice,
         sofficeArgs(
-          path.join(tempDir, 'profile'),
+          profileDirs[0],
           tempDir,
           built.map((job) => job.pptxPath)
         ),
-        batchTimeoutMs
+        batchTimeoutMs,
+        sofficeEnv
       );
     } catch (error) {
       batchError = error;
@@ -538,10 +625,16 @@ async function rasterizeSlidesWithEngine(
         try {
           await exec(
             soffice,
-            sofficeArgs(path.join(tempDir, `profile-retry-${r}`), tempDir, [
-              job.pptxPath,
-            ]),
-            retryBudget
+            // Same directories seeded in `profileDirs` above (index 0 is the
+            // batch profile, so retry `r` is `profileDirs[r + 1]`); the
+            // literal is kept as the fallback for an out-of-range retry.
+            sofficeArgs(
+              profileDirs[r + 1] ?? path.join(tempDir, `profile-retry-${r}`),
+              tempDir,
+              [job.pptxPath]
+            ),
+            retryBudget,
+            sofficeEnv
           );
         } catch (error) {
           retryError = error;
@@ -608,6 +701,11 @@ async function rasterizeSlidesWithEngine(
 
     return results;
   } finally {
+    // Order matters: FontconfigStager.cleanup() restores write permission on
+    // the staged fonts dir (stage() freezes it to 0o555), and rm cannot
+    // unlink inside a non-writable directory. Reversed, the whole temp tree
+    // leaks — silently, because the rm error is swallowed.
+    if (stageHandle) await stageHandle.cleanup().catch(() => {});
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   }
 }
@@ -637,7 +735,8 @@ export function createLibreOfficePptxRasterizer(options?: {
     const [result] = await rasterizeSlidesWithEngine(
       [{ presentation: request.presentation, dpi: request.dpi }],
       request.baseDir,
-      cacheDir
+      cacheDir,
+      request.fonts
     );
     if (!result) throw new Error('Rasterization produced no result.');
     if (!result.ok) {
@@ -674,7 +773,8 @@ export function createLibreOfficePptxBatchRasterizer(options?: {
         dpi: slide.dpi ?? DEFAULT_VISUAL_DPI,
       })),
       request.baseDir,
-      cacheDir
+      cacheDir,
+      request.fonts
     );
     // Strip the engine-internal `cause` (non-serializable) from the results.
     return {

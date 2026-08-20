@@ -18,12 +18,15 @@ export type {
   PptxRasterizeBatchResult,
   PptxRasterizeFailureStage,
   PptxBatchRasterizer,
+  RasterizeFontFace,
 } from './types/services';
 export {
   DEFAULT_VISUAL_DPI,
   MIN_VISUAL_DPI,
   MAX_VISUAL_DPI,
   MAX_RASTERIZE_BATCH_SLIDES,
+  MAX_RASTERIZE_FONTS,
+  MAX_RASTERIZE_FONT_BYTES,
   clampVisualDpi,
 } from './types/services';
 

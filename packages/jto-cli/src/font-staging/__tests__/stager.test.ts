@@ -83,6 +83,25 @@ describe('FontconfigStager', () => {
     expect(aFiles[0]).toMatch(new RegExp(`-${process.pid}-`));
     expect(bFiles[0]).toMatch(new RegExp(`-${process.pid}-`));
   });
+
+  it('cleanup() restores write permission so the caller can rm the temp tree', async () => {
+    // stage() freezes <tempDir>/fonts to 0o555. You cannot unlink entries in
+    // a non-writable directory, so without cleanup the caller's
+    // fs.rm(tempDir, { recursive: true }) fails with EACCES — silently, since
+    // both callers swallow that error, leaking the whole tree.
+    const stager = new FontconfigStager();
+    const handle = await stager.stage(oneFont(), tempDir);
+    await handle.cleanup();
+    await expect(fs.rm(tempDir, { recursive: true })).resolves.toBeUndefined();
+    await expect(fs.access(tempDir)).rejects.toThrow();
+  });
+
+  it('freezes the fonts dir read-only while the conversion window is open', async () => {
+    const stager = new FontconfigStager();
+    await stager.stage(oneFont(), tempDir);
+    const mode = (await fs.stat(path.join(tempDir, 'fonts'))).mode & 0o777;
+    expect(mode & 0o200).toBe(0);
+  });
 });
 
 describe('converter ordering (stage → spawn → cleanup)', () => {
@@ -267,6 +286,62 @@ describe.skipIf(process.platform !== 'darwin')('MacOSCoreTextStager', () => {
     const fontsDir = path.join(tempDir, 'fonts');
     const entries = await fs.readdir(fontsDir);
     expect(entries).toHaveLength(1);
+  });
+
+  it('seeds the macro + XCU into EVERY directory named in profileDirs', async () => {
+    // The pptx rasterizer launches soffice against a batch profile plus one
+    // profile per isolated retry. A profile that was never seeded runs no
+    // macro and silently renders with fallback fonts, so every one of them
+    // must be seeded.
+    const stager = new MacOSCoreTextStager();
+    const profileDirs = [
+      path.join(tempDir, 'profile'),
+      path.join(tempDir, 'profile-retry-0'),
+      path.join(tempDir, 'profile-retry-1'),
+    ];
+    await stager.stage(oneFont(), tempDir, { profileDirs });
+
+    for (const profileDir of profileDirs) {
+      const macro = await fs.readFile(
+        path.join(
+          profileDir,
+          'user',
+          'Scripts',
+          'python',
+          'JtoFontRegister.py'
+        ),
+        'utf8'
+      );
+      const xcu = await fs.readFile(
+        path.join(profileDir, 'user', 'registrymodifications.xcu'),
+        'utf8'
+      );
+      expect(macro).toContain('CTFontManagerRegisterFontsForURL');
+      expect(xcu).toContain('OnStartApp');
+    }
+    // The converter's default profile is NOT seeded when profileDirs is given.
+    await expect(
+      fs.access(path.join(tempDir, 'user-profile'))
+    ).rejects.toThrow();
+  });
+
+  it('falls back to <tempDir>/user-profile when profileDirs is omitted', async () => {
+    // Preserves LibreOfficeConverterService's behaviour, which passes no
+    // options and spawns with -env:UserInstallation=<tempDir>/user-profile.
+    const stager = new MacOSCoreTextStager();
+    await stager.stage(oneFont(), tempDir, {});
+    await expect(
+      fs.access(
+        path.join(
+          tempDir,
+          'user-profile',
+          'user',
+          'Scripts',
+          'python',
+          'JtoFontRegister.py'
+        )
+      )
+    ).resolves.toBeUndefined();
   });
 });
 

@@ -8,6 +8,8 @@ import { resolveThemeContext } from '../core/generationContext';
 import type { GenerationWarning } from '@json-to-office/shared-docx';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from '../core/fontResolution';
+import { collectVisualProps } from '../core/prerasterizeVisuals';
+import { toRasterizeFontFaces } from '@json-to-office/shared/fonts/node';
 import type {
   ExtendedReportComponent,
   DocumentGeneratorBuilder,
@@ -588,7 +590,22 @@ function createBuilderImpl<
       // `fonts.onResolved` internally when a listener is registered
       // (LibreOffice preview stager). DOCX output itself never embeds
       // bytes; recipients rely on system-installed fonts.
-      await resolveDocumentFonts(modedDoc, modedTheme, state.fonts, warnings);
+      //
+      // A `visual` rasterizes out-of-process via LibreOffice, which needs
+      // real font files, so a visual-bearing document forces materialization
+      // even with no listener registered — mirrors core/generator.ts.
+      const hasVisual = collectVisualProps(modedDoc).length > 0;
+      const resolvedFonts = await resolveDocumentFonts(
+        modedDoc,
+        modedTheme,
+        state.fonts,
+        warnings,
+        hasVisual
+      );
+      // Gate on the ENCODED faces: safe-only fonts resolve to entries with
+      // no sources and encode to nothing, and such a document must send no
+      // `fonts` key at all (see core/generator.ts).
+      const visualFonts = hasVisual ? toRasterizeFontFaces(resolvedFonts) : [];
 
       // Use the document generation pipeline directly
       const packageOptions = {
@@ -606,6 +623,7 @@ function createBuilderImpl<
         services: state.services,
         bypassCache: !state.enableCache,
         baseDir: options?.baseDir ?? state.baseDir,
+        ...(visualFonts.length > 0 && { visualFonts }),
       });
 
       // Build preservedDefinition iff the caller opted in. Reuses the same

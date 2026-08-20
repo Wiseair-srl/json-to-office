@@ -4,6 +4,7 @@ import type { TocHeadingEntry } from '../core/collectTocHeadings';
 import type {
   ServicesConfig,
   PptxRasterizeBatchSlideResult,
+  RasterizeFontFace,
 } from '@json-to-office/shared';
 
 // Import types from shared-docx that core needs for its internal use
@@ -227,6 +228,13 @@ export interface RenderContext {
    * consults it first and falls back to per-visual rasterization on a miss.
    */
   visualRasterResults?: ReadonlyMap<string, PptxRasterizeBatchSlideResult>;
+  /**
+   * Per-document font faces (base64) forwarded to the pptx rasterizer with
+   * every `visual`. Seeded by renderDocument from the caller's
+   * `visualFonts`; consumed by `renderVisualComponent`'s per-visual
+   * fallback so a pre-pass miss still rasterizes with the right fonts.
+   */
+  visualFonts?: readonly RasterizeFontFace[];
   /**
    * Per-document TOC entries collected before rendering (#174). Seeded by the
    * renderDocument pre-pass; `renderTocComponent` filters them by depth, scope

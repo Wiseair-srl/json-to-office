@@ -330,4 +330,74 @@ describe('components/visual', () => {
       );
     });
   });
+  describe('context.visualFonts forwarding (Area 6)', () => {
+    const fonts = [
+      { family: 'Inter', weight: 400, italic: false, data: 'AAECAw==' },
+    ];
+
+    it('forwards context.visualFonts to an in-process render on a pre-pass miss', async () => {
+      const render = vi.fn().mockResolvedValue({
+        base64DataUri: PNG_DATA_URI,
+        width: 1200,
+        height: 800,
+      });
+      const context = {
+        services: { pptx: { render } },
+        visualFonts: fonts,
+      } as any;
+
+      await renderVisualComponent(
+        visualComponent(),
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
+      );
+
+      expect(render.mock.calls[0][0].fonts).toEqual(fonts);
+    });
+
+    it('forwards context.visualFonts into the per-visual HTTP body', async () => {
+      const context = {
+        services: { pptx: { serverUrl: 'http://svc:9000' } },
+        visualFonts: fonts,
+      } as any;
+
+      await renderVisualComponent(
+        visualComponent(),
+        createMockTheme(),
+        TEST_THEME_NAME,
+        context
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.fonts).toEqual(fonts);
+    });
+
+    it('emits no fonts key when the context carries none', async () => {
+      const render = vi.fn().mockResolvedValue({
+        base64DataUri: PNG_DATA_URI,
+        width: 1200,
+        height: 800,
+      });
+      await renderVisualComponent(
+        visualComponent(),
+        createMockTheme(),
+        TEST_THEME_NAME,
+        { services: { pptx: { render } } } as any
+      );
+      expect(render.mock.calls[0][0]).not.toHaveProperty('fonts');
+    });
+
+    it('leaves visualRasterKey untouched by fonts (three args, by design)', () => {
+      // The pre-pass map lives inside ONE renderDocument call, which has
+      // exactly one font set, so pre-pass and render-time can never disagree
+      // about fonts. Keying on them here would only fragment the map. The
+      // load-bearing font key is the rasterizer's on-disk cache key.
+      expect(visualRasterKey.length).toBe(3);
+      const presentation = buildVisualPresentation(visualComponent().props);
+      expect(visualRasterKey(presentation, 200)).toBe(
+        visualRasterKey(presentation, 200)
+      );
+    });
+  });
 });

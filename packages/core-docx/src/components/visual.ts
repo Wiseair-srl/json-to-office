@@ -27,6 +27,7 @@ import {
   DEFAULT_VISUAL_DPI,
   type PptxServiceConfig,
   type PptxRasterizeResult,
+  type RasterizeFontFace,
 } from '@json-to-office/shared';
 
 export const DEFAULT_RASTERIZE_SERVER_URL = 'http://localhost:7802';
@@ -112,6 +113,13 @@ export function visualToImageProps(
  * services) the target server. Keys the per-document pre-rasterization map
  * (#153); the pre-pass and the render-time lookup MUST use this one function
  * so the two sides cannot drift.
+ *
+ * FONTS ARE DELIBERATELY NOT PART OF THIS KEY. The map is built and consumed
+ * inside a single `renderDocument` call, which has exactly one font set, so
+ * the pre-pass and the render-time lookup can never disagree about fonts.
+ * The load-bearing font key is the RASTERIZER's on-disk cache key, which is
+ * process-wide and shared across documents and users — see `fontsDigest` in
+ * jto-cli's pptx-rasterizer.ts.
  */
 export function visualRasterKey(
   presentation: unknown,
@@ -152,7 +160,13 @@ export async function rasterizeVisualSlide(
   dpi: number,
   propsServerUrl: string | undefined,
   serviceConfig: PptxServiceConfig | undefined,
-  baseDir: string | undefined
+  baseDir: string | undefined,
+  /**
+   * Document fonts staged for the rasterizer's LibreOffice launch. Added
+   * conditionally below so a fontless document's request body stays exactly
+   * what it was before fonts existed.
+   */
+  fonts?: readonly RasterizeFontFace[]
 ): Promise<PptxRasterizeResult> {
   if (!isNodeEnvironment()) {
     throw new Error(
@@ -163,7 +177,12 @@ export async function rasterizeVisualSlide(
 
   // In-process renderer wins (ideal for tests and single-process hosts).
   if (serviceConfig?.render) {
-    return serviceConfig.render({ presentation, dpi, baseDir });
+    return serviceConfig.render({
+      presentation,
+      dpi,
+      baseDir,
+      ...(fonts?.length ? { fonts: [...fonts] } : {}),
+    });
   }
 
   const serverUrl = resolveServiceUrl(
@@ -175,7 +194,12 @@ export async function rasterizeVisualSlide(
   const response = await postJsonToService({
     url: serverUrl,
     path: '/rasterize',
-    body: { presentation, dpi, ...(baseDir !== undefined && { baseDir }) },
+    body: {
+      presentation,
+      dpi,
+      ...(baseDir !== undefined && { baseDir }),
+      ...(fonts?.length ? { fonts } : {}),
+    },
     headers: serviceConfig?.headers,
     serviceLabel: 'PPTX rasterization service',
     onUnreachable: (url, cause) =>
@@ -245,7 +269,8 @@ export async function renderVisualComponent(
       dpi,
       props.serverUrl,
       serviceConfig,
-      getBaseDir()
+      getBaseDir(),
+      context?.visualFonts
     );
   }
 

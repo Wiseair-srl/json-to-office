@@ -1,6 +1,8 @@
 /**
- * Factory entry point for the font staging pipeline used by the
- * LibreOffice-based PDF preview.
+ * Factory entry point for the font staging pipeline shared by every
+ * LibreOffice launch in the toolchain: the playground's PDF preview
+ * converter (`@json-to-office/jto`) and the pptx rasterizer that backs docx
+ * `visual` components (`../pptx-rasterizer.ts`).
  */
 
 import type { FontStager } from './types';
@@ -9,7 +11,7 @@ import { FontconfigStager } from './fontconfig-stager';
 import { WindowsFontStager } from './windows-stager';
 import { MacOSCoreTextStager } from './macos-stager';
 
-export type { FontStager, FontStageHandle } from './types';
+export type { FontStager, FontStageHandle, FontStageOptions } from './types';
 
 const cached = new Map<NodeJS.Platform, FontStager>();
 

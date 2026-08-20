@@ -111,3 +111,84 @@ describe('resolveDocumentFonts strict mode (docx)', () => {
     expect(calls).toHaveLength(1);
   });
 });
+
+describe('resolveDocumentFonts forceMaterialize (Area 6)', () => {
+  // Inline base64 keeps these tests off the network: `kind: "data"` resolves
+  // entirely in-process.
+  const TTF = Buffer.concat([
+    Buffer.from([0x00, 0x01, 0x00, 0x00]),
+    Buffer.alloc(64),
+  ]).toString('base64');
+
+  const interEntry = {
+    id: 'Inter',
+    family: 'Inter',
+    sources: [{ kind: 'data' as const, data: TTF, weight: 400 }],
+  };
+
+  it('returns [] with no listener and forceMaterialize false (status quo)', async () => {
+    const resolved = await resolveDocumentFonts(
+      docReferencingInter(),
+      MINIMAL_THEME,
+      { mode: 'custom', extraEntries: [interEntry] },
+      [],
+      false
+    );
+    expect(resolved).toEqual([]);
+  });
+
+  it('resolves and returns fonts with forceMaterialize true and NO listener', async () => {
+    // The plain CLI path registers no listener, but a document with a
+    // `visual` still needs real font bytes for the out-of-process render.
+    const resolved = await resolveDocumentFonts(
+      docReferencingInter(),
+      MINIMAL_THEME,
+      { mode: 'custom', extraEntries: [interEntry] },
+      [],
+      true
+    );
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0].family).toBe('Inter');
+    expect(resolved[0].sources[0].data.length).toBeGreaterThan(0);
+  });
+
+  it('still fires the listener exactly once when both are present', async () => {
+    const calls: unknown[] = [];
+    const resolved = await resolveDocumentFonts(
+      docReferencingInter(),
+      MINIMAL_THEME,
+      {
+        mode: 'custom',
+        extraEntries: [interEntry],
+        onResolved: (r) => calls.push(r),
+      },
+      [],
+      true
+    );
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toBe(resolved);
+  });
+
+  it('does not throw on the force path when no callback is registered', async () => {
+    await expect(
+      resolveDocumentFonts(
+        docReferencingInter(),
+        MINIMAL_THEME,
+        { mode: 'custom', extraEntries: [interEntry] },
+        [],
+        true
+      )
+    ).resolves.toBeDefined();
+  });
+
+  it('returns [] for a document that references no fonts at all, even forced', async () => {
+    const plain = {
+      name: 'docx',
+      props: {},
+      children: [{ name: 'paragraph', props: { text: 'x' } }],
+    } as any;
+    await expect(
+      resolveDocumentFonts(plain, MINIMAL_THEME, undefined, [], true)
+    ).resolves.toEqual([]);
+  });
+});

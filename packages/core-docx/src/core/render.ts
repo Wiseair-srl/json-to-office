@@ -62,7 +62,7 @@ import {
   initializeComponentCache,
 } from './cached-render';
 import { MemoryCache } from '../cache';
-import type { ServicesConfig } from '@json-to-office/shared';
+import type { ServicesConfig, RasterizeFontFace } from '@json-to-office/shared';
 import {
   renderHeadingComponent,
   renderParagraphComponent,
@@ -107,6 +107,13 @@ interface RenderDocumentOptions {
    * against. Defaults to `process.cwd()` when absent (#142).
    */
   baseDir?: string;
+  /**
+   * Font faces (base64) shipped with every `visual` rasterization so the
+   * out-of-process LibreOffice renders the slide with the document's real
+   * fonts instead of a system fallback. Produced by the caller from
+   * `resolveDocumentFonts` via `toRasterizeFontFaces`.
+   */
+  visualFonts?: RasterizeFontFace[];
 }
 
 /**
@@ -224,6 +231,7 @@ async function renderDocumentScoped(
     structure.themeName
   );
   context.services = options?.services;
+  context.visualFonts = options?.visualFonts;
 
   // Coalesce the document's visual rasterizations into batched service calls
   // before the (strictly sequential) component walk begins (#153). Purely an
@@ -234,7 +242,7 @@ async function renderDocumentScoped(
     const visualRasterResults = await prerasterizeVisuals(
       layout.sections,
       options?.services?.pptx,
-      { baseDir: getBaseDir() }
+      { baseDir: getBaseDir(), fonts: options?.visualFonts }
     );
     if (visualRasterResults.size > 0) {
       context.visualRasterResults = visualRasterResults;

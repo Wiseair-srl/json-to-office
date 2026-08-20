@@ -23,6 +23,7 @@ import {
   type PptxServiceConfig,
   type PptxRasterizeBatchResult,
   type PptxRasterizeBatchSlideResult,
+  type RasterizeFontFace,
 } from '@json-to-office/shared';
 import type { VisualProps } from '@json-to-office/shared-docx';
 import {
@@ -47,6 +48,13 @@ export interface PrerasterizeOptions {
   baseDir?: string;
   /** Max concurrent per-visual fallback rasterizations (default 4). */
   concurrency?: number;
+  /**
+   * Font faces staged for every slide's LibreOffice render. Request-level,
+   * like `baseDir` — never per-slide: the batch schema validates each slide
+   * object with `additionalProperties: false`, and a uniform slide shape is
+   * what lets the server share one disk-cache key with the single path.
+   */
+  fonts?: readonly RasterizeFontFace[];
 }
 
 /** Cumulative pre-pass counters for cache observability (#156). */
@@ -238,6 +246,15 @@ export async function prerasterizeVisuals(
     Math.max(1, options.concurrency ?? DEFAULT_FALLBACK_CONCURRENCY)
   );
 
+  // Version skew guard. Both rasterize schemas validate with
+  // `additionalProperties: false`, so a pre-fonts render server answers a
+  // `fonts`-bearing body with a hard 400 instead of ignoring the field. Once
+  // a fontless retry has proven that the field was the problem, stop sending
+  // it for the rest of the document: fontless pixels beat a failed render.
+  let fontsRejected = false;
+  const requestFonts = (): readonly RasterizeFontFace[] | undefined =>
+    fontsRejected || !options.fonts?.length ? undefined : options.fonts;
+
   /** Per-visual fallback: exactly the render-time code path, bounded. */
   const rasterizeIndividually = async (
     chunk: VisualRasterTarget[]
@@ -251,7 +268,8 @@ export async function prerasterizeVisuals(
               target.dpi,
               undefined,
               serviceConfig,
-              options.baseDir
+              options.baseDir,
+              requestFonts()
             );
             map.set(target.key, { ok: true, ...result });
           } catch (error) {
@@ -272,6 +290,7 @@ export async function prerasterizeVisuals(
             dpi: target.dpi,
           })),
           ...(options.baseDir !== undefined && { baseDir: options.baseDir }),
+          ...(options.fonts?.length ? { fonts: [...options.fonts] } : {}),
         });
         if (!applyBatchResponse(chunk, response, map)) {
           throw new Error(
@@ -313,8 +332,10 @@ export async function prerasterizeVisuals(
     serviceConfig?.serverUrl,
     DEFAULT_RASTERIZE_SERVER_URL
   );
-  for (const chunk of chunksOf(unique, MAX_RASTERIZE_BATCH_SLIDES)) {
-    let applied = false;
+  const postBatch = async (
+    chunk: VisualRasterTarget[],
+    fonts: readonly RasterizeFontFace[] | undefined
+  ): Promise<boolean> => {
     try {
       const response = await postJsonToService({
         url: serverUrl,
@@ -325,6 +346,7 @@ export async function prerasterizeVisuals(
             dpi: target.dpi,
           })),
           ...(options.baseDir !== undefined && { baseDir: options.baseDir }),
+          ...(fonts?.length ? { fonts } : {}),
         },
         headers: serviceConfig?.headers,
         timeoutMs:
@@ -333,9 +355,26 @@ export async function prerasterizeVisuals(
         onUnreachable: (url, cause) =>
           `PPTX rasterization service is not reachable at ${url}. Cause: ${cause}`,
       });
-      applied = applyBatchResponse(chunk, await response.json(), map);
+      return applyBatchResponse(chunk, await response.json(), map);
     } catch {
-      applied = false;
+      return false;
+    }
+  };
+
+  for (const chunk of chunksOf(unique, MAX_RASTERIZE_BATCH_SLIDES)) {
+    const fonts = requestFonts();
+    let applied = await postBatch(chunk, fonts);
+    if (!applied && fonts) {
+      // A pre-fonts render server rejects the whole body with 400 rather
+      // than ignoring the unknown field, and the usual batch→per-visual
+      // fallback does not help because /rasterize rejects it identically.
+      // Retry once without fonts; only latch `fontsRejected` when dropping
+      // them actually fixed it, so a transient transport error does not cost
+      // the rest of the document its font fidelity.
+      if (await postBatch(chunk, undefined)) {
+        fontsRejected = true;
+        applied = true;
+      }
     }
     if (!applied) await rasterizeIndividually(chunk);
   }

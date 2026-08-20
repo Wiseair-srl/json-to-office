@@ -14,3 +14,9 @@ export { FontDiskCache } from './cache/disk-cache';
 // it (the core-docx/core-pptx server-side pipelines do).
 export { fetchVariableFontSource } from './sources/variable-fetcher';
 export type { VariableFetchOptions } from './sources/variable-fetcher';
+// Buffer ⇄ base64 for the pptx rasterizer's font payload. Node-only for the
+// same reason as the rest of this subpath: it speaks `Buffer`.
+export {
+  toRasterizeFontFaces,
+  fromRasterizeFontFaces,
+} from './rasterize-faces';

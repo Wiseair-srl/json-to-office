@@ -29,6 +29,9 @@ const DEFAULT_PORT = 10_000;
 const DEFAULT_PROXY_TIMEOUT_MS = 30_000;
 const DEFAULT_HEALTH_TIMEOUT_MS = 2_000;
 const DEFAULT_EXPORT_BODY_BYTES = 4 * 1024 * 1024;
+// A rasterize body carries the presentation JSON and, since fonts became
+// part of the protocol, the document's base64 font faces. MAX_RASTERIZE_BODY_SIZE
+// is the operator knob when a document references many faces.
 const DEFAULT_RASTERIZE_BODY_BYTES = 32 * 1024 * 1024;
 const DEFAULT_RESPONSE_BYTES = 24 * 1024 * 1024;
 const MAX_CHART_DIMENSION = 4_096;
@@ -276,6 +279,9 @@ export function createRenderServerApp(options: RenderServerOptions = {}): Hono {
       process.env.MAX_RENDER_RESPONSE_SIZE,
       DEFAULT_RESPONSE_BYTES
     );
+  // Each concurrent rasterize now also writes the request's font files (and,
+  // on macOS, its soffice profile trees) into its own tempDir, so this bounds
+  // disk churn as well as CPU.
   const maxConcurrent =
     options.maxConcurrent ??
     positiveInteger(process.env.MAX_CONCURRENT_RENDERS, production ? 4 : 16);
