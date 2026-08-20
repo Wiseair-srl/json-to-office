@@ -2,7 +2,7 @@
  * Curated list of popular Google Fonts for picker autocomplete.
  *
  * Not exhaustive — the full Google Fonts library has ~1500 families.
- * This is ~30 names known to cover most real-world use cases.
+ * This is ~37 names known to cover most real-world use cases.
  */
 
 export interface PopularGoogleFont {
@@ -100,6 +100,24 @@ export const POPULAR_GOOGLE_FONTS: readonly PopularGoogleFont[] = [
     weights: [100, 200, 300, 400, 500, 600, 700],
     hasItalic: true,
   },
+  {
+    family: 'Archivo',
+    category: 'sans',
+    weights: [100, 200, 300, 400, 500, 600, 700, 800, 900],
+    hasItalic: true,
+  },
+  {
+    family: 'Geist',
+    category: 'sans',
+    weights: [100, 200, 300, 400, 500, 600, 700, 800, 900],
+    hasItalic: true,
+  },
+  {
+    family: 'Space Grotesk',
+    category: 'sans',
+    weights: [300, 400, 500, 600, 700],
+    hasItalic: false,
+  },
 
   // Serif
   {
@@ -174,6 +192,12 @@ export const POPULAR_GOOGLE_FONTS: readonly PopularGoogleFont[] = [
     family: 'Space Mono',
     category: 'mono',
     weights: [400, 700],
+    hasItalic: true,
+  },
+  {
+    family: 'Geist Mono',
+    category: 'mono',
+    weights: [100, 200, 300, 400, 500, 600, 700, 800, 900],
     hasItalic: true,
   },
 

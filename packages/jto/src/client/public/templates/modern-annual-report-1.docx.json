@@ -302,7 +302,8 @@
               "props": {
                 "text": "Integrated",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 50,
                   "lineSpacing": {
                     "type": "multiple",
@@ -316,7 +317,8 @@
               "props": {
                 "text": "Annual Report",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 50,
                   "lineSpacing": {
                     "type": "multiple",
@@ -423,7 +425,8 @@
               "props": {
                 "text": "Content",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 70,
                   "lineSpacing": {
                     "type": "multiple",
@@ -437,7 +440,8 @@
               "props": {
                 "text": "Index",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 70,
                   "lineSpacing": {
                     "type": "multiple",
@@ -497,7 +501,7 @@
               "props": {
                 "text": "001",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 25,
                   "bold": true
                 }
@@ -550,7 +554,7 @@
               "props": {
                 "text": "002",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 25,
                   "bold": true
                 }
@@ -603,7 +607,7 @@
               "props": {
                 "text": "003",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 25,
                   "bold": true
                 }
@@ -656,7 +660,7 @@
               "props": {
                 "text": "004",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 25,
                   "bold": true
                 }
@@ -709,7 +713,7 @@
               "props": {
                 "text": "005",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 25,
                   "bold": true
                 }
@@ -788,7 +792,8 @@
               "props": {
                 "text": "Olivia Hart",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 80
                 }
               }
@@ -850,7 +855,8 @@
               "props": {
                 "text": "CEO – Your Company",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "lineSpacing": {
                     "type": "multiple",
@@ -880,7 +886,8 @@
               "props": {
                 "text": "What She Say",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -968,7 +975,8 @@
               "props": {
                 "text": "CEO Message",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 50,
                   "lineSpacing": {
                     "type": "multiple",
@@ -1024,7 +1032,8 @@
               "props": {
                 "text": "Company",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 65,
                   "color": "background",
                   "lineSpacing": {
@@ -1039,7 +1048,8 @@
               "props": {
                 "text": "Overview",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 65,
                   "color": "background",
                   "lineSpacing": {
@@ -1232,7 +1242,7 @@
               "props": {
                 "text": "Business Sector",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 18,
                   "bold": true,
                   "lineSpacing": {
@@ -1317,7 +1327,7 @@
               "props": {
                 "text": "Share Listing",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 18,
                   "bold": true,
                   "lineSpacing": {
@@ -1373,7 +1383,7 @@
               "props": {
                 "text": "Authorized Capital",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 18,
                   "bold": true,
                   "lineSpacing": {
@@ -1458,7 +1468,7 @@
               "props": {
                 "text": "Paid-Up Capital",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 18,
                   "bold": true,
                   "lineSpacing": {
@@ -1544,7 +1554,7 @@
               "props": {
                 "text": "About Us",
                 "font": {
-                  "family": "Inter SemiBold",
+                  "family": "Inter",
                   "size": 65,
                   "bold": true,
                   "lineSpacing": {
@@ -2266,7 +2276,8 @@
               "props": {
                 "text": "4K+",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 45,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2296,7 +2307,8 @@
               "props": {
                 "text": "6K+",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 45,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2326,7 +2338,8 @@
               "props": {
                 "text": "12K+",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 45,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2356,7 +2369,8 @@
               "props": {
                 "text": "3K+",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 45,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2632,7 +2646,8 @@
               "props": {
                 "text": "Founding Vision",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2662,7 +2677,8 @@
               "props": {
                 "text": "Expansion Into Cloud ",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2676,7 +2692,8 @@
               "props": {
                 "text": "Infrasturcture",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2764,7 +2781,8 @@
               "props": {
                 "text": "AI & Data Analytics",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2778,7 +2796,8 @@
               "props": {
                 "text": "Integration",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2808,7 +2827,8 @@
               "props": {
                 "text": "Global Market",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2822,7 +2842,8 @@
               "props": {
                 "text": "Diversification",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2910,7 +2931,8 @@
               "props": {
                 "text": "Sustainable",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2924,7 +2946,8 @@
               "props": {
                 "text": "Technology",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2954,7 +2977,8 @@
               "props": {
                 "text": "Delivering",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -2968,7 +2992,8 @@
               "props": {
                 "text": "Stakeholder Value",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "lineSpacing": {
                     "type": "multiple",
@@ -3228,7 +3253,8 @@
               "props": {
                 "text": "40%",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 100
                 }
               }
@@ -3254,7 +3280,8 @@
               "props": {
                 "text": "79%",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 100
                 }
               }
@@ -4124,7 +4151,8 @@
                 "text": "FY2050",
                 "alignment": "center",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 14,
                   "lineSpacing": {
                     "type": "multiple",
@@ -4155,7 +4183,8 @@
                 "text": "FY2051",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 14,
                   "lineSpacing": {
                     "type": "multiple",
@@ -4185,7 +4214,8 @@
               "props": {
                 "text": "Metric",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 14,
                   "lineSpacing": {
                     "type": "multiple",
@@ -4661,7 +4691,8 @@
                 "text": "300",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 30,
                   "lineSpacing": {
                     "type": "multiple",
@@ -4722,7 +4753,8 @@
                 "text": "400",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 30,
                   "lineSpacing": {
                     "type": "multiple",
@@ -4783,7 +4815,8 @@
                 "text": "540",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 30,
                   "lineSpacing": {
                     "type": "multiple",
@@ -4844,7 +4877,8 @@
                 "text": "650",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 30,
                   "lineSpacing": {
                     "type": "multiple",
@@ -4955,7 +4989,8 @@
                 "text": "Financial Highlight",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 45,
                   "lineSpacing": {
                     "type": "multiple",
@@ -5012,7 +5047,8 @@
                 "text": "Income",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "color": "background",
                   "lineSpacing": {
@@ -5028,7 +5064,8 @@
                 "text": "Statement",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "color": "background",
                   "lineSpacing": {
@@ -5378,7 +5415,8 @@
                 "text": "FY2051",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "accent4",
                   "lineSpacing": {
@@ -5413,7 +5451,8 @@
               "props": {
                 "text": "Item",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "accent4",
                   "lineSpacing": {
@@ -5448,7 +5487,8 @@
               "props": {
                 "text": "FY2050",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "accent4",
                   "lineSpacing": {
@@ -6127,7 +6167,8 @@
               "props": {
                 "text": "Balance",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 82
                 }
               }
@@ -6154,7 +6195,8 @@
                 "text": "FY2051",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "accent4",
                   "lineSpacing": {
@@ -6190,7 +6232,8 @@
                 "text": "FY2050",
                 "alignment": "center",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "accent4",
                   "lineSpacing": {
@@ -6225,7 +6268,8 @@
               "props": {
                 "text": "Item",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "accent4",
                   "lineSpacing": {
@@ -6890,7 +6934,8 @@
               "props": {
                 "text": "Sheet",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 82
                 }
               }
@@ -6916,7 +6961,8 @@
               "props": {
                 "text": "35%",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "color": "background",
                   "lineSpacing": {
@@ -6952,7 +6998,8 @@
                 "text": "PP&E",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "background",
                   "lineSpacing": {
@@ -6987,7 +7034,8 @@
               "props": {
                 "text": "22%",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 35,
                   "color": "accent4",
                   "lineSpacing": {
@@ -7023,7 +7071,8 @@
                 "text": "Other",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "accent4",
                   "lineSpacing": {
@@ -7058,7 +7107,8 @@
               "props": {
                 "text": "18%",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 35,
                   "color": "background",
                   "lineSpacing": {
@@ -7094,7 +7144,8 @@
                 "text": "Cash",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "background",
                   "lineSpacing": {
@@ -7130,7 +7181,8 @@
                 "text": "Receivable",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "accent4",
                   "lineSpacing": {
@@ -7165,7 +7217,8 @@
               "props": {
                 "text": "14",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 35,
                   "color": "accent4",
                   "lineSpacing": {
@@ -7200,7 +7253,8 @@
               "props": {
                 "text": "9",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 35,
                   "color": "background",
                   "lineSpacing": {
@@ -7236,7 +7290,8 @@
                 "text": "Intangibles",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "color": "background",
                   "lineSpacing": {
@@ -7348,7 +7403,8 @@
                 "text": "Business Model &",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "color": "background",
                   "lineSpacing": {
@@ -7364,7 +7420,8 @@
                 "text": "Strategy",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "color": "background",
                   "lineSpacing": {
@@ -7775,7 +7832,8 @@
               "props": {
                 "text": "20",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 70,
                   "color": "accent4",
                   "lineSpacing": {
@@ -7810,7 +7868,8 @@
               "props": {
                 "text": "73",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 70,
                   "color": "accent4",
                   "lineSpacing": {
@@ -7874,7 +7933,8 @@
               "props": {
                 "text": "07",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 70,
                   "color": "accent4",
                   "lineSpacing": {
@@ -7960,7 +8020,8 @@
                 "text": "Shareholding Structure",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 40,
                   "lineSpacing": {
                     "type": "multiple",
@@ -8353,7 +8414,8 @@
                 "text": "Market Outlook",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "lineSpacing": {
                     "type": "multiple",
@@ -8653,7 +8715,8 @@
               "props": {
                 "text": "Enviromental",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "lineSpacing": {
                     "type": "multiple",
@@ -8683,7 +8746,8 @@
               "props": {
                 "text": "Social",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "lineSpacing": {
                     "type": "multiple",
@@ -8792,7 +8856,8 @@
               "props": {
                 "text": "Governance",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "lineSpacing": {
                     "type": "multiple",
@@ -8969,7 +9034,8 @@
                 "text": "Our Awards &",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 50,
                   "color": "background",
                   "lineSpacing": {
@@ -8985,7 +9051,8 @@
                 "text": "Recognition",
                 "alignment": "justify",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 50,
                   "color": "background",
                   "lineSpacing": {
@@ -9106,7 +9173,8 @@
               "props": {
                 "text": "Top 100",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9121,7 +9189,8 @@
               "props": {
                 "text": "Global",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9136,7 +9205,8 @@
               "props": {
                 "text": "Innovators",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9151,7 +9221,8 @@
               "props": {
                 "text": "Award",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9182,7 +9253,8 @@
               "props": {
                 "text": "Best",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9197,7 +9269,8 @@
               "props": {
                 "text": "Employer in",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9212,7 +9285,8 @@
               "props": {
                 "text": "Technology",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9243,7 +9317,8 @@
               "props": {
                 "text": "Product",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9258,7 +9333,8 @@
               "props": {
                 "text": "Excellence",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9273,7 +9349,8 @@
               "props": {
                 "text": "Award",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 25,
                   "color": "background",
                   "lineSpacing": {
@@ -9489,7 +9566,8 @@
               "props": {
                 "text": "Key Financial Ratio",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 55,
                   "lineSpacing": {
                     "type": "multiple",
@@ -9520,7 +9598,8 @@
                 "text": "2050",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 12,
                   "color": "accent4",
                   "lineSpacing": {
@@ -9556,7 +9635,8 @@
                 "text": "2051",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 12,
                   "color": "accent4",
                   "lineSpacing": {
@@ -9592,7 +9672,8 @@
                 "text": "2052",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 12,
                   "color": "accent4",
                   "lineSpacing": {
@@ -9628,7 +9709,8 @@
                 "text": "2053",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 12,
                   "color": "accent4",
                   "lineSpacing": {
@@ -9664,7 +9746,8 @@
                 "text": "2054",
                 "alignment": "right",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 22,
                   "color": "accent4",
                   "lineSpacing": {
@@ -10617,7 +10700,8 @@
               "props": {
                 "text": "Charlotte",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 57,
                   "lineSpacing": {
                     "type": "multiple",
@@ -10635,7 +10719,8 @@
               "props": {
                 "text": "Hayes",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 57,
                   "lineSpacing": {
                     "type": "multiple",
@@ -10761,7 +10846,8 @@
               "props": {
                 "text": "Guided by vision,",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "lineSpacing": {
                     "type": "multiple",
@@ -10775,7 +10861,8 @@
               "props": {
                 "text": "Driven by Calue",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 18,
                   "lineSpacing": {
                     "type": "multiple",
@@ -10959,7 +11046,8 @@
               "props": {
                 "text": "Let’s ",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "lineSpacing": {
                     "type": "multiple",
@@ -10977,7 +11065,8 @@
               "props": {
                 "text": "Move",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "lineSpacing": {
                     "type": "multiple",
@@ -10995,7 +11084,8 @@
               "props": {
                 "text": "Together ",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "lineSpacing": {
                     "type": "multiple",
@@ -11013,7 +11103,8 @@
               "props": {
                 "text": "With Us",
                 "font": {
-                  "family": "Inter Medium",
+                  "family": "Inter",
+                  "fontWeight": 500,
                   "size": 60,
                   "lineSpacing": {
                     "type": "multiple",

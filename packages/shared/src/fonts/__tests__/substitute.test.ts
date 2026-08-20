@@ -122,6 +122,12 @@ describe('defaultSubstituteFor', () => {
   it('maps JetBrains Mono → Consolas (explicit)', () => {
     expect(defaultSubstituteFor('JetBrains Mono')).toBe('Consolas');
   });
+  it('maps the newly catalogued families', () => {
+    expect(defaultSubstituteFor('Geist')).toBe('Calibri');
+    expect(defaultSubstituteFor('Space Grotesk')).toBe('Calibri');
+    expect(defaultSubstituteFor('Archivo')).toBe('Calibri');
+    expect(defaultSubstituteFor('Geist Mono')).toBe('Consolas');
+  });
   it('falls back to Calibri for unknown fonts', () => {
     expect(defaultSubstituteFor('SomeBrandNewFont')).toBe('Calibri');
   });

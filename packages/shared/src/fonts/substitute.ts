@@ -165,6 +165,9 @@ const EXPLICIT_OVERRIDES: Record<string, string> = {
   'Source Sans 3': 'Calibri',
   'Source Sans Pro': 'Calibri',
   'IBM Plex Sans': 'Calibri',
+  Archivo: 'Calibri',
+  Geist: 'Calibri',
+  'Space Grotesk': 'Calibri',
   'Work Sans': 'Calibri',
   Manrope: 'Calibri',
   Nunito: 'Calibri',
@@ -185,6 +188,7 @@ const EXPLICIT_OVERRIDES: Record<string, string> = {
   'IBM Plex Mono': 'Consolas',
   'Source Code Pro': 'Consolas',
   'Roboto Mono': 'Consolas',
+  'Geist Mono': 'Consolas',
 };
 
 const CATEGORY_FALLBACK: Record<string, string> = {

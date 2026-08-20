@@ -159,7 +159,8 @@
               "props": {
                 "style": "body",
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2"
               }
             }
@@ -293,7 +294,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -311,7 +313,8 @@
               "props": {
                 "style": "heading1",
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -641,7 +644,8 @@
               "props": {
                 "style": "body",
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2",
                 "lineSpacing": 24
               }
@@ -841,7 +845,7 @@
               "name": "text",
               "props": {
                 "fontSize": 13,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
                 "color": "#6E7389",
                 "charSpacing": 3,
                 "bold": true
@@ -860,7 +864,8 @@
               "name": "text",
               "props": {
                 "fontSize": 64,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent",
                 "valign": "middle"
               }
@@ -878,7 +883,8 @@
               "name": "text",
               "props": {
                 "style": "body",
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#9A9EB0",
                 "lineSpacing": 24
               }
@@ -1050,7 +1056,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -1068,7 +1075,8 @@
               "props": {
                 "style": "heading1",
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -1085,7 +1093,8 @@
               "name": "text",
               "props": {
                 "fontSize": 48,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent",
                 "align": "center",
                 "valign": "bottom"
@@ -1123,7 +1132,8 @@
               "props": {
                 "style": "body",
                 "fontSize": 12,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2",
                 "align": "center",
                 "lineSpacing": 20
@@ -1142,7 +1152,8 @@
               "name": "text",
               "props": {
                 "fontSize": 48,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent",
                 "align": "center",
                 "valign": "bottom"
@@ -1180,7 +1191,8 @@
               "props": {
                 "style": "body",
                 "fontSize": 12,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2",
                 "align": "center",
                 "lineSpacing": 20
@@ -1199,7 +1211,8 @@
               "name": "text",
               "props": {
                 "fontSize": 48,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent",
                 "align": "center",
                 "valign": "bottom"
@@ -1237,7 +1250,8 @@
               "props": {
                 "style": "body",
                 "fontSize": 12,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2",
                 "align": "center",
                 "lineSpacing": 20
@@ -1256,7 +1270,8 @@
               "name": "text",
               "props": {
                 "fontSize": 10,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2",
                 "align": "center",
                 "italic": true
@@ -1312,7 +1327,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#6E7389"
               }
             }
@@ -1330,7 +1346,8 @@
               "props": {
                 "style": "heading1",
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "background"
               }
             }
@@ -1491,7 +1508,8 @@
               "name": "text",
               "props": {
                 "fontSize": 10,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#4A4E63",
                 "italic": true,
                 "align": "center"
@@ -1561,7 +1579,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -1579,7 +1598,8 @@
               "props": {
                 "style": "heading1",
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -1596,7 +1616,7 @@
               "name": "chart",
               "props": {
                 "dataLabelFontSize": 14,
-                "dataLabelFontFace": "Inter Light"
+                "dataLabelFontFace": "Inter"
               }
             }
           },
@@ -1745,7 +1765,8 @@
               "name": "text",
               "props": {
                 "style": "caption",
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#6E7389",
                 "align": "right"
               }
@@ -1764,7 +1785,8 @@
               "props": {
                 "style": "title",
                 "fontSize": 40,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "background",
                 "valign": "bottom"
               }
@@ -1782,7 +1804,8 @@
               "name": "text",
               "props": {
                 "fontSize": 18,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -1799,7 +1822,8 @@
               "name": "text",
               "props": {
                 "fontSize": 12,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#6E7389",
                 "italic": true
               }
@@ -2003,7 +2027,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -2021,7 +2046,8 @@
               "props": {
                 "style": "heading1",
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -2581,7 +2607,7 @@
                   "fontSize": 28,
                   "color": "accent",
                   "bold": true,
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter"
                 }
               ]
             }
@@ -2602,7 +2628,7 @@
                   "fontSize": 28,
                   "color": "accent",
                   "bold": true,
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter"
                 }
               ]
             }
@@ -2623,7 +2649,7 @@
                   "fontSize": 28,
                   "color": "accent",
                   "bold": true,
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter"
                 }
               ]
             }
@@ -2644,7 +2670,7 @@
                   "fontSize": 28,
                   "color": "accent",
                   "bold": true,
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter"
                 }
               ]
             }
@@ -2665,7 +2691,7 @@
                   "fontSize": 28,
                   "color": "accent",
                   "bold": true,
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter"
                 }
               ]
             }
@@ -2686,7 +2712,7 @@
                   "fontSize": 28,
                   "color": "accent",
                   "bold": true,
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter"
                 }
               ]
             }
@@ -2757,7 +2783,8 @@
                   "text": "Multi-year contracts, $120k+ ACV.",
                   "fontSize": 11,
                   "color": "text2",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ]
             }
@@ -2778,7 +2805,8 @@
                   "text": "Annual subscriptions, fastest-growing tier.",
                   "fontSize": 11,
                   "color": "text2",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ]
             }
@@ -2799,7 +2827,8 @@
                   "text": "Self-onboard with light-touch sales.",
                   "fontSize": 11,
                   "color": "text2",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ]
             }
@@ -2820,7 +2849,8 @@
                   "text": "PLG funnel; expansion into mid-market.",
                   "fontSize": 11,
                   "color": "text2",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ]
             }
@@ -2865,19 +2895,22 @@
                   "text": "$0",
                   "fontSize": 36,
                   "color": "text",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 },
                 {
                   "text": " / month\n\n",
                   "fontSize": 11,
                   "color": "text2",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 },
                 {
                   "text": "· Up to 3 documents\n· Community templates\n· Local rendering",
                   "fontSize": 11,
                   "color": "text2",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ]
             }
@@ -2898,19 +2931,22 @@
                   "text": "$49",
                   "fontSize": 36,
                   "color": "background",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 },
                 {
                   "text": " / seat / mo\n\n",
                   "fontSize": 11,
                   "color": "#B5BBE6",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 },
                 {
                   "text": "· Unlimited documents\n· Shared template library\n· AI-assisted editing\n· Priority support",
                   "fontSize": 11,
                   "color": "#B5BBE6",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ],
               "fill": {
@@ -2945,7 +2981,8 @@
                   "text": "Custom",
                   "fontSize": 36,
                   "color": "text",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 },
                 {
                   "text": "\n\n",
@@ -2956,7 +2993,8 @@
                   "text": "· SSO + audit logs\n· Dedicated CSM\n· Custom integrations\n· On-prem option",
                   "fontSize": 11,
                   "color": "text2",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ]
             }
@@ -3007,7 +3045,8 @@
                   "text": "Hire 18 engineers across rendering, AI, and platform.",
                   "fontSize": 11,
                   "color": "9A9EB0",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ]
             }
@@ -3028,7 +3067,8 @@
                   "text": "Build outbound team, expand to EMEA, scale partnerships.",
                   "fontSize": 11,
                   "color": "9A9EB0",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ]
             }
@@ -3049,7 +3089,8 @@
                   "text": "Compliance (SOC 2, ISO), security, and finance scale-up.",
                   "fontSize": 11,
                   "color": "9A9EB0",
-                  "fontFace": "Inter Light"
+                  "fontFace": "Inter",
+                  "fontWeight": 300
                 }
               ]
             }

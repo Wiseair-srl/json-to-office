@@ -334,7 +334,7 @@
               "name": "text",
               "props": {
                 "fontSize": 11,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
                 "color": "background",
                 "bold": true
               }
@@ -352,7 +352,8 @@
               "name": "text",
               "props": {
                 "fontSize": 40,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "background"
               }
             }
@@ -369,7 +370,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#B5BBE6"
               }
             }
@@ -912,7 +914,8 @@
               "name": "text",
               "props": {
                 "fontSize": 11,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#6E7389",
                 "align": "right"
               }
@@ -930,7 +933,8 @@
               "name": "text",
               "props": {
                 "fontSize": 44,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "background",
                 "valign": "bottom"
               }
@@ -948,7 +952,8 @@
               "name": "text",
               "props": {
                 "fontSize": 16,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#9A9EB0"
               }
             }
@@ -1350,7 +1355,8 @@
               "name": "text",
               "props": {
                 "fontSize": 38,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "background",
                 "valign": "bottom"
               }
@@ -1368,7 +1374,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#9A9EB0"
               }
             }
@@ -1385,7 +1392,8 @@
               "name": "text",
               "props": {
                 "fontSize": 12,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#9A9EB0"
               }
             }
@@ -1528,7 +1536,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2"
               }
             }
@@ -1596,7 +1605,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -1613,7 +1623,8 @@
               "name": "text",
               "props": {
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -1727,7 +1738,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#6E7389"
               }
             }
@@ -1744,7 +1756,8 @@
               "name": "text",
               "props": {
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "background"
               }
             }
@@ -1908,7 +1921,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -1925,7 +1939,8 @@
               "name": "text",
               "props": {
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -1974,7 +1989,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2"
               }
             }
@@ -1991,7 +2007,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2"
               }
             }
@@ -2045,7 +2062,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -2062,7 +2080,8 @@
               "name": "text",
               "props": {
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -2079,7 +2098,7 @@
               "name": "chart",
               "props": {
                 "dataLabelFontSize": 14,
-                "dataLabelFontFace": "Inter Light"
+                "dataLabelFontFace": "Inter"
               }
             }
           }
@@ -2100,7 +2119,8 @@
               "w": "30%",
               "h": "24%",
               "fontSize": 96,
-              "fontFace": "Inter Light",
+              "fontFace": "Inter",
+              "fontWeight": 300,
               "color": "accent",
               "align": "center"
             }
@@ -2146,7 +2166,8 @@
               "name": "text",
               "props": {
                 "fontSize": 22,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "background",
                 "align": "center",
                 "valign": "middle"
@@ -2165,7 +2186,7 @@
               "name": "text",
               "props": {
                 "fontSize": 15,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
                 "color": "background",
                 "align": "center",
                 "bold": true
@@ -2184,7 +2205,8 @@
               "name": "text",
               "props": {
                 "fontSize": 12,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#8B90A5",
                 "align": "center"
               }
@@ -2319,7 +2341,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -2336,7 +2359,8 @@
               "name": "text",
               "props": {
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -2860,7 +2884,7 @@
               "name": "text",
               "props": {
                 "fontSize": 11,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
                 "color": "accent",
                 "bold": true
               }
@@ -2878,7 +2902,8 @@
               "name": "text",
               "props": {
                 "fontSize": 40,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -2895,7 +2920,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2"
               }
             }
@@ -3019,7 +3045,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text2",
                 "lineSpacing": 24
               }
@@ -3081,7 +3108,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -3098,7 +3126,8 @@
               "name": "text",
               "props": {
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -3115,7 +3144,7 @@
               "name": "table",
               "props": {
                 "fontSize": 13,
-                "fontFace": "Inter Light"
+                "fontFace": "Inter"
               }
             }
           }
@@ -3234,7 +3263,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent"
               }
             }
@@ -3251,7 +3281,8 @@
               "name": "text",
               "props": {
                 "fontSize": 28,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "text"
               }
             }
@@ -3827,7 +3858,8 @@
               "name": "text",
               "props": {
                 "fontSize": 38,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "background",
                 "valign": "bottom"
               }
@@ -3845,7 +3877,8 @@
               "name": "text",
               "props": {
                 "fontSize": 14,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#9A9EB0"
               }
             }
@@ -3862,7 +3895,8 @@
               "name": "text",
               "props": {
                 "fontSize": 12,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#9A9EB0"
               }
             }
@@ -4180,7 +4214,7 @@
               "name": "text",
               "props": {
                 "fontSize": 13,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
                 "color": "#6E7389",
                 "align": "center",
                 "charSpacing": 3,
@@ -4200,7 +4234,8 @@
               "name": "text",
               "props": {
                 "fontSize": 96,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "accent",
                 "align": "center",
                 "valign": "middle"
@@ -4219,7 +4254,8 @@
               "name": "text",
               "props": {
                 "fontSize": 16,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#9A9EB0",
                 "align": "center",
                 "lineSpacing": 26
@@ -4238,7 +4274,8 @@
               "name": "text",
               "props": {
                 "fontSize": 10,
-                "fontFace": "Inter Light",
+                "fontFace": "Inter",
+                "fontWeight": 300,
                 "color": "#4A4E63",
                 "align": "center",
                 "italic": true
@@ -4706,7 +4743,7 @@
               "showLegend": true,
               "legendPos": "t",
               "legendFontSize": 10,
-              "legendFontFace": "Inter Light",
+              "legendFontFace": "Inter",
               "legendColor": "text2",
               "catAxisLabelFontSize": 10,
               "catAxisLabelColor": "text2",

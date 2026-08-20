@@ -54,7 +54,8 @@
         },
         "noProof": true,
         "font": {
-          "family": "DM Sans Light",
+          "family": "DM Sans",
+          "fontWeight": 300,
           "size": 12,
           "color": "primary",
           "lineSpacing": {
@@ -173,7 +174,8 @@
           "props": {
             "text": "(2050)",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -564,7 +566,8 @@
           "props": {
             "text": "01",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -591,7 +594,8 @@
           "props": {
             "text": "02",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -618,7 +622,8 @@
           "props": {
             "text": "03",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -645,7 +650,8 @@
           "props": {
             "text": "04",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -672,7 +678,8 @@
           "props": {
             "text": "05",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -699,7 +706,8 @@
           "props": {
             "text": "06",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -785,7 +793,8 @@
           "props": {
             "text": "“2050 delivered $8.4B, 45-country reach, and greener tech — driving progress.”",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -1000,7 +1009,8 @@
           "props": {
             "text": "Founded",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -1125,7 +1135,8 @@
           "props": {
             "text": "1.25K",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -1238,7 +1249,8 @@
           "props": {
             "text": "Company Overview – Global Reach & Innovation",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -1352,7 +1364,8 @@
           "props": {
             "text": "$1B",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -1408,7 +1421,8 @@
           "props": {
             "text": "$1.2B",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -1464,7 +1478,8 @@
           "props": {
             "text": "90%+",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -1655,7 +1670,8 @@
           "props": {
             "text": "5 New Offices",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -1682,7 +1698,8 @@
           "props": {
             "text": "Record NPS",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -2006,7 +2023,8 @@
           "props": {
             "text": "Lead global tech, 1B users, carbon neutral 2045.",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -2033,7 +2051,8 @@
           "props": {
             "text": "Mission",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -2178,7 +2197,8 @@
           "props": {
             "text": "40%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -2247,7 +2267,8 @@
           "props": {
             "text": "30%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -2316,7 +2337,8 @@
           "props": {
             "text": "30%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -2657,7 +2679,8 @@
           "props": {
             "text": "7.8%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -2713,7 +2736,8 @@
           "props": {
             "text": "60%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -3134,7 +3158,8 @@
           "props": {
             "text": "Cloud Services",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -3176,7 +3201,8 @@
           "props": {
             "text": "AI Solutions",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -3218,7 +3244,8 @@
           "props": {
             "text": "Security Solutions",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -3260,7 +3287,8 @@
           "props": {
             "text": "Upcoming Launch",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -3487,7 +3515,8 @@
           "props": {
             "text": "30%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -3544,7 +3573,8 @@
           "props": {
             "text": "New tech research boosting algorithm speed",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -3713,7 +3743,8 @@
           "props": {
             "text": "Esg & Sustainability Strategy & Initiatives",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -3990,7 +4021,8 @@
           "props": {
             "text": "12.500",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -4032,7 +4064,8 @@
           "props": {
             "text": "+15%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -4386,7 +4419,8 @@
           "props": {
             "text": "(28% Margin) – Strong Profitability",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -4467,7 +4501,8 @@
           "props": {
             "text": "Consistent Growth",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -4509,7 +4544,8 @@
           "props": {
             "text": "$2.5B",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -4551,7 +4587,8 @@
           "props": {
             "text": "$3B",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -4593,7 +4630,8 @@
           "props": {
             "text": "$2B",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -4807,7 +4845,8 @@
           "props": {
             "text": "40%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -4863,7 +4902,8 @@
           "props": {
             "text": "28",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -4921,7 +4961,8 @@
           "props": {
             "text": "5+",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "color": "background",
               "lineSpacing": {
@@ -5336,7 +5377,8 @@
           "props": {
             "text": "Strategic Partnerships, Collaborations & Innovation Network",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -5590,7 +5632,8 @@
           "props": {
             "text": "-5%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -5632,7 +5675,8 @@
           "props": {
             "text": "+20%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -5674,7 +5718,8 @@
           "props": {
             "text": "100%",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -5716,7 +5761,8 @@
           "props": {
             "text": "$10",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -5758,7 +5804,8 @@
           "props": {
             "text": "Cybersecurity Threat Risk",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",
@@ -6361,7 +6408,8 @@
           "props": {
             "text": "“Proud to be part of a global innovation journey, contributing to meaningful change worldwide.”",
             "font": {
-              "family": "DM Sans Medium",
+              "family": "DM Sans",
+              "fontWeight": 500,
               "size": 36,
               "lineSpacing": {
                 "type": "exactly",

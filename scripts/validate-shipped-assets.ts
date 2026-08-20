@@ -227,6 +227,125 @@ function collectLocalPaths(json: string): string[] {
 }
 
 // ----------------------------------------------------------------------------
+// Synthesized font sub-family names
+// ----------------------------------------------------------------------------
+
+/**
+ * "Inter Medium", "Geist Light", "Space Grotesk Medium" are strings the render
+ * path SYNTHESIZES (`synthesizeFamilyName`, packages/shared/src/fonts/
+ * synthesize.ts) from `family` + `fontWeight`. They are not names an author may
+ * write: nothing resolves them, so every reference falls through to
+ * FONT_UNRESOLVED and no bytes are ever staged for LibreOffice.
+ *
+ * `FontFamilyNameSchema` is a free-form string, so schema validation cannot see
+ * this — which is exactly how 417 of them shipped across 8 stock templates.
+ * This is the gate that makes that impossible to repeat.
+ */
+const SYNTHETIC_FAMILY =
+  /^(.+) (Thin|ExtraLight|Light|Regular|Medium|SemiBold|Bold|ExtraBold|Black)( Italic)?$/;
+
+/** Weight each label synthesizes from; used to phrase the fix suggestion. */
+const LABEL_WEIGHTS: Record<string, number> = {
+  Thin: 100,
+  ExtraLight: 200,
+  Light: 300,
+  Regular: 400,
+  Medium: 500,
+  SemiBold: 600,
+  Bold: 700,
+  ExtraBold: 800,
+  Black: 900,
+};
+
+/**
+ * Mirror of `FONT_NAME_KEYS` in packages/shared/src/fonts/collect.ts, plus the
+ * `theme.fonts.{heading,body,mono,light}` keys. Kept local because the shared
+ * package does not export either set; if collect.ts grows a key, add it here.
+ */
+const FONT_NAME_KEYS = new Set([
+  'family',
+  'fontFace',
+  'titleFontFace',
+  'legendFontFace',
+  'dataLabelFontFace',
+  'catAxisLabelFontFace',
+  'valAxisLabelFontFace',
+]);
+const THEME_FONT_KEYS = new Set(['heading', 'body', 'mono', 'light']);
+
+interface FontCatalogApi {
+  isSafeFont: (name: string) => boolean;
+  catalogFamilies: Set<string>;
+}
+
+async function loadFontCatalog(): Promise<FontCatalogApi> {
+  const shared = await import(
+    pathToFileURL(path.join(ROOT, 'packages/shared/dist/index.js')).href
+  );
+  const families = new Set<string>(
+    (shared.POPULAR_GOOGLE_FONTS as { family: string }[]).map((f) =>
+      f.family.toLowerCase()
+    )
+  );
+  return { isSafeFont: shared.isSafeFont, catalogFamilies: families };
+}
+
+function collectSyntheticFamilies(json: string, api: FontCatalogApi): string[] {
+  const found = new Set<string>();
+
+  const known = (name: string): boolean =>
+    api.isSafeFont(name) || api.catalogFamilies.has(name.toLowerCase());
+
+  const check = (raw: string): void => {
+    const name = raw.trim();
+    if (name.length === 0) return;
+    // Membership FIRST: "Archivo Black" and "DM Serif Display" are real
+    // catalog families that match the regex exactly, and "Archivo" is itself
+    // a catalog family — so the regex alone would condemn its own sibling.
+    if (known(name)) return;
+    const match = SYNTHETIC_FAMILY.exec(name);
+    if (!match) return; // unknown third-party family; legitimate, warns at runtime
+    if (!known(match[1])) return; // base is unknown too — not a synthesized name
+    found.add(name);
+  };
+
+  const walkValue = (value: unknown, key: string): void => {
+    if (typeof value === 'string') {
+      if (FONT_NAME_KEYS.has(key) || THEME_FONT_KEYS.has(key)) check(value);
+    } else if (Array.isArray(value)) {
+      value.forEach((item) => walkValue(item, key));
+    } else if (value && typeof value === 'object') {
+      for (const [childKey, child] of Object.entries(value)) {
+        walkValue(child, childKey);
+      }
+    }
+  };
+
+  try {
+    walkValue(JSON.parse(json), '<root>');
+  } catch {
+    // Unparseable JSON is the schema validator's failure to report, not ours.
+  }
+  return [...found];
+}
+
+function suggestionFor(name: string): string {
+  const match = SYNTHETIC_FAMILY.exec(name);
+  if (!match) return name;
+  const [, base, label, italic] = match;
+  const weight = LABEL_WEIGHTS[label];
+  const fix =
+    weight === 700
+      ? `plus bold: true`
+      : `plus fontWeight ${weight} (or bold: true)`;
+  const italicNote = italic ? ` and italic: true` : '';
+  return (
+    `"${name}" is a synthesized sub-family name, not a real family.` +
+    ` Use family/fontFace "${base}" ${fix}${italicNote}.`
+  );
+}
+
+// ----------------------------------------------------------------------------
 // Validation
 // ----------------------------------------------------------------------------
 
@@ -281,6 +400,15 @@ async function main() {
     .map((asset) => ({ asset, paths: collectLocalPaths(asset.json) }))
     .filter((entry) => entry.paths.length > 0);
 
+  // Assets only, same reasoning: docs prose may name a font sub-family.
+  const fontCatalog = await loadFontCatalog();
+  const synthetic = assets
+    .map((asset) => ({
+      asset,
+      names: collectSyntheticFamilies(asset.json, fontCatalog),
+    }))
+    .filter((entry) => entry.names.length > 0);
+
   console.log(
     `Validated ${assets.length} shipped asset(s) and ${snippets.length} docs sample(s).`
   );
@@ -306,6 +434,19 @@ async function main() {
     }
   }
 
+  if (synthetic.length > 0) {
+    console.error(
+      `\n${synthetic.length} shipped asset(s) reference synthesized font` +
+        ` sub-family names. These never resolve — no font bytes are staged and` +
+        ` the renderer falls back:\n`
+    );
+    for (const { asset, names } of synthetic) {
+      console.error(`  ${asset.label}`);
+      for (const name of names) console.error(`      ${suggestionFor(name)}`);
+      console.error('');
+    }
+  }
+
   if (failures.length > 0) {
     console.error(`\n${failures.length} file(s) failed validation:\n`);
     for (const failure of failures) {
@@ -315,7 +456,9 @@ async function main() {
     }
   }
 
-  if (failures.length > 0 || portability.length > 0) process.exit(1);
+  if (failures.length > 0 || portability.length > 0 || synthetic.length > 0) {
+    process.exit(1);
+  }
 
   console.log('All shipped assets and docs samples are valid.');
 }
