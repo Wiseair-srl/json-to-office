@@ -152,7 +152,9 @@ describe('diffDocuments', () => {
     expect(reconstructed).toContain('delta');
   });
 
-  it('table change is reported as untracked and renders the new version', () => {
+  it('legacy {headers, rows} table stays on the opaque path', () => {
+    // That shape is schema-invalid and only survives through a renderer
+    // conversion, so the row-level differ deliberately does not touch it.
     const oldTable: JsonNode = {
       name: 'table',
       props: { headers: ['a'], rows: [['1']] },
@@ -172,7 +174,7 @@ describe('diffDocuments', () => {
     expect((document.children?.[0].props as any).rows).toEqual([['2']]);
   });
 
-  it('deleted table is dropped and reported as untracked', () => {
+  it('deleted legacy table is dropped and reported as untracked', () => {
     const table: JsonNode = { name: 'table', props: { rows: [['x']] } };
     const { document, summary } = diffDocuments(
       doc([para('keep'), table]),
@@ -299,5 +301,194 @@ describe('diffDocuments', () => {
     const run1 = diffDocuments(oldD, newD, { date: '2026-01-01T00:00:00Z' });
     const run2 = diffDocuments(oldD, newD, { date: '2026-01-01T00:00:00Z' });
     expect(JSON.stringify(run1)).toBe(JSON.stringify(run2));
+  });
+});
+
+describe('column-based table diff', () => {
+  const table = (
+    rows: string[][],
+    extra: Record<string, unknown> = {}
+  ): JsonNode => ({
+    name: 'table',
+    props: {
+      columns: [
+        {
+          header: { content: 'Tier' },
+          cells: rows.map((row) => ({ content: row[0] })),
+        },
+        {
+          header: { content: 'Price' },
+          cells: rows.map((row) => ({ content: row[1] })),
+        },
+      ],
+      ...extra,
+    },
+  });
+
+  const rowsOf = (node: JsonNode) =>
+    ((node.props as any).columns[0].cells as { content: string }[]).map(
+      (cell, index) => [
+        cell.content,
+        ((node.props as any).columns[1].cells as { content: string }[])[index]
+          .content,
+      ]
+    );
+
+  it('marks an added row as a row insertion', () => {
+    const { document, summary } = diffDocuments(
+      doc([table([['Basic', '10']])]),
+      doc([
+        table([
+          ['Basic', '10'],
+          ['Pro', '25'],
+        ]),
+      ])
+    );
+
+    const result = document.children![0];
+    expect(rowsOf(result)).toEqual([
+      ['Basic', '10'],
+      ['Pro', '25'],
+    ]);
+    expect((result.props as any).rows).toEqual([
+      {},
+      { revision: { type: 'insert' } },
+    ]);
+    expect(summary.tracked.inserted).toBe(1);
+  });
+
+  it('keeps a removed row and marks it deleted', () => {
+    const { document, summary } = diffDocuments(
+      doc([
+        table([
+          ['Basic', '10'],
+          ['Legacy', '15'],
+        ]),
+      ]),
+      doc([table([['Basic', '10']])])
+    );
+
+    const result = document.children![0];
+    // The row survives in the redline so the reader can see what went.
+    expect(rowsOf(result)).toEqual([
+      ['Basic', '10'],
+      ['Legacy', '15'],
+    ]);
+    expect((result.props as any).rows).toEqual([
+      {},
+      { revision: { type: 'delete' } },
+    ]);
+    expect(summary.tracked.deleted).toBe(1);
+  });
+
+  it('turns a rewritten row into cell-level word changes', () => {
+    const { document, summary } = diffDocuments(
+      doc([table([['Basic', '10']])]),
+      doc([table([['Basic', '12']])])
+    );
+
+    const result = document.children![0];
+    const priceCell = (result.props as any).columns[1].cells[0];
+    expect(priceCell.content).toBe('12');
+    expect(priceCell.revision.segments).toEqual([
+      { type: 'delete', text: '10' },
+      { type: 'insert', text: '12' },
+    ]);
+    // The untouched cell is left exactly as authored.
+    expect((result.props as any).columns[0].cells[0].revision).toBeUndefined();
+    expect(summary.tracked.modified).toBe(1);
+  });
+
+  it('reports an unchanged table as unchanged', () => {
+    const { summary } = diffDocuments(
+      doc([table([['Basic', '10']])]),
+      doc([table([['Basic', '10']])])
+    );
+
+    expect(summary.unchangedBlocks).toBe(1);
+    expect(summary.untracked).toHaveLength(0);
+  });
+
+  it('falls back to a block replace when the column count changes', () => {
+    const oldTable = table([['Basic', '10']]);
+    const newTable: JsonNode = {
+      name: 'table',
+      props: {
+        columns: [
+          { header: { content: 'Tier' }, cells: [{ content: 'Basic' }] },
+        ],
+      },
+    };
+    const { document, summary } = diffDocuments(
+      doc([oldTable]),
+      doc([newTable])
+    );
+
+    expect(document.children![0]).toEqual(newTable);
+    expect(summary.untracked[0].detail).toContain('column count changed');
+  });
+
+  it('reports a changed header row as untracked', () => {
+    const oldTable = table([['Basic', '10']]);
+    const newTable = table([['Basic', '10']]);
+    (newTable.props as any).columns[0].header.content = 'Plan';
+
+    const { summary } = diffDocuments(doc([oldTable]), doc([newTable]));
+    expect(summary.untracked.some((u) => u.detail.includes('header row'))).toBe(
+      true
+    );
+  });
+
+  it('marks every row of an added table inserted', () => {
+    const { document, summary } = diffDocuments(
+      doc([para('keep')]),
+      doc([
+        para('keep'),
+        table([
+          ['Basic', '10'],
+          ['Pro', '25'],
+        ]),
+      ])
+    );
+
+    const result = document.children![1];
+    expect((result.props as any).rows).toEqual([
+      { revision: { type: 'insert' } },
+      { revision: { type: 'insert' } },
+    ]);
+    expect(summary.tracked.inserted).toBe(1);
+  });
+
+  it('keeps a removed table with every row marked deleted', () => {
+    const { document, summary } = diffDocuments(
+      doc([para('keep'), table([['Basic', '10']])]),
+      doc([para('keep')])
+    );
+
+    // Previously the whole table was dropped from the redline.
+    expect(document.children).toHaveLength(2);
+    expect((document.children![1].props as any).rows).toEqual([
+      { revision: { type: 'delete' } },
+    ]);
+    expect(summary.tracked.deleted).toBe(1);
+  });
+
+  it('carries the configured author and date onto row revisions', () => {
+    const { document } = diffDocuments(
+      doc([table([['Basic', '10']])]),
+      doc([
+        table([
+          ['Basic', '10'],
+          ['Pro', '25'],
+        ]),
+      ]),
+      { author: 'Legal', date: '2026-06-09T10:00:00Z' }
+    );
+
+    expect((document.children![0].props as any).rows[1].revision).toEqual({
+      type: 'insert',
+      author: 'Legal',
+      date: '2026-06-09T10:00:00Z',
+    });
   });
 });

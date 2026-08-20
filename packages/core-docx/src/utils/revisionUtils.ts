@@ -7,7 +7,7 @@
 
 import { TextRun, InsertedTextRun, DeletedTextRun } from 'docx';
 import type { IRunOptions, ParagraphChild } from 'docx';
-import type { Revision } from '@json-to-office/shared-docx';
+import type { Revision, RevisionMark } from '@json-to-office/shared-docx';
 import { normalizeUnicodeText } from './unicode';
 import { processTextWithPlaceholders } from './placeholderProcessor';
 import type { TextStyle } from './textParser';
@@ -151,4 +151,55 @@ export function createRevisionRuns(
  */
 export function componentHasRevision(component: MaybeComponent): boolean {
   return componentHasAnnotation(component, 'revision');
+}
+
+/** docx's shape for a structural tracked change (`w:ins` / `w:del` attrs). */
+export interface RevisionMarkAttributes {
+  id: number;
+  author: string;
+  date: string;
+}
+
+/**
+ * Turn a structural revision into the attribute triple docx wants, allocating
+ * the document-scoped id.
+ *
+ * Callers must invoke this in a synchronous prefix — before any `await` — or
+ * ids end up ordered by I/O completion rather than document order.
+ */
+export function createRevisionMark(mark: RevisionMark): {
+  insertion?: RevisionMarkAttributes;
+  deletion?: RevisionMarkAttributes;
+} {
+  const attributes: RevisionMarkAttributes = {
+    id: globalRevisionIdRegistry.next(),
+    author: mark.author || DEFAULT_REVISION_AUTHOR,
+    date: mark.date || DEFAULT_REVISION_DATE,
+  };
+  return mark.type === 'insert'
+    ? { insertion: attributes }
+    : { deletion: attributes };
+}
+
+/**
+ * Render a cell's text as runs that are wholly inserted or wholly deleted,
+ * matching the structural mark on the row they sit in.
+ *
+ * A `w:trPr/w:del` alone leaves the cell text un-struck, and accepting the
+ * change would leave an empty row behind rather than removing it. Word needs
+ * both halves: the row mark and every run inside it marked the same way.
+ */
+export function createMarkedTextRuns(
+  text: string,
+  mark: RevisionMark,
+  baseStyle: RevisionBaseStyle
+): ParagraphChild[] {
+  return createRevisionRuns(
+    {
+      author: mark.author,
+      date: mark.date,
+      segments: [{ type: mark.type, text }],
+    },
+    baseStyle
+  );
 }

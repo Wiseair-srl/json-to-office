@@ -570,6 +570,279 @@ function listWithAllItems(
 }
 
 // ---------------------------------------------------------------------------
+// Table diff
+// ---------------------------------------------------------------------------
+
+/** A table cell as authored: anything but `content` is styling we carry over. */
+type TableCell = Record<string, unknown> & { content?: unknown };
+
+/** One row's cells, in column order, plus the alignment key. */
+interface TableRowView {
+  cells: (TableCell | undefined)[];
+  /** Markdown-stripped cell texts joined — what rows are aligned on. */
+  key: string;
+}
+
+/** Text of a cell as it renders: a plain string, or a nested component's text. */
+function cellText(cell: TableCell | undefined): string {
+  if (!cell) return '';
+  const content = cell.content;
+  if (typeof content === 'string')
+    return stripMarkdown(content.normalize('NFC'));
+  if (content && typeof content === 'object') {
+    const props = (content as JsonNode).props;
+    const text = props?.text;
+    if (typeof text === 'string') return stripMarkdown(text.normalize('NFC'));
+  }
+  return '';
+}
+
+/** True when the cell holds plain text a word-level diff can rewrite. */
+function isTextCell(cell: TableCell | undefined): boolean {
+  if (!cell) return true;
+  const content = cell.content;
+  if (content === undefined || typeof content === 'string') return true;
+  return (
+    typeof content === 'object' && (content as JsonNode).name === 'paragraph'
+  );
+}
+
+/** Turn the column-major model into rows, which is how people read a table. */
+function toRowView(node: JsonNode): TableRowView[] {
+  const columns =
+    (node.props?.columns as { cells?: TableCell[] }[] | undefined) ?? [];
+  const rowCount = columns.reduce(
+    (max, column) => Math.max(max, column.cells?.length ?? 0),
+    0
+  );
+
+  return Array.from({ length: rowCount }, (_, rowIndex) => {
+    const cells = columns.map((column) => column.cells?.[rowIndex]);
+    return { cells, key: cells.map(cellText).join('\u0000') };
+  });
+}
+
+/** Write a row-major set of rows back into the column-major model. */
+function withRows(
+  node: JsonNode,
+  rows: TableRowView[],
+  rowProps: ({ revision?: unknown } | Record<string, never>)[]
+): JsonNode {
+  const columns = (node.props?.columns as Record<string, unknown>[]) ?? [];
+  return {
+    ...node,
+    props: {
+      ...node.props,
+      columns: columns.map((column, colIndex) => ({
+        ...column,
+        cells: rows.map((row) => row.cells[colIndex] ?? { content: '' }),
+      })),
+      ...(rowProps.some((props) => Object.keys(props).length > 0) && {
+        rows: rowProps,
+      }),
+    },
+  };
+}
+
+/**
+ * True for the column-based table shape the differ understands. The legacy
+ * `{ headers, rows }` shape is schema-invalid and only kept alive by a
+ * renderer conversion, so it stays on the opaque path.
+ */
+function isColumnTable(node: JsonNode): boolean {
+  return Array.isArray(node.props?.columns) && !node.props?.headers;
+}
+
+/** A cell whose text is replaced by a word-level tracked change. */
+function revisedCell(
+  cell: TableCell | undefined,
+  oldText: string,
+  newText: string,
+  path: string,
+  ctx: DiffContext
+): TableCell {
+  const segments = diffWords(oldText, newText);
+  notePlaceholdersInChanges(segments, path, 'table', ctx);
+  const base = cell ?? { content: '' };
+  return {
+    ...base,
+    // The revision carries the text, so `content` keeps the new version for
+    // readers that ignore tracked changes.
+    content: newText,
+    revision: makeRevision(ctx, segments),
+  };
+}
+
+/**
+ * Diff a column-based table row by row.
+ *
+ * The model is column-major, so the diff builds a row-major view first: people
+ * insert and delete rows, not columns. Rows are aligned on their joined,
+ * markdown-stripped cell texts; unmatched runs are paired by column count so a
+ * rewritten row becomes cell-level word changes rather than a delete plus an
+ * insert.
+ *
+ * The legacy `{ headers, rows }` shape is not handled here — it is
+ * schema-invalid and the renderer only converts it for backwards
+ * compatibility, so it stays on the opaque block-replace path.
+ */
+function diffTableComponent(
+  oldNode: JsonNode,
+  newNode: JsonNode,
+  path: string,
+  ctx: DiffContext
+): JsonNode {
+  const oldRows = toRowView(oldNode);
+  const newRows = toRowView(newNode);
+
+  const oldColumns = (oldNode.props?.columns as unknown[] | undefined) ?? [];
+  const newColumns = (newNode.props?.columns as unknown[] | undefined) ?? [];
+  if (oldColumns.length !== newColumns.length) {
+    // Column insert/delete is a different tracked change (`w:tcPrChange` and
+    // friends) that the renderer cannot express, so fall back to a replace.
+    ctx.summary.untracked.push({
+      path,
+      kind: 'modified',
+      component: 'table',
+      detail:
+        'table column count changed (columns are not expressible as a tracked change); new version rendered',
+    });
+    return newNode;
+  }
+
+  const propsChanged = !deepEqual(
+    propsWithout(oldNode.props, 'columns', 'rows'),
+    propsWithout(newNode.props, 'columns', 'rows')
+  );
+  if (propsChanged) {
+    ctx.summary.untracked.push({
+      path,
+      kind: 'modified',
+      component: 'table',
+      detail:
+        'table configuration changed (borders/widths/defaults); new version rendered',
+    });
+  }
+
+  const headersChanged = !deepEqual(
+    oldColumns.map((column) => (column as { header?: unknown }).header),
+    newColumns.map((column) => (column as { header?: unknown }).header)
+  );
+  if (headersChanged) {
+    ctx.summary.untracked.push({
+      path,
+      kind: 'modified',
+      component: 'table',
+      detail:
+        'table header row changed (headers are not row content); new version rendered',
+    });
+  }
+
+  if (
+    deepEqual(
+      oldRows.map((row) => row.key),
+      newRows.map((row) => row.key)
+    )
+  ) {
+    if (!propsChanged && !headersChanged && deepEqual(oldRows, newRows)) {
+      ctx.summary.unchangedBlocks++;
+    }
+    return newNode;
+  }
+
+  const ops = alignByLcs(oldRows, newRows, (row) => row.key);
+
+  const outRows: TableRowView[] = [];
+  const outProps: ({ revision?: unknown } | Record<string, never>)[] = [];
+  let changed = false;
+
+  const push = (
+    row: TableRowView,
+    props: { revision?: unknown } | Record<string, never>
+  ) => {
+    outRows.push(row);
+    outProps.push(props);
+  };
+
+  let k = 0;
+  while (k < ops.length) {
+    const op = ops[k];
+    if (op.op === 'equal') {
+      push(op.newItem, {});
+      k++;
+      continue;
+    }
+
+    const deleted: TableRowView[] = [];
+    const inserted: TableRowView[] = [];
+    while (k < ops.length && ops[k].op !== 'equal') {
+      const gapOp = ops[k];
+      if (gapOp.op === 'delete') deleted.push(gapOp.oldItem);
+      else if (gapOp.op === 'insert') inserted.push(gapOp.newItem);
+      k++;
+    }
+
+    const { plan } = pairGap(
+      deleted,
+      inserted,
+      (oldRow, newRow) =>
+        oldRow.cells.length === newRow.cells.length &&
+        oldRow.cells.every(isTextCell) &&
+        newRow.cells.every(isTextCell)
+    );
+
+    for (const step of plan) {
+      changed = true;
+      if (step.kind === 'paired') {
+        const cells = step.newItem.cells.map((cell, index) => {
+          const oldText = cellText(step.oldItem.cells[index]);
+          const newText = cellText(cell);
+          return oldText === newText
+            ? cell ?? { content: '' }
+            : revisedCell(cell, oldText, newText, path, ctx);
+        });
+        push({ ...step.newItem, cells }, {});
+      } else if (step.kind === 'inserted') {
+        ctx.summary.tracked.inserted++;
+        push(step.newItem, { revision: rowRevision(ctx, 'insert') });
+      } else {
+        ctx.summary.tracked.deleted++;
+        push(step.oldItem, { revision: rowRevision(ctx, 'delete') });
+      }
+    }
+  }
+
+  if (changed) ctx.summary.tracked.modified++;
+  return withRows(newNode, outRows, outProps);
+}
+
+/** Every row of a table marked inserted or deleted. */
+function tableWithAllRows(
+  node: JsonNode,
+  type: 'insert' | 'delete',
+  ctx: DiffContext
+): JsonNode {
+  if (type === 'insert') ctx.summary.tracked.inserted++;
+  else ctx.summary.tracked.deleted++;
+
+  const rows = toRowView(node);
+  return withRows(
+    node,
+    rows,
+    rows.map(() => ({ revision: rowRevision(ctx, type) }))
+  );
+}
+
+/** A structural row revision (`w:trPr/w:ins` | `w:del`). */
+function rowRevision(ctx: DiffContext, type: 'insert' | 'delete') {
+  return {
+    type,
+    ...(ctx.author && { author: ctx.author }),
+    ...(ctx.date && { date: ctx.date }),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Tree diff
 // ---------------------------------------------------------------------------
 
@@ -610,6 +883,13 @@ function diffPairedNode(
   }
   if (newNode.name === 'list') {
     return diffListComponent(oldNode, newNode, path, ctx);
+  }
+  if (
+    newNode.name === 'table' &&
+    isColumnTable(oldNode) &&
+    isColumnTable(newNode)
+  ) {
+    return diffTableComponent(oldNode, newNode, path, ctx);
   }
   if (isContainer(newNode) || isContainer(oldNode)) {
     const propsChanged = !deepEqual(oldNode.props, newNode.props);
@@ -656,6 +936,9 @@ function emitInserted(
   if (node.name === 'list') {
     return listWithAllItems(node, 'insert', ctx);
   }
+  if (node.name === 'table' && isColumnTable(node)) {
+    return tableWithAllRows(node, 'insert', ctx);
+  }
   if (isContainer(node)) {
     if (typeof node.props?.title === 'string') {
       ctx.summary.untracked.push({
@@ -694,6 +977,11 @@ function emitDeleted(
   }
   if (node.name === 'list') {
     return listWithAllItems(node, 'delete', ctx);
+  }
+  if (node.name === 'table' && isColumnTable(node)) {
+    // No longer null: a deleted table renders with every row marked deleted
+    // rather than vanishing from the redline.
+    return tableWithAllRows(node, 'delete', ctx);
   }
   if (isContainer(node)) {
     if (typeof node.props?.title === 'string') {
