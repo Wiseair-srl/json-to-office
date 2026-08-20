@@ -35,6 +35,19 @@ export interface TocComponentDefinition {
 }
 
 /**
+ * The Word display name a theme style key registers under: camelCase and
+ * kebab/snake separators become spaces (`calloutTitle` -> `callout Title`).
+ * Mirrors the naming in `themeToDocxAdapter`.
+ */
+function toStyleDisplayName(styleId: string): string {
+  return styleId
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Select the collected entries this TOC would show, in document order.
  *
  * Mirrors what Word's own refresh does with the field switches:
@@ -67,7 +80,11 @@ function selectCachedEntries(
     }
 
     if (entry.styleId !== undefined) {
-      const level = styleLevels.get(entry.styleId);
+      // The entry carries the theme key; the mapping may have named the
+      // display name instead.
+      const level =
+        styleLevels.get(entry.styleId) ??
+        styleLevels.get(toStyleDisplayName(entry.styleId));
       if (level === undefined) continue;
       entries.push({ title: entry.title, level });
       continue;
@@ -240,14 +257,17 @@ export function renderTocComponent(
 
   // Add custom style mappings if provided
   // These allow arbitrary theme styles to appear in the TOC at specified levels
-  // Style key -> TOC level, for matching the collected entries below. Keyed by
-  // the authored `themeStyle` key, not the Word display name the \t switch
-  // needs.
+  //
+  // Style -> TOC level, for matching the collected entries below. A mapping can
+  // name a style either way — by the theme key an author writes in
+  // `themeStyle`, or by the Word display name the \t switch actually needs —
+  // and a collected entry always carries the theme key. Indexing both forms,
+  // and looking up both forms, keeps the cached entries in step with what Word
+  // collects on refresh.
   const styleLevels = new Map<string, number>();
 
   if (componentProps.styles && componentProps.styles.length > 0) {
     for (const styleMapping of componentProps.styles) {
-      styleLevels.set(styleMapping.styleId, styleMapping.level);
       // The TOC \t (stylesWithLevels) switch expects Word style DISPLAY NAMES, not IDs.
       // Our theme registers custom styles with:
       //   - id: original key (e.g., "MySpectacularStyle")
@@ -258,12 +278,11 @@ export function renderTocComponent(
         !!theme.styles &&
         Object.prototype.hasOwnProperty.call(theme.styles, styleId);
       const styleDisplayName = isCustomStyle
-        ? styleId
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/[-_]+/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
+        ? toStyleDisplayName(styleId)
         : styleId; // If it's not a custom style key, assume it's already a display name
+
+      styleLevels.set(styleId, styleMapping.level);
+      styleLevels.set(styleDisplayName, styleMapping.level);
 
       stylesWithLevels.push(
         new StyleLevel(styleDisplayName, styleMapping.level)

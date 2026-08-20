@@ -581,6 +581,16 @@ interface TableRowView {
   cells: (TableCell | undefined)[];
   /** Markdown-stripped cell texts joined — what rows are aligned on. */
   key: string;
+  /** Cell texts with markdown intact, for spotting markdown-only edits. */
+  rawKey: string;
+  /**
+   * Authored `props.rows[i]` for this row, carried through the diff.
+   *
+   * It has to travel with the row rather than by index: the diff reinserts
+   * deleted rows from the old table, so the emitted order no longer matches
+   * either input's `props.rows` indices.
+   */
+  rowProps?: Record<string, unknown>;
 }
 
 /** Text of a cell as it renders: a plain string, or a nested component's text. */
@@ -593,6 +603,18 @@ function cellText(cell: TableCell | undefined): string {
     const props = (content as JsonNode).props;
     const text = props?.text;
     if (typeof text === 'string') return stripMarkdown(text.normalize('NFC'));
+  }
+  return '';
+}
+
+/** Cell text with markdown intact — what the author wrote. */
+function cellRawText(cell: TableCell | undefined): string {
+  if (!cell) return '';
+  const content = cell.content;
+  if (typeof content === 'string') return content.normalize('NFC');
+  if (content && typeof content === 'object') {
+    const text = (content as JsonNode).props?.text;
+    if (typeof text === 'string') return text.normalize('NFC');
   }
   return '';
 }
@@ -616,9 +638,17 @@ function toRowView(node: JsonNode): TableRowView[] {
     0
   );
 
+  const authoredRows =
+    (node.props?.rows as Record<string, unknown>[] | undefined) ?? [];
+
   return Array.from({ length: rowCount }, (_, rowIndex) => {
     const cells = columns.map((column) => column.cells?.[rowIndex]);
-    return { cells, key: cells.map(cellText).join('\u0000') };
+    return {
+      cells,
+      key: cells.map(cellText).join('\u0000'),
+      rawKey: cells.map(cellRawText).join('\u0000'),
+      rowProps: authoredRows[rowIndex],
+    };
   });
 }
 
@@ -629,6 +659,12 @@ function withRows(
   rowProps: ({ revision?: unknown } | Record<string, never>)[]
 ): JsonNode {
   const columns = (node.props?.columns as Record<string, unknown>[]) ?? [];
+  // Each row keeps what it was authored with (cantSplit, tableHeader, ...);
+  // the diff's own revision mark takes precedence over an authored one.
+  const merged = rows.map((row, index) => ({
+    ...(row.rowProps ?? {}),
+    ...rowProps[index],
+  }));
   return {
     ...node,
     props: {
@@ -637,8 +673,8 @@ function withRows(
         ...column,
         cells: rows.map((row) => row.cells[colIndex] ?? { content: '' }),
       })),
-      ...(rowProps.some((props) => Object.keys(props).length > 0) && {
-        rows: rowProps,
+      ...(merged.some((props) => Object.keys(props).length > 0) && {
+        rows: merged,
       }),
     },
   };
@@ -656,6 +692,7 @@ function isColumnTable(node: JsonNode): boolean {
 /** A cell whose text is replaced by a word-level tracked change. */
 function revisedCell(
   cell: TableCell | undefined,
+  oldCell: TableCell | undefined,
   oldText: string,
   newText: string,
   path: string,
@@ -663,6 +700,17 @@ function revisedCell(
 ): TableCell {
   const segments = diffWords(oldText, newText);
   notePlaceholdersInChanges(segments, path, 'table', ctx);
+  // Revision segments render literally, so markdown anywhere in a changed cell
+  // — including its unchanged portions — is flattened to plain text.
+  if (cellRawText(oldCell) !== oldText || cellRawText(cell) !== newText) {
+    ctx.summary.untracked.push({
+      path,
+      kind: 'modified',
+      component: 'table',
+      detail:
+        'inline formatting or links flattened to plain text in a table cell (revision segments render literally)',
+    });
+  }
   const base = cell ?? { content: '' };
   return {
     ...base,
@@ -744,7 +792,27 @@ function diffTableComponent(
       newRows.map((row) => row.key)
     )
   ) {
-    if (!propsChanged && !headersChanged && deepEqual(oldRows, newRows)) {
+    // Same rendered text, but markdown-only differences (bold markers,
+    // hyperlink targets) are invisible after stripping — surface them, as the
+    // paragraph and list paths do.
+    if (
+      !deepEqual(
+        oldRows.map((row) => row.rawKey),
+        newRows.map((row) => row.rawKey)
+      )
+    ) {
+      ctx.summary.untracked.push({
+        path,
+        kind: 'modified',
+        component: 'table',
+        detail:
+          'inline formatting or link target changed in table cells (markdown-only); new version rendered without a tracked change',
+      });
+    } else if (
+      !propsChanged &&
+      !headersChanged &&
+      deepEqual(oldRows, newRows)
+    ) {
       ctx.summary.unchangedBlocks++;
     }
     return newNode;
@@ -799,7 +867,14 @@ function diffTableComponent(
           const newText = cellText(cell);
           return oldText === newText
             ? cell ?? { content: '' }
-            : revisedCell(cell, oldText, newText, path, ctx);
+            : revisedCell(
+                cell,
+                step.oldItem.cells[index],
+                oldText,
+                newText,
+                path,
+                ctx
+              );
         });
         push({ ...step.newItem, cells }, {});
       } else if (step.kind === 'inserted') {

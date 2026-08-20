@@ -24,10 +24,19 @@ export const GenerateDocumentRequestSchema = Type.Object(
       Type.Object(
         {
           includeMetadata: Type.Optional(Type.Boolean()),
-          // No `includeComments`: comments are authored on the components that
-          // carry them, so there is nothing for a request-level toggle to mean.
-          // The object stays `additionalProperties: true`, so old callers that
-          // still send one are unaffected.
+          /**
+           * @deprecated No effect. Comments are authored on the components
+           * that carry them (see the `comment` prop), so there is nothing for
+           * a request-level toggle to switch. Kept so the exported
+           * `GenerateDocumentRequest` type still accepts callers that send it.
+           */
+          includeComments: Type.Optional(
+            Type.Boolean({
+              deprecated: true,
+              description:
+                'Deprecated and ignored. Comments are authored per component via the `comment` prop.',
+            })
+          ),
           trackChanges: Type.Optional(Type.Boolean()),
         },
         { additionalProperties: true }

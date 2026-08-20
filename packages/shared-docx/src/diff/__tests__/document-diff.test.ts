@@ -473,6 +473,78 @@ describe('column-based table diff', () => {
     expect(summary.tracked.deleted).toBe(1);
   });
 
+  it('preserves authored row properties through the diff', () => {
+    const before = table([['Basic', '10']], {
+      rows: [{ cantSplit: true, tableHeader: true }],
+    });
+    const after = table(
+      [
+        ['Basic', '10'],
+        ['Pro', '25'],
+      ],
+      {
+        rows: [{ cantSplit: true, tableHeader: true }, {}],
+      }
+    );
+
+    const { document } = diffDocuments(doc([before]), doc([after]));
+
+    // The authored props travel with their row; the diff only adds revisions.
+    expect((document.children![0].props as any).rows).toEqual([
+      { cantSplit: true, tableHeader: true },
+      { revision: { type: 'insert' } },
+    ]);
+  });
+
+  it('keeps authored row properties on a reinserted deleted row', () => {
+    // Deleted rows come back from the old table, so index alignment against
+    // either input's props.rows is gone — the props have to travel with them.
+    const before = table(
+      [
+        ['Basic', '10'],
+        ['Legacy', '15'],
+      ],
+      {
+        rows: [{}, { cantSplit: true }],
+      }
+    );
+    const after = table([['Basic', '10']], { rows: [{}] });
+
+    const { document } = diffDocuments(doc([before]), doc([after]));
+
+    expect((document.children![0].props as any).rows).toEqual([
+      {},
+      { cantSplit: true, revision: { type: 'delete' } },
+    ]);
+  });
+
+  it('reports a markdown-only cell change as untracked', () => {
+    const before = table([['Basic', '10']]);
+    const after = table([['Basic', '10']]);
+    (after.props as any).columns[0].cells[0].content = '**Basic**';
+
+    const { summary } = diffDocuments(doc([before]), doc([after]));
+
+    expect(
+      summary.untracked.some((entry) => entry.detail.includes('markdown-only'))
+    ).toBe(true);
+    expect(summary.unchangedBlocks).toBe(0);
+  });
+
+  it('reports markdown flattened inside a revised cell', () => {
+    const before = table([['Basic', '10']]);
+    const after = table([['Basic', '10']]);
+    (after.props as any).columns[1].cells[0].content = '**12**';
+
+    const { summary } = diffDocuments(doc([before]), doc([after]));
+
+    expect(
+      summary.untracked.some((entry) =>
+        entry.detail.includes('flattened to plain text in a table cell')
+      )
+    ).toBe(true);
+  });
+
   it('carries the configured author and date onto row revisions', () => {
     const { document } = diffDocuments(
       doc([table([['Basic', '10']])]),

@@ -103,6 +103,11 @@ export function collectTocHeadings(
   const ordinals = computeSectionOrdinals(sections);
 
   sections.forEach((section, index) => {
+    // Ordinal 0 means a continuation chunk that appears before any opening
+    // chunk — there is no bookmark to scope to. `renderSection` applies the
+    // same truthiness test, so the two must stay in step: making either side
+    // treat 0 as a real ordinal would emit entries scoped to a `_Section_0`
+    // bookmark the renderer never writes.
     const ordinal = ordinals[index]?.ordinal;
     const sectionBookmarkId = ordinal
       ? globalSectionBookmarkRegistry.forLayoutSection(ordinal).id

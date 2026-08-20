@@ -142,6 +142,36 @@ describe('TOC cached entries', () => {
     expect(tocBlock(xml)).toContain('<w:pStyle w:val="callout Title"/>');
   });
 
+  it('matches a style mapping written as the Word display name', async () => {
+    // `themeStyle` carries the theme key; a TOC mapping may instead name the
+    // Word display name the \t switch needs. Word collects the paragraph
+    // either way, so the cached entries must too.
+    const buf = await generateBufferFromJson({
+      name: 'docx',
+      props: {
+        theme: 'minimal',
+        themeOverrides: { styles: { calloutTitle: { size: 14, bold: true } } },
+      },
+      children: [
+        {
+          name: 'toc',
+          props: {
+            title: 'Contents',
+            styles: [{ styleId: 'callout Title', level: 2 }],
+          },
+        },
+        {
+          name: 'paragraph',
+          props: { text: 'Callout heading', themeStyle: 'calloutTitle' },
+        },
+      ],
+    } as never);
+    const zip = await JSZip.loadAsync(buf);
+    const xml = await zip.file('word/document.xml')!.async('string');
+
+    expect(cachedFieldBody(xml)).toContain('Callout heading');
+  });
+
   it('scopes a section TOC to its own section', async () => {
     const xml = await documentXml([
       {

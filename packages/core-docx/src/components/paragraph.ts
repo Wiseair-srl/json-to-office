@@ -117,13 +117,17 @@ export function renderParagraphComponent(
 
     globalNumberingRegistry.register(createNumberingConfig(numberingConfig));
 
-    // Create list paragraphs
+    // Create list paragraphs. Comments and notes travel with this path too:
+    // a markdown list is still the same paragraph the author annotated.
     return createList(listData.items, theme, themeName, {
       numberingReference: reference,
       spacing: resolvedConfig.spacing as
         | { before?: number; after?: number; item?: number }
         | undefined,
       alignment: resolvedConfig.alignment,
+      comment: resolvedConfig.comment,
+      footnotes: resolvedConfig.footnotes,
+      endnotes: resolvedConfig.endnotes,
     });
   }
 

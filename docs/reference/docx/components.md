@@ -624,11 +624,12 @@ The marker renders as a superscript reference; Word numbers the notes and places
 Rules worth knowing:
 
 - **`[^id]` is only syntax where notes are declared.** A paragraph with neither `footnotes` nor `endnotes` renders `[^a-z]+` exactly as written, so regexes and character classes in prose are safe.
-- **An id is resolved against `footnotes` first, then `endnotes`.** Declaring the same id in both logs a warning and uses the footnote, so the outcome does not depend on prop order.
+- **An id is resolved against `footnotes` first, then `endnotes`.** Declaring the same id twice — in one array or across both — logs a warning and uses the first declaration, so the outcome does not depend on authoring order.
+- **Notes and `revision` do not combine.** Tracked-change text renders literally, so a marker inside it stays literal and its body is not emitted. Declaring both logs a warning naming the notes that will be dropped.
 - **Numbering follows reference order, not declaration order**, and footnotes and endnotes number independently — they are separate parts. A body that no marker resolves to is not emitted, and a warning names it.
 - **Repeating a marker reuses the same note** rather than duplicating the body.
 - Markers resolve inside decorated text and around links (`**bold[^n]**`, `[a link](https://example.com)[^m]`), but **not** in text that also contains `{PLACEHOLDER}` substitutions — there the marker stays literal and a warning says so.
-- Notes are a `paragraph` prop only. Like `revision` and `comment`, they are excluded from `componentDefaults`.
+- Notes are a `paragraph` prop only — including a paragraph whose text is markdown list syntax. Like `revision` and `comment`, they are excluded from `componentDefaults`.
 
 Note text is styled from the theme's `normal` style, two points smaller, through Word's built-in `FootnoteText`/`FootnoteReference` and `EndnoteText`/`EndnoteReference` styles.
 
@@ -670,7 +671,7 @@ Note text is styled from the theme's `normal` style, two points smaller, through
 }
 ```
 
-On a `list` the comment anchors to the list as a whole: the range opens on the first rendered item and closes on the last. On a table cell it wraps whatever the cell renders, string or component.
+On a `list` — or a `paragraph` whose text is markdown list syntax — the comment anchors to the list as a whole: the range opens on the first rendered item and closes on the last. On a table cell it wraps whatever the cell renders, string or component; a cell with no content still gets a zero-length anchor, so the comment survives.
 
 Every comment in a thread anchors over the same range, which is how Word groups them. Thread parentage is derived, never authored: the renderer writes `word/commentsExtended.xml` with each reply pointing at its root.
 
