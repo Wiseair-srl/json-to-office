@@ -5,9 +5,11 @@
  */
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import JSZip from 'jszip';
 import { generateBufferFromJson } from '../core/generator';
 
@@ -232,8 +234,12 @@ describe('table revision determinism', () => {
     // process, so any ordering that depends on process-global state moves both
     // sides equally. A separate process is the only way to see it.
     const root = resolve(__dirname, '../../../..');
-    const tsx = join(root, 'node_modules/.bin/tsx');
-    if (!existsSync(tsx)) {
+    // Resolve tsx's own entry point rather than the `.bin` shim: on Windows the
+    // shim is a POSIX shell script that exists but cannot be spawned.
+    let tsxCli: string;
+    try {
+      tsxCli = createRequire(__filename).resolve('tsx/cli');
+    } catch {
       console.warn(
         'tsx not resolvable; skipping cross-process determinism check'
       );
@@ -244,8 +250,10 @@ describe('table revision determinism', () => {
     const script = join(dir, 'generate.ts');
     writeFileSync(
       script,
+      // A bare absolute path is not a valid ESM specifier on Windows
+      // (`import "C:\\..."`); a file:// URL is portable.
       `import { generateBufferFromJson } from ${JSON.stringify(
-        resolve(__dirname, '../core/generator')
+        pathToFileURL(resolve(__dirname, '../core/generator')).href
       )};
 const definition = ${JSON.stringify({
         name: 'docx',
@@ -259,7 +267,10 @@ generateBufferFromJson(definition as never).then((buf) =>
     );
 
     const run = () =>
-      execFileSync(tsx, [script], { encoding: 'utf8', cwd: root });
+      execFileSync(process.execPath, [tsxCli, script], {
+        encoding: 'utf8',
+        cwd: root,
+      });
 
     expect(run()).toBe(run());
   }, 60000);

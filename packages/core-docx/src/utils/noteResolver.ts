@@ -33,21 +33,32 @@ function collectDeclared(
   endnotes: readonly Note[] | undefined
 ): Map<string, DeclaredNote> {
   const declared = new Map<string, DeclaredNote>();
-  for (const note of footnotes ?? []) {
-    declared.set(note.id, { text: note.text, endnote: false });
-  }
-  for (const note of endnotes ?? []) {
-    if (declared.has(note.id)) {
-      // One marker cannot mean two notes; the footnote declaration wins so the
-      // outcome does not depend on prop order.
+
+  /**
+   * First declaration wins, in both directions: within one array and across
+   * the two. `[^id]` can only mean one note, and letting the last entry win
+   * would make the outcome depend on authoring order while silently discarding
+   * a body.
+   */
+  const declare = (note: Note, endnote: boolean) => {
+    const existing = declared.get(note.id);
+    if (existing) {
       console.warn(
-        `Note id "${note.id}" is declared as both a footnote and an endnote in ` +
-          'the same paragraph. Using the footnote and ignoring the endnote.'
+        existing.endnote === endnote
+          ? `Note id "${note.id}" is declared twice in the same ` +
+              `${endnote ? 'endnotes' : 'footnotes'} array. Using the first ` +
+              'declaration and ignoring the rest.'
+          : `Note id "${note.id}" is declared as both a footnote and an ` +
+              'endnote in the same paragraph. Using the footnote and ignoring ' +
+              'the endnote.'
       );
-      continue;
+      return;
     }
-    declared.set(note.id, { text: note.text, endnote: true });
-  }
+    declared.set(note.id, { text: note.text, endnote });
+  };
+
+  for (const note of footnotes ?? []) declare(note, false);
+  for (const note of endnotes ?? []) declare(note, true);
   return declared;
 }
 

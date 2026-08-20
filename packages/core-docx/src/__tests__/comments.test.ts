@@ -218,6 +218,55 @@ describe('comment anchors and bodies', () => {
       '<w:commentRangeStart'
     );
   });
+
+  it('anchors a comment on a markdown-list paragraph', async () => {
+    // The list branch returns early from renderParagraphComponent, so the
+    // comment has to travel with it or the anchor and body are both lost.
+    const zip = await generate([
+      {
+        name: 'paragraph',
+        props: {
+          text: '- First item\n- Second item',
+          comment: { text: 'Reorder these' },
+        },
+      },
+    ]);
+
+    const document = await read(zip, 'word/document.xml');
+    expect(document).toContain('<w:commentRangeStart w:id="1"/>');
+    expect(document.indexOf('<w:commentRangeStart w:id="1"/>')).toBeLessThan(
+      document.indexOf('First item')
+    );
+    expect(document.indexOf('Second item')).toBeLessThan(
+      document.indexOf('<w:commentRangeEnd w:id="1"/>')
+    );
+    expect(await read(zip, 'word/comments.xml')).toContain('Reorder these');
+  });
+
+  it('anchors a comment on a cell with no content', async () => {
+    // The empty-cell early return used to drop the anchor and the body.
+    const zip = await generate([
+      {
+        name: 'table',
+        props: {
+          columns: [
+            {
+              header: { content: 'Metric' },
+              cells: [{ comment: { text: 'Fill this in' } }],
+            },
+          ],
+        },
+      },
+    ]);
+
+    const document = await read(zip, 'word/document.xml');
+    const cell = document.match(
+      /<w:tc>(?:(?!<\/w:tc>)[\s\S])*<w:commentRangeStart[\s\S]*?<\/w:tc>/
+    );
+    expect(cell, 'expected a comment range in the empty cell').not.toBeNull();
+    expect(cell![0]).toContain('<w:commentReference w:id="1"/>');
+    expect(await read(zip, 'word/comments.xml')).toContain('Fill this in');
+  });
 });
 
 describe('comment threads', () => {

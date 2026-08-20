@@ -264,3 +264,82 @@ describe('footnotes', () => {
     expect(styles.match(/w:styleId="FootnoteReference"/g)).toHaveLength(1);
   });
 });
+
+describe('notes on other paragraph paths', () => {
+  it('resolves markers in a markdown-list paragraph', async () => {
+    // The list branch returns early from renderParagraphComponent; without the
+    // resolver travelling with it the marker stays literal and no body is
+    // written.
+    const zip = await generate([
+      {
+        name: 'paragraph',
+        props: {
+          text: '- First item[^a]\n- Second item',
+          footnotes: [{ id: 'a', text: 'About the first item' }],
+        },
+      },
+    ]);
+
+    const document = await read(zip, 'word/document.xml');
+    expect(document).toContain('<w:footnoteReference w:id="1"/>');
+    expect(document).not.toContain('[^a]');
+    expect(authoredNotes(await read(zip, 'word/footnotes.xml'))[0]).toContain(
+      'About the first item'
+    );
+  });
+
+  it('warns rather than dropping notes on a revised paragraph', async () => {
+    // Revision segments render literally, so a marker inside them cannot
+    // resolve. Silence would lose both the marker and the body.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const zip = await generate([
+      {
+        name: 'paragraph',
+        props: {
+          text: 'The fee is 12%[^n].',
+          footnotes: [{ id: 'n', text: 'Per the amended schedule.' }],
+          revision: {
+            segments: [
+              { type: 'equal', text: 'The fee is ' },
+              { type: 'delete', text: '10%' },
+              { type: 'insert', text: '12%' },
+              { type: 'equal', text: '[^n].' },
+            ],
+          },
+        },
+      },
+    ]);
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('alongside a `revision`')
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[^n]'));
+    expect(authoredNotes(await read(zip, 'word/footnotes.xml'))).toHaveLength(
+      0
+    );
+  });
+
+  it('keeps the first of two notes sharing an id, and warns', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const zip = await generate([
+      {
+        name: 'paragraph',
+        props: {
+          text: 'Ambiguous[^dup].',
+          footnotes: [
+            { id: 'dup', text: 'The first body' },
+            { id: 'dup', text: 'The second body' },
+          ],
+        },
+      },
+    ]);
+
+    const notes = authoredNotes(await read(zip, 'word/footnotes.xml'));
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toContain('The first body');
+    expect(notes[0]).not.toContain('The second body');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('declared twice in the same footnotes array')
+    );
+  });
+});

@@ -284,12 +284,66 @@ export interface ListOptions {
   // Review comment spanning the whole list: the range opens on the first
   // rendered item and closes on the last.
   comment?: Comment;
+  // Note bodies bound to `[^id]` markers in the item text.
+  footnotes?: readonly Note[];
+  endnotes?: readonly Note[];
   spacing?: {
     before?: number; // in points
     after?: number; // in points
     item?: number; // in points
   };
   alignment?: 'left' | 'center' | 'right' | 'justify';
+}
+
+/**
+ * Warn when a paragraph declares notes but renders through the revision path,
+ * where markers cannot resolve.
+ *
+ * Supporting note references inside tracked-change runs would mean threading
+ * the resolver through `createRevisionRuns` and deciding what an inserted or
+ * deleted reference even means on accept/reject. Until that exists, the
+ * combination is announced rather than swallowed.
+ */
+function reportNotesUnsupportedInRevision(
+  footnotes: readonly Note[] | undefined,
+  endnotes: readonly Note[] | undefined,
+  revision: Revision
+): void {
+  const declared = [...(footnotes ?? []), ...(endnotes ?? [])];
+  if (declared.length === 0) return;
+
+  const text = revision.segments.map((segment) => segment.text).join('');
+  const referenced = declared.filter((note) => text.includes(`[^${note.id}]`));
+  console.warn(
+    `Paragraph declares ${declared.length} note(s) (${declared
+      .map((note) => note.id)
+      .join(', ')}) alongside a \`revision\`. Tracked-change text renders ` +
+      'literally, so note markers are not resolved there' +
+      (referenced.length > 0
+        ? ` — the marker(s) ${referenced
+            .map((note) => `[^${note.id}]`)
+            .join(', ')} will render as literal text`
+        : '') +
+      '. The notes will not appear in the document.'
+  );
+}
+
+/**
+ * Wrap paragraph children in a comment range, or return them untouched when
+ * there is no comment.
+ *
+ * Empty `children` is deliberately allowed: a comment on an empty table cell
+ * anchors as a zero-length range plus its reference, which is what Word writes
+ * for a comment on an empty selection. Dropping the comment instead would lose
+ * both the anchor and the body.
+ */
+function wrapInComment(
+  children: ParagraphChild[],
+  comment: Comment | undefined
+): ParagraphChild[] {
+  const anchor = openCommentRange(comment);
+  if (!anchor) return children;
+  return [...anchor.start, ...children, ...closeCommentRange(anchor.ids)];
 }
 
 /**
@@ -384,6 +438,15 @@ export function createText(
     // Tracked changes: render revision segments as native w:ins/w:del runs
     // (literal text, no markdown parsing). Bookmarks are preserved so
     // internal hyperlinks targeting this paragraph keep working.
+    //
+    // Revision segments render literally, so a `[^id]` marker inside them stays
+    // literal text and its body is never emitted. Report that rather than
+    // dropping the declared notes in silence.
+    reportNotesUnsupportedInRevision(
+      options.footnotes,
+      options.endnotes,
+      options.revision
+    );
     const revisionRuns = createRevisionRuns(options.revision, baseTextStyle);
     if (options.bookmarkId) {
       globalBookmarkRegistry.register(
@@ -993,6 +1056,10 @@ export function createList(
   // paragraph that actually renders and closes on the last. Empty items are
   // skipped below, so neither end can be read off the item index — and docx
   // copies `children` at construction, so both ends must be known up front.
+  // One resolver for the whole list: ids are declared on the list, and markers
+  // may appear in any item.
+  const noteResolver = createNoteResolver(options.footnotes, options.endnotes);
+
   const rendersAt = items.map((item) => {
     const text = typeof item === 'string' ? item : item.text;
     const revision = typeof item === 'object' ? item.revision : undefined;
@@ -1024,6 +1091,7 @@ export function createList(
           {},
           {
             enableHyperlinks: true,
+            noteRef: noteResolver?.resolve,
           }
         );
 
@@ -1065,6 +1133,12 @@ export function createList(
 
     paragraphs.push(paragraph);
   });
+
+  noteResolver?.reportUnemitted(
+    items
+      .map((item) => (typeof item === 'string' ? item : item.text))
+      .join('\n')
+  );
 
   return paragraphs;
 }
@@ -1788,9 +1862,11 @@ export async function createTable(
   ): Promise<ParagraphChild[]> => {
     let cellChildren: ParagraphChild[] = [];
 
-    // Handle undefined or empty content
+    // Handle undefined or empty content. A comment on an empty cell still has
+    // to anchor somewhere: Word writes a zero-length range plus the reference,
+    // which is what `wrapInComment` produces for an empty child list.
     if (!cell) {
-      return cellChildren;
+      return wrapInComment(cellChildren, comment);
     }
 
     // Create merged style with config overrides
@@ -1937,16 +2013,7 @@ export async function createTable(
 
     // The comment lives on the cell, so it wraps whatever the cell rendered —
     // string, paragraph or image alike.
-    const commentAnchor = openCommentRange(comment);
-    if (commentAnchor) {
-      cellChildren = [
-        ...commentAnchor.start,
-        ...cellChildren,
-        ...closeCommentRange(commentAnchor.ids),
-      ];
-    }
-
-    return cellChildren;
+    return wrapInComment(cellChildren, comment);
   };
 
   // Create header row by iterating through columns
