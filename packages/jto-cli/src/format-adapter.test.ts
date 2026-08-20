@@ -5,6 +5,7 @@ import {
   createComponent as createPptxComponent,
   createVersion as createPptxVersion,
 } from '@json-to-office/core-pptx';
+import type { GenerationWarning } from '@json-to-office/shared';
 import { DocxFormatAdapter, PptxFormatAdapter } from './format-adapter';
 import { runWithDiagnosticSink } from './services/diagnostics.js';
 
@@ -269,5 +270,195 @@ describe('plugins do not restyle the document', () => {
     ).generateBuffer(themedDeck('dark'));
 
     expect(requested.equals(own)).toBe(true);
+  });
+});
+
+/**
+ * `emitGenerationWarnings` writes to an AsyncLocalStorage diagnostic sink that
+ * only the CLI installs — off the CLI it is a no-op, so core warnings had no
+ * way of reaching the playground. `GeneratorOptions.warnings` is the array
+ * sink that carries them out.
+ *
+ * The family is deliberately one that is neither in SAFE_FONTS nor in
+ * POPULAR_GOOGLE_FONTS, so validation actually flags it.
+ */
+const UNKNOWN_FAMILY = 'Acme Brand Sans';
+
+function reportWithFont(family: string) {
+  return {
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [
+      { name: 'paragraph', props: { text: 'Body.', font: { family } } },
+    ],
+  };
+}
+
+function deckWithFont(family: string) {
+  return {
+    name: 'pptx',
+    props: {},
+    children: [
+      {
+        name: 'slide',
+        props: {},
+        children: [
+          { name: 'text', props: { text: 'Body.', fontFace: family } },
+        ],
+      },
+    ],
+  };
+}
+
+const unresolved = (warnings: GenerationWarning[]) =>
+  warnings.filter((w) => w.context?.code === 'FONT_UNRESOLVED');
+
+describe('generation warnings sink', () => {
+  it('fills the sink on the docx path without plugins', async () => {
+    const warnings: GenerationWarning[] = [];
+
+    await new DocxFormatAdapter().generateBuffer(
+      reportWithFont(UNKNOWN_FAMILY),
+      { warnings }
+    );
+
+    const hits = unresolved(warnings);
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits[0].component).toBe('fontRegistry');
+    expect(hits[0].message).toContain(UNKNOWN_FAMILY);
+  });
+
+  it('fills the sink on the docx createGenerator path', async () => {
+    const warnings: GenerationWarning[] = [];
+    const generator = await new DocxFormatAdapter().createGenerator([], {
+      warnings,
+    });
+
+    await generator.generateBuffer(reportWithFont(UNKNOWN_FAMILY));
+
+    expect(unresolved(warnings).length).toBeGreaterThan(0);
+  });
+
+  it('fills the sink on the pptx path without plugins', async () => {
+    const warnings: GenerationWarning[] = [];
+
+    await new PptxFormatAdapter().generateBuffer(deckWithFont(UNKNOWN_FAMILY), {
+      warnings,
+    });
+
+    const hits = unresolved(warnings);
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits[0].message).toContain(UNKNOWN_FAMILY);
+  });
+
+  it('fills the sink on the pptx createGenerator path', async () => {
+    const warnings: GenerationWarning[] = [];
+    const generator = await new PptxFormatAdapter().createGenerator([], {
+      warnings,
+    });
+
+    await generator.generateBuffer(deckWithFont(UNKNOWN_FAMILY));
+
+    expect(unresolved(warnings).length).toBeGreaterThan(0);
+  });
+
+  it('normalizes pptx PipelineWarnings into the client-facing shape', async () => {
+    const warnings: GenerationWarning[] = [];
+
+    await new PptxFormatAdapter().generateBuffer(deckWithFont(UNKNOWN_FAMILY), {
+      warnings,
+    });
+
+    expect(warnings.length).toBeGreaterThan(0);
+    for (const w of warnings) {
+      // A raw PipelineWarning has no `severity` and may have no `component` —
+      // both would render as an empty chip in the playground's WarningsPanel.
+      expect(typeof w.component).toBe('string');
+      expect(w.component.length).toBeGreaterThan(0);
+      expect(['warning', 'info']).toContain(w.severity);
+      // `code` is promoted off PipelineWarning into `context`.
+      expect(typeof w.context?.code).toBe('string');
+    }
+  });
+
+  it('fills the sink on the docx plugin path', async () => {
+    const warnings: GenerationWarning[] = [];
+    const generator = await new DocxFormatAdapter().createGenerator(
+      [docxPlugin],
+      { warnings }
+    );
+
+    await generator.generateBuffer(reportWithFont(UNKNOWN_FAMILY));
+
+    expect(unresolved(warnings).length).toBeGreaterThan(0);
+  });
+
+  it('fills the sink on the pptx plugin path', async () => {
+    const warnings: GenerationWarning[] = [];
+    const generator = await new PptxFormatAdapter().createGenerator(
+      [pptxPlugin],
+      { warnings }
+    );
+
+    await generator.generateBuffer(deckWithFont(UNKNOWN_FAMILY));
+
+    expect(unresolved(warnings).length).toBeGreaterThan(0);
+  });
+
+  it('keeps the terminal output when a sink is also supplied', async () => {
+    const warnings: GenerationWarning[] = [];
+    const terminal: string[] = [];
+
+    await runWithDiagnosticSink(
+      (text) => terminal.push(text),
+      async () => {
+        await new DocxFormatAdapter().generateBuffer(
+          reportWithFont(UNKNOWN_FAMILY),
+          { warnings }
+        );
+      }
+    );
+
+    // Sink and terminal are additive, not exclusive.
+    expect(unresolved(warnings).length).toBeGreaterThan(0);
+    expect(
+      terminal.filter((text) => text.includes(UNKNOWN_FAMILY)).length
+    ).toBeGreaterThan(0);
+  });
+
+  it('accumulates across repeated generations on one generator', async () => {
+    // Documented semantics: the sink is per logical request, never per call.
+    const warnings: GenerationWarning[] = [];
+    const generator = await new DocxFormatAdapter().createGenerator([], {
+      warnings,
+    });
+
+    await generator.generateBuffer(reportWithFont(UNKNOWN_FAMILY));
+    const afterFirst = unresolved(warnings).length;
+    await generator.generateBuffer(reportWithFont(UNKNOWN_FAMILY));
+
+    expect(unresolved(warnings).length).toBe(afterFirst * 2);
+  });
+
+  it('still returns a bare Buffer from every generate path', async () => {
+    // Guards the six `.equals()` assertions above: widening the return type to
+    // `{buffer, warnings}` would break four call sites outside this file.
+    const docx = new DocxFormatAdapter();
+    const pptx = new PptxFormatAdapter();
+
+    expect(Buffer.isBuffer(await docx.generateBuffer(report(), {}))).toBe(true);
+    expect(
+      Buffer.isBuffer(
+        await (await docx.createGenerator([], {})).generateBuffer(report())
+      )
+    ).toBe(true);
+    expect(Buffer.isBuffer(await pptx.generateBuffer(themedDeck(), {}))).toBe(
+      true
+    );
+    expect(
+      Buffer.isBuffer(
+        await (await pptx.createGenerator([], {})).generateBuffer(themedDeck())
+      )
+    ).toBe(true);
   });
 });

@@ -26,6 +26,32 @@ function emitGenerationWarnings(warnings: GenerationWarning[]): void {
   }
 }
 
+/**
+ * Normalize a core's warning array into the single client/CLI-facing shape.
+ *
+ * DOCX cores already emit `GenerationWarning`; PPTX cores emit
+ * `PipelineWarning = {code, message, component?, slide?}` — no `severity` and
+ * an optional `component`. Left raw, a PipelineWarning renders as an empty
+ * component chip in the playground's WarningsPanel, so both shapes funnel
+ * through here and come out self-describing.
+ */
+function toGenerationWarnings(
+  raw: readonly any[] | null | undefined
+): GenerationWarning[] {
+  return (raw ?? []).map((w) => ({
+    component: w?.component ?? 'pptx',
+    message: String(w?.message ?? ''),
+    severity: (w?.severity === 'info' ? 'info' : 'warning') as
+      | 'warning'
+      | 'info',
+    context: {
+      ...(w?.context && typeof w.context === 'object' ? w.context : {}),
+      ...(w?.code !== undefined && { code: w.code }),
+      ...(w?.slide !== undefined && { slide: w.slide }),
+    },
+  }));
+}
+
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 function safeThemeKey(name: string | undefined): string {
   return name && !UNSAFE_KEYS.has(name) ? name : 'custom';
@@ -166,6 +192,17 @@ export interface GeneratorOptions {
    * normally the input document's own directory (#142).
    */
   baseDir?: string;
+  /**
+   * Optional sink for structured generation warnings (FONT_UNRESOLVED and
+   * friends). Mirrors core-docx's `JsonGenerationOptions.warnings`, and is the
+   * only delivery mechanism that works off the CLI: `emitGenerationWarnings`
+   * routes through an AsyncLocalStorage sink that is a no-op on the server.
+   *
+   * Adapters PUSH into it; they never replace it. Warnings therefore
+   * ACCUMULATE across repeated `generateBuffer` calls on one
+   * `GeneratorResult` — allocate one array per logical request.
+   */
+  warnings?: GenerationWarning[];
 }
 
 export interface GeneratorResult {
@@ -268,6 +305,7 @@ export class DocxFormatAdapter implements FormatAdapter {
       warnings,
     });
     emitGenerationWarnings(warnings);
+    options.warnings?.push(...toGenerationWarnings(warnings));
     return buffer;
   }
 
@@ -309,6 +347,7 @@ export class DocxFormatAdapter implements FormatAdapter {
             warnings,
           });
           emitGenerationWarnings(warnings);
+          options.warnings?.push(...toGenerationWarnings(warnings));
           return buffer;
         },
         hasPlugins: false,
@@ -358,6 +397,7 @@ export class DocxFormatAdapter implements FormatAdapter {
           baseDir: options.baseDir,
         });
         emitGenerationWarnings(result.warnings ?? []);
+        options.warnings?.push(...toGenerationWarnings(result.warnings));
         return result.buffer;
       },
       getStandardDefinition: generator.expandStandardDefinition
@@ -640,7 +680,11 @@ export class PptxFormatAdapter implements FormatAdapter {
       resolved.customThemes
     );
     const services = buildServicesFromEnv();
-    return await core.generateBufferFromJson(docDefinition as any, {
+    // The warnings-returning entry point: `generateBufferFromJson` allocates
+    // the pipeline's warning array internally and throws it away, so core
+    // warnings (FONT_UNRESOLVED among them) never reached the terminal or the
+    // server.
+    const result = await core.generateBufferWithWarnings(docDefinition as any, {
       customThemes,
       services,
       fonts: options.fonts,
@@ -651,6 +695,10 @@ export class PptxFormatAdapter implements FormatAdapter {
       generatedAt: options.generatedAt,
       baseDir: options.baseDir,
     });
+    const normalized = toGenerationWarnings(result.warnings);
+    emitGenerationWarnings(normalized);
+    options.warnings?.push(...normalized);
+    return result.buffer;
   }
 
   async createGenerator(
@@ -677,7 +725,7 @@ export class PptxFormatAdapter implements FormatAdapter {
             typeof document === 'string' ? JSON.parse(document) : document;
           const { document: docDefinition, customThemes: themes } =
             withRequestedTheme(parsed, requestedTheme, customThemes);
-          return await core.generateBufferFromJson(docDefinition, {
+          const result = await core.generateBufferWithWarnings(docDefinition, {
             customThemes: themes,
             services,
             fonts: options.fonts,
@@ -688,6 +736,10 @@ export class PptxFormatAdapter implements FormatAdapter {
             generatedAt: options.generatedAt,
             baseDir: options.baseDir,
           });
+          const normalized = toGenerationWarnings(result.warnings);
+          emitGenerationWarnings(normalized);
+          options.warnings?.push(...normalized);
+          return result.buffer;
         },
         hasPlugins: false,
         pluginNames: [],
@@ -735,6 +787,9 @@ export class PptxFormatAdapter implements FormatAdapter {
           generatedAt: options.generatedAt,
           baseDir: options.baseDir,
         });
+        const normalized = toGenerationWarnings(result.warnings);
+        emitGenerationWarnings(normalized);
+        options.warnings?.push(...normalized);
         return result.buffer;
       },
       hasPlugins: true,
