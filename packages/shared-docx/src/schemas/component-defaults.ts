@@ -55,13 +55,20 @@ export const ImageComponentDefaultsSchema = Type.Partial(ImagePropsSchema);
 export const StatisticComponentDefaultsSchema =
   Type.Partial(StatisticPropsSchema);
 /**
- * `columns` and `rows` are table *content*, not defaults: they carry cell text,
- * cell comments and row/cell revisions, all of which are per-instance. Since
- * `Type.Partial` is shallow, leaving them in would let a theme inject the same
- * revision or comment into every table in the document.
+ * `rows` is table *content*, not a default: it carries per-row revisions, and
+ * `Type.Partial` is shallow, so leaving it in would let a theme mark the same
+ * row of every table inserted or deleted.
+ *
+ * The leak is real only for `rows`, and only because `rows` is optional on the
+ * instance. `deepMerge` replaces arrays wholesale rather than merging them
+ * element-wise, and `columns` is the one required table prop — so a valid
+ * table always supplies its own `columns`, which replaces any the theme
+ * declared, cell comments and revisions included. `columns` therefore stays
+ * here: it is inert in defaults, and rejecting an inert field would break
+ * existing themes for no gain.
  */
 export const TableComponentDefaultsSchema = Type.Partial(
-  Type.Omit(TablePropsSchema, ['columns', 'rows'])
+  Type.Omit(TablePropsSchema, ['rows'])
 );
 export const SectionComponentDefaultsSchema = Type.Partial(SectionPropsSchema);
 export const ColumnsComponentDefaultsSchema = Type.Partial(ColumnsPropsSchema);

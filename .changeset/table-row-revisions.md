@@ -31,6 +31,9 @@ and are reported in `summary.untracked`.
 merge state for a revision to describe) and the `*PrChange` family, which would
 require the differ to synthesise a fully-resolved old-version options object.
 
-`columns` and `rows` are now excluded from `componentDefaults.table`: they carry
-per-instance content, and `Type.Partial` is shallow, so a theme could otherwise
-inject the same revision, comment or cell text into every table.
+`rows` is excluded from `componentDefaults.table`: `Type.Partial` is shallow and
+`rows` is optional on a table, so a theme could otherwise mark the same row of
+every table inserted or deleted. `columns` is deliberately left alone — theme
+defaults replace arrays wholesale rather than merging them element-wise, and
+`columns` is required on every table, so a theme's `columns` (and any comment or
+revision inside it) can never reach one.
