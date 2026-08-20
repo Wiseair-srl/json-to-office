@@ -376,11 +376,43 @@ function diffTextComponent(
   return {
     ...newNode,
     props: {
-      ...newNode.props,
+      ...revisedTextProps(newNode, path, ctx),
       text: newText,
       revision: makeRevision(ctx, segments),
     },
   };
+}
+
+/**
+ * Props for a paragraph the redline marks as a tracked change.
+ *
+ * `footnotes`/`endnotes` cannot ride along: revision segments render literally,
+ * so a `[^id]` marker inside them never resolves — and the renderer rejects the
+ * pair outright, so emitting both would produce a redline that cannot be
+ * rendered at all. Drop them and say so, the same way the differ reports every
+ * other change Word cannot express.
+ */
+function revisedTextProps(
+  node: JsonNode,
+  path: string,
+  ctx: DiffContext
+): Record<string, unknown> {
+  const props = { ...(node.props ?? {}) };
+  const dropped = (['footnotes', 'endnotes'] as const).filter((kind) => {
+    const notes = props[kind];
+    return Array.isArray(notes) && notes.length > 0;
+  });
+
+  if (dropped.length === 0) return props;
+
+  for (const kind of dropped) delete props[kind];
+  ctx.summary.untracked.push({
+    path,
+    kind: 'modified',
+    component: node.name,
+    detail: `${dropped.join(' and ')} dropped from a tracked-change paragraph (note markers do not resolve inside revision text); the note bodies are not in the redline`,
+  });
+  return props;
 }
 
 /** Whole text component inserted/deleted → fully tracked block. */
@@ -396,7 +428,7 @@ function insertedTextComponent(
   return {
     ...node,
     props: {
-      ...node.props,
+      ...revisedTextProps(node, path, ctx),
       text,
       revision: makeRevision(ctx, segments),
     },
@@ -415,7 +447,7 @@ function deletedTextComponent(
   return {
     ...node,
     props: {
-      ...node.props,
+      ...revisedTextProps(node, path, ctx),
       text: '',
       revision: makeRevision(ctx, segments),
     },
