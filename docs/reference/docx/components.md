@@ -580,7 +580,7 @@ A row revision is structural, so it uses a different shape from the text `Revisi
 
 Not supported, and reported as untracked by the differ: column insert/delete, cell merging, and the `*PrChange` family (formatting-only tracked changes).
 
-`columns` and `rows` are excluded from `componentDefaults.table` — they carry per-instance content, and `Type.Partial` is shallow, so a shared default would inject the same revisions, comments and cell text into every table.
+`rows` is excluded from `componentDefaults.table`: it is optional on a table, so a theme's `rows` would otherwise reach every table that does not declare its own and mark the same row inserted or deleted. `columns` stays allowed but has no effect — theme defaults replace arrays wholesale rather than merging them, and `columns` is required on every table, so an instance always supplies its own.
 
 Set `trackRevisions: true` on the [`docx` root](/reference/docx/document#docx-root) to open the document with track-changes mode active (redlines produced by `diffDocuments` do this automatically). `revision` is deliberately excluded from `componentDefaults` — revisions describe specific edits and cannot be defaulted.
 
