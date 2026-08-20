@@ -203,6 +203,7 @@ A **column-based** table: each column declares its header, width, cell defaults,
 | Prop                      | Type                                                                                | Required | Default | Description                                                                        |
 | ------------------------- | ----------------------------------------------------------------------------------- | -------- | ------- | ---------------------------------------------------------------------------------- |
 | `columns`                 | `Column[]` (min 1)                                                                  | **yes**  | —       | See the Column table below                                                         |
+| `rows`                    | `Row[]`                                                                             | no       | —       | Row-parallel properties, indexed like `cells` (see [Table rows](#table-rows))      |
 | `borderColor`             | `string` \| `{ top?, bottom?, left?, right? }`                                      | no       | theme   | Hex without `#`                                                                    |
 | `borderSize`              | `number` \| per-side object                                                         | no       | theme   | Points                                                                             |
 | `hideBorders`             | `boolean` \| `{ top?, bottom?, left?, right?, insideHorizontal?, insideVertical? }` | no       | —       | Hide all borders or specific sides                                                 |
@@ -228,18 +229,19 @@ The header row emits `<w:tblHeader/>` unless `repeatHeaderOnPageBreak` is explic
 
 **Cell**
 
-| Field                        | Type                                                          | Description                                                                        |
-| ---------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `content`                    | `string` \| component                                         | Plain text or a full nested component (image, list, columns, ...)                  |
-| `color`                      | `string`                                                      | Text color. `#`-prefixed hex, a theme color name, or `"auto"`                      |
-| `backgroundColor`            | `string`                                                      | Cell fill. Same values as `color`, plus `"transparent"` to leave the cell unshaded |
-| `horizontalAlignment`        | `'left'` \| `'center'` \| `'right'` \| `'justify'`            |                                                                                    |
-| `verticalAlignment`          | `'top'` \| `'middle'` \| `'bottom'`                           |                                                                                    |
-| `font`                       | `{ family?, size?, bold?, fontWeight?, italic?, underline? }` | `fontWeight` (100–900) overrides `bold`                                            |
-| `borderColor` / `borderSize` | `string` / `number` (points)                                  | Per-cell border override                                                           |
-| `padding`                    | `number` \| `{ top?, bottom?, left?, right? }` (points)       |                                                                                    |
-| `height`                     | `number` (points)                                             | Minimum row height contribution                                                    |
-| `comment`                    | `Comment`                                                     | Review comment wrapping the cell's content (see [Comments](#comments))             |
+| Field                        | Type                                                          | Description                                                                                |
+| ---------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `content`                    | `string` \| component                                         | Plain text or a full nested component (image, list, columns, ...)                          |
+| `color`                      | `string`                                                      | Text color. `#`-prefixed hex, a theme color name, or `"auto"`                              |
+| `backgroundColor`            | `string`                                                      | Cell fill. Same values as `color`, plus `"transparent"` to leave the cell unshaded         |
+| `horizontalAlignment`        | `'left'` \| `'center'` \| `'right'` \| `'justify'`            |                                                                                            |
+| `verticalAlignment`          | `'top'` \| `'middle'` \| `'bottom'`                           |                                                                                            |
+| `font`                       | `{ family?, size?, bold?, fontWeight?, italic?, underline? }` | `fontWeight` (100–900) overrides `bold`                                                    |
+| `borderColor` / `borderSize` | `string` / `number` (points)                                  | Per-cell border override                                                                   |
+| `padding`                    | `number` \| `{ top?, bottom?, left?, right? }` (points)       |                                                                                            |
+| `height`                     | `number` (points)                                             | Minimum row height contribution                                                            |
+| `comment`                    | `Comment`                                                     | Review comment wrapping the cell's content (see [Comments](#comments))                     |
+| `revision`                   | `Revision`                                                    | Word-level tracked change on the cell's text (see [Revisions](#revisions-tracked-changes)) |
 
 Cell `color` and `backgroundColor` are resolved the same way paragraph and heading `font.color` are: `#RRGGBB` is normalized to bare uppercase hex, and a theme color name (`primary`, `accent`, `text`, ...) resolves to that theme's value. A bare hex without `#` still works for backwards compatibility, but only when it starts with a letter (`F0FDF4`) — a digit-leading one such as `0F0FDF` fails validation, because the shared color pattern accepts only `#RRGGBB` or an identifier.
 
@@ -518,7 +520,7 @@ Once registered, it takes `{ text: string, spaceAfter?: number }` — the text t
 
 ## Revisions (tracked changes)
 
-`heading`, `paragraph`, and individual `list` items can carry a `revision` prop describing word-level edits, rendered as native Word tracked changes (`w:ins`/`w:del`). The [diff engine](/guide/writing-docx#tracked-changes-diffing-two-documents) generates these automatically; you can also author them by hand.
+`heading`, `paragraph`, individual `list` items and table cells can carry a `revision` prop describing word-level edits, rendered as native Word tracked changes (`w:ins`/`w:del`). Whole table rows can be marked inserted or deleted through `props.rows` (see [Table rows](#table-rows)). The [diff engine](/guide/writing-docx#tracked-changes-diffing-two-documents) generates all of these automatically; you can also author them by hand.
 
 **Revision**
 
@@ -548,6 +550,37 @@ Once registered, it takes `{ text: string, spaceAfter?: number }` — the text t
   }
 }
 ```
+
+### Table rows
+
+The table model is column-major (`columns[].cells[rowIndex]`), so anything belonging to a whole row lives in a row-parallel `props.rows` array, indexed the same way as `cells`:
+
+```json
+{
+  "name": "table",
+  "props": {
+    "columns": [
+      {
+        "header": { "content": "Tier" },
+        "cells": [{ "content": "Basic" }, { "content": "Legacy" }]
+      }
+    ],
+    "rows": [{}, { "revision": { "type": "delete", "author": "Legal" } }]
+  }
+}
+```
+
+| Field         | Type                                             | Description                                                        |
+| ------------- | ------------------------------------------------ | ------------------------------------------------------------------ |
+| `revision`    | `{ type: 'insert' \| 'delete', author?, date? }` | The row itself was inserted or deleted (`w:trPr/w:ins` \| `w:del`) |
+| `cantSplit`   | `boolean`                                        | Keep this row on one page                                          |
+| `tableHeader` | `boolean`                                        | Repeat this row as a header on each page                           |
+
+A row revision is structural, so it uses a different shape from the text `Revision` above — there is no text to segment. Marking a row deleted also renders its cell text as deleted runs and marks each cell's closing paragraph mark: without that second half, accepting the change in Word would leave an empty row behind instead of removing it.
+
+Not supported, and reported as untracked by the differ: column insert/delete, cell merging, and the `*PrChange` family (formatting-only tracked changes).
+
+`columns` and `rows` are excluded from `componentDefaults.table` — they carry per-instance content, and `Type.Partial` is shallow, so a shared default would inject the same revisions, comments and cell text into every table.
 
 Set `trackRevisions: true` on the [`docx` root](/reference/docx/document#docx-root) to open the document with track-changes mode active (redlines produced by `diffDocuments` do this automatically). `revision` is deliberately excluded from `componentDefaults` — revisions describe specific edits and cannot be defaulted.
 

@@ -46,10 +46,19 @@ import {
 import { normalizeUnicodeText } from '../utils/unicode';
 import { getStyleIdForLevel } from '../styles/themeToDocxAdapter';
 import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
-import { createRevisionRuns } from '../utils/revisionUtils';
+import {
+  createMarkedTextRuns,
+  createRevisionMark,
+  createRevisionRuns,
+} from '../utils/revisionUtils';
 import { openCommentRange, closeCommentRange } from '../utils/commentAnchors';
 import { createNoteResolver } from '../utils/noteResolver';
-import type { Comment, Note, Revision } from '@json-to-office/shared-docx';
+import type {
+  Comment,
+  Note,
+  Revision,
+  RevisionMark,
+} from '@json-to-office/shared-docx';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import { synthesizeFamilyName } from '@json-to-office/shared';
 import {
@@ -1149,12 +1158,20 @@ type TableConfig = {
     cellDefaults?: CellDefaults;
     header?: CellDefaults & {
       comment?: Comment;
+      revision?: Revision;
       content?: string | ComponentDefinition;
     };
     cells?: (CellDefaults & {
       comment?: Comment;
+      revision?: Revision;
       content?: string | ComponentDefinition;
     })[];
+  }[];
+  /** Row-parallel properties, indexed like `columns[].cells`. */
+  rows?: {
+    revision?: RevisionMark;
+    cantSplit?: boolean;
+    tableHeader?: boolean;
   }[];
   keepInOnePage?: boolean;
   keepNext?: boolean;
@@ -1756,7 +1773,15 @@ export async function createTable(
     cell: string | ComponentDefinition | undefined,
     cellDefaults: NormalizedCellDefaults,
     baseCellStyle: typeof tableStyle.tableCell,
-    comment?: Comment
+    comment?: Comment,
+    revision?: Revision,
+    /**
+     * Set when the whole row is inserted or deleted. The cell's own text then
+     * renders as runs marked the same way: a `w:trPr/w:del` alone leaves the
+     * text un-struck, and accepting the change would leave an empty row rather
+     * than remove it.
+     */
+    rowMark?: RevisionMark
     // ParagraphChild rather than PlaceholderChild: a revised or commented cell
     // paragraph contributes w:ins / w:del and comment-range elements, which sit
     // outside the placeholder union.
@@ -1821,11 +1846,14 @@ export async function createTable(
         // Tracked changes take the same revision-aware path createText uses:
         // segments render as native w:ins/w:del runs (literal text, no markdown
         // parsing) instead of being silently dropped in favour of props.text.
-        cellChildren = textComp.props.revision
-          ? createRevisionRuns(textComp.props.revision, paragraphStyle)
-          : parseTextWithDecorators(textComp.props.text, paragraphStyle, {
-              enableHyperlinks: true,
-            });
+        const paragraphRevision = revision ?? textComp.props.revision;
+        cellChildren = paragraphRevision
+          ? createRevisionRuns(paragraphRevision, paragraphStyle)
+          : rowMark
+            ? createMarkedTextRuns(textComp.props.text, rowMark, paragraphStyle)
+            : parseTextWithDecorators(textComp.props.text, paragraphStyle, {
+                enableHyperlinks: true,
+              });
       } else if (isImageComponent(cell)) {
         const imageComp = cell as ImageComponentDefinition;
         try {
@@ -1898,9 +1926,13 @@ export async function createTable(
       }
     } else {
       // Handle plain string
-      cellChildren = parseTextWithDecorators(cell as string, mergedStyle, {
-        enableHyperlinks: true,
-      });
+      cellChildren = revision
+        ? createRevisionRuns(revision, mergedStyle)
+        : rowMark
+          ? createMarkedTextRuns(cell as string, rowMark, mergedStyle)
+          : parseTextWithDecorators(cell as string, mergedStyle, {
+              enableHyperlinks: true,
+            });
     }
 
     // The comment lives on the cell, so it wraps whatever the cell rendered —
@@ -1984,7 +2016,8 @@ export async function createTable(
           headerCell?.content,
           mergedDefaults,
           tableStyle.tableHeader,
-          headerCell?.comment
+          headerCell?.comment,
+          headerCell?.revision
         );
 
         const horizontalAlignment = mergedDefaults.horizontalAlignment!;
@@ -2041,6 +2074,26 @@ export async function createTable(
     Array.from({ length: numRows }, async (_, rowIndex) => {
       const isLastRow = rowIndex === numRows - 1;
 
+      // Allocate every revision id for this row here, in the synchronous
+      // prefix of the callback: `Array.from` invokes callbacks in order and
+      // this runs before any await, so ids follow document order rather than
+      // I/O completion. Each emitted w:ins/w:del gets its own id, as Word's
+      // own output does.
+      const rowProps = tableConfig.rows?.[rowIndex];
+      const rowRevision = rowProps?.revision;
+      const rowRevisionAttributes = rowRevision
+        ? createRevisionMark(rowRevision)
+        : undefined;
+
+      /**
+       * Each cell's closing paragraph mark carries the same change. Without it
+       * an accepted deletion leaves an empty row behind, and an accepted
+       * insertion leaves the row's paragraph marks untracked.
+       */
+      const paragraphMarks = rowRevision
+        ? columns.map(() => ({ run: createRevisionMark(rowRevision) }))
+        : undefined;
+
       // Calculate row height from any cell in this row that defines it
       const rowHeight = columns.reduce<number | undefined>(
         (maxHeight, column, colIndex) => {
@@ -2077,6 +2130,14 @@ export async function createTable(
           rowHeight !== undefined
             ? { value: rowHeight * 20, rule: 'atLeast' as const }
             : undefined,
+        ...(rowProps?.cantSplit !== undefined && {
+          cantSplit: rowProps.cantSplit,
+        }),
+        ...(rowProps?.tableHeader !== undefined && {
+          tableHeader: rowProps.tableHeader,
+        }),
+        // w:trPr/w:ins | w:del — the row itself was inserted or deleted.
+        ...rowRevisionAttributes,
         children: await Promise.all(
           columns.map(async (column, colIndex) => {
             const cell = column.cells?.[rowIndex];
@@ -2110,6 +2171,7 @@ export async function createTable(
                       : {}),
                     spacing: tableStyle.cellParagraph,
                     alignment: AlignmentType.LEFT,
+                    ...paragraphMarks?.[colIndex],
                     children: [],
                   }),
                 ],
@@ -2178,7 +2240,9 @@ export async function createTable(
               cell.content,
               mergedDefaults,
               tableStyle.tableCell,
-              cell.comment
+              cell.comment,
+              cell.revision,
+              rowRevision
             );
 
             const horizontalAlignment = mergedDefaults.horizontalAlignment!;
@@ -2195,6 +2259,7 @@ export async function createTable(
                     : {}),
                   spacing: tableStyle.cellParagraph,
                   alignment: getAlignment(horizontalAlignment),
+                  ...paragraphMarks?.[colIndex],
                   children: cellChildren,
                 }),
               ],

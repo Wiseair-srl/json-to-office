@@ -54,7 +54,15 @@ export const ParagraphComponentDefaultsSchema = Type.Partial(
 export const ImageComponentDefaultsSchema = Type.Partial(ImagePropsSchema);
 export const StatisticComponentDefaultsSchema =
   Type.Partial(StatisticPropsSchema);
-export const TableComponentDefaultsSchema = Type.Partial(TablePropsSchema);
+/**
+ * `columns` and `rows` are table *content*, not defaults: they carry cell text,
+ * cell comments and row/cell revisions, all of which are per-instance. Since
+ * `Type.Partial` is shallow, leaving them in would let a theme inject the same
+ * revision or comment into every table in the document.
+ */
+export const TableComponentDefaultsSchema = Type.Partial(
+  Type.Omit(TablePropsSchema, ['columns', 'rows'])
+);
 export const SectionComponentDefaultsSchema = Type.Partial(SectionPropsSchema);
 export const ColumnsComponentDefaultsSchema = Type.Partial(ColumnsPropsSchema);
 export const ListComponentDefaultsSchema = Type.Partial(

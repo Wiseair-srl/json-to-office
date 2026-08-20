@@ -474,7 +474,7 @@ console.log(summary.tracked); // { modified, inserted, deleted }
 console.log(summary.untracked); // structural changes Word can't express as tracked changes
 ```
 
-`diffDocuments` returns a new document with `trackRevisions` enabled and per-component `revision` props describing the word-level edits; render it like any other document. Changes that Word cannot express as tracked changes (for example an image swap) are reported in `summary.untracked` instead of being silently dropped. You can also author `revision` segments by hand on headings, paragraphs, and list items — see [Revisions](/reference/docx/components#revisions-tracked-changes).
+`diffDocuments` returns a new document with `trackRevisions` enabled and per-component `revision` props describing the word-level edits; render it like any other document. Tables are diffed row by row: an added or removed row becomes a row-level tracked change, and a rewritten row becomes cell-level word changes. Changes that Word cannot express as tracked changes (for example an image swap, or a changed column count) are reported in `summary.untracked` instead of being silently dropped. You can also author `revision` segments by hand on headings, paragraphs, list items and table cells, and mark whole table rows inserted or deleted — see [Revisions](/reference/docx/components#revisions-tracked-changes).
 
 ## Where to go next
 

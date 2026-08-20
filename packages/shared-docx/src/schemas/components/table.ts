@@ -5,6 +5,7 @@
 import { Type, Static, TSchema } from '@sinclair/typebox';
 import { HexColorSchema, HexColorOrTransparentSchema } from '../font';
 import { CommentSchema } from './comment';
+import { RevisionMarkSchema, RevisionSchema } from './revision';
 
 // Define Cell type - can be plain text or a component definition
 const CellContentSchema = Type.Recursive((This) =>
@@ -194,6 +195,7 @@ export function createTablePropsSchema(componentRef: TSchema): TSchema {
       Type.Number({ minimum: 0, description: 'Cell height in points' })
     ),
     comment: Type.Optional(CommentSchema),
+    revision: Type.Optional(RevisionSchema),
   };
 
   const headerSchema = Type.Object(
@@ -253,6 +255,30 @@ export function createTablePropsSchema(componentRef: TSchema): TSchema {
         description: 'Table columns with headers and cells',
         minItems: 1,
       }),
+      rows: Type.Optional(
+        Type.Array(
+          Type.Object(
+            {
+              revision: Type.Optional(RevisionMarkSchema),
+              cantSplit: Type.Optional(
+                Type.Boolean({
+                  description: 'Keep this row on one page',
+                })
+              ),
+              tableHeader: Type.Optional(
+                Type.Boolean({
+                  description: 'Repeat this row as a header on each page',
+                })
+              ),
+            },
+            { additionalProperties: false }
+          ),
+          {
+            description:
+              'Row-parallel properties, indexed like `columns[].cells`. The model is column-major, so anything that belongs to a whole row lives here.',
+          }
+        )
+      ),
       keepInOnePage: Type.Optional(
         Type.Boolean({
           description:

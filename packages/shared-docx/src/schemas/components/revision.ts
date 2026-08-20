@@ -60,3 +60,38 @@ export const RevisionSchema = Type.Object(
 
 export type RevisionSegment = Static<typeof RevisionSegmentSchema>;
 export type Revision = Static<typeof RevisionSchema>;
+
+/**
+ * A structural revision: an insertion or deletion of a whole element (a table
+ * row, say) rather than a run of text.
+ *
+ * `RevisionSchema` cannot express this — it requires `segments` with at least
+ * one entry, and a structural mark has no text of its own.
+ */
+export const RevisionMarkSchema = Type.Object(
+  {
+    type: Type.Union([Type.Literal('insert'), Type.Literal('delete')], {
+      description: 'Whether the element was inserted or deleted',
+    }),
+    author: Type.Optional(
+      Type.String({
+        description:
+          'Revision author shown in Word (default: "json-to-office")',
+      })
+    ),
+    date: Type.Optional(
+      Type.String({
+        format: 'date-time',
+        description:
+          'Revision timestamp (ISO 8601). Defaults to the Unix epoch for deterministic output',
+      })
+    ),
+  },
+  {
+    description:
+      'Structural tracked change: the element itself was inserted or deleted',
+    additionalProperties: false,
+  }
+);
+
+export type RevisionMark = Static<typeof RevisionMarkSchema>;

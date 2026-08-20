@@ -7,7 +7,11 @@ import { Table } from 'docx';
 import { ComponentDefinition, isTableComponent } from '../types';
 import { ThemeConfig } from '../styles';
 import { createTable } from '../core/content';
-import type { Comment } from '@json-to-office/shared-docx';
+import type {
+  Comment,
+  Revision,
+  RevisionMark,
+} from '@json-to-office/shared-docx';
 
 type CellContent = string | ComponentDefinition;
 
@@ -74,12 +78,20 @@ type TableConfig = {
     cellDefaults?: CellDefaults;
     header?: CellDefaults & {
       comment?: Comment;
+      revision?: Revision;
       content?: CellContent;
     };
     cells?: (CellDefaults & {
       comment?: Comment;
+      revision?: Revision;
       content?: CellContent;
     })[];
+  }[];
+  /** Row-parallel properties, indexed like `columns[].cells`. */
+  rows?: {
+    revision?: RevisionMark;
+    cantSplit?: boolean;
+    tableHeader?: boolean;
   }[];
   keepInOnePage?: boolean;
   keepNext?: boolean;
