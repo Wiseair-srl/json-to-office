@@ -35,6 +35,10 @@ export {
 
 export { rewriteFontFamilyName } from './sources/ttf-name';
 
+// Pure (URL + array membership) and browser-safe, so the playground preview
+// can apply the same host policy as the Node fetchers.
+export { isAllowedFontUrl, FONT_URL_ALLOWLIST } from './sources/url-allowlist';
+
 export { FontRegistry, type FontRegistryInput } from './registry';
 
 export { detectFontFormat } from './sources/format';

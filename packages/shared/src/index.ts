@@ -115,6 +115,8 @@ export {
   validateFontReferences,
   FontRegistry,
   detectFontFormat,
+  isAllowedFontUrl,
+  FONT_URL_ALLOWLIST,
   fetchGoogleFontSources,
   POPULAR_GOOGLE_FONTS,
   WEIGHT_LABELS,

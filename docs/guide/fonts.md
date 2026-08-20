@@ -75,7 +75,15 @@ Strict is a library/CLI feature only. The dev-server HTTP API strips `strict` fr
 
 ## Registering non-safe fonts
 
-To use a font outside SAFE_FONTS, register it via `options.fonts.extraEntries`. Each registry entry has an `id`, a `family` (the display name you reference from `font.family` / `fontFace` / `theme.fonts.*`), an optional `category` (`sans` | `serif` | `mono` | `display` | `handwriting` — used by the substitution fallback), and one or more `sources`. Six source kinds are supported:
+To use a font outside SAFE_FONTS, register it. There are three places to do that, and they compose — later ones win on a family (or `id`) collision:
+
+| Where    | How                              | Use it for                                                                       |
+| -------- | -------------------------------- | -------------------------------------------------------------------------------- |
+| Theme    | `fontRegistry` at the theme root | A brand font every document using that theme should get.                         |
+| Document | `props.fontRegistry`             | A font that travels **with the JSON** — survives export, re-import, and sharing. |
+| Runtime  | `options.fonts.extraEntries`     | Host-supplied overrides that should not be written into the document.            |
+
+Each registry entry has an `id`, a `family` (the display name you reference from `font.family` / `fontFace` / `theme.fonts.*`), an optional `category` (`sans` | `serif` | `mono` | `display` | `handwriting` — used by the substitution fallback), and one or more `sources`. Six source kinds are supported:
 
 | Kind       | Fields                                                                                                                | Meaning                                                                                               |
 | ---------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -111,9 +119,40 @@ const buffer = await generateBufferFromJson(json, {
 });
 ```
 
+The same entry shape goes in the document itself, which is the portable option — nothing outside the JSON is needed:
+
+```json
+{
+  "name": "docx",
+  "props": {
+    "fontRegistry": [
+      {
+        "id": "brand-sans",
+        "family": "Brand Sans",
+        "category": "sans",
+        "sources": [{ "kind": "data", "data": "AAEAAA...", "weight": 400 }]
+      }
+    ]
+  }
+}
+```
+
+A `fontRegistry` is a **declaration, not a reference**: the families named inside it (including a `google` source's `family`) are not treated as fonts the document uses, and `substitute` mode never rewrites them. Only actual `font.family` / `fontFace` / `theme.fonts.*` references count.
+
 ::: warning Registration is for preview fidelity, not embedding
 Registered font bytes are only materialized (fetched, cached, pinned) for the LibreOffice preview pipeline — the renderer registers them with the OS before LibreOffice runs so the in-browser PDF preview shows the real typeface. The downloaded `.docx`/`.pptx` bytes are unaffected: no embedding, ever. This includes the automatic Google Fonts staging — any referenced family that matches the bundled popular-Google catalog is auto-fetched for preview only.
 :::
+
+### From the playground
+
+The **Fonts** dialog has a **Custom** tab that writes into the open document's `props.fontRegistry` for you:
+
+- **Upload a font file** — drop in a `.ttf` or `.otf` (2 MB each). It is base64-encoded in the browser and stored as a `kind: "data"` source, so the font travels with the document. WOFF and WOFF2 are rejected: the preview stager registers every face as a `.ttf`, so a web font would silently fail to load. Family and weight are guessed from the filename (`Geist-SemiBold.ttf` → Geist at 600) and you can reference the family straight away.
+- **Embed any Google font** — not just the curated catalog. The family is fetched server-side and stored as `kind: "data"` sources too.
+
+Because the bytes live inside the JSON, the whole document is capped at 12 MB before it exceeds the server's request limit; the dialog refuses a write that would cross it.
+
+Uploaded and embedded fonts also render in the **fast in-browser preview**, which synthesizes an `@font-face` block from the registry. Intermediate weights work there too: a run authored as `fontWeight: 300` is written into the DOCX as the sub-family `Brand Sans Light`, and the preview registers a matching face under that exact name.
 
 ## CLI font flags
 

@@ -1,6 +1,7 @@
 import { FORMAT } from './env';
 import { API_ENDPOINTS } from '../config/api';
 import { env } from './env';
+import { buildPreviewFontAssets } from './preview-fonts';
 
 export type RenderPayload = {
   iframeSrc?: string;
@@ -8,7 +9,11 @@ export type RenderPayload = {
   cleanup?: () => void;
 };
 
-async function renderDocxWithDocxJS(blob: Blob): Promise<RenderPayload> {
+async function renderDocxWithDocxJS(
+  blob: Blob,
+  jsonText?: string,
+  customThemes?: Record<string, unknown>
+): Promise<RenderPayload> {
   const docx_preview = await import('docx-preview');
 
   const bodyEl = document.createElement('body');
@@ -25,6 +30,31 @@ async function renderDocxWithDocxJS(blob: Blob): Promise<RenderPayload> {
   });
 
   await Promise.race([renderPromise, timeoutPromise]);
+
+  // The DOCX never carries font bytes (word/fonts/ is always empty), so
+  // docx-preview's own renderFontTable contributes nothing. Synthesize the
+  // @font-face block from the document's fontRegistry + Google catalog.
+  // headEl is detached, so nothing is fetched by the parent page — only the
+  // iframe loads these once the serialized HTML is handed to srcdoc.
+  try {
+    const { css, googleHrefs } = await buildPreviewFontAssets(
+      jsonText,
+      customThemes
+    );
+    for (const href of googleHrefs) {
+      const gf = document.createElement('link');
+      gf.rel = 'stylesheet';
+      gf.href = href;
+      headEl.appendChild(gf);
+    }
+    if (css) {
+      const fontStyleEl = document.createElement('style');
+      fontStyleEl.textContent = css;
+      headEl.appendChild(fontStyleEl);
+    }
+  } catch (err) {
+    console.warn('Preview font injection failed; using host fonts', err);
+  }
 
   const overrideStyleEl = document.createElement('link');
   overrideStyleEl.rel = 'stylesheet';
@@ -138,7 +168,7 @@ export async function renderDocument(
     let payload: RenderPayload;
 
     if (FORMAT === 'docx' && library === 'docxjs') {
-      payload = await renderDocxWithDocxJS(blob);
+      payload = await renderDocxWithDocxJS(blob, jsonText, customThemes);
     } else {
       payload = await renderWithLibreOffice(name, blob, jsonText, customThemes);
     }

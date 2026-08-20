@@ -19,6 +19,10 @@ export const API_ENDPOINTS = {
   generate: `${FORMAT_API}/generate`,
   validate: `${FORMAT_API}/validate`,
   diff: `${FORMAT_API}/diff`,
+  fonts: {
+    catalog: `${API_BASE_URL}/fonts/catalog`,
+    materialize: `${API_BASE_URL}/fonts/materialize`,
+  },
   preview: {
     libreoffice: `${FORMAT_API}/preview/libreoffice`,
     libreofficeFromJson: `${FORMAT_API}/preview/libreoffice-from-json`,
