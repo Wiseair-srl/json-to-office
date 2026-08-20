@@ -298,6 +298,18 @@ function EditorMonacoJson({
   useEffect(() => {
     if (value === undefined) return;
     if (value === lastSavedRef.current) return;
+    // A queued collapse pass holds offsets into the model we are about to
+    // replace, so drop it; the recollapse below rebuilds that state anyway.
+    debouncedCollapseNewRef.current.cancel();
+    // Replace the model ourselves rather than letting the react wrapper diff
+    // its `value` prop against the model. The two are not comparable once the
+    // collapser has run — the model holds sentinels where long strings used to
+    // be, so it is both shorter than and textually unlike the document. The
+    // wrapper's edit is computed from that mismatch and can leave the previous
+    // document's tail stranded past the end of the new one, which surfaces as
+    // a bogus "End of file expected" error on a perfectly valid document.
+    const model = editorRef.current?.getModel();
+    if (model && model.getValue() !== value) model.setValue(value);
     setEditorValue(value);
   }, [value]);
 
@@ -311,7 +323,13 @@ function EditorMonacoJson({
       return;
     }
     if (!collapseRef.current) return;
-    const handle = setTimeout(() => collapseRef.current?.recollapse(), 0);
+    const handle = setTimeout(() => {
+      // Same reasoning as above: the replacement itself queues a collapse pass
+      // anchored to pre-replacement offsets. recollapse() resets state and
+      // re-scans, so that queued pass is both redundant and unsafe.
+      debouncedCollapseNewRef.current.cancel();
+      collapseRef.current?.recollapse();
+    }, 0);
     return () => clearTimeout(handle);
   }, [editorValue]);
 

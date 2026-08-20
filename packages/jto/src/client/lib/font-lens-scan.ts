@@ -148,6 +148,11 @@ export function scanFontLenses(text: string): FontLens[] {
     if (!top || top.kind !== 'object') return false;
     const key = top.key;
     if (!key) return false;
+    // A fontRegistry entry declares a family rather than referencing one, so
+    // "pick a different font" is the wrong offer: rewriting it renames the
+    // registration and orphans every reference to it. Mirrors the same
+    // exclusion in the shared collector.
+    if (pathStack.includes('fontRegistry')) return false;
     if (ANYWHERE_KEYS.has(key)) return true;
     if (UNDER_FONTS_KEYS.has(key)) {
       // Require immediate parent object to be named 'fonts'.
