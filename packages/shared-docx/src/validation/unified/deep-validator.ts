@@ -177,19 +177,38 @@ export function collectNoteRevisionConflicts(data: unknown): ValidationError[] {
     }
     if (!node || typeof node !== 'object') return;
 
+    // A paragraph revised directly, or a table cell whose own revision drives
+    // the runs of the paragraph inside it — both render the text from segments,
+    // so neither can resolve a marker.
+    const revisedNotes: { notes: unknown; path: string }[] = [];
     if (node.name === 'paragraph' && node.props?.revision) {
       for (const kind of ['footnotes', 'endnotes'] as const) {
-        const notes = node.props[kind];
-        if (Array.isArray(notes) && notes.length > 0) {
-          errors.push({
-            path: `${path}/props/${kind}`,
-            message:
-              `A paragraph cannot carry both "revision" and "${kind}". Tracked-change ` +
-              'text renders literally, so note markers inside it are not resolved and the ' +
-              'note bodies would be dropped. Move the notes to a paragraph without a revision.',
-            code: 'mutually_exclusive',
-          });
-        }
+        revisedNotes.push({
+          notes: node.props[kind],
+          path: `${path}/props/${kind}`,
+        });
+      }
+    }
+    if (node.revision && node.content?.name === 'paragraph') {
+      for (const kind of ['footnotes', 'endnotes'] as const) {
+        revisedNotes.push({
+          notes: node.content.props?.[kind],
+          path: `${path}/content/props/${kind}`,
+        });
+      }
+    }
+
+    for (const { notes, path: notesPath } of revisedNotes) {
+      if (Array.isArray(notes) && notes.length > 0) {
+        const kind = notesPath.endsWith('endnotes') ? 'endnotes' : 'footnotes';
+        errors.push({
+          path: notesPath,
+          message:
+            `"revision" and "${kind}" cannot apply to the same text. Tracked-change ` +
+            'text renders literally, so note markers inside it are not resolved and the ' +
+            'note bodies would be dropped. Move the notes to text without a revision.',
+          code: 'mutually_exclusive',
+        });
       }
     }
 

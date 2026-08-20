@@ -67,6 +67,49 @@ describe('collectNoteRevisionConflicts', () => {
     ).toEqual([]);
   });
 
+  it('flags a cell revision over a paragraph carrying notes', () => {
+    // The cell's own revision drives the runs, so the nested paragraph's
+    // markers cannot resolve either.
+    const errors = collectNoteRevisionConflicts({
+      name: 'table',
+      props: {
+        columns: [
+          {
+            cells: [
+              {
+                revision: REVISION,
+                content: paragraph({
+                  text: 'new[^a]',
+                  footnotes: [{ id: 'a', text: 'body' }],
+                }),
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0].path).toContain('/content/props/footnotes');
+  });
+
+  it('allows a cell revision over a paragraph without notes', () => {
+    expect(
+      collectNoteRevisionConflicts({
+        name: 'table',
+        props: {
+          columns: [
+            {
+              cells: [
+                { revision: REVISION, content: paragraph({ text: 'new' }) },
+              ],
+            },
+          ],
+        },
+      })
+    ).toEqual([]);
+  });
+
   it('reaches paragraphs nested in containers and table cells', () => {
     const errors = collectNoteRevisionConflicts({
       name: 'docx',

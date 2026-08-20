@@ -23,3 +23,8 @@ tracked change has its notes stripped and reported in `summary.untracked`.
 Without that, redlining a document whose paragraphs carry footnotes would
 produce a redline that fails the new validation — the notes could never have
 survived it anyway.
+
+The same rule covers a table cell whose own `revision` drives the runs of a
+paragraph inside it, and the table differ now keeps a component cell a
+component — it previously replaced the content with a bare string when it
+revised the cell, silently discarding the paragraph's font and other props.

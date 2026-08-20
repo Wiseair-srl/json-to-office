@@ -607,6 +607,50 @@ describe('notes on tracked-change paragraphs', () => {
     ).toBeUndefined();
   });
 
+  it('keeps a component cell a component when the differ revises it', () => {
+    // Replacing the content with a bare string would silently discard the
+    // paragraph's font, alignment and everything else it carries.
+    const cellTable = (price: string): JsonNode => ({
+      name: 'table',
+      props: {
+        columns: [
+          {
+            header: { content: 'Price' },
+            cells: [
+              {
+                content: {
+                  name: 'paragraph',
+                  props: {
+                    text: price,
+                    font: { bold: true },
+                    alignment: 'right',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const { document } = diffDocuments(
+      doc([cellTable('10')]),
+      doc([cellTable('12')])
+    );
+
+    const cell = (document.children![0].props as any).columns[0].cells[0];
+    expect(cell.content.name).toBe('paragraph');
+    expect(cell.content.props).toMatchObject({
+      text: '12',
+      font: { bold: true },
+      alignment: 'right',
+    });
+    expect(cell.revision.segments).toEqual([
+      { type: 'delete', text: '10' },
+      { type: 'insert', text: '12' },
+    ]);
+  });
+
   it('leaves notes alone on an unchanged paragraph', () => {
     const { document } = diffDocuments(
       doc([withNote('Unchanged[^a].')]),

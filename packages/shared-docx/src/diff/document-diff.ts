@@ -747,9 +747,36 @@ function revisedCell(
   return {
     ...base,
     // The revision carries the text, so `content` keeps the new version for
-    // readers that ignore tracked changes.
-    content: newText,
+    // readers that ignore tracked changes. A component cell keeps being a
+    // component — replacing it with a bare string would silently discard the
+    // paragraph's font, alignment and the rest.
+    content: revisedCellContent(base.content, newText, path, ctx),
     revision: makeRevision(ctx, segments),
+  };
+}
+
+/**
+ * The new `content` for a revised cell: a plain string stays a string, a
+ * paragraph component keeps its props and only its text is rewritten.
+ *
+ * Notes cannot come along — the cell's revision drives the rendered runs, so a
+ * `[^id]` marker in them never resolves, exactly as on a revised paragraph.
+ */
+function revisedCellContent(
+  content: unknown,
+  newText: string,
+  path: string,
+  ctx: DiffContext
+): unknown {
+  if (!content || typeof content !== 'object') return newText;
+
+  const component = content as JsonNode;
+  return {
+    ...component,
+    props: {
+      ...revisedTextProps(component, path, ctx),
+      text: newText,
+    },
   };
 }
 
