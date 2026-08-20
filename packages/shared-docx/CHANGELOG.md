@@ -1,5 +1,271 @@
 # @json-to-office/shared-docx
 
+## 0.34.0
+
+### Minor Changes
+
+- ae9b1d4: Bump the `docx` rendering backend from 9.5.1 to 9.7.1 (six releases, ~11
+  months). The pin stays exact in `pnpm.overrides` and in every peer/dependency
+  declaration.
+
+  Package-level consequences of the upgrade, verified against the full document
+  corpus:
+
+  - Every document now carries a `word/endnotes.xml` part plus its relationship
+    and content-type override, and `styles.xml` gains docx's default
+    `EndnoteReference` / `EndnoteText` / `EndnoteTextChar` styles. Relationship
+    ids shift by one as a result.
+  - docx serializes some attributes in a different order than 9.5.1 (for example
+    `w:spacing`, `w:compatSetting`) — semantically identical output, but a reason
+    no downstream code should pattern-match OOXML on attribute position.
+
+  Verified locally: clean build, typecheck, lint, unchanged test counts, all seven
+  corpus documents generate with unique `wp:docPr` ids, structurally valid
+  packages (well-formed parts, resolvable relationships, complete content types),
+  and LibreOffice PDF rasters unchanged apart from that renderer's own
+  page-to-page nondeterminism.
+
+- 912f1b7: Add comment threads: replies and resolved state.
+
+  A `comment` now accepts `replies` (in order) and `resolved`. Every comment in a
+  thread anchors over the same range — how Word groups them in the review pane —
+  and thread parentage is derived rather than authored: the renderer allocates the
+  ids, sets each reply's parent, and lets docx write
+  `word/commentsExtended.xml` with the `w15:paraIdParent` links and `w15:done`
+  flags.
+
+  Word threads are one level deep, so a reply carries the comment fields without
+  threading of its own.
+
+  One docx limitation is surfaced rather than swallowed: the resolved flag lives
+  in `commentsExtended.xml`, which docx writes only when the document contains at
+  least one reply. Setting `resolved` on a comment with no replies anywhere warns
+  that the flag will not survive.
+
+  Needs docx 9.7.1 — none of the threading machinery exists in 9.5.1.
+
+- ea6b6af: Add Word review comments (single, unthreaded).
+
+  `heading`, `paragraph`, `list` and table cells (header and body) accept a
+  `comment` prop — `{ text, author?, initials?, date? }`. The commented runs are
+  wrapped in a `w:commentRangeStart` / `w:commentRangeEnd` pair followed by a
+  `w:commentReference` run, with the body written to `word/comments.xml`. A
+  list-level comment spans the whole list: the range opens on the first rendered
+  item and closes on the last.
+
+  Comment ids come from their own registry — a separate OOXML namespace from the
+  `w:ins`/`w:del` ids, but the same per-render async-local scoping, so concurrent
+  generations cannot interleave counters. Author and date default to stable
+  values so identical input still produces identical bytes.
+
+  Supporting changes:
+
+  - `componentDefaults` now rejects `comment` as well as `revision`. Both come
+    from one exported `PER_INSTANCE_PROPS` list, and the regression test is driven
+    by that list so a future per-instance prop cannot be forgotten.
+  - New `'comment-ids'` cache-bypass reason (`ComponentBypassReason`), so a
+    commented component is never served from the cross-document cache.
+  - The document differ no longer reports a changed `comment` as an untracked
+    formatting change.
+  - Dropped the vestigial `includeComments` request flag: comments are authored on
+    the components that carry them, so a request-level toggle has nothing to mean.
+    The options object stays open, so existing callers are unaffected.
+
+- 234a97e: Add endnotes.
+
+  A `paragraph` now accepts `endnotes` alongside `footnotes`, with the same
+  `[{ id, text }]` shape and the same `[^id]` markers. The two differ only in
+  where Word puts the body: the foot of the page, or the end of the document.
+
+  - An id resolves against `footnotes` first, then `endnotes`. Declaring the same
+    id in both warns and uses the footnote, so the result does not depend on prop
+    order.
+  - Footnotes and endnotes number independently — they are separate OOXML parts —
+    and both are emitted only when a marker actually resolves to them.
+  - Endnote text picks up the theme's `normal` style two points smaller, through
+    Word's built-in `EndnoteText` / `EndnoteReference` styles.
+
+  The note schema and resolver are shared rather than duplicated:
+  `schemas/components/footnote.ts` becomes `note.ts` (exporting `NoteSchema`,
+  `FootnotesSchema`, `EndnotesSchema`) and `footnoteResolver.ts` becomes
+  `noteResolver.ts`. `endnotes` joins the per-instance props excluded from
+  `componentDefaults`.
+
+  Needs docx 9.7.1: `IPropertiesOptions.endnotes` does not exist in 9.5.1.
+
+- 34fdb52: Add footnotes.
+
+  A footnote is authored in two halves: an inline `[^id]` marker in a
+  `paragraph`'s text and the body declared on the same paragraph via a new
+  `footnotes` prop (`[{ id, text }]`). The marker renders as a
+  `w:footnoteReference` and the body lands in `word/footnotes.xml`, so Word
+  numbers the notes and places them at the foot of the page.
+
+  - `[^id]` is only syntax where footnotes are declared, so existing documents —
+    including prose containing regex character classes like `[^a-z]+` — are
+    untouched.
+  - Numbering follows reference order; a body no marker resolves to is not
+    emitted and is reported. A repeated marker reuses the same note.
+  - Markers resolve at the leaf of the text parser, so `**bold[^n]**` keeps its
+    emphasis and a marker beside a link still works. They are not recognised in
+    text that also carries `{PLACEHOLDER}` substitutions, which now warns instead
+    of failing silently.
+  - Footnote ids come from a per-render async-local registry, so concurrent
+    generations cannot cross-reference each other's bodies.
+
+  `createWordStyles` now always emits the `default` styles key rather than only
+  when a document language is set, and fills in the `footnoteText` /
+  `footnoteReference` hooks from the theme's `normal` style two points smaller —
+  otherwise notes would render in Word's default font rather than the document's.
+
+- 5ea33ff: Add per-level marker styling to lists.
+
+  A list level now accepts a `font` (`family`, `size`, `color`, `bold`, `italic`,
+  `underline`) that maps to the numbering level's own run properties, so the
+  number or bullet glyph can carry a font, size, weight or colour independent of
+  the list text. `color` accepts a hex value or a theme colour token like every
+  other colour in the schema. This was the one thing about list markers that was
+  previously inexpressible: numbering only ever emitted paragraph indentation.
+
+  Levels without a `font` emit exactly the XML they did before.
+
+- 51f958a: Add table row insert/delete and cell text revisions, and teach the differ to
+  diff tables row by row.
+
+  **Authoring.** The table model is column-major, so anything belonging to a whole
+  row lives in a new row-parallel `props.rows` array indexed like
+  `columns[].cells`: `{ revision?, cantSplit?, tableHeader? }`. A row `revision`
+  is structural (`{ type: 'insert' | 'delete', author?, date? }`) — the existing
+  `Revision` shape cannot express it, since it requires text segments. Cells now
+  also accept a `revision` of their own, so a plain string cell can carry tracked
+  changes without being wrapped in a paragraph.
+
+  Marking a row deleted emits both halves Word needs: `w:trPr/w:del` **and** every
+  cell's runs and closing paragraph mark marked deleted. Without the second half,
+  accepting the change leaves an empty row behind instead of removing it. An
+  inserted row is marked symmetrically.
+
+  **Differ.** `diffDocuments` no longer treats a column-based table as opaque. It
+  builds a row-major view, aligns rows on their markdown-stripped cell texts, and
+  pairs unmatched runs — so a rewritten row becomes cell-level word changes rather
+  than a delete plus an insert. A deleted table is kept in the redline with every
+  row marked deleted rather than being dropped. Column-count changes, header-row
+  changes and the legacy `{ headers, rows }` shape stay on the block-replace path
+  and are reported in `summary.untracked`.
+
+  **Not included**, and reported as untracked: cell merging (the schema has no
+  merge state for a revision to describe) and the `*PrChange` family, which would
+  require the differ to synthesise a fully-resolved old-version options object.
+
+  `rows` is excluded from `componentDefaults.table`: `Type.Partial` is shallow and
+  `rows` is optional on a table, so a theme could otherwise mark the same row of
+  every table inserted or deleted. `columns` is deliberately left alone — theme
+  defaults replace arrays wholesale rather than merging them element-wise, and
+  `columns` is required on every table, so a theme's `columns` (and any comment or
+  revision inside it) can never reach one.
+
+- baf0fc8: Add `between` to the theme border schema.
+
+  A style's `borders` now accepts `between` alongside `top`/`bottom`/`left`/
+  `right`, mapping to OOXML `w:between` — the rule Word draws between consecutive
+  paragraphs that share the border set, in place of their adjoining bottom and top
+  edges. Same shape as the per-side definitions, including theme colour tokens.
+
+  This is the theme border schema only; the paragraph component has no `border`
+  prop and this does not add one.
+
+  Needs docx 9.7.1: `IBordersOptions.between` does not exist in 9.5.1.
+
+- ed9ba39: Write TOC fields with their entries already cached, so a headless PDF renders a
+  real table of contents.
+
+  `updateFields: true` asks Word to repopulate every TOC on open, and Word
+  obliges — but headless LibreOffice does not, so a TOC field with no cached
+  content exported as just the word "Contents". The rasterizer path goes through
+  soffice, so this was the case that bit.
+
+  A new pre-pass collects the entries before rendering and `renderTocComponent`
+  passes them to docx as `cachedEntries`. The collector walks the layout the way
+  the renderer does:
+
+  - headings, including those nested in a `text-box`;
+  - paragraphs whose `themeStyle` a TOC maps through `props.styles` — Word
+    includes those via the `\t` switch, so a heading-only pass would have made the
+    cached entries disagree with Word's own refresh;
+  - never headers or footers (a heading there renders as nothing);
+  - disabled subtrees pruned.
+
+  Entries are filtered per TOC by depth range, style mapping and — for a
+  section-scoped TOC — the section bookmark. Titles have their markdown
+  decorators stripped the same way `createHeading` does. Page numbers and entry
+  hyperlinks are deliberately omitted: nothing in generation paginates, and Word
+  fills real numbers in on refresh.
+
+  Existing TOC-bearing documents change from a two-empty-paragraph field block to
+  N styled entries.
+
+### Patch Changes
+
+- 4bfe683: Reject `revision` together with `footnotes`/`endnotes` on a paragraph.
+
+  Tracked-change text renders from its segments as literal runs, so a `[^id]`
+  marker inside them never resolves and the declared note body was dropped. The
+  combination is not merely unimplemented — it is not expressible: docx's
+  `InsertedTextRun` and `DeletedTextRun` each wrap exactly one `TextRun` built
+  from their own options, so there is no way to place a footnote reference inside
+  `w:ins`/`w:del` without reaching past the library's public API.
+
+  Warning about it was not enough, since the schema still advertised a
+  combination the renderer could not honour. It is now a validation error, added
+  as a semantic rule (`collectNoteRevisionConflicts`) alongside the existing
+  image-source and indent mutual-exclusivity walks, so the exported JSON Schema
+  gains no conditional and editor completions are unchanged. The renderer keeps
+  its warning for callers that disable validation.
+
+  `diffDocuments` no longer emits the pair either: a paragraph it marks as a
+  tracked change has its notes stripped and reported in `summary.untracked`.
+  Without that, redlining a document whose paragraphs carry footnotes would
+  produce a redline that fails the new validation — the notes could never have
+  survived it anyway.
+
+  The same rule covers a table cell whose own `revision` drives the runs of a
+  paragraph inside it, and the table differ now keeps a component cell a
+  component — it previously replaced the content with a bare string when it
+  revised the cell, silently discarding the paragraph's font and other props.
+
+- bae9e20: Review follow-ups on the docx issue batch:
+
+  - **Comments survive two paths that dropped them.** A comment on a paragraph
+    whose text is markdown list syntax reached `createList` without it, and a
+    comment on a table cell with no content was lost to the empty-cell early
+    return. Both now anchor — the empty cell as a zero-length range plus its
+    reference, which is what Word writes for a comment on an empty selection.
+    Footnotes and endnotes now resolve on the markdown-list path too.
+  - **Notes alongside `revision` are announced, not swallowed.** Tracked-change
+    text renders literally, so a `[^id]` marker inside it cannot resolve; the
+    combination now warns and names the notes that will be dropped.
+  - **Duplicate note ids resolve first-declaration-wins**, within one array as
+    well as across `footnotes` and `endnotes`, and warn. Previously a duplicate
+    inside one array silently replaced the earlier body.
+  - **Cached TOC entries match a style mapping written either way.** `themeStyle`
+    carries the theme key while `toc.styles[].styleId` may name the Word display
+    name the `\t` switch needs; both forms are now indexed and looked up, so the
+    cached entries no longer omit a row Word adds on refresh.
+  - **The table differ keeps authored row properties.** `cantSplit`,
+    `tableHeader` and the rest travelled by index, which the diff invalidates by
+    reinserting deleted rows; they now travel with their row and the diff's
+    revision mark merges on top.
+  - **The table differ reports markdown-only edits**, matching the paragraph and
+    list paths: a cell whose raw text changed but whose rendered text did not, and
+    markdown flattened inside a revised cell, are both surfaced in
+    `summary.untracked` instead of passing silently.
+  - **`includeComments` is restored as a deprecated no-op** rather than deleted.
+    It never did anything, but `GenerateDocumentRequest` is a published type and
+    removing the field narrowed it under callers that still pass it.
+  - Fixed the cross-process determinism test on Windows: it resolved the
+    `node_modules/.bin/tsx` shell shim, which exists but cannot be spawned there,
+    and embedded a bare Windows path as an ESM specifier.
+
 ## 0.33.0
 
 ### Patch Changes

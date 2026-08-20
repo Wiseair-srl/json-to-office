@@ -1,5 +1,32 @@
 # @json-to-office/jto
 
+## 0.34.0
+
+### Patch Changes
+
+- Updated dependencies [2ea0f6a]
+- Updated dependencies [4d7c554]
+- Updated dependencies [7900859]
+- Updated dependencies [ae9b1d4]
+- Updated dependencies [912f1b7]
+- Updated dependencies [ea6b6af]
+- Updated dependencies [234a97e]
+- Updated dependencies [34fdb52]
+- Updated dependencies [5ea33ff]
+- Updated dependencies [1f4e1a5]
+- Updated dependencies [ed54627]
+- Updated dependencies [4bfe683]
+- Updated dependencies [bae9e20]
+- Updated dependencies [9e14e7a]
+- Updated dependencies [58f5331]
+- Updated dependencies [98ca046]
+- Updated dependencies [51f958a]
+- Updated dependencies [baf0fc8]
+- Updated dependencies [ed9ba39]
+  - @json-to-office/core-docx@0.34.0
+  - @json-to-office/shared-docx@0.34.0
+  - @json-to-office/jto-cli@0.34.0
+
 ## 0.33.2
 
 ### Patch Changes
