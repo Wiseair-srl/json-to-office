@@ -18,6 +18,20 @@ export {
   type RasterizerCacheStats,
 } from './pptx-rasterizer.js';
 
+// LibreOffice font staging — used by the pptx rasterizer above and by the
+// playground's PDF-preview converter in `@json-to-office/jto`. It lives here
+// because jto depends on jto-cli and never the reverse.
+export {
+  getFontStager,
+  NoopFontStager,
+  FontconfigStager,
+  WindowsFontStager,
+  MacOSCoreTextStager,
+  type FontStager,
+  type FontStageHandle,
+  type FontStageOptions,
+} from './font-staging/index.js';
+
 // Generator factory
 export { GeneratorFactory } from './services/generator-factory.js';
 

@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import type { ResolvedFont } from '@json-to-office/shared';
 import { config } from '../config/index.js';
-import { getFontStager } from './font-staging/index.js';
+import { getFontStager } from '@json-to-office/jto-cli';
 
 const DEFAULT_CONVERSION_TIMEOUT_MS = 30000;
 const BINARY_PROBE_TIMEOUT_MS = 5000;

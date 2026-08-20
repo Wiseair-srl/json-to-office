@@ -22,8 +22,11 @@ import {
   MIN_VISUAL_DPI,
   MAX_VISUAL_DPI,
   MAX_RASTERIZE_BATCH_SLIDES,
+  MAX_RASTERIZE_FONTS,
+  MAX_RASTERIZE_FONT_BYTES,
   type PptxRasterizer,
   type PptxBatchRasterizer,
+  type RasterizeFontFace,
 } from '@json-to-office/shared';
 import {
   createLibreOfficePptxRasterizer,
@@ -36,6 +39,31 @@ import {
   UnsafeOutboundSourceError,
 } from './security/outbound-source-policy.js';
 
+/**
+ * One font face the caller wants staged for this render's LibreOffice
+ * launch. `data` is base64 of the raw font file (no `data:` prefix).
+ */
+const RasterizeFontFaceSchema = Type.Object(
+  {
+    family: Type.String({ minLength: 1, maxLength: 128 }),
+    weight: Type.Integer({ minimum: 1, maximum: 1000 }),
+    italic: Type.Boolean(),
+    data: Type.String({ minLength: 1, maxLength: 4 * 1024 * 1024 }),
+    format: Type.Optional(
+      Type.Union([
+        Type.Literal('ttf'),
+        Type.Literal('otf'),
+        Type.Literal('woff'),
+        Type.Literal('woff2'),
+      ])
+    ),
+  },
+  { additionalProperties: false }
+);
+const FontsSchema = Type.Optional(
+  Type.Array(RasterizeFontFaceSchema, { maxItems: MAX_RASTERIZE_FONTS })
+);
+
 /** Body for POST /rasterize: a single-slide pptx presentation + optional dpi. */
 export const RasterizeRequestSchema = Type.Object(
   {
@@ -44,6 +72,7 @@ export const RasterizeRequestSchema = Type.Object(
       Type.Number({ minimum: MIN_VISUAL_DPI, maximum: MAX_VISUAL_DPI })
     ),
     baseDir: Type.Optional(Type.String()),
+    fonts: FontsSchema,
   },
   { additionalProperties: false }
 );
@@ -64,6 +93,12 @@ export const RasterizeBatchRequestSchema = Type.Object(
       { minItems: 1, maxItems: MAX_RASTERIZE_BATCH_SLIDES }
     ),
     baseDir: Type.Optional(Type.String()),
+    // Request-level, shared by every slide, exactly like `baseDir`. NOT
+    // inside the per-slide object above, whose `additionalProperties: false`
+    // must keep rejecting per-slide fonts: a uniform slide shape is what
+    // lets batch dedupe and the disk-cache key stay identical to the
+    // single-slide path.
+    fonts: FontsSchema,
   },
   { additionalProperties: false }
 );
@@ -140,6 +175,25 @@ function assertPixelBudget(
 }
 
 /**
+ * Bound the decoded font payload. The per-face `maxLength` and
+ * `MAX_RASTERIZE_FONTS` alone would admit far more than the body limit
+ * allows, and staging writes every face to disk before soffice starts.
+ */
+function assertFontBudget(fonts: RasterizeFontFace[] | undefined): void {
+  if (!fonts?.length) return;
+  // base64 → bytes ≈ len × 3/4. A cheap upper bound; no decode needed.
+  const bytes = fonts.reduce(
+    (sum, f) => sum + Math.ceil(f.data.length * 0.75),
+    0
+  );
+  if (bytes > MAX_RASTERIZE_FONT_BYTES) {
+    throw new HTTPException(400, {
+      message: 'Requested font payload is too large',
+    });
+  }
+}
+
+/**
  * `baseDir` selects the directory local media paths resolve against. An
  * unrestricted value would let any HTTP caller point the rasterizer at
  * arbitrary server directories and exfiltrate readable files as rendered
@@ -206,6 +260,11 @@ export function registerRasterizeRoute(
 
   const shared: MiddlewareHandler[] = [
     ...(options.preMiddleware ?? []),
+    // The body now also carries base64 font faces. The schema alone would
+    // admit MAX_RASTERIZE_FONTS × 4 MiB = 128 MiB; this limit is what
+    // actually bounds it, and it rejects with 413 BEFORE parsing, which is
+    // the order we want. MAX_RASTERIZE_FONT_BYTES (8 MiB decoded ≈ 10.7 MiB
+    // base64) is the intended working ceiling for fonts within that budget.
     bodyLimit({
       maxSize: 32 * 1024 * 1024,
       onError: () => {
@@ -229,18 +288,23 @@ export function registerRasterizeRoute(
     ...shared,
     tbValidator(RasterizeRequestSchema),
     async (c) => {
-      const { presentation, dpi, baseDir } = getValidated<{
+      const { presentation, dpi, baseDir, fonts } = getValidated<{
         presentation: unknown;
         dpi?: number;
         baseDir?: string;
+        fonts?: RasterizeFontFace[];
       }>(c, 'json');
       const safeBaseDir = resolveSafeBaseDir(baseDir);
 
       const effectiveDpi = clampVisualDpi(dpi ?? DEFAULT_VISUAL_DPI);
       assertPixelBudget([{ presentation, dpi: effectiveDpi }]);
+      assertFontBudget(fonts);
 
       const result = await guard(async () => {
         if (options.sourcePolicy) {
+          // Scoped to `presentation` only. Font faces are inert base64 with
+          // no URL-shaped keys, and walking multi-MB strings per request
+          // would be pure cost.
           assertSafeOutboundSources(
             presentation,
             options.sourcePolicy,
@@ -251,6 +315,11 @@ export function registerRasterizeRoute(
           presentation,
           dpi: effectiveDpi,
           baseDir: safeBaseDir,
+          // Conditional so a fontless request reaches the engine with no
+          // `fonts` key at all — an `undefined` would still be an absent
+          // digest, but keeping the object identical to the pre-change shape
+          // makes the cache-key equivalence obvious.
+          ...(fonts?.length && { fonts }),
         });
       });
       return c.json(result);
@@ -262,9 +331,10 @@ export function registerRasterizeRoute(
     ...shared,
     tbValidator(RasterizeBatchRequestSchema),
     async (c) => {
-      const { slides, baseDir } = getValidated<{
+      const { slides, baseDir, fonts } = getValidated<{
         slides: Array<{ presentation: unknown; dpi?: number }>;
         baseDir?: string;
+        fonts?: RasterizeFontFace[];
       }>(c, 'json');
       const safeBaseDir = resolveSafeBaseDir(baseDir);
       const effectiveSlides = slides.map((slide) => ({
@@ -272,9 +342,11 @@ export function registerRasterizeRoute(
         dpi: clampVisualDpi(slide.dpi ?? DEFAULT_VISUAL_DPI),
       }));
       assertPixelBudget(effectiveSlides);
+      assertFontBudget(fonts);
 
       const result = await guard(async () => {
         if (options.sourcePolicy) {
+          // Scoped to each slide's `presentation` only — see /rasterize.
           slides.forEach((slide, index) =>
             assertSafeOutboundSources(
               slide.presentation,
@@ -286,6 +358,7 @@ export function registerRasterizeRoute(
         return getBatchRasterizer()({
           slides: effectiveSlides,
           baseDir: safeBaseDir,
+          ...(fonts?.length && { fonts }),
         });
       });
 

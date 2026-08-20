@@ -82,7 +82,6 @@
     "idb-keyval": "^6.2.2",
     "jsonc-parser": "^3.3.1",
     "jsonrepair": "^3.13.3",
-    "koffi": "^2.16.1",
     "lodash.debounce": "4.0.8",
     "lru-cache": "10.4.3",
     "lucide-react": "0.468.0",

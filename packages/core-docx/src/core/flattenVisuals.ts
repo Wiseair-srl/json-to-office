@@ -19,6 +19,7 @@ import {
   DEFAULT_VISUAL_DPI,
   type PptxRasterizer,
   type PptxBatchRasterizer,
+  type RasterizeFontFace,
 } from '@json-to-office/shared';
 import type { VisualProps } from '@json-to-office/shared-docx';
 import {
@@ -49,12 +50,20 @@ export interface FlattenVisualsOptions {
    * the document's own directory. Absent → the rasterizer's cwd (#142).
    */
   baseDir?: string;
+  /**
+   * Font faces staged for each visual's LibreOffice render. Without these a
+   * flattened document bakes in fontless PNGs permanently — the flatten
+   * output is a portable, service-free `.docx.json`, so there is no second
+   * chance to re-rasterize with the right fonts.
+   */
+  fonts?: readonly RasterizeFontFace[];
 }
 
 interface FlattenCtx {
   rasterize: PptxRasterizer;
   dpi?: number;
   baseDir?: string;
+  fonts?: readonly RasterizeFontFace[];
   limit: <T>(fn: () => Promise<T>) => Promise<T>;
 }
 
@@ -85,7 +94,11 @@ export async function flattenVisuals<T = unknown>(
         renderBatch: options.rasterizeBatch,
         dpi: options.dpi,
       },
-      { baseDir: options.baseDir, concurrency: options.concurrency }
+      {
+        baseDir: options.baseDir,
+        concurrency: options.concurrency,
+        fonts: options.fonts,
+      }
     ).catch(() => new Map<string, never>());
     rasterize = async (request) => {
       const hit = preRasterized.get(
@@ -107,6 +120,7 @@ export async function flattenVisuals<T = unknown>(
     rasterize,
     dpi: options.dpi,
     baseDir: options.baseDir,
+    fonts: options.fonts,
     limit: createLimiter(
       Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY)
     ),
@@ -125,6 +139,7 @@ async function rasterizeVisual(
       presentation: buildVisualPresentation(props),
       dpi,
       baseDir: ctx.baseDir,
+      ...(ctx.fonts?.length ? { fonts: [...ctx.fonts] } : {}),
     })
   );
   const image: Record<string, unknown> = {

@@ -16,7 +16,7 @@ import {
   synthesizeFamilyName,
   rewriteFontFamilyName,
 } from '@json-to-office/shared';
-import type { FontStager, FontStageHandle } from './types';
+import type { FontStager, FontStageHandle, FontStageOptions } from './types';
 import { nextStagingId, safeFilenamePart } from './types';
 
 type KoffiLib = {
@@ -53,7 +53,10 @@ async function getGdiBindings() {
 export class WindowsFontStager implements FontStager {
   async stage(
     fonts: ResolvedFont[],
-    tempDir: string
+    tempDir: string,
+    // Ignored: GDI registration is process-scoped, not tied to any
+    // LibreOffice UserInstallation profile.
+    _options?: FontStageOptions
   ): Promise<FontStageHandle> {
     const id = nextStagingId();
     const fontsDir = path.join(tempDir, 'fonts');

@@ -7,6 +7,12 @@
  * Keeping it in one place ensures the two paths behave identically around
  * validation, SAFE_FONTS awareness, Google Fonts materialization, and the
  * `onResolved` side-channel consumed by the LibreOffice preview font stager.
+ *
+ * Materialization has two triggers: an `onResolved` listener, or the
+ * caller's `forceMaterialize` flag (set when the document contains a
+ * `visual`, whose PNG is produced by an out-of-process LibreOffice that
+ * needs real font files). Both entry paths return the resolved fonts so the
+ * caller can forward them to the rasterizer.
  */
 
 import type {
@@ -34,7 +40,15 @@ export async function resolveDocumentFonts(
   document: ReportComponentDefinition,
   theme: ThemeConfig,
   fonts?: FontRuntimeOpts,
-  warnings?: GenerationWarning[]
+  warnings?: GenerationWarning[],
+  /**
+   * Materialize font bytes even when no `onResolved` listener is registered.
+   * Set by the callers when the document contains at least one `visual`,
+   * whose PNG is rendered by an out-of-process LibreOffice that needs the
+   * actual font files — there is no listener on the plain CLI path, so
+   * without this a visual-bearing build silently renders with fallbacks.
+   */
+  forceMaterialize = false
 ): Promise<ResolvedFont[]> {
   const emit = (code: string, message: string) => {
     if (warnings) {
@@ -89,11 +103,12 @@ export async function resolveDocumentFonts(
     }
   }
 
-  // Registry resolution (Google/URL/file fetches) only runs when a consumer
-  // is listening via onResolved — typically the LibreOffice preview stager.
-  // Office output never embeds bytes, so skipping fetches when nobody cares
-  // keeps library callers from paying network cost.
-  if (!fonts?.onResolved) return [];
+  // Registry resolution (Google/URL/file fetches) runs when a consumer is
+  // listening via onResolved — typically the LibreOffice preview stager —
+  // or when the caller forces materialization because the document has a
+  // `visual` to rasterize. Office output never embeds bytes, so skipping
+  // fetches when neither applies keeps library callers off the network.
+  if (!fonts?.onResolved && !forceMaterialize) return [];
 
   const registry = new FontRegistry({
     // Spread keeps baseDir/googleFonts/mode/substitution intact for
@@ -111,9 +126,9 @@ export async function resolveDocumentFonts(
       emit('FONT_UNRESOLVED', msg);
     }
   }
-  // Fire the side-channel here so callers never have to remember. The
-  // short-circuit above guarantees we only reach this point when a
-  // listener is registered.
-  fonts.onResolved(resolved);
+  // Fire the side-channel here so callers never have to remember. On the
+  // force-materialize path there may be no listener at all — the resolved
+  // fonts still flow back through the return value.
+  fonts?.onResolved?.(resolved);
   return resolved;
 }

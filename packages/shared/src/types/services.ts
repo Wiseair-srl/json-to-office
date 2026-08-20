@@ -43,6 +43,34 @@ export type PptxServiceHeadersResolver = (
   body: unknown
 ) => PptxServiceHeaders | Promise<PptxServiceHeaders>;
 
+/** Max font faces accepted in one rasterize request. */
+export const MAX_RASTERIZE_FONTS = 32;
+/** Max total DECODED font bytes accepted in one rasterize request. */
+export const MAX_RASTERIZE_FONT_BYTES = 8 * 1024 * 1024;
+
+/**
+ * One font face shipped alongside a rasterize request so the rasterizer's
+ * out-of-process LibreOffice can render the slide with the document's real
+ * fonts instead of a system fallback.
+ *
+ * `data` is base64 of the raw font file — NO `data:` URI prefix — so the
+ * request stays plain serializable JSON.
+ *
+ * `family` is the CATALOG family (`ResolvedFont.family`, e.g. "Inter"), not
+ * the synthesized sub-family the presentation references. The receiving
+ * stager applies `synthesizeFamilyName` + `rewriteFontFamilyName` itself,
+ * exactly as it does for the PDF-preview path; pre-synthesizing here would
+ * double-apply the suffix ("Inter Light Light").
+ */
+export interface RasterizeFontFace {
+  family: string;
+  weight: number;
+  italic: boolean;
+  /** Base64-encoded font file bytes (no `data:` prefix). */
+  data: string;
+  format?: 'ttf' | 'otf' | 'woff' | 'woff2';
+}
+
 /**
  * Request handed to a pptx rasterizer: a single-slide pptx presentation
  * component definition plus the target resolution.
@@ -58,6 +86,12 @@ export interface PptxRasterizeRequest {
    * rasterizer's cwd, the legacy behavior (#142).
    */
   baseDir?: string;
+  /**
+   * Font faces to stage for the rasterizer's LibreOffice launch. Absent →
+   * system fonts only, which is what every non-font-aware caller (and every
+   * pre-Area-6 client) sends.
+   */
+  fonts?: RasterizeFontFace[];
 }
 
 /**
@@ -112,6 +146,14 @@ export interface PptxRasterizeBatchRequest {
   slides: PptxRasterizeBatchSlide[];
   /** Base directory for relative asset paths, shared by every slide (#142). */
   baseDir?: string;
+  /**
+   * Font faces staged for the batch's LibreOffice launch, shared by every
+   * slide exactly like `baseDir`. Deliberately REQUEST-level and never
+   * per-slide: {@link PptxRasterizeBatchSlide} stays `{presentation, dpi}` so
+   * batch-internal dedupe and the per-slide disk-cache key stay uniform with
+   * the single-slide path.
+   */
+  fonts?: RasterizeFontFace[];
 }
 
 /**

@@ -348,9 +348,6 @@ importers:
       jsonrepair:
         specifier: ^3.13.3
         version: 3.13.3
-      koffi:
-        specifier: ^2.16.1
-        version: 2.16.1
       lodash.debounce:
         specifier: 4.0.8
         version: 4.0.8
@@ -490,6 +487,9 @@ importers:
       ink:
         specifier: 6.8.0
         version: 6.8.0(@types/react@19.2.14)(react-devtools-core@6.1.2)(react@19.2.4)
+      koffi:
+        specifier: ^2.16.1
+        version: 2.16.1
       react:
         specifier: 19.2.4
         version: 19.2.4

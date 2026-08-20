@@ -5,8 +5,9 @@
  * fontconfig.xml that includes that dir plus the system font config.
  * LibreOffice honors the per-invocation FONTCONFIG_FILE env var.
  *
- * No cleanup work is needed here — the converter removes the whole tempDir
- * in its own finally block.
+ * The caller removes the whole tempDir in its own finally block; `cleanup()`
+ * only has to undo the read-only freeze stage() puts on the fonts dir so
+ * that recursive rm can actually unlink.
  */
 
 import { promises as fs } from 'node:fs';
@@ -16,7 +17,7 @@ import {
   synthesizeFamilyName,
   rewriteFontFamilyName,
 } from '@json-to-office/shared';
-import type { FontStager, FontStageHandle } from './types';
+import type { FontStager, FontStageHandle, FontStageOptions } from './types';
 import { nextStagingId, safeFilenamePart } from './types';
 
 const SYSTEM_FONTS_CONF_CANDIDATES = [
@@ -28,7 +29,10 @@ const SYSTEM_FONTS_CONF_CANDIDATES = [
 export class FontconfigStager implements FontStager {
   async stage(
     fonts: ResolvedFont[],
-    tempDir: string
+    tempDir: string,
+    // Ignored: fontconfig discovery is driven by FONTCONFIG_FILE, not by the
+    // soffice UserInstallation profile.
+    _options?: FontStageOptions
   ): Promise<FontStageHandle> {
     const id = nextStagingId();
     const fontsDir = path.join(tempDir, 'fonts');
@@ -91,7 +95,13 @@ export class FontconfigStager implements FontStager {
         XDG_CACHE_HOME: cacheDir,
       },
       cleanup: async () => {
-        // Cleanup handled by converter's tempDir rm -rf.
+        // Restore write permission before the caller's recursive rm. stage()
+        // froze fontsDir to 0o555, and you cannot unlink entries inside a
+        // non-writable directory: `fs.rm(tempDir, { recursive: true })` fails
+        // with EACCES and leaks the whole temp tree (both callers swallow
+        // that error, so it was silent). Removing the files themselves is
+        // still the caller's job.
+        await fs.chmod(fontsDir, 0o755).catch(() => {});
       },
     };
   }

@@ -30,6 +30,18 @@
  * upload"), it must build a separate converter that does NOT share this
  * profile, or call soffice with `--safe-mode` / a default profile.
  *
+ * The pptx rasterizer (`./pptx-rasterizer.ts`) is the second consumer and
+ * upholds the same invariant: it only ever opens .pptx files this process
+ * just built from `@json-to-office/core-pptx` out of the request's own
+ * presentation JSON — never a user-supplied binary document.
+ *
+ * PROFILE DIRS. The macro is only reachable from the UserInstallation
+ * profile it was seeded into, so `options.profileDirs` must list EVERY
+ * profile the caller will launch soffice with. The converter uses exactly
+ * one (`<tempDir>/user-profile`, the default here); the rasterizer uses a
+ * batch profile plus one per isolated retry, and a launch against an
+ * unseeded profile registers nothing and silently falls back.
+ *
  * Flow: the converter spawns
  *   `soffice --headless -env:UserInstallation=file://<tempDir>/user-profile ...`
  * with env `{ JTO_FONT_PATHS: "<ttf1>:<ttf2>:..." }`. LO boots, reads our
@@ -63,7 +75,7 @@ import {
   synthesizeFamilyName,
   rewriteFontFamilyName,
 } from '@json-to-office/shared';
-import type { FontStager, FontStageHandle } from './types';
+import type { FontStager, FontStageHandle, FontStageOptions } from './types';
 import { nextStagingId, safeFilenamePart } from './types';
 
 /**
@@ -175,7 +187,8 @@ const REGISTRY_MOD_XCU = `<?xml version="1.0" encoding="UTF-8"?>
 export class MacOSCoreTextStager implements FontStager {
   async stage(
     fonts: ResolvedFont[],
-    tempDir: string
+    tempDir: string,
+    options?: FontStageOptions
   ): Promise<FontStageHandle> {
     const embeddable = fonts.filter((r) => r.sources.length > 0);
     if (embeddable.length === 0) {
@@ -238,20 +251,27 @@ export class MacOSCoreTextStager implements FontStager {
       );
     }
 
-    // Seed the per-invocation UserInstallation profile. The converter
-    // spawns soffice with `-env:UserInstallation=file://<tempDir>/user-profile`,
-    // so LO reads the macro + event binding from these exact paths.
-    const profileUser = path.join(tempDir, 'user-profile', 'user');
-    const scriptsDir = path.join(profileUser, 'Scripts', 'python');
-    await fs.mkdir(scriptsDir, { recursive: true });
-    await fs.writeFile(
-      path.join(scriptsDir, 'JtoFontRegister.py'),
-      PYTHON_MACRO
-    );
-    await fs.writeFile(
-      path.join(profileUser, 'registrymodifications.xcu'),
-      REGISTRY_MOD_XCU
-    );
+    // Seed EVERY per-invocation UserInstallation profile the caller will
+    // launch with, so LO reads the macro + event binding from the exact
+    // path its `-env:UserInstallation=` points at. The converter passes
+    // nothing and gets `<tempDir>/user-profile`; the rasterizer passes its
+    // batch profile plus every isolated-retry profile.
+    const profileDirs = options?.profileDirs?.length
+      ? options.profileDirs
+      : [path.join(tempDir, 'user-profile')];
+    for (const profileDir of profileDirs) {
+      const profileUser = path.join(profileDir, 'user');
+      const scriptsDir = path.join(profileUser, 'Scripts', 'python');
+      await fs.mkdir(scriptsDir, { recursive: true });
+      await fs.writeFile(
+        path.join(scriptsDir, 'JtoFontRegister.py'),
+        PYTHON_MACRO
+      );
+      await fs.writeFile(
+        path.join(profileUser, 'registrymodifications.xcu'),
+        REGISTRY_MOD_XCU
+      );
+    }
 
     return {
       envOverrides: {

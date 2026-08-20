@@ -48,6 +48,7 @@
     "cosmiconfig": "9.0.0",
     "glob": "^13.0.0",
     "ink": "6.8.0",
+    "koffi": "^2.16.1",
     "react": "19.2.4",
     "react-devtools-core": "6.1.2",
     "tsx": "4.20.3"

@@ -19,6 +19,8 @@ import { processDocument } from './structure';
 import { applyLayout } from './layout';
 import { renderDocument } from './render';
 import { resolveDocumentFonts } from './fontResolution';
+import { collectVisualProps } from './prerasterizeVisuals';
+import { toRasterizeFontFaces } from '@json-to-office/shared/fonts/node';
 import {
   packageDocument,
   resolveGenerationDate,
@@ -169,7 +171,24 @@ async function generateDocumentWithCustomThemes(
   // Resolve fonts for the LibreOffice preview stager (side-channel).
   // resolveDocumentFonts fires `fonts.onResolved` internally when a
   // listener is registered. The final DOCX never embeds bytes.
-  await resolveDocumentFonts(document, theme, fonts, warnings);
+  //
+  // A `visual` is rasterized by an out-of-process LibreOffice, which needs
+  // the real font files, so a visual-bearing document forces materialization
+  // even with no listener (the plain CLI path has none). Gated on the visual
+  // check so fontless-by-design builds still pay no network cost.
+  const hasVisual = collectVisualProps(document).length > 0;
+  const resolvedFonts = await resolveDocumentFonts(
+    document,
+    theme,
+    fonts,
+    warnings,
+    hasVisual
+  );
+  // Gate on the ENCODED faces, not on `resolvedFonts.length`: a safe-only
+  // font resolves to an entry with no sources, which encodes to nothing. A
+  // document with only safe fonts must send no `fonts` key at all so its
+  // rasterize body — and therefore its cache key — is unchanged.
+  const visualFonts = hasVisual ? toRasterizeFontFaces(resolvedFonts) : [];
 
   // Pipeline: Structure -> Layout -> Render (with caching)
   const structure = await processDocument(
@@ -183,6 +202,7 @@ async function generateDocumentWithCustomThemes(
     bypassCache: false,
     services,
     baseDir,
+    ...(visualFonts.length > 0 && { visualFonts }),
   });
 
   return renderedDocument;
