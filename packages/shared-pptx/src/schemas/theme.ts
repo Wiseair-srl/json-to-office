@@ -3,7 +3,10 @@
  * Simplified theme configuration for presentations
  */
 import { Type, Static } from '@sinclair/typebox';
-import { FontFamilyNameSchema } from '@json-to-office/shared';
+import {
+  FontFamilyNameSchema,
+  FontRegistrySchema,
+} from '@json-to-office/shared';
 import {
   ColorValueSchema,
   STYLE_NAMES,
@@ -130,6 +133,7 @@ export const ThemeConfigSchema = Type.Object(
       },
       { additionalProperties: false, description: 'Font families' }
     ),
+    fontRegistry: Type.Optional(FontRegistrySchema),
     defaults: Type.Object(
       {
         fontSize: Type.Number({ description: 'Default font size in points' }),

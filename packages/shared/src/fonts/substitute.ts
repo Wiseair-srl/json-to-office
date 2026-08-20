@@ -15,7 +15,11 @@
 
 import { SAFE_FONTS, isSafeFont } from '../schemas/font-catalog';
 import { POPULAR_GOOGLE_FONTS } from './catalog/popular-google';
-import { FONT_NAME_KEYS, THEME_FONT_KEYS } from './collect';
+import {
+  FONT_NAME_KEYS,
+  THEME_FONT_KEYS,
+  FONT_DECLARATION_KEYS,
+} from './collect';
 
 /** One swap recorded during a rewrite. */
 export interface FontSubstitution {
@@ -32,6 +36,10 @@ export interface ApplyFontSubstitutionResult<T> {
  * Walk a doc tree + swap every non-safe family reference per `mapping`.
  * Returns a new tree (structural clone) plus the list of `(from, to)`
  * swaps made, deduped by source name.
+ *
+ * One deliberate exception to the clone: `fontRegistry` subtrees are carried
+ * through by reference, since they declare fonts rather than reference them
+ * and nothing downstream mutates them.
  *
  * Families already in SAFE_FONTS are never rewritten (even if a mapping
  * entry targets them as a key — safe fonts don't need substitution).
@@ -75,6 +83,15 @@ function rewrite(
   if (typeof node === 'object') {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      // Mirror of collect.ts: a fontRegistry subtree declares families, it
+      // does not reference them. Rewriting `entry.family` would rename the
+      // registration out from under every reference and key an entry on a
+      // SAFE_FONTS name. Carry it through by reference (see the clone note
+      // on applyFontSubstitution).
+      if (FONT_DECLARATION_KEYS.has(k)) {
+        out[k] = v;
+        continue;
+      }
       // Parallel to collect.ts: `theme.fonts` may hold plain strings
       // keyed by heading/body/mono/light. Those strings are font names
       // and need swapping just like `font.family` does.

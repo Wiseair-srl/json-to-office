@@ -19,6 +19,16 @@ export const FONT_NAME_KEYS = new Set([
 
 export const THEME_FONT_KEYS = new Set(['heading', 'body', 'mono', 'light']);
 
+/**
+ * Subtrees that declare fonts rather than reference them. `fontRegistry`
+ * entries carry `family` (and `sources[].family` for kind:'safe'/'google'),
+ * which the depth-agnostic `family` match would otherwise scoop up as
+ * references — a registry would self-satisfy its own validation, and a
+ * `kind:'google'` source family would appear as a phantom reference.
+ * substitute.ts's rewriter skips the same key; the two MUST stay in sync.
+ */
+export const FONT_DECLARATION_KEYS = new Set(['fontRegistry']);
+
 function collect(node: unknown, out: Set<string>, parentKey?: string): void {
   if (node == null) return;
 
@@ -64,6 +74,8 @@ function collect(node: unknown, out: Set<string>, parentKey?: string): void {
     }
 
     for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      // Declarations, not references — see FONT_DECLARATION_KEYS.
+      if (FONT_DECLARATION_KEYS.has(k)) continue;
       collect(v, out, k);
     }
   }

@@ -140,6 +140,9 @@ export {
   applyExportMode,
   scopedThemeName,
   type FontSubstitution,
+  documentFontRegistry,
+  themeFontRegistry,
+  mergeFontRegistries,
 } from './fonts';
 
 // Cross-format theme constants
