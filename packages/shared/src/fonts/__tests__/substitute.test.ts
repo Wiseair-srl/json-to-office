@@ -210,3 +210,40 @@ describe('applyExportMode', () => {
     expect(out.warnings[0].message).toContain('Playfair Display → Georgia');
   });
 });
+
+describe('substitute mode leaves fontRegistry declarations intact', () => {
+  const registry = [
+    {
+      id: 'inter',
+      family: 'Inter',
+      sources: [{ kind: 'google', family: 'Inter' }],
+    },
+  ];
+
+  it('does not rewrite an entry family onto a SAFE_FONTS name', () => {
+    const doc = {
+      name: 'docx',
+      props: { fontRegistry: registry },
+      children: [{ name: 'paragraph', props: { font: { family: 'Inter' } } }],
+    };
+    const { doc: out } = applyFontSubstitution(doc, { Inter: 'Calibri' });
+
+    // The reference is substituted...
+    expect((out as any).children[0].props.font.family).toBe('Calibri');
+    // ...but the registration keeps its identity, or the entry would end up
+    // keyed on a safe font and every consumer reading it downstream would
+    // get garbage.
+    expect((out as any).props.fontRegistry[0].family).toBe('Inter');
+    expect((out as any).props.fontRegistry[0].sources[0].family).toBe('Inter');
+  });
+
+  it('does not report a substitution for a family only the registry names', () => {
+    const doc = {
+      name: 'docx',
+      props: { fontRegistry: registry },
+      children: [],
+    };
+    const { substitutions } = applyFontSubstitution(doc, { Inter: 'Calibri' });
+    expect(substitutions).toEqual([]);
+  });
+});

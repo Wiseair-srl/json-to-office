@@ -124,3 +124,52 @@ describe('collectFontNamesFromPptx', () => {
     expect(names).toEqual(new Set(['Inter', 'Roboto', 'Arial']));
   });
 });
+
+describe('fontRegistry is a declaration, not a reference', () => {
+  const registry = [
+    {
+      id: 'brand-sans',
+      family: 'Brand Sans',
+      sources: [{ kind: 'google', family: 'Inter' }],
+    },
+  ];
+
+  it('skips props.fontRegistry so entries do not self-collect', () => {
+    const names = collectFontNamesFromDocx({
+      name: 'docx',
+      props: { fontRegistry: registry },
+      children: [],
+    });
+    // Neither the entry's own family nor its google source family is a
+    // reference — the document uses no fonts at all.
+    expect(names).toEqual(new Set());
+  });
+
+  it('still collects genuine references alongside a registry', () => {
+    const names = collectFontNamesFromDocx({
+      name: 'docx',
+      props: { fontRegistry: registry },
+      children: [
+        { name: 'paragraph', props: { font: { family: 'Brand Sans' } } },
+      ],
+    });
+    expect(names).toEqual(new Set(['Brand Sans']));
+  });
+
+  it('skips a theme-level fontRegistry', () => {
+    const names = collectFontNamesFromDocx({
+      fonts: { heading: { family: 'Georgia' } },
+      fontRegistry: registry,
+    });
+    expect(names).toEqual(new Set(['Georgia']));
+  });
+
+  it('skips a registry nested at any depth (pptx inline theme)', () => {
+    const names = collectFontNamesFromPptx({
+      name: 'pptx',
+      props: { theme: { fonts: { heading: 'Arial' }, fontRegistry: registry } },
+      children: [],
+    });
+    expect(names).toEqual(new Set(['Arial']));
+  });
+});

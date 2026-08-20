@@ -2,7 +2,10 @@
  * PPTX Core Types
  */
 
-import type { ServicesConfig } from '@json-to-office/shared';
+import type {
+  ServicesConfig,
+  FontRegistryDefinition,
+} from '@json-to-office/shared';
 import type {
   GradientFill,
   PptxComponentDefaults,
@@ -26,6 +29,7 @@ export interface PresentationComponentDefinition {
     subject?: string;
     company?: string;
     theme?: string;
+    fontRegistry?: FontRegistryDefinition;
     slideWidth?: number;
     slideHeight?: number;
     rtlMode?: boolean;
@@ -155,6 +159,7 @@ export interface PptxThemeConfig {
     heading: string;
     body: string;
   };
+  fontRegistry?: FontRegistryDefinition;
   defaults: {
     fontSize: number;
     fontColor: string;

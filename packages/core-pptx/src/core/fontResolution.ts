@@ -13,6 +13,9 @@ import {
   collectFontNamesFromPptx,
   validateFontReferences,
   FontRegistry,
+  documentFontRegistry,
+  themeFontRegistry,
+  mergeFontRegistries,
 } from '@json-to-office/shared';
 import {
   loadFileFontSource,
@@ -37,12 +40,24 @@ export async function resolveDocumentFonts(
   for (const n of collectFontNamesFromPptx(theme as unknown)) names.add(n);
   if (names.size === 0) return [];
 
+  // Merge the declared registries with runtime overrides. Precedence:
+  // theme < document < fonts.extraEntries (see registry.ts's resolution
+  // rules). This MUST run before validation, not after the `onResolved`
+  // short-circuit below: a presentation with a valid registry and no preview
+  // listener would otherwise still report every registered family as
+  // FONT_UNRESOLVED.
+  const registryEntries = mergeFontRegistries(
+    themeFontRegistry(theme),
+    documentFontRegistry(document),
+    fonts?.extraEntries
+  );
+
   // Validate unconditionally — strict mode must fire even when no consumer
   // is listening via onResolved (CLI / library callers that just want
   // build-time validation of font references).
   const validation = validateFontReferences({
     referencedNames: names,
-    registeredEntries: fonts?.extraEntries,
+    registeredEntries: registryEntries,
   });
   if (validation.warnings.length > 0) {
     if (fonts?.strict) {
@@ -65,7 +80,9 @@ export async function resolveDocumentFonts(
   if (!fonts?.onResolved) return [];
 
   const registry = new FontRegistry({
-    opts: fonts,
+    // Spread keeps baseDir/googleFonts/mode/substitution intact for
+    // materializeSource; extraEntries carries the merged registry.
+    opts: { ...fonts, extraEntries: registryEntries },
     fileLoader: loadFileFontSource,
     variableLoader: fetchVariableFontSource,
     diskCache: fonts?.googleFonts?.cacheDir

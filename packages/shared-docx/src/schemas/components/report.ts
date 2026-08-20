@@ -3,6 +3,7 @@
  */
 
 import { Type, Static, TSchema } from '@sinclair/typebox';
+import { FontRegistrySchema } from '@json-to-office/shared';
 import { ComponentDefaultsSchema } from '../component-defaults';
 import { NoProofWordsSchema } from '../font';
 import { ThemeOverridesSchema } from '../theme';
@@ -19,6 +20,7 @@ export const createReportPropsSchema = (_componentRef?: TSchema) =>
         })
       ),
       themeOverrides: Type.Optional(ThemeOverridesSchema),
+      fontRegistry: Type.Optional(FontRegistrySchema),
       componentDefaults: Type.Optional(ComponentDefaultsSchema),
       language: Type.Optional(
         Type.String({

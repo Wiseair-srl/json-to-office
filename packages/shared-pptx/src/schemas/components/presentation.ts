@@ -3,6 +3,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { FontRegistrySchema } from '@json-to-office/shared';
 import { TemplateSlideDefinitionSchema } from './template';
 import { GridConfigSchema, ThemeConfigSchema } from '../theme';
 import { PptxComponentDefaultsSchema } from '../component-defaults';
@@ -38,6 +39,7 @@ export const PresentationPropsSchema = Type.Object(
         }
       )
     ),
+    fontRegistry: Type.Optional(FontRegistrySchema),
     slideWidth: Type.Optional(
       Type.Number({
         description: 'Slide width in inches (default: 10)',

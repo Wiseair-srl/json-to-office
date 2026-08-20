@@ -4,6 +4,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { FontRegistrySchema } from '@json-to-office/shared';
 import {
   FontDefinitionSchema,
   TextFormattingPropertiesSchema,
@@ -460,6 +461,7 @@ export const ThemeConfigSchema = Type.Object(
       { additionalProperties: false }
     ),
     fonts: FontsSchema,
+    fontRegistry: Type.Optional(FontRegistrySchema),
     page: PageSchema,
     styles: Type.Optional(StyleDefinitionsSchema),
     componentDefaults: Type.Optional(ComponentDefaultsSchema),

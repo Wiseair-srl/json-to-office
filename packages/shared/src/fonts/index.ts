@@ -10,7 +10,14 @@ export {
   collectFontNames,
   collectFontNamesFromDocx,
   collectFontNamesFromPptx,
+  FONT_DECLARATION_KEYS,
 } from './collect';
+
+export {
+  documentFontRegistry,
+  themeFontRegistry,
+  mergeFontRegistries,
+} from './document-registry';
 
 export {
   validateFontReferences,
