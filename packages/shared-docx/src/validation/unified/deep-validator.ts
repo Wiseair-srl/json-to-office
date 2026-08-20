@@ -151,6 +151,58 @@ export function collectIndentConflicts(data: unknown): ValidationError[] {
 }
 
 /**
+ * Collect "notes declared on a revised paragraph" conflicts anywhere in a
+ * document.
+ *
+ * `revision` renders a paragraph's text from its segments as literal runs, so a
+ * `[^id]` marker inside them never resolves and the declared note body is never
+ * written. The combination is not expressible either: `InsertedTextRun` and
+ * `DeletedTextRun` wrap exactly one `TextRun` built from their own options, so
+ * `docx` offers no way to put a footnote reference inside `w:ins` / `w:del`
+ * without reaching past its public API.
+ *
+ * Each half is an independent optional field, so a payload carrying both passes
+ * TypeBox's structural check. Like the image-source and indent walks above,
+ * this runs unconditionally and traverses every nested value, so paragraphs
+ * inside columns, table cells, text boxes, headers/footers and sections are all
+ * covered.
+ */
+export function collectNoteRevisionConflicts(data: unknown): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  const visit = (node: any, path: string): void => {
+    if (Array.isArray(node)) {
+      node.forEach((item, i) => visit(item, `${path}/${i}`));
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+
+    if (node.name === 'paragraph' && node.props?.revision) {
+      for (const kind of ['footnotes', 'endnotes'] as const) {
+        const notes = node.props[kind];
+        if (Array.isArray(notes) && notes.length > 0) {
+          errors.push({
+            path: `${path}/props/${kind}`,
+            message:
+              `A paragraph cannot carry both "revision" and "${kind}". Tracked-change ` +
+              'text renders literally, so note markers inside it are not resolved and the ' +
+              'note bodies would be dropped. Move the notes to a paragraph without a revision.',
+            code: 'mutually_exclusive',
+          });
+        }
+      }
+    }
+
+    for (const key of Object.keys(node)) {
+      visit(node[key], `${path}/${key}`);
+    }
+  };
+
+  visit(data, '');
+  return errors;
+}
+
+/**
  * Deep validate a document to collect ALL errors, not just union-level errors
  */
 export function deepValidateDocument(

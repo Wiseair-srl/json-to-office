@@ -288,32 +288,52 @@ describe('notes on other paragraph paths', () => {
     );
   });
 
-  it('warns rather than dropping notes on a revised paragraph', async () => {
-    // Revision segments render literally, so a marker inside them cannot
-    // resolve. Silence would lose both the marker and the body.
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const zip = await generate([
-      {
-        name: 'paragraph',
-        props: {
-          text: 'The fee is 12%[^n].',
-          footnotes: [{ id: 'n', text: 'Per the amended schedule.' }],
-          revision: {
-            segments: [
-              { type: 'equal', text: 'The fee is ' },
-              { type: 'delete', text: '10%' },
-              { type: 'insert', text: '12%' },
-              { type: 'equal', text: '[^n].' },
-            ],
+  it('rejects notes on a revised paragraph, and still warns if validation is skipped', async () => {
+    // Tracked-change text renders literally, so a marker inside it cannot
+    // resolve — and docx offers no way to put a footnote reference inside
+    // w:ins/w:del, since InsertedTextRun wraps exactly one TextRun built from
+    // its own options. Validation rejects the combination; the renderer's
+    // warning covers callers that turn validation off.
+    const definition = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'paragraph',
+          props: {
+            text: 'The fee is 12%[^n].',
+            footnotes: [{ id: 'n', text: 'Per the amended schedule.' }],
+            revision: {
+              segments: [
+                { type: 'equal', text: 'The fee is ' },
+                { type: 'delete', text: '10%' },
+                { type: 'insert', text: '12%' },
+                { type: 'equal', text: '[^n].' },
+              ],
+            },
           },
         },
-      },
-    ]);
+      ],
+    };
+
+    await expect(generateBufferFromJson(definition as never)).rejects.toThrow(
+      /validation failed/i
+    );
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const buf = await generateBufferFromJson(
+      definition as never,
+      {
+        validation: { enabled: false },
+      } as never
+    );
 
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('alongside a `revision`')
     );
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('[^n]'));
+
+    const zip = await JSZip.loadAsync(buf);
     expect(authoredNotes(await read(zip, 'word/footnotes.xml'))).toHaveLength(
       0
     );
