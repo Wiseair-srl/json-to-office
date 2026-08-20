@@ -13,6 +13,7 @@ import {
   comprehensiveValidateDocument,
   collectImageSourceConflicts,
   collectIndentConflicts,
+  collectNoteRevisionConflicts,
 } from './deep-validator';
 
 // JsonComponentDefinitionSchema is just an alias for ComponentDefinitionSchema
@@ -61,6 +62,13 @@ export function validateDocument(
   const indentConflicts = collectIndentConflicts(data);
   if (indentConflicts.length > 0) {
     finalErrors = [...finalErrors, ...indentConflicts];
+    finalValid = false;
+  }
+
+  // Same for notes on a revised paragraph, which the renderer cannot express.
+  const noteRevisionConflicts = collectNoteRevisionConflicts(data);
+  if (noteRevisionConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...noteRevisionConflicts];
     finalValid = false;
   }
 
@@ -133,6 +141,13 @@ export function validateJsonDocument(
   const indentConflicts = collectIndentConflicts(result.parsed);
   if (indentConflicts.length > 0) {
     finalErrors = [...finalErrors, ...indentConflicts];
+    finalValid = false;
+  }
+
+  // Notes on a revised paragraph (see validateDocument).
+  const noteRevisionConflicts = collectNoteRevisionConflicts(result.parsed);
+  if (noteRevisionConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...noteRevisionConflicts];
     finalValid = false;
   }
 

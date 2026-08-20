@@ -625,7 +625,7 @@ Rules worth knowing:
 
 - **`[^id]` is only syntax where notes are declared.** A paragraph with neither `footnotes` nor `endnotes` renders `[^a-z]+` exactly as written, so regexes and character classes in prose are safe.
 - **An id is resolved against `footnotes` first, then `endnotes`.** Declaring the same id twice — in one array or across both — logs a warning and uses the first declaration, so the outcome does not depend on authoring order.
-- **Notes and `revision` do not combine.** Tracked-change text renders literally, so a marker inside it stays literal and its body is not emitted. Declaring both logs a warning naming the notes that will be dropped.
+- **Notes and `revision` do not combine, and the pair is rejected at validation.** Tracked-change text renders literally, so a marker inside it cannot resolve — and `docx` offers no way to place a footnote reference inside `w:ins`/`w:del` at all. Put the notes on a paragraph without a revision. (Callers that disable validation get a warning naming the notes that will be dropped.)
 - **Numbering follows reference order, not declaration order**, and footnotes and endnotes number independently — they are separate parts. A body that no marker resolves to is not emitted, and a warning names it.
 - **Repeating a marker reuses the same note** rather than duplicating the body.
 - Markers resolve inside decorated text and around links (`**bold[^n]**`, `[a link](https://example.com)[^m]`), but **not** in text that also contains `{PLACEHOLDER}` substitutions — there the marker stays literal and a warning says so.
