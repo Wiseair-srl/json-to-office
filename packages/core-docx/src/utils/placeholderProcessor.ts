@@ -9,6 +9,7 @@ import {
   ExternalHyperlink,
   InternalHyperlink,
   FootnoteReferenceRun,
+  EndnoteReferenceRun,
 } from 'docx';
 import {
   parseTextWithDecorators,
@@ -24,8 +25,9 @@ export type PlaceholderChild =
   | TextRun
   | ExternalHyperlink
   | InternalHyperlink
-  // A `[^id]` footnote marker resolves to a reference run mid-text.
-  | FootnoteReferenceRun;
+  // A `[^id]` note marker resolves to a reference run mid-text.
+  | FootnoteReferenceRun
+  | EndnoteReferenceRun;
 
 /**
  * Placeholder handler function type

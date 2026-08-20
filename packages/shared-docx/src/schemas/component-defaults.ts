@@ -25,7 +25,8 @@ import { ListPropsSchema } from './components/list';
  * `revision` would silently replace every component's text with the same
  * tracked change; `comment` would attach the same review comment to every
  * component and make the registry allocate a fresh id for each copy;
- * `footnotes` are bodies bound to markers in one paragraph's own text.
+ * `footnotes` and `endnotes` are bodies bound to markers in one paragraph's
+ * own text.
  * `ComponentDefaultsSchema` is embedded in every theme, so either leak is
  * theme-wide.
  *
@@ -33,7 +34,12 @@ import { ListPropsSchema } from './components/list';
  * `__tests__/component-defaults-per-instance.test.ts`, which is driven by this
  * list.
  */
-export const PER_INSTANCE_PROPS = ['revision', 'comment', 'footnotes'] as const;
+export const PER_INSTANCE_PROPS = [
+  'revision',
+  'comment',
+  'footnotes',
+  'endnotes',
+] as const;
 
 export type PerInstanceProp = (typeof PER_INSTANCE_PROPS)[number];
 

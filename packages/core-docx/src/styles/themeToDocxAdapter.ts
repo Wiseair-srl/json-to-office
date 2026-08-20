@@ -894,11 +894,11 @@ export function createWordStyles(
     });
   }
 
-  // Note styles: docx ships built-in FootnoteText / FootnoteReference styles,
-  // but they carry Word's defaults, not the theme's — a footnote in a Georgia
-  // document would otherwise set in Calibri. Both hooks live under the
-  // `default` key, which is why that key is now always built rather than being
-  // emitted only when a document language is set.
+  // Note styles: docx ships built-in Footnote/Endnote Text and Reference
+  // styles, but they carry Word's defaults, not the theme's — a note in a
+  // Georgia document would otherwise set in Calibri. All four hooks live under
+  // the `default` key, which is why that key is now always built rather than
+  // being emitted only when a document language is set.
   const noteStyle =
     resolveStyleWithBaseStyle(theme, 'normal') || theme.styles?.normal;
   const bodyRun = convertRunProperties(
@@ -933,13 +933,13 @@ export function createWordStyles(
           },
         },
       }),
-      // Run properties only: docx's own FootnoteText paragraph defaults
-      // (single line spacing, no space after) are already what a note wants,
-      // and an empty spacing override would drop its line rule.
+      // Run properties only: docx's own note paragraph defaults (single line
+      // spacing, no space after) are already what a note wants, and an empty
+      // spacing override would drop its line rule.
       footnoteText: { run: noteRun },
-      footnoteReference: {
-        run: { ...noteRun, superScript: true },
-      },
+      footnoteReference: { run: { ...noteRun, superScript: true } },
+      endnoteText: { run: noteRun },
+      endnoteReference: { run: { ...noteRun, superScript: true } },
     },
   };
 }
