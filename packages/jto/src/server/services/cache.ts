@@ -3,6 +3,17 @@ import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/index.js';
 import { cacheEvents } from '@json-to-office/jto-cli';
+import type { GenerationWarning } from '@json-to-office/shared';
+
+/**
+ * A cached generation: the bytes plus the warnings that produced them.
+ * Storing bare Buffers meant a cache HIT reported no warnings at all, so the
+ * second render of a document with an unresolvable font went silent.
+ */
+export interface CachedGeneration {
+  buffer: Buffer;
+  warnings: GenerationWarning[] | null;
+}
 
 export interface CacheStats {
   hits: number;
@@ -13,7 +24,7 @@ export interface CacheStats {
 }
 
 export class CacheService {
-  private cache: LRUCache<string, Buffer>;
+  private cache: LRUCache<string, CachedGeneration>;
   private stats: CacheStats = {
     hits: 0,
     misses: 0,
@@ -26,13 +37,15 @@ export class CacheService {
   constructor() {
     const maxSizeBytes = config.cache.maxSizeMB * 1024 * 1024;
 
-    this.cache = new LRUCache<string, Buffer>({
+    this.cache = new LRUCache<string, CachedGeneration>({
       max: config.cache.maxItems,
       maxSize: maxSizeBytes,
-      sizeCalculation: (value: Buffer) => value.length,
+      // Must stay the buffer's byte length: lru-cache rejects a zero or
+      // undefined size when `maxSize` is set.
+      sizeCalculation: (value: CachedGeneration) => value.buffer.length,
       ttl: config.cache.ttlSeconds * 1000,
       dispose: (
-        _value: Buffer,
+        _value: CachedGeneration,
         _key: string,
         reason: LRUCache.DisposeReason
       ) => {
@@ -78,7 +91,7 @@ export class CacheService {
     return patterns.some((p) => p.test(str));
   }
 
-  get(key: string): Buffer | null {
+  get(key: string): CachedGeneration | null {
     if (!config.features.cache) return null;
     const value = this.cache.get(key);
     if (value) {
@@ -92,7 +105,7 @@ export class CacheService {
 
   set(
     key: string,
-    value: Buffer,
+    value: CachedGeneration,
     documentConfig: unknown,
     options?: { bypassCache?: boolean }
   ): void {

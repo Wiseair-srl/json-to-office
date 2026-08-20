@@ -13,6 +13,7 @@ import {
   isSafeFont,
   type FontRegistryEntry,
   type ResolvedFont,
+  type GenerationWarning,
 } from '@json-to-office/shared';
 
 /**
@@ -262,7 +263,7 @@ export class GeneratorService {
     fileId?: string;
     buffer: Buffer;
     cached?: boolean;
-    warnings?: any[] | null;
+    warnings?: GenerationWarning[] | null;
     resolvedFonts?: ResolvedFont[];
   }> {
     const { jsonDefinition, customThemes, options } = request;
@@ -369,15 +370,17 @@ export class GeneratorService {
 
     // Try cache
     if (!bypassCache && !hasDynamicContent) {
-      const cachedBuffer = this.cacheService.get(cacheKey);
-      if (cachedBuffer) {
+      const cached = this.cacheService.get(cacheKey);
+      if (cached) {
         logger.info('Served from cache', { title: config.metadata?.title });
         return {
           filename: `${config.metadata?.title || this.adapter.label}${this.adapter.extension}`,
           fileId: Date.now().toString(),
-          buffer: cachedBuffer,
+          buffer: cached.buffer,
+          // Warnings ride along with the bytes: a cache hit describes the same
+          // document, so it must report the same font problems.
           cached: true,
-          warnings: null,
+          warnings: cached.warnings,
         };
       }
     }
@@ -413,12 +416,18 @@ export class GeneratorService {
         }
       : undefined;
 
+    // Per-request sink for core warnings. `createGenerator` is invoked per
+    // request just below, so one generator never accumulates another
+    // request's warnings.
+    const coreWarnings: GenerationWarning[] = [];
+
     if (registry.hasPlugins()) {
       const plugins = registry.getPlugins();
       const generator = await this.adapter.createGenerator(plugins, {
         customThemes,
         fonts: fontOpts,
         baseDir,
+        warnings: coreWarnings,
       });
       buffer = await generator.generateBuffer(config);
     } else {
@@ -426,13 +435,9 @@ export class GeneratorService {
         customThemes,
         fonts: fontOpts,
         baseDir,
+        warnings: coreWarnings,
       });
     }
-
-    // Store in cache
-    this.cacheService.set(cacheKey, buffer, config, {
-      bypassCache: bypassCache || hasDynamicContent,
-    });
 
     // Surface non-canonical fontWeight values (e.g. 450, 550) — the render
     // path silently coerces these to Regular/Bold via a bold-fallback, so
@@ -444,12 +449,14 @@ export class GeneratorService {
     const nonCanonical = [...referencedWeights].filter(
       (w) => !CANONICAL_WEIGHTS.has(w)
     );
-    const extraWarnings = overrideWarnings.map((message) => ({
-      component: 'fontRegistry',
-      message,
-      severity: 'info' as const,
-      context: { code: 'FONT_OVERRIDE_LOCAL' },
-    }));
+    const extraWarnings: GenerationWarning[] = overrideWarnings.map(
+      (message) => ({
+        component: 'fontRegistry',
+        message,
+        severity: 'info' as const,
+        context: { code: 'FONT_OVERRIDE_LOCAL' },
+      })
+    );
     for (const w of nonCanonical) {
       extraWarnings.push({
         component: 'fontRegistry',
@@ -459,12 +466,26 @@ export class GeneratorService {
       });
     }
 
+    // Core first: FONT_UNRESOLVED is actionable and should read above the
+    // informational FONT_OVERRIDE_LOCAL / FONT_NONCANONICAL_WEIGHT entries.
+    const allWarnings = [...coreWarnings, ...extraWarnings];
+
+    // Store in cache — buffer and warnings together, so a later HIT is not a
+    // silent render. `resolvedFonts` deliberately stays out: it is a TTF byte
+    // side-channel, and its only consumer passes `bypassCache: true`.
+    this.cacheService.set(
+      cacheKey,
+      { buffer, warnings: allWarnings.length > 0 ? allWarnings : null },
+      config,
+      { bypassCache: bypassCache || hasDynamicContent }
+    );
+
     return {
       filename: `${config.metadata?.title || this.adapter.label}${this.adapter.extension}`,
       fileId: Date.now().toString(),
       buffer,
       cached: false,
-      warnings: extraWarnings.length > 0 ? extraWarnings : null,
+      warnings: allWarnings.length > 0 ? allWarnings : null,
       resolvedFonts,
     };
   }
