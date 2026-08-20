@@ -1,5 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Loader2 } from 'lucide-react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Check, Copy, Loader2, Upload } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Button } from '../ui/button';
@@ -20,7 +26,18 @@ import {
   type FontPickerContext,
 } from '../../store/font-picker-store';
 import { mutateDocumentAtPath } from '../../lib/doc-mutations';
-import { WEIGHT_LABELS } from '@json-to-office/shared';
+import { WEIGHT_LABELS, type FontRegistryEntry } from '@json-to-office/shared';
+import { API_ENDPOINTS } from '../../config/api';
+import {
+  validateFontUpload,
+  guessFontIdentity,
+  upsertFontRegistryEntry,
+  mergeDataSources,
+  materializeResponseToEntry,
+  checkDocumentSize,
+  type MaterializeResponse,
+} from '../../lib/font-upload';
+import { ensureDataFontLoaded } from '../../lib/font-face-inject';
 
 interface PopularGoogleFont {
   family: string;
@@ -164,6 +181,75 @@ function useMutateActiveDocumentAtPath() {
   );
 }
 
+/**
+ * Append a font to the active *document*'s `props.fontRegistry`.
+ *
+ * Deliberately the document and not the theme: an uploaded font travels as
+ * bytes inside the JSON, and the document is what gets generated, exported,
+ * and re-imported. Sources for a family are merged so re-uploading one weight
+ * does not discard the others.
+ */
+function useMutateActiveDocumentFontRegistry() {
+  const activeTab = useDocumentsStore((s) => s.activeTab);
+  const documents = useDocumentsStore((s) => s.documents);
+  const documentTypes = useDocumentsStore((s) => s.documentTypes);
+  const saveDocument = useDocumentsStore((s) => s.saveDocument);
+
+  return useCallback(
+    (entry: FontRegistryEntry) => {
+      if (!activeTab) return { ok: false as const, error: 'No active file' };
+      if (documentTypes[activeTab] === 'application/json+theme') {
+        return {
+          ok: false as const,
+          error:
+            'Custom fonts are registered on the document, not the theme. Open the .docx.json / .pptx.json tab and try again.',
+        };
+      }
+      const doc = documents.find((d) => d.name === activeTab);
+      if (!doc)
+        return { ok: false as const, error: 'Active document not found' };
+      let parsed: any;
+      try {
+        parsed = JSON.parse(doc.text);
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: `Active document is not valid JSON: ${(err as Error).message}`,
+        };
+      }
+      const current: FontRegistryEntry[] | undefined =
+        parsed?.props?.fontRegistry;
+      const existing = current?.find(
+        (e) => e.family.toLowerCase() === entry.family.toLowerCase()
+      );
+      const merged = upsertFontRegistryEntry(
+        current,
+        mergeDataSources(
+          existing,
+          entry.family,
+          entry.sources.map((s: any) => ({
+            data: s.data,
+            weight: s.weight ?? 400,
+            italic: s.italic ?? false,
+          })),
+          entry.category
+        )
+      );
+      const next = mutateDocumentAtPath(
+        parsed,
+        ['props', 'fontRegistry'],
+        merged
+      );
+      const json = JSON.stringify(next, null, 2);
+      const sizeError = checkDocumentSize(json);
+      if (sizeError) return { ok: false as const, error: sizeError };
+      saveDocument(activeTab, json);
+      return { ok: true as const, name: activeTab };
+    },
+    [activeTab, documents, documentTypes, saveDocument]
+  );
+}
+
 /** Set theme.fonts.<role> at the root of a theme file. */
 function setThemeFont(
   theme: any,
@@ -211,13 +297,21 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
   const [catalog, setCatalog] = useState<FontCatalog>(FALLBACK_CATALOG);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'safe' | 'google'>('safe');
+  const [activeTab, setActiveTab] = useState<'safe' | 'google' | 'custom'>(
+    'safe'
+  );
   const [applyingFamily, setApplyingFamily] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [materializeBusy, setMaterializeBusy] = useState(false);
+  const [gfFamily, setGfFamily] = useState('');
+  const [lastWarnings, setLastWarnings] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
   const mutateTheme = useMutateActiveTheme();
   const mutateDocumentAtPathAction = useMutateActiveDocumentAtPath();
+  const mutateFontRegistry = useMutateActiveDocumentFontRegistry();
   const activeTabName = useDocumentsStore((s) => s.activeTab);
   const documentTypes = useDocumentsStore((s) => s.documentTypes);
   const isThemeActive =
@@ -232,7 +326,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
     if (!open) return;
     if (catalog.safe.length > 0 || catalog.google.length > 0) return;
     setLoading(true);
-    fetch('/api/fonts/catalog')
+    fetch(API_ENDPOINTS.fonts.catalog)
       .then((r) => r.json())
       .then((data: FontCatalog) => setCatalog(data))
       .catch((err) => {
@@ -342,6 +436,136 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
     [contextual, mutateDocumentAtPathAction, toast, handleOpenChange]
   );
 
+  const handleUploadFiles = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      setUploadBusy(true);
+      try {
+        for (const file of Array.from(files)) {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          const result = validateFontUpload(file.name, bytes);
+          if (!result.ok) {
+            toast({
+              variant: 'destructive',
+              title: 'Font rejected',
+              description: result.message,
+            });
+            continue;
+          }
+          const identity = guessFontIdentity(file.name);
+          const written = mutateFontRegistry({
+            id: identity.family,
+            family: identity.family,
+            sources: [
+              {
+                kind: 'data',
+                data: result.base64,
+                weight: identity.weight,
+                italic: identity.italic,
+              },
+            ],
+          });
+          if (!written.ok) {
+            toast({
+              variant: 'destructive',
+              title: 'Could not register font',
+              description: written.error,
+            });
+            continue;
+          }
+          void ensureDataFontLoaded(
+            identity.family,
+            result.base64,
+            identity.weight,
+            identity.italic
+          );
+          toast({
+            title: `Added ${identity.family}`,
+            description: `Registered at weight ${identity.weight}${
+              identity.italic ? ' italic' : ''
+            } in props.fontRegistry. Reference it as "${identity.family}".`,
+          });
+        }
+      } catch (err) {
+        toast({
+          variant: 'destructive',
+          title: 'Upload failed',
+          description: (err as Error).message,
+        });
+      } finally {
+        setUploadBusy(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    },
+    [mutateFontRegistry, toast]
+  );
+
+  const handleMaterialize = useCallback(async () => {
+    const family = gfFamily.trim();
+    if (!family) return;
+    setMaterializeBusy(true);
+    setLastWarnings([]);
+    try {
+      const res = await fetch(API_ENDPOINTS.fonts.materialize, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ family, weights: [400, 700], italics: false }),
+      });
+      if (res.status === 429) {
+        throw new Error(
+          'Too many font fetches — the playground allows 20 every 15 minutes. Try again shortly.'
+        );
+      }
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(body.error ?? `Materialize failed (${res.status})`);
+      }
+      const data = (await res.json()) as MaterializeResponse;
+      setLastWarnings(data.warnings ?? []);
+
+      const category = catalog.google.find(
+        (f) => f.family.toLowerCase() === data.family.toLowerCase()
+      )?.category;
+      const entry = materializeResponseToEntry(data, category);
+      if (!entry) {
+        // The route answers 200 with an empty `sources` for an unknown
+        // family, and the schema requires at least one source.
+        toast({
+          variant: 'destructive',
+          title: 'Nothing to embed',
+          description:
+            data.warnings?.join(' · ') ||
+            `Google Fonts has no family named "${family}".`,
+        });
+        return;
+      }
+      const written = mutateFontRegistry(entry);
+      if (!written.ok) {
+        toast({
+          variant: 'destructive',
+          title: 'Could not register font',
+          description: written.error,
+        });
+        return;
+      }
+      ensureGoogleFontLoaded(data.family, [400, 700]);
+      toast({
+        title: `Added ${data.family}`,
+        description: `Embedded ${entry.sources.length} weight(s) in props.fontRegistry.`,
+      });
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Google Fonts fetch failed',
+        description: (err as Error).message,
+      });
+    } finally {
+      setMaterializeBusy(false);
+    }
+  }, [gfFamily, catalog.google, mutateFontRegistry, toast]);
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -353,7 +577,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        {!contextual && !isThemeActive && (
+        {!contextual && !isThemeActive && activeTab !== 'custom' && (
           <Alert>
             <AlertDescription>
               Fonts are registered on themes. Open a <code>.theme.json</code>{' '}
@@ -365,7 +589,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
 
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as 'safe' | 'google')}
+          onValueChange={(v) => setActiveTab(v as 'safe' | 'google' | 'custom')}
           className="flex-1 overflow-hidden flex flex-col"
         >
           <div className="flex items-center gap-2">
@@ -382,6 +606,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
                   {catalog.google.length}
                 </Badge>
               </TabsTrigger>
+              <TabsTrigger value="custom">Custom</TabsTrigger>
             </TabsList>
             <Input
               type="search"
@@ -465,6 +690,100 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
                     />
                   ))}
                 </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="custom" className="m-0 flex flex-col gap-6">
+              {isThemeActive ? (
+                <Alert>
+                  <AlertDescription>
+                    Custom fonts are stored on the document (
+                    <code>props.fontRegistry</code>), because the bytes travel
+                    with the JSON. Open a document tab to add one.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <section className="flex flex-col gap-2">
+                    <h3 className="text-sm font-medium">Upload a font file</h3>
+                    <p className="text-xs text-muted-foreground">
+                      TTF or OTF, up to 2 MB each. The font is embedded in the
+                      document as base64, so it survives export and re-import —
+                      and renders in the preview. The family and weight are
+                      guessed from the filename (e.g.{' '}
+                      <code>Geist-SemiBold.ttf</code>).
+                    </p>
+                    <div
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        void handleUploadFiles(e.dataTransfer.files);
+                      }}
+                      className="rounded-md border border-dashed p-6 text-center"
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".ttf,.otf,font/ttf,font/otf"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => void handleUploadFiles(e.target.files)}
+                      />
+                      <Button
+                        variant="secondary"
+                        disabled={uploadBusy}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {uploadBusy ? (
+                          <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                        ) : (
+                          <Upload className="mr-2 h-4 w-4" />
+                        )}
+                        Choose font files
+                      </Button>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        or drop them here
+                      </p>
+                    </div>
+                  </section>
+
+                  <section className="flex flex-col gap-2">
+                    <h3 className="text-sm font-medium">
+                      Embed any Google font
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Not limited to the {catalog.google.length} curated
+                      families — type any Google Fonts family name and its
+                      regular and bold weights are fetched and embedded.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="e.g. Geist"
+                        value={gfFamily}
+                        onChange={(e) => setGfFamily(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void handleMaterialize();
+                        }}
+                      />
+                      <Button
+                        onClick={() => void handleMaterialize()}
+                        disabled={materializeBusy || gfFamily.trim() === ''}
+                      >
+                        {materializeBusy && (
+                          <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                        )}
+                        Embed
+                      </Button>
+                    </div>
+                    {lastWarnings.length > 0 && (
+                      <Alert>
+                        <AlertDescription className="text-xs">
+                          {lastWarnings.join(' · ')}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </section>
+                </>
               )}
             </TabsContent>
           </div>
