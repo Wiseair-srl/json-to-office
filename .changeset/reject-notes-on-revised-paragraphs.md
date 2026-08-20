@@ -17,3 +17,9 @@ as a semantic rule (`collectNoteRevisionConflicts`) alongside the existing
 image-source and indent mutual-exclusivity walks, so the exported JSON Schema
 gains no conditional and editor completions are unchanged. The renderer keeps
 its warning for callers that disable validation.
+
+`diffDocuments` no longer emits the pair either: a paragraph it marks as a
+tracked change has its notes stripped and reported in `summary.untracked`.
+Without that, redlining a document whose paragraphs carry footnotes would
+produce a redline that fails the new validation — the notes could never have
+survived it anyway.

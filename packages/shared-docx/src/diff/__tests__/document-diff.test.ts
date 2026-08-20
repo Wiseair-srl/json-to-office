@@ -564,3 +564,57 @@ describe('column-based table diff', () => {
     });
   });
 });
+
+describe('notes on tracked-change paragraphs', () => {
+  const withNote = (text: string): JsonNode => ({
+    name: 'paragraph',
+    props: { text, footnotes: [{ id: 'a', text: 'Source note' }] },
+  });
+
+  it('drops notes from a modified paragraph and reports them', () => {
+    // The renderer rejects revision + notes, so a redline carrying both would
+    // not be renderable at all.
+    const { document, summary } = diffDocuments(
+      doc([withNote('Revenue grew 10%[^a].')]),
+      doc([withNote('Revenue grew 12%[^a].')])
+    );
+
+    const props = document.children![0].props as any;
+    expect(props.revision).toBeDefined();
+    expect(props.footnotes).toBeUndefined();
+    expect(
+      summary.untracked.some((entry) =>
+        entry.detail.includes('dropped from a tracked-change paragraph')
+      )
+    ).toBe(true);
+  });
+
+  it('drops notes from inserted and deleted paragraphs too', () => {
+    const inserted = diffDocuments(
+      doc([para('keep')]),
+      doc([para('keep'), withNote('Added[^a].')])
+    );
+    expect(
+      (inserted.document.children![1].props as any).footnotes
+    ).toBeUndefined();
+
+    const deleted = diffDocuments(
+      doc([para('keep'), withNote('Removed[^a].')]),
+      doc([para('keep')])
+    );
+    expect(
+      (deleted.document.children![1].props as any).footnotes
+    ).toBeUndefined();
+  });
+
+  it('leaves notes alone on an unchanged paragraph', () => {
+    const { document } = diffDocuments(
+      doc([withNote('Unchanged[^a].')]),
+      doc([withNote('Unchanged[^a].')])
+    );
+
+    expect((document.children![0].props as any).footnotes).toEqual([
+      { id: 'a', text: 'Source note' },
+    ]);
+  });
+});
