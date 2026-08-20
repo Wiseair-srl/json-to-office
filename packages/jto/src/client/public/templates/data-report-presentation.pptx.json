@@ -20,7 +20,7 @@
         "accent6": "#0D0D0D"
       },
       "fonts": {
-        "heading": "Space Grotesk Medium",
+        "heading": "Space Grotesk",
         "body": "Space Grotesk"
       },
       "defaults": {
@@ -30,23 +30,28 @@
       "styles": {
         "title": {
           "fontSize": 72,
-          "fontColor": "background"
+          "fontColor": "background",
+          "fontWeight": 500
         },
         "heading1": {
           "fontSize": 54,
-          "fontColor": "background"
+          "fontColor": "background",
+          "fontWeight": 500
         },
         "heading2": {
           "fontSize": 24,
-          "fontColor": "text"
+          "fontColor": "text",
+          "fontWeight": 500
         },
         "heading3": {
           "fontSize": 14,
-          "fontColor": "accent6"
+          "fontColor": "accent6",
+          "fontWeight": 500
         },
         "subtitle": {
           "fontSize": 18,
-          "fontFace": "Space Grotesk Medium",
+          "fontFace": "Space Grotesk",
+          "fontWeight": 500,
           "fontColor": "background"
         },
         "body": {
@@ -96,7 +101,8 @@
               "w": 1.02,
               "h": 0.404,
               "fontSize": 9,
-              "fontFace": "Space Grotesk Medium",
+              "fontFace": "Space Grotesk",
+              "fontWeight": 500,
               "color": "text"
             }
           },
@@ -109,7 +115,8 @@
               "w": 1.7530000000000001,
               "h": 0.252,
               "fontSize": 9,
-              "fontFace": "Space Grotesk Medium",
+              "fontFace": "Space Grotesk",
+              "fontWeight": 500,
               "color": "text2",
               "align": "center"
             }
@@ -141,7 +148,8 @@
               "w": 1.02,
               "h": 0.404,
               "fontSize": 9,
-              "fontFace": "Space Grotesk Medium",
+              "fontFace": "Space Grotesk",
+              "fontWeight": 500,
               "color": "background"
             }
           },
@@ -154,7 +162,8 @@
               "w": 1.7530000000000001,
               "h": 0.252,
               "fontSize": 9,
-              "fontFace": "Space Grotesk Medium",
+              "fontFace": "Space Grotesk",
+              "fontWeight": 500,
               "color": "background",
               "align": "center"
             }
@@ -303,7 +312,8 @@
             "w": 1.4200000000000002,
             "h": 0.3,
             "fontSize": 12,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "lineSpacingMultiple": 0.9
           }
@@ -317,7 +327,8 @@
             "w": 1.4200000000000002,
             "h": 0.3,
             "fontSize": 12,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "lineSpacingMultiple": 0.9
           }
@@ -395,7 +406,8 @@
             "w": 1.758,
             "h": 0.77,
             "fontSize": 44,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "align": "right",
             "lineSpacingMultiple": 0.9
@@ -410,7 +422,8 @@
             "w": 1.758,
             "h": 0.77,
             "fontSize": 44,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "align": "right",
             "lineSpacingMultiple": 0.9
@@ -425,7 +438,8 @@
             "w": 1.758,
             "h": 0.77,
             "fontSize": 44,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "align": "right",
             "lineSpacingMultiple": 0.9
@@ -479,7 +493,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -598,7 +613,8 @@
             "w": 1.52,
             "h": 0.45,
             "fontSize": 20,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "lineSpacingMultiple": 0.9
           }
@@ -637,7 +653,8 @@
             "w": 1.52,
             "h": 0.45,
             "fontSize": 20,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "lineSpacingMultiple": 0.9
           }
@@ -676,7 +693,8 @@
             "w": 1.52,
             "h": 0.45,
             "fontSize": 20,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "lineSpacingMultiple": 0.9
           }
@@ -715,7 +733,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -852,7 +871,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -946,7 +966,7 @@
             },
             "catAxisLabelFontSize": 10.5,
             "catAxisLabelColor": "text",
-            "catAxisLabelFontFace": "Space Grotesk Medium",
+            "catAxisLabelFontFace": "Space Grotesk",
             "data": [
               {
                 "name": "A",
@@ -1059,7 +1079,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -1180,7 +1201,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "align": "right"
           }
@@ -1350,7 +1372,8 @@
             "w": 2.899,
             "h": 0.587,
             "fontSize": 16,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "lineSpacingMultiple": 0.9
           }
@@ -1364,7 +1387,8 @@
             "w": 1.4200000000000002,
             "h": 0.3,
             "fontSize": 12,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "lineSpacingMultiple": 0.9
           }
@@ -1378,7 +1402,8 @@
             "w": 1.72,
             "h": 0.3,
             "fontSize": 12,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "lineSpacingMultiple": 0.9
           }
@@ -1419,7 +1444,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -1750,7 +1776,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -1818,7 +1845,7 @@
             "w": 2.9379999999999997,
             "h": 0.774,
             "fontSize": 42,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
             "color": "accent6",
             "bold": true,
             "align": "center",
@@ -1849,7 +1876,7 @@
             "w": 2.77,
             "h": 0.62,
             "fontSize": 34,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
             "color": "accent6",
             "bold": true,
             "align": "center",
@@ -1880,7 +1907,7 @@
             "w": 2.77,
             "h": 0.55,
             "fontSize": 30,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
             "color": "accent6",
             "bold": true,
             "align": "center",
@@ -1925,7 +1952,8 @@
             "w": 5.438000000000001,
             "h": 0.587,
             "fontSize": 16,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "lineSpacingMultiple": 0.9
           }
@@ -1976,7 +2004,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -2086,7 +2115,8 @@
             "w": 0.913,
             "h": 0.572,
             "fontSize": 28,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "align": "center",
             "lineSpacingMultiple": 0.9
@@ -2101,7 +2131,8 @@
             "w": 0.913,
             "h": 0.572,
             "fontSize": 28,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "align": "center",
             "lineSpacingMultiple": 0.9
@@ -2116,7 +2147,8 @@
             "w": 0.913,
             "h": 0.572,
             "fontSize": 28,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "align": "center",
             "lineSpacingMultiple": 0.9
@@ -2212,7 +2244,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "align": "right"
           }
@@ -2398,7 +2431,8 @@
             "w": 5.438000000000001,
             "h": 0.587,
             "fontSize": 16,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "lineSpacingMultiple": 0.9
           }
@@ -2437,7 +2471,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -2554,7 +2589,8 @@
             "w": 3.28,
             "h": 0.829,
             "fontSize": 16,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "lineSpacingMultiple": 0.9
           }
@@ -2596,7 +2632,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -2724,7 +2761,8 @@
             "w": 1.522,
             "h": 0.831,
             "fontSize": 48,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "align": "right",
             "lineSpacingMultiple": 0.9
@@ -2739,7 +2777,8 @@
             "w": 1.522,
             "h": 0.831,
             "fontSize": 48,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "align": "right",
             "lineSpacingMultiple": 0.9
@@ -2754,7 +2793,8 @@
             "w": 1.522,
             "h": 0.831,
             "fontSize": 48,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "align": "right",
             "lineSpacingMultiple": 0.9
@@ -2794,7 +2834,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -2900,7 +2941,8 @@
             "w": 0.9670000000000001,
             "h": 0.6,
             "fontSize": 36,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "align": "center",
             "lineSpacingMultiple": 0.9
@@ -2915,7 +2957,8 @@
             "w": 1.2750000000000001,
             "h": 0.72,
             "fontSize": 44,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "align": "center",
             "lineSpacingMultiple": 0.9
@@ -2930,7 +2973,8 @@
             "w": 1.522,
             "h": 0.8,
             "fontSize": 48,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text",
             "align": "center",
             "lineSpacingMultiple": 0.9
@@ -2993,7 +3037,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }
@@ -3115,7 +3160,8 @@
             "w": 2.6119999999999997,
             "h": 0.587,
             "fontSize": 16,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "background",
             "align": "right",
             "lineSpacingMultiple": 0.9
@@ -3194,7 +3240,8 @@
             "w": 0.333,
             "h": 0.252,
             "fontSize": 9,
-            "fontFace": "Space Grotesk Medium",
+            "fontFace": "Space Grotesk",
+            "fontWeight": 500,
             "color": "text2",
             "align": "right"
           }

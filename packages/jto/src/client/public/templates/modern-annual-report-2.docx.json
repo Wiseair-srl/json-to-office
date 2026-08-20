@@ -1187,7 +1187,8 @@
           "props": {
             "text": "CEO REPORT",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 28,
               "characterSpacing": {
                 "type": "condensed",
@@ -1252,7 +1253,8 @@
           "props": {
             "text": "MESSAGE FROM CEO",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 28,
               "characterSpacing": {
                 "type": "condensed",
@@ -1285,7 +1287,8 @@
           "props": {
             "text": "BUSINESS MODEL",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 28,
               "characterSpacing": {
                 "type": "condensed",
@@ -1318,7 +1321,8 @@
           "props": {
             "text": "FINANCIAL HIGHLIGHT",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 28,
               "characterSpacing": {
                 "type": "condensed",
@@ -1351,7 +1355,8 @@
           "props": {
             "text": "INCOME STATEMENT",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 28,
               "characterSpacing": {
                 "type": "condensed",
@@ -1384,7 +1389,8 @@
           "props": {
             "text": "FUTURE OUTLOOK",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 28,
               "characterSpacing": {
                 "type": "condensed",
@@ -1997,7 +2003,7 @@
           "props": {
             "text": "Date of ",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 24,
               "color": "background",
               "bold": true,
@@ -2032,7 +2038,7 @@
           "props": {
             "text": "Incorporation:",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 24,
               "color": "background",
               "bold": true,
@@ -2097,7 +2103,7 @@
           "props": {
             "text": "Business Sector:",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 18,
               "color": "background",
               "bold": true,
@@ -2128,7 +2134,7 @@
           "props": {
             "text": "Authorized Capital:",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 18,
               "color": "background",
               "bold": true,
@@ -2217,7 +2223,7 @@
           "props": {
             "text": "Paid-Up Capital:",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 18,
               "color": "background",
               "bold": true,
@@ -2248,7 +2254,7 @@
           "props": {
             "text": "Share Listing:",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 18,
               "color": "background",
               "bold": true,
@@ -2434,7 +2440,7 @@
           "props": {
             "text": "Company",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 12,
               "color": "background",
               "bold": true,
@@ -2625,7 +2631,7 @@
           "props": {
             "text": "ABOUT",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 86,
               "bold": true,
               "characterSpacing": {
@@ -3072,7 +3078,7 @@
           "props": {
             "text": "Artifical Intelligence",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 18,
               "color": "background",
               "bold": true,
@@ -3161,7 +3167,7 @@
           "props": {
             "text": "Technology Service",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 18,
               "color": "background",
               "bold": true,
@@ -3254,7 +3260,7 @@
           "props": {
             "text": "Blockchain",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 18,
               "color": "background",
               "bold": true,
@@ -3347,7 +3353,7 @@
           "props": {
             "text": "Internet of Things",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 18,
               "color": "background",
               "bold": true,
@@ -3683,7 +3689,8 @@
           "props": {
             "text": "3.000",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 44,
               "characterSpacing": {
                 "type": "condensed",
@@ -3758,7 +3765,8 @@
           "props": {
             "text": "3.000",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 44,
               "characterSpacing": {
                 "type": "condensed",
@@ -3812,7 +3820,8 @@
           "props": {
             "text": "3.000",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 44,
               "characterSpacing": {
                 "type": "condensed",
@@ -3866,7 +3875,8 @@
           "props": {
             "text": "3.000",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 44,
               "characterSpacing": {
                 "type": "condensed",
@@ -10280,7 +10290,7 @@
           "props": {
             "text": "35%",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 48,
               "bold": true,
               "characterSpacing": {
@@ -10314,7 +10324,7 @@
           "props": {
             "text": "22%",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 48,
               "bold": true,
               "characterSpacing": {
@@ -10463,7 +10473,7 @@
           "props": {
             "text": "18%",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 48,
               "bold": true,
               "characterSpacing": {
@@ -10497,7 +10507,7 @@
           "props": {
             "text": "14%",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 48,
               "bold": true,
               "characterSpacing": {
@@ -10647,7 +10657,7 @@
           "props": {
             "text": "9%",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 48,
               "bold": true,
               "characterSpacing": {
@@ -13329,7 +13339,7 @@
           "props": {
             "text": "OUR AWARDS",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 76,
               "bold": true,
               "characterSpacing": {
@@ -13391,7 +13401,8 @@
           "props": {
             "text": "2051",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 48,
               "characterSpacing": {
                 "type": "condensed",
@@ -13424,7 +13435,8 @@
           "props": {
             "text": "2052",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 48,
               "characterSpacing": {
                 "type": "condensed",
@@ -13457,7 +13469,8 @@
           "props": {
             "text": "2053",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 48,
               "characterSpacing": {
                 "type": "condensed",
@@ -14719,7 +14732,7 @@
           "props": {
             "text": "DORENNE",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 66,
               "bold": true,
               "characterSpacing": {
@@ -14753,7 +14766,7 @@
           "props": {
             "text": "SOLENNE",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 66,
               "bold": true,
               "characterSpacing": {
@@ -15256,7 +15269,8 @@
           "props": {
             "text": "Follow Us",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "color": "background",
               "lineSpacing": {
                 "type": "exactly",
@@ -15314,7 +15328,7 @@
           "props": {
             "text": "ANNUAL REPORT",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 18,
               "color": "background",
               "bold": true,
@@ -15345,7 +15359,7 @@
           "props": {
             "text": "THANK YOU",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
               "size": 52,
               "color": "background",
               "bold": true,
@@ -15442,7 +15456,8 @@
           "props": {
             "text": "Contact Us",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "color": "background",
               "lineSpacing": {
                 "type": "exactly",

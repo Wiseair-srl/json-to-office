@@ -655,7 +655,8 @@
           "props": {
             "text": "Global presence ",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 32,
               "characterSpacing": {
                 "type": "condensed",
@@ -684,7 +685,8 @@
           "props": {
             "text": "Message from CEO ",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 32,
               "characterSpacing": {
                 "type": "condensed",
@@ -713,7 +715,8 @@
           "props": {
             "text": "Business Model ",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 32,
               "characterSpacing": {
                 "type": "condensed",
@@ -742,7 +745,8 @@
           "props": {
             "text": "Financial Highlights",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 32,
               "characterSpacing": {
                 "type": "condensed",
@@ -771,7 +775,8 @@
           "props": {
             "text": "Income Statement ",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 32,
               "characterSpacing": {
                 "type": "condensed",
@@ -800,7 +805,8 @@
           "props": {
             "text": "Future Outlook",
             "font": {
-              "family": "Geist Light",
+              "family": "Geist",
+              "fontWeight": 300,
               "size": 32,
               "characterSpacing": {
                 "type": "condensed",
@@ -1426,7 +1432,8 @@
           "props": {
             "text": "Authorized Capital:",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 22,
               "characterSpacing": {
                 "type": "condensed",
@@ -1482,7 +1489,8 @@
           "props": {
             "text": "Share Listing:",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 22,
               "characterSpacing": {
                 "type": "condensed",
@@ -1538,7 +1546,8 @@
           "props": {
             "text": "Business Sector:",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 22,
               "characterSpacing": {
                 "type": "condensed",
@@ -1761,7 +1770,8 @@
           "props": {
             "text": "Ferum quia volutatur aborehe ndestium fugia venti quibus esci blaut quatian ducidus dis escid quamus qui rescien estemperum qui volupta pratur repudae voluptium quis que voluptas adit eos ate plibea",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 22,
               "lineSpacing": {
                 "type": "exactly",
@@ -2186,7 +2196,8 @@
           "props": {
             "text": "Artifical Intelligence",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 20,
               "lineSpacing": {
                 "type": "exactly",
@@ -2219,7 +2230,8 @@
           "props": {
             "text": "Technology Service",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 20,
               "lineSpacing": {
                 "type": "exactly",
@@ -2362,7 +2374,8 @@
           "props": {
             "text": "Blockchain",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 20,
               "lineSpacing": {
                 "type": "exactly",
@@ -2395,7 +2408,8 @@
           "props": {
             "text": "Internet of Things",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 20,
               "lineSpacing": {
                 "type": "exactly",
@@ -2753,7 +2767,8 @@
           "props": {
             "text": "1K+",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 56,
               "lineSpacing": {
                 "type": "exactly",
@@ -2861,7 +2876,8 @@
           "props": {
             "text": "4K+",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 56,
               "lineSpacing": {
                 "type": "exactly",
@@ -2969,7 +2985,8 @@
           "props": {
             "text": "3K+",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 56,
               "lineSpacing": {
                 "type": "exactly",
@@ -3077,7 +3094,8 @@
           "props": {
             "text": "700",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 56,
               "lineSpacing": {
                 "type": "exactly",
@@ -13288,7 +13306,8 @@
           "props": {
             "text": "Contact Us",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 14,
               "color": "background",
               "lineSpacing": {
@@ -13405,7 +13424,8 @@
           "props": {
             "text": "Follow Us",
             "font": {
-              "family": "Geist Medium",
+              "family": "Geist",
+              "fontWeight": 500,
               "size": 14,
               "color": "background",
               "lineSpacing": {
