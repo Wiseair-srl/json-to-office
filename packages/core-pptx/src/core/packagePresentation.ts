@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
-import type { PendingXmlFill } from '../types';
+import type { PendingXmlFill, PipelineWarning } from '../types';
+import { repairSvgRasterFallbacks } from './svgRasterFallback';
 
 const MEDIUM_STYLE_2_ACCENT_1 = '{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}';
 const NO_STYLE_NO_GRID = '{2D5ABB26-0587-4C30-8999-92F81FD0307C}';
@@ -18,6 +19,11 @@ export interface PresentationPackagingOptions {
    * the registered fill XML.
    */
   pendingFills?: PendingXmlFill[];
+  /**
+   * Warning sink for post-generation repairs. Only the SVG raster fallback
+   * pass reports here; when omitted its failures go to `console.warn`.
+   */
+  warnings?: PipelineWarning[];
 }
 
 /**
@@ -232,6 +238,8 @@ export async function packagePresentationBuffer(
       changed = true;
     }
   }
+
+  changed = (await repairSvgRasterFallbacks(zip, options.warnings)) || changed;
 
   if (options.deterministic !== false) {
     const generatedAt = resolveGeneratedAt(options.generatedAt);

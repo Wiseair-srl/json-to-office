@@ -98,23 +98,25 @@ A text box. The most feature-rich component: it participates in the theme's styl
 
 Embeds a raster image or inline SVG.
 
-| Prop               | Type                         | Default | Description                                                               |
-| ------------------ | ---------------------------- | ------- | ------------------------------------------------------------------------- |
-| `path`             | string                       | — \*    | File path or URL                                                          |
-| `base64`           | string                       | — \*    | Base64 data-URI content                                                   |
-| `svg`              | string                       | — \*    | Raw inline SVG markup, embedded as a vector (renders in PowerPoint 2016+) |
-| `x`, `y`, `w`, `h` | number \| `"NN%"`            | —       | Position and size                                                         |
-| `sizing`           | `{ type, w?, h? }`           | —       | `type`: `contain` \| `cover` \| `crop` (see below)                        |
-| `rotate`           | number (deg)                 | —       | Rotation                                                                  |
-| `rounding`         | boolean                      | —       | Rounds the image into a circle                                            |
-| `shadow`           | Shadow                       | —       | Drop shadow (see [Shadow](#shadow))                                       |
-| `hyperlink`        | `{ url?, slide?, tooltip? }` | —       | Click-through link                                                        |
-| `alt`              | string                       | —       | Accessibility alt text                                                    |
-| `grid`             | GridPosition                 | —       | Grid placement                                                            |
+| Prop               | Type                         | Default | Description                                             |
+| ------------------ | ---------------------------- | ------- | ------------------------------------------------------- |
+| `path`             | string                       | — \*    | File path or URL                                        |
+| `base64`           | string                       | — \*    | Base64 data-URI content                                 |
+| `svg`              | string                       | — \*    | Raw inline SVG markup, embedded as a vector (see below) |
+| `x`, `y`, `w`, `h` | number \| `"NN%"`            | —       | Position and size                                       |
+| `sizing`           | `{ type, w?, h? }`           | —       | `type`: `contain` \| `cover` \| `crop` (see below)      |
+| `rotate`           | number (deg)                 | —       | Rotation                                                |
+| `rounding`         | boolean                      | —       | Rounds the image into a circle                          |
+| `shadow`           | Shadow                       | —       | Drop shadow (see [Shadow](#shadow))                     |
+| `hyperlink`        | `{ url?, slide?, tooltip? }` | —       | Click-through link                                      |
+| `alt`              | string                       | —       | Accessibility alt text                                  |
+| `grid`             | GridPosition                 | —       | Grid placement                                          |
 
 \* **Exactly one source is required.** Providing more than one non-empty source (`path` + `base64`, etc.) fails both validation and generation with a `mutually_exclusive` error; providing none produces an `IMAGE_NO_SOURCE` warning and the image is skipped.
 
 **Aspect-ratio auto-sizing**: if you give exactly one of `w`/`h` (and no `sizing`), the library probes the image's intrinsic dimensions and computes the other side to preserve the aspect ratio.
+
+**`svg` raster fallback**: PowerPoint 2016+ draws the vector itself. For everything else — LibreOffice ≤ 7.x, Google Slides, Office < 2016 — the library rasterizes the SVG at ~288 DPI for the box it is placed in and ships that PNG alongside it, so the picture still renders. If the SVG cannot be rasterized you get an `IMAGE_SVG_RASTER_FAILED` warning and those viewers fall back to a broken-image placeholder; PowerPoint is unaffected either way.
 
 **`sizing` modes**:
 

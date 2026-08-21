@@ -237,6 +237,7 @@ export async function generateBufferWithWarnings(
   const buffer = await packagePresentationBuffer(data as Buffer, {
     ...options,
     pendingFills,
+    warnings,
   });
   return { buffer, warnings };
 }
