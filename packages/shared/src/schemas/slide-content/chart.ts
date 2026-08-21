@@ -101,6 +101,14 @@ export const PptxChartPropsSchema = Type.Object(
     titleFontFace: Type.Optional(
       Type.String({ description: 'Title font face' })
     ),
+    titleFontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Title weight (100–900). Rendered as a sub-family alias — see `dataLabelFontWeight`.',
+      })
+    ),
 
     // Chart colors
     chartColors: Type.Optional(
@@ -148,6 +156,14 @@ export const PptxChartPropsSchema = Type.Object(
     legendFontFace: Type.Optional(
       Type.String({ description: 'Legend font face' })
     ),
+    legendFontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Legend weight (100–900). Rendered as a sub-family alias — see `dataLabelFontWeight`. PowerPoint gives the legend no bold toggle, so 400 and 700 both render Regular (700 warns).',
+      })
+    ),
     legendColor: Type.Optional(
       Type.String({ description: 'Legend text color' })
     ),
@@ -172,6 +188,14 @@ export const PptxChartPropsSchema = Type.Object(
     ),
     catAxisLabelFontFace: Type.Optional(
       Type.String({ description: 'Category axis label font face' })
+    ),
+    catAxisLabelFontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Category axis label weight (100–900). Rendered as a sub-family alias — see `dataLabelFontWeight`.',
+      })
     ),
     catGridLine: Type.Optional(ChartGridLineSchema),
 
@@ -201,6 +225,14 @@ export const PptxChartPropsSchema = Type.Object(
     ),
     valAxisLabelFontFace: Type.Optional(
       Type.String({ description: 'Value axis label font face' })
+    ),
+    valAxisLabelFontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Value axis label weight (100–900). Rendered as a sub-family alias — see `dataLabelFontWeight`.',
+      })
     ),
     valAxisLabelFontSize: Type.Optional(
       Type.Number({ description: 'Value axis label font size' })
@@ -310,6 +342,14 @@ export const PptxChartPropsSchema = Type.Object(
     ),
     dataLabelFontFace: Type.Optional(
       Type.String({ description: 'Data label font face' })
+    ),
+    dataLabelFontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Data label weight (100–900); overrides `dataLabelFontBold`. PowerPoint chart labels carry no numeric weight, so a non-RIBBI weight renders by rewriting the font face to the matching sub-family ("Inter" at 300 → "Inter Light") — 400 and 700 stay on the family and use the bold toggle. Falls back to the theme body font when the sibling font face is unset.',
+      })
     ),
     dataLabelFontBold: Type.Optional(
       Type.Boolean({ description: 'Bold data labels' })

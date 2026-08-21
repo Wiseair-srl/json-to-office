@@ -45,6 +45,7 @@ interface TableComponentProps {
   fill?: string;
   fontSize?: number;
   fontFace?: string;
+  fontWeight?: number;
   color?: string;
   align?: string;
   valign?: string;
@@ -213,9 +214,23 @@ export function renderTableComponent(
   if (props.fill)
     opts.fill = { color: resolveColor(props.fill, theme, warnings) };
 
-  // Font defaults
+  // Font defaults — a table-level weight resolves exactly like a per-cell one:
+  // a sub-family alias for non-RIBBI weights, the bold toggle for 700.
+  // pptxgenjs cascades `fontFace`/`bold` into every cell that sets neither, so
+  // the alias reaches plain-string cells too; a cell with its own `fontWeight`
+  // or `bold` already aliased off the un-synthesized `props.fontFace` above.
   opts.fontSize = props.fontSize ?? theme.defaults.fontSize;
   opts.fontFace = props.fontFace ?? theme.fonts.body;
+  if (props.fontWeight != null) {
+    const w = applyFontWeight({
+      family: opts.fontFace as string | undefined,
+      fontWeight: props.fontWeight,
+    });
+    if (w.fontFace !== undefined) opts.fontFace = w.fontFace;
+    // Only ever set true: pptxgenjs's cell cascade ignores falsy table opts,
+    // so `bold: false` would be dead weight in the options object.
+    if (w.bold === true) opts.bold = true;
+  }
   if (props.color) opts.color = resolveColor(props.color, theme, warnings);
 
   // Alignment

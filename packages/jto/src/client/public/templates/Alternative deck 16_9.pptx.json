@@ -1616,7 +1616,8 @@
               "name": "chart",
               "props": {
                 "dataLabelFontSize": 14,
-                "dataLabelFontFace": "Inter"
+                "dataLabelFontFace": "Inter",
+                "dataLabelFontWeight": 300
               }
             }
           },

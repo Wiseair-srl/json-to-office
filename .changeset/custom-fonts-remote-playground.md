@@ -53,3 +53,17 @@ Documents without a `visual` are unaffected.
 rasterize schemas are `additionalProperties: false`, so a `fonts`-bearing body
 reaches an old server as a 400 rather than being ignored. The batch path
 retries once without fonts, but ordering avoids the wasted round trip.
+
+PPTX chart labels and table defaults can now carry a font weight. The five
+chart font-face props (`titleFontFace`, `legendFontFace`, `dataLabelFontFace`,
+`catAxisLabelFontFace`, `valAxisLabelFontFace`) each gained a `*FontWeight`
+companion, and `TablePropsSchema` gained a table-level `fontWeight` next to its
+table-level `fontFace`. Both run through the same `synthesizeFamilyName` seam a
+run-level `fontFace`/`fontWeight` pair does, so `{ dataLabelFontFace: "Inter",
+dataLabelFontWeight: 300 }` renders as the `Inter Light` face. Previously the
+only weight-ish companion in the chart schema was the boolean
+`dataLabelFontBold`, and tables had a weight per cell but none at table level —
+so nine sites across the shipped decks rendered Regular where the design said
+Light or Medium. Those weights are restored. The legend is the one slot
+PowerPoint gives no bold toggle: `legendFontWeight: 700` renders Regular and
+emits a new `CHART_FONT_WEIGHT_DROPPED` warning.

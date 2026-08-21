@@ -2098,7 +2098,8 @@
               "name": "chart",
               "props": {
                 "dataLabelFontSize": 14,
-                "dataLabelFontFace": "Inter"
+                "dataLabelFontFace": "Inter",
+                "dataLabelFontWeight": 300
               }
             }
           }
@@ -3144,7 +3145,8 @@
               "name": "table",
               "props": {
                 "fontSize": 13,
-                "fontFace": "Inter"
+                "fontFace": "Inter",
+                "fontWeight": 300
               }
             }
           }
@@ -4744,6 +4746,7 @@
               "legendPos": "t",
               "legendFontSize": 10,
               "legendFontFace": "Inter",
+              "legendFontWeight": 300,
               "legendColor": "text2",
               "catAxisLabelFontSize": 10,
               "catAxisLabelColor": "text2",

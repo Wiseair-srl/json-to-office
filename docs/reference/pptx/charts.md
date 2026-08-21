@@ -68,12 +68,13 @@ All optional. Grouped by concern:
 
 **Title**
 
-| Prop            | Type        | Description                   |
-| --------------- | ----------- | ----------------------------- |
-| `title`         | string      | Chart title text              |
-| `titleFontSize` | number (pt) | Title size                    |
-| `titleColor`    | string      | Title color (hex or semantic) |
-| `titleFontFace` | string      | Title font                    |
+| Prop              | Type            | Description                                        |
+| ----------------- | --------------- | -------------------------------------------------- |
+| `title`           | string          | Chart title text                                   |
+| `titleFontSize`   | number (pt)     | Title size                                         |
+| `titleColor`      | string          | Title color (hex or semantic)                      |
+| `titleFontFace`   | string          | Title font                                         |
+| `titleFontWeight` | integer 100–900 | Title weight — see [Label weights](#label-weights) |
 
 **Colors**
 
@@ -91,33 +92,39 @@ An explicit `chartColors` is resolved differently: an entry naming a slot the th
 
 **Legend**
 
-| Prop             | Type                                       | Description                                           |
-| ---------------- | ------------------------------------------ | ----------------------------------------------------- |
-| `legendPos`      | `'b'` \| `'l'` \| `'r'` \| `'t'` \| `'tr'` | Legend position (bottom, left, right, top, top-right) |
-| `legendFontSize` | number (pt)                                | Legend text size                                      |
-| `legendFontFace` | string                                     | Legend font                                           |
-| `legendColor`    | string                                     | Legend text color                                     |
+| Prop               | Type                                       | Description                                           |
+| ------------------ | ------------------------------------------ | ----------------------------------------------------- |
+| `legendPos`        | `'b'` \| `'l'` \| `'r'` \| `'t'` \| `'tr'` | Legend position (bottom, left, right, top, top-right) |
+| `legendFontSize`   | number (pt)                                | Legend text size                                      |
+| `legendFontFace`   | string                                     | Legend font                                           |
+| `legendFontWeight` | integer 100–900                            | Legend weight — see [Label weights](#label-weights)   |
+| `legendColor`      | string                                     | Legend text color                                     |
 
 **Category axis**
 
-| Prop                   | Type         | Description                                                     |
-| ---------------------- | ------------ | --------------------------------------------------------------- |
-| `catAxisTitle`         | string       | Axis title — setting it automatically enables the title display |
-| `catAxisHidden`        | boolean      | Hide the axis                                                   |
-| `catAxisLabelRotate`   | number (deg) | Rotate labels                                                   |
-| `catAxisLabelFontSize` | number (pt)  | Label size                                                      |
-| `catAxisLabelColor`    | string       | Label color                                                     |
+| Prop                     | Type            | Description                                                     |
+| ------------------------ | --------------- | --------------------------------------------------------------- |
+| `catAxisTitle`           | string          | Axis title — setting it automatically enables the title display |
+| `catAxisHidden`          | boolean         | Hide the axis                                                   |
+| `catAxisLabelRotate`     | number (deg)    | Rotate labels                                                   |
+| `catAxisLabelFontSize`   | number (pt)     | Label size                                                      |
+| `catAxisLabelColor`      | string          | Label color                                                     |
+| `catAxisLabelFontFace`   | string          | Label font                                                      |
+| `catAxisLabelFontWeight` | integer 100–900 | Label weight — see [Label weights](#label-weights)              |
 
 **Value axis**
 
-| Prop                              | Type    | Description                                                     |
-| --------------------------------- | ------- | --------------------------------------------------------------- |
-| `valAxisTitle`                    | string  | Axis title — setting it automatically enables the title display |
-| `valAxisHidden`                   | boolean | Hide the axis                                                   |
-| `valAxisMinVal` / `valAxisMaxVal` | number  | Axis bounds                                                     |
-| `valAxisLabelFormatCode`          | string  | Number format, e.g. `"$0.00"` or `"#%"`                         |
-| `valAxisMajorUnit`                | number  | Tick interval                                                   |
-| `valAxisLabelColor`               | string  | Label color                                                     |
+| Prop                              | Type            | Description                                                     |
+| --------------------------------- | --------------- | --------------------------------------------------------------- |
+| `valAxisTitle`                    | string          | Axis title — setting it automatically enables the title display |
+| `valAxisHidden`                   | boolean         | Hide the axis                                                   |
+| `valAxisMinVal` / `valAxisMaxVal` | number          | Axis bounds                                                     |
+| `valAxisLabelFormatCode`          | string          | Number format, e.g. `"$0.00"` or `"#%"`                         |
+| `valAxisMajorUnit`                | number          | Tick interval                                                   |
+| `valAxisLabelColor`               | string          | Label color                                                     |
+| `valAxisLabelFontSize`            | number (pt)     | Label size                                                      |
+| `valAxisLabelFontFace`            | string          | Label font                                                      |
+| `valAxisLabelFontWeight`          | integer 100–900 | Label weight — see [Label weights](#label-weights)              |
 
 **Bar charts**
 
@@ -150,17 +157,29 @@ An explicit `chartColors` is resolved differently: an entry naming a slot the th
 
 **Data labels**
 
-| Prop                | Type                                                                                  | Description     |
-| ------------------- | ------------------------------------------------------------------------------------- | --------------- |
-| `dataLabelColor`    | string                                                                                | Label color     |
-| `dataLabelFontSize` | number (pt)                                                                           | Label size      |
-| `dataLabelFontFace` | string                                                                                | Label font      |
-| `dataLabelFontBold` | boolean                                                                               | Bold labels     |
-| `dataLabelPosition` | `'b'` \| `'bestFit'` \| `'ctr'` \| `'l'` \| `'r'` \| `'t'` \| `'inEnd'` \| `'outEnd'` | Label placement |
+| Prop                  | Type                                                                                  | Description                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `dataLabelColor`      | string                                                                                | Label color                                                                       |
+| `dataLabelFontSize`   | number (pt)                                                                           | Label size                                                                        |
+| `dataLabelFontFace`   | string                                                                                | Label font                                                                        |
+| `dataLabelFontWeight` | integer 100–900                                                                       | Label weight — overrides `dataLabelFontBold`; see [Label weights](#label-weights) |
+| `dataLabelFontBold`   | boolean                                                                               | Bold labels                                                                       |
+| `dataLabelPosition`   | `'b'` \| `'bestFit'` \| `'ctr'` \| `'l'` \| `'r'` \| `'t'` \| `'inEnd'` \| `'outEnd'` | Label placement                                                                   |
 
 **Position**
 
 `x`, `y`, `w`, `h` (inches or `"NN%"`) and `grid` — see [Slides & grid](/reference/pptx/slides-and-grid).
+
+### Label weights
+
+A PowerPoint chart label carries no numeric weight — only a bold toggle. Each `*FontFace` prop therefore has a `*FontWeight` companion (integer 100–900) that resolves the same way a run-level [`fontWeight`](/reference/pptx/components#text) does:
+
+- **400** and **700** stay on the family you named and use the slot's bold toggle.
+- Any other canonical weight (100, 200, 300, 500, 600, 800, 900) rewrites the font face to the matching sub-family — `{ dataLabelFontFace: "Inter", dataLabelFontWeight: 300 }` renders as `Inter Light` — and leaves bold off. Write the family and the weight; **never** write the sub-family name yourself, since nothing resolves it and no font bytes get staged.
+- A weight with no sibling `*FontFace` falls back to the theme's body font, so `{ dataLabelFontWeight: 300 }` alone is enough to lighten the labels of a chart that already follows the theme.
+- A non-canonical weight (e.g. `350`) has no face to resolve to and rounds to Regular or Bold.
+
+`dataLabelFontWeight` wins over `dataLabelFontBold` when both are set. The legend is the one slot PowerPoint gives no bold toggle at all: `legendFontWeight: 700` renders Regular and emits a `CHART_FONT_WEIGHT_DROPPED` warning. Every other weight works there normally.
 
 ### Theme auto-contrast
 
@@ -170,12 +189,13 @@ When unset, `titleColor`, `legendColor`, `catAxisLabelColor`, `valAxisLabelColor
 
 Chart problems don't abort generation; they surface as [pipeline warnings](/guide/validation):
 
-| Code                   | Trigger                                                           |
-| ---------------------- | ----------------------------------------------------------------- |
-| `UNKNOWN_CHART_TYPE`   | `type` is not one of the 9 supported types — the chart is skipped |
-| `CHART_NO_DATA`        | Empty `data` array — the chart is skipped                         |
-| `CHART_INVALID_SERIES` | A series is missing `labels` or `values` — the chart is skipped   |
-| `CHART_MULTI_SERIES`   | More than one series on a pie/doughnut — only the first renders   |
+| Code                        | Trigger                                                                                   |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| `UNKNOWN_CHART_TYPE`        | `type` is not one of the 9 supported types — the chart is skipped                         |
+| `CHART_NO_DATA`             | Empty `data` array — the chart is skipped                                                 |
+| `CHART_INVALID_SERIES`      | A series is missing `labels` or `values` — the chart is skipped                           |
+| `CHART_MULTI_SERIES`        | More than one series on a pie/doughnut — only the first renders                           |
+| `CHART_FONT_WEIGHT_DROPPED` | `legendFontWeight` resolves to bold, which the legend cannot express — it renders Regular |
 
 ---
 

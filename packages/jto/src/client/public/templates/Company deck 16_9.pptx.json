@@ -1961,7 +1961,8 @@
               "name": "chart",
               "props": {
                 "dataLabelFontSize": 14,
-                "dataLabelFontFace": "Inter"
+                "dataLabelFontFace": "Inter",
+                "dataLabelFontWeight": 300
               }
             }
           }
@@ -2256,7 +2257,8 @@
               "name": "table",
               "props": {
                 "fontSize": 13,
-                "fontFace": "Inter"
+                "fontFace": "Inter",
+                "fontWeight": 300
               }
             }
           }
@@ -2924,7 +2926,8 @@
               "name": "chart",
               "props": {
                 "dataLabelFontSize": 12,
-                "dataLabelFontFace": "Inter"
+                "dataLabelFontFace": "Inter",
+                "dataLabelFontWeight": 300
               }
             }
           }
@@ -4613,7 +4616,8 @@
               "name": "table",
               "props": {
                 "fontSize": 12,
-                "fontFace": "Inter"
+                "fontFace": "Inter",
+                "fontWeight": 300
               }
             }
           }

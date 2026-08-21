@@ -143,6 +143,14 @@ export const PptxTablePropsSchema = Type.Object(
     fontFace: Type.Optional(
       Type.String({ description: 'Default font family for all cells' })
     ),
+    fontWeight: Type.Optional(
+      Type.Integer({
+        minimum: 100,
+        maximum: 900,
+        description:
+          'Default weight for all cells (100–900). Same sub-family aliasing as the per-cell `fontWeight`; a cell that sets its own `fontWeight` or `bold` opts out.',
+      })
+    ),
     color: Type.Optional(
       Type.String({
         description: 'Default text color for all cells (hex without #)',

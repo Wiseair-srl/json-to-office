@@ -104,7 +104,7 @@ describe('renderChartComponent theme palette', () => {
       catGridLine: { style: 'none' },
       valGridLine: { style: 'dash', size: 0.5, color: 'accent' },
       catAxisLabelFontFace: 'Inter',
-      valAxisLabelFontFace: 'Inter Light',
+      valAxisLabelFontFace: 'Space Grotesk',
       lineDataSymbolSize: 8,
       barOverlapPct: -10,
     });
@@ -117,7 +117,7 @@ describe('renderChartComponent theme palette', () => {
       color: '17a2b8',
     });
     expect(opts.catAxisLabelFontFace).toBe('Inter');
-    expect(opts.valAxisLabelFontFace).toBe('Inter Light');
+    expect(opts.valAxisLabelFontFace).toBe('Space Grotesk');
     expect(opts.lineDataSymbolSize).toBe(8);
     expect(opts.barOverlapPct).toBe(-10);
     expect(warnings).toEqual([]);
@@ -166,5 +166,112 @@ describe('renderChartComponent axis passthrough', () => {
     expect(opts.catAxisLineShow).toBeUndefined();
     expect(opts.valAxisLineShow).toBeUndefined();
     expect(opts.valAxisLabelFontSize).toBeUndefined();
+  });
+});
+
+describe('renderChartComponent label font weights', () => {
+  // Chart labels have no numeric weight in OOXML, so a non-RIBBI weight only
+  // survives as a synthesized sub-family name — the same seam text.ts uses.
+  const themed = {
+    colors: baseColors,
+    fonts: { heading: 'Geist', body: 'Inter' },
+  };
+
+  it('rewrites every label face to the sub-family for a non-RIBBI weight', () => {
+    const opts = chartOpts(themed, undefined, {
+      titleFontFace: 'Inter',
+      titleFontWeight: 300,
+      legendFontFace: 'Inter',
+      legendFontWeight: 300,
+      catAxisLabelFontFace: 'Space Grotesk',
+      catAxisLabelFontWeight: 500,
+      valAxisLabelFontFace: 'Space Grotesk',
+      valAxisLabelFontWeight: 500,
+      dataLabelFontFace: 'Inter',
+      dataLabelFontWeight: 600,
+    });
+
+    expect(opts.titleFontFace).toBe('Inter Light');
+    expect(opts.legendFontFace).toBe('Inter Light');
+    expect(opts.catAxisLabelFontFace).toBe('Space Grotesk Medium');
+    expect(opts.valAxisLabelFontFace).toBe('Space Grotesk Medium');
+    expect(opts.dataLabelFontFace).toBe('Inter SemiBold');
+    // The sub-family face carries the weight; the bold toggle must stay off or
+    // PowerPoint synthesizes a faux-bold on top of it.
+    expect(opts.titleBold).toBe(false);
+    expect(opts.catAxisLabelFontBold).toBe(false);
+    expect(opts.valAxisLabelFontBold).toBe(false);
+    expect(opts.dataLabelFontBold).toBe(false);
+  });
+
+  it('keeps the canonical family and uses the bold toggle at 400/700', () => {
+    const opts = chartOpts(themed, undefined, {
+      titleFontFace: 'Inter',
+      titleFontWeight: 700,
+      catAxisLabelFontFace: 'Inter',
+      catAxisLabelFontWeight: 400,
+    });
+
+    expect(opts.titleFontFace).toBe('Inter');
+    expect(opts.titleBold).toBe(true);
+    expect(opts.catAxisLabelFontFace).toBe('Inter');
+    expect(opts.catAxisLabelFontBold).toBe(false);
+  });
+
+  it('falls back to the theme body font when only a weight is given', () => {
+    const opts = chartOpts(themed, undefined, { dataLabelFontWeight: 300 });
+
+    expect(opts.dataLabelFontFace).toBe('Inter Light');
+  });
+
+  it('lets the weight win over dataLabelFontBold', () => {
+    const opts = chartOpts(themed, undefined, {
+      dataLabelFontFace: 'Inter',
+      dataLabelFontBold: true,
+      dataLabelFontWeight: 300,
+    });
+
+    expect(opts.dataLabelFontFace).toBe('Inter Light');
+    expect(opts.dataLabelFontBold).toBe(false);
+  });
+
+  it('leaves dataLabelFontBold alone when no weight accompanies it', () => {
+    const opts = chartOpts(themed, undefined, {
+      dataLabelFontFace: 'Inter',
+      dataLabelFontBold: true,
+    });
+
+    expect(opts.dataLabelFontFace).toBe('Inter');
+    expect(opts.dataLabelFontBold).toBe(true);
+  });
+
+  it('warns that a bold legend weight is dropped', () => {
+    // pptxgenjs writes no `b=` for the legend, so 700 has nowhere to land and
+    // the legend renders Regular. Every other slot has a bold companion.
+    const warnings: PipelineWarning[] = [];
+    const opts = chartOpts(themed, warnings, {
+      legendFontFace: 'Inter',
+      legendFontWeight: 700,
+    });
+
+    expect(opts.legendFontFace).toBe('Inter');
+    expect(warnings).toEqual([
+      {
+        code: 'CHART_FONT_WEIGHT_DROPPED',
+        component: 'chart',
+        message: expect.stringContaining('legendFontFace'),
+      },
+    ]);
+  });
+
+  it('passes a face through untouched when no weight accompanies it', () => {
+    const warnings: PipelineWarning[] = [];
+    const opts = chartOpts(themed, warnings, { legendFontFace: 'Inter' });
+
+    expect(opts.legendFontFace).toBe('Inter');
+    expect(opts.titleFontFace).toBeUndefined();
+    expect(opts.dataLabelFontFace).toBeUndefined();
+    expect(opts.titleBold).toBeUndefined();
+    expect(warnings).toEqual([]);
   });
 });
