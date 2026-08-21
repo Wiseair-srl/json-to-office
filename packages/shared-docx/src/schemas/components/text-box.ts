@@ -54,6 +54,12 @@ export const TextBoxPropsSchema = Type.Object(
         }
       )
     ),
+    renderAs: Type.Optional(
+      Type.Union([Type.Literal('table'), Type.Literal('shape')], {
+        description:
+          "Rendering strategy. 'table' (default): borderless one-cell table — height auto-fits content, per-side borders and percentage widths resolve in Word. 'shape': native Word text box (WPS shape) — real wrap modes and z-order, but requires explicit width and height (no autofit), a single uniform border, and eagerly-resolved percentage sizes.",
+      })
+    ),
     floating: Type.Optional(FloatingPropertiesSchema),
     style: Type.Optional(
       Type.Object(

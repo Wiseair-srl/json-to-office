@@ -16,6 +16,38 @@ interface BookmarkState {
 }
 
 /**
+ * Slug a piece of text into a bookmark id candidate.
+ *
+ * Pure half of `generateId`: the document-outline pre-pass has to predict the
+ * ids render will produce before any registry state exists, so the algorithm
+ * cannot live inside the registry.
+ */
+export function slugifyBookmarkText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .substring(0, 40); // Limit length
+}
+
+/**
+ * Disambiguate a slug against ids already taken, appending `-1`, `-2`, … .
+ * Gives up after 100 attempts and returns the colliding id, exactly as
+ * `generateId` always has.
+ */
+export function dedupeBookmarkId(
+  base: string,
+  taken: (id: string) => boolean
+): string {
+  let id = base;
+  let attempt = 0;
+  while (taken(id) && attempt < 100) {
+    id = `${base}-${++attempt}`;
+  }
+  return id;
+}
+
+/**
  * Registry for managing document bookmarks
  * Used to track bookmark IDs and validate internal hyperlink targets
  */
@@ -49,21 +81,9 @@ export class BookmarkRegistry {
    * Converts text to a URL-friendly format
    */
   generateId(text: string, _type: string = 'bookmark'): string {
-    // Convert to lowercase, replace spaces with hyphens, remove special characters
-    const baseId = text
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-      .substring(0, 40); // Limit length
-
-    // Ensure uniqueness by appending counter if needed
-    let id = baseId;
-    let attempt = 0;
-    while (this.state.bookmarks.has(id) && attempt < 100) {
-      id = `${baseId}-${++attempt}`;
-    }
-
-    return id;
+    return dedupeBookmarkId(slugifyBookmarkText(text), (id) =>
+      this.state.bookmarks.has(id)
+    );
   }
 
   /**

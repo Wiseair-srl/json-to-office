@@ -3,7 +3,7 @@
  * Provides caching layer for component rendering operations
  */
 
-import { Paragraph, Table, TableOfContents, Textbox } from 'docx';
+import { Paragraph, Table, TableOfContents } from 'docx';
 import { ComponentDefinition, RenderContext } from '../types';
 import { ThemeConfig } from '../styles';
 import {
@@ -215,7 +215,7 @@ export async function renderComponentWithCache(
   themeName: string,
   context: RenderContext,
   bypassCache = false
-): Promise<(Paragraph | Table | TableOfContents | Textbox)[]> {
+): Promise<(Paragraph | Table | TableOfContents)[]> {
   const bypassReason = componentBypassReason(component);
 
   // Initialize cache if needed
@@ -276,7 +276,7 @@ export async function renderComponentWithCache(
   if (cached) {
     // Cache hit - the cache internally tracks this as a hit
     // Return the rendered result from cache
-    return cached.result as (Paragraph | Table | TableOfContents | Textbox)[];
+    return cached.result as (Paragraph | Table | TableOfContents)[];
   }
 
   // Cache miss - render the component

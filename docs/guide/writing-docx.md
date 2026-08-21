@@ -62,6 +62,7 @@ jto docx generate report.docx.json -o report.docx
 - `**bold**` or `__bold__`, `*italic*` or `_italic_`, `***bold italic***`
 - `\n` for line breaks within one paragraph
 - `[link text](https://example.com)` for hyperlinks
+- `[@id]` for a cross-reference to a numbered heading or list item
 - `{PLACEHOLDER}` for dynamic content
 
 The built-in placeholders are `{PAGE}` (current page number), `{TOTAL_PAGES}`, `{DATE}`, `{DATETIME}`, and `{YEAR}`. Unknown placeholders are left in the text as-is, so stray braces will not break a render.
@@ -95,6 +96,30 @@ A hyperlink whose URL starts with `#` becomes an internal bookmark link. The tar
   }
 ]
 ```
+
+### Numbered headings and cross-references
+
+`"numbering": true` on a heading puts it in the document's `1.` / `1.1.` / `1.1.1.` sequence — Word renders the number, so it stays right when sections move. Turn it on for every heading through the theme's `componentDefaults.heading.numbering`, and set `"numbering": false` on the odd heading that should stay unnumbered.
+
+Once a heading is numbered, `[@id]` in any text references it: the number is written as a hyperlinked Word `REF` field. Headings take the `id` from their node `id`, or from a slug of their text; list items take one written on the item. `[@id:none]` references the target's text instead of its number.
+
+```json
+[
+  {
+    "name": "heading",
+    "id": "methods",
+    "props": { "text": "Methods", "level": 2, "numbering": true }
+  },
+  {
+    "name": "paragraph",
+    "props": {
+      "text": "Sampling is described in [@methods] ([@methods:none])."
+    }
+  }
+]
+```
+
+See [cross-references](/reference/docx/components#cross-references) for the other switches and the caveats about cached values.
 
 Paragraphs also accept `font` (a partial font override: family, size, color, bold, `fontWeight`, italic, underline, ...), `themeStyle` (a named style from the theme's `styles` map), `boldColor` (a color applied only to `**bold**` segments), `spacing`, `keepNext`/`keepLines`, and page/column breaks. Headings take `level` 1–6 (default 1) and feed the table of contents automatically.
 
@@ -188,7 +213,7 @@ Column widths are points, or `"%"` strings relative to the table width; columns 
 
 ## Lists
 
-The `items` array accepts plain strings or objects with a `level` (0–8) for nesting. By default you get bullets; `format` switches level 0 to numbering, and `levels` gives full per-level control:
+The `items` array accepts plain strings or objects with a `level` (0–8) for nesting and an optional `id` that bookmarks the item, so `[jump](#id)` links to it and `[@id]` [cross-references](/reference/docx/components#cross-references) its number. By default you get bullets; `format` switches level 0 to numbering, and `levels` gives full per-level control:
 
 ```json
 {
@@ -314,6 +339,8 @@ Each child fills the next column. Columns accept nearly everything a section doe
   ]
 }
 ```
+
+By default the box is a borderless one-cell table, which auto-fits its height and lets Word resolve percentage widths. Set `"renderAs": "shape"` to emit a native Word text box instead, when you need real text wrapping or z-order; it needs an explicit `width` and `height`, and takes a single uniform border. See [renderAs](/reference/docx/components#renderas-table-or-shape) for the full trade.
 
 Both colors in that `style` block — `border.<side>.color` and `shading.fill` — take a `#`-prefixed hex or a theme color name (`"primary"`, `"accent"`, ...), and both are checked against that pattern at validation. A digit-leading bare hex such as `"0F0FDF"` fails validation outright. A letter-leading one such as `"F0FDF4"` is indistinguishable from a theme color name under that pattern, so it passes validation — and resolves as hex at render, since no theme color name is six hex characters. Write `"#F0FDF4"` anyway: it is the form the schema is built around, and the only one that works for both leading digits and letters.
 

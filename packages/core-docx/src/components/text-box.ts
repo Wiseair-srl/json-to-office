@@ -14,6 +14,8 @@ import {
   RelativeVerticalPosition,
   OverlapType,
   TableLayoutType,
+  WpsShapeRun,
+  type IWpsShapeOptions,
 } from 'docx';
 import {
   ComponentDefinition,
@@ -25,6 +27,8 @@ import { ThemeConfig } from '../styles';
 import { renderComponent } from '../core/render';
 import { NONE_BORDERS } from '../styles/utils/borderUtils';
 import { buildCellOptions, CellStyleConfig } from '../styles/utils/cellUtils';
+import { resolveColor } from '../styles/utils/colorUtils';
+import { mapFloatingOptions } from '../utils/docxImagePositioning';
 import {
   resolveOffsetTwips,
   getPageWidthTwips,
@@ -128,15 +132,12 @@ function mapTableFloatOptions(
   return opt;
 }
 
-export async function renderTextBoxComponent(
-  component: ComponentDefinition,
+async function renderTextBoxAsTable(
+  tb: TextBoxComponentDefinition,
   theme: ThemeConfig,
   themeName: string,
   _context: import('../types').RenderContext
 ): Promise<(Paragraph | Table)[]> {
-  if (!isTextBoxComponent(component)) return [];
-  const tb = component as TextBoxComponentDefinition;
-
   const isInline = !tb.props.floating;
   const childComponents = tb.children || [];
 
@@ -234,4 +235,231 @@ export async function renderTextBoxComponent(
     borders: NONE_BORDERS,
   });
   return [table];
+}
+
+/** 1 px at 96 DPI in EMU (914400 EMU/inch ÷ 96 px/inch). */
+const PIXELS_TO_EMU = 9525;
+/** 1 px at 96 DPI in twips (1440 twips/inch ÷ 96 px/inch). */
+const TWIPS_PER_PIXEL = 15;
+
+type TextBoxStyle = NonNullable<TextBoxComponentDefinition['props']['style']>;
+type BorderSide = NonNullable<NonNullable<TextBoxStyle['border']>['top']>;
+
+/**
+ * Resolve a `width`/`height` prop to whole pixels.
+ *
+ * A shape carries an absolute size in the file, so a percentage cannot stay
+ * lazy the way a table's `w:tblW` can: it is resolved here against the page's
+ * content box and frozen. Callers warn about that, once per text box.
+ */
+function resolveShapeSize(
+  value: number | string | undefined,
+  axis: 'width' | 'height',
+  theme: ThemeConfig,
+  themeName: string
+): { pixels?: number; resolvedPercentage: boolean } {
+  if (typeof value === 'number') {
+    return { pixels: Math.round(value), resolvedPercentage: false };
+  }
+  if (typeof value !== 'string') return { resolvedPercentage: false };
+
+  const fraction = parseFloat(value) / 100;
+  if (!Number.isFinite(fraction) || fraction <= 0) {
+    return { resolvedPercentage: false };
+  }
+  const availableTwips =
+    axis === 'width'
+      ? getAvailableWidthTwips(theme, themeName)
+      : getAvailableHeightTwips(theme, themeName);
+  return {
+    pixels: Math.round((availableTwips * fraction) / TWIPS_PER_PIXEL),
+    resolvedPercentage: true,
+  };
+}
+
+/** Hex without the leading '#', which DrawingML's `a:srgbClr` does not take. */
+function shapeColor(value: string, theme: ThemeConfig): string {
+  return resolveColor(value, theme).replace(/^#/, '');
+}
+
+/**
+ * Collapse the per-side border config into the single `a:ln` a shape has.
+ *
+ * Sides are considered in top/left/bottom/right order; when they disagree, the
+ * first one wins and the caller is told which.
+ */
+function shapeOutline(
+  style: TextBoxStyle | undefined,
+  theme: ThemeConfig
+): { outline?: IWpsShapeOptions['outline']; ignoredSides: string[] } {
+  const border = style?.border;
+  if (!border) return { ignoredSides: [] };
+
+  const order: (keyof NonNullable<TextBoxStyle['border']>)[] = [
+    'top',
+    'left',
+    'bottom',
+    'right',
+  ];
+  const declared = order
+    .map((side) => [side, border[side]] as const)
+    .filter((entry): entry is [(typeof order)[number], BorderSide] =>
+      Boolean(entry[1])
+    );
+  if (declared.length === 0) return { ignoredSides: [] };
+
+  const [, used] = declared[0];
+  const differs = ({ style: s, width, color }: BorderSide): boolean =>
+    s !== used.style || width !== used.width || color !== used.color;
+  const ignoredSides = declared
+    .slice(1)
+    .filter(([, config]) => differs(config))
+    .map(([side]) => side);
+
+  if (used.style === 'none') return { ignoredSides };
+
+  return {
+    outline: {
+      type: 'solidFill',
+      solidFillType: 'rgb',
+      value: used.color ? shapeColor(used.color, theme) : '000000',
+      ...(used.width !== undefined && {
+        width: Math.round(used.width * PIXELS_TO_EMU),
+      }),
+    },
+    ignoredSides,
+  };
+}
+
+/** `bodyPr` insets are EMU, like every other DrawingML length. */
+function shapeBodyProperties(
+  style: TextBoxStyle | undefined
+): IWpsShapeOptions['bodyProperties'] {
+  const padding = style?.padding;
+  if (!padding) return undefined;
+
+  const toEmu = (value: number | undefined) =>
+    value === undefined ? undefined : Math.round(value * PIXELS_TO_EMU);
+
+  return {
+    margins: {
+      ...(padding.top !== undefined && { top: toEmu(padding.top) }),
+      ...(padding.bottom !== undefined && { bottom: toEmu(padding.bottom) }),
+      ...(padding.left !== undefined && { left: toEmu(padding.left) }),
+      ...(padding.right !== undefined && { right: toEmu(padding.right) }),
+    },
+  };
+}
+
+/**
+ * Render the text box as a native Word text box (a `wps:wsp` shape).
+ *
+ * Returns undefined when the request cannot be honoured — non-paragraph
+ * content, or a missing dimension — so the caller falls back to the table
+ * rendering rather than emitting a shape that clips its own content.
+ */
+async function renderTextBoxAsShape(
+  tb: TextBoxComponentDefinition,
+  theme: ThemeConfig,
+  themeName: string,
+  context: import('../types').RenderContext
+): Promise<Paragraph[] | undefined> {
+  // Size is checked before the children render: a fallback after rendering
+  // would render them a second time on the table path, and child side effects
+  // (bookmark, comment, footnote registrations) must happen exactly once.
+  const width = resolveShapeSize(tb.props.width, 'width', theme, themeName);
+  const height = resolveShapeSize(tb.props.height, 'height', theme, themeName);
+  if (width.pixels === undefined || height.pixels === undefined) {
+    console.warn(
+      '[core-docx] text-box renderAs "shape" needs an explicit width and height (a shape has no autofit); falling back to table rendering.'
+    );
+    return undefined;
+  }
+
+  const childContext: import('../types').RenderContext = {
+    ...context,
+    parent: tb,
+  };
+
+  const children: Paragraph[] = [];
+  for (const child of tb.children || []) {
+    const rendered = await renderComponent(
+      child,
+      theme,
+      themeName,
+      childContext
+    );
+    for (const element of rendered) {
+      // `WpsShapeCoreOptions.children` is `readonly Paragraph[]`: a nested
+      // `columns` (which renders as a Table) has nowhere to go in a shape.
+      if (!(element instanceof Paragraph)) {
+        console.warn(
+          '[core-docx] text-box renderAs "shape" requires paragraph-only content; falling back to table rendering.'
+        );
+        return undefined;
+      }
+      children.push(element);
+    }
+  }
+
+  if (width.resolvedPercentage || height.resolvedPercentage) {
+    console.warn(
+      '[core-docx] text-box renderAs "shape" resolves percentage sizes at generation time, against the current page content box; the shape will not reflow if the page size changes.'
+    );
+  }
+
+  const style = tb.props.style;
+  const fill = style?.shading?.fill;
+  const { outline, ignoredSides } = shapeOutline(style, theme);
+  if (ignoredSides.length > 0) {
+    console.warn(
+      `[core-docx] text-box renderAs "shape" has one uniform outline; using the first declared border side and ignoring ${ignoredSides.join(', ')}.`
+    );
+  }
+
+  // docx 9.7.1 emits `a:noFill` + `a:ln` for an outline and then `a:solidFill`
+  // for the fill, which is two fill groups in the wrong order for
+  // CT_ShapeProperties — Word rejects it. Verified against the packed XML, so
+  // when both are asked for, the fill wins.
+  const dropOutline = Boolean(fill) && Boolean(outline);
+  if (dropOutline) {
+    console.warn(
+      '[core-docx] text-box renderAs "shape" cannot carry a fill and a border at once (docx emits invalid shape properties); keeping the fill and dropping the border.'
+    );
+  }
+
+  const bodyProperties = shapeBodyProperties(style);
+  const run = new WpsShapeRun({
+    type: 'wps',
+    children,
+    transformation: { width: width.pixels, height: height.pixels },
+    ...(fill && {
+      solidFill: { type: 'rgb', value: shapeColor(fill, theme) } as const,
+    }),
+    ...(outline && !dropOutline && { outline }),
+    ...(bodyProperties && { bodyProperties }),
+    // Absent `floating` makes it a `wp:inline` drawing.
+    ...(tb.props.floating && {
+      floating: mapFloatingOptions(tb.props.floating, theme, themeName),
+    }),
+  });
+
+  return [new Paragraph({ children: [run], spacing: { before: 0, after: 0 } })];
+}
+
+export async function renderTextBoxComponent(
+  component: ComponentDefinition,
+  theme: ThemeConfig,
+  themeName: string,
+  context: import('../types').RenderContext
+): Promise<(Paragraph | Table)[]> {
+  if (!isTextBoxComponent(component)) return [];
+  const tb = component as TextBoxComponentDefinition;
+
+  if (tb.props.renderAs === 'shape') {
+    const shape = await renderTextBoxAsShape(tb, theme, themeName, context);
+    if (shape) return shape;
+  }
+
+  return renderTextBoxAsTable(tb, theme, themeName, context);
 }

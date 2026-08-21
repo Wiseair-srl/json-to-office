@@ -39,7 +39,43 @@ Different Word constructs use different native units; json-to-office keeps each 
 
 ### Shared text features
 
-`heading` and `paragraph` text supports inline markdown (`**bold**`, `*italic*`, `***bold italic***`, `_underscore variants_`), `\n` line breaks, `[text](url)` hyperlinks (internal bookmark links when the URL starts with `#`), and the placeholders `{PAGE}`, `{TOTAL_PAGES}`, `{DATE}`, `{DATETIME}`, `{YEAR}`. Unknown placeholders are kept as literal text. All text is Unicode NFC-normalized. Image and visual captions support the bold/italic subset.
+`heading` and `paragraph` text supports inline markdown (`**bold**`, `*italic*`, `***bold italic***`, `_underscore variants_`), `\n` line breaks, `[text](url)` hyperlinks (internal bookmark links when the URL starts with `#`), `[@id]` cross-references (below), and the placeholders `{PAGE}`, `{TOTAL_PAGES}`, `{DATE}`, `{DATETIME}`, `{YEAR}`. Unknown placeholders are kept as literal text. All text is Unicode NFC-normalized. Image and visual captions support the bold/italic subset.
+
+#### Cross-references
+
+`[@id]` inserts a Word `REF` field pointing at a [numbered heading](#heading-numbering) or a [list item](#list) that declares an `id`. It renders as the target's number and hyperlinks to it, so the number follows the target when sections are reordered.
+
+| Token                | Word switch | Renders                                                     |
+| -------------------- | ----------- | ----------------------------------------------------------- |
+| `[@id]`              | `\r`        | The number relative to where the reference sits (default)   |
+| `[@id:no_context]`   | `\n`        | Only the target's own level counter — `3` for heading 2.1.3 |
+| `[@id:full_context]` | `\w`        | The whole number — `2.1.3`                                  |
+| `[@id:none]`         | —           | The target's text instead of its number                     |
+
+A heading's `id` is its explicit node `id` if it has one, otherwise a slug of its text (`"Data Sources"` → `data-sources`, disambiguated with `-1`, `-2` on collision). List items take the `id` written on the item.
+
+```json
+[
+  {
+    "name": "heading",
+    "id": "methods",
+    "props": { "text": "Methods", "level": 2, "numbering": true }
+  },
+  {
+    "name": "paragraph",
+    "props": {
+      "text": "Sampling is described in [@methods] ([@methods:none])."
+    }
+  }
+]
+```
+
+renders as "Sampling is described in 2.1 (Methods)."
+
+Two caveats:
+
+- **The number is cached at generation time.** Word recomputes every field on open (the document sets `updateFields`), but headless LibreOffice — and therefore the PDF export — shows the cached value, so a `[@id]` in a PDF reflects the document as generated. `[@id]` (relative) is the approximation: its true value depends on where the reference sits, which only Word resolves.
+- **A reference the pre-pass cannot resolve degrades rather than breaking.** An unknown id renders as the literal `[@id]` text with a warning — never as Word's "Error! Reference source not found". A target that exists but carries no number (a bullet-list item, an unnumbered heading) gets a real field with no cached value: blank until the reader updates fields, and a warning suggesting `:none`.
 
 The `font` prop, where present, is a partial font override with the same fields as a theme font definition: `family`, `size` (8–72), `color`, `bold`, `fontWeight` (100–900, wins over `bold`), `italic`, `underline`, `lineSpacing`, `spacing`, `characterSpacing` (`{ type: 'condensed' | 'expanded', value }`).
 
@@ -62,7 +98,7 @@ A document heading. Headings feed the [table of contents](#toc) and Word's navig
 | `lineSpacing`  | `number` \| `{ type: 'single'\|'atLeast'\|'exactly'\|'double'\|'multiple', value? }` | no       | theme               |                                                                       |
 | `pageBreak`    | `boolean`                                                                            | no       | —                   | Page break before the heading                                         |
 | `columnBreak`  | `boolean`                                                                            | no       | —                   | Column break before the heading                                       |
-| `numbering`    | `boolean`                                                                            | no       | —                   | Accepted by the schema but not currently applied by the renderer      |
+| `numbering`    | `boolean`                                                                            | no       | —                   | Auto-number this heading (see below)                                  |
 | `keepNext`     | `boolean`                                                                            | no       | —                   | Keep with the next paragraph                                          |
 | `keepLines`    | `boolean`                                                                            | no       | —                   | Keep all lines on one page                                            |
 | `revision`     | `Revision`                                                                           | no       | —                   | Tracked-change segments (see [Revisions](#revisions-tracked-changes)) |
@@ -71,9 +107,17 @@ A document heading. Headings feed the [table of contents](#toc) and Word's navig
 ```json
 {
   "name": "heading",
-  "props": { "text": "2. Methodology", "level": 2, "keepNext": true }
+  "props": { "text": "Methodology", "level": 2, "keepNext": true }
 }
 ```
+
+### Heading numbering
+
+`numbering: true` puts the heading in the document's multilevel heading numbering — `1.`, `1.1.`, `1.1.1.`, one continuous sequence across the whole document, with the number rendered by Word rather than typed into `text`. The definition binds each level to the matching `Heading1`–`Heading6` style, so Word's own "Continue numbering" UI, the TOC refresh, and `[@id]` cross-references all agree with it.
+
+Turn it on for the whole document through the theme's `componentDefaults.heading.numbering`, and set `numbering: false` on a single heading to opt that one out (an unnumbered appendix title, say). A heading whose level appears before any heading of the level above it numbers with zeros — `2.0.1` — exactly as Word does.
+
+Only numbered headings advance the counters: an unnumbered heading in the middle of a numbered document does not consume a number.
 
 ## `paragraph`
 
@@ -278,18 +322,18 @@ Note the conventions differ between the two color families: `borderColor` (table
 
 Bulleted or numbered lists with up to nine nesting levels and fully configurable numbering.
 
-| Prop        | Type                                                | Required | Default        | Description                                                              |
-| ----------- | --------------------------------------------------- | -------- | -------------- | ------------------------------------------------------------------------ |
-| `items`     | `(string \| { text, level?, revision? })[]` (min 1) | **yes**  | —              | `level` is 0–8                                                           |
-| `reference` | `string`                                            | no       | auto-generated | Numbering configuration ID (share it to continue numbering across lists) |
-| `levels`    | `Level[]` (1–9 items)                               | no       | —              | Per-level configuration (see below)                                      |
-| `format`    | LevelFormat \| `'numbered'` \| `'none'`             | no       | bullets        | Shorthand for the level-0 format                                         |
-| `bullet`    | `string`                                            | no       | —              | Custom bullet character                                                  |
-| `start`     | `number` (≥ 1)                                      | no       | `1`            | Level-0 starting number (applies with or without `levels`)               |
-| `spacing`   | `{ before?, after?, item? }` (points)               | no       | —              | `item` = spacing between items                                           |
-| `alignment` | `'left'` \| `'center'` \| `'right'` \| `'justify'`  | no       | —              |                                                                          |
-| `indent`    | `number` \| `{ left?, hanging? }`                   | no       | —              |                                                                          |
-| `comment`   | `Comment`                                           | no       | —              | Review comment spanning the whole list (see [Comments](#comments))       |
+| Prop        | Type                                                     | Required | Default        | Description                                                              |
+| ----------- | -------------------------------------------------------- | -------- | -------------- | ------------------------------------------------------------------------ |
+| `items`     | `(string \| { text, level?, id?, revision? })[]` (min 1) | **yes**  | —              | `level` is 0–8; `id` bookmarks the item (see below)                      |
+| `reference` | `string`                                                 | no       | auto-generated | Numbering configuration ID (share it to continue numbering across lists) |
+| `levels`    | `Level[]` (1–9 items)                                    | no       | —              | Per-level configuration (see below)                                      |
+| `format`    | LevelFormat \| `'numbered'` \| `'none'`                  | no       | bullets        | Shorthand for the level-0 format                                         |
+| `bullet`    | `string`                                                 | no       | —              | Custom bullet character                                                  |
+| `start`     | `number` (≥ 1)                                           | no       | `1`            | Level-0 starting number (applies with or without `levels`)               |
+| `spacing`   | `{ before?, after?, item? }` (points)                    | no       | —              | `item` = spacing between items                                           |
+| `alignment` | `'left'` \| `'center'` \| `'right'` \| `'justify'`       | no       | —              |                                                                          |
+| `indent`    | `number` \| `{ left?, hanging? }`                        | no       | —              |                                                                          |
+| `comment`   | `Comment`                                                | no       | —              | Review comment spanning the whole list (see [Comments](#comments))       |
 
 **Level**
 
@@ -326,6 +370,8 @@ Bulleted or numbered lists with up to nine nesting levels and fully configurable
   }
 }
 ```
+
+**Item ids.** An item written as an object may carry an `id`, which bookmarks that item: `[jump](#id)` links to it, and `[@id]` [cross-references](#cross-references) it — rendering its counter (`3`, `c`, `iv`) for a numbered level, or its text with `[@id:none]`. Two lists sharing a `reference` share one counter, so an item in the second list numbers on from the first.
 
 ## `toc`
 
@@ -396,14 +442,15 @@ Inside a `text-box`, a nested `columns` renders as a multi-column table.
 
 A bordered, padded box — callouts, sidebars, cover-page blocks. Allowed children: `heading`, `paragraph`, `image`.
 
-| Prop            | Type                                                                                | Required | Default | Description                                                                            |
-| --------------- | ----------------------------------------------------------------------------------- | -------- | ------- | -------------------------------------------------------------------------------------- |
-| `width`         | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       | Relative to content width                                                              |
-| `height`        | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —       |                                                                                        |
-| `floating`      | floating object                                                                     | no       | —       | Identical schema to [`image`](#image) — one shared floating schema for both components |
-| `style.padding` | `{ top?, right?, bottom?, left? }` (≥ 0)                                            | no       | —       | Inner padding                                                                          |
-| `style.border`  | per-side `{ style: 'solid'\|'dashed'\|'dotted'\|'double'\|'none', width?, color? }` | no       | —       | `color` takes `#`-prefixed hex or a theme color name                                   |
-| `style.shading` | `{ fill?: color }`                                                                  | no       | —       | Background fill. `fill` takes the same color type as `style.border.*.color`            |
+| Prop            | Type                                                                                | Required | Default   | Description                                                                            |
+| --------------- | ----------------------------------------------------------------------------------- | -------- | --------- | -------------------------------------------------------------------------------------- |
+| `renderAs`      | `'table'` \| `'shape'`                                                              | no       | `'table'` | Rendering strategy (see below)                                                         |
+| `width`         | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —         | Relative to content width                                                              |
+| `height`        | `number` (px, ≥ 1) \| `"%"` string                                                  | no       | —         |                                                                                        |
+| `floating`      | floating object                                                                     | no       | —         | Identical schema to [`image`](#image) — one shared floating schema for both components |
+| `style.padding` | `{ top?, right?, bottom?, left? }` (≥ 0)                                            | no       | —         | Inner padding                                                                          |
+| `style.border`  | per-side `{ style: 'solid'\|'dashed'\|'dotted'\|'double'\|'none', width?, color? }` | no       | —         | `color` takes `#`-prefixed hex or a theme color name                                   |
+| `style.shading` | `{ fill?: color }`                                                                  | no       | —         | Background fill. `fill` takes the same color type as `style.border.*.color`            |
 
 `style.shading.fill` and every `style.border.*.color` share one color type — `#RRGGBB` hex or a theme color name — enforced by the schema rather than at render time. Malformed values (`#F0F`, `#GGGGGG`, `rgb(240, 253, 244)`, `light green`, a digit-leading bare hex such as `0F0FDF`, the empty string) are rejected at validation. A letter-leading bare hex such as `F0FDF4` is indistinguishable from a theme color name under that pattern, so it passes validation — and resolves as hex at render, since no theme color name is six hex characters. Write `#F0FDF4` anyway; it is the only form that works whether the value starts with a digit or a letter.
 
@@ -428,6 +475,24 @@ A bordered, padded box — callouts, sidebars, cover-page blocks. Allowed childr
   ]
 }
 ```
+
+### `renderAs`: table or shape
+
+The default `'table'` renders the box as a borderless one-cell table. `'shape'` renders a native Word text box (a `wps:wsp` DrawingML shape) instead — the thing Word's own Insert → Text Box produces. The two trade different capabilities:
+
+| Capability                     | `'table'` (default)                                 | `'shape'`                                                                  |
+| ------------------------------ | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| Height                         | Auto-fits the content                               | Fixed; `width` **and** `height` are required, content that overflows clips |
+| Text wrapping                  | Table float clearances only                         | Real wrap modes (`square`, `topAndBottom`, `none`, …)                      |
+| Z-order / behind text          | Not available                                       | `floating.zIndex`, `floating.behindDocument`                               |
+| Borders                        | Per side, each with its own style, width and colour | One uniform outline; dash patterns render solid                            |
+| Border **and** fill together   | Both                                                | Fill only — see below                                                      |
+| `width` / `height` percentages | Resolved by Word, so they follow the page           | Resolved at generation time against the current content box                |
+| Children                       | Anything, including nested `columns`                | Paragraph-producing components only                                        |
+
+Shape mode degrades to the table rendering, with a warning, when the request cannot be honoured: non-paragraph content (a nested `columns`, which renders as a table), or a missing `width` or `height`. Two more warnings report a downgrade inside shape mode: per-side borders that disagree (the first declared side of top/left/bottom/right wins), and a percentage size being frozen.
+
+A shape cannot carry both `style.shading.fill` and `style.border`: docx 9.7.1 writes the two fill groups in an order Word rejects, so when both are given the fill is kept, the border dropped, and a warning raised. Use one or the other, or stay on the table path.
 
 ## `highcharts`
 

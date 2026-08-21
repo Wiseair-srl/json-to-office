@@ -93,7 +93,12 @@ function selectCachedEntries(
     if (entry.level < depthStart || entry.level > depthEnd) continue;
     // `page` is deliberately omitted: nothing in generation paginates, and
     // Word fills in real numbers the moment it refreshes the field.
-    entries.push({ title: entry.title, level: entry.level });
+    // A numbered heading shows its number in Word's own refresh, so the cached
+    // copy has to carry it too or the two disagree.
+    entries.push({
+      title: entry.number ? `${entry.number} ${entry.title}` : entry.title,
+      level: entry.level,
+    });
   }
 
   return entries;

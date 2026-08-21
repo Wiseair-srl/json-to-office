@@ -14,7 +14,6 @@ import {
   AlignmentType,
   BookmarkStart,
   BookmarkEnd,
-  Textbox,
 } from 'docx';
 import {
   calculateImageDimensions,
@@ -97,8 +96,9 @@ import {
 import type { GenerationWarning } from '@json-to-office/shared';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
 import { computeSectionOrdinals } from './sectionOrdinals';
-import { collectTocHeadings } from './collectTocHeadings';
+import { collectDocumentOutline } from './collectTocHeadings';
 import { globalSectionBookmarkRegistry } from './sectionBookmarks';
+import { globalNumberedItemsRegistry } from '../utils/numberedItemsRegistry';
 
 interface RenderDocumentOptions {
   cache?: MemoryCache;
@@ -206,7 +206,11 @@ export async function renderDocument(
                   // Footnote ids are document-scoped too: a reference resolved
                   // against another render's counter points at the wrong body.
                   globalNoteRegistry.runScoped(() =>
-                    renderDocumentScoped(structure, layout, options)
+                    // Cross-reference targets are keyed by bookmark id, which
+                    // is only unique within one document.
+                    globalNumberedItemsRegistry.runScoped(() =>
+                      renderDocumentScoped(structure, layout, options)
+                    )
                   )
                 )
               )
@@ -263,18 +267,21 @@ async function renderDocumentScoped(
     );
   }
 
-  // Collect TOC entries before rendering so a TOC field can carry cached
-  // content for readers that never refresh fields (#174). Same
-  // catch-and-degrade discipline as the visual pre-pass: a failure here costs
-  // the cached entries, never the document.
+  // Walk the outline before rendering so a TOC field can carry cached content
+  // for readers that never refresh fields (#174), headings know their number
+  // (#177), and a `[@id]` cross-reference can resolve a target that appears
+  // later in the document (#182). Same catch-and-degrade discipline as the
+  // visual pre-pass: a failure here costs the cached entries and the
+  // cross-reference values, never the document.
   try {
-    const tocHeadings = collectTocHeadings(layout.sections);
-    if (tocHeadings.length > 0) {
-      context.tocHeadings = tocHeadings;
+    const outline = collectDocumentOutline(layout.sections);
+    if (outline.entries.length > 0) {
+      context.tocHeadings = outline.entries;
     }
+    globalNumberedItemsRegistry.seed(outline.numberedItems);
   } catch (error) {
     console.warn(
-      '[core-docx] TOC entry collection failed; the TOC field will rely on the reader refreshing it:',
+      '[core-docx] Document outline collection failed; the TOC field will rely on the reader refreshing it:',
       error instanceof Error ? error.message : error
     );
   }
@@ -753,7 +760,7 @@ export async function renderComponent(
   theme: ThemeConfig,
   themeName: string,
   context: RenderContext
-): Promise<(Paragraph | Table | TableOfContents | Textbox)[]> {
+): Promise<(Paragraph | Table | TableOfContents)[]> {
   if (isHeadingComponent(component)) {
     return renderHeadingComponent(component, theme, themeName);
   } else if (isParagraphComponent(component)) {

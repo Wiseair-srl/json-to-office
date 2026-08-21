@@ -10,6 +10,7 @@ import {
   InternalHyperlink,
   FootnoteReferenceRun,
   EndnoteReferenceRun,
+  SimpleField,
 } from 'docx';
 import {
   parseTextWithDecorators,
@@ -27,7 +28,9 @@ export type PlaceholderChild =
   | InternalHyperlink
   // A `[^id]` note marker resolves to a reference run mid-text.
   | FootnoteReferenceRun
-  | EndnoteReferenceRun;
+  | EndnoteReferenceRun
+  // A `[@id]` cross-reference resolves to a REF field (NumberedItemReference).
+  | SimpleField;
 
 /**
  * Placeholder handler function type
