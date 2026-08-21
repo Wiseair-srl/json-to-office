@@ -163,9 +163,13 @@ export function renderTableComponent(
       }
       if (cell.fontSize) cellOpts.fontSize = cell.fontSize;
       if (cell.fontFace) cellOpts.fontFace = cell.fontFace;
-      if (cell.bold) cellOpts.bold = true;
+      // `!== undefined`, not truthiness: a table-level `fontWeight: 700` sets
+      // `opts.bold = true`, and pptxgenjs cascades that into every cell that
+      // does not set its own. A cell saying `bold: false` has to write the
+      // false through, or it silently inherits the table's bold.
+      if (cell.bold !== undefined) cellOpts.bold = cell.bold;
       if (cell.italic) cellOpts.italic = true;
-      if (cell.fontWeight != null || cell.bold === true) {
+      if (cell.fontWeight != null || cell.bold !== undefined) {
         const w = applyFontWeight({
           family:
             (cellOpts.fontFace as string | undefined) ??

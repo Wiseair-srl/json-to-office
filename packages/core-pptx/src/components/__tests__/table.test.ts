@@ -74,3 +74,37 @@ describe('renderTableComponent table-level fontWeight', () => {
     expect(opts.fontFace).toBe('Inter Light');
   });
 });
+
+describe('a cell can opt out of an inherited table weight', () => {
+  it('writes bold: false through so the table-level bold does not cascade', () => {
+    // pptxgenjs cascades table-level `bold` into any cell that sets none, so
+    // a cell that says `bold: false` has to emit the false explicitly or it
+    // silently renders bold anyway.
+    const { rows } = addTable({
+      fontFace: 'Inter',
+      fontWeight: 700,
+      rows: [[{ text: 'plain', bold: false }]],
+    });
+    expect(rows[0][0].options.bold).toBe(false);
+  });
+
+  it('still leaves a cell that expresses no opinion to inherit', () => {
+    const { rows, opts } = addTable({
+      fontFace: 'Inter',
+      fontWeight: 700,
+      rows: [[{ text: 'inherits' }]],
+    });
+    expect(opts.bold).toBe(true);
+    expect(rows[0][0].options.bold).toBeUndefined();
+  });
+
+  it('does not alias a bold:false cell onto a bold sub-family', () => {
+    const { rows } = addTable({
+      fontFace: 'Inter',
+      fontWeight: 700,
+      rows: [[{ text: 'plain', bold: false }]],
+    });
+    // The cell must not pick up a synthesized bold face either.
+    expect(rows[0][0].options.fontFace).not.toBe('Inter Bold');
+  });
+});
