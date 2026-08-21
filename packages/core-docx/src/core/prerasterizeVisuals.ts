@@ -96,6 +96,15 @@ interface VisualRasterTarget {
 }
 
 /**
+ * Result of one batch attempt. `schemaRejected` distinguishes "the server
+ * refused this body" (HTTP 400) from every other failure, so the caller can
+ * tell a version-skew rejection from a blip instead of treating both alike.
+ */
+type BatchOutcome =
+  | { applied: true }
+  | { applied: false; schemaRejected: boolean };
+
+/**
  * Collect the props of every enabled `visual` component reachable from
  * `root`. The walk is generic — every array element and object value is
  * visited — so visuals nested anywhere (columns, table cells, section
@@ -137,6 +146,29 @@ export function collectVisualProps(root: unknown): VisualProps[] {
 
 function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * COUPLING: `postJsonToService` (utils/serviceClient.ts) is the only producer
+ * of the errors this inspects, and it encodes a non-2xx as
+ * `"<serviceLabel> returned <status>: <statusText>"`. This pattern is the one
+ * place that knowledge lives; if that message format changes, change it here
+ * too (a transport error or timeout carries no status and matches nothing).
+ */
+const HTTP_STATUS_IN_MESSAGE = /\breturned (\d{3})\b/;
+
+/**
+ * Is this failure the server rejecting our request *body* (HTTP 400) rather
+ * than the server being unwell? Both rasterize schemas validate with
+ * `additionalProperties: false`, so a pre-fonts render server answers a
+ * `fonts`-bearing body with a hard 400 — that, and only that, is evidence
+ * that dropping `fonts` could help. A timeout, a connection reset or a 5xx
+ * says nothing about the body: retrying without fonts cannot fix a server
+ * that is down, and must never latch the fontless downgrade.
+ */
+function isSchemaRejection(error: unknown): boolean {
+  const match = HTTP_STATUS_IN_MESSAGE.exec(toErrorMessage(error));
+  return match !== null && match[1] === '400';
 }
 
 function* chunksOf<T>(items: T[], size: number): Generator<T[]> {
@@ -251,9 +283,52 @@ export async function prerasterizeVisuals(
   // `fonts`-bearing body with a hard 400 instead of ignoring the field. Once
   // a fontless retry has proven that the field was the problem, stop sending
   // it for the rest of the document: fontless pixels beat a failed render.
+  // Only a 400 latches this (see isSchemaRejection) — a blip must not
+  // silently downgrade every remaining visual to fontless rendering.
   let fontsRejected = false;
   const requestFonts = (): readonly RasterizeFontFace[] | undefined =>
     fontsRejected || !options.fonts?.length ? undefined : options.fonts;
+
+  /**
+   * One visual through exactly the render-time code path, with the same
+   * version-skew guard the batch path has: `/rasterize` is
+   * `additionalProperties: false` too, so an old server 400s a fonts-bearing
+   * per-visual body and, without this retry, a failed batch would take the
+   * whole document down instead of degrading to fontless visuals.
+   */
+  const rasterizeOne = async (
+    target: VisualRasterTarget
+  ): Promise<PptxRasterizeBatchSlideResult> => {
+    const fonts = requestFonts();
+    const call = (
+      withFonts: readonly RasterizeFontFace[] | undefined
+    ): Promise<{ base64DataUri: string; width: number; height: number }> =>
+      rasterizeVisualSlide(
+        target.presentation,
+        target.dpi,
+        undefined,
+        serviceConfig,
+        options.baseDir,
+        withFonts
+      );
+    try {
+      return { ok: true, ...(await call(fonts)) };
+    } catch (error) {
+      if (!fonts || !isSchemaRejection(error)) {
+        return { ok: false, error: toErrorMessage(error) };
+      }
+      try {
+        const result = await call(undefined);
+        // Dropping `fonts` fixed it: the server predates the field.
+        fontsRejected = true;
+        return { ok: true, ...result };
+      } catch {
+        // The fontless retry is speculative; when it fails too the fonts were
+        // not the problem, so report the original failure and do not latch.
+        return { ok: false, error: toErrorMessage(error) };
+      }
+    }
+  };
 
   /** Per-visual fallback: exactly the render-time code path, bounded. */
   const rasterizeIndividually = async (
@@ -262,19 +337,7 @@ export async function prerasterizeVisuals(
     await Promise.all(
       chunk.map((target) =>
         limit(async () => {
-          try {
-            const result = await rasterizeVisualSlide(
-              target.presentation,
-              target.dpi,
-              undefined,
-              serviceConfig,
-              options.baseDir,
-              requestFonts()
-            );
-            map.set(target.key, { ok: true, ...result });
-          } catch (error) {
-            map.set(target.key, { ok: false, error: toErrorMessage(error) });
-          }
+          map.set(target.key, await rasterizeOne(target));
         })
       )
     );
@@ -335,9 +398,10 @@ export async function prerasterizeVisuals(
   const postBatch = async (
     chunk: VisualRasterTarget[],
     fonts: readonly RasterizeFontFace[] | undefined
-  ): Promise<boolean> => {
+  ): Promise<BatchOutcome> => {
+    let response: Response;
     try {
-      const response = await postJsonToService({
+      response = await postJsonToService({
         url: serverUrl,
         path: '/rasterize/batch',
         body: {
@@ -355,28 +419,39 @@ export async function prerasterizeVisuals(
         onUnreachable: (url, cause) =>
           `PPTX rasterization service is not reachable at ${url}. Cause: ${cause}`,
       });
-      return applyBatchResponse(chunk, await response.json(), map);
-    } catch {
-      return false;
+    } catch (error) {
+      // A 400 means the server rejected the body we sent; anything else
+      // (timeout, reset, 5xx) is the server, not the body.
+      return { applied: false, schemaRejected: isSchemaRejection(error) };
     }
+    try {
+      if (applyBatchResponse(chunk, await response.json(), map)) {
+        return { applied: true };
+      }
+    } catch {
+      // Non-JSON body from a 2xx — malformed, not a schema rejection.
+    }
+    return { applied: false, schemaRejected: false };
   };
 
   for (const chunk of chunksOf(unique, MAX_RASTERIZE_BATCH_SLIDES)) {
     const fonts = requestFonts();
-    let applied = await postBatch(chunk, fonts);
-    if (!applied && fonts) {
+    let outcome = await postBatch(chunk, fonts);
+    if (!outcome.applied && fonts && outcome.schemaRejected) {
       // A pre-fonts render server rejects the whole body with 400 rather
       // than ignoring the unknown field, and the usual batch→per-visual
       // fallback does not help because /rasterize rejects it identically.
       // Retry once without fonts; only latch `fontsRejected` when dropping
-      // them actually fixed it, so a transient transport error does not cost
-      // the rest of the document its font fidelity.
-      if (await postBatch(chunk, undefined)) {
+      // them actually fixed it, so a transient failure does not cost the rest
+      // of the document its font fidelity. A non-400 failure skips the retry
+      // entirely: dropping fonts cannot revive a server that is down.
+      const retry = await postBatch(chunk, undefined);
+      if (retry.applied) {
         fontsRejected = true;
-        applied = true;
+        outcome = retry;
       }
     }
-    if (!applied) await rasterizeIndividually(chunk);
+    if (!outcome.applied) await rasterizeIndividually(chunk);
   }
   return map;
 }
