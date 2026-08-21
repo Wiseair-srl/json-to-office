@@ -43,8 +43,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# /rasterize does no font staging (see rasterize-route.ts) — system fonts are
-# the only source, so the metric aliases below are load-bearing here.
+# /rasterize stages any fonts the caller sends, but a caller that sends none
+# falls back to system faces — so these aliases stay load-bearing.
 # Must stay above `USER appuser` so the file lands root-owned.
 COPY docker/fontconfig-local.conf /etc/fonts/local.conf
 
