@@ -166,6 +166,7 @@ Each warning is a `PipelineWarning`:
 | `IMAGE_NO_SOURCE`            | Image has none of `path` / `base64` / `svg`; skipped.                                                                                                              |
 | `IMAGE_PROBE_FAILED`         | Intrinsic image dimensions could not be probed (affects auto-sizing).                                                                                              |
 | `IMAGE_ZERO_BOX`             | Image sizing box resolved to zero width or height.                                                                                                                 |
+| `IMAGE_SVG_RASTER_FAILED`    | An inline `svg` image could not be rasterized, so viewers without SVG support show a broken-image placeholder (PowerPoint 2016+ is unaffected).                    |
 | `MISSING_TEMPLATE`           | Slide references a template name that isn't defined.                                                                                                               |
 | `UNKNOWN_PLACEHOLDER`        | Slide fills a placeholder name the template doesn't declare.                                                                                                       |
 | `PLACEHOLDER_NO_POSITION`    | Placeholder used without a template and without any position; skipped.                                                                                             |

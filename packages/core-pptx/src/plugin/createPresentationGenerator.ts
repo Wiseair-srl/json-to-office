@@ -457,6 +457,7 @@ function createBuilderImpl<
         deterministic: options?.deterministic ?? state.packaging.deterministic,
         generatedAt: options?.generatedAt ?? state.packaging.generatedAt,
         pendingFills,
+        warnings,
       });
 
       return { buffer, warnings };
