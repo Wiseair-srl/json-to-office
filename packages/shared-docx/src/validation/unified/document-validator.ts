@@ -19,8 +19,59 @@ import {
 
 // JsonComponentDefinitionSchema is just an alias for ComponentDefinitionSchema
 const JsonComponentDefinitionSchema = ComponentDefinitionSchema;
-import type { DocumentValidationResult, ValidationOptions } from './types';
+import type {
+  DocumentValidationResult,
+  ValidationError,
+  ValidationOptions,
+} from './types';
 import { validateAgainstSchema, validateJson } from './base-validator';
+
+/**
+ * The semantic rules the structural schema cannot express.
+ *
+ * Each entry runs unconditionally over the whole document, because every one of
+ * them describes a payload TypeBox already accepted: the fields involved are
+ * independently optional, and only their combination is wrong.
+ *
+ * They live in one list because both entry points below need all of them, and a
+ * collector wired into only one of the two is invisible until a document takes
+ * the other path.
+ */
+const SEMANTIC_COLLECTORS: readonly {
+  readonly why: string;
+  readonly collect: (document: unknown) => ValidationError[];
+}[] = [
+  {
+    // A multi-source image passes the structural check: each source is its own
+    // optional field.
+    why: 'image source mutual-exclusivity',
+    collect: collectImageSourceConflicts,
+  },
+  {
+    why: 'indent hanging/firstLine mutual-exclusivity',
+    collect: collectIndentConflicts,
+  },
+  {
+    // Tracked-change text renders literally, so a note marker inside it never
+    // resolves and docx cannot express the pair anyway.
+    why: 'notes on a revised paragraph',
+    collect: collectNoteRevisionConflicts,
+  },
+  {
+    // A shape has no autofit and its outline carries no dash pattern, so the
+    // request could only ever come back as a table.
+    why: 'a text box asking for a shape rendering a shape cannot give it',
+    collect: collectTextBoxShapeConflicts,
+  },
+];
+
+/**
+ * Run every semantic rule over an already-resolved document — `data` for the
+ * object entry point, `result.parsed` for the JSON one.
+ */
+function collectSemanticConflicts(document: unknown): ValidationError[] {
+  return SEMANTIC_COLLECTORS.flatMap(({ collect }) => collect(document));
+}
 
 /**
  * Validate a document/report component definition
@@ -50,33 +101,11 @@ export function validateDocument(
     }
   }
 
-  // Image source mutual-exclusivity is a semantic rule the structural schema
-  // cannot express, so it runs unconditionally — a multi-source image passes
-  // the TypeBox check above.
-  const sourceConflicts = collectImageSourceConflicts(data);
-  if (sourceConflicts.length > 0) {
-    finalErrors = [...finalErrors, ...sourceConflicts];
-    finalValid = false;
-  }
-
-  // Same for indent hanging/firstLine mutual-exclusivity.
-  const indentConflicts = collectIndentConflicts(data);
-  if (indentConflicts.length > 0) {
-    finalErrors = [...finalErrors, ...indentConflicts];
-    finalValid = false;
-  }
-
-  // Same for notes on a revised paragraph, which the renderer cannot express.
-  const noteRevisionConflicts = collectNoteRevisionConflicts(data);
-  if (noteRevisionConflicts.length > 0) {
-    finalErrors = [...finalErrors, ...noteRevisionConflicts];
-    finalValid = false;
-  }
-
-  // Same for a text box asking for a shape rendering a shape cannot give it.
-  const textBoxShapeConflicts = collectTextBoxShapeConflicts(data);
-  if (textBoxShapeConflicts.length > 0) {
-    finalErrors = [...finalErrors, ...textBoxShapeConflicts];
+  // Semantic rules run on every document, valid or not: they describe payloads
+  // the structural check already accepted.
+  const semanticConflicts = collectSemanticConflicts(data);
+  if (semanticConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...semanticConflicts];
     finalValid = false;
   }
 
@@ -138,32 +167,11 @@ export function validateJsonDocument(
     }
   }
 
-  // Image source mutual-exclusivity (see validateDocument) — runs always.
-  const sourceConflicts = collectImageSourceConflicts(result.parsed);
-  if (sourceConflicts.length > 0) {
-    finalErrors = [...finalErrors, ...sourceConflicts];
-    finalValid = false;
-  }
-
-  // Indent hanging/firstLine mutual-exclusivity (see validateDocument).
-  const indentConflicts = collectIndentConflicts(result.parsed);
-  if (indentConflicts.length > 0) {
-    finalErrors = [...finalErrors, ...indentConflicts];
-    finalValid = false;
-  }
-
-  // Notes on a revised paragraph (see validateDocument).
-  const noteRevisionConflicts = collectNoteRevisionConflicts(result.parsed);
-  if (noteRevisionConflicts.length > 0) {
-    finalErrors = [...finalErrors, ...noteRevisionConflicts];
-    finalValid = false;
-  }
-
-  // A text box asking for a shape rendering a shape cannot give it (see
-  // validateDocument).
-  const textBoxShapeConflicts = collectTextBoxShapeConflicts(result.parsed);
-  if (textBoxShapeConflicts.length > 0) {
-    finalErrors = [...finalErrors, ...textBoxShapeConflicts];
+  // Semantic rules run on every document, valid or not: they describe payloads
+  // the structural check already accepted.
+  const semanticConflicts = collectSemanticConflicts(result.parsed);
+  if (semanticConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...semanticConflicts];
     finalValid = false;
   }
 
