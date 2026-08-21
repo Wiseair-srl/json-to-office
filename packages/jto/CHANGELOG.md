@@ -1,5 +1,13 @@
 # @json-to-office/jto
 
+## 0.36.0
+
+### Patch Changes
+
+- Updated dependencies [c89a2d8]
+  - @json-to-office/core-pptx@0.36.0
+  - @json-to-office/jto-cli@0.36.0
+
 ## 0.35.0
 
 ### Minor Changes
