@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -70,16 +78,20 @@ async function loadRasterizer() {
 }
 
 /**
- * The staging tests build a real .pptx and write real temp files, and
- * `vi.resetModules()` re-imports core-pptx for every one of them. That runs in
- * ~40ms on Linux/macOS but ~2s per test on a Windows runner.
+ * Every `loadRasterizer()` re-executes this module's graph, and the staging
+ * tests additionally build a real .pptx (which dynamically imports core-pptx)
+ * and write real temp files. The whole file is ~600ms on Linux/macOS but ~20s
+ * on a Windows runner — the transform cost there is roughly 35x ours.
  *
- * The default 5s timeout is not just tight there, it is actively corrupting:
- * staging happens deliberately AFTER the build loop, so a test killed at 5s is
- * usually killed BEFORE it stages. Vitest moves on, `beforeEach` clears the
- * spy, and the abandoned run then stages inside the NEXT test's window — which
- * showed up as "expected the spy to be called 1 time, but it was called 2
- * times" in a test that had itself behaved perfectly.
+ * The default 5s timeout is not just tight against that, it is actively
+ * corrupting: staging happens deliberately AFTER the build loop, so a test
+ * killed at 5s is usually killed BEFORE it stages. Vitest moves on,
+ * `beforeEach` clears the spy, and the abandoned run then stages inside the
+ * NEXT test's window — which showed up as "expected the spy to be called 1
+ * time, but it was called 2 times" in a test that had itself behaved
+ * perfectly.
+ *
+ * Budget every window that pays an import, hooks included.
  */
 const SLOW_TEST_MS = 30_000;
 
@@ -104,8 +116,23 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('cacheKey font sensitivity', () => {
+  /**
+   * `cacheKey` and `fontsDigest` are pure hashes over their arguments — no
+   * module-level state, so `loadRasterizer`'s `vi.resetModules()` protects
+   * nothing here. Importing once instead drops four re-executions of the
+   * module graph that bought us nothing, and moves the file's COLDEST import
+   * — the first test's, with nothing yet warm — out of a 5s test window and
+   * into a hook we can budget. That import is what timed out on Windows CI:
+   * the suite below was given a real timeout, this one was left on the
+   * default, and it owns the most expensive import in the file.
+   */
+  let rasterizer: Awaited<ReturnType<typeof loadRasterizer>>;
+  beforeAll(async () => {
+    rasterizer = await import('../pptx-rasterizer.js');
+  }, SLOW_TEST_MS);
+
   it('differs between a request with fonts and the identical request without', async () => {
-    const { cacheKey, fontsDigest } = await loadRasterizer();
+    const { cacheKey, fontsDigest } = rasterizer;
     const base = { presentation: presentation(), dpi: 200 };
     const withFonts = cacheKey({
       ...base,
@@ -116,7 +143,7 @@ describe('cacheKey font sensitivity', () => {
   });
 
   it('is identical when the same faces arrive in a different order', async () => {
-    const { cacheKey, fontsDigest } = await loadRasterizer();
+    const { cacheKey, fontsDigest } = rasterizer;
     const a = face({ weight: 400 });
     const b = face({
       weight: 700,
@@ -129,7 +156,7 @@ describe('cacheKey font sensitivity', () => {
   });
 
   it("differs when a face's bytes change but its family/weight/italic do not", async () => {
-    const { cacheKey, fontsDigest } = await loadRasterizer();
+    const { cacheKey, fontsDigest } = rasterizer;
     const base = { presentation: presentation(), dpi: 200 };
     const original = cacheKey({ ...base, fontsKey: fontsDigest([face()]) });
     const rebuilt = cacheKey({
@@ -146,7 +173,7 @@ describe('cacheKey font sensitivity', () => {
     // base64 decoder ignores whitespace and tolerates missing padding — so
     // hashing the base64 TEXT staged byte-identical fonts under different
     // disk-cache keys, silently multiplying misses on a shared cache.
-    const { fontsDigest } = await loadRasterizer();
+    const { fontsDigest } = rasterizer;
     const raw = Buffer.alloc(64, 7);
     const canonical = raw.toString('base64');
     const wrapped = canonical.replace(/(.{20})/g, '$1\n'); // MIME-style breaks
@@ -164,7 +191,7 @@ describe('cacheKey font sensitivity', () => {
   });
 
   it('leaves an empty or absent font list keyed exactly like no fonts', async () => {
-    const { cacheKey, fontsDigest } = await loadRasterizer();
+    const { cacheKey, fontsDigest } = rasterizer;
     expect(fontsDigest([])).toBeUndefined();
     expect(fontsDigest(undefined)).toBeUndefined();
     const base = { presentation: presentation(), dpi: 200 };
