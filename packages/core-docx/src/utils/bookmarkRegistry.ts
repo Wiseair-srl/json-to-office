@@ -4,6 +4,8 @@
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { BookmarkStart, BookmarkEnd } from 'docx';
+import type { ParagraphChild } from 'docx';
 
 export interface BookmarkInfo {
   id: string;
@@ -13,6 +15,22 @@ export interface BookmarkInfo {
 
 interface BookmarkState {
   bookmarks: Map<string, BookmarkInfo>;
+  /** Next `w:bookmarkStart/@w:id` for a content bookmark. */
+  nextLinkId: number;
+}
+
+/**
+ * Content bookmarks number from here up.
+ *
+ * `w:id` pairs a `bookmarkStart` with its `bookmarkEnd`, so it has to be unique
+ * across the whole document — including against the section bookmarks, which
+ * allocate from their own two ranges in `sectionBookmarks.ts` (layout ordinals
+ * from 1, nested sections from 1_000_000). This is the third disjoint range.
+ */
+const CONTENT_LINK_ID_BASE = 2_000_000;
+
+function createState(): BookmarkState {
+  return { bookmarks: new Map(), nextLinkId: CONTENT_LINK_ID_BASE + 1 };
 }
 
 /**
@@ -52,7 +70,7 @@ export function dedupeBookmarkId(
  * Used to track bookmark IDs and validate internal hyperlink targets
  */
 export class BookmarkRegistry {
-  private readonly fallback: BookmarkState = { bookmarks: new Map() };
+  private readonly fallback: BookmarkState = createState();
   private readonly scopes = new AsyncLocalStorage<BookmarkState>();
 
   private get state(): BookmarkState {
@@ -61,7 +79,7 @@ export class BookmarkRegistry {
 
   /** Run work with an isolated registry that follows its async call chain. */
   runScoped<T>(callback: () => T): T {
-    return this.scopes.run({ bookmarks: new Map() }, callback);
+    return this.scopes.run(createState(), callback);
   }
 
   /**
@@ -74,6 +92,20 @@ export class BookmarkRegistry {
       );
     }
     this.state.bookmarks.set(id, { id, title, type });
+  }
+
+  /**
+   * A `w:id` no other bookmark in this document will use.
+   *
+   * docx's own `Bookmark` cannot supply one: its constructor builds a fresh
+   * id generator per instance (`bookmarkUniqueNumericIdGen()`), so every
+   * bookmark it emits carries `w:id="1"`. Reported upstream as dolanmiu/docx
+   * #3478, still unreleased as of 9.7.1. Duplicated ids leave the start/end
+   * pairing ambiguous, which is why a `REF` field could not read a target's
+   * text even though navigating to it by name worked.
+   */
+  allocateLinkId(): number {
+    return this.state.nextLinkId++;
   }
 
   /**
@@ -131,3 +163,22 @@ export class BookmarkRegistry {
 
 // Global registry instance
 export const globalBookmarkRegistry = new BookmarkRegistry();
+
+/**
+ * A bookmark around `children`, as the three elements OOXML actually wants:
+ * `w:bookmarkStart`, the content, `w:bookmarkEnd`.
+ *
+ * Replaces docx's `Bookmark`, which pairs every start/end with `w:id="1"`
+ * (see `allocateLinkId`). Spread the result into a paragraph's children.
+ */
+export function createBookmarkedContent(
+  name: string,
+  children: readonly ParagraphChild[]
+): ParagraphChild[] {
+  const linkId = globalBookmarkRegistry.allocateLinkId();
+  return [
+    new BookmarkStart(name, linkId),
+    ...children,
+    new BookmarkEnd(linkId),
+  ];
+}

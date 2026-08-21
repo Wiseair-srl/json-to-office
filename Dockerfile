@@ -1,5 +1,5 @@
 # ── Stage 1: build ──
-FROM node:20-slim AS builder
+FROM node:22-trixie-slim AS builder
 
 RUN npm i -g pnpm@9.15.9
 
@@ -15,8 +15,15 @@ ENV VITE_AI_ENABLED=${VITE_AI_ENABLED}
 RUN pnpm build
 
 # ── Stage 2: runtime ──
-FROM node:20-slim
+FROM node:22-trixie-slim
 
+# Debian trixie, for LibreOffice 25.2: bookworm is frozen at LibreOffice 7.4,
+# which cannot parse a TOC field nested in a `w:sdt` and prints the field
+# instruction into the document instead. Every hosted PDF with a table of
+# contents showed it. Pin the base suite explicitly rather than tracking
+# `node:22-slim`, so the LibreOffice version cannot move under us when Docker
+# retags the default.
+#
 # LibreOffice + metric-compatible fonts. `--no-install-recommends` suppresses
 # libreoffice-common's `Recommends: fonts-liberation2 | ttf-mscorefonts-installer`,
 # which is why the image otherwise ships only DejaVu + OpenSymbol and every
