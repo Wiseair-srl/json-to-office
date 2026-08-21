@@ -17,9 +17,32 @@ RUN pnpm build
 # ── Stage 2: runtime ──
 FROM node:20-slim
 
+# LibreOffice + metric-compatible fonts. `--no-install-recommends` suppresses
+# libreoffice-common's `Recommends: fonts-liberation2 | ttf-mscorefonts-installer`,
+# which is why the image otherwise ships only DejaVu + OpenSymbol and every
+# SAFE_FONT renders with the wrong advance widths.
+#   fonts-liberation2        -> Arial / Times New Roman / Courier New (metric-compatible)
+#   fonts-crosextra-carlito  -> Calibri (metric-compatible)
+#   fonts-crosextra-caladea  -> Cambria (metric-compatible)
+#   fonts-dejavu-core        -> the sans/serif/mono fallbacks local.conf points at
+# fonts-dejavu-core must be listed EXPLICITLY: fontconfig-config declares
+# `Depends: fonts-dejavu-core | ttf-bitstream-vera | fonts-liberation |
+# fonts-liberation2 | ...`, so asking for fonts-liberation2 satisfies that
+# alternative and apt silently drops DejaVu — which would leave every
+# proportional fallback below resolving to Liberation Mono. Use the -core
+# package, not the `fonts-dejavu` metapackage (that drags in +7 MB of extras).
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libreoffice-core libreoffice-writer libreoffice-impress && \
+    apt-get install -y --no-install-recommends \
+      libreoffice-core libreoffice-writer libreoffice-impress \
+      fonts-liberation2 fonts-crosextra-carlito fonts-crosextra-caladea \
+      fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
+
+# Aliases for the SAFE_FONTS that Debian's own 30-metric-aliases.conf does not
+# cover (no free metric clone exists). Additive: the per-conversion config
+# written by FontconfigStager <include>s /etc/fonts/fonts.conf, which pulls
+# 51-local.conf -> this file, so staged fonts still win.
+COPY docker/fontconfig-local.conf /etc/fonts/local.conf
 
 WORKDIR /app
 
