@@ -967,6 +967,7 @@
             "catAxisLabelFontSize": 10.5,
             "catAxisLabelColor": "text",
             "catAxisLabelFontFace": "Space Grotesk",
+            "catAxisLabelFontWeight": 500,
             "data": [
               {
                 "name": "A",

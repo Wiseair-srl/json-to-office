@@ -425,6 +425,43 @@ describe('chart styling passthrough validation', () => {
     expect(result.valid).toBe(true);
   });
 
+  it('accepts a weight companion on every chart font-face prop', () => {
+    const result = validatePresentationDocument(
+      deck([
+        slide([
+          chart({
+            titleFontFace: 'Inter',
+            titleFontWeight: 300,
+            legendFontFace: 'Inter',
+            legendFontWeight: 500,
+            catAxisLabelFontFace: 'Inter',
+            catAxisLabelFontWeight: 600,
+            valAxisLabelFontFace: 'Inter',
+            valAxisLabelFontWeight: 700,
+            dataLabelFontFace: 'Inter',
+            dataLabelFontWeight: 900,
+          }),
+        ]),
+      ])
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects a chart font weight outside 100–900', () => {
+    const result = validatePresentationDocument(
+      deck([slide([chart({ dataLabelFontWeight: 1000 })])])
+    );
+
+    expect(result.valid).toBe(false);
+    expect(
+      result.errors.some((e) =>
+        e.path.startsWith('/children/0/children/0/props/dataLabelFontWeight')
+      )
+    ).toBe(true);
+  });
+
   it('rejects an invalid gridline style with a pointer path', () => {
     const result = validatePresentationDocument(
       deck([slide([chart({ valGridLine: { style: 'wavy' } })])])

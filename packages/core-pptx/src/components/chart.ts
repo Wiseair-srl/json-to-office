@@ -5,6 +5,7 @@
 import type PptxGenJS from 'pptxgenjs';
 import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { resolveColor, definedChartColorTokens } from '../utils/color';
+import { applyFontWeight } from '../utils/fontAliasContext';
 import { warn, W } from '../utils/warn';
 
 interface ChartDataSeries {
@@ -29,6 +30,7 @@ interface ChartComponentProps {
   titleFontSize?: number;
   titleColor?: string;
   titleFontFace?: string;
+  titleFontWeight?: number;
 
   chartColors?: string[];
 
@@ -37,6 +39,7 @@ interface ChartComponentProps {
   legendPos?: string;
   legendFontSize?: number;
   legendFontFace?: string;
+  legendFontWeight?: number;
   legendColor?: string;
 
   catAxisTitle?: string;
@@ -45,6 +48,7 @@ interface ChartComponentProps {
   catAxisLabelFontSize?: number;
   catAxisLabelColor?: string;
   catAxisLabelFontFace?: string;
+  catAxisLabelFontWeight?: number;
   catGridLine?: { style?: string; size?: number; color?: string };
 
   valAxisTitle?: string;
@@ -55,6 +59,7 @@ interface ChartComponentProps {
   valAxisMajorUnit?: number;
   valAxisLabelColor?: string;
   valAxisLabelFontFace?: string;
+  valAxisLabelFontWeight?: number;
   valAxisLabelFontSize?: number;
   valGridLine?: { style?: string; size?: number; color?: string };
   catAxisLineShow?: boolean;
@@ -78,6 +83,7 @@ interface ChartComponentProps {
   dataLabelColor?: string;
   dataLabelFontSize?: number;
   dataLabelFontFace?: string;
+  dataLabelFontWeight?: number;
   dataLabelFontBold?: boolean;
   dataLabelPosition?: string;
 
@@ -220,6 +226,44 @@ export function renderChartComponent(
     };
   }
 
+  // Label fonts — the chart analogue of the run-level `fontFace`/`fontWeight`
+  // seam in text.ts. PowerPoint chart labels carry no numeric weight, so a
+  // non-RIBBI weight only survives as a synthesized sub-family name ("Inter"
+  // at 300 → "Inter Light"); 400/700 stay on the family and use the slot's
+  // bold toggle. A weight with no sibling face falls back to the theme body
+  // font, the same family a plain text component would have inherited.
+  //
+  // `boldKey` is the pptxgenjs bold companion for the slot, or undefined for
+  // the legend, which has none — see the warn below.
+  const applyLabelFont = (
+    faceKey: string,
+    boldKey: string | undefined,
+    face: string | undefined,
+    weight: number | undefined
+  ): void => {
+    if (weight === undefined) {
+      if (face !== undefined) opts[faceKey] = face;
+      return;
+    }
+    const w = applyFontWeight({
+      family: face ?? theme.fonts?.body,
+      fontWeight: weight,
+    });
+    if (w.fontFace !== undefined) opts[faceKey] = w.fontFace;
+    if (boldKey !== undefined) {
+      // Assign even when false: an explicit weight has to win over a bold
+      // toggle set alongside it (`dataLabelFontBold` is the only such prop).
+      opts[boldKey] = w.bold === true;
+    } else if (w.bold === true) {
+      warn(
+        warnings,
+        W.CHART_FONT_WEIGHT_DROPPED,
+        `Chart ${faceKey} weight ${weight} renders as Regular — PowerPoint gives the legend no bold toggle, and only non-RIBBI weights resolve to a sub-family face`,
+        { component: 'chart' }
+      );
+    }
+  };
+
   // Display toggles
   if (props.showLegend !== undefined) opts.showLegend = props.showLegend;
   if (props.showTitle !== undefined) opts.showTitle = props.showTitle;
@@ -232,15 +276,23 @@ export function renderChartComponent(
   if (props.title !== undefined) opts.title = props.title;
   if (props.titleFontSize !== undefined)
     opts.titleFontSize = props.titleFontSize;
-  if (props.titleFontFace !== undefined)
-    opts.titleFontFace = props.titleFontFace;
+  applyLabelFont(
+    'titleFontFace',
+    'titleBold',
+    props.titleFontFace,
+    props.titleFontWeight
+  );
 
   // Legend
   if (props.legendPos !== undefined) opts.legendPos = props.legendPos;
   if (props.legendFontSize !== undefined)
     opts.legendFontSize = props.legendFontSize;
-  if (props.legendFontFace !== undefined)
-    opts.legendFontFace = props.legendFontFace;
+  applyLabelFont(
+    'legendFontFace',
+    undefined,
+    props.legendFontFace,
+    props.legendFontWeight
+  );
 
   // Category axis
   if (props.catAxisTitle !== undefined) {
@@ -253,8 +305,12 @@ export function renderChartComponent(
     opts.catAxisLabelRotate = props.catAxisLabelRotate;
   if (props.catAxisLabelFontSize !== undefined)
     opts.catAxisLabelFontSize = props.catAxisLabelFontSize;
-  if (props.catAxisLabelFontFace !== undefined)
-    opts.catAxisLabelFontFace = props.catAxisLabelFontFace;
+  applyLabelFont(
+    'catAxisLabelFontFace',
+    'catAxisLabelFontBold',
+    props.catAxisLabelFontFace,
+    props.catAxisLabelFontWeight
+  );
   if (props.catGridLine !== undefined)
     opts.catGridLine = resolveGridLine(props.catGridLine, theme, warnings);
 
@@ -273,8 +329,12 @@ export function renderChartComponent(
     opts.valAxisLabelFormatCode = props.valAxisLabelFormatCode;
   if (props.valAxisMajorUnit !== undefined)
     opts.valAxisMajorUnit = props.valAxisMajorUnit;
-  if (props.valAxisLabelFontFace !== undefined)
-    opts.valAxisLabelFontFace = props.valAxisLabelFontFace;
+  applyLabelFont(
+    'valAxisLabelFontFace',
+    'valAxisLabelFontBold',
+    props.valAxisLabelFontFace,
+    props.valAxisLabelFontWeight
+  );
   if (props.valGridLine !== undefined)
     opts.valGridLine = resolveGridLine(props.valGridLine, theme, warnings);
 
@@ -308,10 +368,14 @@ export function renderChartComponent(
     : themeTextColor;
   if (props.dataLabelFontSize !== undefined)
     opts.dataLabelFontSize = props.dataLabelFontSize;
-  if (props.dataLabelFontFace !== undefined)
-    opts.dataLabelFontFace = props.dataLabelFontFace;
   if (props.dataLabelFontBold !== undefined)
     opts.dataLabelFontBold = props.dataLabelFontBold;
+  applyLabelFont(
+    'dataLabelFontFace',
+    'dataLabelFontBold',
+    props.dataLabelFontFace,
+    props.dataLabelFontWeight
+  );
   if (props.dataLabelPosition !== undefined)
     opts.dataLabelPosition = props.dataLabelPosition;
 

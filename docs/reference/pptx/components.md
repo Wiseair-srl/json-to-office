@@ -234,6 +234,7 @@ A data table. Cells may be plain strings or objects with per-cell formatting and
 | `fill`                 | string                        | —               | Table background (hex or semantic)                                                                      |
 | `fontSize`             | number ≥ 1 (pt)               | theme default   | Default cell font size                                                                                  |
 | `fontFace`             | string                        | theme body font | Default cell font                                                                                       |
+| `fontWeight`           | integer 100–900               | —               | Default cell weight; same aliasing as `text`. A cell setting its own `fontWeight`/`bold` opts out       |
 | `color`                | string                        | —               | Default cell text color                                                                                 |
 | `align` / `valign`     | alignment                     | — / `'middle'`  | Default cell alignment                                                                                  |
 | `autoPage`             | boolean                       | —               | Automatically continue the table on new slides when it overflows                                        |

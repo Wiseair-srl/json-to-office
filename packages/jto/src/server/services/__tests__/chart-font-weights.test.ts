@@ -2,48 +2,47 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { isSafeFont, POPULAR_GOOGLE_FONTS } from '@json-to-office/shared';
+import {
+  isSafeFont,
+  POPULAR_GOOGLE_FONTS,
+  WEIGHT_LABELS,
+} from '@json-to-office/shared';
 
 /**
- * Chart label fonts are a one-way door: they can name a family, never a weight.
+ * Chart label fonts used to be a one-way door: they could name a family, never
+ * a weight. `PptxChartPropsSchema` exposed exactly one weight-ish companion for
+ * all five font-face props — `dataLabelFontBold`, a boolean — and core-pptx
+ * copied the faces straight into the pptxgenjs options, so nothing reached
+ * `synthesizeFamilyName`. Six sites that used to read "Inter Light" or
+ * "Space Grotesk Medium" rendered at Regular, and the names could not go back:
+ * they resolve to nothing and `scripts/validate-shipped-assets.ts` rejects them.
  *
- * Run-level `fontFace` reaches `applyFontWeight` → `synthesizeFamilyName`, so
- * `{ fontFace: "Inter", fontWeight: 300 }` renders as the "Inter Light" face.
- * The chart component has no such seam — packages/core-pptx/src/components/
- * chart.ts copies `titleFontFace` / `legendFontFace` / `dataLabelFontFace` /
- * `catAxisLabelFontFace` / `valAxisLabelFontFace` straight into the pptxgenjs
- * options, and `PptxChartPropsSchema` (additionalProperties: false) exposes
- * exactly one weight-ish companion for all five: `dataLabelFontBold`, a
- * boolean. A boolean cannot say 300 or 500.
+ * That door is open now. Each font-face prop has a `<prop>FontWeight` sibling
+ * (integer 100–900) and `packages/core-pptx/src/components/chart.ts` runs the
+ * pair through the same `applyFontWeight` → `synthesizeFamilyName` seam that
+ * run-level `fontFace` uses. The six sites below carry their designed weight
+ * again; the remaining five name a family and genuinely want Regular.
  *
- * So every entry below renders at Regular, whatever the surrounding deck text
- * does. Six of them used to say "Inter Light" / "Space Grotesk Medium" and lost
- * that weight when the templates stopped hand-authoring synthesized sub-family
- * names; the names cannot be put back, because they resolve to nothing and
- * `scripts/validate-shipped-assets.ts` rejects them.
- *
- * This is the inventory of that unavoidable degradation. It is pinned, not
- * merely counted, so that:
+ * Both lists are pinned, not merely counted, so that:
  *   - a template edit that adds a chart font reference has to come here and
- *     acknowledge that its weight will be dropped, and
+ *     say which of the two it is, and
  *   - a "fix" that smuggles a sub-family name back into a chart font key
- *     (the one place the synthesis seam does not run) fails loudly.
- *
- * The real fix lives outside the templates: give the chart schema a weight
- * companion and run `synthesizeFamilyName` over these props in core-pptx.
- * When that lands, these sites gain a `fontWeight` sibling and this list
- * shrinks.
+ *     (rather than using the weight companion) fails loudly.
  */
+const WEIGHTED_CHART_FONT_SITES = [
+  'Alternative deck 16_9.pptx.json :: $.props.templates[6].placeholders[2].defaults.props.dataLabelFontFace :: Inter @300',
+  'Company deck 16_9.pptx.json :: $.props.templates[12].placeholders[5].defaults.props.dataLabelFontFace :: Inter @300',
+  'Company deck 16_9.pptx.json :: $.props.templates[6].placeholders[2].defaults.props.dataLabelFontFace :: Inter @300',
+  'Company deck 4_3.pptx.json :: $.children[6].props.placeholders.chart.props.legendFontFace :: Inter @300',
+  'Company deck 4_3.pptx.json :: $.props.templates[7].placeholders[2].defaults.props.dataLabelFontFace :: Inter @300',
+  'data-report-presentation.pptx.json :: $.children[4].children[4].props.catAxisLabelFontFace :: Space Grotesk @500',
+];
+
+/** Chart font references that name a family and no weight — Regular by design. */
 const WEIGHTLESS_CHART_FONT_SITES = [
-  'Alternative deck 16_9.pptx.json :: $.props.templates[6].placeholders[2].defaults.props.dataLabelFontFace :: Inter',
-  'Company deck 16_9.pptx.json :: $.props.templates[12].placeholders[5].defaults.props.dataLabelFontFace :: Inter',
-  'Company deck 16_9.pptx.json :: $.props.templates[6].placeholders[2].defaults.props.dataLabelFontFace :: Inter',
-  'Company deck 4_3.pptx.json :: $.children[6].props.placeholders.chart.props.legendFontFace :: Inter',
-  'Company deck 4_3.pptx.json :: $.props.templates[7].placeholders[2].defaults.props.dataLabelFontFace :: Inter',
   'data-report-presentation.pptx.json :: $.children[14].children[0].props.catAxisLabelFontFace :: Space Grotesk',
   'data-report-presentation.pptx.json :: $.children[14].children[0].props.valAxisLabelFontFace :: Space Grotesk',
   'data-report-presentation.pptx.json :: $.children[3].children[0].props.catAxisLabelFontFace :: Space Grotesk',
-  'data-report-presentation.pptx.json :: $.children[4].children[4].props.catAxisLabelFontFace :: Space Grotesk',
   'data-report-presentation.pptx.json :: $.children[5].children[4].props.catAxisLabelFontFace :: Space Grotesk',
   'data-report-presentation.pptx.json :: $.children[5].children[4].props.valAxisLabelFontFace :: Space Grotesk',
 ];
@@ -51,7 +50,8 @@ const WEIGHTLESS_CHART_FONT_SITES = [
 /**
  * Mirror of the chart font keys in `FONT_NAME_KEYS`
  * (packages/shared/src/fonts/collect.ts) minus the run-level `family` /
- * `fontFace`, which do go through the weight synthesis seam.
+ * `fontFace`. Each one's weight companion is the same name with `FontFace`
+ * swapped for `FontWeight`.
  */
 const CHART_FONT_KEYS = new Set([
   'titleFontFace',
@@ -60,6 +60,9 @@ const CHART_FONT_KEYS = new Set([
   'catAxisLabelFontFace',
   'valAxisLabelFontFace',
 ]);
+
+const weightKeyFor = (faceKey: string): string =>
+  faceKey.replace('FontFace', 'FontWeight');
 
 /** Same shape `scripts/validate-shipped-assets.ts` gates on. */
 const SYNTHETIC_FAMILY =
@@ -79,6 +82,7 @@ interface ChartFontSite {
   file: string;
   jsonPath: string;
   family: string;
+  weight?: unknown;
 }
 
 function collectChartFontSites(file: string, json: unknown): ChartFontSite[] {
@@ -90,12 +94,16 @@ function collectChartFontSites(file: string, json: unknown): ChartFontSite[] {
       return;
     }
     if (node === null || typeof node !== 'object') return;
-    for (const [key, value] of Object.entries(
-      node as Record<string, unknown>
-    )) {
+    const record = node as Record<string, unknown>;
+    for (const [key, value] of Object.entries(record)) {
       const childPath = `${jsonPath}.${key}`;
       if (typeof value === 'string' && CHART_FONT_KEYS.has(key)) {
-        sites.push({ file, jsonPath: childPath, family: value });
+        sites.push({
+          file,
+          jsonPath: childPath,
+          family: value,
+          weight: record[weightKeyFor(key)],
+        });
       } else {
         walk(value, childPath);
       }
@@ -117,23 +125,46 @@ const allSites = fs
     )
   );
 
+const label = (s: ChartFontSite): string =>
+  `${s.file} :: ${s.jsonPath} :: ${s.family}` +
+  (s.weight === undefined ? '' : ` @${String(s.weight)}`);
+
 describe('chart label fonts in bundled templates', () => {
   it('finds chart font references at all (the walk is wired up)', () => {
     expect(allSites.length).toBeGreaterThan(0);
   });
 
-  it('pins every chart font reference that cannot carry its weight', () => {
+  it('pins every chart font reference that carries a weight', () => {
     const actual = allSites
-      .map((s) => `${s.file} :: ${s.jsonPath} :: ${s.family}`)
+      .filter((s) => s.weight !== undefined)
+      .map(label)
+      .sort();
+    expect(actual).toEqual([...WEIGHTED_CHART_FONT_SITES].sort());
+  });
+
+  it('pins every chart font reference that renders at Regular', () => {
+    const actual = allSites
+      .filter((s) => s.weight === undefined)
+      .map(label)
       .sort();
     expect(actual).toEqual([...WEIGHTLESS_CHART_FONT_SITES].sort());
   });
 
+  it('only ever names a weight synthesis can resolve to a real face', () => {
+    // A non-canonical weight (350, 12.5, "300") reaches no sub-family face:
+    // `synthesizeFamilyName` falls back to `weight >= 600 → bold`, so the
+    // label silently renders Regular or Bold instead.
+    const offCanon = allSites.filter(
+      (s) => s.weight !== undefined && WEIGHT_LABELS[s.weight as number] == null
+    );
+    expect(offCanon).toEqual([]);
+  });
+
   it('never names a synthesized sub-family in a chart font key', () => {
-    // Chart props bypass `synthesizeFamilyName`, so a sub-family name here is
-    // not a stale authoring habit — it is a deliberate attempt to fake a
-    // weight. It still resolves to nothing: `validate-shipped-assets` rejects
-    // it and no bytes are staged for LibreOffice.
+    // The weight companion is the supported way to ask for an intermediate
+    // face. A sub-family name written into the font key itself still resolves
+    // to nothing: `validate-shipped-assets` rejects it and no bytes are staged
+    // for LibreOffice.
     const synthetic = allSites.filter((s) => {
       const name = s.family.trim();
       if (isSafeFont(name) || CATALOG.has(name.toLowerCase())) return false;
