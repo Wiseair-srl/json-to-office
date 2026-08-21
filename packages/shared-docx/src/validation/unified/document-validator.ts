@@ -109,6 +109,13 @@ export function validateDocument(
     finalValid = false;
   }
 
+  // Same for a text box asking for a shape rendering a shape cannot give it.
+  const textBoxShapeConflicts = collectTextBoxShapeConflicts(data);
+  if (textBoxShapeConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...textBoxShapeConflicts];
+    finalValid = false;
+  }
+
   // Add document-specific metadata. Keep `data` populated whenever `valid` is
   // true so `isValidDocument()` (which requires both) stays consistent — when
   // TypeBox failed and the deep validator cleared the doc, fall back to the
@@ -172,6 +179,14 @@ export function validateJsonDocument(
   const semanticConflicts = collectSemanticConflicts(result.parsed);
   if (semanticConflicts.length > 0) {
     finalErrors = [...finalErrors, ...semanticConflicts];
+    finalValid = false;
+  }
+
+  // A text box asking for a shape rendering a shape cannot give it (see
+  // validateDocument).
+  const textBoxShapeConflicts = collectTextBoxShapeConflicts(result.parsed);
+  if (textBoxShapeConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...textBoxShapeConflicts];
     finalValid = false;
   }
 
