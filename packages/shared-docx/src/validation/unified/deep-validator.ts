@@ -222,6 +222,88 @@ export function collectNoteRevisionConflicts(data: unknown): ValidationError[] {
 }
 
 /**
+ * Collect `text-box` requests for a shape rendering that a shape cannot honour,
+ * anywhere in a document.
+ *
+ * `renderAs: 'shape'` emits a WPS DrawingML shape, and two of its limits are
+ * decidable from the props alone:
+ *
+ * - **Size.** A shape carries an absolute extent and has no autofit, so a box
+ *   without both `width` and `height` has no size to render at.
+ * - **Border style.** docx's outline options carry width, cap, compound and
+ *   fill but no `a:prstDash`, so a dash pattern cannot be expressed at all; the
+ *   `compoundLine` that could stand in for `double` is emitted as the enum key
+ *   (`cmpd="DOUBLE"`) rather than the OOXML value.
+ *
+ * Both are independently optional fields, so the combination passes TypeBox's
+ * structural check. Reporting them here rather than warning at render time puts
+ * the fault where the author can fix it — the renderer's own guards degrade to
+ * the table rendering, which is silent in an editor that only shows the result.
+ *
+ * Like the walks above this runs unconditionally over every nested value, so a
+ * text box inside columns, a table cell, a header/footer or another text box is
+ * covered too. The third render-time fallback — content that renders as a table
+ * rather than a paragraph — is deliberately absent: it depends on what the
+ * children render to, which no static walk can know.
+ */
+const UNDASHABLE_BORDER_STYLES = new Set(['dashed', 'dotted', 'double']);
+
+export function collectTextBoxShapeConflicts(data: unknown): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  const visit = (node: any, path: string): void => {
+    if (Array.isArray(node)) {
+      node.forEach((item, i) => visit(item, `${path}/${i}`));
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+
+    if (node.name === 'text-box' && node.props?.renderAs === 'shape') {
+      const missing = (['width', 'height'] as const).filter(
+        (axis) => node.props[axis] === undefined
+      );
+      if (missing.length > 0) {
+        errors.push({
+          path: `${path}/props/${missing[0]}`,
+          message:
+            `A text-box with renderAs "shape" requires ${missing.join(' and ')}: a shape ` +
+            'has no autofit, so its size cannot be derived from its content. Give it an ' +
+            'explicit size, or use renderAs "table", which grows to fit.',
+          code: 'required',
+        });
+      }
+
+      const border = node.props.style?.border;
+      if (border && typeof border === 'object') {
+        for (const side of ['top', 'right', 'bottom', 'left'] as const) {
+          const style = border[side]?.style;
+          if (
+            typeof style === 'string' &&
+            UNDASHABLE_BORDER_STYLES.has(style)
+          ) {
+            errors.push({
+              path: `${path}/props/style/border/${side}/style`,
+              message:
+                `A text-box with renderAs "shape" cannot draw a "${style}" border: a shape ` +
+                'outline carries no dash pattern. Use "solid", or use renderAs "table", ' +
+                'which draws every border style.',
+              code: 'unsupported_value',
+            });
+          }
+        }
+      }
+    }
+
+    for (const key of Object.keys(node)) {
+      visit(node[key], `${path}/${key}`);
+    }
+  };
+
+  visit(data, '');
+  return errors;
+}
+
+/**
  * Deep validate a document to collect ALL errors, not just union-level errors
  */
 export function deepValidateDocument(

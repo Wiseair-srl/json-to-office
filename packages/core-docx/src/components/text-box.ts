@@ -396,8 +396,12 @@ type ShapeAttempt =
  *
  * Everything a shape cannot express falls back to the table rendering rather
  * than shipping a box that clips its content or quietly redraws its border.
- * The checks that read props only run before the children render, so the
- * common fallbacks cost nothing.
+ *
+ * The two prop-only limits — a missing dimension and a dash-patterned border —
+ * are rejected by `collectTextBoxShapeConflicts` during validation, where the
+ * author can act on them. The guards below are the safety net for callers that
+ * render without validating; they run before the children do, so the fallback
+ * never renders a child twice.
  */
 async function renderTextBoxAsShape(
   tb: TextBoxComponentDefinition,
