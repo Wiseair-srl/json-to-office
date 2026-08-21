@@ -4,9 +4,27 @@
  * backend via SAL_DISABLE_SKIA=1 — Skia/DirectWrite doesn't reliably pick
  * up GDI-registered fonts on recent LO builds.
  *
- * Registration is process-scoped: Node stays alive for the full conversion,
- * so the fonts persist until cleanup. If Node crashes, GDI releases them on
- * process exit — no logout-scope leaks.
+ * Scope, precisely: `AddFontResourceW` adds to the **session** font table, not
+ * a private per-process one. That is deliberate and unavoidable here — the
+ * private variant (`AddFontResourceExW` with `FR_PRIVATE`) is visible only to
+ * the registering process, and the process that has to see these fonts is the
+ * `soffice` CHILD. Node stays alive for the full conversion so the fonts
+ * persist until cleanup, and GDI releases them on process exit if Node
+ * crashes, so nothing leaks past the process.
+ *
+ * KNOWN LIMITATION — concurrent conversions on one Windows host share that
+ * session table. Two conversions staging different bytes under the same
+ * synthesized family (say two documents that each embed their own "Inter")
+ * register two faces claiming one name, and which one GDI hands to soffice is
+ * then order-dependent. Staged FILES never collide — each carries a
+ * pid-plus-counter suffix — so this is a resolution ambiguity, not corruption.
+ *
+ * Not fixed here because the only correct fix is a host-wide lease held from
+ * stage() through cleanup(), which serializes every Windows conversion; that
+ * is a real throughput cost for a risk the deployed images do not carry (both
+ * production containers are Linux/fontconfig, where staging is per-process via
+ * FONTCONFIG_FILE and cannot collide). It bites a Windows host running
+ * concurrent conversions — worth a lease if that becomes a supported topology.
  */
 
 import { promises as fs } from 'node:fs';
@@ -54,8 +72,9 @@ export class WindowsFontStager implements FontStager {
   async stage(
     fonts: ResolvedFont[],
     tempDir: string,
-    // Ignored: GDI registration is process-scoped, not tied to any
-    // LibreOffice UserInstallation profile.
+    // Ignored: GDI registration is session-wide, not scoped to any one
+    // LibreOffice UserInstallation profile, so the retry profiles need no
+    // separate seeding the way the macOS Core Text stager's do.
     _options?: FontStageOptions
   ): Promise<FontStageHandle> {
     const id = nextStagingId();

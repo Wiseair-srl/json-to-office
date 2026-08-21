@@ -139,8 +139,15 @@ The same entry shape goes in the document itself, which is the portable option �
 
 A `fontRegistry` is a **declaration, not a reference**: the families named inside it (including a `google` source's `family`) are not treated as fonts the document uses, and `substitute` mode never rewrites them. Only actual `font.family` / `fontFace` / `theme.fonts.*` references count.
 
-::: warning Registration is for preview fidelity, not embedding
-Registered font bytes are only materialized (fetched, cached, pinned) for the LibreOffice preview pipeline — the renderer registers them with the OS before LibreOffice runs so the in-browser PDF preview shows the real typeface. The downloaded `.docx`/`.pptx` bytes are unaffected: no embedding, ever. This includes the automatic Google Fonts staging — any referenced family that matches the bundled popular-Google catalog is auto-fetched for preview only.
+::: warning Registration is for rendering fidelity, not embedding
+Registered font bytes are materialized (fetched, cached, pinned) only for the pipelines that need real font files on disk, and are registered with the OS before LibreOffice runs. There are two:
+
+- the **LibreOffice preview**, so the in-browser PDF preview shows the real typeface; and
+- **`visual` rasterization**, where an out-of-process LibreOffice renders the nested slide to a PNG.
+
+The second one has a consequence worth knowing: a document containing a `visual` materializes its fonts — including Google Fonts network fetches — even on a plain CLI `jto docx generate`, with no preview involved, because the rasterizer cannot render text without the files. Documents with no `visual` never fetch.
+
+The downloaded `.docx`/`.pptx` bytes are unaffected either way: no embedding, ever.
 :::
 
 ### From the playground

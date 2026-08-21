@@ -350,12 +350,24 @@ export class GeneratorService {
         }
       }
     }
+    // A document- or theme-declared registry is the third thing that makes
+    // font resolution meaningful, alongside caller entries and the export-mode
+    // selectors. Computed here rather than next to `fontOpts` because
+    // `bypassCache` below has to see it.
+    const declaresRegistry =
+      documentFontRegistry(config).length > 0 ||
+      Object.values(customThemes ?? {}).some(
+        (t) => themeFontRegistry(t).length > 0
+      );
     // Font resolution produces a side-channel (`resolvedFonts`) consumed by the
     // LibreOffice preview stager. The byte-cache can't round-trip that, so skip
     // the cache when auto-font resolution is needed — otherwise a cached buffer
-    // returns without the TTFs the previewer needs.
+    // returns without the TTFs the previewer needs. A declared registry counts:
+    // its bytes are exactly what the stager would otherwise be missing.
     const bypassCache =
-      options?.bypassCache === true || extraEntries.length > 0;
+      options?.bypassCache === true ||
+      extraEntries.length > 0 ||
+      declaresRegistry;
     // Include font runtime selectors in the cache key so substitute vs
     // custom runs (same config+themes) don't collide on a single buffer
     // slot. `extraEntries` already forces bypassCache, so only need
@@ -411,16 +423,11 @@ export class GeneratorService {
     // supported. `extraEntries` is authoritative in this flow:
     // caller-supplied entries were merged with auto-Google entries above
     // and are passed down unified here.
-    // A document- or theme-declared registry has no representation in
-    // `extraEntries`, so without this the preview's `onResolved` listener is
-    // never registered, `resolveDocumentFonts` short-circuits, and an
-    // uploaded font is validated but never materialized — the LibreOffice
-    // preview then renders it with a host fallback.
-    const declaresRegistry =
-      documentFontRegistry(config).length > 0 ||
-      Object.values(customThemes ?? {}).some(
-        (t) => themeFontRegistry(t).length > 0
-      );
+    // `declaresRegistry` (computed above, next to `bypassCache`) is what keeps
+    // a document-declared registry from falling through every branch here:
+    // without it the preview's `onResolved` listener is never registered,
+    // `resolveDocumentFonts` short-circuits, and an uploaded font is validated
+    // but never materialized — the preview then uses a host fallback.
     const needsFontOpts =
       extraEntries.length > 0 ||
       declaresRegistry ||

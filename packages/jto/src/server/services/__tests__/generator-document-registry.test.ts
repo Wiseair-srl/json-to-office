@@ -100,3 +100,30 @@ describe('props.fontRegistry materialization', () => {
     expect(result.resolvedFonts ?? []).toEqual([]);
   });
 });
+
+describe('a declared registry bypasses the buffer cache', () => {
+  let cache: CacheService;
+  let service: GeneratorService;
+
+  beforeEach(() => {
+    cache = new CacheService();
+    service = new GeneratorService(new DocxFormatAdapter(), cache);
+  });
+  afterEach(() => {
+    cache.destroy();
+  });
+
+  it('still returns resolvedFonts on a repeat render', async () => {
+    // The byte cache cannot round-trip the resolvedFonts side-channel, so a
+    // cache hit would hand the preview a buffer with nothing to stage and the
+    // font would silently fall back on every render after the first.
+    const first = await service.generate({ jsonDefinition: docWithRegistry() });
+    expect(first.resolvedFonts?.length).toBeGreaterThan(0);
+
+    const second = await service.generate({
+      jsonDefinition: docWithRegistry(),
+    });
+    expect(second.cached).toBe(false);
+    expect(second.resolvedFonts?.length).toBeGreaterThan(0);
+  });
+});
