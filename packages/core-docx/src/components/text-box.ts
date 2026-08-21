@@ -132,32 +132,53 @@ function mapTableFloatOptions(
   return opt;
 }
 
+/**
+ * Render a text box's children with the box itself as their parent — the link
+ * that makes a nested `columns` render as a table rather than as a
+ * section-level column layout.
+ */
+async function renderTextBoxChildren(
+  tb: TextBoxComponentDefinition,
+  theme: ThemeConfig,
+  themeName: string,
+  context: import('../types').RenderContext
+): Promise<(Paragraph | Table)[]> {
+  const childContext: import('../types').RenderContext = {
+    ...context,
+    parent: tb,
+  };
+
+  const rendered: (Paragraph | Table)[] = [];
+  for (const child of tb.children || []) {
+    rendered.push(
+      ...(await renderComponent(child, theme, themeName, childContext))
+    );
+  }
+  return rendered;
+}
+
+/**
+ * Render the text box as a borderless one-cell table — the default, and the
+ * only rendering with autofit, per-side borders and lazy percentage widths.
+ *
+ * `prerendered` carries the children a failed shape attempt already rendered:
+ * rendering them again would repeat their bookmark, comment and footnote
+ * registrations.
+ */
 async function renderTextBoxAsTable(
   tb: TextBoxComponentDefinition,
   theme: ThemeConfig,
   themeName: string,
-  _context: import('../types').RenderContext
+  _context: import('../types').RenderContext,
+  prerendered?: (Paragraph | Table)[]
 ): Promise<(Paragraph | Table)[]> {
   const isInline = !tb.props.floating;
-  const childComponents = tb.children || [];
 
   if (isInline) {
     // Inline: use a one-cell table container for multi-paragraph support
-    const cellChildren: (Paragraph | Table)[] = [];
-    // Create context with current text-box as parent
-    const childContext: import('../types').RenderContext = {
-      ..._context,
-      parent: tb,
-    };
-    for (const child of childComponents) {
-      const rendered = await renderComponent(
-        child,
-        theme,
-        themeName,
-        childContext
-      );
-      cellChildren.push(...rendered);
-    }
+    const cellChildren =
+      prerendered ??
+      (await renderTextBoxChildren(tb, theme, themeName, _context));
 
     const styleCfg = (tb.props as any).style as CellStyleConfig | undefined;
     const cellOpts = buildCellOptions(cellChildren, styleCfg, theme);
@@ -173,23 +194,9 @@ async function renderTextBoxAsTable(
   }
 
   // Always use a floating one-cell table container for multi-paragraph support
-
-  // If there is at least one table or image child, use a floating one-cell table container
-  const cellChildren: (Paragraph | Table)[] = [];
-  // Create context with current text-box as parent
-  const childContext: import('../types').RenderContext = {
-    ..._context,
-    parent: tb,
-  };
-  for (const child of childComponents) {
-    const rendered = await renderComponent(
-      child,
-      theme,
-      themeName,
-      childContext
-    );
-    cellChildren.push(...rendered);
-  }
+  const cellChildren =
+    prerendered ??
+    (await renderTextBoxChildren(tb, theme, themeName, _context));
 
   const styleCfg = (tb.props as any).style as CellStyleConfig | undefined;
   const cellOpts = buildCellOptions(cellChildren, styleCfg, theme);
@@ -291,9 +298,13 @@ function shapeColor(value: string, theme: ThemeConfig): string {
 function shapeOutline(
   style: TextBoxStyle | undefined,
   theme: ThemeConfig
-): { outline?: IWpsShapeOptions['outline']; ignoredSides: string[] } {
+): {
+  outline?: IWpsShapeOptions['outline'];
+  ignoredSides: string[];
+  unsupportedStyles: string[];
+} {
   const border = style?.border;
-  if (!border) return { ignoredSides: [] };
+  if (!border) return { ignoredSides: [], unsupportedStyles: [] };
 
   const order: (keyof NonNullable<TextBoxStyle['border']>)[] = [
     'top',
@@ -306,7 +317,27 @@ function shapeOutline(
     .filter((entry): entry is [(typeof order)[number], BorderSide] =>
       Boolean(entry[1])
     );
-  if (declared.length === 0) return { ignoredSides: [] };
+  if (declared.length === 0) return { ignoredSides: [], unsupportedStyles: [] };
+
+  // docx's OutlineOptions carries width, cap, compound and fill — there is no
+  // `a:prstDash`, so a dash pattern cannot be expressed at all, and the one
+  // `compoundLine` that could stand in for `double` is emitted as the enum key
+  // (`cmpd="DOUBLE"`) rather than the OOXML value. Drawing any of the three as
+  // a plain solid line would silently change the design, so the caller falls
+  // back to the table rendering, which supports all of them.
+  const unsupportedStyles = [
+    ...new Set(
+      declared
+        .map(([, config]) => config.style)
+        .filter(
+          (value): value is 'dashed' | 'dotted' | 'double' =>
+            value === 'dashed' || value === 'dotted' || value === 'double'
+        )
+    ),
+  ];
+  if (unsupportedStyles.length > 0) {
+    return { ignoredSides: [], unsupportedStyles };
+  }
 
   const [, used] = declared[0];
   const differs = ({ style: s, width, color }: BorderSide): boolean =>
@@ -316,7 +347,7 @@ function shapeOutline(
     .filter(([, config]) => differs(config))
     .map(([side]) => side);
 
-  if (used.style === 'none') return { ignoredSides };
+  if (used.style === 'none') return { ignoredSides, unsupportedStyles };
 
   return {
     outline: {
@@ -328,6 +359,7 @@ function shapeOutline(
       }),
     },
     ignoredSides,
+    unsupportedStyles,
   };
 }
 
@@ -352,55 +384,58 @@ function shapeBodyProperties(
 }
 
 /**
+ * A shape rendering, or the reason there is none — carrying back whatever the
+ * attempt already rendered so the table fallback can reuse it.
+ */
+type ShapeAttempt =
+  | { kind: 'shape'; paragraphs: Paragraph[] }
+  | { kind: 'fallback'; rendered?: (Paragraph | Table)[] };
+
+/**
  * Render the text box as a native Word text box (a `wps:wsp` shape).
  *
- * Returns undefined when the request cannot be honoured — non-paragraph
- * content, or a missing dimension — so the caller falls back to the table
- * rendering rather than emitting a shape that clips its own content.
+ * Everything a shape cannot express falls back to the table rendering rather
+ * than shipping a box that clips its content or quietly redraws its border.
+ * The checks that read props only run before the children render, so the
+ * common fallbacks cost nothing.
  */
 async function renderTextBoxAsShape(
   tb: TextBoxComponentDefinition,
   theme: ThemeConfig,
   themeName: string,
   context: import('../types').RenderContext
-): Promise<Paragraph[] | undefined> {
-  // Size is checked before the children render: a fallback after rendering
-  // would render them a second time on the table path, and child side effects
-  // (bookmark, comment, footnote registrations) must happen exactly once.
+): Promise<ShapeAttempt> {
   const width = resolveShapeSize(tb.props.width, 'width', theme, themeName);
   const height = resolveShapeSize(tb.props.height, 'height', theme, themeName);
   if (width.pixels === undefined || height.pixels === undefined) {
     console.warn(
       '[core-docx] text-box renderAs "shape" needs an explicit width and height (a shape has no autofit); falling back to table rendering.'
     );
-    return undefined;
+    return { kind: 'fallback' };
   }
 
-  const childContext: import('../types').RenderContext = {
-    ...context,
-    parent: tb,
-  };
-
-  const children: Paragraph[] = [];
-  for (const child of tb.children || []) {
-    const rendered = await renderComponent(
-      child,
-      theme,
-      themeName,
-      childContext
+  const style = tb.props.style;
+  const { outline, ignoredSides, unsupportedStyles } = shapeOutline(
+    style,
+    theme
+  );
+  if (unsupportedStyles.length > 0) {
+    console.warn(
+      `[core-docx] text-box renderAs "shape" cannot draw a ${unsupportedStyles.join('/')} border (a shape outline has no dash pattern); falling back to table rendering, which draws it.`
     );
-    for (const element of rendered) {
-      // `WpsShapeCoreOptions.children` is `readonly Paragraph[]`: a nested
-      // `columns` (which renders as a Table) has nowhere to go in a shape.
-      if (!(element instanceof Paragraph)) {
-        console.warn(
-          '[core-docx] text-box renderAs "shape" requires paragraph-only content; falling back to table rendering.'
-        );
-        return undefined;
-      }
-      children.push(element);
-    }
+    return { kind: 'fallback' };
   }
+
+  const rendered = await renderTextBoxChildren(tb, theme, themeName, context);
+  // `WpsShapeCoreOptions.children` is `readonly Paragraph[]`: a nested
+  // `columns` (which renders as a Table) has nowhere to go in a shape.
+  if (rendered.some((element) => !(element instanceof Paragraph))) {
+    console.warn(
+      '[core-docx] text-box renderAs "shape" requires paragraph-only content; falling back to table rendering.'
+    );
+    return { kind: 'fallback', rendered };
+  }
+  const children = rendered as Paragraph[];
 
   if (width.resolvedPercentage || height.resolvedPercentage) {
     console.warn(
@@ -408,9 +443,7 @@ async function renderTextBoxAsShape(
     );
   }
 
-  const style = tb.props.style;
   const fill = style?.shading?.fill;
-  const { outline, ignoredSides } = shapeOutline(style, theme);
   if (ignoredSides.length > 0) {
     console.warn(
       `[core-docx] text-box renderAs "shape" has one uniform outline; using the first declared border side and ignoring ${ignoredSides.join(', ')}.`
@@ -444,7 +477,12 @@ async function renderTextBoxAsShape(
     }),
   });
 
-  return [new Paragraph({ children: [run], spacing: { before: 0, after: 0 } })];
+  return {
+    kind: 'shape',
+    paragraphs: [
+      new Paragraph({ children: [run], spacing: { before: 0, after: 0 } }),
+    ],
+  };
 }
 
 export async function renderTextBoxComponent(
@@ -457,8 +495,15 @@ export async function renderTextBoxComponent(
   const tb = component as TextBoxComponentDefinition;
 
   if (tb.props.renderAs === 'shape') {
-    const shape = await renderTextBoxAsShape(tb, theme, themeName, context);
-    if (shape) return shape;
+    const attempt = await renderTextBoxAsShape(tb, theme, themeName, context);
+    if (attempt.kind === 'shape') return attempt.paragraphs;
+    return renderTextBoxAsTable(
+      tb,
+      theme,
+      themeName,
+      context,
+      attempt.rendered
+    );
   }
 
   return renderTextBoxAsTable(tb, theme, themeName, context);

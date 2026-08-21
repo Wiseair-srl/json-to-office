@@ -255,8 +255,11 @@ describe('TOC cached entries with numbering', () => {
       { name: 'heading', props: { text: 'Beta', level: 2, numbering: true } },
     ]);
 
-    expect(document).toContain('1 Alpha');
-    expect(document).toContain('1.1 Beta');
+    // The trailing period is part of the number Word draws (lvlText is `%1.`),
+    // so the cached entry has to carry it or the field visibly shifts on the
+    // reader's first refresh.
+    expect(document).toContain('1. Alpha');
+    expect(document).toContain('1.1. Beta');
   });
 
   it('leaves unnumbered headings unprefixed', async () => {

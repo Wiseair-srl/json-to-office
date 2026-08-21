@@ -107,6 +107,10 @@ Once a heading is numbered, `[@id]` in any text references it: the number is wri
 [
   {
     "name": "heading",
+    "props": { "text": "Field study", "level": 1, "numbering": true }
+  },
+  {
+    "name": "heading",
     "id": "methods",
     "props": { "text": "Methods", "level": 2, "numbering": true }
   },
@@ -118,6 +122,8 @@ Once a heading is numbered, `[@id]` in any text references it: the number is wri
   }
 ]
 ```
+
+"Field study" numbers `1.` and "Methods" numbers `1.1.`, so the paragraph reads "Sampling is described in 1.1 (Methods)." A heading numbered before any heading of the level above it fills the missing places with zeros — `0.1` — exactly as Word does.
 
 See [cross-references](/reference/docx/components#cross-references) for the other switches and the caveats about cached values.
 

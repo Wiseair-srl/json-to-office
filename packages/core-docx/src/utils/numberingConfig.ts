@@ -345,6 +345,20 @@ export function createHeadingNumberingConfig(): {
 }
 
 /**
+ * The heading number as Word draws it in the document — the bare dotted number
+ * plus the trailing period `lvlText` ends with.
+ *
+ * A cached TOC entry has to reproduce that form exactly: Word rewrites the
+ * entry from the heading's own rendered text the first time it refreshes the
+ * field, and an entry cached as "1.1 Methods" would visibly shift to
+ * "1.1. Methods". Cross-references keep the bare number instead — Word's `\w`
+ * switch is defined as the paragraph number *without* trailing periods.
+ */
+export function headingNumberLabel(number: string): string {
+  return `${number}.`;
+}
+
+/**
  * Registry for managing numbering configurations
  */
 export class NumberingRegistry {
