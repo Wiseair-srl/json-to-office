@@ -11,6 +11,8 @@ import {
   POPULAR_GOOGLE_FONTS,
   getUpstreamOverride,
   isSafeFont,
+  documentFontRegistry,
+  themeFontRegistry,
   type FontRegistryEntry,
   type ResolvedFont,
   type GenerationWarning,
@@ -304,8 +306,18 @@ export class GeneratorService {
       rawSub && typeof rawSub === 'object' && !Array.isArray(rawSub)
         ? (rawSub as Record<string, string>)
         : undefined;
+    // Families already declared by the caller, the document, or a theme. Any
+    // of them outranks an auto-Google fetch, and `extraEntries` — where the
+    // auto entries land — is the HIGHEST precedence group in the merge, so
+    // omitting the document/theme families here would let Google's bytes
+    // silently replace the ones the document ships with.
+    const declaredFamilies = [
+      ...callerExtraEntries,
+      ...documentFontRegistry(config),
+      ...Object.values(customThemes ?? {}).flatMap((t) => themeFontRegistry(t)),
+    ];
     const callerFamilies = new Set(
-      callerExtraEntries.map((e) => e.family.toLowerCase())
+      declaredFamilies.map((e) => e.family.toLowerCase())
     );
     // In substitute mode the doc's non-safe families are rewritten to safe
     // equivalents before font resolution runs, so an auto-Google fetch for
@@ -399,8 +411,19 @@ export class GeneratorService {
     // supported. `extraEntries` is authoritative in this flow:
     // caller-supplied entries were merged with auto-Google entries above
     // and are passed down unified here.
+    // A document- or theme-declared registry has no representation in
+    // `extraEntries`, so without this the preview's `onResolved` listener is
+    // never registered, `resolveDocumentFonts` short-circuits, and an
+    // uploaded font is validated but never materialized — the LibreOffice
+    // preview then renders it with a host fallback.
+    const declaresRegistry =
+      documentFontRegistry(config).length > 0 ||
+      Object.values(customThemes ?? {}).some(
+        (t) => themeFontRegistry(t).length > 0
+      );
     const needsFontOpts =
       extraEntries.length > 0 ||
+      declaresRegistry ||
       fontMode !== undefined ||
       fontSubstitution !== undefined ||
       callerStrict !== undefined;

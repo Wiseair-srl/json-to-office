@@ -137,3 +137,63 @@ describe('mergeFontRegistries', () => {
     expect(mergeFontRegistries(undefined, [], undefined)).toEqual([]);
   });
 });
+
+describe('precedence survives the FontRegistry replay', () => {
+  // FontRegistry re-derives precedence from ARRAY ORDER (addEntry, last write
+  // wins). A merge that returns the right entries in the wrong order is
+  // therefore still wrong — these cases pin the order itself.
+  const lastIndexOwning = (
+    merged: FontRegistryEntry[],
+    family: string
+  ): FontRegistryEntry | undefined => {
+    let owner: FontRegistryEntry | undefined;
+    for (const e of merged) {
+      if (
+        e.family.toLowerCase() === family.toLowerCase() ||
+        e.id.toLowerCase() === family.toLowerCase()
+      ) {
+        owner = e;
+      }
+    }
+    return owner;
+  };
+
+  it('lets the document win when it shares a family but not an id', () => {
+    const theme: FontRegistryEntry = {
+      id: 'brand-sans',
+      family: 'Inter',
+      sources: [{ kind: 'google', family: 'THEME' }],
+    };
+    const doc: FontRegistryEntry = {
+      id: 'Inter',
+      family: 'Inter',
+      sources: [{ kind: 'google', family: 'DOC' }],
+    };
+    const merged = mergeFontRegistries([theme], [doc]);
+    expect(lastIndexOwning(merged, 'Inter')).toBe(doc);
+  });
+
+  it('lets runtime win when it shares a family but not an id', () => {
+    const doc: FontRegistryEntry = {
+      id: 'doc-id',
+      family: 'Inter',
+      sources: [{ kind: 'google', family: 'DOC' }],
+    };
+    const runtime: FontRegistryEntry = {
+      id: 'runtime-id',
+      family: 'Inter',
+      sources: [{ kind: 'google', family: 'RUNTIME' }],
+    };
+    const merged = mergeFontRegistries(undefined, [doc], [runtime]);
+    expect(lastIndexOwning(merged, 'Inter')).toBe(runtime);
+  });
+
+  it('orders a true replacement last rather than in the slot it replaced', () => {
+    const theme = entry('inter', 'Inter', 'THEME');
+    const other = entry('roboto', 'Roboto');
+    const doc = entry('inter', 'Inter', 'DOC');
+    const merged = mergeFontRegistries([theme, other], [doc]);
+    expect(merged).toHaveLength(2);
+    expect(merged[merged.length - 1]).toBe(doc);
+  });
+});

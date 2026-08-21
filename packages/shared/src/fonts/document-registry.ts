@@ -52,21 +52,33 @@ export function themeFontRegistry(theme: unknown): FontRegistryEntry[] {
 export function mergeFontRegistries(
   ...groups: (FontRegistryEntry[] | undefined)[]
 ): FontRegistryEntry[] {
-  const byKey = new Map<string, FontRegistryEntry>();
-  for (const group of groups) {
-    for (const e of group ?? []) {
-      byKey.set(e.family.toLowerCase(), e);
-      byKey.set(e.id.toLowerCase(), e);
-    }
-  }
-  // One entry occupies two keys (family + id); de-dupe by identity so the
-  // caller sees each registration once.
+  // Order IS the contract: `FontRegistry` replays this array through
+  // `addEntry`, indexing on family and id with last-write-wins, so an entry
+  // only outranks another by sitting later. Concatenating the groups in
+  // precedence order is therefore the whole mechanism.
+  //
+  // Deliberately NOT de-duped through a Map keyed by family/id: `Map.set` on
+  // an existing key keeps the original insertion *position*, so a
+  // higher-precedence entry colliding with an earlier one would be emitted
+  // early and then lose the replay to the entry it was supposed to beat.
   const out: FontRegistryEntry[] = [];
-  const seen = new Set<FontRegistryEntry>();
-  for (const e of byKey.values()) {
-    if (seen.has(e)) continue;
-    seen.add(e);
-    out.push(e);
+  for (const group of groups) {
+    for (const entry of group ?? []) {
+      const family = entry.family.toLowerCase();
+      const id = entry.id.toLowerCase();
+      // Drop only a true replacement — same family AND same id. An entry that
+      // shares just one of the two still owns the other key in FontRegistry's
+      // index, so removing it here would make that name unresolvable.
+      for (let i = out.length - 1; i >= 0; i--) {
+        if (
+          out[i].family.toLowerCase() === family &&
+          out[i].id.toLowerCase() === id
+        ) {
+          out.splice(i, 1);
+        }
+      }
+      out.push(entry);
+    }
   }
   return out;
 }

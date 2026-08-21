@@ -66,7 +66,11 @@ The image's `entrypoint.sh` runs Highcharts in a supervisor loop (restart with a
 
 The Dockerfile builds the whole monorepo in a `node:20-slim` stage, then assembles a `node:20-bookworm-slim` runtime with `chromium`, `libreoffice-core`, `libreoffice-impress`, `poppler-utils`, and the metric-compatible font packages `fonts-liberation2`, `fonts-crosextra-carlito`, and `fonts-crosextra-caladea`, pre-warms the Highcharts module cache at build time, and runs as a non-root user.
 
-The rasterizer does **no** per-request font staging: `/rasterize` and `/rasterize/batch` resolve document fonts entirely against the container's system faces plus the alias rules in `/etc/fonts/local.conf` (copied from `docker/fontconfig-local.conf`). Anything a document asks for that is not installed there falls back — see [Fonts](/guide/fonts) for the resulting mapping.
+Both rasterize endpoints accept an optional `fonts` array of base64 faces, which the rasterizer stages around each `soffice` launch and tears down afterwards. A caller that sends them — the playground does, for any document whose fonts it has already resolved — gets the real typeface in the rendered PNG. Anything not sent falls back to the container's system faces plus the alias rules in `/etc/fonts/local.conf` (copied from `docker/fontconfig-local.conf`); see [Fonts](/guide/fonts) for that mapping.
+
+::: warning Deploy this service before the playground
+Both request schemas are `additionalProperties: false`, so a `fonts`-bearing body reaches an **older** render server as a `400`, not as a field it quietly ignores. The batch path retries once without fonts and the per-visual path does the same, so an old server degrades to fontless visuals rather than failing the document — but deploying the render server first avoids the wasted round trip entirely.
+:::
 
 ### Environment variables (front server)
 

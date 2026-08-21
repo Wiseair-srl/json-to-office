@@ -36,8 +36,17 @@ export interface PreviewFontFace {
   family: string;
   weight: number;
   italic: boolean;
-  /** Full CSS `src` value, e.g. `url("https://…woff2")`. */
-  src: string;
+  /**
+   * Raw resource for a document-declared source: a `data:` URI or an
+   * allowlisted https URL. Kept unwrapped so the CSS writer owns quoting —
+   * see renderFontFaceCss.
+   */
+  url?: string;
+  /**
+   * Pre-built CSS `src` value. Only ever set from Google's own stylesheet,
+   * which we fetch ourselves and validate; never from document input.
+   */
+  src?: string;
   unicodeRange?: string;
   /** Backed by a variable font, so synthetic names must pin the wght axis. */
   variable?: boolean;
@@ -126,7 +135,18 @@ export function synthesizedFamilyNames(
   return out;
 }
 
-function dataUrlFor(raw: string): string {
+/**
+ * A `kind:"data"` payload is either bare base64 or a base64 data: URI, and
+ * nothing else. Anything outside that alphabet is a crafted payload trying to
+ * break out of the `url("…")` it would be interpolated into — most usefully
+ * `"),url("https://attacker/x` to append a source the host allowlist would
+ * have rejected. Reject rather than escape: there is no legitimate font here.
+ */
+const DATA_FONT_RE =
+  /^(?:data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,)?[A-Za-z0-9+/=\s]+$/i;
+
+function dataUrlFor(raw: string): string | null {
+  if (!DATA_FONT_RE.test(raw)) return null;
   return raw.startsWith('data:') ? raw : `data:font/ttf;base64,${raw}`;
 }
 
@@ -153,12 +173,9 @@ export function facesFromRegistryEntry(
     if (source.kind === 'data') {
       // No format() hint: it is advisory, browsers sniff, and the real
       // detector is Buffer-based and unavailable in the browser.
-      faces.push({
-        family: entry.family,
-        weight,
-        italic,
-        src: `url("${dataUrlFor(source.data)}")`,
-      });
+      const url = dataUrlFor(source.data);
+      if (!url) continue;
+      faces.push({ family: entry.family, weight, italic, url });
       continue;
     }
 
@@ -170,7 +187,7 @@ export function facesFromRegistryEntry(
       family: entry.family,
       weight,
       italic,
-      src: `url("${source.url}")`,
+      url: source.url,
       variable: source.kind === 'variable',
     });
   }
@@ -183,14 +200,21 @@ export function googleFamiliesFor(
   registryEntries: FontRegistryEntry[],
   referencedWeights: Set<number>
 ): { family: string; weights: number[]; italics: boolean }[] {
-  // A registry entry backed by real bytes wins over the Google stylesheet.
-  const covered = new Set(
-    registryEntries
-      .filter((e) =>
-        (e.sources ?? []).some((s) => s.kind !== 'google' && s.kind !== 'safe')
-      )
-      .map((e) => e.family.toLowerCase())
-  );
+  // Registry bytes win over the Google stylesheet — but only for the weights
+  // they actually supply. Treating the whole family as covered would mean
+  // that embedding a font (the Custom tab registers 400/700, an upload
+  // registers one weight) silently drops every other weight the document
+  // uses, so a `fontWeight: 500` run would lose the face it just gained.
+  const coveredWeights = new Map<string, Set<number>>();
+  for (const e of registryEntries) {
+    for (const s of e.sources ?? []) {
+      if (s.kind === 'google' || s.kind === 'safe') continue;
+      const key = e.family.toLowerCase();
+      let set = coveredWeights.get(key);
+      if (!set) coveredWeights.set(key, (set = new Set<number>()));
+      set.add('weight' in s && s.weight ? s.weight : 400);
+    }
+  }
 
   const out: { family: string; weights: number[]; italics: boolean }[] = [];
   const emitted = new Set<string>();
@@ -198,20 +222,21 @@ export function googleFamiliesFor(
   for (const name of referencedNames) {
     if (isSafeFont(name)) continue;
     const lower = name.toLowerCase();
-    if (covered.has(lower) || emitted.has(lower)) continue;
+    if (emitted.has(lower)) continue;
     const match = POPULAR_GOOGLE_FONTS.find(
       (f) => f.family.toLowerCase() === lower
     );
     if (!match) continue;
     emitted.add(lower);
 
+    const already = coveredWeights.get(lower);
     const wanted = new Set<number>([400, 700, ...referencedWeights]);
-    const weights = match.weights.filter((w) => wanted.has(w));
-    out.push({
-      family: match.family,
-      weights: weights.length > 0 ? weights : [400],
-      italics: match.hasItalic,
-    });
+    const weights = match.weights.filter(
+      (w) => wanted.has(w) && !already?.has(w)
+    );
+    // Every weight this document uses already has real bytes.
+    if (weights.length === 0) continue;
+    out.push({ family: match.family, weights, italics: match.hasItalic });
   }
   return out;
 }
@@ -278,7 +303,13 @@ export function parseGoogleCss(css: string, family: string): PreviewFontFace[] {
     if (!src) continue;
     const style = /font-style:\s*(\w+)/.exec(block)?.[1] ?? 'normal';
     const weight = Number(/font-weight:\s*(\d+)/.exec(block)?.[1] ?? '400');
-    const unicodeRange = /unicode-range:\s*([^;]+);/.exec(block)?.[1]?.trim();
+    const rawRange = /unicode-range:\s*([^;]+);/.exec(block)?.[1]?.trim();
+    // Interpolated unquoted, so hold it to the grammar rather than trusting
+    // the response body.
+    const unicodeRange =
+      rawRange && /^[Uu]\+[0-9A-Fa-f?,+\-Uu\s]*$/.test(rawRange)
+        ? rawRange
+        : undefined;
     faces.push({
       family,
       weight: Number.isFinite(weight) ? weight : 400,
@@ -290,8 +321,18 @@ export function parseGoogleCss(css: string, family: string): PreviewFontFace[] {
   return faces;
 }
 
+/**
+ * Escape for a CSS string that will be serialized into a `<style>` element.
+ *
+ * `<style>` is HTML raw text: its content is emitted verbatim, so a literal
+ * `</style>` anywhere inside — including in the middle of a quoted CSS
+ * string — closes the element and turns everything after it into markup. Font
+ * family names come straight from document JSON, so escaping `\` and `"` is
+ * not enough. `\3c ` is the CSS escape for `<` and resolves back to the same
+ * character, so the family still matches while `</style>` can never appear.
+ */
 function escapeCssString(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/</g, '\\3c ');
 }
 
 /**
@@ -309,12 +350,22 @@ export function renderFontFaceCss(
   let dropped = 0;
 
   for (const face of faces) {
+    // A document-declared source is quoted here, by the writer that knows the
+    // output context; a Google-derived `src` is used as-is but must not carry
+    // a `<`, which its own stylesheet never contains.
+    const src = face.url
+      ? `url("${escapeCssString(face.url)}")`
+      : face.src && !face.src.includes('<')
+        ? face.src
+        : undefined;
+    if (!src) continue;
+
     for (const n of synthesizedFamilyNames(
       face.family,
       face.weight,
       face.italic
     )) {
-      const key = `${n.family}|${n.cssWeight}|${n.cssStyle}|${face.src}`;
+      const key = `${n.family}|${n.cssWeight}|${n.cssStyle}|${src}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
@@ -328,7 +379,7 @@ export function renderFontFaceCss(
 
       const rule =
         `@font-face{font-family:"${escapeCssString(n.family)}";` +
-        `src:${face.src};` +
+        `src:${src};` +
         `font-weight:${n.cssWeight};` +
         `font-style:${n.cssStyle};` +
         `font-display:swap;` +
