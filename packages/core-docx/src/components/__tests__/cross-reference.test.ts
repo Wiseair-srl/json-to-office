@@ -330,6 +330,75 @@ describe('unresolvable cross-references', () => {
   });
 });
 
+describe('bookmark link ids', () => {
+  /**
+   * `w:id` pairs a bookmarkStart with its bookmarkEnd, so a document that
+   * reuses one leaves every range ambiguous — which is how `[@id:none]` came
+   * to render blank: navigating by name still worked, but a REF field could
+   * not read the target's text out of a range that never closed. docx's own
+   * `Bookmark` emits `w:id="1"` for every instance (dolanmiu/docx#3478).
+   */
+  it('gives every bookmark in a document its own id, paired with its end', async () => {
+    const xml = await documentXml([
+      ...numberedHeadings,
+      {
+        name: 'list',
+        props: {
+          format: 'numbered',
+          items: [
+            { text: 'First', id: 'item-one' },
+            { text: 'Second', id: 'item-two' },
+          ],
+        },
+      },
+      { name: 'paragraph', id: 'para-one', props: { text: 'Body.' } },
+    ]);
+
+    const starts = [
+      ...xml.matchAll(/<w:bookmarkStart w:name="([^"]+)" w:id="(\d+)"/g),
+    ].map((m) => ({ name: m[1], id: m[2] }));
+    const endIds = [...xml.matchAll(/<w:bookmarkEnd w:id="(\d+)"/g)].map(
+      (m) => m[1]
+    );
+
+    expect(starts.length).toBeGreaterThan(3);
+    const startIds = starts.map((s) => s.id);
+    expect(new Set(startIds).size).toBe(startIds.length);
+    // Every range closes, and closes on an id that was opened.
+    expect(endIds.slice().sort()).toEqual(startIds.slice().sort());
+  });
+
+  it('keeps content ids clear of the section bookmark range', async () => {
+    // A `section` component is what puts a `_Section_*` bookmark in the
+    // document, so both id ranges are present to compare.
+    const xml = await documentXml([
+      {
+        name: 'section',
+        props: {},
+        children: [{ name: 'heading', props: { text: 'Alpha', level: 1 } }],
+      },
+    ]);
+
+    const byName = Object.fromEntries(
+      [...xml.matchAll(/<w:bookmarkStart w:name="([^"]+)" w:id="(\d+)"/g)].map(
+        (m) => [m[1], Number(m[2])]
+      )
+    );
+    expect(byName._Section_1).toBeLessThan(1_000_000);
+    expect(byName.alpha).toBeGreaterThan(2_000_000);
+  });
+
+  it('resolves :none against the bookmarked text', async () => {
+    const xml = await documentXml([
+      ...numberedHeadings,
+      { name: 'paragraph', props: { text: 'See [@methods:none].' } },
+    ]);
+
+    const field = fields(xml).find((f) => f.includes('REF methods'));
+    expect(field).toContain('>Methods<');
+  });
+});
+
 describe('cross-reference id grammar', () => {
   // `id` is a free string in the schema, so the token grammar has to accept
   // whatever an author can legally write on a list item or a node.

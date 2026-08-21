@@ -20,7 +20,6 @@ import {
   ColumnBreak,
   TableLayoutType,
   VerticalAlign,
-  Bookmark,
 } from 'docx';
 import type { ParagraphChild } from 'docx';
 import {
@@ -46,7 +45,10 @@ import {
 } from '../utils/placeholderProcessor';
 import { normalizeUnicodeText } from '../utils/unicode';
 import { getStyleIdForLevel } from '../styles/themeToDocxAdapter';
-import { globalBookmarkRegistry } from '../utils/bookmarkRegistry';
+import {
+  globalBookmarkRegistry,
+  createBookmarkedContent,
+} from '../utils/bookmarkRegistry';
 import {
   createMarkedTextRuns,
   createRevisionMark,
@@ -462,10 +464,7 @@ export function createText(
         'paragraph'
       );
       children.push(
-        new Bookmark({
-          id: options.bookmarkId,
-          children: revisionRuns as TextRun[],
-        })
+        ...createBookmarkedContent(options.bookmarkId, revisionRuns)
       );
     } else {
       children.push(...revisionRuns);
@@ -501,12 +500,7 @@ export function createText(
       );
 
       // Wrap text runs in bookmark
-      children.push(
-        new Bookmark({
-          id: options.bookmarkId,
-          children: textRuns as TextRun[],
-        })
-      );
+      children.push(...createBookmarkedContent(options.bookmarkId, textRuns));
     } else {
       // No bookmark, add text runs directly
       children.push(...textRuns);
@@ -756,10 +750,7 @@ export function createHeading(
         'heading'
       );
       children.push(
-        new Bookmark({
-          id: options.bookmarkId,
-          children: revisionRuns as TextRun[],
-        })
+        ...createBookmarkedContent(options.bookmarkId, revisionRuns)
       );
     } else {
       children.push(...revisionRuns);
@@ -792,10 +783,7 @@ export function createHeading(
 
     // Wrap in bookmark
     children.push(
-      new Bookmark({
-        id: options.bookmarkId,
-        children: headingTextChildren,
-      })
+      ...createBookmarkedContent(options.bookmarkId, headingTextChildren)
     );
   } else {
     // No bookmark, add text directly
@@ -1130,9 +1118,7 @@ export function createList(
     let itemContent: ParagraphChild[] = textRuns;
     if (itemId) {
       globalBookmarkRegistry.register(itemId, itemText, 'list-item');
-      itemContent = [
-        new Bookmark({ id: itemId, children: textRuns as TextRun[] }),
-      ];
+      itemContent = createBookmarkedContent(itemId, textRuns);
     }
 
     // Create the paragraph with proper numbering reference
