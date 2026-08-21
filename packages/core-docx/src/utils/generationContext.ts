@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { isAbsolute, resolve } from 'node:path';
+import type { GenerationWarning } from '@json-to-office/shared';
 
 const generationDateStorage = new AsyncLocalStorage<Date>();
 
@@ -44,4 +45,41 @@ export function resolveFromBaseDir(filePath: string): string {
   const base = baseDirStorage.getStore();
   if (!base || isAbsolute(filePath)) return filePath;
   return resolve(base, filePath);
+}
+
+const warningsStorage = new AsyncLocalStorage<GenerationWarning[]>();
+
+/**
+ * Scope a warning collector for a render, so leaf utilities can report
+ * without every intermediate signature carrying a sink. No collector → plain
+ * callback, and `reportWarning` falls back to `console.warn` as before.
+ */
+export function runWithWarnings<T>(
+  warnings: GenerationWarning[] | undefined,
+  callback: () => T
+): T {
+  return warnings === undefined
+    ? callback()
+    : warningsStorage.run(warnings, callback);
+}
+
+/** Record a render-time warning against the active collector, if any. */
+export function reportWarning(
+  component: string,
+  code: string,
+  message: string,
+  context?: Record<string, unknown>
+): void {
+  const warnings = warningsStorage.getStore();
+  if (warnings) {
+    warnings.push({
+      component,
+      message,
+      severity: 'warning',
+      context: { code, ...context },
+    });
+    return;
+  }
+  // eslint-disable-next-line no-console
+  console.warn(`[json-to-docx] [${code}] ${message}`);
 }

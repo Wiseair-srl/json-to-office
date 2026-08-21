@@ -1,8 +1,77 @@
 import { readFileSync } from 'fs';
 import probe from 'probe-image-size';
-import { resolveFromBaseDir } from './generationContext';
+import { reportWarning, resolveFromBaseDir } from './generationContext';
 import { ImageRun, IFloating } from 'docx';
 import { parsePercentageStringToFraction } from './widthUtils';
+
+type ResvgModule = typeof import('@resvg/resvg-js');
+
+/** 3x of Word's 96 DPI baseline — ~288 DPI, sharp in print and on retina. */
+const SVG_RASTER_SCALE = 3;
+const SVG_MAX_EDGE_PX = 4096;
+const SVG_MIN_EDGE_PX = 16;
+
+let resvgModule: Promise<ResvgModule> | undefined;
+
+function loadResvg(): Promise<ResvgModule> {
+  resvgModule ??= import('@resvg/resvg-js');
+  return resvgModule;
+}
+
+function toRasterPx(px: number): number {
+  return Math.min(
+    SVG_MAX_EDGE_PX,
+    Math.max(SVG_MIN_EDGE_PX, Math.round(px * SVG_RASTER_SCALE))
+  );
+}
+
+/**
+ * Rasterize inline SVG for the `fallback` slot of an SVG `ImageRun`.
+ *
+ * Word 2016+ draws the vector, but every older Word and non-SVG consumer
+ * renders the fallback instead — so shipping the SVG bytes under a `png` type
+ * gave those readers a broken image. Returns `undefined` when rasterization is
+ * unavailable or fails; the caller then keeps the historical bytes, which is
+ * no worse than before and never fails the render.
+ */
+async function rasterizeSvgFallback(
+  svg: Buffer,
+  transformation: { width: number; height: number }
+): Promise<Buffer | undefined> {
+  let Resvg: ResvgModule['Resvg'];
+  try {
+    ({ Resvg } = await loadResvg());
+  } catch (error) {
+    reportWarning(
+      'image',
+      'IMAGE_SVG_RASTER_FAILED',
+      `Could not load the SVG rasterizer, so inline SVG keeps a fallback that only Word 2016+ can draw: ${String(error)}`
+    );
+    return undefined;
+  }
+
+  try {
+    const markup = svg.toString('utf-8');
+    const probeImage = new Resvg(markup);
+    // resvg scales uniformly, so pick the axis that makes the bitmap cover
+    // the placed box on both — matching the box aspect is not enough.
+    const wide =
+      probeImage.width / probeImage.height >
+      transformation.width / transformation.height;
+    const fitTo = wide
+      ? { mode: 'height' as const, value: toRasterPx(transformation.height) }
+      : { mode: 'width' as const, value: toRasterPx(transformation.width) };
+
+    return Buffer.from(new Resvg(markup, { fitTo }).render().asPng());
+  } catch (error) {
+    reportWarning(
+      'image',
+      'IMAGE_SVG_RASTER_FAILED',
+      `Could not rasterize inline SVG, so its fallback only renders in Word 2016+: ${String(error)}`
+    );
+    return undefined;
+  }
+}
 
 export interface ImageDimensions {
   width: number;
@@ -210,25 +279,30 @@ export function detectImageType(
 
 /**
  * Create an ImageRun with correct type handling, including SVG fallback.
- * TODO: SVG fallback uses raw SVG as PNG — works in Word 2016+ which renders
- * SVG natively; fallback won't render correctly in older versions.
+ *
+ * An SVG run carries a raster `fallback` for readers that cannot draw the
+ * vector — Word before 2016, and anything else consuming the package. That
+ * fallback is rasterized here; if rasterization is unavailable the run keeps
+ * the SVG bytes, which renders in Word 2016+ and reports a warning for the
+ * rest rather than failing the document.
  */
-export function createTypedImageRun(opts: {
+export async function createTypedImageRun(opts: {
   type: 'jpg' | 'png' | 'gif' | 'bmp' | 'svg';
   data: Buffer;
   transformation: { width: number; height: number };
   floating?: IFloating;
-}): ImageRun {
+}): Promise<ImageRun> {
   const base = {
     data: opts.data,
     transformation: opts.transformation,
     ...(opts.floating && { floating: opts.floating }),
   };
   if (opts.type === 'svg') {
+    const raster = await rasterizeSvgFallback(opts.data, opts.transformation);
     return new ImageRun({
       type: 'svg',
       ...base,
-      fallback: { type: 'png', data: opts.data },
+      fallback: { type: 'png', data: raster ?? opts.data },
     });
   }
   return new ImageRun({ type: opts.type, ...base });

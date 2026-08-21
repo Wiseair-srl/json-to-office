@@ -91,8 +91,10 @@ import { globalNoteRegistry } from '../utils/noteRegistry';
 import {
   runWithGenerationDate,
   runWithBaseDir,
+  runWithWarnings,
   getBaseDir,
 } from '../utils/generationContext';
+import type { GenerationWarning } from '@json-to-office/shared';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
 import { computeSectionOrdinals } from './sectionOrdinals';
 import { collectTocHeadings } from './collectTocHeadings';
@@ -114,6 +116,11 @@ interface RenderDocumentOptions {
    * `resolveDocumentFonts` via `toRasterizeFontFaces`.
    */
   visualFonts?: RasterizeFontFace[];
+  /**
+   * Collector for warnings raised while rendering, such as an inline SVG the
+   * rasterizer could not turn into a fallback. Absent → `console.warn`.
+   */
+  warnings?: GenerationWarning[];
 }
 
 /**
@@ -185,20 +192,22 @@ export async function renderDocument(
   options?: RenderDocumentOptions
 ): Promise<Document> {
   return runWithGenerationDate(structure.metadata.date, () =>
-    runWithBaseDir(options?.baseDir, () =>
-      globalBookmarkRegistry.runScoped(() =>
-        globalRevisionIdRegistry.runScoped(() =>
-          globalNumberingRegistry.runScoped(() =>
-            globalSectionBookmarkRegistry.runScoped(() =>
-              // Comment ids are a separate OOXML namespace from w:ins/w:del,
-              // but they need the same per-render isolation: outside this nest
-              // concurrent generations would interleave counters and an anchor
-              // would point at another document's comment body.
-              globalCommentRegistry.runScoped(() =>
-                // Footnote ids are document-scoped too: a reference resolved
-                // against another render's counter points at the wrong body.
-                globalNoteRegistry.runScoped(() =>
-                  renderDocumentScoped(structure, layout, options)
+    runWithWarnings(options?.warnings, () =>
+      runWithBaseDir(options?.baseDir, () =>
+        globalBookmarkRegistry.runScoped(() =>
+          globalRevisionIdRegistry.runScoped(() =>
+            globalNumberingRegistry.runScoped(() =>
+              globalSectionBookmarkRegistry.runScoped(() =>
+                // Comment ids are a separate OOXML namespace from w:ins/w:del,
+                // but they need the same per-render isolation: outside this nest
+                // concurrent generations would interleave counters and an anchor
+                // would point at another document's comment body.
+                globalCommentRegistry.runScoped(() =>
+                  // Footnote ids are document-scoped too: a reference resolved
+                  // against another render's counter points at the wrong body.
+                  globalNoteRegistry.runScoped(() =>
+                    renderDocumentScoped(structure, layout, options)
+                  )
                 )
               )
             )
@@ -545,7 +554,7 @@ async function renderHeaderFooterComponents(
 
         const imageType = detectImageType(imageSource, responseContentType);
 
-        const imageRun = createTypedImageRun({
+        const imageRun = await createTypedImageRun({
           type: imageType,
           data: imageBuffer,
           transformation: {
