@@ -3,7 +3,10 @@ import probe from 'probe-image-size';
 import { describe, expect, it } from 'vitest';
 import { generateBufferWithWarnings } from '../generator';
 import { repairSvgRasterFallbacks } from '../svgRasterFallback';
-import type { PresentationComponentDefinition } from '../../types';
+import type {
+  PipelineWarning,
+  PresentationComponentDefinition,
+} from '../../types';
 
 const SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#3C44E3"/></svg>';
@@ -103,13 +106,13 @@ describe('inline SVG raster fallbacks', () => {
     const zip = await JSZip.loadAsync(buffer);
     const relsPath = 'ppt/slides/_rels/slide1.xml.rels';
     const rels = await zip.file(relsPath)!.async('string');
-    zip.file(
-      relsPath,
-      rels.replace(
-        'Target="../media/image-1-3.png"',
-        'Target="../media/image-1-1.png"'
-      )
+    const sharedRels = rels.replace(
+      'Target="../media/image-1-3.png"',
+      'Target="../media/image-1-1.png"'
     );
+    // Fail here, not on the width below, if PptxGenJS renames its media parts.
+    expect(sharedRels).not.toBe(rels);
+    zip.file(relsPath, sharedRels);
 
     expect(await repairSvgRasterFallbacks(zip)).toBe(true);
 
@@ -157,6 +160,53 @@ describe('inline SVG raster fallbacks', () => {
 
     const zip = await JSZip.loadAsync(buffer);
     expect(await repairSvgRasterFallbacks(zip)).toBe(false);
+  });
+
+  it('warns instead of authoring a part when the preview target is dangling', async () => {
+    const { buffer } = await generateBufferWithWarnings(
+      deck([{ svg: SVG, x: 1, y: 1, w: 2, h: 2 }])
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    const relsPath = 'ppt/slides/_rels/slide1.xml.rels';
+    const rels = await zip.file(relsPath)!.async('string');
+    const dangling = rels.replace(
+      'Target="../media/image-1-1.png"',
+      'Target="../media/image-1-404.png"'
+    );
+    expect(dangling).not.toBe(rels);
+    zip.file(relsPath, dangling);
+
+    const warnings: PipelineWarning[] = [];
+    expect(await repairSvgRasterFallbacks(zip, warnings)).toBe(false);
+    expect(warnings.map((entry) => entry.code)).toContain(
+      'IMAGE_SVG_RASTER_FAILED'
+    );
+    expect(zip.file('ppt/media/image-1-404.png')).toBeNull();
+  });
+
+  it('repairs a picture carried by a slide layout', async () => {
+    const { buffer } = await generateBufferWithWarnings(
+      deck([{ svg: SVG, x: 1, y: 1, w: 2, h: 2 }])
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    // Re-home the slide's picture onto a layout part to exercise the
+    // PART_PATTERNS branch that no generated deck reaches today.
+    const slide = await zip.file('ppt/slides/slide1.xml')!.async('string');
+    const rels = await zip
+      .file('ppt/slides/_rels/slide1.xml.rels')!
+      .async('string');
+    zip.remove('ppt/slides/slide1.xml');
+    zip.remove('ppt/slides/_rels/slide1.xml.rels');
+    zip.file('ppt/slideLayouts/slideLayout9.xml', slide);
+    zip.file('ppt/slideLayouts/_rels/slideLayout9.xml.rels', rels);
+
+    expect(await repairSvgRasterFallbacks(zip)).toBe(true);
+
+    const preview = await zip
+      .file('ppt/media/image-1-1.png')!
+      .async('nodebuffer');
+    expect(preview.byteLength).not.toBe(PLACEHOLDER_BYTES);
+    expect(probe.sync(preview)!.width).toBeGreaterThanOrEqual(574);
   });
 
   it('stays byte-identical across repeated generation', async () => {

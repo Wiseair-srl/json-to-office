@@ -110,7 +110,10 @@ function collectWorkItems(
     const cy = extent ? Number(extent[2]) : undefined;
 
     // PptxGenJS can point two pictures at one preview part; size it for the
-    // largest box it has to cover.
+    // largest box it has to cover. The axes max independently on purpose:
+    // resvg scales uniformly, so one bitmap covers every box that shares the
+    // part only when its width clears the widest and its height the tallest.
+    // Keeping whichever single box is largest by area undersizes the other.
     const existing = items.get(pngPart);
     items.set(pngPart, {
       svgPart,
@@ -194,6 +197,11 @@ export async function repairSvgRasterFallbacks(
 
   for (const [pngPart, item] of pending) {
     try {
+      // Repair only a preview that is really there: a dangling relationship
+      // target would otherwise have this pass author a brand new media part.
+      if (!zip.file(pngPart)) {
+        throw new Error(`missing preview part ${pngPart}`);
+      }
       const source = zip.file(item.svgPart);
       if (!source) throw new Error(`missing part ${item.svgPart}`);
       const svg = await source.async('string');

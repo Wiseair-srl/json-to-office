@@ -1,9 +1,9 @@
 ---
-'@json-to-office/core-pptx': patch
+'@json-to-office/core-pptx': minor
 ---
 
 Ship a real raster fallback for inline `svg` images instead of a broken-image
-placeholder.
+placeholder, and expose a `warnings` sink on `PresentationPackagingOptions`.
 
 An SVG picture travels as two media parts: the SVG itself, referenced by
 `<asvg:svgBlip>` inside the blip's `<a:extLst>`, plus a PNG preview referenced
