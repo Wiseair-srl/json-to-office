@@ -19,13 +19,34 @@ RUN pnpm build
 # ── Stage 2: runtime — Chromium (highcharts) + LibreOffice/poppler (rasterizer) ──
 FROM node:20-bookworm-slim
 
+# `--no-install-recommends` suppresses libreoffice-common's
+# `Recommends: fonts-liberation2 | ttf-mscorefonts-installer`, so the metric
+# font packages must be listed explicitly or the image ships DejaVu only.
+# fonts-liberation2 (Liberation 2.x) replaces fonts-liberation (1.07) — never
+# install both: they claim the same family names and the winner is arbitrary.
+# fonts-dejavu-core is explicit on purpose: fontconfig-config's dependency is
+# `fonts-dejavu-core | ... | fonts-liberation2`, so naming Liberation 2 would
+# otherwise satisfy it and drop DejaVu, breaking the fallbacks in local.conf.
+# fontconfig likewise: the per-conversion staging config <include>s
+# /etc/fonts/fonts.conf, which today only arrives transitively via
+# libreoffice-core. Naming it keeps a base-image change from silently
+# degrading every staged font to a fallback with no error.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
-    fonts-liberation \
+    fontconfig \
+    fonts-crosextra-caladea \
+    fonts-crosextra-carlito \
+    fonts-dejavu-core \
+    fonts-liberation2 \
     libreoffice-core \
     libreoffice-impress \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
+
+# /rasterize does no font staging (see rasterize-route.ts) — system fonts are
+# the only source, so the metric aliases below are load-bearing here.
+# Must stay above `USER appuser` so the file lands root-owned.
+COPY docker/fontconfig-local.conf /etc/fonts/local.conf
 
 # ── Highcharts Export Server (unchanged from the standalone image) ──
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true

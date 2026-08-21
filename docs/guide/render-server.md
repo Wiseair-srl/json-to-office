@@ -64,7 +64,9 @@ See the [API reference](/reference/api) for the full options object and the [cha
 
 The image's `entrypoint.sh` runs Highcharts in a supervisor loop (restart with a 2 s backoff if it exits) and `exec`s the front server in the foreground, so the container's lifecycle tracks the front server while a Highcharts crash self-heals — with `/health` honestly reporting 503 in the meantime.
 
-The Dockerfile builds the whole monorepo in a `node:20-slim` stage, then assembles a `node:20-bookworm-slim` runtime with `chromium`, `libreoffice-core`, `libreoffice-impress`, and `poppler-utils`, pre-warms the Highcharts module cache at build time, and runs as a non-root user.
+The Dockerfile builds the whole monorepo in a `node:20-slim` stage, then assembles a `node:20-bookworm-slim` runtime with `chromium`, `libreoffice-core`, `libreoffice-impress`, `poppler-utils`, and the metric-compatible font packages `fonts-liberation2`, `fonts-crosextra-carlito`, and `fonts-crosextra-caladea`, pre-warms the Highcharts module cache at build time, and runs as a non-root user.
+
+The rasterizer does **no** per-request font staging: `/rasterize` and `/rasterize/batch` resolve document fonts entirely against the container's system faces plus the alias rules in `/etc/fonts/local.conf` (copied from `docker/fontconfig-local.conf`). Anything a document asks for that is not installed there falls back — see [Fonts](/guide/fonts) for the resulting mapping.
 
 ### Environment variables (front server)
 
@@ -202,7 +204,7 @@ The repo's root `Dockerfile` builds the [playground](/guide/playground) as a Doc
 CMD node packages/jto/dist/cli.js ${FORMAT} dev --host 0.0.0.0 --port 10000
 ```
 
-One image serves both formats: set `FORMAT=docx` or `FORMAT=pptx` per container. The runtime stage includes `libreoffice-core`, `libreoffice-writer`, and `libreoffice-impress` for the high-fidelity PDF previews, and the build arg `VITE_AI_ENABLED=false` compiles the client with the AI assistant hidden.
+One image serves both formats: set `FORMAT=docx` or `FORMAT=pptx` per container. The runtime stage includes `libreoffice-core`, `libreoffice-writer`, and `libreoffice-impress` for the high-fidelity PDF previews, and the build arg `VITE_AI_ENABLED=false` compiles the client with the AI assistant hidden. It also installs `fonts-liberation2`, `fonts-crosextra-carlito`, and `fonts-crosextra-caladea` and copies `docker/fontconfig-local.conf` to `/etc/fonts/local.conf`: because the apt line passes `--no-install-recommends`, LibreOffice's own font recommendation is suppressed and the packages have to be named explicitly — without them every font collapses to DejaVu and previews break lines in the wrong places.
 
 The `render.yaml` Render.com blueprint declares the full production topology — three Docker web services, all health-checked on `/health`:
 
