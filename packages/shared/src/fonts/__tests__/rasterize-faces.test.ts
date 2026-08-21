@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ResolvedFont } from '../types';
+import type { GenerationWarning } from '../../types/warnings';
 import {
   toRasterizeFontFaces,
   fromRasterizeFontFaces,
@@ -93,7 +94,7 @@ describe('toRasterizeFontFaces', () => {
   });
 
   it('reports each dropped source into the optional warnings sink', () => {
-    const warnings: string[] = [];
+    const warnings: GenerationWarning[] = [];
     toRasterizeFontFaces(
       [
         {
@@ -108,13 +109,17 @@ describe('toRasterizeFontFaces', () => {
       warnings
     );
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('FONT_FORMAT_NOT_RASTERIZABLE');
-    expect(warnings[0]).toContain('Inter');
-    expect(warnings[0]).toContain('woff2');
+    // Shaped like every other generation warning, so a caller can hand in the
+    // array it already collects and the code survives to the client.
+    expect(warnings[0].context?.code).toBe('FONT_FORMAT_NOT_RASTERIZABLE');
+    expect(warnings[0].component).toBe('fontRegistry');
+    expect(warnings[0].severity).toBe('warning');
+    expect(warnings[0].message).toContain('Inter');
+    expect(warnings[0].message).toContain('woff2');
   });
 
   it('stays silent when nothing is dropped', () => {
-    const warnings: string[] = [];
+    const warnings: GenerationWarning[] = [];
     toRasterizeFontFaces(
       [
         {

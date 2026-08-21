@@ -188,7 +188,9 @@ async function generateDocumentWithCustomThemes(
   // font resolves to an entry with no sources, which encodes to nothing. A
   // document with only safe fonts must send no `fonts` key at all so its
   // rasterize body — and therefore its cache key — is unchanged.
-  const visualFonts = hasVisual ? toRasterizeFontFaces(resolvedFonts) : [];
+  const visualFonts = hasVisual
+    ? toRasterizeFontFaces(resolvedFonts, warnings)
+    : [];
 
   // Pipeline: Structure -> Layout -> Render (with caching)
   const structure = await processDocument(
