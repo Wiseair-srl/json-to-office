@@ -35,6 +35,7 @@
   "dependencies": {
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-docx": "workspace:^",
+    "@resvg/resvg-js": "2.6.2",
     "@sinclair/typebox": "0.34.38",
     "adm-zip": "0.5.16",
     "date-fns": "3.6.0",

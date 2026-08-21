@@ -625,6 +625,7 @@ function createBuilderImpl<
         services: state.services,
         bypassCache: !state.enableCache,
         baseDir: options?.baseDir ?? state.baseDir,
+        warnings,
         ...(visualFonts.length > 0 && { visualFonts }),
       });
 

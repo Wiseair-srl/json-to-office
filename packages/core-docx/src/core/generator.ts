@@ -204,6 +204,7 @@ async function generateDocumentWithCustomThemes(
     bypassCache: false,
     services,
     baseDir,
+    warnings,
     ...(visualFonts.length > 0 && { visualFonts }),
   });
 

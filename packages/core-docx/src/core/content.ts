@@ -943,7 +943,7 @@ export async function createImage(
     const imageType = detectImageType(imagePath, responseContentType);
 
     // Create ImageRun based on image type
-    const imageRun = createTypedImageRun({
+    const imageRun = await createTypedImageRun({
       type: imageType,
       data: imageBuffer,
       transformation: { width: dimensions.width, height: dimensions.height },
@@ -1966,7 +1966,7 @@ export async function createTable(
           );
 
           const imgType = detectImageType(imageSource, imageResult.contentType);
-          const imageRun = createTypedImageRun({
+          const imageRun = await createTypedImageRun({
             type: imgType,
             data: imageResult.buffer,
             transformation: {
@@ -2591,7 +2591,7 @@ export async function createMixedContentParagraph(
       );
 
       const imgType = detectImageType(imagePath, imageResult.contentType);
-      const imageRun = createTypedImageRun({
+      const imageRun = await createTypedImageRun({
         type: imgType,
         data: imageResult.buffer,
         transformation: { width: dimensions.width, height: dimensions.height },
@@ -2744,7 +2744,7 @@ export async function createHeaderFooterTable(
                       imageSource,
                       imageResult.contentType
                     );
-                    const imageRun = createTypedImageRun({
+                    const imageRun = await createTypedImageRun({
                       type: imgType,
                       data: imageResult.buffer,
                       transformation: {
