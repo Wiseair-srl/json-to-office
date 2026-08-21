@@ -32,12 +32,28 @@ import {
   createLibreOfficePptxRasterizer,
   createLibreOfficePptxBatchRasterizer,
 } from '@json-to-office/jto-cli';
+import { config } from './config/index.js';
 import { tbValidator, getValidated } from './lib/typebox-validator.js';
 import {
   assertSafeOutboundSources,
   type OutboundSourcePolicy,
   UnsafeOutboundSourceError,
 } from './security/outbound-source-policy.js';
+
+/**
+ * Strict standard-alphabet base64: whole quadruplets with correct padding,
+ * nothing else. `Buffer.from(s, 'base64')` is lenient — it silently skips
+ * whitespace, newlines, invalid characters, and everything up to (and
+ * including) a `data:image/...;base64,` prefix — so an unconstrained string
+ * decodes to garbage that gets written to disk and handed to LibreOffice.
+ * Rejecting at the boundary turns that into a 400.
+ *
+ * Linear-time by construction: one unambiguous fixed-width repetition
+ * followed by a fixed-width optional tail, so there is no backtracking
+ * blowup on a multi-megabyte string.
+ */
+const BASE64_PATTERN =
+  '^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$';
 
 /**
  * One font face the caller wants staged for this render's LibreOffice
@@ -48,7 +64,11 @@ const RasterizeFontFaceSchema = Type.Object(
     family: Type.String({ minLength: 1, maxLength: 128 }),
     weight: Type.Integer({ minimum: 1, maximum: 1000 }),
     italic: Type.Boolean(),
-    data: Type.String({ minLength: 1, maxLength: 4 * 1024 * 1024 }),
+    data: Type.String({
+      minLength: 1,
+      maxLength: 4 * 1024 * 1024,
+      pattern: BASE64_PATTERN,
+    }),
     format: Type.Optional(
       Type.Union([
         Type.Literal('ttf'),
@@ -232,12 +252,52 @@ function toHttpException(error: unknown): HTTPException {
   });
 }
 
+/**
+ * Hard ceiling for the rasterize body limit, whatever an operator configures.
+ * The schema's own worst case (MAX_RASTERIZE_FONTS × 4 MiB of base64 = 128
+ * MiB) must never be reachable, and a body this large is already far past the
+ * MAX_RASTERIZE_FONT_BYTES working budget.
+ */
+const MAX_RASTERIZE_BODY_CEILING = 64 * 1024 * 1024;
+
+/**
+ * Resolve the rasterize body limit. Precedence, most specific first:
+ *
+ *   1. an explicit `options.maxBodyBytes` from the mounting server,
+ *   2. `MAX_RASTERIZE_BODY_SIZE` — the route's own operator knob, also read
+ *      by the standalone render server for its outer limit,
+ *   3. `config.requestLimits.maxBodySize` (`MAX_REQUEST_BODY_SIZE`), the
+ *      process-wide configured ceiling,
+ *
+ * clamped to {@link MAX_RASTERIZE_BODY_CEILING}. Previously this was a
+ * hardcoded 32 MiB, which silently discarded any configured value above it.
+ * Resolved lazily (at route registration) so dotenv has certainly run.
+ */
+export function resolveMaxBodyBytes(explicit?: number): number {
+  const fromEnv = Number.parseInt(
+    process.env.MAX_RASTERIZE_BODY_SIZE ?? '',
+    10
+  );
+  const configured =
+    explicit ??
+    (Number.isFinite(fromEnv) && fromEnv > 0
+      ? fromEnv
+      : config.requestLimits.maxBodySize);
+  return Math.min(configured, MAX_RASTERIZE_BODY_CEILING);
+}
+
 export interface RasterizeRouteOptions {
   getRasterizer?: () => PptxRasterizer;
   getBatchRasterizer?: () => PptxBatchRasterizer;
   preMiddleware?: MiddlewareHandler[];
   sourcePolicy?: OutboundSourcePolicy;
   onError?: (error: unknown) => void;
+  /**
+   * Body-size limit for both rasterize routes. Defaults to the configured
+   * server limit (see {@link resolveMaxBodyBytes}); always clamped to
+   * {@link MAX_RASTERIZE_BODY_CEILING}.
+   */
+  maxBodyBytes?: number;
 }
 
 /**
@@ -249,6 +309,8 @@ export interface RasterizeRouteOptions {
  * and its per-visual fallback draw from the same budget.
  *
  * @param options.preMiddleware - extra middleware (e.g. a rate limiter) run first.
+ * @param options.maxBodyBytes - body-size limit; defaults to the configured
+ *   server limit rather than a hardcoded one (see {@link resolveMaxBodyBytes}).
  */
 export function registerRasterizeRoute(
   router: Hono<any>,
@@ -258,15 +320,17 @@ export function registerRasterizeRoute(
   const getBatchRasterizer =
     options.getBatchRasterizer ?? getSharedBatchRasterizer;
 
+  // The body now also carries base64 font faces. The schema alone would admit
+  // MAX_RASTERIZE_FONTS × 4 MiB = 128 MiB; this limit is what actually bounds
+  // it, and it rejects with 413 BEFORE parsing, which is the order we want.
+  // MAX_RASTERIZE_FONT_BYTES (8 MiB decoded ≈ 10.7 MiB base64) is the
+  // intended working ceiling for fonts within that budget.
+  const maxBodyBytes = resolveMaxBodyBytes(options.maxBodyBytes);
+
   const shared: MiddlewareHandler[] = [
     ...(options.preMiddleware ?? []),
-    // The body now also carries base64 font faces. The schema alone would
-    // admit MAX_RASTERIZE_FONTS × 4 MiB = 128 MiB; this limit is what
-    // actually bounds it, and it rejects with 413 BEFORE parsing, which is
-    // the order we want. MAX_RASTERIZE_FONT_BYTES (8 MiB decoded ≈ 10.7 MiB
-    // base64) is the intended working ceiling for fonts within that budget.
     bodyLimit({
-      maxSize: 32 * 1024 * 1024,
+      maxSize: maxBodyBytes,
       onError: () => {
         throw new HTTPException(413, { message: 'Request body too large' });
       },

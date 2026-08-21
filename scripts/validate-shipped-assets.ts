@@ -273,6 +273,15 @@ const FONT_NAME_KEYS = new Set([
 ]);
 const THEME_FONT_KEYS = new Set(['heading', 'body', 'mono', 'light']);
 
+/**
+ * Mirror of `FONT_DECLARATION_KEYS` in collect.ts. A `fontRegistry` entry's
+ * `family` DECLARES a name rather than referencing one: `{family: "Inter
+ * Light", sources: [{kind: "data", ...}]}` is a self-contained declaration
+ * that stages real bytes under exactly that name, so the render path resolves
+ * it. Without this skip the gate condemns the one shape that actually works.
+ */
+const FONT_DECLARATION_KEYS = new Set(['fontRegistry']);
+
 interface FontCatalogApi {
   isSafeFont: (name: string) => boolean;
   catalogFamilies: Set<string>;
@@ -316,6 +325,8 @@ function collectSyntheticFamilies(json: string, api: FontCatalogApi): string[] {
       value.forEach((item) => walkValue(item, key));
     } else if (value && typeof value === 'object') {
       for (const [childKey, child] of Object.entries(value)) {
+        // Declarations, not references — see FONT_DECLARATION_KEYS.
+        if (FONT_DECLARATION_KEYS.has(childKey)) continue;
         walkValue(child, childKey);
       }
     }
@@ -334,15 +345,68 @@ function suggestionFor(name: string): string {
   if (!match) return name;
   const [, base, label, italic] = match;
   const weight = LABEL_WEIGHTS[label];
+  // `bold: true` means weight 700 and nothing else, so offering it beside 300
+  // or 500 would talk the author into the wrong face. 400 is the default:
+  // Regular needs no weight at all, just the suffix gone.
   const fix =
-    weight === 700
-      ? `plus bold: true`
-      : `plus fontWeight ${weight} (or bold: true)`;
+    weight === 400
+      ? ''
+      : weight === 700
+        ? ' plus bold: true (or fontWeight 700)'
+        : ` plus fontWeight ${weight}`;
   const italicNote = italic ? ` and italic: true` : '';
   return (
     `"${name}" is a synthesized sub-family name, not a real family.` +
-    ` Use family/fontFace "${base}" ${fix}${italicNote}.`
+    ` Use family/fontFace "${base}"${fix}${italicNote}.`
   );
+}
+
+/**
+ * Fixture-level self-check for the two rules above that are a single edit away
+ * from silently inverting: a `fontRegistry` declaration must NOT read as a
+ * reference, a bare reference to the same name must STILL be flagged, and the
+ * suggestion must not offer `bold: true` for a weight that is not 700. This
+ * gate is a standalone tsx script with no test project of its own, so the
+ * fixtures run here, on every invocation — they cost two JSON parses.
+ */
+function selfCheck(api: FontCatalogApi): string[] {
+  const failures: string[] = [];
+
+  const declaresOnly = JSON.stringify({
+    name: 'docx',
+    props: {
+      fontRegistry: [
+        {
+          id: 'inter-light',
+          family: 'Inter Light',
+          sources: [{ kind: 'data', data: 'AAEC' }],
+        },
+      ],
+    },
+    children: [{ name: 'paragraph', props: { text: 'Body.' } }],
+  });
+  const declared = collectSyntheticFamilies(declaresOnly, api);
+  if (declared.length > 0) {
+    failures.push(
+      `a fontRegistry declaration was read as a font reference: ${declared.join(', ')}`
+    );
+  }
+
+  const bareReference = JSON.stringify({
+    name: 'docx',
+    children: [
+      { name: 'paragraph', props: { font: { family: 'Inter Light' } } },
+    ],
+  });
+  if (!collectSyntheticFamilies(bareReference, api).includes('Inter Light')) {
+    failures.push('a bare "Inter Light" reference was not flagged');
+  }
+
+  if (suggestionFor('Inter Light').includes('bold')) {
+    failures.push('the weight-300 suggestion offers bold: true');
+  }
+
+  return failures;
 }
 
 // ----------------------------------------------------------------------------
@@ -402,6 +466,7 @@ async function main() {
 
   // Assets only, same reasoning: docs prose may name a font sub-family.
   const fontCatalog = await loadFontCatalog();
+  const selfCheckFailures = selfCheck(fontCatalog);
   const synthetic = assets
     .map((asset) => ({
       asset,
@@ -434,6 +499,15 @@ async function main() {
     }
   }
 
+  if (selfCheckFailures.length > 0) {
+    console.error(
+      `\nThe synthesized-font-name gate is broken — its own fixtures fail, so` +
+        ` its verdict on the assets below means nothing:\n`
+    );
+    for (const failure of selfCheckFailures) console.error(`  - ${failure}`);
+    console.error('');
+  }
+
   if (synthetic.length > 0) {
     console.error(
       `\n${synthetic.length} shipped asset(s) reference synthesized font` +
@@ -456,7 +530,12 @@ async function main() {
     }
   }
 
-  if (failures.length > 0 || portability.length > 0 || synthetic.length > 0) {
+  if (
+    failures.length > 0 ||
+    portability.length > 0 ||
+    synthetic.length > 0 ||
+    selfCheckFailures.length > 0
+  ) {
     process.exit(1);
   }
 

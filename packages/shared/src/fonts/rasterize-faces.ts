@@ -20,27 +20,59 @@ import type { ResolvedFont, ResolvedFontSource } from './types';
 import type { RasterizeFontFace } from '../types/services';
 
 /**
+ * Formats the rasterizer's native stagers can actually register.
+ *
+ * All three stagers (fontconfig, macOS Core Text, Windows GDI) write every
+ * staged source as a `.ttf` and register it as a raw sfnt, and they rename
+ * the face through `rewriteFontFamilyName`, which returns the buffer
+ * UNCHANGED for anything without an sfnt header. So a WOFF/WOFF2 (or EOT, or
+ * PostScript) source is staged as bytes no font system parses, under the
+ * catalog family rather than the synthesized sub-family the presentation
+ * references — it renders as fallback text, silently.
+ *
+ * Shipping those bytes anyway costs wire size, disk writes, and a distinct
+ * rasterizer cache key for a render that is identical to the fontless one.
+ * An allowlist (rather than a WOFF denylist) keeps any format added to
+ * `ResolvedFontSource['format']` later excluded until a stager can handle it.
+ */
+const STAGEABLE_FORMATS = new Set<ResolvedFontSource['format']>(['ttf', 'otf']);
+
+/**
  * Flatten resolved fonts into the serializable wire faces (one face per
  * source variant). Entries with no sources — safe-only fonts, which the
- * renderer resolves against system faces — carry no bytes and are skipped.
+ * renderer resolves against system faces — carry no bytes and are skipped,
+ * as are sources in a format no stager can register.
+ *
+ * @param warnings - optional sink for one message per dropped source. No
+ *   in-repo caller passes one yet: both docx entry paths drain
+ *   `ResolvedFont.warnings` into `GenerationWarning[]` inside
+ *   `resolveDocumentFonts`, i.e. before this encoder runs, so surfacing the
+ *   drop end-to-end needs a change in core-docx. The sink exists so the
+ *   behaviour is observable and testable in the meantime.
  */
 export function toRasterizeFontFaces(
-  fonts: readonly ResolvedFont[]
+  fonts: readonly ResolvedFont[],
+  warnings?: string[]
 ): RasterizeFontFace[] {
   const faces: RasterizeFontFace[] = [];
   for (const font of fonts) {
     if (font.sources.length === 0) continue;
     for (const source of font.sources) {
+      if (!STAGEABLE_FORMATS.has(source.format)) {
+        warnings?.push(
+          `FONT_FORMAT_NOT_RASTERIZABLE: "${font.family}" weight ${source.weight}` +
+            `${source.italic ? ' italic' : ''} is ${source.format}; the rasterizer's ` +
+            `font stagers only register TTF/OTF, so this face is omitted and the ` +
+            `visual renders with a fallback face.`
+        );
+        continue;
+      }
       faces.push({
         family: font.family,
         weight: source.weight,
         italic: source.italic,
         data: source.data.toString('base64'),
-        // `unknown` is not a wire format; omitting it lets the decoder pick
-        // its default rather than round-tripping a non-value.
-        ...(source.format !== 'unknown' && {
-          format: source.format as RasterizeFontFace['format'],
-        }),
+        format: source.format as RasterizeFontFace['format'],
       });
     }
   }

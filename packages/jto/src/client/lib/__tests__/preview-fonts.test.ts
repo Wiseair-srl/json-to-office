@@ -9,6 +9,7 @@ import {
   renderFontFaceCss,
   collectReferencedWeights,
   buildPreviewFontAssets,
+  fetchGoogleFacesRewritten,
   type PreviewFontFace,
 } from '../preview-fonts';
 import type { FontRegistryEntry } from '@json-to-office/shared';
@@ -383,6 +384,85 @@ describe('buildPreviewFontAssets', () => {
   });
 });
 
+describe('a stalled Google Fonts fetch cannot hang the preview', () => {
+  // render.ts awaits buildPreviewFontAssets *after* its 10s renderAsync race
+  // has already settled, and nothing races renderDocument either — so an
+  // unbounded fetch left the preview promise unsettled and the pane spinning
+  // forever. Each test uses its own family so the module-level face cache,
+  // keyed by href, cannot serve a neighbouring test's result.
+  //
+  // The timeout is injected at a few milliseconds: real timers, but nothing
+  // that actually waits.
+  const stalls = (): typeof fetch =>
+    (() => new Promise(() => {})) as unknown as typeof fetch;
+
+  it('rejects instead of hanging, and aborts the request', async () => {
+    let signal: AbortSignal | undefined;
+    const capture = ((_href: string, init?: RequestInit) => {
+      signal = init?.signal ?? undefined;
+      return new Promise(() => {});
+    }) as unknown as typeof fetch;
+
+    await expect(
+      fetchGoogleFacesRewritten('Manrope', [400, 700], false, capture, 5)
+    ).rejects.toThrow(/timed out/);
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it('times out a stalled body read as well as a stalled response', async () => {
+    const headersOnly = (async () => ({
+      ok: true,
+      status: 200,
+      text: () => new Promise(() => {}),
+    })) as unknown as typeof fetch;
+
+    await expect(
+      fetchGoogleFacesRewritten('Rubik', [400, 700], false, headersOnly, 5)
+    ).rejects.toThrow(/timed out/);
+  });
+
+  it('still resolves, via the stylesheet-link fallback', async () => {
+    const json = JSON.stringify({
+      name: 'docx',
+      props: {},
+      children: [{ props: { font: { family: 'Lora' } } }],
+    });
+
+    const { css, googleHrefs } = await buildPreviewFontAssets(
+      json,
+      {},
+      { fetchImpl: stalls(), googleTimeoutMs: 5 }
+    );
+
+    // The plain link still covers 400/700 — degraded, but rendered.
+    expect(googleHrefs).toHaveLength(1);
+    expect(googleHrefs[0]).toContain('family=Lora');
+    expect(css).toBe('');
+  });
+
+  it('does not poison the cache, so a later fetch can succeed', async () => {
+    const ok = (async () => ({
+      ok: true,
+      status: 200,
+      text: async () =>
+        "@font-face{font-family:'Nunito';font-style:normal;font-weight:400;src:url(https://fonts.gstatic.com/n.woff2) format('woff2');}",
+    })) as unknown as typeof fetch;
+
+    await expect(
+      fetchGoogleFacesRewritten('Nunito', [400], false, stalls(), 5)
+    ).rejects.toThrow(/timed out/);
+
+    const faces = await fetchGoogleFacesRewritten(
+      'Nunito',
+      [400],
+      false,
+      ok,
+      5
+    );
+    expect(faces).toHaveLength(1);
+  });
+});
+
 describe('document-controlled strings cannot escape the <style> element', () => {
   // The generated CSS is assigned as the text of a <style> element and then
   // serialized with outerHTML for the preview iframe's srcdoc. <style> is HTML
@@ -515,6 +595,104 @@ describe('embedding a font does not cost the family its other weights', () => {
     };
     expect(
       googleFamiliesFor(new Set(['Acme Brand Sans']), [brand], new Set([500]))
+    ).toEqual([]);
+  });
+});
+
+describe('a source that yields no face never suppresses the Google fallback', () => {
+  // Coverage used to be re-derived from the sources with looser rules than
+  // facesFromRegistryEntry applies, so an entry that produces no usable
+  // @font-face still marked its weight as supplied and the preview silently
+  // lost the family altogether.
+  const referenced = new Set(['Inter']);
+
+  const expectStillFetched = (entry: FontRegistryEntry): void => {
+    expect(facesFromRegistryEntry(entry)).toEqual([]);
+    const out = googleFamiliesFor(referenced, [entry], new Set());
+    expect(out).toHaveLength(1);
+    expect(out[0].weights).toEqual([400, 700]);
+  };
+
+  it('still fetches when the only source is a server-side file path', () => {
+    expectStillFetched({
+      id: 'i',
+      family: 'Inter',
+      sources: [
+        { kind: 'file', path: './Inter.ttf', weight: 400 },
+        { kind: 'file', path: './Inter-Bold.ttf', weight: 700 },
+      ],
+    });
+  });
+
+  it('still fetches when the data payload fails the base64 grammar', () => {
+    expectStillFetched({
+      id: 'i',
+      family: 'Inter',
+      sources: [
+        { kind: 'data', data: 'javascript:alert(1)', weight: 400 },
+        {
+          kind: 'data',
+          data: 'AA"),url("https://attacker.example/x.ttf',
+          weight: 700,
+        },
+      ],
+    });
+  });
+
+  it('still fetches when the url is outside the host allowlist', () => {
+    expectStillFetched({
+      id: 'i',
+      family: 'Inter',
+      sources: [
+        { kind: 'url', url: 'https://evil.example.com/i.ttf', weight: 400 },
+        { kind: 'url', url: 'https://evil.example.com/b.ttf', weight: 700 },
+      ],
+    });
+  });
+
+  it('covers only the weights that survived, in a mixed entry', () => {
+    const out = googleFamiliesFor(
+      referenced,
+      [
+        {
+          id: 'i',
+          family: 'Inter',
+          sources: [
+            { kind: 'data', data: 'AAAA', weight: 400 },
+            { kind: 'file', path: './Inter-Bold.ttf', weight: 700 },
+          ],
+        },
+      ],
+      new Set()
+    );
+    // 400 has real bytes; 700 only had a path the browser cannot read.
+    expect(out[0].weights).toEqual([700]);
+  });
+
+  it('still counts an allowlisted url as real coverage', () => {
+    expect(
+      googleFamiliesFor(
+        referenced,
+        [
+          {
+            id: 'i',
+            family: 'Inter',
+            sources: [
+              {
+                kind: 'url',
+                url: 'https://cdn.jsdelivr.net/i.ttf',
+                weight: 400,
+              },
+              {
+                kind: 'url',
+                url: 'https://cdn.jsdelivr.net/b.ttf',
+                weight: 700,
+              },
+            ],
+          },
+        ],
+        new Set()
+      )
     ).toEqual([]);
   });
 });

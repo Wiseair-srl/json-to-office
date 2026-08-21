@@ -337,7 +337,17 @@ export function fontsDigest(
     .map(
       (f) =>
         `${f.family}|${f.weight}|${f.italic ? 'i' : 'r'}|` +
-        crypto.createHash('sha256').update(f.data).digest('hex')
+        crypto
+          .createHash('sha256')
+          // DECODED bytes, not the base64 text. `fromRasterizeFontFaces`
+          // decodes before staging, and Node's base64 decoder is lenient:
+          // missing padding, embedded newlines, and stray characters all
+          // decode to the same bytes. Hashing the text would give two
+          // spellings of one font two different cache keys — a silent
+          // cache-miss multiplier on a shared, restart-surviving render
+          // server cache.
+          .update(Buffer.from(f.data, 'base64'))
+          .digest('hex')
     )
     .sort();
   return crypto.createHash('sha256').update(parts.join('\n')).digest('hex');

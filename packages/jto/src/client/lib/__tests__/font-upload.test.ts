@@ -6,6 +6,7 @@ import {
   guessFontIdentity,
   upsertFontRegistryEntry,
   mergeDataSources,
+  mergeFontEntriesIntoRegistry,
   materializeResponseToEntry,
   checkDocumentSize,
   MAX_UPLOAD_FONT_BYTES,
@@ -224,6 +225,178 @@ describe('mergeDataSources', () => {
     // additionalProperties:false means an explicit undefined would serialize
     // as a key and fail validation.
     expect('category' in out).toBe(false);
+  });
+
+  it('replaces a same-slot source of any kind, not just data', () => {
+    // Filtering only `kind:"data"` left the url face in place, so the family
+    // ended up with two competing faces for weight 400 roman and the winner
+    // was whichever the renderer resolved first.
+    const withUrl: FontRegistryEntry = {
+      id: 'inter',
+      family: 'Inter',
+      sources: [
+        { kind: 'url', url: 'https://cdn.jsdelivr.net/inter.ttf', weight: 400 },
+        { kind: 'file', path: './Inter-Bold.ttf', weight: 700 },
+      ],
+    };
+    const out = mergeDataSources(withUrl, 'Inter', [
+      { data: 'REGULAR', weight: 400, italic: false },
+      { data: 'BOLD', weight: 700, italic: false },
+    ]);
+    expect(out.sources).toHaveLength(2);
+    expect(out.sources.every((s) => s.kind === 'data')).toBe(true);
+  });
+
+  it('replaces a url source that relies on the implicit 400 default', () => {
+    const implicit: FontRegistryEntry = {
+      id: 'inter',
+      family: 'Inter',
+      sources: [{ kind: 'url', url: 'https://cdn.jsdelivr.net/inter.ttf' }],
+    };
+    const out = mergeDataSources(implicit, 'Inter', [
+      { data: 'REGULAR', weight: 400, italic: false },
+    ]);
+    expect(out.sources).toHaveLength(1);
+    expect(out.sources[0]).toMatchObject({ kind: 'data', data: 'REGULAR' });
+  });
+
+  it('keeps safe and google sources, which hold no single slot', () => {
+    // `safe` has no weight at all and `google` carries a whole `weights`
+    // array for the family; reading either as 400/roman would let one
+    // uploaded face silently delete a family-wide source.
+    const mixed: FontRegistryEntry = {
+      id: 'inter',
+      family: 'Inter',
+      sources: [
+        { kind: 'safe', family: 'Arial' },
+        { kind: 'google', family: 'Inter', weights: [400, 700] },
+      ],
+    };
+    const out = mergeDataSources(mixed, 'Inter', [
+      { data: 'REGULAR', weight: 400, italic: false },
+    ]);
+    expect(out.sources).toHaveLength(3);
+    expect(out.sources.map((s) => s.kind)).toEqual(['safe', 'google', 'data']);
+  });
+
+  it('leaves a same-kind source at a different slot alone', () => {
+    const withUrl: FontRegistryEntry = {
+      id: 'inter',
+      family: 'Inter',
+      sources: [
+        { kind: 'url', url: 'https://cdn.jsdelivr.net/inter.ttf', weight: 400 },
+      ],
+    };
+    const out = mergeDataSources(withUrl, 'Inter', [
+      { data: 'ITALIC', weight: 400, italic: true },
+    ]);
+    expect(out.sources).toHaveLength(2);
+  });
+});
+
+describe('mergeFontEntriesIntoRegistry', () => {
+  const uploaded = (
+    family: string,
+    weight: number,
+    data: string,
+    italic = false
+  ): FontRegistryEntry => ({
+    id: family,
+    family,
+    sources: [{ kind: 'data', data, weight, italic }],
+  });
+
+  it('keeps every family of a multi-file upload', () => {
+    // The regression: the registry hook closed over a stale document
+    // snapshot, so a per-file write re-parsed the same pre-upload text and
+    // each save clobbered the previous one — three fonts left one.
+    const out = mergeFontEntriesIntoRegistry(undefined, [
+      uploaded('Alpha', 400, 'A'),
+      uploaded('Beta', 400, 'B'),
+      uploaded('Gamma', 400, 'C'),
+    ]);
+    expect(out.map((e) => e.family)).toEqual(['Alpha', 'Beta', 'Gamma']);
+  });
+
+  it('folds two weights of one family into a single entry', () => {
+    const out = mergeFontEntriesIntoRegistry(undefined, [
+      uploaded('Geist', 400, 'REGULAR'),
+      uploaded('Geist', 700, 'BOLD'),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].sources).toHaveLength(2);
+    expect(out[0].sources.map((s) => (s as { data: string }).data)).toEqual([
+      'REGULAR',
+      'BOLD',
+    ]);
+  });
+
+  it('lets the last file win when two claim the same slot', () => {
+    const out = mergeFontEntriesIntoRegistry(undefined, [
+      uploaded('Geist', 400, 'FIRST'),
+      uploaded('Geist', 400, 'SECOND'),
+    ]);
+    expect(out[0].sources).toEqual([
+      { kind: 'data', data: 'SECOND', weight: 400, italic: false },
+    ]);
+  });
+
+  it('appends to an existing registry without disturbing other families', () => {
+    const existing: FontRegistryEntry[] = [
+      {
+        id: 'kept',
+        family: 'Kept',
+        category: 'serif',
+        sources: [{ kind: 'data', data: 'K', weight: 400, italic: false }],
+      },
+      {
+        id: 'geist',
+        family: 'Geist',
+        category: 'sans',
+        sources: [{ kind: 'data', data: 'OLD400', weight: 400, italic: false }],
+      },
+    ];
+    const out = mergeFontEntriesIntoRegistry(existing, [
+      uploaded('Geist', 700, 'NEW700'),
+      uploaded('Fresh', 300, 'F'),
+    ]);
+    expect(out.map((e) => e.family)).toEqual(['Kept', 'Geist', 'Fresh']);
+    expect(out[0]).toEqual(existing[0]);
+    // Existing weight survives, the new one is appended, category preserved.
+    expect(out[1].sources.map((s) => (s as { data: string }).data)).toEqual([
+      'OLD400',
+      'NEW700',
+    ]);
+    expect(out[1].category).toBe('sans');
+  });
+
+  it('matches an existing family case-insensitively across the batch', () => {
+    const out = mergeFontEntriesIntoRegistry(
+      [
+        {
+          id: 'geist',
+          family: 'GEIST',
+          sources: [{ kind: 'data', data: 'OLD', weight: 400, italic: false }],
+        },
+      ],
+      [uploaded('Geist', 700, 'NEW')]
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].sources).toHaveLength(2);
+  });
+
+  it('returns the registry untouched for an empty batch', () => {
+    const existing: FontRegistryEntry[] = [uploaded('Alpha', 400, 'A')];
+    expect(mergeFontEntriesIntoRegistry(existing, [])).toEqual(existing);
+  });
+
+  it('skips an entry carrying no data source rather than emitting an empty one', () => {
+    // `sources` has minItems:1, so a source-less entry would not validate.
+    const out = mergeFontEntriesIntoRegistry(undefined, [
+      { id: 'f', family: 'F', sources: [{ kind: 'file', path: './f.ttf' }] },
+      uploaded('Alpha', 400, 'A'),
+    ]);
+    expect(out.map((e) => e.family)).toEqual(['Alpha']);
   });
 });
 

@@ -67,3 +67,26 @@ so nine sites across the shipped decks rendered Regular where the design said
 Light or Medium. Those weights are restored. The legend is the one slot
 PowerPoint gives no bold toggle: `legendFontWeight: 700` renders Regular and
 emits a new `CHART_FONT_WEIGHT_DROPPED` warning.
+
+**Rasterizer font-cache keys change.** `fontsDigest` now hashes the decoded
+font bytes rather than the base64 text, matching its own documented
+content-addressed contract — three spellings of the same bytes (padded,
+unpadded, newline-wrapped) previously staged identical fonts under three keys.
+Existing font-bearing entries in the rasterizer's disk cache become unreachable
+orphans; fontless entries keep byte-identical keys and are unaffected.
+
+**`/rasterize` now rejects malformed font data.** `RasterizeFontFaceSchema.data`
+is held to a strict base64 pattern instead of relying on `Buffer.from`, which
+silently tolerates whitespace, `data:` prefixes and invalid characters and so
+let garbage reach LibreOffice. Third-party clients sending MIME-wrapped or
+`data:`-prefixed base64 now get a 400; in-repo producers are unaffected, and
+the docx side already retries without fonts when a server 400s. The route also
+honours the configured body limit instead of a hardcoded 32 MiB, clamped to a
+64 MiB ceiling.
+
+**WOFF/WOFF2 faces are no longer forwarded to the rasterizer.** Every stager
+renames a face via `rewriteFontFamilyName`, which returns non-sfnt input
+unchanged — so a web font was either unparseable or indexed under the wrong
+family, and rendered as a silent fallback either way. Only `ttf`/`otf` are sent
+now, via an allowlist so a newly added format stays excluded until a stager
+supports it.

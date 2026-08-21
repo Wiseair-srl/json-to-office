@@ -502,8 +502,8 @@
                 "text": "001",
                 "font": {
                   "family": "Inter",
-                  "size": 25,
-                  "bold": true
+                  "fontWeight": 600,
+                  "size": 25
                 }
               }
             }
@@ -555,8 +555,8 @@
                 "text": "002",
                 "font": {
                   "family": "Inter",
-                  "size": 25,
-                  "bold": true
+                  "fontWeight": 600,
+                  "size": 25
                 }
               }
             }
@@ -608,8 +608,8 @@
                 "text": "003",
                 "font": {
                   "family": "Inter",
-                  "size": 25,
-                  "bold": true
+                  "fontWeight": 600,
+                  "size": 25
                 }
               }
             }
@@ -661,8 +661,8 @@
                 "text": "004",
                 "font": {
                   "family": "Inter",
-                  "size": 25,
-                  "bold": true
+                  "fontWeight": 600,
+                  "size": 25
                 }
               }
             }
@@ -714,8 +714,8 @@
                 "text": "005",
                 "font": {
                   "family": "Inter",
-                  "size": 25,
-                  "bold": true
+                  "fontWeight": 600,
+                  "size": 25
                 }
               }
             }
@@ -1243,8 +1243,8 @@
                 "text": "Business Sector",
                 "font": {
                   "family": "Inter",
+                  "fontWeight": 600,
                   "size": 18,
-                  "bold": true,
                   "lineSpacing": {
                     "type": "multiple",
                     "value": 0.9
@@ -1328,8 +1328,8 @@
                 "text": "Share Listing",
                 "font": {
                   "family": "Inter",
+                  "fontWeight": 600,
                   "size": 18,
-                  "bold": true,
                   "lineSpacing": {
                     "type": "multiple",
                     "value": 0.9
@@ -1384,8 +1384,8 @@
                 "text": "Authorized Capital",
                 "font": {
                   "family": "Inter",
+                  "fontWeight": 600,
                   "size": 18,
-                  "bold": true,
                   "lineSpacing": {
                     "type": "multiple",
                     "value": 0.9
@@ -1469,8 +1469,8 @@
                 "text": "Paid-Up Capital",
                 "font": {
                   "family": "Inter",
+                  "fontWeight": 600,
                   "size": 18,
-                  "bold": true,
                   "lineSpacing": {
                     "type": "multiple",
                     "value": 0.9
@@ -1555,8 +1555,8 @@
                 "text": "About Us",
                 "font": {
                   "family": "Inter",
+                  "fontWeight": 600,
                   "size": 65,
-                  "bold": true,
                   "lineSpacing": {
                     "type": "multiple",
                     "value": 0.9
