@@ -428,6 +428,86 @@ describe('font forwarding (Area 6)', () => {
     expect(map.get(keyOf(doc[0].props))).toMatchObject({ ok: true });
   });
 
+  it('does NOT latch the fontless downgrade after a transient batch failure', async () => {
+    // Regression: a 503 on one chunk used to trigger the fontless retry, and
+    // that retry succeeding latched `fontsRejected` for the REST of the
+    // document — every later visual silently rendered with the wrong fonts.
+    // Only a 400 (what additionalProperties:false produces) may latch.
+    let batchCalls = 0;
+    mockFetch.mockImplementation(async (url: string, init: any) => {
+      const body = JSON.parse(init.body);
+      if (url.endsWith('/rasterize/batch')) {
+        batchCalls++;
+        if (batchCalls === 1) {
+          return { ok: false, status: 503, statusText: 'Service Unavailable' };
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            results: body.slides.map(() => ({ ok: true, ...okResult })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => okResult };
+    });
+
+    // 33 visuals → two chunks, so the second chunk observes the latch.
+    const doc = Array.from({ length: 33 }, (_, i) => visual(`v${i}`));
+    const map = await prerasterizeVisuals(
+      doc,
+      { serverUrl: 'http://flaky:9000' },
+      { fonts }
+    );
+
+    const batchBodies = mockFetch.mock.calls
+      .filter((c) => (c[0] as string).endsWith('/rasterize/batch'))
+      .map((c) => JSON.parse(c[1].body));
+    // A 5xx is not evidence about the body: no fontless batch retry at all.
+    expect(batchBodies).toHaveLength(2);
+    // The second chunk must still carry the document's fonts.
+    expect(batchBodies[1].fonts).toEqual(fonts);
+    // …and so must the per-visual fallback the failed first chunk took.
+    const perVisual = mockFetch.mock.calls.filter(
+      (c) => c[0] === 'http://flaky:9000/rasterize'
+    );
+    expect(perVisual).toHaveLength(32);
+    expect(JSON.parse(perVisual[0][1].body).fonts).toEqual(fonts);
+    expect(map.size).toBe(33);
+  });
+
+  it('retries a per-visual /rasterize without fonts when an old server 400s', async () => {
+    // Regression: the version-skew retry existed only on the batch path. When
+    // BOTH batch attempts fail, the per-visual fallback still sent `fonts` to
+    // an old `additionalProperties:false` /rasterize, got a 400, and the
+    // document failed outright instead of degrading to fontless visuals.
+    mockFetch.mockImplementation(async (url: string, init: any) => {
+      if (url.endsWith('/rasterize/batch')) {
+        return { ok: false, status: 404, statusText: 'Not Found' };
+      }
+      if (JSON.parse(init.body).fonts) {
+        return { ok: false, status: 400, statusText: 'Bad Request' };
+      }
+      return { ok: true, json: async () => okResult };
+    });
+
+    const doc = [visual('a'), visual('b')];
+    const map = await prerasterizeVisuals(
+      doc,
+      { serverUrl: 'http://old:9000' },
+      { fonts, concurrency: 1 }
+    );
+
+    expect(map.get(keyOf(doc[0].props))).toMatchObject({ ok: true });
+    expect(map.get(keyOf(doc[1].props))).toMatchObject({ ok: true });
+
+    const perVisualFonts = mockFetch.mock.calls
+      .filter((c) => c[0] === 'http://old:9000/rasterize')
+      .map((c) => JSON.parse(c[1].body).fonts);
+    // First visual: fonts → 400, then a fontless retry. The proven rejection
+    // latches, so the second visual goes out fontless straight away.
+    expect(perVisualFonts).toEqual([fonts, undefined, undefined]);
+  });
+
   it('keeps sending fonts when the fontless retry also fails (transport error)', async () => {
     // Only a SUCCESSFUL fontless retry proves the field was the problem; a
     // flat-out unreachable server must not silently cost the rest of the
