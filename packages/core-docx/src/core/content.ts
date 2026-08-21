@@ -38,6 +38,7 @@ import { getThemeColors, getThemeFonts } from '../themes/defaults';
 import {
   parseTextWithDecorators,
   splitByNoProofWords,
+  hasCrossReference,
 } from '../utils/textParser';
 import {
   processTextWithPlaceholders,
@@ -163,6 +164,12 @@ export interface TextOptions {
   prependChildren?: any[];
   // Outline level for TOC
   outlineLevel?: number;
+  /**
+   * Paragraph-level numbering (`w:numPr`). `false` is the explicit opt-out
+   * docx writes as numId 0 — the only way a single heading escapes a numbering
+   * turned on for every heading through componentDefaults.
+   */
+  numbering?: { reference: string; level: number } | false;
   // Bookmark ID for internal linking
   bookmarkId?: string;
   // Floating frame properties
@@ -672,8 +679,12 @@ export function createHeading(
     children.push(...commentAnchor.start);
   }
 
-  // Check if text has decorators (bold/italic markers)
-  const hasDecorators = /(\*\*\*|___|(\*\*|__)|(\*|_))/.test(normalizedText);
+  // Anything the inline parser has to see: markdown decorators, or a `[@id]`
+  // cross-reference. Simple headings take the cheaper run builder below, which
+  // treats every character as literal text.
+  const hasInlineSyntax =
+    /(\*\*\*|___|(\*\*|__)|(\*|_))/.test(normalizedText) ||
+    hasCrossReference(normalizedText);
 
   // Headings default to theme.fonts.heading when no explicit family is given.
   // Resolve it so fontWeight can be aliased through the same path as body runs.
@@ -764,7 +775,7 @@ export function createHeading(
     // Wrap heading text in bookmark
     const headingTextChildren: (TextRun | any)[] = [];
 
-    if (hasDecorators) {
+    if (hasInlineSyntax) {
       // For headings with decorators, parse text runs first
       const textRuns = parseTextWithDecorators(normalizedText, baseTextStyle, {
         boldColor: options.boldColor
@@ -788,7 +799,7 @@ export function createHeading(
     );
   } else {
     // No bookmark, add text directly
-    if (hasDecorators) {
+    if (hasInlineSyntax) {
       // For headings with decorators, parse and add text runs
       const textRuns = parseTextWithDecorators(normalizedText, baseTextStyle, {
         boldColor: options.boldColor
@@ -817,6 +828,9 @@ export function createHeading(
     ...(options.keepNext !== undefined && { keepNext: options.keepNext }),
     ...(options.keepLines !== undefined && { keepLines: options.keepLines }),
     ...(options.indent && { indent: options.indent }),
+    // docx creates the concrete numbering instance for the reference itself,
+    // in ParagraphProperties.prepForXml.
+    ...(options.numbering !== undefined && { numbering: options.numbering }),
   });
 }
 
@@ -1041,7 +1055,10 @@ export function createStatistic(
  * Create a list of items using proper docx numbering
  */
 export function createList(
-  items: (string | { text: string; level?: number; revision?: Revision })[],
+  items: (
+    | string
+    | { text: string; level?: number; id?: string; revision?: Revision }
+  )[],
   _theme: ThemeConfig,
   _themeName: string,
   options: ListOptions = {}
@@ -1106,10 +1123,22 @@ export function createList(
       spacing.after = pointsToTwips(options.spacing.item);
     }
 
+    // A bookmarked item is a cross-reference target (`[@id]`) and an internal
+    // link target. The bookmark wraps the text runs only — the comment range
+    // stays outside it, as it does on a heading.
+    const itemId = typeof item === 'object' ? item.id : undefined;
+    let itemContent: ParagraphChild[] = textRuns;
+    if (itemId) {
+      globalBookmarkRegistry.register(itemId, itemText, 'list-item');
+      itemContent = [
+        new Bookmark({ id: itemId, children: textRuns as TextRun[] }),
+      ];
+    }
+
     // Create the paragraph with proper numbering reference
     const paragraphChildren: ParagraphChild[] = [
       ...(commentAnchor && index === firstRendered ? commentAnchor.start : []),
-      ...textRuns,
+      ...itemContent,
       ...(commentAnchor && index === lastRendered
         ? closeCommentRange(commentAnchor.ids)
         : []),

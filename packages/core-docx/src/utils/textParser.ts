@@ -4,6 +4,8 @@ import {
   InternalHyperlink,
   FootnoteReferenceRun,
   EndnoteReferenceRun,
+  NumberedItemReference,
+  NumberedItemReferenceFormat,
   Tab,
 } from 'docx';
 import {
@@ -12,6 +14,7 @@ import {
   type PlaceholderContext,
 } from './placeholderProcessor';
 import { normalizeUnicodeText } from './unicode';
+import { globalNumberedItemsRegistry } from './numberedItemsRegistry';
 
 export interface TextStyle {
   font?: string;
@@ -448,8 +451,106 @@ function splitNoteMarkers(
 }
 
 /**
- * Parse text with hyperlinks and decorators
- * Supports markdown-style links: [link text](url)
+ * Cross-reference to a numbered heading or list item: `[@id]`, optionally
+ * `[@id:relative|no_context|full_context|none]`.
+ *
+ * No collision with `[text](url)`: that syntax needs a `(…)` immediately after
+ * the bracket, and the alternation below tries it first anyway.
+ */
+const CROSS_REFERENCE_PATTERN =
+  '\\[@([A-Za-z0-9_-]+)(?::(relative|no_context|full_context|none))?\\]';
+
+/**
+ * One pass over both bracket syntaxes: parsing them separately would mean
+ * re-scanning the segments between one kind of token for the other kind, while
+ * the plain text between them still has to reach `parseTextWithDecorators`.
+ */
+const INLINE_TOKEN_REGEX = `\\[([^\\]]+)\\]\\(([^)]+)\\)|${CROSS_REFERENCE_PATTERN}`;
+
+/**
+ * True when the text carries a `[@id]` token. `createHeading` renders simple
+ * headings through a run builder that never reaches this parser, so it needs to
+ * know when a heading is not simple after all.
+ */
+export function hasCrossReference(text: string): boolean {
+  return new RegExp(CROSS_REFERENCE_PATTERN).test(text);
+}
+
+const REFERENCE_FORMATS = {
+  relative: NumberedItemReferenceFormat.RELATIVE,
+  no_context: NumberedItemReferenceFormat.NO_CONTEXT,
+  full_context: NumberedItemReferenceFormat.FULL_CONTEXT,
+  none: NumberedItemReferenceFormat.NONE,
+} as const;
+
+type ReferenceFormatKey = keyof typeof REFERENCE_FORMATS;
+
+/**
+ * Turn one `[@id]` token into a Word REF field.
+ *
+ * The cached value is what makes the reference readable outside Word: headless
+ * LibreOffice — and therefore the PDF export path — never updates fields, so an
+ * uncached REF exports blank. Word recomputes it on open (the document sets
+ * `updateFields`), so an approximate cached value is corrected there.
+ *
+ * An unresolvable id renders as its literal token text rather than as a field:
+ * a REF pointing at a bookmark that does not exist is exactly what makes Word
+ * show "Error! Reference source not found".
+ */
+function createCrossReference(
+  id: string,
+  format: ReferenceFormatKey,
+  token: string,
+  baseStyle: TextStyle,
+  options: TextDecoratorOptions
+): PlaceholderChild[] {
+  const info = globalNumberedItemsRegistry.get(id);
+
+  if (!info) {
+    // An unseeded registry means no render is in progress (a unit test calling
+    // the text primitives directly), so nothing has had the chance to declare
+    // the target and there is no authoring mistake to report.
+    if (globalNumberedItemsRegistry.isSeeded()) {
+      console.warn(
+        `[core-docx] Cross-reference ${token} has no target: no heading or list item declares the id "${id}". Rendering the token as literal text.`
+      );
+    }
+    return buildTextRuns(
+      token,
+      buildRunCommonProps(baseStyle, { boldColor: options.boldColor }),
+      { noProof: baseStyle.noProof, noProofWords: options.noProofWords }
+    );
+  }
+
+  if (format === 'none') {
+    return [
+      new NumberedItemReference(id, info.text, {
+        hyperlink: true,
+        referenceFormat: REFERENCE_FORMATS.none,
+      }),
+    ];
+  }
+
+  // `relative` caches the full number: Word resolves it against the reference's
+  // own position in the numbering, which generation does not know.
+  const cachedValue = format === 'no_context' ? info.own : info.full;
+  if (cachedValue === undefined) {
+    console.warn(
+      `[core-docx] Cross-reference ${token} targets an unnumbered ${info.kind} ("${id}"), so the field carries no cached number and reads blank until the reader updates fields. Use [@${id}:none] to reference its text instead.`
+    );
+  }
+
+  return [
+    new NumberedItemReference(id, cachedValue, {
+      hyperlink: true,
+      referenceFormat: REFERENCE_FORMATS[format],
+    }),
+  ];
+}
+
+/**
+ * Parse text with hyperlinks, cross-references and decorators
+ * Supports markdown-style links `[text](url)` and cross-references `[@id]`
  */
 function parseTextWithHyperlinks(
   text: string,
@@ -459,15 +560,15 @@ function parseTextWithHyperlinks(
   const normalizedText = normalizeUnicodeText(text);
   const runs: PlaceholderChild[] = [];
 
-  // Regex to match markdown-style links: [text](url)
-  // This regex handles nested brackets in the link text
-  const hyperlinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  // Fresh instance per call: a shared /g regex carries `lastIndex` between
+  // calls and would skip tokens.
+  const tokenRegex = new RegExp(INLINE_TOKEN_REGEX, 'g');
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = hyperlinkRegex.exec(normalizedText)) !== null) {
-    // Add any text before the hyperlink
+  while ((match = tokenRegex.exec(normalizedText)) !== null) {
+    // Add any text before the token
     if (match.index > lastIndex) {
       const plainText = normalizedText.substring(lastIndex, match.index);
       if (plainText) {
@@ -478,6 +579,23 @@ function parseTextWithHyperlinks(
         });
         runs.push(...plainRuns);
       }
+    }
+
+    lastIndex = match.index + match[0].length;
+
+    // Group 1 is the hyperlink's text; absent means the cross-reference branch
+    // of the alternation matched.
+    if (match[1] === undefined) {
+      runs.push(
+        ...createCrossReference(
+          match[3],
+          (match[4] as ReferenceFormatKey | undefined) ?? 'relative',
+          match[0],
+          baseStyle,
+          options
+        )
+      );
+      continue;
     }
 
     const linkText = match[1];
@@ -511,11 +629,9 @@ function parseTextWithHyperlinks(
         })
       );
     }
-
-    lastIndex = match.index + match[0].length;
   }
 
-  // Add any remaining text after the last hyperlink
+  // Add any remaining text after the last token
   if (lastIndex < normalizedText.length) {
     const remainingText = normalizedText.substring(lastIndex);
     if (remainingText) {
@@ -527,7 +643,7 @@ function parseTextWithHyperlinks(
     }
   }
 
-  // If no hyperlinks were found, fall back to regular decorator parsing
+  // If no tokens were found, fall back to regular decorator parsing
   if (runs.length === 0 && normalizedText) {
     return parseTextWithDecorators(normalizedText, baseStyle, {
       ...options,

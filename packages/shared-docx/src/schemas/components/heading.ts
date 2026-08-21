@@ -53,7 +53,8 @@ export const HeadingPropsSchema = Type.Object(
     ),
     numbering: Type.Optional(
       Type.Boolean({
-        description: 'Include in numbering',
+        description:
+          "Number this heading with the document's multilevel heading numbering (1., 1.1., 1.1.1.). Set globally via componentDefaults.heading.numbering; false opts a single heading out.",
       })
     ),
     keepNext: Type.Optional(

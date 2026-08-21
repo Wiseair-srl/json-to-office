@@ -3,7 +3,12 @@
  * Utilities for creating and managing docx numbering configurations
  */
 
-import { AlignmentType, convertInchesToTwip, LevelFormat } from 'docx';
+import {
+  AlignmentType,
+  convertInchesToTwip,
+  LevelFormat,
+  LevelSuffix,
+} from 'docx';
 import type { ILevelsOptions, IRunStylePropertiesOptions } from 'docx';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
@@ -291,6 +296,52 @@ export function createNumberedListConfig(
       createDefaultLevel(2, LevelFormat.LOWER_ROMAN, '%3.'),
     ],
   };
+}
+
+/**
+ * The one multilevel definition every numbered heading in a document shares —
+ * shared so that 1., 1.1., 1.1.1. is a single continuous sequence rather than
+ * one restarting per heading.
+ */
+export const HEADING_NUMBERING_REFERENCE = 'jto-heading-numbering';
+
+/**
+ * Word's built-in heading numbering: decimal at every level, each level's text
+ * accumulating the ones above it, bound to `Heading1`..`Heading6` through
+ * `w:lvl/w:pStyle` so Word's own "restart/continue numbering" UI and the `\r`
+ * cross-reference switch recognise it.
+ *
+ * The levels are built here rather than through `createNumberingConfig`
+ * because that helper applies list indents; a numbered heading stays flush
+ * left and takes its indentation from the heading style.
+ */
+export function createHeadingNumberingConfig(): {
+  levels: ILevelsOptions[];
+  reference: string;
+} {
+  const levels: ILevelsOptions[] = [];
+
+  for (let level = 0; level < 6; level++) {
+    const text =
+      Array.from({ length: level + 1 }, (_, i) => `%${i + 1}`).join('.') + '.';
+
+    levels.push({
+      level,
+      format: LevelFormat.DECIMAL,
+      text,
+      alignment: AlignmentType.LEFT,
+      start: 1,
+      // A space, not the default tab: a tab would push the heading text to the
+      // next tab stop and misalign it against unnumbered headings.
+      suffix: LevelSuffix.SPACE,
+      style: {
+        paragraph: { indent: { left: 0, hanging: 0 } },
+        style: `Heading${level + 1}`,
+      },
+    });
+  }
+
+  return { reference: HEADING_NUMBERING_REFERENCE, levels };
 }
 
 /**

@@ -169,6 +169,12 @@ export const ListPropsSchema = Type.Object(
                 description: 'Nesting level for this item',
               })
             ),
+            id: Type.Optional(
+              Type.String({
+                description:
+                  'Bookmark id for this item, targetable by internal links (#id) and cross-references ([@id])',
+              })
+            ),
             revision: Type.Optional(RevisionSchema),
           },
           { additionalProperties: false }
