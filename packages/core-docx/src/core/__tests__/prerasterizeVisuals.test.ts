@@ -512,19 +512,46 @@ describe('font forwarding (Area 6)', () => {
     // Only a SUCCESSFUL fontless retry proves the field was the problem; a
     // flat-out unreachable server must not silently cost the rest of the
     // document its font fidelity.
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 503,
-      text: async () => 'down',
+    //
+    // This has to run over HTTP: an in-process `render` short-circuits
+    // rasterizeVisualSlide before any fetch, so a config carrying one would
+    // never reach isSchemaRejection and would pass without touching the
+    // branch. Batch 404s (old server) → per-visual; the fonts-bearing body
+    // 400s (schema rejection, the only thing that may latch); the fontless
+    // retry 503s (transport), so nothing is proven.
+    mockFetch.mockImplementation(async (url: string, init: any) => {
+      if (url.endsWith('/rasterize/batch')) {
+        return { ok: false, status: 404, statusText: 'Not Found' };
+      }
+      if (JSON.parse(init.body).fonts) {
+        return { ok: false, status: 400, statusText: 'Bad Request' };
+      }
+      return { ok: false, status: 503, statusText: 'Service Unavailable' };
     });
-    const render = vi.fn(async () => okResult);
 
-    await prerasterizeVisuals(
-      [visual('a'), visual('b')],
-      { render, serverUrl: 'http://down:9000' },
-      { fonts }
+    const doc = [visual('a'), visual('b')];
+    const map = await prerasterizeVisuals(
+      doc,
+      { serverUrl: 'http://down:9000' },
+      { fonts, concurrency: 1 }
     );
 
-    expect((render.mock.calls[0][0] as any).fonts).toEqual(fonts);
+    const perVisualFonts = mockFetch.mock.calls
+      .filter((c) => c[0] === 'http://down:9000/rasterize')
+      .map((c) => JSON.parse(c[1].body).fonts);
+    // Visual 'a': fonts → 400, fontless retry → 503. The retry failing means
+    // the fonts were never shown to be the problem, so visual 'b' must still
+    // lead with them (a latch would make the third entry `undefined`).
+    expect(perVisualFonts).toEqual([fonts, undefined, fonts, undefined]);
+
+    // Both visuals report the ORIGINAL 400, not the speculative retry's 503.
+    expect(map.get(keyOf(doc[0].props))).toEqual({
+      ok: false,
+      error: expect.stringContaining('400'),
+    });
+    expect(map.get(keyOf(doc[1].props))).toEqual({
+      ok: false,
+      error: expect.stringContaining('400'),
+    });
   });
 });

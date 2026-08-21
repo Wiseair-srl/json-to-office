@@ -31,8 +31,7 @@ import { API_ENDPOINTS } from '../../config/api';
 import {
   validateFontUpload,
   guessFontIdentity,
-  upsertFontRegistryEntry,
-  mergeDataSources,
+  mergeFontEntriesIntoRegistry,
   materializeResponseToEntry,
   checkDocumentSize,
   type MaterializeResponse,
@@ -182,12 +181,17 @@ function useMutateActiveDocumentAtPath() {
 }
 
 /**
- * Append a font to the active *document*'s `props.fontRegistry`.
+ * Append fonts to the active *document*'s `props.fontRegistry`.
  *
  * Deliberately the document and not the theme: an uploaded font travels as
  * bytes inside the JSON, and the document is what gets generated, exported,
  * and re-imported. Sources for a family are merged so re-uploading one weight
  * does not discard the others.
+ *
+ * Takes a *list* of entries and writes them in a single save. The callback
+ * closes over the store's `documents` snapshot, so calling it once per
+ * uploaded file would re-parse the same pre-upload text each time and every
+ * save would clobber the previous one — three dropped fonts would leave one.
  */
 function useMutateActiveDocumentFontRegistry() {
   const activeTab = useDocumentsStore((s) => s.activeTab);
@@ -196,7 +200,8 @@ function useMutateActiveDocumentFontRegistry() {
   const saveDocument = useDocumentsStore((s) => s.saveDocument);
 
   return useCallback(
-    (entry: FontRegistryEntry) => {
+    (entries: FontRegistryEntry[]) => {
+      if (entries.length === 0) return { ok: true as const, name: activeTab };
       if (!activeTab) return { ok: false as const, error: 'No active file' };
       if (documentTypes[activeTab] === 'application/json+theme') {
         return {
@@ -217,23 +222,9 @@ function useMutateActiveDocumentFontRegistry() {
           error: `Active document is not valid JSON: ${(err as Error).message}`,
         };
       }
-      const current: FontRegistryEntry[] | undefined =
-        parsed?.props?.fontRegistry;
-      const existing = current?.find(
-        (e) => e.family.toLowerCase() === entry.family.toLowerCase()
-      );
-      const merged = upsertFontRegistryEntry(
-        current,
-        mergeDataSources(
-          existing,
-          entry.family,
-          entry.sources.map((s: any) => ({
-            data: s.data,
-            weight: s.weight ?? 400,
-            italic: s.italic ?? false,
-          })),
-          entry.category
-        )
+      const merged = mergeFontEntriesIntoRegistry(
+        parsed?.props?.fontRegistry,
+        entries
       );
       const next = mutateDocumentAtPath(
         parsed,
@@ -441,6 +432,13 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
       if (!files || files.length === 0) return;
       setUploadBusy(true);
       try {
+        // Validate every file first, then write all of them in one save. A
+        // per-file write would re-parse the same stale document text each
+        // time and keep only the last font.
+        const accepted: {
+          identity: ReturnType<typeof guessFontIdentity>;
+          base64: string;
+        }[] = [];
         for (const file of Array.from(files)) {
           const bytes = new Uint8Array(await file.arrayBuffer());
           const result = validateFontUpload(file.name, bytes);
@@ -452,30 +450,39 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
             });
             continue;
           }
-          const identity = guessFontIdentity(file.name);
-          const written = mutateFontRegistry({
+          accepted.push({
+            identity: guessFontIdentity(file.name),
+            base64: result.base64,
+          });
+        }
+        if (accepted.length === 0) return;
+
+        const written = mutateFontRegistry(
+          accepted.map(({ identity, base64 }) => ({
             id: identity.family,
             family: identity.family,
             sources: [
               {
-                kind: 'data',
-                data: result.base64,
+                kind: 'data' as const,
+                data: base64,
                 weight: identity.weight,
                 italic: identity.italic,
               },
             ],
+          }))
+        );
+        if (!written.ok) {
+          toast({
+            variant: 'destructive',
+            title: 'Could not register font',
+            description: written.error,
           });
-          if (!written.ok) {
-            toast({
-              variant: 'destructive',
-              title: 'Could not register font',
-              description: written.error,
-            });
-            continue;
-          }
+          return;
+        }
+        for (const { identity, base64 } of accepted) {
           void ensureDataFontLoaded(
             identity.family,
-            result.base64,
+            base64,
             identity.weight,
             identity.italic
           );
@@ -541,7 +548,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
         });
         return;
       }
-      const written = mutateFontRegistry(entry);
+      const written = mutateFontRegistry([entry]);
       if (!written.ok) {
         toast({
           variant: 'destructive',

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { Hono } from 'hono';
@@ -6,7 +6,10 @@ import { createFormatRouter } from '../format';
 import { Container } from '../../container';
 import { PptxFormatAdapter } from '@json-to-office/jto-cli';
 import { MAX_RASTERIZE_FONTS } from '@json-to-office/shared';
-import { registerRasterizeRoute } from '../../rasterize-route';
+import {
+  registerRasterizeRoute,
+  resolveMaxBodyBytes,
+} from '../../rasterize-route';
 
 async function post(app: Hono, url: string, body: unknown) {
   const bodyStr = JSON.stringify(body);
@@ -283,5 +286,136 @@ describe('rasterize font payload', () => {
       fonts: [{ family: 'Inter', weight: 400, data: 'AA==' }],
     });
     expect(res.status).toBe(400);
+  });
+
+  // `Buffer.from(s, 'base64')` silently skips whitespace, invalid characters
+  // and everything up to a `data:` prefix, so an unvalidated string decodes
+  // to garbage that gets written to disk and handed to LibreOffice. The
+  // schema has to reject it at the boundary instead.
+  const MALFORMED_DATA: Array<[string, string]> = [
+    [
+      'a data: URI prefix',
+      `data:font/ttf;base64,${Buffer.alloc(48, 1).toString('base64')}`,
+    ],
+    [
+      'embedded newlines',
+      Buffer.alloc(48, 1)
+        .toString('base64')
+        .replace(/(.{16})/g, '$1\n'),
+    ],
+    ['a non-base64 character', 'AAAA****AAAA'],
+    ['base64url alphabet', 'AA-_AAAA'],
+    ['a partial quadruplet', 'AAAAA'],
+    ['misplaced padding', 'AA==AAAA'],
+  ];
+
+  for (const [label, data] of MALFORMED_DATA) {
+    it(`rejects font data with ${label} on /rasterize (400)`, async () => {
+      const { app: a, single } = appWithSpies();
+      const res = await post(a, '/rasterize', {
+        presentation: slide(),
+        fonts: [aFace({ data })],
+      });
+      expect(res.status).toBe(400);
+      expect(single).not.toHaveBeenCalled();
+    });
+
+    it(`rejects font data with ${label} on /rasterize/batch (400)`, async () => {
+      const { app: a, batch } = appWithSpies();
+      const res = await post(a, '/rasterize/batch', {
+        slides: [{ presentation: slide(), dpi: 96 }],
+        fonts: [aFace({ data })],
+      });
+      expect(res.status).toBe(400);
+      expect(batch).not.toHaveBeenCalled();
+    });
+  }
+
+  it('still accepts canonical padded base64 on both routes', async () => {
+    // Guards against an over-strict pattern: this is exactly what
+    // `toRasterizeFontFaces` (Buffer#toString('base64')) emits, for byte
+    // lengths hitting each of the three padding cases.
+    for (const len of [63, 64, 65]) {
+      const fonts = [aFace({ data: Buffer.alloc(len, 3).toString('base64') })];
+      const { app: a, single, batch } = appWithSpies();
+      expect(
+        (await post(a, '/rasterize', { presentation: slide(), fonts })).status
+      ).toBe(200);
+      expect(
+        (
+          await post(a, '/rasterize/batch', {
+            slides: [{ presentation: slide(), dpi: 96 }],
+            fonts,
+          })
+        ).status
+      ).toBe(200);
+      expect(single).toHaveBeenCalledTimes(1);
+      expect(batch).toHaveBeenCalledTimes(1);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Body limit. The route used to hardcode 32 MiB, so any configured limit above
+// it was silently ineffective and any lower one silently unenforced here.
+// ---------------------------------------------------------------------------
+
+describe('rasterize body limit', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  function appWithLimit(maxBodyBytes?: number) {
+    const router = new Hono();
+    registerRasterizeRoute(router, {
+      getRasterizer: () =>
+        (async () => ({
+          base64DataUri: 'data:image/png;base64,AAAA',
+          width: 10,
+          height: 10,
+        })) as any,
+      ...(maxBodyBytes !== undefined && { maxBodyBytes }),
+    });
+    return router;
+  }
+
+  it('honors MAX_RASTERIZE_BODY_SIZE instead of a hardcoded 32 MiB', async () => {
+    vi.stubEnv('MAX_RASTERIZE_BODY_SIZE', '512');
+    // Comfortably under 32 MiB, comfortably over the configured 512 bytes.
+    const res = await post(appWithLimit(), '/rasterize', {
+      presentation: slide(),
+      fonts: [
+        {
+          family: 'Inter',
+          weight: 400,
+          italic: false,
+          data: Buffer.alloc(1024, 1).toString('base64'),
+        },
+      ],
+    });
+    expect(res.status).toBe(413);
+  });
+
+  it('honors an explicit maxBodyBytes over the environment', async () => {
+    vi.stubEnv('MAX_RASTERIZE_BODY_SIZE', '33554432');
+    const res = await post(appWithLimit(64), '/rasterize', {
+      presentation: slide(),
+    });
+    expect(res.status).toBe(413);
+  });
+
+  it('lets a body under the configured limit through', async () => {
+    vi.stubEnv('MAX_RASTERIZE_BODY_SIZE', '1048576');
+    const res = await post(appWithLimit(), '/rasterize', {
+      presentation: slide(),
+      dpi: 96,
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('clamps a configured limit to the hard ceiling', () => {
+    expect(resolveMaxBodyBytes(1024 * 1024 * 1024)).toBe(64 * 1024 * 1024);
+    // Below the ceiling the configured value passes through untouched.
+    expect(resolveMaxBodyBytes(8 * 1024 * 1024)).toBe(8 * 1024 * 1024);
   });
 });

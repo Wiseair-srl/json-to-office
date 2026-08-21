@@ -141,6 +141,28 @@ describe('cacheKey font sensitivity', () => {
     expect(original).not.toBe(rebuilt);
   });
 
+  it('is identical for two base64 spellings of the same bytes', async () => {
+    // `fromRasterizeFontFaces` DECODES `data` before staging, and Node's
+    // base64 decoder ignores whitespace and tolerates missing padding — so
+    // hashing the base64 TEXT staged byte-identical fonts under different
+    // disk-cache keys, silently multiplying misses on a shared cache.
+    const { fontsDigest } = await loadRasterizer();
+    const raw = Buffer.alloc(64, 7);
+    const canonical = raw.toString('base64');
+    const wrapped = canonical.replace(/(.{20})/g, '$1\n'); // MIME-style breaks
+    const unpadded = canonical.replace(/=+$/, ''); // padding stripped
+
+    // Preconditions: genuinely different strings, genuinely identical bytes.
+    expect(new Set([canonical, wrapped, unpadded]).size).toBe(3);
+    for (const spelling of [wrapped, unpadded]) {
+      expect(Buffer.from(spelling, 'base64').equals(raw)).toBe(true);
+    }
+
+    const digest = (data: string) => fontsDigest([face({ data })]);
+    expect(digest(wrapped)).toBe(digest(canonical));
+    expect(digest(unpadded)).toBe(digest(canonical));
+  });
+
   it('leaves an empty or absent font list keyed exactly like no fonts', async () => {
     const { cacheKey, fontsDigest } = await loadRasterizer();
     expect(fontsDigest([])).toBeUndefined();

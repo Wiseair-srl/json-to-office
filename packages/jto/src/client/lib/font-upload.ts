@@ -11,7 +11,11 @@
  * React components are not testable and all logic must live outside them.
  */
 
-import { WEIGHT_LABELS, type FontRegistryEntry } from '@json-to-office/shared';
+import {
+  WEIGHT_LABELS,
+  type FontRegistryEntry,
+  type FontSource,
+} from '@json-to-office/shared';
 
 /**
  * Raw bytes ceiling per uploaded file. The server hard-rejects anything over
@@ -181,9 +185,33 @@ export function upsertFontRegistryEntry(
 }
 
 /**
+ * The single (weight, italic) slot a source occupies, or null when it holds
+ * no slot of its own.
+ *
+ * `safe` carries no weight at all and `google` carries a whole `weights`
+ * array for the family, so neither can be superseded by one uploaded face —
+ * defaulting them to 400/roman would let a single upload silently delete a
+ * family-wide Google source. Every other kind (`data`, `file`, `url`,
+ * `variable`) names exactly one variant, defaulting to regular roman.
+ */
+function sourceSlot(s: FontSource): { weight: number; italic: boolean } | null {
+  if (s.kind === 'safe' || s.kind === 'google') return null;
+  return {
+    weight: 'weight' in s && s.weight ? s.weight : 400,
+    italic: 'italic' in s ? Boolean(s.italic) : false,
+  };
+}
+
+/**
  * Merge new data sources into an existing same-family entry, replacing any
  * source with the same (weight, italic) pair so re-uploading a weight
  * overwrites rather than duplicates.
+ *
+ * The replacement is deliberately kind-blind: a `url`/`file`/`variable`
+ * source at the same slot is superseded too. Keeping it would leave the
+ * family with two faces competing for one variant, and the winner would be
+ * whichever the renderer happened to resolve first — the opposite of the
+ * "the upload I just made wins" contract.
  */
 export function mergeDataSources(
   existing: FontRegistryEntry | undefined,
@@ -191,17 +219,13 @@ export function mergeDataSources(
   sources: Array<{ data: string; weight: number; italic: boolean }>,
   category?: FontRegistryEntry['category']
 ): FontRegistryEntry {
-  const kept = (existing?.sources ?? []).filter(
-    (s) =>
-      !(
-        s.kind === 'data' &&
-        sources.some(
-          (n) =>
-            (('weight' in s && s.weight) || 400) === n.weight &&
-            (('italic' in s && s.italic) || false) === n.italic
-        )
-      )
-  );
+  const kept = (existing?.sources ?? []).filter((s) => {
+    const slot = sourceSlot(s);
+    if (!slot) return true;
+    return !sources.some(
+      (n) => n.weight === slot.weight && n.italic === slot.italic
+    );
+  });
   const added = sources.map((s) => ({
     kind: 'data' as const,
     data: s.data,
@@ -217,6 +241,48 @@ export function mergeDataSources(
     ...(resolvedCategory ? { category: resolvedCategory } : {}),
     sources: [...kept, ...added],
   };
+}
+
+/**
+ * Fold several registry entries into one registry array, in one pass.
+ *
+ * The multi-file upload path needs this: the React hook that writes the
+ * registry closes over the store's `documents` snapshot, so calling it once
+ * per file would re-parse the same pre-upload text every time and each save
+ * would overwrite the previous one — uploading three fonts would keep only
+ * the last. Folding here means entry N sees the result of entry N-1, so a
+ * second family is appended and a second weight of the *same* family is
+ * merged into the entry the first file created.
+ *
+ * Only `kind:"data"` sources are merged, because that is all the two upload
+ * paths ever produce; an entry carrying none is skipped rather than writing
+ * a source-less entry (`sources` has minItems:1 in the schema).
+ */
+export function mergeFontEntriesIntoRegistry(
+  registry: FontRegistryEntry[] | undefined,
+  entries: FontRegistryEntry[]
+): FontRegistryEntry[] {
+  let out = Array.isArray(registry) ? [...registry] : [];
+  for (const entry of entries) {
+    const dataSources = entry.sources
+      .filter((s): s is Extract<FontSource, { kind: 'data' }> => {
+        return s.kind === 'data';
+      })
+      .map((s) => ({
+        data: s.data,
+        weight: s.weight ?? 400,
+        italic: s.italic ?? false,
+      }));
+    if (dataSources.length === 0) continue;
+    const existing = out.find(
+      (e) => e?.family?.toLowerCase() === entry.family.toLowerCase()
+    );
+    out = upsertFontRegistryEntry(
+      out,
+      mergeDataSources(existing, entry.family, dataSources, entry.category)
+    );
+  }
+  return out;
 }
 
 /** Response shape of POST /api/fonts/materialize. */

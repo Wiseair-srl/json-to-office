@@ -6,7 +6,7 @@
  * playground preview silently fell back to a host font.
  */
 import { describe, it, expect } from 'vitest';
-import type { GenerationWarning } from '@json-to-office/shared';
+import type { GenerationWarning, ResolvedFont } from '@json-to-office/shared';
 import { generateBufferFromJson } from '../core/generator';
 import { corporateTheme } from '../templates/themes';
 
@@ -22,6 +22,16 @@ const REGISTRY = [
 const paragraph = (family: string) => ({
   name: 'paragraph',
   props: { text: 'Body.', font: { family } },
+});
+
+/**
+ * An inline source whose bytes name the registry that declared it. `wOFF` is
+ * a real magic number, so the data loader accepts the payload; WOFF also
+ * skips the TTF/OTF metadata validation that a fabricated face would trip.
+ */
+const markedSource = (marker: string) => ({
+  kind: 'data' as const,
+  data: Buffer.from(`wOFF ${marker}`).toString('base64'),
 });
 
 /** A built-in theme that additionally declares the brand family. */
@@ -113,7 +123,24 @@ describe('props.fontRegistry satisfies font validation', () => {
   });
 
   it('lets the document registry override the theme registry', async () => {
+    // Both registries declare the SAME family, so "no FONT_UNRESOLVED" is
+    // satisfied whichever entry wins — it would pass just as happily if the
+    // theme entry silently outranked the document's. The resolved BYTES are
+    // the seam that tells them apart, so each entry ships a marked inline
+    // source and the winner names itself.
     const warnings: GenerationWarning[] = [];
+    const resolved: ResolvedFont[] = [];
+    const themed = {
+      ...structuredClone(corporateTheme),
+      fontRegistry: [
+        {
+          id: 'brand-sans',
+          family: 'Brand Sans',
+          sources: [markedSource('from-theme')],
+        },
+      ],
+    } as never;
+
     await generateBufferFromJson(
       {
         name: 'docx',
@@ -123,14 +150,27 @@ describe('props.fontRegistry satisfies font validation', () => {
             {
               id: 'brand-sans',
               family: 'Brand Sans',
-              sources: [{ kind: 'google' as const, family: 'Roboto' }],
+              sources: [markedSource('from-document')],
             },
           ],
         },
         children: [paragraph('Brand Sans')],
       } as any,
-      { warnings, customThemes: { branded: brandedTheme() } }
+      {
+        warnings,
+        customThemes: { branded: themed },
+        // Registering a listener is what makes resolution materialize sources
+        // at all — without it resolveDocumentFonts stops after validation and
+        // there is nothing to observe.
+        fonts: { onResolved: (fonts) => resolved.push(...fonts) },
+      }
     );
+
     expect(unresolved(warnings)).toEqual([]);
+    const brandSans = resolved.find((f) => f.family === 'Brand Sans');
+    expect(brandSans?.sources).toHaveLength(1);
+    expect(brandSans!.sources[0].data.toString('utf8')).toContain(
+      'from-document'
+    );
   });
 });

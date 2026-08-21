@@ -205,14 +205,21 @@ export function googleFamiliesFor(
   // that embedding a font (the Custom tab registers 400/700, an upload
   // registers one weight) silently drops every other weight the document
   // uses, so a `fontWeight: 500` run would lose the face it just gained.
+  //
+  // Coverage is read off the faces `facesFromRegistryEntry` really returns,
+  // never off the sources directly. It drops more than the obvious
+  // google/safe pair — `file` paths exist only server-side, a data payload
+  // outside the base64 grammar is rejected, and a url outside the host
+  // allowlist is dropped — and a source that produces no face must not
+  // suppress the Google fallback, or the preview loses the family entirely.
+  // Deriving from the faces keeps the two rules from drifting apart.
   const coveredWeights = new Map<string, Set<number>>();
   for (const e of registryEntries) {
-    for (const s of e.sources ?? []) {
-      if (s.kind === 'google' || s.kind === 'safe') continue;
-      const key = e.family.toLowerCase();
+    for (const face of facesFromRegistryEntry(e)) {
+      const key = face.family.toLowerCase();
       let set = coveredWeights.get(key);
       if (!set) coveredWeights.set(key, (set = new Set<number>()));
-      set.add('weight' in s && s.weight ? s.weight : 400);
+      set.add(face.weight);
     }
   }
 
@@ -266,27 +273,65 @@ export function buildGoogleCss2Href(
 const googleFaceCache = new Map<string, Promise<PreviewFontFace[]>>();
 
 /**
+ * How long the Google stylesheet fetch may take before we give up on
+ * rewriting it and fall back to a plain `<link>`.
+ *
+ * Nothing downstream bounds this: render.ts awaits `buildPreviewFontAssets`
+ * *after* its 10s renderAsync race has already settled, and no caller of
+ * `renderDocument` races it either — so a stalled request would leave the
+ * preview promise unsettled and the pane spinning forever. Short on purpose:
+ * the fallback path still covers 400/700, so waiting longer buys only the
+ * intermediate weights.
+ */
+export const GOOGLE_CSS_TIMEOUT_MS = 3000;
+
+/**
  * Fetch a Google stylesheet and re-express it as faces we own.
  *
  * A plain `<link>` would only ever declare `font-family: 'Inter'`, so runs
  * carrying the synthetic `"Inter Light"` name would not match. Parsing the
  * CSS gives us the real gstatic URLs, which `renderFontFaceCss` then re-emits
  * under both the canonical and synthetic names.
+ *
+ * Rejects on timeout rather than resolving empty, so the caller's existing
+ * catch degrades to the stylesheet link instead of emitting no face at all.
  */
 export async function fetchGoogleFacesRewritten(
   family: string,
   weights: number[],
   italics: boolean,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs: number = GOOGLE_CSS_TIMEOUT_MS
 ): Promise<PreviewFontFace[]> {
   const href = buildGoogleCss2Href(family, weights, italics);
   const cached = googleFaceCache.get(href);
   if (cached) return cached;
 
   const pending = (async () => {
-    const res = await fetchImpl(href);
-    if (!res.ok) throw new Error(`Google Fonts CSS ${res.status}`);
-    return parseGoogleCss(await res.text(), family);
+    // The abort cancels a real in-flight request; the race is what
+    // guarantees rejection, since an injected or non-conforming fetch may
+    // ignore the signal entirely. Both halves of the exchange are raced —
+    // a stalled body read hangs exactly like a stalled response.
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const expiry = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error(`Google Fonts CSS timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+    try {
+      const res = await Promise.race([
+        fetchImpl(href, { signal: controller.signal }),
+        expiry,
+      ]);
+      if (!res.ok) throw new Error(`Google Fonts CSS ${res.status}`);
+      const text = await Promise.race([res.text(), expiry]);
+      return parseGoogleCss(text, family);
+    } finally {
+      // Also stops `expiry` from ever rejecting once we are done with it.
+      if (timer) clearTimeout(timer);
+    }
   })();
 
   googleFaceCache.set(href, pending);
@@ -431,7 +476,12 @@ export function collectReferencedWeights(node: unknown): Set<number> {
 export async function buildPreviewFontAssets(
   jsonText: string | undefined,
   customThemes: Record<string, unknown> | undefined,
-  opts?: { fetchImpl?: typeof fetch; maxBytes?: number }
+  opts?: {
+    fetchImpl?: typeof fetch;
+    maxBytes?: number;
+    /** Per-family cap on the Google CSS fetch. Injectable for tests. */
+    googleTimeoutMs?: number;
+  }
 ): Promise<PreviewFontAssets> {
   const entries = extractFontRegistries(jsonText, customThemes);
 
@@ -468,7 +518,8 @@ export async function buildPreviewFontAssets(
           g.family,
           g.weights,
           g.italics,
-          opts?.fetchImpl ?? fetch
+          opts?.fetchImpl ?? fetch,
+          opts?.googleTimeoutMs
         ))
       );
     } catch {

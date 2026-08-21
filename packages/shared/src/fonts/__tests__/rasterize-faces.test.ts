@@ -55,17 +55,79 @@ describe('toRasterizeFontFaces', () => {
     expect(Buffer.from(faces[0].data, 'base64').equals(data)).toBe(true);
   });
 
-  it("omits `format` when the source format is 'unknown'", () => {
+  // The rasterizer's native stagers write every staged source as a `.ttf`,
+  // register it as a raw sfnt, and rename it through `rewriteFontFamilyName`,
+  // which returns non-sfnt buffers UNCHANGED. So anything but TTF/OTF is
+  // staged as bytes nothing can parse, under the wrong family name, and
+  // renders as silent fallback text. Better to not ship it at all.
+  it.each(['woff', 'woff2', 'eot', 'pfb', 'unknown'] as const)(
+    'drops a %s source the stagers cannot register',
+    (format) => {
+      const faces = toRasterizeFontFaces([
+        {
+          family: 'Mystery',
+          sources: [{ data: bytes(3), weight: 400, italic: false, format }],
+          warnings: [],
+        },
+      ]);
+      expect(faces).toEqual([]);
+    }
+  );
+
+  it('keeps the TTF/OTF siblings of a dropped source', () => {
     const faces = toRasterizeFontFaces([
       {
-        family: 'Mystery',
+        family: 'Inter',
         sources: [
-          { data: bytes(3), weight: 400, italic: false, format: 'unknown' },
+          { data: bytes(1), weight: 400, italic: false, format: 'ttf' },
+          { data: bytes(2), weight: 500, italic: false, format: 'woff2' },
+          { data: bytes(3), weight: 700, italic: false, format: 'otf' },
         ],
         warnings: [],
       },
     ]);
-    expect(faces[0]).not.toHaveProperty('format');
+    expect(faces.map((f) => [f.weight, f.format])).toEqual([
+      [400, 'ttf'],
+      [700, 'otf'],
+    ]);
+  });
+
+  it('reports each dropped source into the optional warnings sink', () => {
+    const warnings: string[] = [];
+    toRasterizeFontFaces(
+      [
+        {
+          family: 'Inter',
+          sources: [
+            { data: bytes(1), weight: 400, italic: false, format: 'ttf' },
+            { data: bytes(2), weight: 300, italic: true, format: 'woff2' },
+          ],
+          warnings: [],
+        },
+      ],
+      warnings
+    );
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('FONT_FORMAT_NOT_RASTERIZABLE');
+    expect(warnings[0]).toContain('Inter');
+    expect(warnings[0]).toContain('woff2');
+  });
+
+  it('stays silent when nothing is dropped', () => {
+    const warnings: string[] = [];
+    toRasterizeFontFaces(
+      [
+        {
+          family: 'Inter',
+          sources: [
+            { data: bytes(1), weight: 400, italic: false, format: 'ttf' },
+          ],
+          warnings: [],
+        },
+      ],
+      warnings
+    );
+    expect(warnings).toEqual([]);
   });
 
   it('ships the CATALOG family, not a synthesized sub-family', () => {

@@ -118,12 +118,40 @@ export function collectReferencedItalic(
   return found;
 }
 
+/**
+ * A service-local warning carrying its OWN code. This used to be a bare
+ * string and the code was hardcoded at the mapping site, so every message in
+ * the array — including `FONT_WEIGHT_NOT_IN_OVERRIDE` — was published to
+ * clients as `context.code === 'FONT_OVERRIDE_LOCAL'`, and any client
+ * filtering on the code misclassified it.
+ */
+export interface SupplementalFontWarning {
+  code: string;
+  message: string;
+}
+
+/**
+ * Turn service-local font warnings into the client-facing shape, preserving
+ * each entry's own code. Informational: unlike core's `FONT_UNRESOLVED`,
+ * none of these mean the document failed to resolve something.
+ */
+export function toSupplementalWarnings(
+  warnings: readonly SupplementalFontWarning[]
+): GenerationWarning[] {
+  return warnings.map(({ code, message }) => ({
+    component: 'fontRegistry',
+    message,
+    severity: 'info' as const,
+    context: { code },
+  }));
+}
+
 export function autoGoogleFontEntries(
   names: Set<string>,
   skipFamilies: Set<string>,
   referencedWeights?: Set<number>,
   referencedItalic?: boolean,
-  warnings?: string[]
+  warnings?: SupplementalFontWarning[]
 ): FontRegistryEntry[] {
   const googleByLower = new Map(
     POPULAR_GOOGLE_FONTS.map((f) => [f.family.toLowerCase(), f])
@@ -192,13 +220,14 @@ export function autoGoogleFontEntries(
         const missing = [...overrideWantedSet]
           .filter((w) => !override.variants.some((v) => v.weight === w))
           .sort((a, b) => a - b);
-        warnings?.push(
-          `FONT_WEIGHT_NOT_IN_OVERRIDE: family "${match.family}" — referenced weight(s) ${missing.join(', ')} not in upstream override (has ${override.variants
+        warnings?.push({
+          code: 'FONT_WEIGHT_NOT_IN_OVERRIDE',
+          message: `FONT_WEIGHT_NOT_IN_OVERRIDE: family "${match.family}" — referenced weight(s) ${missing.join(', ')} not in upstream override (has ${override.variants
             .map((v) => v.weight)
             .filter((w, i, a) => a.indexOf(w) === i)
             .sort((a, b) => a - b)
-            .join(', ')}). Fetching all override variants as a fallback.`
-        );
+            .join(', ')}). Fetching all override variants as a fallback.`,
+        });
         selected = override.variants;
       }
       entries.push({
@@ -323,7 +352,7 @@ export class GeneratorService {
     // equivalents before font resolution runs, so an auto-Google fetch for
     // them is wasted work and — via `bypassCache` below — would disable the
     // server buffer cache for no benefit. Skip it.
-    const overrideWarnings: string[] = [];
+    const overrideWarnings: SupplementalFontWarning[] = [];
     const autoEntries =
       fontMode === 'substitute'
         ? []
@@ -344,9 +373,10 @@ export class GeneratorService {
       for (const e of callerExtraEntries) {
         const lower = e.family.toLowerCase();
         if (googleFamiliesLower.has(lower) && referencedNames.has(e.family)) {
-          overrideWarnings.push(
-            `[FONT_OVERRIDE_LOCAL] ${e.family}: caller-supplied source used; Google Fonts auto-fetch skipped for this family.`
-          );
+          overrideWarnings.push({
+            code: 'FONT_OVERRIDE_LOCAL',
+            message: `[FONT_OVERRIDE_LOCAL] ${e.family}: caller-supplied source used; Google Fonts auto-fetch skipped for this family.`,
+          });
         }
       }
     }
@@ -479,14 +509,10 @@ export class GeneratorService {
     const nonCanonical = [...referencedWeights].filter(
       (w) => !CANONICAL_WEIGHTS.has(w)
     );
-    const extraWarnings: GenerationWarning[] = overrideWarnings.map(
-      (message) => ({
-        component: 'fontRegistry',
-        message,
-        severity: 'info' as const,
-        context: { code: 'FONT_OVERRIDE_LOCAL' },
-      })
-    );
+    // Each entry keeps its own code: this array mixes FONT_OVERRIDE_LOCAL and
+    // FONT_WEIGHT_NOT_IN_OVERRIDE, and clients filter on `context.code`.
+    const extraWarnings: GenerationWarning[] =
+      toSupplementalWarnings(overrideWarnings);
     for (const w of nonCanonical) {
       extraWarnings.push({
         component: 'fontRegistry',
