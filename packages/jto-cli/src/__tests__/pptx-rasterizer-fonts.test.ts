@@ -69,6 +69,20 @@ async function loadRasterizer() {
   return import('../pptx-rasterizer.js');
 }
 
+/**
+ * The staging tests build a real .pptx and write real temp files, and
+ * `vi.resetModules()` re-imports core-pptx for every one of them. That runs in
+ * ~40ms on Linux/macOS but ~2s per test on a Windows runner.
+ *
+ * The default 5s timeout is not just tight there, it is actively corrupting:
+ * staging happens deliberately AFTER the build loop, so a test killed at 5s is
+ * usually killed BEFORE it stages. Vitest moves on, `beforeEach` clears the
+ * spy, and the abandoned run then stages inside the NEXT test's window — which
+ * showed up as "expected the spy to be called 1 time, but it was called 2
+ * times" in a test that had itself behaved perfectly.
+ */
+const SLOW_TEST_MS = 30_000;
+
 /** `--version` probes succeed; everything else defers to `onConvert`. */
 function stubExec(onConvert: (binary: string, args: string[]) => Error | null) {
   execFileMock.mockImplementation(
@@ -152,101 +166,123 @@ describe('font staging around the soffice launch', () => {
     await fs.rm(cacheDir, { recursive: true, force: true }).catch(() => {});
   });
 
-  it('does NOT stage when every slide hits the disk cache', async () => {
-    const { createLibreOfficePptxRasterizer, cacheKey, fontsDigest } =
-      await loadRasterizer();
-    const fonts = [face()];
-    const key = cacheKey({
-      presentation: presentation(),
-      dpi: 200,
-      baseDir: undefined,
-      fontsKey: fontsDigest(fonts),
-    });
-    await fs.writeFile(path.join(cacheDir, `${key}.png`), fakePng());
+  it(
+    'does NOT stage when every slide hits the disk cache',
+    async () => {
+      const { createLibreOfficePptxRasterizer, cacheKey, fontsDigest } =
+        await loadRasterizer();
+      const fonts = [face()];
+      const key = cacheKey({
+        presentation: presentation(),
+        dpi: 200,
+        baseDir: undefined,
+        fontsKey: fontsDigest(fonts),
+      });
+      await fs.writeFile(path.join(cacheDir, `${key}.png`), fakePng());
 
-    stubExec(() => new Error('soffice must not be launched on a full hit'));
-    const rasterize = createLibreOfficePptxRasterizer({ cacheDir });
-    const result = await rasterize({
-      presentation: presentation(),
-      dpi: 200,
-      fonts,
-    });
+      stubExec(() => new Error('soffice must not be launched on a full hit'));
+      const rasterize = createLibreOfficePptxRasterizer({ cacheDir });
+      const result = await rasterize({
+        presentation: presentation(),
+        dpi: 200,
+        fonts,
+      });
 
-    expect(result.width).toBe(40);
-    expect(stageSpy).not.toHaveBeenCalled();
-    expect(execFileMock).not.toHaveBeenCalled();
-  });
+      expect(result.width).toBe(40);
+      expect(stageSpy).not.toHaveBeenCalled();
+      expect(execFileMock).not.toHaveBeenCalled();
+    },
+    SLOW_TEST_MS
+  );
 
-  it('stages, then cleans up exactly once, when the soffice exec rejects', async () => {
-    const { createLibreOfficePptxRasterizer } = await loadRasterizer();
-    stubExec((binary) =>
-      binary.includes('pdftoppm') ? null : new Error('soffice exploded')
-    );
+  it(
+    'stages, then cleans up exactly once, when the soffice exec rejects',
+    async () => {
+      const { createLibreOfficePptxRasterizer } = await loadRasterizer();
+      stubExec((binary) =>
+        binary.includes('pdftoppm') ? null : new Error('soffice exploded')
+      );
 
-    const rasterize = createLibreOfficePptxRasterizer({ cacheDir: null });
-    await expect(
-      rasterize({ presentation: presentation(), dpi: 200, fonts: [face()] })
-    ).rejects.toThrow(/LibreOffice failed to convert/);
+      const rasterize = createLibreOfficePptxRasterizer({ cacheDir: null });
+      await expect(
+        rasterize({ presentation: presentation(), dpi: 200, fonts: [face()] })
+      ).rejects.toThrow(/LibreOffice failed to convert/);
 
-    expect(stageSpy).toHaveBeenCalledTimes(1);
-    expect(cleanupSpy).toHaveBeenCalledTimes(1);
-  });
+      expect(stageSpy).toHaveBeenCalledTimes(1);
+      expect(cleanupSpy).toHaveBeenCalledTimes(1);
+    },
+    SLOW_TEST_MS
+  );
 
-  it('passes the batch profile plus every retry profile in profileDirs', async () => {
-    const { createLibreOfficePptxRasterizer } = await loadRasterizer();
-    stubExec(() => new Error('soffice exploded'));
+  it(
+    'passes the batch profile plus every retry profile in profileDirs',
+    async () => {
+      const { createLibreOfficePptxRasterizer } = await loadRasterizer();
+      stubExec(() => new Error('soffice exploded'));
 
-    const rasterize = createLibreOfficePptxRasterizer({ cacheDir: null });
-    await rasterize({
-      presentation: presentation(),
-      dpi: 200,
-      fonts: [face()],
-    }).catch(() => {});
+      const rasterize = createLibreOfficePptxRasterizer({ cacheDir: null });
+      await rasterize({
+        presentation: presentation(),
+        dpi: 200,
+        fonts: [face()],
+      }).catch(() => {});
 
-    expect(stageSpy).toHaveBeenCalledTimes(1);
-    const [resolvedFonts, tempDir, options] = stageSpy.mock.calls[0] as any;
-    // The wire faces are decoded back into ResolvedFont[] before staging.
-    expect(resolvedFonts[0].family).toBe('Inter');
-    expect(Buffer.isBuffer(resolvedFonts[0].sources[0].data)).toBe(true);
-    expect(options.profileDirs).toEqual([
-      path.join(tempDir, 'profile'),
-      path.join(tempDir, 'profile-retry-0'),
-      path.join(tempDir, 'profile-retry-1'),
-      path.join(tempDir, 'profile-retry-2'),
-    ]);
-  });
+      expect(stageSpy).toHaveBeenCalledTimes(1);
+      const [resolvedFonts, tempDir, options] = stageSpy.mock.calls[0] as any;
+      // The wire faces are decoded back into ResolvedFont[] before staging.
+      expect(resolvedFonts[0].family).toBe('Inter');
+      expect(Buffer.isBuffer(resolvedFonts[0].sources[0].data)).toBe(true);
+      expect(options.profileDirs).toEqual([
+        path.join(tempDir, 'profile'),
+        path.join(tempDir, 'profile-retry-0'),
+        path.join(tempDir, 'profile-retry-1'),
+        path.join(tempDir, 'profile-retry-2'),
+      ]);
+    },
+    SLOW_TEST_MS
+  );
 
-  it('merges the stager env into the soffice launch but not the pdftoppm one', async () => {
-    const { createLibreOfficePptxRasterizer } = await loadRasterizer();
-    const seen: Array<{ binary: string; env: Record<string, string> }> = [];
-    execFileMock.mockImplementation(
-      (binary: string, args: string[], opts: any, cb: any) => {
-        if (args.includes('--version')) return cb(null, '', '');
-        seen.push({ binary, env: opts.env });
-        return cb(new Error('stop here'), '', '');
-      }
-    );
+  it(
+    'merges the stager env into the soffice launch but not the pdftoppm one',
+    async () => {
+      const { createLibreOfficePptxRasterizer } = await loadRasterizer();
+      const seen: Array<{ binary: string; env: Record<string, string> }> = [];
+      execFileMock.mockImplementation(
+        (binary: string, args: string[], opts: any, cb: any) => {
+          if (args.includes('--version')) return cb(null, '', '');
+          seen.push({ binary, env: opts.env });
+          return cb(new Error('stop here'), '', '');
+        }
+      );
 
-    const rasterize = createLibreOfficePptxRasterizer({ cacheDir: null });
-    await rasterize({
-      presentation: presentation(),
-      dpi: 200,
-      fonts: [face()],
-    }).catch(() => {});
+      const rasterize = createLibreOfficePptxRasterizer({ cacheDir: null });
+      await rasterize({
+        presentation: presentation(),
+        dpi: 200,
+        fonts: [face()],
+      }).catch(() => {});
 
-    expect(seen.length).toBeGreaterThan(0);
-    const soffice = seen.find((s) => !s.binary.includes('pdftoppm'));
-    expect(soffice?.env.JTO_FONT_PATHS).toBe('/staged/Inter-400r.ttf');
-  });
+      expect(seen.length).toBeGreaterThan(0);
+      const soffice = seen.find((s) => !s.binary.includes('pdftoppm'));
+      expect(soffice?.env.JTO_FONT_PATHS).toBe('/staged/Inter-400r.ttf');
+    },
+    SLOW_TEST_MS
+  );
 
-  it('does not stage at all when the request carries no fonts', async () => {
-    const { createLibreOfficePptxRasterizer } = await loadRasterizer();
-    stubExec(() => new Error('soffice exploded'));
+  it(
+    'does not stage at all when the request carries no fonts',
+    async () => {
+      const { createLibreOfficePptxRasterizer } = await loadRasterizer();
+      stubExec(() => new Error('soffice exploded'));
 
-    const rasterize = createLibreOfficePptxRasterizer({ cacheDir: null });
-    await rasterize({ presentation: presentation(), dpi: 200 }).catch(() => {});
+      const rasterize = createLibreOfficePptxRasterizer({ cacheDir: null });
+      await rasterize({ presentation: presentation(), dpi: 200 }).catch(
+        () => {}
+      );
 
-    expect(stageSpy).not.toHaveBeenCalled();
-    expect(cleanupSpy).not.toHaveBeenCalled();
-  });
+      expect(stageSpy).not.toHaveBeenCalled();
+      expect(cleanupSpy).not.toHaveBeenCalled();
+    },
+    SLOW_TEST_MS
+  );
 });
