@@ -454,11 +454,17 @@ function splitNoteMarkers(
  * Cross-reference to a numbered heading or list item: `[@id]`, optionally
  * `[@id:relative|no_context|full_context|none]`.
  *
+ * The id accepts every character a bookmark id can actually hold, rather than
+ * a narrower slug alphabet: `id` is a free string in the schema, so an author
+ * who writes `item.1` on a list item must be able to reference it. Whitespace
+ * ends the token (an unclosed `[@` cannot swallow a sentence) and `:` is
+ * reserved as the format separator.
+ *
  * No collision with `[text](url)`: that syntax needs a `(…)` immediately after
  * the bracket, and the alternation below tries it first anyway.
  */
 const CROSS_REFERENCE_PATTERN =
-  '\\[@([A-Za-z0-9_-]+)(?::(relative|no_context|full_context|none))?\\]';
+  '\\[@([^\\]\\s:]+)(?::(relative|no_context|full_context|none))?\\]';
 
 /**
  * One pass over both bracket syntaxes: parsing them separately would mean

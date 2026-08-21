@@ -329,3 +329,36 @@ describe('unresolvable cross-references', () => {
     expect(fields(xml)).toHaveLength(0);
   });
 });
+
+describe('cross-reference id grammar', () => {
+  // `id` is a free string in the schema, so the token grammar has to accept
+  // whatever an author can legally write on a list item or a node.
+  it.each(['item.1', 'step_2', 'fig-3a', 'Ref4'])(
+    'resolves the id %s',
+    async (id) => {
+      const xml = await documentXml([
+        {
+          name: 'list',
+          props: { format: 'numbered', items: [{ text: 'First', id }] },
+        },
+        { name: 'paragraph', props: { text: `See [@${id}].` } },
+      ]);
+
+      const field = fields(xml).find((f) => f.includes(`REF ${id}`));
+      expect(field).toBeDefined();
+      expect(field).toContain('>1<');
+    }
+  );
+
+  it('does not swallow a sentence when a token is left unclosed', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const xml = await documentXml([
+      { name: 'paragraph', props: { text: 'An [@unclosed reference here.' } },
+    ]);
+
+    expect(fields(xml)).toHaveLength(0);
+    expect(xml).toContain('reference here.');
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('has no target');
+  });
+});

@@ -290,4 +290,49 @@ describe('text-box renderAs shape fallbacks', () => {
       'requires paragraph-only content'
     );
   });
+
+  it.each(['dashed', 'dotted', 'double'])(
+    'falls back to the table path for a %s border rather than drawing it solid',
+    async (style) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await render(
+        textBox({
+          renderAs: 'shape',
+          width: 200,
+          height: 100,
+          style: { border: { top: { style, width: 2, color: '#16A34A' } } },
+        })
+      );
+
+      expect(result[0]).toBeInstanceOf(Table);
+      expect(warn.mock.calls.flat().join(' ')).toContain(
+        `cannot draw a ${style} border`
+      );
+    }
+  );
+
+  it('renders each child exactly once when falling back', async () => {
+    // A child rendered twice registers its bookmark twice, and the registry
+    // reports that as a duplicate — the observable symptom of a fallback that
+    // re-renders content the shape attempt already built.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await documentXml([
+      textBox({ renderAs: 'shape', width: 200, height: 100 }, [
+        {
+          name: 'columns',
+          props: { columns: 2 },
+          children: [
+            { name: 'heading', id: 'boxed-heading', props: { text: 'Boxed' } },
+            { name: 'paragraph', props: { text: 'Right' } },
+          ],
+        },
+      ]),
+    ]);
+
+    expect(warn.mock.calls.flat().join(' ')).not.toContain(
+      'Duplicate bookmark ID'
+    );
+  });
 });

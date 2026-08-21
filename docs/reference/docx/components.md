@@ -54,8 +54,14 @@ Different Word constructs use different native units; json-to-office keeps each 
 
 A heading's `id` is its explicit node `id` if it has one, otherwise a slug of its text (`"Data Sources"` → `data-sources`, disambiguated with `-1`, `-2` on collision). List items take the `id` written on the item.
 
+A reference renders the bare number — `1.1` — while the heading itself renders `1.1.`: the trailing period belongs to the heading's numbering, and Word's reference switches drop it.
+
 ```json
 [
+  {
+    "name": "heading",
+    "props": { "text": "Field study", "level": 1, "numbering": true }
+  },
   {
     "name": "heading",
     "id": "methods",
@@ -70,7 +76,7 @@ A heading's `id` is its explicit node `id` if it has one, otherwise a slug of it
 ]
 ```
 
-renders as "Sampling is described in 2.1 (Methods)."
+"Field study" is the document's first level-1 heading, so it numbers `1.` and "Methods" numbers `1.1.` — the paragraph renders as "Sampling is described in 1.1 (Methods)."
 
 Two caveats:
 
@@ -485,12 +491,18 @@ The default `'table'` renders the box as a borderless one-cell table. `'shape'` 
 | Height                         | Auto-fits the content                               | Fixed; `width` **and** `height` are required, content that overflows clips |
 | Text wrapping                  | Table float clearances only                         | Real wrap modes (`square`, `topAndBottom`, `none`, …)                      |
 | Z-order / behind text          | Not available                                       | `floating.zIndex`, `floating.behindDocument`                               |
-| Borders                        | Per side, each with its own style, width and colour | One uniform outline; dash patterns render solid                            |
+| Borders                        | Per side, each with its own style, width and colour | One uniform `solid` outline                                                |
 | Border **and** fill together   | Both                                                | Fill only — see below                                                      |
 | `width` / `height` percentages | Resolved by Word, so they follow the page           | Resolved at generation time against the current content box                |
 | Children                       | Anything, including nested `columns`                | Paragraph-producing components only                                        |
 
-Shape mode degrades to the table rendering, with a warning, when the request cannot be honoured: non-paragraph content (a nested `columns`, which renders as a table), or a missing `width` or `height`. Two more warnings report a downgrade inside shape mode: per-side borders that disagree (the first declared side of top/left/bottom/right wins), and a percentage size being frozen.
+Shape mode degrades to the table rendering, with a warning, when the request cannot be honoured:
+
+- a missing `width` or `height`;
+- a `dashed`, `dotted` or `double` border — a shape outline has no dash pattern, and drawing it solid would silently change the design, so the box goes back to the table path that renders it properly;
+- non-paragraph content (a nested `columns`, which renders as a table).
+
+Two further warnings report a downgrade inside shape mode rather than a fallback: per-side borders that disagree (the first declared side of top/left/bottom/right wins), and a percentage size being frozen.
 
 A shape cannot carry both `style.shading.fill` and `style.border`: docx 9.7.1 writes the two fill groups in an order Word rejects, so when both are given the fill is kept, the border dropped, and a warning raised. Use one or the other, or stay on the table path.
 

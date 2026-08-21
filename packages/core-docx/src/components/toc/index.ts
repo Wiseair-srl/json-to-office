@@ -27,6 +27,7 @@ import type { TocProps } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../../styles';
 import type { RenderContext } from '../../types';
 import type { TocHeadingEntry } from '../../core/collectTocHeadings';
+import { headingNumberLabel } from '../../utils/numberingConfig';
 
 export interface TocComponentDefinition {
   name: 'toc';
@@ -94,9 +95,11 @@ function selectCachedEntries(
     // `page` is deliberately omitted: nothing in generation paginates, and
     // Word fills in real numbers the moment it refreshes the field.
     // A numbered heading shows its number in Word's own refresh, so the cached
-    // copy has to carry it too or the two disagree.
+    // copy has to carry it too — in the same form, trailing period included.
     entries.push({
-      title: entry.number ? `${entry.number} ${entry.title}` : entry.title,
+      title: entry.number
+        ? `${headingNumberLabel(entry.number)} ${entry.title}`
+        : entry.title,
       level: entry.level,
     });
   }
