@@ -605,7 +605,9 @@ function createBuilderImpl<
       // Gate on the ENCODED faces: safe-only fonts resolve to entries with
       // no sources and encode to nothing, and such a document must send no
       // `fonts` key at all (see core/generator.ts).
-      const visualFonts = hasVisual ? toRasterizeFontFaces(resolvedFonts) : [];
+      const visualFonts = hasVisual
+        ? toRasterizeFontFaces(resolvedFonts, warnings)
+        : [];
 
       // Use the document generation pipeline directly
       const packageOptions = {

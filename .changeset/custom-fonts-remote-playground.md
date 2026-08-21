@@ -90,3 +90,9 @@ unchanged — so a web font was either unparseable or indexed under the wrong
 family, and rendered as a silent fallback either way. Only `ttf`/`otf` are sent
 now, via an allowlist so a newly added format stays excluded until a stager
 supports it.
+
+A face the rasterizer's stagers cannot register (WOFF/WOFF2) now produces a
+`FONT_FORMAT_NOT_RASTERIZABLE` generation warning instead of being dropped
+silently. The drop itself is correct — those formats never rendered — but a
+visual falling back to a system face without saying so is the exact silent
+substitution this work exists to eliminate.

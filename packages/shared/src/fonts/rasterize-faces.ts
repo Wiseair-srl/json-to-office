@@ -18,6 +18,7 @@
 
 import type { ResolvedFont, ResolvedFontSource } from './types';
 import type { RasterizeFontFace } from '../types/services';
+import type { GenerationWarning } from '../types/warnings';
 
 /**
  * Formats the rasterizer's native stagers can actually register.
@@ -43,28 +44,31 @@ const STAGEABLE_FORMATS = new Set<ResolvedFontSource['format']>(['ttf', 'otf']);
  * renderer resolves against system faces — carry no bytes and are skipped,
  * as are sources in a format no stager can register.
  *
- * @param warnings - optional sink for one message per dropped source. No
- *   in-repo caller passes one yet: both docx entry paths drain
- *   `ResolvedFont.warnings` into `GenerationWarning[]` inside
- *   `resolveDocumentFonts`, i.e. before this encoder runs, so surfacing the
- *   drop end-to-end needs a change in core-docx. The sink exists so the
- *   behaviour is observable and testable in the meantime.
+ * @param warnings - sink for one warning per dropped source, shaped like every
+ *   other generation warning so a caller can hand in the same array it already
+ *   collects. Both docx entry paths do: a dropped face renders as a fallback,
+ *   which is precisely the silent substitution this pipeline exists to make
+ *   visible, so it must not be discoverable only by reading the code.
  */
 export function toRasterizeFontFaces(
   fonts: readonly ResolvedFont[],
-  warnings?: string[]
+  warnings?: GenerationWarning[]
 ): RasterizeFontFace[] {
   const faces: RasterizeFontFace[] = [];
   for (const font of fonts) {
     if (font.sources.length === 0) continue;
     for (const source of font.sources) {
       if (!STAGEABLE_FORMATS.has(source.format)) {
-        warnings?.push(
-          `FONT_FORMAT_NOT_RASTERIZABLE: "${font.family}" weight ${source.weight}` +
+        warnings?.push({
+          component: 'fontRegistry',
+          severity: 'warning',
+          context: { code: 'FONT_FORMAT_NOT_RASTERIZABLE' },
+          message:
+            `"${font.family}" weight ${source.weight}` +
             `${source.italic ? ' italic' : ''} is ${source.format}; the rasterizer's ` +
             `font stagers only register TTF/OTF, so this face is omitted and the ` +
-            `visual renders with a fallback face.`
-        );
+            `visual renders with a fallback face.`,
+        });
         continue;
       }
       faces.push({
