@@ -1,5 +1,25 @@
 # @json-to-office/jto
 
+## 0.38.0
+
+### Patch Changes
+
+- 5ff7bba: Build the hosted playground image on `node:22-trixie-slim`.
+
+  Debian bookworm is frozen at LibreOffice 7.4, which cannot parse a table-of-
+  contents field nested in a `w:sdt` and prints the raw field instruction into
+  the document instead — visible on every hosted PDF with a TOC. Trixie carries
+  LibreOffice 25.2, which renders it correctly, and Node 22.
+
+  The suite is pinned explicitly (`-trixie-slim`, not `-slim`) so the LibreOffice
+  version cannot move when Docker retags the default.
+
+- Updated dependencies [5ff7bba]
+- Updated dependencies [10d3b4f]
+  - @json-to-office/core-docx@0.38.0
+  - @json-to-office/shared-docx@0.38.0
+  - @json-to-office/jto-cli@0.38.0
+
 ## 0.37.0
 
 ### Patch Changes
