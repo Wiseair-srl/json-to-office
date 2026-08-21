@@ -496,11 +496,14 @@ The default `'table'` renders the box as a borderless one-cell table. `'shape'` 
 | `width` / `height` percentages | Resolved by Word, so they follow the page           | Resolved at generation time against the current content box                |
 | Children                       | Anything, including nested `columns`                | Paragraph-producing components only                                        |
 
-Shape mode degrades to the table rendering, with a warning, when the request cannot be honoured:
+Two shape limits are **rejected at validation**, so a document that validates gets the shape it asked for:
 
-- a missing `width` or `height`;
-- a `dashed`, `dotted` or `double` border — a shape outline has no dash pattern, and drawing it solid would silently change the design, so the box goes back to the table path that renders it properly;
-- non-paragraph content (a nested `columns`, which renders as a table).
+- a missing `width` or `height` — a shape has no autofit, so its size cannot come from its content;
+- a `dashed`, `dotted` or `double` border — a shape outline carries no dash pattern.
+
+Both errors name the two ways out: fix the prop, or drop to `renderAs: 'table'`, which auto-fits and draws every border style.
+
+One limit stays a **render-time fallback**, because it depends on what the children render to rather than on the props: non-paragraph content (a nested `columns`, which renders as a table) degrades to the table rendering with a warning.
 
 Two further warnings report a downgrade inside shape mode rather than a fallback: per-side borders that disagree (the first declared side of top/left/bottom/right wins), and a percentage size being frozen.
 

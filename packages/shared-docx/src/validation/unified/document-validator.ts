@@ -14,6 +14,7 @@ import {
   collectImageSourceConflicts,
   collectIndentConflicts,
   collectNoteRevisionConflicts,
+  collectTextBoxShapeConflicts,
 } from './deep-validator';
 
 // JsonComponentDefinitionSchema is just an alias for ComponentDefinitionSchema
@@ -69,6 +70,13 @@ export function validateDocument(
   const noteRevisionConflicts = collectNoteRevisionConflicts(data);
   if (noteRevisionConflicts.length > 0) {
     finalErrors = [...finalErrors, ...noteRevisionConflicts];
+    finalValid = false;
+  }
+
+  // Same for a text box asking for a shape rendering a shape cannot give it.
+  const textBoxShapeConflicts = collectTextBoxShapeConflicts(data);
+  if (textBoxShapeConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...textBoxShapeConflicts];
     finalValid = false;
   }
 
@@ -148,6 +156,14 @@ export function validateJsonDocument(
   const noteRevisionConflicts = collectNoteRevisionConflicts(result.parsed);
   if (noteRevisionConflicts.length > 0) {
     finalErrors = [...finalErrors, ...noteRevisionConflicts];
+    finalValid = false;
+  }
+
+  // A text box asking for a shape rendering a shape cannot give it (see
+  // validateDocument).
+  const textBoxShapeConflicts = collectTextBoxShapeConflicts(result.parsed);
+  if (textBoxShapeConflicts.length > 0) {
+    finalErrors = [...finalErrors, ...textBoxShapeConflicts];
     finalValid = false;
   }
 
