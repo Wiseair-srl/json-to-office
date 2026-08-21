@@ -1,5 +1,10 @@
 {
   "$schema": "https://v2-8-16.turborepo.dev/schema.json",
+  // `test:coverage` is cached and infers its inputs from the package
+  // directory, so it cannot see the root config the per-package
+  // `vitest.config.ts` files re-export. Without this, changing a timeout
+  // would be served from a stale cache.
+  "globalDependencies": ["vitest.base.ts"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
