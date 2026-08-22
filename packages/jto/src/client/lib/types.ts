@@ -16,19 +16,8 @@ export type BinaryFile = BaseFile & {
 
 export type Mode = 'create' | 'update' | 'delete';
 
-/**
- * How a generated file is *displayed* in the browser.
- *
- * Not the generation backend — `Settings.generationBackend` is that, and its
- * DOCX default is also spelled `docxjs`. The two are unrelated: this one picks
- * between an in-browser preview library and a LibreOffice-rendered PDF.
- */
-export type RenderingLibrary = 'docxjs' | 'LibreOffice';
-
 export type Settings = {
   saveDocumentDebounceWait: number; // in milliseconds
-  autoReload: boolean; // whether to automatically reload preview on changes
-  renderingLibrary: RenderingLibrary;
   /**
    * Backend that turns the document into bytes, by renderer id.
    *

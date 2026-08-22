@@ -1,72 +1,11 @@
 import { FORMAT } from './env';
 import { API_ENDPOINTS } from '../config/api';
-import { env } from './env';
-import { buildPreviewFontAssets } from './preview-fonts';
 
 export type RenderPayload = {
   iframeSrc?: string;
   iframeSrcDoc?: string;
   cleanup?: () => void;
 };
-
-async function renderDocxWithDocxJS(
-  blob: Blob,
-  jsonText?: string,
-  customThemes?: Record<string, unknown>
-): Promise<RenderPayload> {
-  const docx_preview = await import('docx-preview');
-
-  const bodyEl = document.createElement('body');
-  const headEl = document.createElement('head');
-
-  const renderPromise = docx_preview.renderAsync(blob, bodyEl, headEl, {
-    inWrapper: true,
-  });
-
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => {
-      reject(new Error('DocxJS renderAsync timed out after 10 seconds'));
-    }, 10000);
-  });
-
-  await Promise.race([renderPromise, timeoutPromise]);
-
-  // The DOCX never carries font bytes (word/fonts/ is always empty), so
-  // docx-preview's own renderFontTable contributes nothing. Synthesize the
-  // @font-face block from the document's fontRegistry + Google catalog.
-  // headEl is detached, so nothing is fetched by the parent page — only the
-  // iframe loads these once the serialized HTML is handed to srcdoc.
-  try {
-    const { css, googleHrefs } = await buildPreviewFontAssets(
-      jsonText,
-      customThemes
-    );
-    for (const href of googleHrefs) {
-      const gf = document.createElement('link');
-      gf.rel = 'stylesheet';
-      gf.href = href;
-      headEl.appendChild(gf);
-    }
-    if (css) {
-      const fontStyleEl = document.createElement('style');
-      fontStyleEl.textContent = css;
-      headEl.appendChild(fontStyleEl);
-    }
-  } catch (err) {
-    console.warn('Preview font injection failed; using host fonts', err);
-  }
-
-  const overrideStyleEl = document.createElement('link');
-  overrideStyleEl.rel = 'stylesheet';
-  overrideStyleEl.href = `${env.basePath}/css/preview/docxjs.css`;
-  headEl.appendChild(overrideStyleEl);
-
-  const htmlEl = document.createElement('html');
-  htmlEl.appendChild(headEl);
-  htmlEl.appendChild(bodyEl);
-
-  return { iframeSrcDoc: htmlEl.outerHTML };
-}
 
 async function renderWithLibreOffice(
   name: string,
@@ -150,13 +89,9 @@ export function cleanupIframe(iframe: HTMLIFrameElement) {
   }
 }
 
-export type RenderLibrary = 'docxjs' | 'LibreOffice';
-
 export async function renderDocument(
   name: string,
   blob: Blob,
-  library: RenderLibrary = FORMAT === 'docx' ? 'docxjs' : 'LibreOffice',
-  _baseUrl?: string,
   jsonText?: string,
   customThemes?: Record<string, unknown>
 ) {
@@ -165,13 +100,12 @@ export async function renderDocument(
       throw new Error('Invalid or empty document blob');
     }
 
-    let payload: RenderPayload;
-
-    if (FORMAT === 'docx' && library === 'docxjs') {
-      payload = await renderDocxWithDocxJS(blob, jsonText, customThemes);
-    } else {
-      payload = await renderWithLibreOffice(name, blob, jsonText, customThemes);
-    }
+    const payload = await renderWithLibreOffice(
+      name,
+      blob,
+      jsonText,
+      customThemes
+    );
 
     return { status: 'success' as const, name, payload };
   } catch (error) {
@@ -181,5 +115,5 @@ export async function renderDocument(
 }
 
 // Keep backward compat exports for pptx code
-export const renderPptx = (name: string, blob: Blob, baseUrl: string) =>
-  renderDocument(name, blob, 'LibreOffice', baseUrl);
+export const renderPptx = (name: string, blob: Blob) =>
+  renderDocument(name, blob);

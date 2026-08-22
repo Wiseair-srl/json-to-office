@@ -75,7 +75,6 @@
     "commander": "11.1.0",
     "constrained-editor-plugin": "1.4.0",
     "cosmiconfig": "9.0.0",
-    "docx-preview": "0.3.3",
     "dotenv": "16.3.1",
     "glob": "^13.0.0",
     "hono": "4.6.14",

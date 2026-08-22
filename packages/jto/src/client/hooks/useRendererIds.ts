@@ -10,6 +10,34 @@ interface RendererList {
 const EMPTY: RendererList = { ids: [], default: null };
 
 /**
+ * Fetched once per page load, not once per mount.
+ *
+ * The set of backends is fixed for the life of the server, and this hook runs
+ * in every mounted preview header — without the shared promise a page with two
+ * of them asks the same question five times.
+ */
+let pending: Promise<RendererList> | undefined;
+
+function loadRenderers(): Promise<RendererList> {
+  pending ??= (async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.renderers);
+      if (!response.ok) return EMPTY;
+      const body = (await response.json()) as {
+        success?: boolean;
+        data?: RendererList;
+      };
+      if (!body?.success || !Array.isArray(body.data?.ids)) return EMPTY;
+      return body.data;
+    } catch {
+      // A playground without the list simply shows no backend control.
+      return EMPTY;
+    }
+  })();
+  return pending;
+}
+
+/**
  * The generation backends this server registers.
  *
  * Fetched rather than listed here: the ids come from the core's renderer
@@ -23,22 +51,9 @@ export function useRendererIds(): RendererList {
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      try {
-        const response = await fetch(API_ENDPOINTS.renderers);
-        if (!response.ok) return;
-        const body = (await response.json()) as {
-          success?: boolean;
-          data?: RendererList;
-        };
-        if (cancelled || !body?.success || !Array.isArray(body.data?.ids)) {
-          return;
-        }
-        setRenderers(body.data);
-      } catch {
-        // A playground without the list simply shows no backend control.
-      }
-    })();
+    void loadRenderers().then((list) => {
+      if (!cancelled) setRenderers(list);
+    });
     return () => {
       cancelled = true;
     };
