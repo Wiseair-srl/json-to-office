@@ -12,7 +12,7 @@ bytes. PptxGenJS is now one backend behind that seam rather than the pipeline
 itself.
 
 **Output is unchanged.** Every case in the parity corpus produces a
-byte-identical package, checked against hashes recorded from the previous
+identical package, part for part, checked against digests recorded from the previous
 implementation (`src/__tests__/corpus-goldens.test.ts`).
 
 **New**
@@ -96,3 +96,9 @@ No public type now references PptxGenJS.
   `image-crop`, `image-rounding`, `table-insets`, `table-rounded-corners` and
   `table-auto-page` — so a deck using them fails with the feature name and the
   IR path instead of losing a crop, a rounded corner or half a table.
+- The parity goldens record what each package _contains_ rather than a hash of
+  the file. A golden over raw bytes also asserts that the deflate stream is
+  identical, and deflate is the runtime's rather than this pipeline's, so a Node
+  release with a different zlib fails every case at once while changing nothing
+  about any deck. Byte stability within one runtime is still asserted, by
+  rendering twice, and CI now covers both ends of the advertised `>=20` range.

@@ -1,8 +1,8 @@
 /**
  * The DocxIR path against the same recorded goldens as the pre-IR writer.
  *
- * `corpus-goldens.ts` holds one SHA-256 per case, recorded from the pipeline
- * before any of this existed. Reproducing those hashes through the IR is the
+ * `corpus-goldens.ts` holds one part digest per case, recorded from the
+ * pipeline before any of this existed. Reproducing those through the IR is the
  * whole claim of the migration — that nothing about any document changed — and
  * it is a claim that has to be checked case by case rather than asserted.
  *
@@ -13,17 +13,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createHash } from 'node:crypto';
 import {
   compileDocumentToIr,
   generateBufferViaIr,
 } from '../core/generateFromIr';
 import { CORPUS } from './fixtures/corpus';
 import { CORPUS_GOLDENS } from './fixtures/corpus-goldens';
-
-function sha256(buffer: Buffer): string {
-  return createHash('sha256').update(buffer).digest('hex');
-}
+import { packageDigest } from './fixtures/packageDigest';
 
 describe('DOCX corpus through DocxIR', () => {
   it.each(CORPUS.map((c) => [c.name, c] as const))(
@@ -33,7 +29,7 @@ describe('DOCX corpus through DocxIR', () => {
         structuredClone(testCase.document) as never
       );
 
-      expect(sha256(buffer)).toBe(CORPUS_GOLDENS[name]);
+      expect(packageDigest(buffer)).toBe(CORPUS_GOLDENS[name]);
     },
     30_000
   );

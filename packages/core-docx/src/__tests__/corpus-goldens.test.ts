@@ -1,22 +1,22 @@
 /**
  * The DOCX pipeline against recorded golden output.
  *
- * `corpus-goldens.ts` holds one SHA-256 per corpus case, recorded from the
- * pipeline as it stands today. This is what will keep the default backend
- * honest when generation moves behind a renderer IR: a byte change anywhere in
- * a package fails here, and can only be accepted by editing a golden and
- * saying why.
+ * `corpus-goldens.ts` holds one digest per corpus case, covering every part of
+ * the package. This is what keeps the default backend honest now that
+ * generation is behind a renderer IR: a change to any part fails here, and can
+ * only be accepted by editing a golden and saying why.
+ *
+ * The digest deliberately says nothing about compression — see
+ * `fixtures/packageDigest.ts`. Byte-for-byte stability is a separate claim and
+ * has its own assertion below, within one process on one runtime, which is the
+ * scope it holds at.
  */
 
 import { describe, expect, it } from 'vitest';
-import { createHash } from 'node:crypto';
 import { generateBufferFromJson } from '../core/generator';
 import { CORPUS } from './fixtures/corpus';
 import { CORPUS_GOLDENS } from './fixtures/corpus-goldens';
-
-function sha256(buffer: Buffer): string {
-  return createHash('sha256').update(buffer).digest('hex');
-}
+import { packageDigest } from './fixtures/packageDigest';
 
 describe('DOCX corpus goldens', () => {
   it('covers every recorded golden and records every corpus case', () => {
@@ -37,7 +37,7 @@ describe('DOCX corpus goldens', () => {
         structuredClone(testCase.document) as never
       );
 
-      expect(sha256(buffer as Buffer)).toBe(CORPUS_GOLDENS[name]);
+      expect(packageDigest(buffer as Buffer)).toBe(CORPUS_GOLDENS[name]);
     },
     30_000
   );

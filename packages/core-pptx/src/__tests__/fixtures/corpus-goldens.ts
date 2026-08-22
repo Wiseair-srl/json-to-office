@@ -1,10 +1,17 @@
 /**
- * Golden package hashes for the PPTX parity corpus.
+ * Golden part digests for the PPTX parity corpus.
  *
- * Recorded from the pipeline as it was before the renderer IR became the
- * default, so the IR path has a fixed target that does not depend on any code
- * it replaces. Generation is deterministic — ZIP entry and core metadata
- * timestamps are pinned — so one SHA-256 per case describes the whole package.
+ * One digest per corpus case, covering every part in the package — its
+ * position, its name and its exact uncompressed bytes — and nothing about how
+ * the container is compressed. Recorded from the pipeline as it stood before
+ * the renderer IR became the default, then carried forward unchanged when the
+ * digest replaced the raw-bytes hash it used to be: the packages were
+ * byte-identical at that point, so the parity claim is the same one.
+ *
+ * Not a hash of the file. Deflate belongs to the runtime, so a Node release
+ * that changes its bundled zlib changes every byte of every package without
+ * changing any deck — see `fixtures/packageDigest.ts` and #264. Byte stability
+ * within one runtime is asserted separately, by rendering twice.
  *
  * A change here means the output changed. That is only ever correct with an
  * explanation, recorded in docs/architecture/office-renderer-ir.md.
@@ -12,131 +19,131 @@
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'text/plain':
-    '6949c705d06f7c4872789c7f73f4e6f560b5c691e7c0a6ca89290f07adb306d9',
+    '856c8d0ade8513d243155580bde179eefbbed559428189dd37637ece728cab74',
   'text/styled':
-    '8efcd041f57a82f19e893667ab7761bdb44ddfee6f66e67ef0a96b82287e322e',
+    'e61a8a6f620dfbfbad821c3376729d558247da144b86573ccc7b7eb2e36baef5',
   'text/percent-position':
-    '8b12d96045ac5e025a93285ae07268ee49a58f4312f4c6e180b48b7314669581',
+    '10953cc32259391d61489fbe5b7f664ba87d5c45689e43ab445f2b28a301050d',
   'text/rich-runs':
-    'e95dc768905790baa2c8bc7d1f55e9fdea57b378597b2487e222673e1fc05dbb',
+    '77e6f38baf2e1a6dfdc7f43b9957bf56a5c93353c1018d6760be72d21b925831',
   'text/named-styles':
-    '4fc0d3878aa560c577899c36b60cf2bf2ec9b8cc03de3e574d5389bebf696ae2',
+    '0ca2c33e195dcd85783c06c730cac0596b7b070cceb07a0922ca2c270c907019',
   'text/page-numbers':
-    '2fd890e52deb01785c027dbf66f50716cf3cafe39345a5af61c769099a34b378',
+    '6480fc818be29f07886cea7d8b1e296bbb85876e31ba26bfc6b34cd1c3f72b1d',
   'text/font-weight-alias':
-    'a21b51c6c47c0cecdfc73e5bc2a6d8363ccb24cb39fe81ab7563df6e97a20db6',
+    '421b7fe1fa137dfddb797b0ad6971eac2b2940c6de02c8f9e7cbedf39dd0999c',
   'deck/language-rtl':
-    '149c42b428f092c93b18134f20b1658ea41a2bdd04d3ed6e4d750508e45695b1',
+    'c2ae3a174e1d009185add7bd15bf29fa9d916c6001b99399857b806cb0eaf9e3',
   'deck/widescreen':
-    '38f61384404799915d735008dbcd3dd5f9159832a2baa77959ffdff6b17bd389',
+    '11a4c5fb223a8e426c4cfd6cf4145428512fe3164eea38282cc332a08e4ca18b',
   'slide/notes-hidden':
-    '12833e50c5908945ee27fb7ee5df8bfb7d16fbdd5ca567d4c107209925c7a10f',
+    'edf43bff3c6f9faedc46fefa00293f67b7b35407d3e5305827300694c7306311',
   'slide/solid-background':
-    '089399b1a95f1afdfbdc1e493897ebf37f2756dd1ed0a070e50f96ef2f71b454',
+    '29890cc261afacdee7acae0803e84484d09d91b975bc465cd10a42ae8630881e',
   'slide/gradient-background':
-    'ba1a15e1433aec176d98486fd232bc7277a1887a3cc5b9e09408b77236880060',
+    '4cbf897139f155024f7d08d97c73ca160ec06cf7b9ede290b7c004b10daea544',
   'shape/fills-and-lines':
-    '9ceda1ef3bca4fd5dfadc9c471339ca6a90a74cf3c9c1e92dd86c824753bc0aa',
+    '83280db35f2f44148e0eb31e9f5fb87a9b0f7dd0b0bcca17a7e05bd583d4d283',
   'shape/with-text':
-    '72c414d2332c9b963cf35f0b4619bcabea403aafc89bc5543f344a8959cd5a33',
+    '28e832bcfe7e5044dca85cae21927c2174666cc45669b4949b2aa86f62471926',
   'shape/text-segments':
-    'd907678f89fd6736956efcaa8209ed3cfd9abcb4f6b2d690da7299fbc7e4d565',
+    'dc08d615da491348bb77e203d0ae1064b08235fc9362e5300b2fce022a27bf53',
   'shape/gradient-linear':
-    'bc0e22e1917d5efbd11e080f1eee442e231ff2bdb674d7fb5b71faa4efec10e4',
+    '28eb6e892a147d1fcee471ab79f7b492a4f42c8db96e1282769d4da90cea7cfb',
   'shape/gradient-radial':
-    '2b33b899bec813287a015ebadb1cbf2363e3fcbc2f89d511bb03de4ae2e81f57',
+    'c19ad937fb03fe1c9cdff519331300a0b55c59325e0964a483ea8c4ce2dd257c',
   'shape/pattern':
-    '429f7dd6bbd1345284d71216634aa037913224b5df915142c08c7fe70a70a69e',
+    '5784200bad2b3977c952d6ae387b9da2817d7241aea1ac7cf59edc1a1ffc080c',
   'shape/shadow':
-    '45e346279768c5d9b6ddafd5a1b7d5aedeefd5834788ef2fbd0f156551b76afa',
+    'ea5a80ba7f666f0dd0328eef162681c386a9a0d143caf3810da4e583afc15be8',
   'image/base64':
-    '768e7c813cb5313fac7258e14069878d9234ae79334c84a26c9482d2aae06c72',
+    'bc1324144a2ad5b1a621ff90f7fbf60f2a8f5d28498b0e7196c9a2398cffbaa2',
   'image/deduplicated':
-    'd823fb4a718a2f7a8d907dc863a1b330b86e9ec8b4fe171a56b76ff0bf4aa2f4',
+    '8e411ac82ea3ce5a79b8ae9c6e8d3a6b6f12d9ce50d427f8a9f409795bfb9b07',
   'image/aspect-from-width':
-    '09770702186e5b93cdba205f180e11f696de323a3e05e15fd228636037aa4dcb',
+    '39104e9961e6b4c240f71c447d00379b8609a72bbabefa612dccced89b77921e',
   'image/aspect-from-height':
-    '09770702186e5b93cdba205f180e11f696de323a3e05e15fd228636037aa4dcb',
+    '39104e9961e6b4c240f71c447d00379b8609a72bbabefa612dccced89b77921e',
   'image/contain':
-    '0149f11d8af9f59f4aeda33a7fd76b1251b298445ab96dbfe9d6e249abed5c74',
+    '5f3f439fbe890ee10856a6a4db10e266081f2be0101d2ce2a59bafc1f071ed9b',
   'image/cover':
-    'e83e1a19dcb99719c6f59389882c2b417ac6d3857b072fe7b08f4c034fc28332',
+    'e3f4773956e58b8a61b8684920fc4b3231ee9769ebd7117c7109f79316124f77',
   'image/rounding-rotate':
-    'f8956b36f5adc324af63008aa97456db3fb776aaf96876e4458234ef7867df24',
+    'e7d0e04790c7931d6aa1a44f64ae881a9ac6e4a204ba87b5d3e86b4c1b0988eb',
   'link/external-and-slide':
-    'd5349ba0601c9a10ae458af63de4b14f8e12e0c099947dc233d154fbde7e9c77',
+    'b670b17d96e9ca97211de83894624aec304bc450886874259f5b7b5b0d586262',
   'layout/grid':
-    '8662617b4f34af848e068c6d7ffe4b153fbbcf52bfdecc1c3bae5c522ea1cee7',
+    'a0f1131c5fe3048c3c0789eb304ea8a4ad03882a0950dc02c5c00a6e76e6ecf3',
   'template/background-and-objects':
-    '16d542e0618a4a41dd70e2ffaf51fb2ead1e90682eae8eda49cb8c12d285c1ae',
+    '77081e5b9646da95237159f1d8286439e5fea53c4a5fbf36bacabde284e8f06d',
   'template/placeholders':
-    '5f39d43f2b9663575e758242f7a6303b350aac8a7c0d3ea19e71e9edebff965d',
+    '5b0402b552e02ea0e6a982694ae074a7d80bb28e8f586136b18881c1f3df45dc',
   'table/plain':
-    '02c6d56aafc2810fa3bfd64ea25dbcf5783ea8578dbecfcbfcc2475595003447',
+    '4893bc652071b1c42ca73a21dcaab0fa1393908c99d2cb7aea95e11e36937ded',
   'table/formatting':
-    'b8571923640c1f850c2f42173f110656c4e31db8e6940bde34bfe98b778ab8e4',
+    '4542428eb5011262f1a8cfa0c142ed583d0fa4af7af0d912906bbc25826586c8',
   'table/merged-cells':
-    '674147fe1df3cd23b1b77e62621413bef2ee54c3912124e9c4a5a5ede241c070',
+    'c3e24aa64fc53a47f58319ec7e85b27a8af26c09d3ab33edf701ffda9369c0e1',
   'table/rounded':
-    'e189a7b0ac5e65aaebb26f17b834310d4b3c52f8236f6f653d80dfc306cd6d45',
+    '38af3df3d800115361b063a10035b630f6ad18d1084a7122a9f984c3b28372de',
   'table/emoji-text-presentation':
-    'a41539d17b1956579947dd348d810d553e68b611d02a0662c166c4003e4f1a4e',
+    '97549905779766b2f1535987f83bb4ff5ee2aeb508a4002b5011c46c47f0fec1',
   'chart/bar':
-    '74b1995fbe47776ea3453a7b7a260f2866458bd2c1ec238b91756163775d6786',
+    'd9401548df8e8006c8ea49345087273c734ca95be7038dd22bf4304e43938605',
   'chart/configured':
-    'd43fbb2ab7db1744a42578ff9b30b53b4eddf5aff338f840824eaf604ca70d84',
+    'ffe76d4a98bef73f498c480b1911db04c4b0aef64431686d5a34220f36d3f5c8',
   'chart/two-on-one-slide':
-    'c1b26a6a8702d62d91b1bd7080a3377446c1c2893436fe84fd50c73a0359bbf9',
+    '0527b713fa1d7dfd1e831373c6582b23996dfdd56e1542791e10a0032b844487',
   'text/single-run':
-    'ca9b3d55d175d29baad74f86a7f2145f7563e727ded2aa4bd9619ef399f0544e',
+    'c8fab6b0e567d172d836f3189c5f79e8b4b1798f3636ef187177696c2587d261',
   'text/bullets':
-    '7034f34c2389ac350fc7250acea2278f9ec809ac475b45ca0fc9d6dea6e33f11',
+    'ce23bedfe7f8474c23f540bd89915c665dbcf77d26f8de51ec8ab94819124863',
   'shape/no-text':
-    '33e7bc07d17a30d4838a025f780373ecaba2d368c25364899d40705f68f4ee80',
+    '3ee1b87e9564fd0c037d1c69de71261f3381e3f65b9838e50c42df6731c7ba75',
   'table/auto-page':
-    'dc02d781734c0390750a8605a0bd8baf42ec6386cfecc4e96fc5c21d5690f2f0',
+    '6aeff45745d3a535224670b39c145816ac8de0a5f1ff01523bd65d05f24836a3',
   'table/no-size':
-    'fc2e40f2eadb825d40398765aa1e93b8746cadf7959a015c9539c0443f67b9ab',
+    '14e79704efba2d0d3fa6f5d7417b5b65f6229b21ba2c3aef3e7b233739ac4159',
   'chart/line':
-    'a1f519e6d0c5254dcab98c2fbf1910e698f49222bb8f1ddc86f90cd13f88d065',
+    '99d97b95d755bdfd1cee78ad175760f7607a79d3e2cd5c7859aa41d9549b6021',
   'chart/doughnut':
-    'e76f696c17cbca7e51a6b5f45270d05dee7f837dcb440a4582dada7a468e6d77',
+    'bc9ba1a5b5cded919e3548beefd2d97f84610184e4236d8fb367bed68440190c',
   'image/url-free-aspect':
-    'a337e997b5781aa13f9ec769d040e9605c20d007580fa261c9a8ea0a6f2c9c0e',
+    '407196d4d120fd4af8cd8f993a1c7d05f0e69f51038663d3adcdbd045d4a762c',
   'slide/disabled-content':
-    'f13ae2d6e4cc3a75e2aaa9c545956d9cf88f32c8deec4f866823916046f46fe8',
+    '50c4cf5537a17f32a494132266d8745d318e56f7b6c83ee09fe418a9da563d4b',
   'template/object-page-number':
-    'e3f97e4cf31f1998a768960807a4d0d83364baa277f95c8a58cbdfa13024196f',
+    'fa38b86e14fd8bbc3dea301fa3dd19607680715986e092f0f84efa40f8a94d67',
   'template/object-language':
-    'd7959bdf5ef4aa0b18383312604cf4abf64a07041b6be78653756f4d3465939d',
+    '154130fdb6be35d89c9e6b180e7249ff6ccc65c5c0cb6a0fe0b4ef0e89deac9d',
   'template/margin':
-    '8849bd0228c599f63a6e93b3e6c0679915b637753adb207c56039a7fd3eff7ef',
+    '8e755e6de3d2658e0ca07acfd951c4fa77e4aa3fb4bf8742924f3923b3cda8d8',
   'text/runs-inherit-underline':
-    '7c198a468cbbc913f4dc993c2663f19406f2450f9ddf67fb4f0e394c2030e590',
+    '508cce02c1cddbd4f550cdcbb953313d1802275339ac4d232a0542bac760a868',
   'text/runs-inherit-strike':
-    'eb916d8ce4d651937a05aa5bc547fdd2e73c67cd55467c0a998ea5e03a7aed22',
+    'e23c7946cb3837ab82f3761ad6cf7bcd25077c36c6f41b67092fb3efe313c229',
   'text/runs-override-inherited-underline':
-    '3a25083a801ae862181f987e847ec9dd61e25ef7e8922da7489eef0e5284cbb1',
+    'a36aed59d373949edb1a48bb7e24b6c703356971074039d4c74362237ee8c99f',
   'text/body-hyperlink-over-runs':
-    '8e9fe9c604f5ef0d2928cbc534491bfd1b3bef8f76664ab9f0d8141b72d96492',
+    'a402c6ebfa652bdfe1f18112c2e3956b5f93e4f143684de2cb52b3741c1aa6c4',
   'text/underline-false':
-    '4bd85d6a50e38cfa8c0db3adee5fb3c0be69f2ceb86b0f254c6c25c0f2471ae0',
+    '622feb8dd5536ec1e7894952b8d176f265fa0aeff1c7c295db816c26833a4a1b',
   'text/bullet-object-form':
-    '23f89da77b57968cda2f3ba3767350a0020589e9903867edafe18ce8ef90076c',
+    '37ec2827a0b2ae93362a6906686760b86afb9b3cf3f2c4ced9f29dfb0d6fdba0',
   'shape/empty-line-object':
-    '109cc1ab2ce45db7cf87272638d75bdc11f955fd8fc3a0488ccdea66feaf8da4',
+    '8463e0114420c9f6548e224832af16cf3c38309e908c338cab91a112ca859810',
   'image/contain-without-box':
-    '9045e43efd2d4912f56a0f8e9fda459e07deac1a447a59c3e6423c4671822af8',
+    'c275d4516875b317da911b9657c8c180022e21400bd76028c6beedae7d41520d',
   'table/rounded-single-column-width':
-    'c872f9202d070616c2f24e17c9b30dbdad342d79f8a3099c7d12794c880cb92e',
+    '51ec41c00a90b3ec96b3a6b6b3765e7289f5dda45c91cc11d960ea8cd0ff5790',
   'table/rounded-percent-position':
-    '7c2f86b1e43675851706599ed9943d5c1e4dbd88f4af83dc8572ae4c44467776',
+    'de7e82453f5da55b0cb4a4bbcd613c2445448c69a5f618769be92226184a0d88',
   'link/on-image':
-    'afb404811286372fc40ccbe61df2ce298c24c601b320640669911f01bbdffa83',
+    '97be9df07e1d92acb37adcc6016d346eb8acc3d91cf56df939b2794e637980ae',
   'image/rotated':
-    'a4721bd0f9fcc2c9bdcebfcfba0fabe43a548ef1aca4051db2ec27aeabbf861a',
+    '88418882c26bde4677b2165aa210339b7aa55ae46c73b5a3c273ba5aee820728',
   'shape/arc-family':
-    '0afa8cbbaa8bf020e0689a9665fa0fbbd14c48a9b6b735290a755636ae717471',
+    'eb8fb9a1489274ea56b7c38cfb898471a8ae18cc6b6fb27b21c9a85e54ea8c58',
   'shape/geometry-aliases':
-    'dfa08cf091ca6cd9169172041e899b6e1e744ca293f39fcc190a643f32031f02',
+    '35c5e3473fcdc3ac9c4ebd191641d7b8657bb7cf71c8020a96a6b5f864710765',
 };

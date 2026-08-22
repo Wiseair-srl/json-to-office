@@ -12,12 +12,12 @@ This is a contributor document. It is excluded from the published VitePress site
 | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Shared renderer contract (`packages/shared/src/rendering/`)           | done                                                                                                                 |
 | PptxIR + compiler + validation + debug snapshots                      | done                                                                                                                 |
-| PptxGenJS adapter                                                     | done — the default, byte-identical to the previous implementation                                                    |
+| PptxGenJS adapter                                                     | done — the default, identical part for part to the previous implementation                                           |
 | PPTX cutover: buffer/file APIs, plugin generator, native APIs removed | done                                                                                                                 |
 | PPTX packaging split (generic vs backend)                             | done — repairs in `renderers/pptxgenjs/packaging.ts`, finalization in `core/finalizePackage.ts`, one shared zip pass |
 | `office-open` PPTX adapter                                            | done — experimental, opt-in, declares a verified subset                                                              |
 | DocxIR + compiler                                                     | done — including the style set, so the IR describes every part of the document                                       |
-| docx.js adapter                                                       | done — the default, byte-identical across all 272 corpus cases                                                       |
+| docx.js adapter                                                       | done — the default, identical part for part across all 272 corpus cases                                              |
 | DOCX cutover: buffer/file APIs, plugin generator, native APIs removed | done                                                                                                                 |
 | `office-open` DOCX adapter                                            | done — experimental, opt-in; 265 of 272 corpus cases, the rest refused by name                                       |
 
@@ -191,6 +191,33 @@ evidence, never assumed generic.
 types. PptxIR describes gradients and patterns _semantically_; each adapter
 decides how to realise them.
 
+### What "deterministic" covers
+
+Determinism is a claim about two different things, and they hold at different
+scopes:
+
+| Claim                                  | Scope                                        |
+| -------------------------------------- | -------------------------------------------- |
+| Same input → same **package contents** | any supported runtime, any platform          |
+| Same input → same **file bytes**       | one runtime build (same Node, same platform) |
+
+Everything the pipeline decides is pinned: entry timestamps, core metadata
+timestamps, relationship ids, drawing ids, embedded chart workbooks. What is
+_not_ the pipeline's is the deflate stream — the container's compression comes
+from the runtime's zlib, so a Node release that changes it changes every byte
+of every package without changing a single document.
+
+That is why the corpus goldens hash part content rather than the file
+(`__tests__/fixtures/packageDigest.ts`): a golden over raw bytes asserts more
+than this pipeline controls, and fails the entire corpus at once on a runtime
+upgrade with nothing to distinguish that from a real regression. Byte stability
+is still asserted, by rendering the same document twice in one process — which
+is exactly the scope at which it holds. The `test` job runs both ends of the
+advertised `>=20` engine range so neither claim is only theoretical.
+
+If you need a package to be byte-identical across machines — an artefact hash,
+a signature — pin the Node version alongside the input.
+
 ## Renderer selection
 
 ```ts
@@ -231,8 +258,9 @@ not exported from `@json-to-office/json-to-docx` or
 - **IR tests** — deterministic IDs, resolved units, resolved colours/fonts,
   resource deduplication, stable ordering, required-feature collection,
   invariant rejection, absence of renderer-native values.
-- **Default-backend parity** — byte equality for deterministic fixtures where
-  feasible; otherwise unzip and compare semantic OOXML. Every intentional
+- **Default-backend parity** — one recorded digest per corpus case, covering
+  every part's name and uncompressed bytes and nothing about compression (see
+  [What "deterministic" covers](#what-deterministic-covers)). Every intentional
   difference is documented; unexplained output changes are not accepted.
 - **Cross-backend** — for the shared supported subset, assert required package
   parts, expected XML content, relationships, text/element counts, metadata,
@@ -385,7 +413,7 @@ Two constraints matter:
 
 ## Recorded output differences
 
-Everything else is byte-identical, checked case by case against the pre-IR
+Everything else is identical part for part, checked case by case against the pre-IR
 implementation. These are the deliberate exceptions.
 
 | Change                                                                                                | Why                                                                                                                                                                                                                                                                                                                          |
@@ -417,7 +445,7 @@ them; component-level `underline` and `strike` never reached the runs of a
 rich-text body; a template's `margin` was dropped, silently resizing any
 unconstrained table on that master; a body-level hyperlink was attached to every
 run, emitting one duplicate relationship per run; and several derived geometries
-disagreed. All are byte-identical again and are pinned in
+disagreed. All agree again and are pinned in
 `src/__tests__/fixtures/corpus-regressions.ts`.
 
 The lesson is in that file's header: a differential comparison against the

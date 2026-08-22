@@ -3,7 +3,6 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createHash } from 'node:crypto';
 import {
   generateBufferFromJson,
   generateBufferWithWarnings,
@@ -14,6 +13,7 @@ import { createPresentationGenerator } from '../plugin/createPresentationGenerat
 import type { PresentationComponentDefinition } from '../types';
 import { CORPUS } from './fixtures/corpus';
 import { CORPUS_GOLDENS } from './fixtures/corpus-goldens';
+import { packageDigest } from './fixtures/packageDigest';
 
 const deck = (text: string): PresentationComponentDefinition =>
   ({
@@ -54,9 +54,6 @@ const deckWithImage = (
     ],
   }) as PresentationComponentDefinition;
 
-const sha = (buffer: Buffer) =>
-  createHash('sha256').update(buffer).digest('hex');
-
 const imageOf = (element: { kind: string }): PptxIrImageElement => {
   if (element.kind !== 'image') {
     throw new Error(`expected an image element, got "${element.kind}"`);
@@ -75,8 +72,12 @@ describe('renderer selection', () => {
       { renderer: 'pptxgenjs' }
     );
 
-    expect(sha(withDefault)).toBe(CORPUS_GOLDENS[first.name]);
-    expect(sha(explicit)).toBe(CORPUS_GOLDENS[first.name]);
+    await expect(packageDigest(withDefault as Buffer)).resolves.toBe(
+      CORPUS_GOLDENS[first.name]
+    );
+    await expect(packageDigest(explicit as Buffer)).resolves.toBe(
+      CORPUS_GOLDENS[first.name]
+    );
   });
 
   it('renders through the office-open backend when asked', async () => {
@@ -111,7 +112,7 @@ describe('concurrent generation isolation', () => {
     const results = await Promise.all(
       CORPUS.map(async (testCase) => [
         testCase.name,
-        sha(
+        await packageDigest(
           (await generateBufferFromJson(
             structuredClone(testCase.document) as never
           )) as Buffer
@@ -119,8 +120,8 @@ describe('concurrent generation isolation', () => {
       ])
     );
 
-    for (const [name, hash] of results) {
-      expect({ name, hash }).toEqual({ name, hash: CORPUS_GOLDENS[name] });
+    for (const [name, digest] of results) {
+      expect({ name, digest }).toEqual({ name, digest: CORPUS_GOLDENS[name] });
     }
   });
 
