@@ -240,14 +240,32 @@ async function prepareImages(
     if (resource.kind !== 'image') continue;
     const type = resource.mediaType;
     const data = Buffer.from(resource.bytes);
+    const placementData = new Map<string, Buffer>();
+    [...(placements.get(resource.id) ?? [])].forEach((size, index) => {
+      placementData.set(
+        size,
+        index === 0 ? data : distinguishImageBytes(data, type, size)
+      );
+    });
     resources.set(resource.id, (image, drawingId) => {
-      const transformation = {
+      const rasterSize = {
         width: emuToPixels(image.widthEmu),
         height: emuToPixels(image.heightEmu),
       };
+      const sizeKey = `${rasterSize.width}x${rasterSize.height}`;
+      const transformation = {
+        // Raw numbers are EMUs in @office-open/docx. Passing pixels here makes
+        // a normal image only a few hundred EMUs wide, effectively a dot.
+        width: image.widthEmu,
+        height: image.heightEmu,
+      };
       return {
         type,
-        data,
+        // @office-open/docx stores a drawing transformation on its deduplicated
+        // media entry. Equivalent bytes drawn at a second size would otherwise
+        // reuse the first size, so each distinct placement size gets equivalent
+        // image bytes carrying a harmless format-native marker.
+        data: placementData.get(sizeKey) ?? data,
         transformation,
         // The id is stated rather than left to the backend's process-global
         // counter. `name` stays empty, which is what it was before and what
@@ -260,10 +278,7 @@ async function prepareImages(
               // which is what this pipeline has always shipped.
               fallback: {
                 type: 'png',
-                data:
-                  rasters.get(
-                    `${image.resourceId}:${transformation.width}x${transformation.height}`
-                  ) ?? data,
+                data: rasters.get(`${image.resourceId}:${sizeKey}`) ?? data,
               },
             }
           : {}),
@@ -277,6 +292,125 @@ async function prepareImages(
     });
   }
   return resources;
+}
+
+/**
+ * Keep an image visually identical while giving a differently-sized placement
+ * distinct bytes. The backend deduplicates media by bytes and, unlike OOXML,
+ * keeps the drawing extent on that shared media record.
+ */
+function distinguishImageBytes(
+  data: Buffer,
+  mediaType: string,
+  placement: string
+): Buffer {
+  const marker = Buffer.from(`json-to-office:${placement}`, 'utf8');
+
+  switch (mediaType) {
+    case 'png':
+      return addPngTextChunk(data, marker);
+    case 'jpg':
+      return addJpegComment(data, marker);
+    case 'gif':
+      return addGifComment(data, marker);
+    case 'svg':
+      return Buffer.concat([
+        data,
+        Buffer.from(`\n<!-- ${marker.toString('utf8')} -->`, 'utf8'),
+      ]);
+    case 'bmp': {
+      const marked = Buffer.concat([data, marker]);
+      if (
+        marked.length >= 14 &&
+        marked.subarray(0, 2).toString('ascii') === 'BM'
+      ) {
+        marked.writeUInt32LE(marked.length, 2);
+      }
+      return marked;
+    }
+    default:
+      return Buffer.concat([data, marker]);
+  }
+}
+
+/** Insert a valid ancillary tEXt chunk immediately before PNG's IEND chunk. */
+function addPngTextChunk(data: Buffer, marker: Buffer): Buffer {
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (data.length < 8 || !data.subarray(0, 8).equals(signature)) {
+    return Buffer.concat([data, marker]);
+  }
+
+  let offset = 8;
+  while (offset + 12 <= data.length) {
+    const payloadLength = data.readUInt32BE(offset);
+    const chunkEnd = offset + 12 + payloadLength;
+    if (chunkEnd > data.length) break;
+    if (data.subarray(offset + 4, offset + 8).toString('ascii') === 'IEND') {
+      const payload = Buffer.concat([
+        Buffer.from('json-to-office\0', 'latin1'),
+        marker,
+      ]);
+      const chunk = Buffer.alloc(12 + payload.length);
+      chunk.writeUInt32BE(payload.length, 0);
+      chunk.write('tEXt', 4, 4, 'ascii');
+      payload.copy(chunk, 8);
+      chunk.writeUInt32BE(
+        crc32(chunk.subarray(4, 8 + payload.length)),
+        8 + payload.length
+      );
+      return Buffer.concat([
+        data.subarray(0, offset),
+        chunk,
+        data.subarray(offset),
+      ]);
+    }
+    offset = chunkEnd;
+  }
+
+  return Buffer.concat([data, marker]);
+}
+
+/** Insert a legal JPEG COM segment after the start-of-image marker. */
+function addJpegComment(data: Buffer, marker: Buffer): Buffer {
+  if (data.length < 2 || data[0] !== 0xff || data[1] !== 0xd8) {
+    return Buffer.concat([data, marker]);
+  }
+  const comment = Buffer.alloc(4 + marker.length);
+  comment[0] = 0xff;
+  comment[1] = 0xfe;
+  comment.writeUInt16BE(marker.length + 2, 2);
+  marker.copy(comment, 4);
+  return Buffer.concat([data.subarray(0, 2), comment, data.subarray(2)]);
+}
+
+/** Insert a legal GIF comment extension before the trailer. */
+function addGifComment(data: Buffer, marker: Buffer): Buffer {
+  const trailer = data.lastIndexOf(0x3b);
+  if (trailer < 0 || marker.length > 255) {
+    return Buffer.concat([data, marker]);
+  }
+  const comment = Buffer.concat([
+    Buffer.from([0x21, 0xfe, marker.length]),
+    marker,
+    Buffer.from([0]),
+  ]);
+  return Buffer.concat([
+    data.subarray(0, trailer),
+    comment,
+    data.subarray(trailer),
+  ]);
+}
+
+/** CRC-32 used by PNG chunks. */
+function crc32(data: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (const byte of data) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
 }
 
 /**

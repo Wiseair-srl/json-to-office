@@ -5,7 +5,9 @@
  * asserted — the two disagree about plenty that a reader cannot see. What is
  * asserted is that the IR *means* the same thing to both: the same text in the
  * same order, the same number of tables, rows, cells, drawings, links, note and
- * comment references, and the same media, footnote, endnote and comment parts.
+ * comment references, drawing extents, and the same note and comment parts.
+ * The second backend may need extra equivalent media parts when the same image
+ * is drawn at different sizes because it stores extents on deduplicated media.
  *
  * Running every corpus case rather than a hand-picked subset is deliberate. A
  * subset only proves what someone thought to include; the corpus is the set of
@@ -21,8 +23,19 @@ import {
 } from '../../../core/generateFromIr';
 import { resolveDocxRenderer } from '../../registry';
 import { CORPUS } from '../../../__tests__/fixtures/corpus';
+import {
+  BMP_4X2,
+  GIF_4X2,
+  JPEG_8X4,
+  PNG_4X2,
+} from '../../../__tests__/fixtures/corpus-blocks';
+import { readImageDimensions } from '../../../utils/imageUtils';
 
 const officeOpen = await resolveDocxRenderer('office-open');
+
+const SVG_4X2 = `data:image/svg+xml;base64,${Buffer.from(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="2"><rect width="4" height="2" fill="#3366cc"/></svg>'
+).toString('base64')}`;
 
 /**
  * The features a case needs that the second backend does not declare.
@@ -75,6 +88,7 @@ const STRUCTURE = [
 interface Shape {
   text: string[];
   counts: Record<string, number>;
+  drawingExtents: Array<{ widthEmu: number; heightEmu: number }>;
   media: number;
   footnotes: number;
   endnotes: number;
@@ -90,6 +104,12 @@ async function shapeOf(buffer: Buffer): Promise<Shape> {
   const body = document.slice(document.indexOf('<w:body>'));
   const count = (tag: string): number =>
     (body.match(new RegExp(`<${tag}[ />]`, 'g')) ?? []).length;
+  const drawingExtents = [...body.matchAll(/<wp:extent\b([^>]*)\/?>/g)].map(
+    ([, attributes]) => ({
+      widthEmu: Number(/\bcx="(\d+)"/.exec(attributes)?.[1]),
+      heightEmu: Number(/\bcy="(\d+)"/.exec(attributes)?.[1]),
+    })
+  );
 
   return {
     // Empty text nodes are dropped: docx.js writes one per cached TOC entry as
@@ -97,6 +117,7 @@ async function shapeOf(buffer: Buffer): Promise<Shape> {
     // difference in punctuation rather than in content.
     text: [...body.matchAll(TEXT)].map((m) => m[1]).filter((t) => t.length > 0),
     counts: Object.fromEntries(STRUCTURE.map((tag) => [tag, count(tag)])),
+    drawingExtents,
     media: Object.values(zip.files).filter(
       (file) => !file.dir && file.name.startsWith('word/media/')
     ).length,
@@ -122,9 +143,13 @@ describe('both DOCX backends over the corpus', () => {
         }),
       ]);
 
-      expect(await shapeOf(officeOpen.buffer)).toEqual(
-        await shapeOf(docxjs.buffer)
-      );
+      const officeShape = await shapeOf(officeOpen.buffer);
+      const docxShape = await shapeOf(docxjs.buffer);
+      const { media: officeMedia, ...officeSemantics } = officeShape;
+      const { media: docxMedia, ...docxSemantics } = docxShape;
+
+      expect(officeSemantics).toEqual(docxSemantics);
+      expect(officeMedia).toBeGreaterThanOrEqual(docxMedia);
     },
     30_000
   );
@@ -164,6 +189,35 @@ describe('both DOCX backends over the corpus', () => {
     ]);
 
     expect(officeOpen.buffer.equals(docxjs.buffer)).toBe(false);
+  }, 30_000);
+
+  it('keeps per-placement extents for every image type', async () => {
+    const images = [PNG_4X2, JPEG_8X4, GIF_4X2, BMP_4X2, SVG_4X2].flatMap(
+      (base64) => [
+        { name: 'image', props: { base64, width: 80 } },
+        { name: 'image', props: { base64, width: 120 } },
+      ]
+    );
+    const document = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [{ name: 'section', props: {}, children: images }],
+    };
+    const [docxjs, officeOpen] = await Promise.all([
+      generateBufferViaIr(document as never, { renderer: 'docxjs' }),
+      generateBufferViaIr(document as never, { renderer: 'office-open' }),
+    ]);
+
+    expect((await shapeOf(officeOpen.buffer)).drawingExtents).toEqual(
+      (await shapeOf(docxjs.buffer)).drawingExtents
+    );
+
+    const zip = await JSZip.loadAsync(officeOpen.buffer);
+    for (const [path, entry] of Object.entries(zip.files)) {
+      if (entry.dir || !path.startsWith('word/media/')) continue;
+      const bytes = await entry.async('nodebuffer');
+      expect(readImageDimensions(bytes, path).width).toBeGreaterThan(0);
+    }
   }, 30_000);
 });
 
