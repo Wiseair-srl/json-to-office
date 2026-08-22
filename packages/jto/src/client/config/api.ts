@@ -27,5 +27,6 @@ export const API_ENDPOINTS = {
     libreoffice: `${FORMAT_API}/preview/libreoffice`,
     libreofficeFromJson: `${FORMAT_API}/preview/libreoffice-from-json`,
   },
+  renderers: `${FORMAT_API}/renderers`,
   cacheStats: `${FORMAT_API}/cache-stats`,
 };

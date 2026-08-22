@@ -38,6 +38,7 @@ interface GenerateOptions {
   fontSubstitute?: string[];
   deterministic?: boolean;
   generatedAt?: string;
+  renderer?: string;
 }
 
 interface GenerateSummary {
@@ -139,6 +140,10 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
       'Allow timestamps and other volatile metadata'
     )
     .option('--generated-at <iso>', 'Generation timestamp (ISO 8601)')
+    .option(
+      '--renderer <id>',
+      `Rendering backend for ${adapter.label} (default: the format's own; run with an unknown id to list them)`
+    )
     .option('--dry-run', 'Preview without writing files')
     .action(async (input: string, options: GenerateOptions) => {
       const startTime = performance.now();
@@ -206,6 +211,19 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
               substitution[from] = to;
             }
 
+            // Checked before any work: an unknown backend should cost a
+            // message, not a full render followed by one. The ids come from
+            // the core's registry, so this cannot list a stale set.
+            if (options.renderer !== undefined) {
+              const known = await adapter.rendererIds();
+              if (!known.includes(options.renderer)) {
+                throw new Error(
+                  `Unknown ${adapter.name} renderer "${options.renderer}". ` +
+                    `Available renderers: ${known.map((id) => `"${id}"`).join(', ')}.`
+                );
+              }
+            }
+
             reporter.update(
               options.dryRun
                 ? `Validating ${adapter.label} preview...`
@@ -217,6 +235,7 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
               validation: mergedConfig.validation,
               deterministic: options.deterministic,
               generatedAt: parseGeneratedAt(options.generatedAt),
+              renderer: options.renderer,
               // Relative asset paths resolve against the document's own
               // directory, not the invocation cwd (#142).
               baseDir: dirname(inputPath),

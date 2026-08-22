@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { FORMAT, FORMAT_LABEL } from '../lib/env';
 import { API_ENDPOINTS } from '../config/api';
+import { useSettingsStore } from '../store/settings-store-provider';
 
 export interface GenerationWarning {
   component: string;
@@ -94,6 +95,10 @@ export function describeFailure(
 
 export function usePresentationGenerator() {
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Read here rather than at each call site: every generate has to carry the
+  // selected backend, and a call site that forgot would silently render on the
+  // default one while the UI said otherwise.
+  const generationBackend = useSettingsStore((s) => s.generationBackend);
 
   const generatePresentation = useCallback(
     async (
@@ -106,6 +111,8 @@ export function usePresentationGenerator() {
       ) => void,
       options?: {
         bypassCache?: boolean;
+        /** Renderer id; undefined means the format's default backend. */
+        renderer?: string;
         fonts?: {
           mode?: 'substitute' | 'custom';
           substitution?: Record<string, string>;
@@ -143,6 +150,7 @@ export function usePresentationGenerator() {
           options?: {
             bypassCache?: boolean;
             sourceName?: string;
+            renderer?: string;
             fonts?: {
               mode?: 'substitute' | 'custom';
               substitution?: Record<string, string>;
@@ -153,7 +161,15 @@ export function usePresentationGenerator() {
           jsonDefinition,
           // sourceName lets the server resolve relative asset paths against
           // the discovered document's own directory (#142).
-          options: { ...options, sourceName: name },
+          options: {
+            ...options,
+            sourceName: name,
+            // An explicit per-call renderer still wins, which is what lets a
+            // comparison view ask for both without changing the setting.
+            ...(options?.renderer ?? generationBackend
+              ? { renderer: options?.renderer ?? generationBackend }
+              : {}),
+          },
         };
 
         requestBody.customThemes = customThemes ?? {};
@@ -239,7 +255,7 @@ export function usePresentationGenerator() {
         }
       }
     },
-    []
+    [generationBackend]
   );
 
   const cancelGeneration = useCallback(() => {

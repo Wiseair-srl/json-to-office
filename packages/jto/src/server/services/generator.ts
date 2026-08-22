@@ -407,6 +407,13 @@ export class GeneratorService {
       'string'
         ? (options as { baseDir: string }).baseDir
         : undefined;
+    // The backend is chosen per request, not per server: the playground's
+    // point is comparing two of them on the same document.
+    const renderer =
+      typeof (options as { renderer?: unknown } | undefined)?.renderer ===
+      'string'
+        ? (options as { renderer: string }).renderer
+        : undefined;
     const cacheKeyData = {
       config,
       customThemes:
@@ -418,6 +425,9 @@ export class GeneratorService {
       fontStrict: callerStrict ?? null,
       // Same definition, different source directory → different local assets.
       baseDir: baseDir ?? null,
+      // Same document, different backend → different bytes. Without this,
+      // switching backends would serve the other one's cached buffer.
+      renderer: renderer ?? null,
     };
     const cacheKey = this.cacheService.generateCacheKey(cacheKeyData);
     const hasDynamicContent = this.cacheService.hasDynamicContent(config);
@@ -487,6 +497,7 @@ export class GeneratorService {
         customThemes,
         fonts: fontOpts,
         baseDir,
+        renderer,
         warnings: coreWarnings,
       });
       buffer = await generator.generateBuffer(config);
@@ -495,6 +506,7 @@ export class GeneratorService {
         customThemes,
         fonts: fontOpts,
         baseDir,
+        renderer,
         warnings: coreWarnings,
       });
     }

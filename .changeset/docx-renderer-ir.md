@@ -32,6 +32,11 @@ implementation (`src/__tests__/corpus-ir-parity.test.ts`).
   `UncompiledComponentError`, `DocxRendererId`.
 - `renderer` on `createDocumentGenerator({...})` and on each
   `generateBuffer` / `generateFile` call, the latter overriding the former.
+- `jto <format> generate --renderer <id>`, and a backend picker in the dev
+  playground fed by a new `GET /api/<format>/renderers`. Both formats: the
+  plumbing is shared, so `pptxgenjs` / `office-open` are selectable for PPTX
+  too. An unsupported feature now answers `400` with the feature name and the
+  path that needed it, where it used to be swallowed as a generic `500`.
 
 **Breaking**
 

@@ -31,6 +31,39 @@ import {
 } from '../services/libreoffice-converter.js';
 import { inlineTemplateMedia } from '../services/template-media-inliner.js';
 
+/**
+ * Re-throw as a 400 when the failure is the document's fault, not the server's.
+ *
+ * Two kinds qualify. A backend refusing a feature, or the compiler meeting a
+ * component it does not lower, both carry a code and a message naming what was
+ * missing and where — matched on the code rather than the text, because these
+ * cross a dynamic-import boundary where `instanceof` is unreliable and because
+ * the wording is not an API. Everything else is matched on the message, which
+ * is older and less precise but covers validation failures that predate codes.
+ *
+ * Returns normally when the error is not a client error, leaving the caller to
+ * decide what its own 500 says.
+ */
+function throwIfClientError(error: unknown): void {
+  const code = (error as { code?: unknown } | undefined)?.code;
+  if (
+    code === 'UNSUPPORTED_RENDERER_FEATURE' ||
+    code === 'UNCOMPILED_COMPONENT'
+  ) {
+    throw new HTTPException(400, { message: (error as Error).message });
+  }
+  if (!(error instanceof Error)) return;
+  const message = error.message.toLowerCase();
+  if (
+    message.includes('invalid') ||
+    message.includes('validation') ||
+    message.includes('missing required') ||
+    message.includes('unknown component')
+  ) {
+    throw new HTTPException(400, { message: error.message });
+  }
+}
+
 export function createFormatRouter(adapter: FormatAdapter) {
   const router = new Hono<AppEnv>();
   const assertRequestSources = (value: unknown, path: string) => {
@@ -203,17 +236,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
           requestId,
         });
 
-        if (error instanceof Error) {
-          const msg = error.message.toLowerCase();
-          if (
-            msg.includes('invalid') ||
-            msg.includes('validation') ||
-            msg.includes('missing required') ||
-            msg.includes('unknown component')
-          ) {
-            throw new HTTPException(400, { message: error.message });
-          }
-        }
+        throwIfClientError(error);
         if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, {
           message: `Internal server error during ${adapter.label} generation`,
@@ -632,25 +655,28 @@ export function createFormatRouter(adapter: FormatAdapter) {
           requestId,
         });
         if (error instanceof HTTPException) throw error;
-        // Mirror /generate's mapping so document mistakes read as client
-        // errors, not server faults.
-        if (error instanceof Error) {
-          const msg = error.message.toLowerCase();
-          if (
-            msg.includes('invalid') ||
-            msg.includes('validation') ||
-            msg.includes('missing required') ||
-            msg.includes('unknown component')
-          ) {
-            throw new HTTPException(400, { message: error.message });
-          }
-        }
+        throwIfClientError(error);
         throw new HTTPException(500, {
           message: 'Failed to get standard components definition',
         });
       }
     }
   );
+
+  // GET /renderers — the backends this format registers, defaults first.
+  router.get('/renderers', async (c) => {
+    try {
+      const ids = await adapter.rendererIds();
+      return c.json({
+        success: true,
+        data: { ids, default: ids[0] ?? null },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      logger.error('Failed to list renderers', { error });
+      throw new HTTPException(500, { message: 'Failed to list renderers' });
+    }
+  });
 
   // GET /cache-stats
   router.get('/cache-stats', async (c) => {

@@ -53,6 +53,23 @@ jto <docx|pptx> generate <input> [options]
 | `--font-mode <mode>`              | `substitute` \| `custom` | `custom`                                    | `custom` keeps font references as-is; `substitute` rewrites non-safe fonts to safe ones. Any other value errors                                                                          |
 | `--font-substitute <family=safe>` | string, repeatable       | `[]`                                        | Map a non-safe family to a specific safe font; the target must be in the safe-fonts list or the command errors                                                                           |
 | `--dry-run`                       | boolean                  | `false`                                     | Print a summary — input, output, format, theme, plugins (when any loaded), and `Validation: passed` — without writing files                                                              |
+| `--renderer <id>`                 | string                   | format default                              | Backend that writes the file — see [Choosing a backend](#choosing-a-backend)                                                                                                             |
+
+### Choosing a backend
+
+`--renderer` picks which library turns the compiled document into bytes. The
+default produces the output this pipeline has always produced; `office-open` is
+experimental and opt-in.
+
+```bash
+jto docx generate report.docx.json --renderer office-open -o report.docx
+```
+
+The two backends do not support the same set of features. A document needing one
+the chosen backend does not have is refused _before_ any bytes exist, naming the
+feature and the path that needed it — a comment thread on `office-open`, for
+instance. That is deliberate: a backend silently dropping content would be worse
+than a failed command.
 
 The [plugin/generation config file](#plugin--generation-config)'s `theme` and `themePath` keys **are** applied by `generate` (either CLI flag replaces both — see [Theme selection](#theme-selection) below), as is `validation.allowUnknownFields`. Only `validation.strict` is inert. Plugin keys (`plugins`, `pluginDirs`, `autoDiscover`) take effect as documented there.
 
@@ -380,6 +397,7 @@ The key is read from `x-api-key` (or `API_KEY_HEADER`), and `Authorization: Bear
 | `POST`   | `/api/<format>/preview/libreoffice-from-json`         | JSON → generate → PDF in one step; 16 MB cap                                                                                                  |
 | `POST`   | `/api/<format>/standard-components`                   | Resolve plugin components to standard definitions                                                                                             |
 | `POST`   | `/api/<format>/rasterize`                             | Rasterize a single-slide pptx to PNG; 32 MB cap, DPI clamped                                                                                  |
+| `GET`    | `/api/<format>/renderers`                             | Backends this format registers, default first — what the playground's backend picker offers                                                   |
 | `GET`    | `/api/<format>/cache-stats`                           | Cache statistics                                                                                                                              |
 | `DELETE` | `/api/<format>/cache`                                 | Clear the cache                                                                                                                               |
 | `GET`    | `/api/discovery/all`                                  | Discover plugins, documents, and themes                                                                                                       |

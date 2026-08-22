@@ -49,6 +49,8 @@ import { KbdShortcut } from '../ui/kbd';
 import { apiClient } from '../../api/client';
 import { useToast } from '../ui/use-toast';
 import { usePresentationGenerator } from '../../hooks/usePresentationGenerator';
+import { useRendererIds } from '../../hooks/useRendererIds';
+import { useSettingsStore } from '../../store/settings-store-provider';
 import { buildWarningsDocumentJson } from '../../lib/warnings-document-builder';
 import type { GenerationWarning } from '../../store/output-store';
 import { FORMAT, FORMAT_EXT } from '../../lib/env';
@@ -139,6 +141,15 @@ function PreviewHeader({
   // PPTX-specific generator.
   const { generateDocument } = usePresentationGenerator();
   const themesStore = useContext(ThemesStoreContext)!;
+  // The *generation* backend, unrelated to `renderingLibrary` above even
+  // though the DOCX default is also spelled `docxjs`. Read from the store
+  // rather than taken as a prop: `usePresentationGenerator` reads the same
+  // value, so a control that only informed this component would drift from
+  // what actually rendered.
+  const backends = useRendererIds();
+  const generationBackend = useSettingsStore((s) => s.generationBackend);
+  const setSettings = useSettingsStore((s) => s.setSettings);
+  const activeBackend = generationBackend ?? backends.default ?? undefined;
 
   /**
    * Snapshot the current valid custom themes into the `{ [name]: parsed }`
@@ -690,6 +701,35 @@ function PreviewHeader({
             </Tooltip>
           )}
 
+          {backends.ids.length > 1 && (
+            <Select
+              value={activeBackend}
+              onValueChange={(id) => setSettings({ generationBackend: id })}
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SelectTrigger className="w-[150px] h-7 text-xs hidden lg:flex">
+                    <SelectValue placeholder="Backend" />
+                  </SelectTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    Backend that writes the {FORMAT.toUpperCase()} file. A
+                    non-default one may refuse a document it cannot express.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+              <SelectContent className="text-sidebar-foreground">
+                {backends.ids.map((id) => (
+                  <SelectItem value={id} key={id}>
+                    {id}
+                    {id === backends.default ? '' : ' (experimental)'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           {renderingLibrary && setRenderingLibrary && (
             <Select
               value={renderingLibrary}
@@ -795,6 +835,26 @@ function PreviewHeader({
                 <Trash2Icon className="h-4 w-4 mr-2" />
                 {isClearingCache ? 'Clearing...' : 'Clear all caches'}
               </DropdownMenuItem>
+              {/* Generation backend for small screens */}
+              {backends.ids.length > 1 && (
+                <>
+                  <DropdownMenuSeparator className="lg:hidden" />
+                  {backends.ids.map((id) => (
+                    <DropdownMenuItem
+                      key={id}
+                      className="lg:hidden"
+                      onClick={() => setSettings({ generationBackend: id })}
+                    >
+                      <span className="mr-2">
+                        {activeBackend === id ? '●' : '○'}
+                      </span>
+                      {id}
+                      {id === backends.default ? '' : ' (experimental)'}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+
               {/* Renderer select for small screens */}
               {renderingLibrary && setRenderingLibrary && (
                 <>
