@@ -68,7 +68,6 @@ const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'text-boxes',
   'toc',
   'cached-toc',
-  'fields',
   'cached-fields',
   'cross-references',
   'comments',
