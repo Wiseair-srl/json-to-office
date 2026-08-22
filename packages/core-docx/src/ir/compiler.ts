@@ -935,7 +935,7 @@ function compileParagraph(
       }),
       bookmarkName,
       ...(props.comment
-        ? { commentIds: declareComment(props.comment, ctx) }
+        ? { commentIds: declareComment(props.comment, ctx, path) }
         : {}),
     }),
   ];
@@ -979,7 +979,7 @@ function compileHeading(
       formatting: paragraphFormatting(props, ctx, { defaultAlignment: 'left' }),
       bookmarkName,
       ...(props.comment
-        ? { commentIds: declareComment(props.comment, ctx) }
+        ? { commentIds: declareComment(props.comment, ctx, path) }
         : {}),
       numberingNone: props.numbering === false,
       ...(props.numbering === true
@@ -1850,7 +1850,7 @@ function compileList(
   const lastRendered = rendersAt.lastIndexOf(true);
   const commentIds =
     firstRendered !== -1 && props.comment
-      ? declareComment(props.comment, ctx)
+      ? declareComment(props.comment, ctx, path)
       : undefined;
 
   items.forEach((item, index) => {
@@ -2492,9 +2492,17 @@ interface NoteBinding {
  */
 function declareComment(
   comment: Record<string, any>,
-  ctx: CompileContext
+  ctx: CompileContext,
+  path: string
 ): number[] {
   const resolved = comment.resolved as boolean | undefined;
+  const replies = (comment.replies ?? []) as Record<string, any>[];
+  // A reply and a resolved state both live in `word/commentsExtended.xml`,
+  // which a backend has to write on purpose. Requiring the feature is what
+  // stops one that cannot from flattening a thread into unrelated comments.
+  if (replies.length > 0 || resolved !== undefined) {
+    ctx.features.require('comment-threads', path);
+  }
   const rootId = ++ctx.commentCounter;
   const toComment = (
     source: Record<string, any>,
@@ -2523,7 +2531,7 @@ function declareComment(
 
   ctx.comments.push(toComment(comment, rootId));
   const ids = [rootId];
-  for (const reply of (comment.replies ?? []) as Record<string, any>[]) {
+  for (const reply of replies) {
     const replyId = ++ctx.commentCounter;
     // Word resolves a thread as a whole, so the flag rides every member.
     ctx.comments.push(toComment(reply, replyId, rootId));
@@ -3686,7 +3694,7 @@ function compileTableCell(
     // A cell paragraph names no style: it takes its run properties from the
     // cell, not from Normal, so naming one would layer body-prose spacing back
     // on top of the dense table spacing.
-    children: cellChildren(cell, baseStyle, scope.ctx, rowRevision),
+    children: cellChildren(cell, baseStyle, scope, rowRevision),
     formatting: {
       alignment: cell.missing
         ? 'left'
@@ -3744,14 +3752,17 @@ function compileTableCell(
 function cellChildren(
   cell: ResolvedCell<unknown, unknown>,
   baseStyle: TableBaseStyle,
-  ctx: CompileContext,
+  scope: ComponentScope,
   rowRevision?: RowRevision
 ): DocxIrInline[] {
+  const { ctx } = scope;
   // A comment on an empty cell still has to anchor somewhere: Word writes a
   // zero-length range plus the reference, so the anchors are placed before the
   // content is known to exist.
   const comment = cell.comment as Record<string, any> | undefined;
-  const commentIds = comment ? declareComment(comment, ctx) : undefined;
+  const commentIds = comment
+    ? declareComment(comment, ctx, scope.path)
+    : undefined;
   const wrap = (children: DocxIrInline[]): DocxIrInline[] =>
     commentIds
       ? [

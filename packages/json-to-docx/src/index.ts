@@ -23,6 +23,11 @@ export {
 
 // Renderer selection
 export type { DocxRendererId } from '@json-to-office/core-docx';
+export {
+  DEFAULT_DOCX_RENDERER_ID,
+  docxRendererIds,
+  isDocxRendererId,
+} from '@json-to-office/core-docx';
 
 // Re-export shared-docx schemas and types
 export * from '@json-to-office/shared-docx';
