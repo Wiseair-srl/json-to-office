@@ -542,13 +542,21 @@ export interface DocxIrParagraph {
   frame?: DocxIrFrame;
 }
 
-export interface DocxIrParagraphNumbering {
-  reference: string;
-  /** 0-based. */
-  level: number;
-  /** Explicitly detach from numbering — OOXML `numId 0`. */
-  none?: boolean;
-}
+/**
+ * A paragraph's place in a numbering sequence.
+ *
+ * `none` is not "no numbering stated" — that is expressed by leaving the whole
+ * field out. It is an explicit detachment (OOXML `numId 0`), which is how a
+ * single heading opts out of a numbering its style applies.
+ */
+export type DocxIrParagraphNumbering =
+  | { none: true }
+  | {
+      none?: false;
+      reference: string;
+      /** 0-based. */
+      level: number;
+    };
 
 export interface DocxIrParagraphMarkRevision {
   type: 'insert' | 'delete';
