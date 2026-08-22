@@ -46,8 +46,12 @@ export const PPTX_FEATURES = [
   'external-links',
   /** Hyperlinks targeting another slide in the same deck. */
   'internal-links',
-  /** Shape/element rotation and flips. */
-  'transforms',
+  /** Rotation on a shape, text box or table. */
+  'rotation',
+  /** Rotation on a picture — a separate ability from shape rotation. */
+  'image-rotation',
+  'flip-horizontal',
+  'flip-vertical',
   /** Grouped elements sharing a transform. */
   'groups',
   /** Per-run proofing language. */

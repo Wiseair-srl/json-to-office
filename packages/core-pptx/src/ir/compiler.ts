@@ -1034,13 +1034,7 @@ function compileShape(
 
   ctx.features.require('shapes', path);
   const transform = shapeTransform(props, ctx);
-  if (
-    transform.rotationDegrees !== undefined ||
-    transform.flipHorizontal ||
-    transform.flipVertical
-  ) {
-    ctx.features.require('transforms', path);
-  }
+  requireTransformFeatures(transform, path, 'rotation', ctx);
 
   return {
     kind: 'shape',
@@ -1155,6 +1149,25 @@ function shapeTransform(
   };
 }
 
+/**
+ * Record the transform abilities an element actually uses.
+ *
+ * Rotation is split by element kind because backends differ: one may rotate a
+ * shape but not a picture. Flips are separate for the same reason.
+ */
+function requireTransformFeatures(
+  transform: PptxIrTransform,
+  path: string,
+  rotationFeature: 'rotation' | 'image-rotation',
+  ctx: CompileContext
+): void {
+  if (transform.rotationDegrees !== undefined) {
+    ctx.features.require(rotationFeature, path);
+  }
+  if (transform.flipHorizontal) ctx.features.require('flip-horizontal', path);
+  if (transform.flipVertical) ctx.features.require('flip-vertical', path);
+}
+
 /* ------------------------------------------------------------------ *
  * Images
  * ------------------------------------------------------------------ */
@@ -1192,9 +1205,7 @@ function compileImage(
   const hyperlink = compileHyperlink(props.hyperlink, 'image', ctx);
 
   const transform = shapeTransform(props, ctx);
-  if (transform.rotationDegrees !== undefined) {
-    ctx.features.require('transforms', path);
-  }
+  requireTransformFeatures(transform, path, 'image-rotation', ctx);
 
   const sizing = compileImageSizing(props.sizing, ctx);
 

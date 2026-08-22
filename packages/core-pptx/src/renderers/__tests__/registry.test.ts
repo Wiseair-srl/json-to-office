@@ -46,11 +46,35 @@ describe('PPTX renderer registry', () => {
     );
   });
 
-  it('reports the missing optional backend when office-open is selected', async () => {
-    // `@office-open/pptx` is not installed yet, so selecting it must say so
-    // rather than failing with a bare module-resolution error.
-    await expect(resolvePptxRenderer('office-open')).rejects.toThrow(
-      /@office-open\/pptx/
-    );
+  it('resolves the office-open renderer with a narrower capability set', async () => {
+    const officeOpen = await resolvePptxRenderer('office-open');
+    const pptxgenjs = await resolvePptxRenderer('pptxgenjs');
+
+    expect(officeOpen.id).toBe('office-open');
+    expect(officeOpen.format).toBe('pptx');
+
+    // Each backend has abilities the other lacks; neither is a subset.
+    expect(officeOpen.capabilities.has('transitions')).toBe(true);
+    expect(officeOpen.capabilities.has('groups')).toBe(true);
+    expect(pptxgenjs.capabilities.has('transitions')).toBe(false);
+
+    // Verified gaps in office-open, declared as gaps rather than mapped badly.
+    for (const feature of [
+      'svg',
+      'charts',
+      'image-rotation',
+      'flip-vertical',
+      'masters',
+      'table-merged-cells',
+    ] as const) {
+      expect({
+        feature,
+        supported: officeOpen.capabilities.has(feature),
+      }).toEqual({ feature, supported: false });
+      expect({
+        feature,
+        supported: pptxgenjs.capabilities.has(feature),
+      }).toEqual({ feature, supported: true });
+    }
   });
 });

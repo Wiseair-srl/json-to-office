@@ -42,6 +42,8 @@
     "probe-image-size": "7.2.3"
   },
   "devDependencies": {
+    "@office-open/core": "0.11.0",
+    "@office-open/pptx": "0.11.0",
     "@types/node": "20.11.0",
     "@types/probe-image-size": "7.2.4",
     "tsup": "8.5.0",
@@ -74,5 +76,13 @@
   ],
   "engines": {
     "node": ">=20.0.0"
+  },
+  "peerDependencies": {
+    "@office-open/pptx": "0.11.0"
+  },
+  "peerDependenciesMeta": {
+    "@office-open/pptx": {
+      "optional": true
+    }
   }
 }
