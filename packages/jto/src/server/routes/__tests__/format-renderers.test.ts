@@ -12,6 +12,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { Hono } from 'hono';
 import { createAPIApp } from '../../app';
 import { DocxFormatAdapter } from '@json-to-office/jto-cli';
+import { PptxFormatAdapter } from '@json-to-office/jto-cli';
 
 // Hono's body-limit middleware reads Content-Length; tests must set it.
 async function post(app: Hono, url: string, body: unknown) {
@@ -162,6 +163,26 @@ describe('/api/docx/renderers', () => {
     const body = (await response.json()) as { error?: string };
     expect(body.error).toContain('"nope"');
     expect(body.error).toContain('"docxjs"');
+    expect(body.error).toContain('"office-open"');
+  }, 30_000);
+});
+
+describe('/api/pptx/generate renderer validation', () => {
+  it('answers an unregistered backend with 400 and the PPTX ids', async () => {
+    const app = createAPIApp(new PptxFormatAdapter()) as unknown as Hono;
+    const response = await post(app, '/api/pptx/generate', {
+      jsonDefinition: {
+        name: 'pptx',
+        props: { title: 'Renderer' },
+        children: [{ name: 'slide', props: {}, children: [] }],
+      },
+      options: { renderer: 'nope' },
+    });
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error?: string };
+    expect(body.error).toContain('"nope"');
+    expect(body.error).toContain('"pptxgenjs"');
     expect(body.error).toContain('"office-open"');
   }, 30_000);
 });

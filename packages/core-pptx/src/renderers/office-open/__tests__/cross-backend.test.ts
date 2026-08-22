@@ -439,6 +439,32 @@ describe('office-open capability failures', () => {
     );
   });
 
+  it.each([0, 360, -360])(
+    'accepts an identity image rotation of %s degrees',
+    async (rotate) => {
+      const result = await generateBufferViaIr(
+        deck([
+          slide([
+            {
+              name: 'image',
+              props: {
+                base64: PNG_4X2,
+                x: 1,
+                y: 1,
+                w: 2,
+                h: 1,
+                rotate,
+              },
+            },
+          ]),
+        ]) as never,
+        { renderer: 'office-open' }
+      );
+
+      expect(result.buffer.length).toBeGreaterThan(0);
+    }
+  );
+
   it('rejects a vertical flip', async () => {
     await expectRejected(
       deck([

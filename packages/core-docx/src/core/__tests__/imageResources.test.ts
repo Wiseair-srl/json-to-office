@@ -10,8 +10,16 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { loadImageResources } from '../imageResources';
 import type { ComponentDefinition } from '../../types';
+
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<typeof import('fs')>('fs');
+  return { ...actual, readFileSync: vi.fn(actual.readFileSync) };
+});
 
 /** A 4×2 PNG and a 2×4 one, so a swapped response is visible in the size. */
 const WIDE = Buffer.from(
@@ -75,6 +83,25 @@ describe('loadImageResources', () => {
     ]);
 
     expect(fetches.calls()).toBe(1);
+  });
+
+  it('reads a local source once for both bytes and dimensions', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'jto-image-resource-'));
+    const path = join(directory, 'wide.png');
+    writeFileSync(path, WIDE);
+    const read = vi.mocked(readFileSync);
+    read.mockClear();
+
+    try {
+      const loaded = await loadImageResources([image(path)]);
+
+      expect(loaded.get(path)?.intrinsic).toEqual({ width: 4, height: 2 });
+      expect(read.mock.calls.filter(([value]) => value === path)).toHaveLength(
+        1
+      );
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it('sizes the image from the bytes it embedded, not a second response', async () => {

@@ -115,7 +115,7 @@ export type InferCustomComponents<T> = T extends { customComponents: infer M }
 // ============================================================================
 
 /**
- * Per-call options shared by generate/generateBuffer/generateFile.
+ * Per-call options shared by generateBuffer/generateFile.
  *
  * `preserveCustomComponents`: list of registered custom-component names whose
  * `{ name, props, children? }` nodes should be kept verbatim in the returned

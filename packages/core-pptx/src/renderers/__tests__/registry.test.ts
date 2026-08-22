@@ -38,6 +38,7 @@ describe('PPTX renderer registry', () => {
     expect(capabilities.has('image-fills')).toBe(false);
     expect(capabilities.has('transitions')).toBe(false);
     expect(capabilities.has('groups')).toBe(false);
+    expect(capabilities.has('complex-bullet-glyphs')).toBe(false);
   });
 
   it('fails with an actionable message for an unknown renderer', async () => {
@@ -56,6 +57,7 @@ describe('PPTX renderer registry', () => {
     // Each backend has abilities the other lacks; neither is a subset.
     expect(officeOpen.capabilities.has('transitions')).toBe(true);
     expect(officeOpen.capabilities.has('groups')).toBe(true);
+    expect(officeOpen.capabilities.has('complex-bullet-glyphs')).toBe(true);
     expect(pptxgenjs.capabilities.has('transitions')).toBe(false);
 
     // Verified gaps in office-open, declared as gaps rather than mapped badly.

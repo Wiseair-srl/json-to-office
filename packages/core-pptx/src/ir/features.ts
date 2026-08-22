@@ -18,6 +18,11 @@ export const PPTX_FEATURES = [
   'placeholders',
   /** Multiple independently-formatted runs inside one text body. */
   'rich-text',
+  /**
+   * Bullet glyphs outside PptxGenJS's single-BMP-character API: astral
+   * characters and multi-code-point graphemes.
+   */
+  'complex-bullet-glyphs',
   /** Text bodies at all (a single run, uniform formatting). */
   'text',
   /** Preset-geometry shapes. */

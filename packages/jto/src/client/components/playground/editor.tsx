@@ -347,6 +347,7 @@ function EditorComponent() {
             name: result.name as string,
             text: result.text as string,
             blob: result.blob as Blob,
+            renderer: result.renderer as string | undefined,
             globalError: undefined,
             isGenerating: false,
             isPreviewStale: false,

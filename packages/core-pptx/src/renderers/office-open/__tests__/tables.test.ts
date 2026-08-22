@@ -140,6 +140,36 @@ describe('office-open tables: what it refuses', () => {
       /slides\[0\]\.elements\[0\]\.borderRadius/
     );
   });
+
+  it('names the repeated-header field in its refusal', async () => {
+    await expect(refuses({ autoPageRepeatHeader: true })).rejects.toThrow(
+      /slides\[0\]\.elements\[0\]\.autoPageRepeatHeader/
+    );
+  });
+
+  it('names the exact padded cell in its refusal', async () => {
+    await expect(
+      refuses({ rows: [['Plain', { text: 'Padded', margin: 6 }]] })
+    ).rejects.toThrow(/slides\[0\]\.elements\[0\]\.rows\[0\]\[1\]\.margin/);
+  });
+});
+
+describe('office-open tables: semantic identity values', () => {
+  it.each([
+    ['zero corner radius', { borderRadius: 0 }],
+    ['unit column span', { rows: [[{ text: 'One', colspan: 1 }]] }],
+    ['unit row span', { rows: [[{ text: 'One', rowspan: 1 }]] }],
+  ])('accepts %s', async (_name, props) => {
+    const xml = await officeOpenSlide(props);
+    expect(xml).toContain('<a:tbl>');
+  });
+
+  it.each([
+    ['a real column span', { rows: [[{ text: 'Two', colspan: 2 }]] }],
+    ['a real row span', { rows: [[{ text: 'Two', rowspan: 2 }], ['Next']] }],
+  ])('still refuses %s', async (_name, props) => {
+    await expect(refuses(props)).rejects.toThrow(/table-merged-cells/);
+  });
 });
 
 describe('pptxgenjs still supports all of them', () => {
