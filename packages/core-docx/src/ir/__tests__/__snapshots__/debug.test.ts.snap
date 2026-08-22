@@ -1,0 +1,91 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DocxIR debug snapshots > matches a recorded snapshot 1`] = `
+"{
+  "comments": [],
+  "endnotes": [],
+  "footnotes": [],
+  "metadata": {
+    "author": "JTO",
+    "title": "Snapshot"
+  },
+  "numbering": [],
+  "resources": [
+    {
+      "byteLength": 8,
+      "id": "res1",
+      "kind": "image",
+      "mediaType": "image/png",
+      "sha256": "4c4b6a3be1314ab86138bef4314dde022e600960d8689a2c8f8631802d20dab6"
+    }
+  ],
+  "schemaVersion": 1,
+  "sections": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "first"
+            },
+            {
+              "kind": "text",
+              "text": "second"
+            }
+          ],
+          "id": "s0.b0",
+          "kind": "paragraph",
+          "path": "sections[0].children[0]"
+        },
+        {
+          "children": [
+            {
+              "heightEmu": 457200,
+              "kind": "image",
+              "resourceId": "res1",
+              "widthEmu": 914400
+            }
+          ],
+          "id": "s0.b1",
+          "kind": "paragraph",
+          "path": "sections[0].children[1]"
+        }
+      ],
+      "id": "s0",
+      "path": "sections[0]",
+      "properties": {
+        "page": {
+          "heightTwips": 16838,
+          "margins": {
+            "bottomTwips": 1440,
+            "leftTwips": 1440,
+            "rightTwips": 1440,
+            "topTwips": 1440
+          },
+          "orientation": "portrait",
+          "widthTwips": 11906
+        }
+      }
+    }
+  ],
+  "settings": {
+    "trackRevisions": false,
+    "updateFields": true
+  },
+  "styles": {
+    "character": [],
+    "defaults": {
+      "paragraph": {},
+      "run": {}
+    },
+    "paragraph": [
+      {
+        "id": "Normal",
+        "name": "Normal"
+      }
+    ]
+  }
+}
+"
+`;

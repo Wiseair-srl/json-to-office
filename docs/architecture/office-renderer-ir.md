@@ -327,6 +327,114 @@ Everything else is byte-identical; these are the deliberate exceptions.
 no transition API, and it was silently dropped before the IR existed too. It is
 now visible as a capability the `pptxgenjs` adapter does not declare.
 
+## The DOCX half: what the migration has to absorb
+
+DocxIR exists and its invariants are tested; the compiler and adapters do not.
+What follows is what a compiler has to account for, gathered by reading the
+current implementation rather than by guessing. It is written down because
+these are the details that decide whether a migration preserves behaviour.
+
+### Where the work is
+
+| Module                         | Lines | What it holds                                      |
+| ------------------------------ | ----- | -------------------------------------------------- |
+| `core/content.ts`              | 2855  | every primitive that builds a docx.js object       |
+| `styles/themeToDocxAdapter.ts` | 960   | theme → `IStylesOptions`, i.e. the whole style set |
+| `utils/textParser.ts`          | 661   | the inline text mini-language                      |
+| `core/layout.ts`               | ~700  | section chunking and column layout                 |
+
+The component files themselves are thin: they read props and call a primitive.
+Migrating the components is not the job — migrating `content.ts`,
+`themeToDocxAdapter.ts` and `textParser.ts` is.
+
+### The inline mini-language
+
+`**bold**`, `__bold__`, `*italic*`, `***both***`, `\n`, `\t`,
+`[text](url)`, `[text](#id)`, `[@id]` and `[@id:format]` cross-references,
+`[^id]` note markers, and the `{PAGE}` / `{TOTAL_PAGES}` / `{DATE}` /
+`{DATETIME}` / `{YEAR}` placeholders. All of it resolves to `DocxIrInline`
+nodes before the IR exists — the IR carries runs, hyperlinks, fields and note
+references, never markup.
+
+### Six registries become IR data
+
+Bookmarks, revision ids, numbering, section bookmarks, comments and notes are
+currently `AsyncLocalStorage`-scoped registries entered per render
+(`core/render.ts`). In the IR they are ordinary data: ids are allocated by the
+compiler in document order, comment and note bodies live on the root, and
+bookmark and comment ranges are explicit paired inline nodes. That is what
+makes concurrent generations independent without a storage trick.
+
+### Author units are inconsistent, and the IR is not
+
+The compiler normalises all of this; the IR states the unit in every property
+name.
+
+| Author prop                                   | Unit at the boundary                           |
+| --------------------------------------------- | ---------------------------------------------- |
+| `spacing.before/after`                        | points                                         |
+| `font.size`                                   | points                                         |
+| `font.characterSpacing.value`                 | twentieths of a point                          |
+| `indent.*`, `tabStops[].position`             | **twips already**                              |
+| table `padding`, row `height`, column `width` | points (or a percentage)                       |
+| table `borderSize`                            | points → eighths of a point                    |
+| image `width`/`height`                        | **pixels at 96 DPI** (or a percentage)         |
+| image floating offsets                        | twips → EMU                                    |
+| paragraph frame `floating.width/height`       | **twips**                                      |
+| `text-box` `width`/`height`                   | **pixels**                                     |
+| `text-box` `style.padding` and `border.width` | **points in table mode, pixels in shape mode** |
+| `columns` `width`/`gap`                       | points (or a percentage)                       |
+| list level `indent`                           | points                                         |
+| `visual` `canvas.width/height`                | **inches**                                     |
+| page size and margins                         | twips                                          |
+
+Two known defects sit in this table and must be preserved deliberately or fixed
+deliberately, not by accident: `statistic.spacing` is passed through as twips
+without the points conversion every other component applies, and the same
+`text-box` padding prop means points or pixels depending on the render mode.
+
+### Backend-specific repairs to move into `renderers/docxjs/`
+
+Each of these exists because of docx.js, not because of Word:
+
+- bookmarks are emitted as raw `BookmarkStart`/`BookmarkEnd` with a scoped
+  counter, because docx.js 9.7.1 gives every bookmark `w:id="1"`
+- `CommentReference` is wrapped in a `TextRun`, or LibreOffice drops every
+  annotation
+- duplicate `wp:docPr@id` values are rewritten in the produced zip
+- `text-box` shape mode falls back to table mode in five documented cases, and
+  drops the border when fill and outline are set together, because docx.js
+  emits two fill groups in an order Word rejects
+- `wrap.type: 'tight'` throws, because docx.js emits invalid OOXML without
+  polygon geometry
+
+Generic finalization — deterministic zip and core-metadata timestamps — stays
+outside the adapter, as it does for PPTX.
+
+### Diagnostics are the biggest gap
+
+Only three structured warning codes exist today, all in the image path
+(`IMAGE_SVG_RASTER_FAILED`, `IMAGE_SVG_RASTER_SKIPPED`,
+`TABLE_CELL_COLOR_INVALID`). Everything else — the five text-box fallbacks, two
+TOC no-ops, three note-resolution failures, two cross-reference failures,
+duplicate bookmarks, unresolved comments, invalid z-index, column overflow — is
+a bare `console.warn` with no code and no collector. The compiler is where that
+should become structured, because it is the layer that knows both the authoring
+path and the reason.
+
+### Order of work
+
+1. **Goldens first.** `src/__tests__/fixtures/corpus.ts` and its recorded
+   hashes exist now, so any compiler can be checked against the output the
+   current implementation produces. Nothing else should start before this.
+2. Compile the body: paragraphs, runs, headings, bookmarks, images, tables.
+3. Compile the document: styles, numbering, sections, headers/footers.
+4. Compile the annotations: comments, notes, revisions, fields, TOC.
+5. Write the docx.js adapter against the IR, and cut over only when the corpus
+   passes through it.
+6. Remove the native docx.js APIs and the `docx` dependency from packages with
+   no remaining source imports.
+
 ## Source map
 
 | Concern         | Path                                |
