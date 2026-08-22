@@ -7,25 +7,12 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import JSZip from 'jszip';
-import { Paragraph, Table } from 'docx';
 import { generateBufferFromJson } from '../../core/generator';
-import { renderTextBoxComponent } from '../text-box';
+import { compileDocumentToIr } from '../../core/generateFromIr';
 import { minimalTheme } from '../../templates/themes';
 import { getAvailableWidthTwips } from '../../utils/widthUtils';
-import type { TextBoxComponentDefinition, RenderContext } from '../../types';
-
-const context: RenderContext = {
-  theme: { name: 'minimal', colors: {}, fonts: {}, spacing: {} },
-  fullTheme: minimalTheme,
-  document: { title: 'Test', date: new Date() },
-  section: { currentLayout: 'single', columnCount: 1, pageNumber: 1 },
-  utils: {
-    formatDate: (date: Date) => date.toISOString(),
-    parseText: (text: string) => [{ text }],
-    getStyle: (name: string) => ({ name }),
-  },
-  depth: 0,
-} as unknown as RenderContext;
+import type { DocxIrBlock } from '../../ir/types';
+import type { TextBoxComponentDefinition } from '../../types';
 
 const paragraphChild = {
   name: 'paragraph',
@@ -43,8 +30,29 @@ function textBox(
   } as unknown as TextBoxComponentDefinition;
 }
 
-function render(component: TextBoxComponentDefinition) {
-  return renderTextBoxComponent(component, minimalTheme, 'minimal', context);
+/**
+ * Compile one text box and report which rendering it took.
+ *
+ * A shape is a run inside a paragraph; the table rendering is a block of its
+ * own — so the block kind is the answer to "did the shape attempt succeed?".
+ */
+async function render(
+  component: TextBoxComponentDefinition
+): Promise<DocxIrBlock[]> {
+  const compiled = await compileDocumentToIr({
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [component],
+  } as never);
+  return compiled.ir.sections[0].children;
+}
+
+/** True when the text box compiled to a native shape rather than a table. */
+function isShape(block: DocxIrBlock): boolean {
+  return (
+    block.kind === 'paragraph' &&
+    block.children.some((child) => child.kind === 'shape')
+  );
 }
 
 async function documentXml(children: unknown[]): Promise<string> {
@@ -71,12 +79,12 @@ describe('text-box renderAs default', () => {
   it('still renders a table when renderAs is absent', async () => {
     const result = await render(textBox({ width: 200 }));
     expect(result).toHaveLength(1);
-    expect(result[0]).toBeInstanceOf(Table);
+    expect(result[0].kind).toBe('table');
   });
 
   it('still renders a table for an explicit renderAs: table', async () => {
     const result = await render(textBox({ renderAs: 'table', width: 200 }));
-    expect(result[0]).toBeInstanceOf(Table);
+    expect(result[0].kind).toBe('table');
   });
 });
 
@@ -86,7 +94,7 @@ describe('text-box renderAs shape', () => {
       textBox({ renderAs: 'shape', width: 200, height: 100 })
     );
     expect(result).toHaveLength(1);
-    expect(result[0]).toBeInstanceOf(Paragraph);
+    expect(isShape(result[0])).toBe(true);
   });
 
   it('writes a text box shape sized in EMU', async () => {
@@ -262,7 +270,7 @@ describe('text-box renderAs shape fallbacks', () => {
 
     const result = await render(textBox({ renderAs: 'shape', width: 200 }));
 
-    expect(result[0]).toBeInstanceOf(Table);
+    expect(result[0].kind).toBe('table');
     expect(warn.mock.calls.flat().join(' ')).toContain(
       'needs an explicit width and height'
     );
@@ -285,7 +293,7 @@ describe('text-box renderAs shape fallbacks', () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toBeInstanceOf(Table);
+    expect(result[0].kind).toBe('table');
     expect(warn.mock.calls.flat().join(' ')).toContain(
       'requires paragraph-only content'
     );
@@ -305,7 +313,7 @@ describe('text-box renderAs shape fallbacks', () => {
         })
       );
 
-      expect(result[0]).toBeInstanceOf(Table);
+      expect(result[0].kind).toBe('table');
       expect(warn.mock.calls.flat().join(' ')).toContain(
         `cannot draw a ${style} border`
       );
