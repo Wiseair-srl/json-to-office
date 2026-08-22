@@ -381,7 +381,6 @@ The key is read from `x-api-key` (or `API_KEY_HEADER`), and `Authorization: Bear
 | `POST`   | `/api/<format>/standard-components`                   | Resolve plugin components to standard definitions                                                                                             |
 | `POST`   | `/api/<format>/rasterize`                             | Rasterize a single-slide pptx to PNG; 32 MB cap, DPI clamped                                                                                  |
 | `GET`    | `/api/<format>/cache-stats`                           | Cache statistics                                                                                                                              |
-| `GET`    | `/api/<format>/cache-analytics`                       | Cache analytics                                                                                                                               |
 | `DELETE` | `/api/<format>/cache`                                 | Clear the cache                                                                                                                               |
 | `GET`    | `/api/discovery/all`                                  | Discover plugins, documents, and themes                                                                                                       |
 | `GET`    | `/api/discovery/plugins` \| `/documents` \| `/themes` | Discover one kind                                                                                                                             |
