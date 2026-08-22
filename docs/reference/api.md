@@ -37,13 +37,22 @@ await generateAndSaveFromJson(
 ```
 
 ::: info Renderer-native APIs were removed in 0.39
-`generateDocument`, `generateDocumentFromJson` and `generateDocumentFromFile`
-(which returned a [docx](https://github.com/dolanmiu/docx) `Document`),
-`saveDocument`, `generateFromConfig` and `DocumentGenerator.generate` are gone.
-Generation now compiles to an internal representation and hands it to a
-renderer adapter, so no public API returns or accepts a backend object. Use
-`generateBufferFromJson` / `generateBufferWithWarnings` and write the buffer
-yourself, or `generateAndSaveFromJson`.
+Generation compiles to an internal representation and hands it to a renderer
+adapter, so no public API returns or accepts a [docx](https://github.com/dolanmiu/docx)
+object any more. Everything that did is gone:
+
+| Removed                                                                    | Use instead                                                                        |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `generateDocument`, `generateDocumentFromJson`, `generateDocumentFromFile` | `generateBufferFromJson` / `generateBufferWithWarnings` / `generateBufferFromFile` |
+| `saveDocument(document, …)`, `generateFromConfig`                          | `generateAndSaveFromJson` / `generateAndSaveFromFile`                              |
+| `DocumentGenerator.generate(document, options?)`                           | `generateBuffer(document, options?)` or `generateFile(document, path, options?)`   |
+| `DocumentGeneratorOptions.enableCache`                                     | — (the component render cache went with the writer layer; the option was a no-op)  |
+| `parseTextWithDecorators`, `renderComponent`, `createTypedImageRun`        | — (they were the writer layer)                                                     |
+
+`generateBuffer` returns `{ buffer, warnings, standardDefinition, preservedDefinition? }`
+where `generate` returned `{ document, … }`; every other field is unchanged, so
+the migration is usually one method name and reading `buffer` instead of
+packing `document` yourself.
 :::
 
 ### Functions
@@ -277,28 +286,36 @@ const { buffer, warnings } = await generator.generateBuffer({
 
 **Options** (`DocumentGeneratorOptions`):
 
-| Option         | Type                          | Description                                                                                     |
-| -------------- | ----------------------------- | ----------------------------------------------------------------------------------------------- |
-| `theme`        | `ThemeConfig`                 | Default theme when no custom or built-in theme matches.                                         |
-| `customThemes` | `Record<string, ThemeConfig>` | Custom themes resolved per-document via `props.theme`.                                          |
-| `enableCache`  | `boolean`                     | Component-level render caching.                                                                 |
-| `debug`        | `boolean`                     | Debug logging.                                                                                  |
-| `services`     | `ServicesConfig`              | Highcharts / pptx-rasterizer wiring.                                                            |
-| `fonts`        | `FontRuntimeOpts`             | Font resolution options.                                                                        |
-| `validation`   | `GenerationValidationOptions` | Default validation behavior for every generate call (on by default); per-call options override. |
+| Option          | Type                          | Default    | Description                                                                                                                                              |
+| --------------- | ----------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `theme`         | `ThemeConfig`                 | —          | Default theme when no custom or built-in theme matches.                                                                                                  |
+| `customThemes`  | `Record<string, ThemeConfig>` | —          | Custom themes resolved per-document via `props.theme`.                                                                                                   |
+| `debug`         | `boolean`                     | `false`    | Debug logging.                                                                                                                                           |
+| `services`      | `ServicesConfig`              | —          | Highcharts / pptx-rasterizer wiring.                                                                                                                     |
+| `fonts`         | `FontRuntimeOpts`             | —          | Font resolution options.                                                                                                                                 |
+| `validation`    | `GenerationValidationOptions` | on         | Default validation behavior for every generate call; per-call options override.                                                                          |
+| `deterministic` | `boolean`                     | `true`     | Normalize volatile OOXML values so the same document produces the same bytes.                                                                            |
+| `generatedAt`   | `string \| Date`              | epoch      | Timestamp written into document metadata.                                                                                                                |
+| `baseDir`       | `string`                      | `cwd()`    | Directory relative image `path` props resolve against; per-call `options.baseDir` overrides it.                                                          |
+| `renderer`      | `'docxjs' \| 'office-open'`   | `'docxjs'` | Backend that turns the compiled document into bytes. `office-open` is experimental, opt-in, and fails before rendering on any feature it cannot express. |
 
 **Builder methods:**
 
-| Method                                                                   | Returns                                                                     | Description                                                                                                          |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `addComponent(component)`                                                | new builder                                                                 | Registers a custom component; TypeScript accumulates the component types so documents are fully typed.               |
-| `generate(document, options?)`                                           | `Promise<{ document, warnings, standardDefinition, preservedDefinition? }>` | Expand plugins, generate the docx.js `Document`. `standardDefinition` is the fully-expanded standard-component tree. |
-| `generateBuffer(document, options?)`                                     | `Promise<{ buffer, warnings, standardDefinition, ... }>`                    | Same, packed to a buffer.                                                                                            |
-| `generateFile(document, outputPath, options?)`                           | `Promise<{ warnings, standardDefinition, ... }>`                            | Same, written to disk.                                                                                               |
-| `validate(document)`                                                     | `{ valid, errors? }`                                                        | Validate against the enriched (standard + custom) schema.                                                            |
-| `getComponentNames()`                                                    | `string[]`                                                                  | Registered custom component names.                                                                                   |
-| `generateSchema(includeStandardComponents = true)`                       | `TSchema`                                                                   | The enriched TypeBox schema.                                                                                         |
-| `exportSchema(outputPath, { includeStandardComponents?, prettyPrint? })` | `Promise<void>`                                                             | Write the enriched schema as JSON Schema — see [JSON Schemas](/reference/json-schemas).                              |
+| Method                                                                   | Returns                                                  | Description                                                                                                                        |
+| ------------------------------------------------------------------------ | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `addComponent(component)`                                                | new builder                                              | Registers a custom component; TypeScript accumulates the component types so documents are fully typed.                             |
+| `generateBuffer(document, options?)`                                     | `Promise<{ buffer, warnings, standardDefinition, ... }>` | Expand plugins and pack a `.docx` buffer. `standardDefinition` is the fully-expanded standard-component tree.                      |
+| `generateFile(document, outputPath, options?)`                           | `Promise<{ warnings, standardDefinition, ... }>`         | Same, written to disk.                                                                                                             |
+| `expandStandardDefinition(document, options?)`                           | `Promise<{ standardDefinition, warnings }>`              | Expansion only — no fonts, no layout, no rendering, no external services. Use it when you want the JSON tree and not a document.   |
+| `validate(document)`                                                     | `{ valid, errors? }`                                     | Validate against the enriched (standard + custom) schema.                                                                          |
+| `getComponentNames()`                                                    | `string[]`                                               | Registered custom component names.                                                                                                 |
+| `generateSchema(includeStandardComponents = true)`                       | `TSchema`                                                | The enriched TypeBox schema.                                                                                                       |
+| `exportSchema(outputPath, { includeStandardComponents?, prettyPrint? })` | `Promise<void>`                                          | Write the enriched schema as JSON Schema — see [JSON Schemas](/reference/json-schemas).                                            |
+| `getStandardComponentsDefinition(document)`                              | `Promise<ReportComponentDefinition>`                     | **Deprecated.** Runs a second expansion pass; read `standardDefinition` off a generate result, or call `expandStandardDefinition`. |
+
+There is no `generate()`: it returned a docx.js `Document`, and no public API
+hands out a backend object any more. The table at the top of this section maps
+it and its neighbours onto what replaced them.
 
 ### `createPresentationGenerator` (PPTX)
 

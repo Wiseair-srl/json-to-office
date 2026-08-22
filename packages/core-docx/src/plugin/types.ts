@@ -262,7 +262,7 @@ export interface DocumentGenerator<
    * Compute only the post-expansion standard definition: validation, theme
    * resolution, custom-component expansion, and normalization — no font
    * resolution, no layout, no rendering, no packaging, no external services.
-   * Use this instead of `generate()` when you only need the JSON tree.
+   * Use this instead of `generateBuffer()` when you only need the JSON tree.
    */
   expandStandardDefinition: (
     document: ExtendedReportComponent<TCustomComponents>,
@@ -286,11 +286,11 @@ export interface DocumentGenerator<
   ) => Promise<void>;
 
   /**
-   * @deprecated Use `generate(...).standardDefinition` instead. This is now a thin
-   * wrapper over `generate()` and runs `render()` once per call, but if you also
-   * call `generate*` you'll trigger a second pass — read `standardDefinition` off
-   * the result you already produce. Kept for backwards compatibility; will be
-   * removed in a future major.
+   * @deprecated Use `generateBuffer(...).standardDefinition`, or
+   * `expandStandardDefinition(...)` when you do not want a document at all.
+   * This is a thin wrapper that runs `render()` once per call, so calling it
+   * alongside `generateBuffer`/`generateFile` costs a second expansion pass.
+   * Kept for backwards compatibility; will be removed in a future major.
    */
   getStandardComponentsDefinition: (
     document: ExtendedReportComponent<TCustomComponents>

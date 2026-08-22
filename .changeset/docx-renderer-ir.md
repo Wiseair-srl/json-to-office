@@ -49,6 +49,10 @@ implementation (`src/__tests__/corpus-ir-parity.test.ts`).
   from `generateBufferFromJson` yourself.
 - `DocumentGenerator.generate` is removed; the remaining members are buffer- and
   file-oriented.
+- `DocumentGeneratorOptions.enableCache` is removed. The component render cache
+  went with the writer layer — compiling to an IR holds no cross-document state,
+  so there is nothing left to cache between documents — and keeping the option
+  would have left a documented performance switch that did nothing.
 - The component renderer exports and the text engine behind them
   (`parseTextWithDecorators` and the per-component render functions) are
   removed — they were the docx.js writer layer.
@@ -72,6 +76,17 @@ No public type now references docx.js.
   rather than from that library's module-level counter, which made the same
   document come out differently on a second call and let two concurrent renders
   interleave. 38 of the 272 corpus cases were affected; none are now.
+- A header or footer whose components are all `enabled: false` now breaks
+  Word's link to the previous section instead of inheriting it. The author asked
+  for no chrome and the section showed the previous section's, stale or
+  confidential content included.
+- The docx.js adapter reads all three chrome slots — `default`, `first` and
+  `even` — where it read only `default` in two places: an SVG appearing solely
+  in a first-page or even-page part shipped its own bytes labelled `image/png`
+  as the raster fallback, and such a part was dropped from the section outright.
+- Each image source is loaded once. The pre-pass fetched every image twice —
+  once for its bytes and once for its dimensions — so a source whose response
+  changes between the two embedded one image and sized it from another.
 - `text-frames` and `custom-properties` are now recorded as required when a
   document uses them. Both adapters declared and emitted both, but nothing ever
   demanded them, so the capability check for a floating paragraph or a custom

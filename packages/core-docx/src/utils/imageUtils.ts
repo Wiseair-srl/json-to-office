@@ -438,21 +438,34 @@ export async function getImageDimensions(
 ): Promise<ImageDimensions> {
   try {
     const { buffer: imageBuffer } = await getImageBuffer(imagePath);
-    const result = probe.sync(imageBuffer);
-
-    if (!result) {
-      throw new Error(`Unable to determine dimensions for image: ${imagePath}`);
-    }
-
-    return {
-      width: result.width,
-      height: result.height,
-    };
+    return readImageDimensions(imageBuffer, imagePath);
   } catch (error) {
     throw new Error(
       `Error reading image dimensions from ${imagePath}: ${error instanceof Error ? error.message : String(error)}`
     );
   }
+}
+
+/**
+ * Get the dimensions of bytes already in hand.
+ *
+ * The point is that it takes bytes rather than a location. A caller that has
+ * loaded an image and then asks `getImageDimensions` for its size fetches the
+ * same URL twice — doubling the network traffic, and, if the response changes
+ * between the two, embedding one image while sizing it from another (#267).
+ * `label` is only used in the message.
+ */
+export function readImageDimensions(
+  bytes: Buffer,
+  label: string
+): ImageDimensions {
+  const result = probe.sync(bytes);
+
+  if (!result) {
+    throw new Error(`Unable to determine dimensions for image: ${label}`);
+  }
+
+  return { width: result.width, height: result.height };
 }
 
 /**
