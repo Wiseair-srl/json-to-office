@@ -76,6 +76,7 @@ import {
 } from '../utils/numberingConfig';
 import { normalizeUnicodeText } from '../utils/unicode';
 import { collectDocumentOutline } from '../core/collectTocHeadings';
+import { parseMarkdownList } from '../core/markdownList';
 import type { NumberedItemInfo } from '../utils/numberedItemsRegistry';
 import {
   containsCrossReference,
@@ -188,7 +189,12 @@ interface CompileContext {
   /** Numbering definitions, in the order the lists that need them appear. */
   numbering: DocxIrNumbering[];
   numberingByReference: Map<string, DocxIrNumbering>;
-  /** Counter behind the generated `list-1`, `list-2`, … references. */
+  /**
+   * Counter behind the generated `list-1`, `markdown-list-2`, … references.
+   *
+   * One counter for both kinds: they share a namespace, so a document that
+   * mixes them must not produce two definitions with the same name.
+   */
   listCounter: number;
   /** Warning messages already collected, so one bad value warns once. */
   warnedMessages: Set<string>;
@@ -846,6 +852,25 @@ function compileComponent(
  * ------------------------------------------------------------------ */
 
 /**
+ * The levels a markdown list always defines.
+ *
+ * Three of them, whatever depth the text actually reaches: the syntax has no
+ * way to declare its own numbering, so the definition is fixed.
+ */
+const MARKDOWN_LIST_LEVELS: Readonly<Record<string, ListLevelConfig[]>> = {
+  unordered: [
+    { level: 0, format: 'bullet', text: '•', alignment: 'left' },
+    { level: 1, format: 'bullet', text: '◦', alignment: 'left' },
+    { level: 2, format: 'bullet', text: '▪', alignment: 'left' },
+  ],
+  ordered: [
+    { level: 0, format: 'decimal', text: '%1.', alignment: 'left' },
+    { level: 1, format: 'lowerLetter', text: '%2.', alignment: 'left' },
+    { level: 2, format: 'lowerRoman', text: '%3.', alignment: 'left' },
+  ],
+};
+
+/**
  * Markdown decorators.
  *
  * A heading reaches the inline parser only when its text carries one of these
@@ -865,6 +890,29 @@ function compileParagraph(
   const text = String(props.text ?? '');
 
   if (reportUnlowered(component, props, text, scope)) return [];
+
+  // A paragraph whose whole text is a markdown list is a list, and has always
+  // rendered as one. A revision paragraph never is: its segments carry literal
+  // text and cannot be re-split into items.
+  const markdown = props.revision ? null : parseMarkdownList(text);
+  if (markdown) {
+    return compileList(
+      {
+        ...component,
+        props: {
+          items: markdown.items,
+          ...(props.spacing ? { spacing: props.spacing } : {}),
+          ...(props.alignment ? { alignment: props.alignment } : {}),
+          ...(props.comment ? { comment: props.comment } : {}),
+          ...(props.footnotes ? { footnotes: props.footnotes } : {}),
+          ...(props.endnotes ? { endnotes: props.endnotes } : {}),
+        },
+      } as ComponentDefinition,
+      scope,
+      'markdown-list',
+      MARKDOWN_LIST_LEVELS[markdown.type]
+    );
+  }
 
   const styleId = paragraphStyleId(props.themeStyle);
   if (styleId && !ctx.styleIds.has(styleId)) ctx.styleIds.add(styleId);
@@ -1060,7 +1108,10 @@ const UNLOWERED_LIST_PROPS = ['footnotes', 'endnotes'] as const;
  */
 function compileList(
   component: ComponentDefinition,
-  scope: ComponentScope
+  scope: ComponentScope,
+  referencePrefix = 'list',
+  /** Levels to use as written, instead of deriving them from the props. */
+  explicitLevels?: ListLevelConfig[]
 ): DocxIrBlock[] {
   const { ctx, path } = scope;
   const props = (component.props ?? {}) as Record<string, any>;
@@ -1075,7 +1126,14 @@ function compileList(
   const items = (props.items ?? []) as ListItem[];
   if (items.length === 0) return [];
 
-  const reference = declareNumbering(props, ctx);
+  // A markdown list states its levels in full rather than deriving them: it
+  // always defines three, however few the text actually uses.
+  const reference = declareNumbering(
+    props,
+    ctx,
+    referencePrefix,
+    explicitLevels
+  );
   const blocks: DocxIrBlock[] = [];
 
   // A list-level comment spans the whole list, so its range opens on the first
@@ -1187,19 +1245,21 @@ function itemSpacing(
  */
 function declareNumbering(
   props: Record<string, any>,
-  ctx: CompileContext
+  ctx: CompileContext,
+  prefix = 'list',
+  explicitLevels?: ListLevelConfig[]
 ): string {
   const reference =
     typeof props.reference === 'string' && props.reference
       ? props.reference
-      : `list-${++ctx.listCounter}`;
+      : `${prefix}-${++ctx.listCounter}`;
 
   if (ctx.numberingByReference.has(reference)) return reference;
 
   const numbering: DocxIrNumbering = {
     reference,
-    levels: resolveListLevels(props as ListLevelSource).map((level) =>
-      compileNumberingLevel(level, ctx)
+    levels: (explicitLevels ?? resolveListLevels(props as ListLevelSource)).map(
+      (level) => compileNumberingLevel(level, ctx)
     ),
   };
   ctx.numbering.push(numbering);
@@ -1397,17 +1457,6 @@ function reportUnlowered(
       name: component.name,
       path: scope.path,
       detail: syntax,
-    });
-    return true;
-  }
-
-  // Markdown list syntax turns a paragraph into a numbered list, which needs a
-  // numbering definition this slice does not build.
-  if (/^\s*(?:[-*+]|\d+[.)])\s+/m.test(text)) {
-    scope.ctx.unsupported.push({
-      name: component.name,
-      path: scope.path,
-      detail: 'markdown list',
     });
     return true;
   }
