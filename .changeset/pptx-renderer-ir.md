@@ -21,6 +21,12 @@ implementation (`src/__tests__/corpus-goldens.test.ts`).
   generator: `'pptxgenjs'` (default) or `'office-open'` (experimental, opt-in).
   An unsupported feature fails before any bytes are produced, with the feature
   name and the IR path that needed it.
+- An experimental `@office-open/pptx` backend, declared as an optional peer
+  dependency. It covers text, shapes, images, fills, lines, shadows, plain
+  tables, backgrounds, notes, hidden slides, transitions, groups and
+  hyperlinks; SVG, native charts, image rotation, vertical flips, masters and
+  merged table cells are verified gaps and are rejected up front rather than
+  rendered incorrectly.
 - `PptxRendererId`, `DEFAULT_PPTX_RENDERER_ID`, `pptxRendererIds()`,
   `isPptxRendererId()`, `UncompiledComponentError`.
 - `@json-to-office/shared` gains `@json-to-office/shared/rendering`: the

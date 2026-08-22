@@ -270,6 +270,33 @@ not exported from `@json-to-office/json-to-docx` or
 | groups                                       | **no** API                                             | yes                                                                                        |
 | RTL                                          | deck-level                                             | deck- and paragraph-level; run-level `rightToLeft` is declared but never emitted           |
 
+### What the office-open adapter declares
+
+Supported and mapped: text bodies and rich runs, paragraph properties, preset
+shapes, images, solid/gradient/pattern/image fills, lines, shadows, plain
+tables, backgrounds, speaker notes, hidden slides, transitions, groups,
+external and slide hyperlinks, shape rotation, horizontal flip, proofing
+language, RTL.
+
+Deliberately **not** declared, so a document using them fails before rendering
+rather than losing content:
+
+| Feature                   | Why                                                                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `svg`                     | `PictureOptions.type` excludes SVG and nothing creates an SVG media entry                                      |
+| `charts`                  | chart XML ships without its embedded workbook, so "Edit Data" fails                                            |
+| `image-rotation`          | `PictureOptions` has no `rotation`; it would be discarded                                                      |
+| `flip-vertical`           | no pptx option type carries it                                                                                 |
+| `masters`, `placeholders` | the backend supports them; the mapping is not written, and an unmapped master would drop every template object |
+| `table-merged-cells`      | the backend marks merges as `restart`/`continue` on covered cells while the IR carries span counts             |
+
+Both backends are exercised over the same common-subset corpus in
+`renderers/office-open/__tests__/cross-backend.test.ts`, which compares package
+parts, slide dimensions, metadata, text content and element counts — not
+byte-identical OOXML, which is not the goal between different renderers. A
+LibreOffice conversion smoke test covers both, and skips itself when the tool
+is absent.
+
 `office-open` findings come from reading the shipped types and compiled source
 and from generating, unzipping and rendering real files — not from its README.
 Anything not proven by a test stays out of the adapter's capability set, so it

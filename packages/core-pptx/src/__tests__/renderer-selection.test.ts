@@ -45,10 +45,15 @@ describe('renderer selection', () => {
     expect(sha(explicit)).toBe(CORPUS_GOLDENS[first.name]);
   });
 
-  it('reports the missing optional backend when office-open is selected', async () => {
-    await expect(
-      generateBufferFromJson(deck('x') as never, { renderer: 'office-open' })
-    ).rejects.toThrow(/@office-open\/pptx/);
+  it('renders through the office-open backend when asked', async () => {
+    const buffer = await generateBufferFromJson(deck('office-open') as never, {
+      renderer: 'office-open',
+    });
+
+    expect(buffer.length).toBeGreaterThan(0);
+    // A different backend, so different bytes — the point is that it is a real
+    // package, not that it matches.
+    expect(buffer.subarray(0, 2).toString('latin1')).toBe('PK');
   });
 
   it('rejects an unknown renderer id with the valid ids', async () => {
