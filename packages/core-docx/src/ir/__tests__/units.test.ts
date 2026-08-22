@@ -82,8 +82,8 @@ describe('resolveLengthTwips', () => {
 });
 
 describe('irColor', () => {
-  it('normalises to bare uppercase hex', () => {
-    expect(irColor('#aabbcc')).toEqual({ hex: 'AABBCC' });
+  it('strips the # prefix and leaves case alone', () => {
+    expect(irColor('#aabbcc')).toEqual({ hex: 'aabbcc' });
     expect(irColor('AABBCC')).toEqual({ hex: 'AABBCC' });
     expect(irColor('#FFFFFF')).toEqual({ hex: 'FFFFFF' });
   });

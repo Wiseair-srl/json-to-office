@@ -56,6 +56,12 @@ import {
 } from '../utils/revisionUtils';
 import { openCommentRange, closeCommentRange } from '../utils/commentAnchors';
 import { createNoteResolver } from '../utils/noteResolver';
+import {
+  resolveTableModel,
+  type ResolvedBorder,
+  type ResolvedCell,
+  type TableSource,
+} from './tableModel';
 import type {
   Comment,
   Note,
@@ -1159,117 +1165,18 @@ export function createList(
 }
 
 /**
- * Create a table
+ * Create a table.
+ *
+ * Every cascade — cell over column over table, per border side — is resolved by
+ * `resolveTableModel`, which the DocxIR compiler shares. What is left here is
+ * the translation into docx objects plus the one thing the model cannot do:
+ * turning cell content into runs, which may have to load an image.
  */
-type TableFontConfig = {
-  family?: string;
-  size?: number;
-  bold?: boolean;
-  fontWeight?: number;
-  italic?: boolean;
-  underline?: boolean;
-};
-
-type BorderColor =
-  | string
-  | {
-      bottom?: string;
-      top?: string;
-      right?: string;
-      left?: string;
-    };
-
-type BorderSize =
-  | number
-  | {
-      bottom?: number;
-      top?: number;
-      right?: number;
-      left?: number;
-    };
-
-type Padding =
-  | number
-  | {
-      bottom?: number;
-      top?: number;
-      right?: number;
-      left?: number;
-    };
-
-type CellDefaults = {
-  color?: string;
-  backgroundColor?: string;
-  horizontalAlignment?: 'left' | 'center' | 'right' | 'justify';
-  verticalAlignment?: 'top' | 'middle' | 'bottom';
-  font?: TableFontConfig;
-  borderColor?: BorderColor;
-  borderSize?: BorderSize;
-  padding?: Padding;
-  height?: number;
-};
-
-// After merging, borders and padding are always normalized to per-side format
-type NormalizedCellDefaults = {
-  color?: string;
-  backgroundColor?: string;
-  horizontalAlignment?: 'left' | 'center' | 'right' | 'justify';
-  verticalAlignment?: 'top' | 'middle' | 'bottom';
-  font?: TableFontConfig;
-  borderColor: { top: string; right: string; bottom: string; left: string };
-  borderSize: { top: number; right: number; bottom: number; left: number };
-  padding?: { top: number; right: number; bottom: number; left: number };
-  height?: number;
-};
-
-// Hide borders configuration - can be boolean or per-side object
-type HideBorders =
-  | boolean
-  | {
-      top?: boolean;
-      right?: boolean;
-      bottom?: boolean;
-      left?: boolean;
-      insideHorizontal?: boolean;
-      insideVertical?: boolean;
-    };
-
-type TableConfig = {
-  borderColor?: BorderColor;
-  borderSize?: BorderSize;
-  hideBorders?: HideBorders;
-  cellDefaults?: CellDefaults;
-  headerCellDefaults?: CellDefaults;
-  width?: number;
-  columns: {
-    /** Width in points (number) or as percentage string e.g. "40%" */
-    width?: number | string;
-    cellDefaults?: CellDefaults;
-    header?: CellDefaults & {
-      comment?: Comment;
-      revision?: Revision;
-      content?: string | ComponentDefinition;
-    };
-    cells?: (CellDefaults & {
-      comment?: Comment;
-      revision?: Revision;
-      content?: string | ComponentDefinition;
-    })[];
-  }[];
-  /** Row-parallel properties, indexed like `columns[].cells`. */
-  rows?: {
-    revision?: RevisionMark;
-    cantSplit?: boolean;
-    tableHeader?: boolean;
-  }[];
-  keepInOnePage?: boolean;
-  keepNext?: boolean;
-  repeatHeaderOnPageBreak?: boolean;
-};
+export type { TableSource as TableConfigSource } from './tableModel';
 
 export async function createTable(
-  columns: TableConfig['columns'],
-  tableConfig: TableConfig,
+  columns: TableSource<Comment, Revision, RevisionMark>['columns'],
+  tableConfig: TableSource<Comment, Revision, RevisionMark>,
   theme: ThemeConfig,
   themeName: string,
   _options: TableOptions = {}
@@ -1277,637 +1184,112 @@ export async function createTable(
   // Note: _options parameter is available for future table customization
   const tableStyle = getTableStyle(theme, themeName);
 
-  // Determine number of rows from the first column
-  const numRows = columns[0]?.cells?.length || 0;
-
-  // Default values for missing cell defaults
-  const getDefaultCellDefaults = (): CellDefaults => ({
-    color: '000000',
-    backgroundColor: 'transparent',
-    horizontalAlignment: 'left',
-    verticalAlignment: 'top',
-    font: {
-      family: 'Arial',
-      size: 11,
-      bold: false,
-      italic: false,
-      underline: false,
-    },
-    borderColor: '000000',
-    borderSize: 1,
-  });
-
   // No warning collector reaches createTable (the render path passes only
   // theme/themeName), so use the prefixed console.warn fallback the generator
   // uses when no collector is present. Deduped so a column of cells sharing the
   // same bad value warns once per table.
-  const warnedCellColors = new Set<string>();
-  const warnCellColor = (code: string, message: string): void => {
-    if (warnedCellColors.has(message)) return;
-    warnedCellColors.add(message);
+  const warned = new Set<string>();
+  const warn = (code: string, message: string): void => {
+    if (warned.has(message)) return;
+    warned.add(message);
     // eslint-disable-next-line no-console
     console.warn(`[json-to-docx] ${code}: ${message}`);
   };
 
-  // Resolve a cell color the same way paragraph/heading font colors are
-  // resolved: theme name ("primary") or "#RRGGBB". Bare 6-digit hex and "auto"
-  // are passed through — those are the only raw values OOXML itself accepts, so
-  // documents relying on them predate theme resolution and must keep working.
-  // "transparent" is a backgroundColor-only sentinel consumed at the shading
-  // site; on the text path nothing consumes it and it is not a legal w:color
-  // value, so it is dropped with a warning rather than emitted.
-  const resolveCellColor = (
-    value: string | undefined,
-    prop: 'color' | 'backgroundColor'
-  ): string | undefined => {
-    if (value === undefined || value === 'auto') return value;
-    if (value === 'transparent') {
-      if (prop === 'backgroundColor') return value;
-      warnCellColor(
-        'TABLE_CELL_COLOR_INVALID',
-        `"transparent" is not a valid table cell "color"; ignoring it and using the table style color. It only applies to "backgroundColor".`
-      );
-      return undefined;
-    }
-    if (/^[0-9A-Fa-f]{6}$/.test(value)) return value.toUpperCase();
-    try {
-      return resolveColor(value, theme);
-    } catch {
-      // Passing the value through instead would not save the document: docx
-      // rejects any non-hex, non-"auto" fill/color, so it would still fail —
-      // deeper in the stack with an opaque message.
-      const allowed =
-        prop === 'backgroundColor'
-          ? '"auto", or "transparent" for no shading'
-          : 'or "auto"';
-      throw new Error(
-        `Invalid table cell ${prop}: "${value}". Must be a hex color with # prefix (e.g. "#000000"), a theme color name, ${allowed}.`
-      );
-    }
-  };
+  const model = resolveTableModel<Comment, Revision, RevisionMark>(
+    { ...tableConfig, columns },
+    theme,
+    themeName,
+    { onWarning: warn }
+  );
 
-  // Helper function to normalize border color to per-side format
-  const normalizeBorderColor = (
-    border: BorderColor | undefined
-  ):
-    | { top: string; right: string; bottom: string; left: string }
-    | undefined => {
-    if (border === undefined) return undefined;
-    if (typeof border === 'string') {
-      return { top: border, right: border, bottom: border, left: border };
-    }
-    return {
-      top: border.top ?? '',
-      right: border.right ?? '',
-      bottom: border.bottom ?? '',
-      left: border.left ?? '',
-    };
-  };
-
-  // Helper function to normalize border size to per-side format
-  const normalizeBorderSize = (
-    border: BorderSize | undefined
-  ):
-    | { top: number; right: number; bottom: number; left: number }
-    | undefined => {
-    if (border === undefined) return undefined;
-    if (typeof border === 'number') {
-      return { top: border, right: border, bottom: border, left: border };
-    }
-    return {
-      top: border.top ?? -1,
-      right: border.right ?? -1,
-      bottom: border.bottom ?? -1,
-      left: border.left ?? -1,
-    };
-  };
-
-  // Helper function to normalize padding to per-side format
-  const normalizePadding = (
-    padding: Padding | undefined
-  ):
-    | { top: number; right: number; bottom: number; left: number }
-    | undefined => {
-    if (padding === undefined) return undefined;
-    if (typeof padding === 'number') {
-      return { top: padding, right: padding, bottom: padding, left: padding };
-    }
-    return {
-      top: padding.top ?? -1,
-      right: padding.right ?? -1,
-      bottom: padding.bottom ?? -1,
-      left: padding.left ?? -1,
-    };
-  };
-
-  // Helper function to merge border colors at the side level
-  const mergeBorderColorPerSide = (
-    ...borders: (BorderColor | undefined)[]
-  ): { top: string; right: string; bottom: string; left: string } => {
-    const normalized = borders.map(normalizeBorderColor);
-    const defaults = getDefaultCellDefaults();
-    const defaultColor =
-      typeof defaults.borderColor === 'string'
-        ? defaults.borderColor
-        : '000000';
-
-    return {
-      top: normalized.find((b) => b && b.top !== '')?.top ?? defaultColor,
-      right: normalized.find((b) => b && b.right !== '')?.right ?? defaultColor,
-      bottom:
-        normalized.find((b) => b && b.bottom !== '')?.bottom ?? defaultColor,
-      left: normalized.find((b) => b && b.left !== '')?.left ?? defaultColor,
-    };
-  };
-
-  // Helper function to merge border sizes at the side level
-  const mergeBorderSizePerSide = (
-    ...borders: (BorderSize | undefined)[]
-  ): { top: number; right: number; bottom: number; left: number } => {
-    const normalized = borders.map(normalizeBorderSize);
-    const defaults = getDefaultCellDefaults();
-    const defaultSize =
-      typeof defaults.borderSize === 'number' ? defaults.borderSize : 1;
-
-    return {
-      top: normalized.find((b) => b && b.top !== -1)?.top ?? defaultSize,
-      right: normalized.find((b) => b && b.right !== -1)?.right ?? defaultSize,
-      bottom:
-        normalized.find((b) => b && b.bottom !== -1)?.bottom ?? defaultSize,
-      left: normalized.find((b) => b && b.left !== -1)?.left ?? defaultSize,
-    };
-  };
-
-  // Helper to create border override for table outer borders based on position
-  const getTableOuterBorder = (
-    position: {
-      isHeader?: boolean;
-      isFirstCol?: boolean;
-      isLastCol?: boolean;
-      isLastRow?: boolean;
-    },
-    tableBorderColor?: BorderColor,
-    tableBorderSize?: BorderSize
-  ): {
-    borderColor?: Partial<{
-      top: string;
-      right: string;
-      bottom: string;
-      left: string;
-    }>;
-    borderSize?: Partial<{
-      top: number;
-      right: number;
-      bottom: number;
-      left: number;
-    }>;
-  } => {
-    const result: {
-      borderColor?: Partial<{
-        top: string;
-        right: string;
-        bottom: string;
-        left: string;
-      }>;
-      borderSize?: Partial<{
-        top: number;
-        right: number;
-        bottom: number;
-        left: number;
-      }>;
-    } = {};
-
-    if (tableBorderColor) {
-      const normalizedColor = normalizeBorderColor(tableBorderColor);
-      if (normalizedColor) {
-        result.borderColor = {};
-        if (position.isHeader && normalizedColor.top !== '')
-          result.borderColor.top = normalizedColor.top;
-        if (position.isFirstCol && normalizedColor.left !== '')
-          result.borderColor.left = normalizedColor.left;
-        if (position.isLastCol && normalizedColor.right !== '')
-          result.borderColor.right = normalizedColor.right;
-        if (position.isLastRow && normalizedColor.bottom !== '')
-          result.borderColor.bottom = normalizedColor.bottom;
-      }
-    }
-
-    if (tableBorderSize) {
-      const normalizedSize = normalizeBorderSize(tableBorderSize);
-      if (normalizedSize) {
-        result.borderSize = {};
-        if (position.isHeader && normalizedSize.top !== -1)
-          result.borderSize.top = normalizedSize.top;
-        if (position.isFirstCol && normalizedSize.left !== -1)
-          result.borderSize.left = normalizedSize.left;
-        if (position.isLastCol && normalizedSize.right !== -1)
-          result.borderSize.right = normalizedSize.right;
-        if (position.isLastRow && normalizedSize.bottom !== -1)
-          result.borderSize.bottom = normalizedSize.bottom;
-      }
-    }
-
-    return result;
-  };
-
-  // Helper function to merge padding at the side level
-  const mergePaddingPerSide = (
-    ...paddings: (Padding | undefined)[]
-  ):
-    | { top: number; right: number; bottom: number; left: number }
-    | undefined => {
-    const normalized = paddings.map(normalizePadding);
-    const hasAny = normalized.some((p) => p !== undefined);
-    if (!hasAny) return undefined;
-
-    return {
-      top: normalized.find((p) => p && p.top !== -1)?.top ?? 0,
-      right: normalized.find((p) => p && p.right !== -1)?.right ?? 0,
-      bottom: normalized.find((p) => p && p.bottom !== -1)?.bottom ?? 0,
-      left: normalized.find((p) => p && p.left !== -1)?.left ?? 0,
-    };
-  };
-
-  // Helper function to merge cell defaults with priority: cell > column > table outer border (for specific sides) > table cellDefaults > default
-  const mergeCellDefaults = (
-    tableDef?: CellDefaults,
-    columnDef?: CellDefaults,
-    cellDef?: Partial<CellDefaults>,
-    position?: {
-      isFirstCol?: boolean;
-      isLastCol?: boolean;
-      isLastRow?: boolean;
-    },
-    tableOuterBorder?: { borderColor?: BorderColor; borderSize?: BorderSize }
-  ): NormalizedCellDefaults => {
-    const defaults = getDefaultCellDefaults();
-
-    // Merge font configs
-    const mergedFont: TableFontConfig = {
-      ...defaults.font,
-      ...tableDef?.font,
-      ...columnDef?.font,
-      ...cellDef?.font,
-    };
-
-    // Get table outer border overrides based on position
-    const outerBorder =
-      position && tableOuterBorder
-        ? getTableOuterBorder(
-            position,
-            tableOuterBorder.borderColor,
-            tableOuterBorder.borderSize
-          )
-        : {};
-
-    // Merge border colors per side (priority: cell > column > table outer border > table cellDefaults > table borderColor > default)
-    // tableOuterBorder.borderColor is used twice: via outerBorder for edge-specific application,
-    // and directly as fallback for ALL borders when not overridden by cellDefaults
-    const mergedBorderColor = mergeBorderColorPerSide(
-      cellDef?.borderColor,
-      columnDef?.borderColor,
-      outerBorder.borderColor as BorderColor,
-      tableDef?.borderColor,
-      tableOuterBorder?.borderColor // Apply table-level borderColor to all cells as fallback
+  if (model.overflow) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[json-to-office] Column widths total (${model.overflow.totalTwips} twips) exceeds available table width (${model.overflow.availableTwips} twips). Table may overflow.`
     );
+  }
 
-    // Merge border sizes per side (priority: cell > column > table outer border > table cellDefaults > table borderSize > default)
-    const mergedBorderSize = mergeBorderSizePerSide(
-      cellDef?.borderSize,
-      columnDef?.borderSize,
-      outerBorder.borderSize as BorderSize,
-      tableDef?.borderSize,
-      tableOuterBorder?.borderSize // Apply table-level borderSize to all cells as fallback
-    );
-
-    // Merge padding per side (priority: cell > column > table)
-    const mergedPadding = mergePaddingPerSide(
-      cellDef?.padding,
-      columnDef?.padding,
-      tableDef?.padding
-    );
-
-    return {
-      color: resolveCellColor(
-        cellDef?.color ?? columnDef?.color ?? tableDef?.color ?? defaults.color,
-        'color'
-      ),
-      backgroundColor: resolveCellColor(
-        cellDef?.backgroundColor ??
-          columnDef?.backgroundColor ??
-          tableDef?.backgroundColor ??
-          defaults.backgroundColor,
-        'backgroundColor'
-      ),
-      horizontalAlignment:
-        cellDef?.horizontalAlignment ??
-        columnDef?.horizontalAlignment ??
-        tableDef?.horizontalAlignment ??
-        defaults.horizontalAlignment,
-      verticalAlignment:
-        cellDef?.verticalAlignment ??
-        columnDef?.verticalAlignment ??
-        tableDef?.verticalAlignment ??
-        defaults.verticalAlignment,
-      font: mergedFont,
-      borderColor: mergedBorderColor,
-      borderSize: mergedBorderSize,
-      padding: mergedPadding,
-      height: cellDef?.height ?? columnDef?.height ?? tableDef?.height,
-    };
-  };
-
-  // Helper function to merge header cell defaults with priority: header > columnCellDefaults > table outer border (for specific sides) > headerCellDefaults > cellDefaults > default
-  const mergeHeaderCellDefaults = (
-    tableDef?: CellDefaults,
-    headerTableDef?: CellDefaults,
-    columnDef?: CellDefaults,
-    headerDef?: Partial<CellDefaults>,
-    position?: { isFirstCol?: boolean; isLastCol?: boolean },
-    tableOuterBorder?: { borderColor?: BorderColor; borderSize?: BorderSize }
-  ): NormalizedCellDefaults => {
-    const defaults = getDefaultCellDefaults();
-
-    // Merge font configs with new priority
-    const mergedFont: TableFontConfig = {
-      ...defaults.font,
-      ...tableDef?.font,
-      ...headerTableDef?.font,
-      ...columnDef?.font,
-      ...headerDef?.font,
-    };
-
-    // Get table outer border overrides based on position (headers always affect top border)
-    const outerBorder =
-      position && tableOuterBorder
-        ? getTableOuterBorder(
-            {
-              isHeader: true,
-              isFirstCol: position.isFirstCol,
-              isLastCol: position.isLastCol,
-            },
-            tableOuterBorder.borderColor,
-            tableOuterBorder.borderSize
-          )
-        : {};
-
-    // Merge border colors per side (priority: header > columnCellDefaults > table outer border > headerCellDefaults > cellDefaults > table borderColor > default)
-    // tableOuterBorder.borderColor is used twice: via outerBorder for edge-specific application,
-    // and directly as fallback for ALL borders when not overridden by cellDefaults
-    const mergedBorderColor = mergeBorderColorPerSide(
-      headerDef?.borderColor,
-      columnDef?.borderColor,
-      outerBorder.borderColor as BorderColor,
-      headerTableDef?.borderColor,
-      tableDef?.borderColor,
-      tableOuterBorder?.borderColor // Apply table-level borderColor to all cells as fallback
-    );
-
-    // Merge border sizes per side (priority: header > columnCellDefaults > table outer border > headerCellDefaults > cellDefaults > table borderSize > default)
-    const mergedBorderSize = mergeBorderSizePerSide(
-      headerDef?.borderSize,
-      columnDef?.borderSize,
-      outerBorder.borderSize as BorderSize,
-      headerTableDef?.borderSize,
-      tableDef?.borderSize,
-      tableOuterBorder?.borderSize // Apply table-level borderSize to all cells as fallback
-    );
-
-    // Merge padding per side (priority: header > headerCellDefaults > columnCellDefaults > cellDefaults)
-    const mergedPadding = mergePaddingPerSide(
-      headerDef?.padding,
-      headerTableDef?.padding,
-      columnDef?.padding,
-      tableDef?.padding
-    );
-
-    return {
-      color: resolveCellColor(
-        headerDef?.color ??
-          headerTableDef?.color ??
-          columnDef?.color ??
-          tableDef?.color ??
-          defaults.color,
-        'color'
-      ),
-      backgroundColor: resolveCellColor(
-        headerDef?.backgroundColor ??
-          headerTableDef?.backgroundColor ??
-          columnDef?.backgroundColor ??
-          tableDef?.backgroundColor ??
-          defaults.backgroundColor,
-        'backgroundColor'
-      ),
-      horizontalAlignment:
-        headerDef?.horizontalAlignment ??
-        headerTableDef?.horizontalAlignment ??
-        columnDef?.horizontalAlignment ??
-        tableDef?.horizontalAlignment ??
-        defaults.horizontalAlignment,
-      verticalAlignment:
-        headerDef?.verticalAlignment ??
-        headerTableDef?.verticalAlignment ??
-        columnDef?.verticalAlignment ??
-        tableDef?.verticalAlignment ??
-        defaults.verticalAlignment,
-      font: mergedFont,
-      borderColor: mergedBorderColor,
-      borderSize: mergedBorderSize,
-      padding: mergedPadding,
-      height:
-        headerDef?.height ??
-        headerTableDef?.height ??
-        columnDef?.height ??
-        tableDef?.height,
-    };
-  };
-
-  // Helper function to get border value for a specific side
-  // After normalization, borders are always objects with side properties
-  const getBorderValue = (
-    border: {
-      top: string | number;
-      right: string | number;
-      bottom: string | number;
-      left: string | number;
-    },
-    side: 'top' | 'bottom' | 'left' | 'right'
-  ) => {
-    return border[side];
-  };
-
-  // Helper function to get padding value for a specific side
-  // After normalization, padding is always an object with side properties or undefined
-  const getPaddingValue = (
-    padding:
-      | { top: number; right: number; bottom: number; left: number }
-      | undefined,
-    side: 'top' | 'bottom' | 'left' | 'right'
-  ): number | undefined => {
-    if (padding === undefined) return undefined;
-    return padding[side] * 20; // Convert points to twips
-  };
-
-  // Helper function to create margins object from padding
-  // After normalization, padding is always an object with side properties or undefined
-  // Returns ITableCellMarginOptions with marginUnitType set to DXA (twips)
-  const createMarginsFromPadding = (
-    padding:
-      | { top: number; right: number; bottom: number; left: number }
-      | undefined
-  ) => {
-    if (padding === undefined) return undefined;
-
-    return {
-      marginUnitType: WidthType.DXA, // Specify that values are in twips
-      top: getPaddingValue(padding, 'top') ?? 0,
-      bottom: getPaddingValue(padding, 'bottom') ?? 0,
-      left: getPaddingValue(padding, 'left') ?? 0,
-      right: getPaddingValue(padding, 'right') ?? 0,
-    };
-  };
-
-  // Normalize hideBorders config to per-side format
-  const normalizeHideBorders = (
-    hideBorders: HideBorders | undefined
-  ): {
-    top: boolean;
-    right: boolean;
-    bottom: boolean;
-    left: boolean;
-    insideHorizontal: boolean;
-    insideVertical: boolean;
-  } => {
-    if (hideBorders === undefined) {
-      return {
-        top: false,
-        right: false,
-        bottom: false,
-        left: false,
-        insideHorizontal: false,
-        insideVertical: false,
-      };
-    }
-    if (typeof hideBorders === 'boolean') {
-      return {
-        top: hideBorders,
-        right: hideBorders,
-        bottom: hideBorders,
-        left: hideBorders,
-        insideHorizontal: hideBorders,
-        insideVertical: hideBorders,
-      };
-    }
-    return {
-      top: hideBorders.top ?? false,
-      right: hideBorders.right ?? false,
-      bottom: hideBorders.bottom ?? false,
-      left: hideBorders.left ?? false,
-      insideHorizontal: hideBorders.insideHorizontal ?? false,
-      insideVertical: hideBorders.insideVertical ?? false,
-    };
-  };
-
-  // Normalized hidden borders config
-  const hiddenBorders = normalizeHideBorders(tableConfig.hideBorders);
-
-  // Helper function to create border config
-  const createBorder = (size: number, color: string, isHidden?: boolean) => {
-    if (size === 0 || isHidden) {
+  const createBorder = (border: ResolvedBorder) => {
+    if (border.size === 0 || border.hidden) {
       return { style: BorderStyle.NONE, size: 0, color: '000000' };
     }
     return {
       style: BorderStyle.SINGLE,
-      size: size * 8, // Convert points to eighths of a point
-      color: color || '000000',
+      size: border.size * 8, // Convert points to eighths of a point
+      color: border.color || '000000',
     };
   };
 
-  // Helper to determine if a specific border should be hidden based on cell position
-  const shouldHideBorder = (
-    side: 'top' | 'right' | 'bottom' | 'left',
-    position: {
-      isFirstRow?: boolean;
-      isLastRow?: boolean;
-      isFirstCol?: boolean;
-      isLastCol?: boolean;
-    }
-  ): boolean => {
-    // Map cell position to which hideBorders config applies
-    // Outer borders use top/right/bottom/left, inner borders use insideHorizontal/insideVertical
-    switch (side) {
-      case 'top':
-        return position.isFirstRow
-          ? hiddenBorders.top
-          : hiddenBorders.insideHorizontal;
-      case 'bottom':
-        return position.isLastRow
-          ? hiddenBorders.bottom
-          : hiddenBorders.insideHorizontal;
-      case 'left':
-        return position.isFirstCol
-          ? hiddenBorders.left
-          : hiddenBorders.insideVertical;
-      case 'right':
-        return position.isLastCol
-          ? hiddenBorders.right
-          : hiddenBorders.insideVertical;
-      default:
-        return false;
-    }
-  };
+  const cellBorders = (cell: ResolvedCell<Comment, Revision>) => ({
+    top: createBorder(cell.borders.top),
+    bottom: createBorder(cell.borders.bottom),
+    left: createBorder(cell.borders.left),
+    right: createBorder(cell.borders.right),
+  });
 
-  // Helper function to process cell content
+  const cellMargins = (cell: ResolvedCell<Comment, Revision>) =>
+    cell.padding === undefined
+      ? undefined
+      : {
+          marginUnitType: WidthType.DXA, // Specify that values are in twips
+          top: cell.padding.top * 20,
+          bottom: cell.padding.bottom * 20,
+          left: cell.padding.left * 20,
+          right: cell.padding.right * 20,
+        };
+
+  /**
+   * Turn one cell's content into runs.
+   *
+   * `rowMark` is set when the whole row is inserted or deleted. The cell's own
+   * text then renders as runs marked the same way: a `w:trPr/w:del` alone
+   * leaves the text un-struck, and accepting the change would leave an empty
+   * row rather than remove it.
+   */
+  // ParagraphChild rather than PlaceholderChild: a revised or commented cell
+  // paragraph contributes w:ins / w:del and comment-range elements, which sit
+  // outside the placeholder union.
   const processCellContent = async (
-    cell: string | ComponentDefinition | undefined,
-    cellDefaults: NormalizedCellDefaults,
+    cell: ResolvedCell<Comment, Revision>,
     baseCellStyle: typeof tableStyle.tableCell,
-    comment?: Comment,
-    revision?: Revision,
-    /**
-     * Set when the whole row is inserted or deleted. The cell's own text then
-     * renders as runs marked the same way: a `w:trPr/w:del` alone leaves the
-     * text un-struck, and accepting the change would leave an empty row rather
-     * than remove it.
-     */
     rowMark?: RevisionMark
-    // ParagraphChild rather than PlaceholderChild: a revised or commented cell
-    // paragraph contributes w:ins / w:del and comment-range elements, which sit
-    // outside the placeholder union.
   ): Promise<ParagraphChild[]> => {
     let cellChildren: ParagraphChild[] = [];
+    const content = cell.content;
+    const { comment, revision } = cell;
 
     // Handle undefined or empty content. A comment on an empty cell still has
     // to anchor somewhere: Word writes a zero-length range plus the reference,
     // which is what `wrapInComment` produces for an empty child list.
-    if (!cell) {
+    if (!content) {
       return wrapInComment(cellChildren, comment);
     }
 
     // Create merged style with config overrides
     const cellWeighted = applyFontWeightAlias({
-      fontFamily: cellDefaults.font?.family || baseCellStyle.font,
-      bold: cellDefaults.font?.bold ?? false,
-      italic: cellDefaults.font?.italic ?? false,
-      fontWeight: cellDefaults.font?.fontWeight,
+      fontFamily: cell.font?.family || baseCellStyle.font,
+      bold: cell.font?.bold ?? false,
+      italic: cell.font?.italic ?? false,
+      fontWeight: cell.font?.fontWeight,
     });
     const mergedStyle = {
       font: cellWeighted.font,
-      size: cellDefaults.font?.size
-        ? cellDefaults.font.size * 2
-        : baseCellStyle.size, // Convert to half-points
+      size: cell.font?.size ? cell.font.size * 2 : baseCellStyle.size, // half-points
       bold: cellWeighted.bold ?? false,
       italics: cellWeighted.italics ?? false,
-      underline: cellDefaults.font?.underline
-        ? { type: 'single' as const }
-        : undefined,
-      color: cellDefaults.color || baseCellStyle.color,
+      underline: cell.font?.underline ? { type: 'single' as const } : undefined,
+      color: cell.color || baseCellStyle.color,
     };
 
-    if (typeof cell === 'object' && 'name' in cell && 'props' in cell) {
+    if (
+      typeof content === 'object' &&
+      'name' in content &&
+      'props' in content
+    ) {
       // Handle ComponentDefinition
-      if (isParagraphComponent(cell)) {
-        const textComp = cell as ParagraphComponentDefinition;
+      if (isParagraphComponent(content)) {
+        const textComp = content as ParagraphComponentDefinition;
         const paragraphFont = textComp.props.font;
         const paraWeighted = applyFontWeightAlias({
           fontFamily: paragraphFont?.family ?? mergedStyle.font,
@@ -1945,8 +1327,8 @@ export async function createTable(
             : parseTextWithDecorators(textComp.props.text, paragraphStyle, {
                 enableHyperlinks: true,
               });
-      } else if (isImageComponent(cell)) {
-        const imageComp = cell as ImageComponentDefinition;
+      } else if (isImageComponent(content)) {
+        const imageComp = content as ImageComponentDefinition;
         try {
           // Get image source (svg, base64, or path)
           const imageSource = resolveImageSource(imageComp.props);
@@ -2008,7 +1390,7 @@ export async function createTable(
         // Unsupported component type in table cell
         cellChildren = [
           new TextRun({
-            text: `[Unsupported component type: ${cell.name}]`,
+            text: `[Unsupported component type: ${content.name}]`,
             font: mergedStyle.font,
             size: mergedStyle.size,
             color: '#999999',
@@ -2020,8 +1402,8 @@ export async function createTable(
       cellChildren = revision
         ? createRevisionRuns(revision, mergedStyle)
         : rowMark
-          ? createMarkedTextRuns(cell as string, rowMark, mergedStyle)
-          : parseTextWithDecorators(cell as string, mergedStyle, {
+          ? createMarkedTextRuns(content as string, rowMark, mergedStyle)
+          : parseTextWithDecorators(content as string, mergedStyle, {
               enableHyperlinks: true,
             });
     }
@@ -2031,138 +1413,51 @@ export async function createTable(
     return wrapInComment(cellChildren, comment);
   };
 
-  // Create header row by iterating through columns
-  // Calculate row height from any header cell that defines it
-  const numColumns = columns.length;
-  const headerHeight = columns.reduce<number | undefined>(
-    (maxHeight, column, colIndex) => {
-      const headerCell = column.header;
-      const position = {
-        isFirstCol: colIndex === 0,
-        isLastCol: colIndex === numColumns - 1,
-      };
-      const mergedDefaults = mergeHeaderCellDefaults(
-        tableConfig.cellDefaults,
-        tableConfig.headerCellDefaults,
-        column.cellDefaults,
-        headerCell,
-        position,
-        {
-          borderColor: tableConfig.borderColor,
-          borderSize: tableConfig.borderSize,
-        }
-      );
-      if (mergedDefaults.height !== undefined) {
-        return maxHeight !== undefined
-          ? Math.max(maxHeight, mergedDefaults.height)
-          : mergedDefaults.height;
-      }
-      return maxHeight;
-    },
-    undefined
-  );
-
   const headerRow = new TableRow({
     // Headers repeat across page breaks unless explicitly disabled
-    tableHeader: tableConfig.repeatHeaderOnPageBreak ?? true,
+    tableHeader: model.repeatHeader,
     height:
-      headerHeight !== undefined
-        ? { value: headerHeight * 20, rule: 'atLeast' as const }
+      model.header.height !== undefined
+        ? { value: model.header.height * 20, rule: 'atLeast' as const }
         : undefined,
     children: await Promise.all(
-      columns.map(async (column, colIndex) => {
-        const headerCell = column.header;
-
-        // Determine position for outer border application and hideBorders
-        const position = {
-          isFirstRow: true, // Header is always the first row
-          isLastRow: numRows === 0, // Header is last row only if no data rows
-          isFirstCol: colIndex === 0,
-          isLastCol: colIndex === numColumns - 1,
-        };
-
-        // Merge cell defaults with priority: header > columnCellDefaults > table outer border > headerCellDefaults > cellDefaults
-        const mergedDefaults = mergeHeaderCellDefaults(
-          tableConfig.cellDefaults,
-          tableConfig.headerCellDefaults,
-          column.cellDefaults,
-          headerCell,
-          position,
-          {
-            borderColor: tableConfig.borderColor,
-            borderSize: tableConfig.borderSize,
-          }
-        );
-
+      model.header.cells.map(async (cell) => {
         const cellChildren = await processCellContent(
-          headerCell?.content,
-          mergedDefaults,
-          tableStyle.tableHeader,
-          headerCell?.comment,
-          headerCell?.revision
-        );
-
-        const horizontalAlignment = mergedDefaults.horizontalAlignment!;
-        const verticalAlignment = getVerticalAlignment(
-          mergedDefaults.verticalAlignment
+          cell,
+          tableStyle.tableHeader
         );
 
         return new TableCell({
           children: [
             new Paragraph({
-              ...(tableConfig.keepInOnePage && { keepNext: true }),
+              ...(model.header.keepNext && { keepNext: true }),
               spacing: tableStyle.headerParagraph,
-              alignment: getAlignment(horizontalAlignment),
+              alignment: getAlignment(cell.horizontalAlignment),
               children: cellChildren,
             }),
           ],
 
-          verticalAlign: verticalAlignment,
-          ...(mergedDefaults.backgroundColor !== 'transparent' && {
+          verticalAlign: getVerticalAlignment(cell.verticalAlignment),
+          ...(cell.backgroundColor !== 'transparent' && {
             shading: {
-              fill: mergedDefaults.backgroundColor,
+              fill: cell.backgroundColor,
             },
           }),
-          margins: createMarginsFromPadding(mergedDefaults.padding),
-          borders: {
-            top: createBorder(
-              getBorderValue(mergedDefaults.borderSize, 'top') as number,
-              getBorderValue(mergedDefaults.borderColor, 'top') as string,
-              shouldHideBorder('top', position)
-            ),
-            bottom: createBorder(
-              getBorderValue(mergedDefaults.borderSize, 'bottom') as number,
-              getBorderValue(mergedDefaults.borderColor, 'bottom') as string,
-              shouldHideBorder('bottom', position)
-            ),
-            left: createBorder(
-              getBorderValue(mergedDefaults.borderSize, 'left') as number,
-              getBorderValue(mergedDefaults.borderColor, 'left') as string,
-              shouldHideBorder('left', position)
-            ),
-            right: createBorder(
-              getBorderValue(mergedDefaults.borderSize, 'right') as number,
-              getBorderValue(mergedDefaults.borderColor, 'right') as string,
-              shouldHideBorder('right', position)
-            ),
-          },
+          margins: cellMargins(cell),
+          borders: cellBorders(cell),
         });
       })
     ),
   });
 
-  // Create data rows
   const dataRows = await Promise.all(
-    Array.from({ length: numRows }, async (_, rowIndex) => {
-      const isLastRow = rowIndex === numRows - 1;
-
+    model.rows.map(async (row) => {
       // Allocate every revision id for this row here, in the synchronous
-      // prefix of the callback: `Array.from` invokes callbacks in order and
-      // this runs before any await, so ids follow document order rather than
-      // I/O completion. Each emitted w:ins/w:del gets its own id, as Word's
-      // own output does.
-      const rowProps = tableConfig.rows?.[rowIndex];
-      const rowRevision = rowProps?.revision;
+      // prefix of the callback: `map` invokes callbacks in order and this runs
+      // before any await, so ids follow document order rather than I/O
+      // completion. Each emitted w:ins/w:del gets its own id, as Word's own
+      // output does.
+      const rowRevision = row.revision;
       const rowRevisionAttributes = rowRevision
         ? createRevisionMark(rowRevision)
         : undefined;
@@ -2173,210 +1468,59 @@ export async function createTable(
        * insertion leaves the row's paragraph marks untracked.
        */
       const paragraphMarks = rowRevision
-        ? columns.map(() => ({ run: createRevisionMark(rowRevision) }))
+        ? row.cells.map(() => ({ run: createRevisionMark(rowRevision) }))
         : undefined;
-
-      // Calculate row height from any cell in this row that defines it
-      const rowHeight = columns.reduce<number | undefined>(
-        (maxHeight, column, colIndex) => {
-          const cell = column.cells?.[rowIndex];
-          if (cell) {
-            const position = {
-              isFirstCol: colIndex === 0,
-              isLastCol: colIndex === numColumns - 1,
-              isLastRow,
-            };
-            const mergedDefaults = mergeCellDefaults(
-              tableConfig.cellDefaults,
-              column.cellDefaults,
-              cell,
-              position,
-              {
-                borderColor: tableConfig.borderColor,
-                borderSize: tableConfig.borderSize,
-              }
-            );
-            if (mergedDefaults.height !== undefined) {
-              return maxHeight !== undefined
-                ? Math.max(maxHeight, mergedDefaults.height)
-                : mergedDefaults.height;
-            }
-          }
-          return maxHeight;
-        },
-        undefined
-      );
 
       return new TableRow({
         height:
-          rowHeight !== undefined
-            ? { value: rowHeight * 20, rule: 'atLeast' as const }
+          row.height !== undefined
+            ? { value: row.height * 20, rule: 'atLeast' as const }
             : undefined,
-        ...(rowProps?.cantSplit !== undefined && {
-          cantSplit: rowProps.cantSplit,
-        }),
-        ...(rowProps?.tableHeader !== undefined && {
-          tableHeader: rowProps.tableHeader,
-        }),
+        ...(row.cantSplit !== undefined && { cantSplit: row.cantSplit }),
+        ...(row.tableHeader !== undefined && { tableHeader: row.tableHeader }),
         // w:trPr/w:ins | w:del — the row itself was inserted or deleted.
         ...rowRevisionAttributes,
         children: await Promise.all(
-          columns.map(async (column, colIndex) => {
-            const cell = column.cells?.[rowIndex];
-
-            // Determine position for outer border application and hideBorders
-            const position = {
-              isFirstRow: false, // Data rows are never the first row (header is)
-              isFirstCol: colIndex === 0,
-              isLastCol: colIndex === numColumns - 1,
-              isLastRow,
-            };
-
-            if (!cell) {
-              // Handle missing cell data - merge defaults properly
-              const mergedDefaultsForMissing = mergeCellDefaults(
-                tableConfig.cellDefaults,
-                column.cellDefaults,
-                undefined,
-                position,
-                {
-                  borderColor: tableConfig.borderColor,
-                  borderSize: tableConfig.borderSize,
-                }
-              );
+          row.cells.map(async (cell, colIndex) => {
+            if (cell.missing) {
               return new TableCell({
                 children: [
                   new Paragraph({
-                    ...((tableConfig.keepInOnePage && !isLastRow) ||
-                    (isLastRow && tableConfig.keepNext)
-                      ? { keepNext: true }
-                      : {}),
+                    ...(row.keepNext ? { keepNext: true } : {}),
                     spacing: tableStyle.cellParagraph,
                     alignment: AlignmentType.LEFT,
                     ...paragraphMarks?.[colIndex],
                     children: [],
                   }),
                 ],
-                borders: {
-                  top: createBorder(
-                    getBorderValue(
-                      mergedDefaultsForMissing.borderSize,
-                      'top'
-                    ) as number,
-                    getBorderValue(
-                      mergedDefaultsForMissing.borderColor,
-                      'top'
-                    ) as string,
-                    shouldHideBorder('top', position)
-                  ),
-                  bottom: createBorder(
-                    getBorderValue(
-                      mergedDefaultsForMissing.borderSize,
-                      'bottom'
-                    ) as number,
-                    getBorderValue(
-                      mergedDefaultsForMissing.borderColor,
-                      'bottom'
-                    ) as string,
-                    shouldHideBorder('bottom', position)
-                  ),
-                  left: createBorder(
-                    getBorderValue(
-                      mergedDefaultsForMissing.borderSize,
-                      'left'
-                    ) as number,
-                    getBorderValue(
-                      mergedDefaultsForMissing.borderColor,
-                      'left'
-                    ) as string,
-                    shouldHideBorder('left', position)
-                  ),
-                  right: createBorder(
-                    getBorderValue(
-                      mergedDefaultsForMissing.borderSize,
-                      'right'
-                    ) as number,
-                    getBorderValue(
-                      mergedDefaultsForMissing.borderColor,
-                      'right'
-                    ) as string,
-                    shouldHideBorder('right', position)
-                  ),
-                },
+                borders: cellBorders(cell),
               });
             }
 
-            // Merge cell defaults with priority: cell > column > table outer border > table cellDefaults
-            const mergedDefaults = mergeCellDefaults(
-              tableConfig.cellDefaults,
-              column.cellDefaults,
-              cell,
-              position,
-              {
-                borderColor: tableConfig.borderColor,
-                borderSize: tableConfig.borderSize,
-              }
-            );
-
             const cellChildren = await processCellContent(
-              cell.content,
-              mergedDefaults,
+              cell,
               tableStyle.tableCell,
-              cell.comment,
-              cell.revision,
               rowRevision
-            );
-
-            const horizontalAlignment = mergedDefaults.horizontalAlignment!;
-            const verticalAlignment = getVerticalAlignment(
-              mergedDefaults.verticalAlignment
             );
 
             return new TableCell({
               children: [
                 new Paragraph({
-                  ...((tableConfig.keepInOnePage && !isLastRow) ||
-                  (isLastRow && tableConfig.keepNext)
-                    ? { keepNext: true }
-                    : {}),
+                  ...(row.keepNext ? { keepNext: true } : {}),
                   spacing: tableStyle.cellParagraph,
-                  alignment: getAlignment(horizontalAlignment),
+                  alignment: getAlignment(cell.horizontalAlignment),
                   ...paragraphMarks?.[colIndex],
                   children: cellChildren,
                 }),
               ],
-              verticalAlign: verticalAlignment,
-              ...(mergedDefaults.backgroundColor !== 'transparent' && {
+              verticalAlign: getVerticalAlignment(cell.verticalAlignment),
+              ...(cell.backgroundColor !== 'transparent' && {
                 shading: {
-                  fill: mergedDefaults.backgroundColor,
+                  fill: cell.backgroundColor,
                 },
               }),
-              margins: createMarginsFromPadding(mergedDefaults.padding),
-              borders: {
-                top: createBorder(
-                  getBorderValue(mergedDefaults.borderSize, 'top') as number,
-                  getBorderValue(mergedDefaults.borderColor, 'top') as string,
-                  shouldHideBorder('top', position)
-                ),
-                bottom: createBorder(
-                  getBorderValue(mergedDefaults.borderSize, 'bottom') as number,
-                  getBorderValue(
-                    mergedDefaults.borderColor,
-                    'bottom'
-                  ) as string,
-                  shouldHideBorder('bottom', position)
-                ),
-                left: createBorder(
-                  getBorderValue(mergedDefaults.borderSize, 'left') as number,
-                  getBorderValue(mergedDefaults.borderColor, 'left') as string,
-                  shouldHideBorder('left', position)
-                ),
-                right: createBorder(
-                  getBorderValue(mergedDefaults.borderSize, 'right') as number,
-                  getBorderValue(mergedDefaults.borderColor, 'right') as string,
-                  shouldHideBorder('right', position)
-                ),
-              },
+              margins: cellMargins(cell),
+              borders: cellBorders(cell),
             });
           })
         ),
@@ -2384,74 +1528,13 @@ export async function createTable(
     })
   );
 
-  // Calculate column widths - if any column has explicit width, use DXA for all
-  const hasExplicitWidths = columns.some((col) => col.width !== undefined);
-
-  let columnWidths: number[];
-  let tableWidth: {
-    size: number;
-    type: (typeof WidthType)[keyof typeof WidthType];
-  };
-
-  if (hasExplicitWidths) {
-    // Use explicit widths in DXA (twips) - convert from points
-    const widthUtils = await import('../utils/widthUtils');
-    const { getAvailableWidthTwips, relativeLengthToTwips } = widthUtils;
-
-    // Get available table width in twips (page width minus margins)
-    const availableTableWidth = getAvailableWidthTwips(theme, themeName);
-
-    // Convert explicit column widths (points or percentage strings) to twips
-    const columnsWithExplicitWidthTwips = columns.map((col) =>
-      col.width !== undefined
-        ? relativeLengthToTwips(col.width, availableTableWidth)
-        : undefined
-    );
-
-    // Calculate total width used by columns with explicit widths
-    const totalExplicitWidth = columnsWithExplicitWidthTwips.reduce(
-      (sum: number, w) => sum + (w || 0),
-      0
-    );
-
-    if (totalExplicitWidth > availableTableWidth) {
-      console.warn(
-        `[json-to-office] Column widths total (${totalExplicitWidth} twips) exceeds available table width (${availableTableWidth} twips). Table may overflow.`
-      );
-    }
-
-    // Count columns without explicit width
-    const columnsWithoutWidth = columns.filter(
-      (col) => col.width === undefined
-    ).length;
-
-    // Calculate remaining space and distribute among columns without explicit width
-    const remainingWidth = Math.max(
-      0,
-      availableTableWidth - totalExplicitWidth
-    );
-    const defaultColumnWidth =
-      columnsWithoutWidth > 0
-        ? remainingWidth / columnsWithoutWidth
-        : pointsToTwips(72); // Fallback to 1 inch if all columns have explicit widths
-
-    // Assign widths: use explicit width (in twips) or calculated default
-    columnWidths = columnsWithExplicitWidthTwips.map(
-      (w) => w || defaultColumnWidth
-    );
-    const totalWidth = columnWidths.reduce((sum, w) => sum + w, 0);
-    tableWidth = { size: totalWidth, type: WidthType.DXA };
-  } else {
-    // Use percentage-based equal distribution
-    const percentPerColumn = 100 / columns.length;
-    columnWidths = columns.map(() => percentPerColumn);
-    tableWidth = { size: tableConfig.width ?? 100, type: WidthType.PERCENTAGE };
-  }
-
   return new Table({
-    width: tableWidth,
+    width: {
+      size: model.width.size,
+      type: model.width.unit === 'twips' ? WidthType.DXA : WidthType.PERCENTAGE,
+    },
     layout: TableLayoutType.FIXED,
-    columnWidths: columnWidths,
+    columnWidths: model.columnGrid.values,
     rows: [headerRow, ...dataRows],
   });
 }

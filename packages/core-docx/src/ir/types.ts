@@ -207,7 +207,13 @@ export type DocxIrAlignment =
 
 export type DocxIrVerticalAlign = 'top' | 'center' | 'bottom';
 
-/** A resolved colour: bare uppercase 6-digit hex, never a theme token. */
+/**
+ * A resolved colour: bare 6-digit hex without `#`, never a theme token.
+ *
+ * Case is preserved rather than normalised. OOXML reads hex case-insensitively,
+ * so normalising would change nothing a reader can see while changing the bytes
+ * of every document that ever stated a colour in lower case.
+ */
 export interface DocxIrColor {
   hex: string;
 }
@@ -557,8 +563,7 @@ export interface DocxIrTable {
   id: string;
   path: string;
   rows: DocxIrTableRow[];
-  /** Column widths in twips. Empty means the renderer distributes them. */
-  columnWidthsTwips: number[];
+  columnGrid: DocxIrColumnGrid;
   width: DocxIrTableWidth;
   /** Fixed layout is what the pipeline has always produced. */
   layout: 'fixed' | 'autofit';
@@ -570,6 +575,19 @@ export interface DocxIrTable {
   keepInOnePage?: boolean;
   /** Float the table out of the text flow. */
   floating?: DocxIrTableFloating;
+}
+
+/**
+ * The table's column grid (`w:tblGrid`).
+ *
+ * `twips` is the real OOXML unit. `percent` is what the pipeline writes when no
+ * column states a width: the grid then carries a percentage per column rather
+ * than a width, which Word tolerates because the table itself is sized in
+ * percent.
+ */
+export interface DocxIrColumnGrid {
+  unit: 'twips' | 'percent';
+  values: number[];
 }
 
 export type DocxIrTableWidth =

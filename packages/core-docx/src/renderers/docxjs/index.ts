@@ -21,6 +21,7 @@ import {
   Header,
   Packer,
   Paragraph,
+  Table,
   type ILevelsOptions,
   type ISectionOptions,
 } from 'docx';
@@ -50,7 +51,6 @@ export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
  * of them, and each moves into this set as the compiler learns to lower it.
  */
 const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
-  'tables',
   'table-merged-cells',
   'floating-tables',
   'images',
@@ -258,12 +258,12 @@ function partChildren(part: DocxIrHeaderFooter) {
  * one before its content and closing it after, without the anchor paragraphs
  * themselves adding visible space.
  */
-function sectionChildren(section: DocxIrSection): Paragraph[] {
+function sectionChildren(section: DocxIrSection): (Paragraph | Table)[] {
   const blocks = section.children.map(emitBlock);
   const bookmark = section.bookmark;
   if (!bookmark) return blocks;
 
-  const out: Paragraph[] = [];
+  const out: (Paragraph | Table)[] = [];
   if (bookmark.opens) {
     out.push(
       new Paragraph({
