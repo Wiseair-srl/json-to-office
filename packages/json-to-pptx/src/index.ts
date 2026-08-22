@@ -5,23 +5,34 @@
  * Re-exports from core-pptx and shared-pptx.
  */
 
-// Core generation API
+// Core generation API — buffer and file oriented. No export returns or accepts
+// a renderer-native object; the backend is chosen with the `renderer` option.
 export {
-  generatePresentation,
   generateBufferFromJson,
   generateBufferWithWarnings,
   generateAndSaveFromJson,
   generateFromFile,
-  savePresentation,
   PresentationGenerator,
+  PresentationValidationError,
+  UncompiledComponentError,
 } from '@json-to-office/core-pptx';
 
 export type {
+  GenerationOptions,
   GenerationResult,
+  GenerationValidationOptions,
   PipelineWarning,
   WarningCode,
 } from '@json-to-office/core-pptx';
 export { WarningCodes } from '@json-to-office/core-pptx';
+
+// Renderer selection
+export type { PptxRendererId } from '@json-to-office/core-pptx';
+export {
+  DEFAULT_PPTX_RENDERER_ID,
+  isPptxRendererId,
+  pptxRendererIds,
+} from '@json-to-office/core-pptx';
 
 // Plugin system
 export {

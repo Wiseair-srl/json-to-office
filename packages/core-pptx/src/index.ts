@@ -3,14 +3,12 @@ export function getPptxCoreVersion(): string {
   return 'PptxCore v1.0.0';
 }
 
-// Core API
+// Core API — buffer and file oriented; no member exposes a renderer object.
 export {
-  generatePresentation,
   generateBufferFromJson,
   generateBufferWithWarnings,
   generateAndSaveFromJson,
   generateFromFile,
-  savePresentation,
   isPresentationComponentDefinition,
   PresentationValidationError,
   PresentationGenerator,
@@ -21,6 +19,12 @@ export type {
   GenerationResult,
   GenerationValidationOptions,
 } from './core/generator';
+
+// Renderer selection. The IR itself stays internal to this package for now.
+export type { PptxRendererId } from './renderers/types';
+export { DEFAULT_PPTX_RENDERER_ID } from './renderers/types';
+export { isPptxRendererId, pptxRendererIds } from './renderers/registry';
+export { UncompiledComponentError } from './core/generateFromIr';
 export {
   DEFAULT_GENERATED_AT,
   packagePresentationBuffer,
@@ -89,13 +93,3 @@ export type {
   ComponentValidationResult,
   ValidationError as PluginValidationError,
 } from './plugin';
-
-// Component renderers
-export {
-  renderTextComponent,
-  renderImageComponent,
-  renderShapeComponent,
-  renderTableComponent,
-  renderHighchartsComponent,
-  renderComponent,
-} from './components';

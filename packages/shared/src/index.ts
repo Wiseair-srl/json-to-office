@@ -30,6 +30,28 @@ export {
   clampVisualDpi,
 } from './types/services';
 
+// Renderer infrastructure (format-independent contracts)
+export type {
+  OfficeFormat,
+  OfficeRenderer,
+  RenderOptions,
+  RendererDiagnostic,
+  RendererDiagnosticSeverity,
+  UnsupportedRendererFeatureErrorInit,
+  FeatureRequirement,
+} from './rendering/index';
+export {
+  assertNever,
+  UnsupportedRendererFeatureError,
+  partitionDiagnostics,
+  rendererError,
+  rendererWarning,
+  FeatureRequirementCollector,
+  RendererRegistry,
+  assertRendererSupports,
+  diagnoseUnsupportedFeatures,
+} from './rendering/index';
+
 // Schema utilities
 export {
   fixSchemaReferences,

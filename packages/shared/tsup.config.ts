@@ -11,6 +11,7 @@ export default defineConfig({
     'src/cache/index.ts',
     'src/plugin/index.ts',
     'src/fonts/node.ts',
+    'src/rendering/index.ts',
   ],
   format: ['esm'],
   dts: {

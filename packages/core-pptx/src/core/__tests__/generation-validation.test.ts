@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   generateBufferFromJson,
-  generatePresentation,
+  generateBufferWithWarnings,
   PresentationValidationError,
 } from '../generator';
 import type { PresentationComponentDefinition } from '../../types';
@@ -58,14 +58,11 @@ describe('PPTX generation validation', () => {
     }
   });
 
-  it('applies the same gate to direct generatePresentation calls', async () => {
+  it('applies the same gate to the warning-collecting buffer API', async () => {
     const deck = validDeck();
-    deck.children![0].children!.push({
-      name: 'textt',
-      props: { text: 'Typo' },
-    });
+    (deck.children![0].children![0].props as any).fontColor = 'CC785C';
 
-    await expect(generatePresentation(deck)).rejects.toBeInstanceOf(
+    await expect(generateBufferWithWarnings(deck)).rejects.toBeInstanceOf(
       PresentationValidationError
     );
   });

@@ -10,7 +10,6 @@ import type {
   PresentationComponentDefinition,
   PipelineWarning,
   PptxThemeConfig,
-  PendingXmlFill,
 } from '../types';
 import type {
   ExtendedPresentationComponent,
@@ -25,17 +24,15 @@ import type {
 import { validatePresentation, cleanComponentProps } from './validation';
 import { generatePluginPresentationSchema, exportPluginSchema } from './schema';
 import { processPresentation } from '../core/structure';
-import { renderPresentation } from '../core/render';
+import type { PresentationPackagingOptions } from '../core/packagePresentation';
+import { renderProcessedViaIr } from '../core/generateFromIr';
+import type { PptxRendererId } from '../renderers/types';
 import { getPptxTheme, hasPptxTheme } from '../themes';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from '../core/fontResolution';
 import { resolveThemeContext } from '../core/generationContext';
 import { runWithBaseDir } from '../utils/baseDirContext';
 import { assertNoContentConflicts } from '../core/generator';
-import {
-  packagePresentationBuffer,
-  type PresentationPackagingOptions,
-} from '../core/packagePresentation';
 
 /**
  * Options for creating a presentation generator
@@ -60,6 +57,11 @@ export interface PresentationGeneratorOptions
    * overrides it; defaults to `process.cwd()` when neither is set (#142).
    */
   baseDir?: string;
+  /**
+   * Backend that turns the compiled presentation into bytes. Per-call
+   * `options.renderer` overrides it; defaults to `pptxgenjs`.
+   */
+  renderer?: PptxRendererId;
 }
 
 /**
@@ -76,6 +78,7 @@ interface BuilderState {
   validation?: GenerationValidationOptions;
   packaging: PresentationPackagingOptions;
   baseDir?: string;
+  renderer?: PptxRendererId;
 }
 
 type ValidateEmitted = (
@@ -436,29 +439,24 @@ function createBuilderImpl<
       // Scope the document base directory over process+render: relative
       // asset paths are rewritten eagerly there — pptxgenjs reads them
       // later, during write() (#142). Matches the core pipeline.
-      const { pendingFills, pptx } = await runWithBaseDir(
+      const buffer = await runWithBaseDir(
         options?.baseDir ?? state.baseDir,
-        async () => {
-          const processed = processPresentation(processedDocument, {
-            theme: resolvedTheme,
-            services: state.services,
-          });
-          const pendingFills: PendingXmlFill[] = [];
-          const pptx = await renderPresentation(
-            processed,
+        () =>
+          renderProcessedViaIr(
+            processPresentation(processedDocument, {
+              theme: resolvedTheme,
+              services: state.services,
+            }),
             warnings,
-            pendingFills
-          );
-          return { pendingFills, pptx };
-        }
+            {
+              renderer: options?.renderer ?? state.renderer,
+              services: state.services,
+              deterministic:
+                options?.deterministic ?? state.packaging.deterministic,
+              generatedAt: options?.generatedAt ?? state.packaging.generatedAt,
+            }
+          )
       );
-      const data = await pptx.write({ outputType: 'nodebuffer' });
-      const buffer = await packagePresentationBuffer(data as Buffer, {
-        deterministic: options?.deterministic ?? state.packaging.deterministic,
-        generatedAt: options?.generatedAt ?? state.packaging.generatedAt,
-        pendingFills,
-        warnings,
-      });
 
       return { buffer, warnings };
     } catch (error) {
@@ -628,6 +626,7 @@ export function createPresentationGenerator(
       generatedAt: options.generatedAt,
     },
     baseDir: options.baseDir,
+    renderer: options.renderer,
   };
 
   return createBuilderImpl<readonly []>(initialState);

@@ -1,0 +1,100 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PptxIR debug snapshots > matches a recorded snapshot 1`] = `
+"{
+  "masters": [],
+  "metadata": {
+    "title": "Snapshot deck"
+  },
+  "resources": [
+    {
+      "id": "res1",
+      "kind": "image",
+      "mediaType": "image/png",
+      "origin": {
+        "byteLength": 68,
+        "kind": "inline",
+        "sha256": "b7a95783e8c945e9f2566ec4baaf0d118564bc09278f801c44f44140cfb2f1c0"
+      }
+    }
+  ],
+  "rtl": false,
+  "schemaVersion": 1,
+  "size": {
+    "heightEmu": 6858000,
+    "widthEmu": 9144000
+  },
+  "slides": [
+    {
+      "elements": [
+        {
+          "id": "s1.e0",
+          "kind": "textBox",
+          "path": "slides[0].elements[0]",
+          "runs": [
+            {
+              "color": {
+                "hex": "333333"
+              },
+              "fontFamily": "Arial",
+              "fontSize": 18,
+              "text": "Hello"
+            }
+          ],
+          "style": {
+            "defaults": {
+              "color": {
+                "hex": "333333"
+              },
+              "fontFamily": "Arial",
+              "fontSize": 18
+            },
+            "insetPoints": 0,
+            "verticalAlign": "top"
+          },
+          "transform": {
+            "heightEmu": 914400,
+            "widthEmu": 3657600,
+            "xEmu": 914400,
+            "yEmu": 914400
+          }
+        },
+        {
+          "id": "s1.e1",
+          "kind": "image",
+          "path": "slides[0].elements[1]",
+          "resourceId": "res1",
+          "transform": {
+            "heightEmu": 914400,
+            "widthEmu": 914400,
+            "xEmu": 5486400,
+            "yEmu": 914400
+          }
+        }
+      ],
+      "hidden": false,
+      "id": "slide1",
+      "notes": "a note",
+      "path": "slides[0]"
+    }
+  ],
+  "theme": {
+    "bodyFont": "Arial",
+    "headingFont": "Arial",
+    "name": "default",
+    "palette": {
+      "accent": "70AD47",
+      "accent4": "FFC000",
+      "accent5": "5B9BD5",
+      "accent6": "70AD47",
+      "background": "FFFFFF",
+      "background2": "E7E6E6",
+      "primary": "4472C4",
+      "secondary": "ED7D31",
+      "text": "333333",
+      "text2": "44546A"
+    }
+  }
+}
+"
+`;
