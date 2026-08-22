@@ -390,7 +390,7 @@ describe('validateDocxIr', () => {
           ],
         },
       ],
-      columnWidthsTwips: [2000],
+      columnGrid: { unit: 'twips' as const, values: [2000] },
       width: { kind: 'auto' },
       layout: 'fixed',
     };
@@ -401,19 +401,36 @@ describe('validateDocxIr', () => {
     );
   });
 
-  it('rejects a non-integer column width', () => {
+  it('rejects a non-integer twips column width', () => {
     const table: DocxIrTable = {
       kind: 'table',
       id: 's0.b0',
       path: 'sections[0].children[0]',
       rows: [],
-      columnWidthsTwips: [2000.5],
+      columnGrid: { unit: 'twips' as const, values: [2000.5] },
       width: { kind: 'auto' },
       layout: 'fixed',
     };
     expect(validateDocxIr(withBody([table]))).toContainEqual(
       expect.objectContaining({
-        path: 'sections[0].children[0].columnWidthsTwips',
+        path: 'sections[0].children[0].columnGrid',
+      })
+    );
+  });
+
+  it('accepts a fractional percentage column grid', () => {
+    const table: DocxIrTable = {
+      kind: 'table',
+      id: 's0.b0',
+      path: 'sections[0].children[0]',
+      rows: [],
+      columnGrid: { unit: 'percent' as const, values: [33.33, 33.33, 33.34] },
+      width: { kind: 'percent', value: 100 },
+      layout: 'fixed',
+    };
+    expect(validateDocxIr(withBody([table]))).not.toContainEqual(
+      expect.objectContaining({
+        path: 'sections[0].children[0].columnGrid',
       })
     );
   });

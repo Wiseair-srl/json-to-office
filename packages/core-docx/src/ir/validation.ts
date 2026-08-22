@@ -190,10 +190,19 @@ function checkBlock(block: DocxIrBlock, path: string, scope: Scope): void {
       return;
 
     case 'table':
-      if (block.columnWidthsTwips.some((w) => !Number.isInteger(w) || w < 0)) {
+      // A percentage grid is a share of the table, so it may be fractional; a
+      // twips grid is a real measurement and must be whole.
+      if (
+        block.columnGrid.values.some(
+          (w) =>
+            w < 0 || (block.columnGrid.unit === 'twips' && !Number.isInteger(w))
+        )
+      ) {
         scope.add(
-          `${path}.columnWidthsTwips`,
-          'expected non-negative integer twips'
+          `${path}.columnGrid`,
+          block.columnGrid.unit === 'twips'
+            ? 'expected non-negative integer twips'
+            : 'expected non-negative percentages'
         );
       }
       block.rows.forEach((row, r) => {

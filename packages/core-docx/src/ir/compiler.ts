@@ -37,6 +37,15 @@ import {
   slugifyBookmarkText,
 } from '../utils/bookmarkRegistry';
 import { resolveListLevels, type ListLevelSource } from '../utils/listLevels';
+import {
+  resolveTableModel,
+  type ResolvedBorder,
+  type ResolvedCell,
+  type ResolvedRow,
+  type ResolvedTable,
+  type TableSource,
+} from '../core/tableModel';
+import { getTableStyle } from '../styles/utils/layoutUtils';
 import type {
   ListLevelConfig,
   ListMarkerFontConfig,
@@ -48,6 +57,7 @@ import {
   type DocxIR,
   type DocxIrAlignment,
   type DocxIrBlock,
+  type DocxIrBorder,
   type DocxIrHeaderFooter,
   type DocxIrInline,
   type DocxIrNumbering,
@@ -60,15 +70,16 @@ import {
   type DocxIrSectionProperties,
   type DocxIrSpacing,
   type DocxIrStyles,
-  type DocxIrTable,
   type DocxIrTableCell,
   type DocxIrTableRow,
+  type DocxIrVerticalAlign,
 } from './types';
 import {
   blockId,
   headerFooterBlockId,
   inchesToTwips,
   irColor,
+  pointsToEighthPoints,
   pointsToHalfPoints,
   pointsToTwips,
 } from './units';
@@ -132,6 +143,8 @@ interface CompileContext {
   numberingByReference: Map<string, DocxIrNumbering>;
   /** Counter behind the generated `list-1`, `list-2`, … references. */
   listCounter: number;
+  /** Warning messages already collected, so one bad value warns once. */
+  warnedMessages: Set<string>;
 }
 
 export function compileDocument(
@@ -157,6 +170,7 @@ export function compileDocument(
     numbering: [],
     numberingByReference: new Map(),
     listCounter: 0,
+    warnedMessages: new Set(),
   };
 
   ctx.features.require('paragraphs', 'sections');
@@ -934,7 +948,9 @@ function paragraphNode(
     id: scope.id,
     path: scope.path,
     children: content,
-    ...(options.styleId ? { styleId: options.styleId } : {}),
+    // Body text always names a style; leaving it out is how a table cell says
+    // it has none.
+    styleId: options.styleId ?? 'Normal',
     ...(options.formatting ? { formatting: options.formatting } : {}),
     ...(options.numberingNone
       ? { numbering: { reference: '', level: 0, none: true } }
@@ -1295,13 +1311,395 @@ function compileImage(
  * Tables
  * ------------------------------------------------------------------ */
 
+/**
+ * A table.
+ *
+ * Every cascade — cell over column over table, per border side — and the column
+ * grid come from `resolveTableModel`, which the pre-IR writer shares. What is
+ * left here is turning each resolved cell into a paragraph and its runs.
+ */
 function compileTable(
   component: ComponentDefinition,
   scope: ComponentScope
 ): DocxIrBlock[] {
-  scope.ctx.unsupported.push({ name: 'table', path: scope.path });
-  return [];
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+  const source = tableSource(props);
+
+  if (source.columns.length === 0) {
+    ctx.unsupported.push({ name: 'table', path, detail: 'no columns' });
+    return [];
+  }
+
+  const style = getTableStyle(ctx.theme, ctx.themeName);
+  const model = resolveTableModel<unknown, unknown, unknown>(
+    source,
+    ctx.theme,
+    ctx.themeName,
+    { onWarning: (_code, message) => warnOnce(ctx, 'table', message) }
+  );
+
+  if (model.overflow) {
+    warnOnce(
+      ctx,
+      'table',
+      `Column widths total (${model.overflow.totalTwips} twips) exceeds available table width (${model.overflow.availableTwips} twips). Table may overflow.`
+    );
+  }
+
+  // A cell may carry an annotation or a nested component this slice does not
+  // lower; refusing the whole table beats emitting one with a cell missing.
+  const blocker = tableBlocker(model, path);
+  if (blocker) {
+    ctx.unsupported.push({ name: 'table', ...blocker });
+    return [];
+  }
+
+  const rows: DocxIrTableRow[] = [
+    compileTableRow(model.header, style.headerParagraph, style.tableHeader, {
+      ctx,
+      path: `${path}.header`,
+      id: `${scope.id}:h`,
+      // Headers repeat across page breaks unless the source disabled it.
+      isHeader: model.repeatHeader,
+    }),
+    ...model.rows.map((row, index) =>
+      compileTableRow(row, style.cellParagraph, style.tableCell, {
+        ctx,
+        path: `${path}.rows[${index}]`,
+        id: `${scope.id}:r${index}`,
+        ...(row.tableHeader !== undefined ? { isHeader: row.tableHeader } : {}),
+        ...(row.cantSplit !== undefined ? { cantSplit: row.cantSplit } : {}),
+      })
+    ),
+  ];
+
+  ctx.features.require('tables', path);
+
+  return [
+    {
+      kind: 'table',
+      id: scope.id,
+      path,
+      rows,
+      columnGrid: model.columnGrid,
+      width:
+        model.width.unit === 'twips'
+          ? { kind: 'twips', value: model.width.size }
+          : { kind: 'percent', value: model.width.size },
+      // Fixed layout is what the pipeline has always produced.
+      layout: 'fixed',
+    },
+  ];
 }
 
-/** Referenced once the table and image compilers land; keeps their types live. */
-export type { DocxIrTable, DocxIrTableRow, DocxIrTableCell };
+/**
+ * The table as the model wants it, whichever way the author wrote it.
+ *
+ * `headers`/`rows` is the original flat shape: a header row and a row of
+ * strings each. It has no per-cell or per-column settings, so every cell is
+ * given the same explicit defaults the flat shape has always rendered with.
+ */
+function tableSource(
+  props: Record<string, any>
+): TableSource<unknown, unknown, unknown> {
+  if (!Array.isArray(props.headers) || !Array.isArray(props.rows)) {
+    return { ...props, columns: props.columns ?? [] } as TableSource<
+      unknown,
+      unknown,
+      unknown
+    >;
+  }
+
+  const headers = props.headers as string[];
+  const rows = props.rows as string[][];
+  const cellDefaults = {
+    color: '000000',
+    backgroundColor: 'transparent',
+    horizontalAlignment: 'left' as const,
+    verticalAlignment: 'top' as const,
+    font: {
+      family: 'Arial',
+      size: 11,
+      bold: false,
+      italic: false,
+      underline: false,
+    },
+    borderColor: '000000',
+    borderSize: 1,
+  };
+
+  return {
+    borderColor: '000000',
+    borderSize: 1,
+    cellDefaults,
+    width: 100,
+    columns: headers.map((header, colIndex) => ({
+      cellDefaults: { ...cellDefaults },
+      header: { ...cellDefaults, content: header },
+      cells: rows.map((row) => ({
+        ...cellDefaults,
+        content: row[colIndex] || '',
+      })),
+    })),
+  };
+}
+
+/** The first thing about this table the slice cannot lower, if any. */
+function tableBlocker(
+  model: ResolvedTable<unknown, unknown, unknown>,
+  path: string
+): { path: string; detail: string } | undefined {
+  const rows = [model.header, ...model.rows];
+  for (const [rowIndex, row] of rows.entries()) {
+    const rowPath = row.isHeader
+      ? `${path}.header`
+      : `${path}.rows[${rowIndex - 1}]`;
+    if (row.revision !== undefined) {
+      return { path: rowPath, detail: 'revision' };
+    }
+    for (const [colIndex, cell] of row.cells.entries()) {
+      const cellPath = `${rowPath}.cells[${colIndex}]`;
+      if (cell.comment !== undefined)
+        return { path: cellPath, detail: 'comment' };
+      if (cell.revision !== undefined)
+        return { path: cellPath, detail: 'revision' };
+      const content = cell.content;
+      if (content === undefined || typeof content === 'string') {
+        if (content && containsUnsupportedSyntax(content)) {
+          return {
+            path: cellPath,
+            detail: containsUnsupportedSyntax(content)!,
+          };
+        }
+        continue;
+      }
+      if (content.name !== 'paragraph') {
+        return { path: cellPath, detail: content.name };
+      }
+      const text = String((content.props as { text?: unknown })?.text ?? '');
+      const syntax = containsUnsupportedSyntax(text);
+      if (syntax) return { path: cellPath, detail: syntax };
+      if ((content.props as { revision?: unknown })?.revision !== undefined) {
+        return { path: cellPath, detail: 'revision' };
+      }
+    }
+  }
+  return undefined;
+}
+
+/** Base run style for a cell, from the theme's table styles. */
+type TableBaseStyle = ReturnType<typeof getTableStyle>['tableCell'] & {
+  bold?: boolean;
+};
+
+function compileTableRow(
+  row: ResolvedRow<unknown, unknown, unknown>,
+  spacing: ReturnType<typeof getTableStyle>['cellParagraph'],
+  baseStyle: TableBaseStyle,
+  scope: ComponentScope & { isHeader?: boolean; cantSplit?: boolean }
+): DocxIrTableRow {
+  return {
+    cells: row.cells.map((cell, colIndex) =>
+      compileTableCell(cell, spacing, baseStyle, row.keepNext, {
+        ctx: scope.ctx,
+        path: `${scope.path}.cells[${colIndex}]`,
+        id: `${scope.id}:c${colIndex}`,
+      })
+    ),
+    ...(row.height !== undefined
+      ? {
+          heightTwips: pointsToTwips(row.height),
+          heightRule: 'atLeast' as const,
+        }
+      : {}),
+    ...(scope.isHeader !== undefined ? { isHeader: scope.isHeader } : {}),
+    ...(scope.cantSplit !== undefined ? { cantSplit: scope.cantSplit } : {}),
+  };
+}
+
+function compileTableCell(
+  cell: ResolvedCell<unknown, unknown>,
+  spacing: ReturnType<typeof getTableStyle>['cellParagraph'],
+  baseStyle: TableBaseStyle,
+  keepNext: boolean,
+  scope: ComponentScope
+): DocxIrTableCell {
+  const paragraph: DocxIrParagraph = {
+    kind: 'paragraph',
+    id: scope.id,
+    path: scope.path,
+    // A cell paragraph names no style: it takes its run properties from the
+    // cell, not from Normal, so naming one would layer body-prose spacing back
+    // on top of the dense table spacing.
+    children:
+      cell.missing || cellText(cell) === undefined
+        ? []
+        : parseInline(cellText(cell)!, {
+            base: cellRunFormatting(cell, baseStyle, scope.ctx),
+          }),
+    formatting: {
+      alignment: cell.missing
+        ? 'left'
+        : compileAlignment(cell.horizontalAlignment)!,
+      spacing: {
+        beforeTwips: spacing.before,
+        afterTwips: spacing.after,
+        ...(spacing.line !== undefined
+          ? { lineTwips: spacing.line, lineRule: lineRule(spacing.lineRule) }
+          : {}),
+      },
+      ...(keepNext ? { keepNext: true } : {}),
+    },
+  };
+
+  return {
+    children: [paragraph],
+    ...(cell.missing
+      ? {}
+      : {
+          verticalAlign: verticalAlign(cell.verticalAlignment),
+          ...(cell.backgroundColor !== undefined &&
+          cell.backgroundColor !== 'transparent'
+            ? { shading: { fill: { hex: cell.backgroundColor } } }
+            : {}),
+          ...(cell.padding
+            ? {
+                margins: {
+                  topTwips: pointsToTwips(cell.padding.top),
+                  bottomTwips: pointsToTwips(cell.padding.bottom),
+                  leftTwips: pointsToTwips(cell.padding.left),
+                  rightTwips: pointsToTwips(cell.padding.right),
+                },
+              }
+            : {}),
+        }),
+    borders: {
+      top: compileTableBorder(cell.borders.top),
+      bottom: compileTableBorder(cell.borders.bottom),
+      left: compileTableBorder(cell.borders.left),
+      right: compileTableBorder(cell.borders.right),
+    },
+  };
+}
+
+/**
+ * The text a cell renders.
+ *
+ * A cell holding a `paragraph` renders that paragraph's text; a cell holding
+ * nothing renders nothing at all, which is not the same as rendering an empty
+ * string — an empty string still produces a run.
+ */
+function cellText(cell: ResolvedCell<unknown, unknown>): string | undefined {
+  const content = cell.content;
+  if (content === undefined || content === '') return undefined;
+  if (typeof content === 'string') return content;
+  return String((content.props as { text?: unknown })?.text ?? '');
+}
+
+/**
+ * The run formatting a cell's text starts from.
+ *
+ * The cell's own font wins over the theme's table style, and a numeric weight
+ * resolves to the synthesized family alias exactly as it does in body text.
+ */
+function cellRunFormatting(
+  cell: ResolvedCell<unknown, unknown>,
+  baseStyle: TableBaseStyle,
+  ctx: CompileContext
+): DocxIrRunFormatting {
+  const content = cell.content;
+  const componentFont =
+    content !== undefined && typeof content !== 'string'
+      ? (content.props as { font?: Record<string, any> })?.font ?? undefined
+      : undefined;
+
+  const weighted = applyFontWeightAlias({
+    fontFamily: cell.font?.family || baseStyle.font,
+    bold: cell.font?.bold ?? false,
+    italic: cell.font?.italic ?? false,
+    fontWeight: cell.font?.fontWeight,
+  });
+
+  const formatting: DocxIrRunFormatting = {
+    ...(weighted.font ? { fontFamily: weighted.font } : {}),
+    sizeHalfPoints: cell.font?.size ? cell.font.size * 2 : baseStyle.size,
+    bold: weighted.bold ?? false,
+    italic: weighted.italic ?? false,
+    ...(cell.font?.underline ? { underline: { type: 'single' } } : {}),
+    ...(cell.color || baseStyle.color
+      ? { color: irColor(cell.color || baseStyle.color) }
+      : {}),
+  };
+
+  if (!componentFont) return formatting;
+
+  // A paragraph component inside the cell layers its own font on top.
+  const paraWeighted = applyFontWeightAlias({
+    fontFamily: componentFont.family ?? formatting.fontFamily,
+    bold: componentFont.bold,
+    italic: componentFont.italic,
+    fontWeight: componentFont.fontWeight,
+  });
+
+  return {
+    ...formatting,
+    ...(paraWeighted.font ? { fontFamily: paraWeighted.font } : {}),
+    ...(componentFont.size ? { sizeHalfPoints: componentFont.size * 2 } : {}),
+    ...(paraWeighted.bold !== undefined ? { bold: paraWeighted.bold } : {}),
+    ...(paraWeighted.italic !== undefined
+      ? { italic: paraWeighted.italic }
+      : {}),
+    ...(componentFont.underline !== undefined
+      ? {
+          underline: componentFont.underline
+            ? { type: 'single' as const }
+            : undefined,
+        }
+      : {}),
+    ...(componentFont.color
+      ? { color: irColor(resolveColor(componentFont.color, ctx.theme)) }
+      : {}),
+  };
+}
+
+/**
+ * One side of a cell border.
+ *
+ * A zero size and a hidden side are the same thing to OOXML — `none` — and the
+ * distinction between them is only meaningful to the author.
+ */
+function compileTableBorder(border: ResolvedBorder): DocxIrBorder {
+  if (border.size === 0 || border.hidden) {
+    return { style: 'none', sizeEighthPoints: 0, color: { hex: '000000' } };
+  }
+  return {
+    style: 'single',
+    sizeEighthPoints: pointsToEighthPoints(border.size),
+    color: irColor(border.color || '000000'),
+  };
+}
+
+function verticalAlign(
+  value: 'top' | 'middle' | 'bottom'
+): DocxIrVerticalAlign {
+  return value === 'middle' ? 'center' : value;
+}
+
+/** The theme's line rule, in the IR's vocabulary. */
+function lineRule(value: unknown): DocxIrSpacing['lineRule'] {
+  if (value === 'exactly' || value === 'exact') return 'exact';
+  if (value === 'atLeast') return 'atLeast';
+  return 'auto';
+}
+
+/** Collect a warning at most once per compilation, keyed by its message. */
+function warnOnce(
+  ctx: CompileContext,
+  component: string,
+  message: string
+): void {
+  if (ctx.warnedMessages.has(message)) return;
+  ctx.warnedMessages.add(message);
+  ctx.warnings.push({ component, message });
+}

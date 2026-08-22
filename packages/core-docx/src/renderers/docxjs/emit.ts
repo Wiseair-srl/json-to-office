@@ -16,21 +16,33 @@ import {
   AlignmentType,
   BookmarkEnd,
   BookmarkStart,
+  BorderStyle,
   ColumnBreak,
   Paragraph,
   Tab,
+  Table,
+  TableCell,
+  TableLayoutType,
+  TableRow,
   TextRun,
+  VerticalAlign,
+  WidthType,
   type IParagraphOptions,
   type IRunOptions,
+  type ITableCellOptions,
   type ParagraphChild,
 } from 'docx';
 import { assertNever } from '@json-to-office/shared/rendering';
 import type {
   DocxIrBlock,
+  DocxIrBorder,
   DocxIrInline,
   DocxIrParagraph,
   DocxIrParagraphFormatting,
   DocxIrRunFormatting,
+  DocxIrTable,
+  DocxIrTableCell,
+  DocxIrTableRow,
 } from '../../ir/types';
 
 export const ALIGNMENT: Readonly<
@@ -229,9 +241,9 @@ export function paragraphOptions(
 export function emitParagraph(block: DocxIrParagraph): Paragraph {
   return new Paragraph({
     children: inlineChildren(block.children),
-    // The pre-IR writer always named a style, defaulting to Normal, and the
-    // emitted XML carries `w:pStyle` either way.
-    style: block.styleId ?? 'Normal',
+    // A paragraph with no style named is one that deliberately has none — a
+    // table cell, whose run properties come from the cell itself.
+    ...(block.styleId ? { style: block.styleId } : {}),
     ...paragraphOptions(block.formatting),
     ...(block.numbering
       ? {
@@ -248,11 +260,12 @@ export function emitParagraph(block: DocxIrParagraph): Paragraph {
   });
 }
 
-export function emitBlock(block: DocxIrBlock): Paragraph {
+export function emitBlock(block: DocxIrBlock): Paragraph | Table {
   switch (block.kind) {
     case 'paragraph':
       return emitParagraph(block);
     case 'table':
+      return emitTable(block);
     case 'toc':
       throw new Error(
         `the docxjs renderer has no emitter for "${block.kind}" (${block.path})`
@@ -260,4 +273,96 @@ export function emitBlock(block: DocxIrBlock): Paragraph {
     default:
       return assertNever(block, 'DocxIrBlock');
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Tables
+ * ------------------------------------------------------------------ */
+
+const VERTICAL_ALIGN: Readonly<
+  Record<string, (typeof VerticalAlign)[keyof typeof VerticalAlign]>
+> = {
+  top: VerticalAlign.TOP,
+  center: VerticalAlign.CENTER,
+  bottom: VerticalAlign.BOTTOM,
+};
+
+export function emitTable(block: DocxIrTable): Table {
+  return new Table({
+    width: {
+      size: block.width.kind === 'auto' ? 0 : block.width.value,
+      type: block.width.kind === 'twips' ? WidthType.DXA : WidthType.PERCENTAGE,
+    },
+    layout:
+      block.layout === 'fixed'
+        ? TableLayoutType.FIXED
+        : TableLayoutType.AUTOFIT,
+    columnWidths: block.columnGrid.values,
+    rows: block.rows.map(emitTableRow),
+  });
+}
+
+function emitTableRow(row: DocxIrTableRow): TableRow {
+  return new TableRow({
+    children: row.cells.map(emitTableCell),
+    ...(row.heightTwips !== undefined
+      ? {
+          height: { value: row.heightTwips, rule: row.heightRule ?? 'atLeast' },
+        }
+      : {}),
+    ...(row.isHeader !== undefined ? { tableHeader: row.isHeader } : {}),
+    ...(row.cantSplit !== undefined ? { cantSplit: row.cantSplit } : {}),
+  });
+}
+
+function emitTableCell(cell: DocxIrTableCell): TableCell {
+  const options: Record<string, unknown> = {
+    children: cell.children.map(emitBlock),
+  };
+
+  if (cell.verticalAlign) {
+    options.verticalAlign = VERTICAL_ALIGN[cell.verticalAlign];
+  }
+  if (cell.shading) options.shading = { fill: cell.shading.fill.hex };
+  if (cell.margins) {
+    options.margins = {
+      // Stated in twips, which docx.js only believes if told the unit.
+      marginUnitType: WidthType.DXA,
+      top: cell.margins.topTwips ?? 0,
+      bottom: cell.margins.bottomTwips ?? 0,
+      left: cell.margins.leftTwips ?? 0,
+      right: cell.margins.rightTwips ?? 0,
+    };
+  }
+  if (cell.borders) {
+    options.borders = {
+      top: emitBorder(cell.borders.top),
+      bottom: emitBorder(cell.borders.bottom),
+      left: emitBorder(cell.borders.left),
+      right: emitBorder(cell.borders.right),
+    };
+  }
+  if (cell.columnSpan !== undefined) options.columnSpan = cell.columnSpan;
+  if (cell.rowSpan !== undefined) options.verticalMerge = cell.rowSpan;
+
+  return new TableCell(options as unknown as ITableCellOptions);
+}
+
+const BORDER_STYLE: Readonly<
+  Record<string, (typeof BorderStyle)[keyof typeof BorderStyle]>
+> = {
+  none: BorderStyle.NONE,
+  single: BorderStyle.SINGLE,
+  double: BorderStyle.DOUBLE,
+  dashed: BorderStyle.DASHED,
+  dotted: BorderStyle.DOTTED,
+};
+
+function emitBorder(border: DocxIrBorder | undefined) {
+  if (!border) return undefined;
+  return {
+    style: BORDER_STYLE[border.style] ?? BorderStyle.SINGLE,
+    size: border.sizeEighthPoints ?? 0,
+    color: border.color?.hex ?? '000000',
+  };
 }

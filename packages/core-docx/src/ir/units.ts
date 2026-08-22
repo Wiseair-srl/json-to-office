@@ -76,12 +76,13 @@ export function resolveLengthTwips(
 /**
  * Build an IR colour from an already-resolved hex string.
  *
- * Theme tokens are resolved upstream; this only normalises the `#` prefix and
- * casing, so an unresolved token cannot reach the IR by accident.
+ * Theme tokens are resolved upstream; this only strips the `#` prefix, so an
+ * unresolved token cannot reach the IR by accident. Case is left alone — OOXML
+ * reads hex case-insensitively, so normalising it would rewrite the bytes of
+ * every document that stated a colour in lower case and change nothing else.
  */
 export function irColor(hex: string): { hex: string } {
-  const bare = hex.startsWith('#') ? hex.slice(1) : hex;
-  return { hex: bare.toUpperCase() };
+  return { hex: hex.startsWith('#') ? hex.slice(1) : hex };
 }
 
 /** Lowercase hex SHA-256, the identity used for resources. */
