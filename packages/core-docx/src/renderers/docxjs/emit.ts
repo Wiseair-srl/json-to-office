@@ -22,7 +22,9 @@ import {
   CommentRangeStart,
   CommentReference,
   DeletedTextRun,
+  EndnoteReferenceRun,
   ExternalHyperlink,
+  FootnoteReferenceRun,
   InsertedTextRun,
   InternalHyperlink,
   PageNumber,
@@ -261,11 +263,12 @@ export function inlineChildren(
         break;
 
       case 'noteReference':
-        // Reachable only if capability checking let it through, which would be
-        // a bug — never a silent drop.
-        throw new Error(
-          `the docxjs renderer has no emitter for inline "${child.kind}"`
+        out.push(
+          child.noteKind === 'endnote'
+            ? new EndnoteReferenceRun(child.id)
+            : new FootnoteReferenceRun(child.id)
         );
+        break;
 
       default:
         assertNever(child, 'DocxIrInline');

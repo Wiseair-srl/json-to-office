@@ -91,6 +91,7 @@ import {
   type DocxIrBlock,
   type DocxIrBorder,
   type DocxIrComment,
+  type DocxIrNote,
   type DocxIrFloating,
   type DocxIrFloatingPosition,
   type DocxIrHeaderFooter,
@@ -197,6 +198,9 @@ interface CompileContext {
   nextRevisionId: number;
   /** Comment bodies, in id order, with the ids their anchors carry. */
   comments: DocxIrComment[];
+  /** Note bodies, in the order their markers resolved. */
+  footnotes: DocxIrNote[];
+  endnotes: DocxIrNote[];
   commentCounter: number;
   /** Whether anything in this document asked for a resolved state. */
   hasResolvedComment: boolean;
@@ -239,6 +243,8 @@ export function compileDocument(
     warnedMessages: new Set(),
     nextRevisionId: 1,
     comments: [],
+    footnotes: [],
+    endnotes: [],
     commentCounter: 0,
     hasResolvedComment: false,
     images,
@@ -289,8 +295,8 @@ export function compileDocument(
     resources: ctx.resources,
     sections,
     comments: ctx.comments,
-    footnotes: [],
-    endnotes: [],
+    footnotes: ctx.footnotes,
+    endnotes: ctx.endnotes,
   };
 
   return {
@@ -802,11 +808,7 @@ function compileComponent(
 const DECORATED = /(\*\*\*|___|(\*\*|__)|(\*|_))/;
 
 /** Props a paragraph or heading may carry that this slice does not lower. */
-const UNLOWERED_PARAGRAPH_PROPS = [
-  'footnotes',
-  'endnotes',
-  'floating',
-] as const;
+const UNLOWERED_PARAGRAPH_PROPS = ['floating'] as const;
 
 function compileParagraph(
   component: ComponentDefinition,
@@ -1390,7 +1392,13 @@ function compileRuns(
     ctx.features.require('breaks', path);
   }
 
+  const notes = createNoteBinding(props.footnotes, props.endnotes, ctx);
+
   if (props.revision) {
+    // Revision segments render literally, so a `[^id]` marker inside them
+    // stays literal text and its body is never emitted. Report that rather
+    // than dropping the declared notes in silence.
+    notes?.reportUnemitted('');
     ctx.features.require('revisions', path);
     return [
       ...(props.columnBreak ? [{ kind: 'columnBreak' as const }] : []),
@@ -1406,6 +1414,7 @@ function compileRuns(
     ...(words ? { noProofWords: words } : {}),
     resolvePlaceholder: (name: string) =>
       resolvePlaceholder(name, ctx.generatedAt),
+    ...(notes ? { resolveNote: notes.resolve } : {}),
   };
   children.push(
     ...(mode === 'literal'
@@ -1418,8 +1427,132 @@ function compileRuns(
   if (mode === 'inline' && containsPlaceholder(text)) {
     ctx.features.require('fields', path);
   }
+  notes?.reportUnemitted(text);
 
   return children;
+}
+
+/**
+ * Bind a component's declared note bodies to the `[^id]` markers in its text.
+ *
+ * Footnotes and endnotes share the marker syntax and differ only in where Word
+ * puts the body, so one resolver serves both: an id is looked up in `footnotes`
+ * first, then `endnotes`. Registration is lazy — a body reaches its part only
+ * when a marker actually resolves to it — and memoised, so repeating `[^id]`
+ * points both references at one note rather than duplicating the body.
+ */
+function createNoteBinding(
+  footnotes: unknown,
+  endnotes: unknown,
+  ctx: CompileContext
+): NoteBinding | undefined {
+  const declared = new Map<string, { text: string; endnote: boolean }>();
+
+  /**
+   * First declaration wins, in both directions: within one array and across
+   * the two. `[^id]` can only mean one note, and letting the last entry win
+   * would make the outcome depend on authoring order while silently discarding
+   * a body.
+   */
+  const declare = (note: { id: string; text: string }, endnote: boolean) => {
+    const existing = declared.get(note.id);
+    if (existing) {
+      warnOnce(
+        ctx,
+        endnote ? 'endnote' : 'footnote',
+        existing.endnote === endnote
+          ? `Note id "${note.id}" is declared twice in the same ` +
+              `${endnote ? 'endnotes' : 'footnotes'} array. Using the first ` +
+              'declaration and ignoring the rest.'
+          : `Note id "${note.id}" is declared as both a footnote and an ` +
+              'endnote in the same paragraph. Using the footnote and ignoring ' +
+              'the endnote.'
+      );
+      return;
+    }
+    declared.set(note.id, { text: note.text, endnote });
+  };
+
+  for (const note of (footnotes ?? []) as { id: string; text: string }[]) {
+    declare(note, false);
+  }
+  for (const note of (endnotes ?? []) as { id: string; text: string }[]) {
+    declare(note, true);
+  }
+  if (declared.size === 0) return undefined;
+
+  const registered = new Map<
+    string,
+    { id: number; noteKind: 'footnote' | 'endnote' }
+  >();
+
+  return {
+    resolve(id: string) {
+      const existing = registered.get(id);
+      if (existing !== undefined) return existing;
+
+      const note = declared.get(id);
+      if (note === undefined) {
+        // The component declares notes, so `[^id]` was meant as a marker.
+        // Leave it literal rather than dropping text, but say so.
+        warnOnce(
+          ctx,
+          'footnote',
+          `Note marker "[^${id}]" has no matching entry in this paragraph's ` +
+            `footnotes or endnotes (declared: ${[...declared.keys()].join(', ')}). ` +
+            'Rendering the marker as literal text.'
+        );
+        return undefined;
+      }
+
+      const bodies = note.endnote ? ctx.endnotes : ctx.footnotes;
+      const resolved = {
+        id: bodies.length + 1,
+        noteKind: note.endnote ? ('endnote' as const) : ('footnote' as const),
+      };
+      bodies.push({
+        id: resolved.id,
+        // One paragraph per line, so an author can write a short list.
+        children: normalizeUnicodeText(note.text)
+          .split('\n')
+          .map((line, index) => ({
+            kind: 'paragraph' as const,
+            id: `${note.endnote ? 'endnote' : 'footnote'}${resolved.id}:p${index}`,
+            path: `${note.endnote ? 'endnotes' : 'footnotes'}[${resolved.id}].children[${index}]`,
+            styleId: note.endnote ? 'EndnoteText' : 'FootnoteText',
+            children: [{ kind: 'text' as const, text: line }],
+          })),
+      });
+      registered.set(id, resolved);
+      ctx.features.require(note.endnote ? 'endnotes' : 'footnotes', 'notes');
+      return resolved;
+    },
+
+    reportUnemitted(text: string) {
+      for (const [id, note] of declared) {
+        if (registered.has(id)) continue;
+        const kind = note.endnote ? 'Endnote' : 'Footnote';
+        warnOnce(
+          ctx,
+          note.endnote ? 'endnote' : 'footnote',
+          text.includes(`[^${id}]`)
+            ? `${kind} "${id}" is declared and its marker appears in the text, ` +
+                'but the marker was not resolved — markers are not recognised ' +
+                'in text that also contains {PLACEHOLDER} substitutions. ' +
+                'The note will not appear in the document.'
+            : `${kind} "${id}" is declared but never referenced as [^${id}] ` +
+                'in this paragraph. It will not appear in the document.'
+        );
+      }
+    },
+  };
+}
+
+interface NoteBinding {
+  resolve: (
+    id: string
+  ) => { id: number; noteKind: 'footnote' | 'endnote' } | undefined;
+  reportUnemitted: (text: string) => void;
 }
 
 /**

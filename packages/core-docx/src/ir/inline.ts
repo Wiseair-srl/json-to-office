@@ -50,10 +50,10 @@ const PLACEHOLDER = /\{([^}]+)\}/;
 const UNSUPPORTED_SYNTAX: ReadonlyArray<{
   pattern: RegExp;
   what: string;
-}> = [
-  { pattern: /\[@[^\]]+\]/, what: 'cross-reference' },
-  { pattern: /\[\^[^\]]+\]/, what: 'note marker' },
-];
+}> = [{ pattern: /\[@[^\]]+\]/, what: 'cross-reference' }];
+
+/** `[^id]`, the note marker syntax. */
+const NOTE_MARKER = /\[\^([^\]\s]+)\]/g;
 
 /** True when the text carries a `{PLACEHOLDER}` token. */
 export function containsPlaceholder(text: string): boolean {
@@ -107,6 +107,16 @@ export interface ParseInlineOptions {
    * any of it.
    */
   resolvePlaceholder?: (name: string) => PlaceholderResolution | undefined;
+  /**
+   * Resolve a `[^id]` marker to a note. Returning nothing leaves it literal.
+   *
+   * Resolution happens at the leaf, after decorators: a marker inside
+   * `**bold[^n]**` keeps the surrounding emphasis, which splitting earlier
+   * would break by cutting the `**` pair across segments.
+   */
+  resolveNote?: (
+    id: string
+  ) => { id: number; noteKind: 'footnote' | 'endnote' } | undefined;
 }
 
 /**
@@ -400,6 +410,61 @@ function pushSegment(
  * A run already marked `noProof` has nothing to single out, so it stays whole.
  */
 function pushWords(
+  out: DocxIrInline[],
+  text: string,
+  formatting: DocxIrRunFormatting | undefined,
+  options: ParseInlineOptions
+): void {
+  if (options.resolveNote) {
+    splitNoteMarkers(out, text, formatting, options);
+    return;
+  }
+  pushNoProofWords(out, text, formatting, options);
+}
+
+/**
+ * Replace resolvable `[^id]` markers with note reference nodes.
+ *
+ * A marker whose id the resolver does not know stays literal; the resolver owns
+ * that decision, and the warning that goes with it, so this never has to guess
+ * whether `[^a-z]` was meant as syntax.
+ */
+function splitNoteMarkers(
+  out: DocxIrInline[],
+  text: string,
+  formatting: DocxIrRunFormatting | undefined,
+  options: ParseInlineOptions
+): void {
+  const regex = new RegExp(NOTE_MARKER.source, 'g');
+  let lastIndex = 0;
+  let pending = '';
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    const note = options.resolveNote!(match[1]);
+    if (note === undefined) {
+      // Unresolved: the marker stays in the text stream verbatim.
+      pending += text.slice(lastIndex, regex.lastIndex);
+      lastIndex = regex.lastIndex;
+      continue;
+    }
+
+    const before = pending + text.slice(lastIndex, match.index);
+    pending = '';
+    if (before) pushNoProofWords(out, before, formatting, options);
+    out.push({
+      kind: 'noteReference',
+      noteKind: note.noteKind,
+      id: note.id,
+    });
+    lastIndex = regex.lastIndex;
+  }
+
+  const rest = pending + text.slice(lastIndex);
+  if (rest) pushNoProofWords(out, rest, formatting, options);
+}
+
+function pushNoProofWords(
   out: DocxIrInline[],
   text: string,
   formatting: DocxIrRunFormatting | undefined,
