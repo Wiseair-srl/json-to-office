@@ -467,8 +467,15 @@ export interface DocxIrRevisionRange {
  * ------------------------------------------------------------------ */
 
 export interface DocxIrFloating {
-  horizontal: DocxIrFloatingPosition;
-  vertical: DocxIrFloatingPosition;
+  /**
+   * Where the drawing sits on each axis.
+   *
+   * Both are optional because an author may float an image purely to change
+   * how text wraps around it, stating no position at all; the anchor then
+   * keeps whatever position its container gives it.
+   */
+  horizontal?: DocxIrFloatingPosition;
+  vertical?: DocxIrFloatingPosition;
   /** Distance kept clear of surrounding text, in EMU. */
   margins?: DocxIrFloatingMargins;
   wrap?: DocxIrTextWrap;
@@ -476,10 +483,18 @@ export interface DocxIrFloating {
   zIndex: number;
   behindDocument?: boolean;
   allowOverlap?: boolean;
+  /** Keep the anchor with the paragraph it is attached to. */
+  lockAnchor?: boolean;
+  /** Position the drawing inside its table cell rather than the page. */
+  layoutInCell?: boolean;
 }
 
 export interface DocxIrFloatingPosition {
-  relativeTo: string;
+  /**
+   * OOXML's `relativeFrom`. Absent when the author named a frame of reference
+   * OOXML has no element for, in which case the backend's own default applies.
+   */
+  relativeTo?: string;
   /** Offset in EMU. Mutually exclusive with `align`. */
   offsetEmu?: number;
   align?: string;
@@ -493,8 +508,15 @@ export interface DocxIrFloatingMargins {
 }
 
 export interface DocxIrTextWrap {
-  /** `tight` needs polygon geometry and is rejected at compile time. */
-  type: 'none' | 'square' | 'topAndBottom' | 'through';
+  /**
+   * OOXML's own vocabulary.
+   *
+   * `tight` is reachable only from the authoring values `around` and `through`,
+   * which have no OOXML equivalent of their own; asking for `tight` directly is
+   * rejected at compile time because it needs polygon geometry no backend here
+   * emits.
+   */
+  type: 'none' | 'square' | 'tight' | 'topAndBottom';
   side?: 'bothSides' | 'left' | 'right' | 'largest';
 }
 

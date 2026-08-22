@@ -45,7 +45,22 @@ import {
   type ResolvedTable,
   type TableSource,
 } from '../core/tableModel';
-import { getTableStyle } from '../styles/utils/layoutUtils';
+import { getPageSetup, getTableStyle } from '../styles/utils/layoutUtils';
+import type { ImageResources, LoadedImage } from '../core/imageResources';
+import {
+  calculateMissingDimension,
+  detectImageType,
+  parseDimensionValue,
+  parseWidthValue,
+  resolveImageSource,
+} from '../utils/imageUtils';
+import {
+  getAvailableHeightTwips,
+  getAvailableWidthTwips,
+  getPageHeightTwips,
+  getPageWidthTwips,
+  resolveOffsetTwips,
+} from '../utils/widthUtils';
 import type {
   ListLevelConfig,
   ListMarkerFontConfig,
@@ -58,7 +73,10 @@ import {
   type DocxIrAlignment,
   type DocxIrBlock,
   type DocxIrBorder,
+  type DocxIrFloating,
+  type DocxIrFloatingPosition,
   type DocxIrHeaderFooter,
+  type DocxIrImageRun,
   type DocxIrInline,
   type DocxIrNumbering,
   type DocxIrNumberingLevel,
@@ -72,6 +90,7 @@ import {
   type DocxIrStyles,
   type DocxIrTableCell,
   type DocxIrTableRow,
+  type DocxIrTextWrap,
   type DocxIrVerticalAlign,
 } from './types';
 import {
@@ -79,9 +98,13 @@ import {
   headerFooterBlockId,
   inchesToTwips,
   irColor,
+  pixelsToEmu,
   pointsToEighthPoints,
   pointsToHalfPoints,
   pointsToTwips,
+  sha256Hex,
+  twipsToEmu,
+  twipsToPixels,
 } from './units';
 
 /** A component the compiler does not yet lower into IR. */
@@ -145,12 +168,15 @@ interface CompileContext {
   listCounter: number;
   /** Warning messages already collected, so one bad value warns once. */
   warnedMessages: Set<string>;
+  /** Image bytes, loaded before compilation started. */
+  images: ImageResources;
 }
 
 export function compileDocument(
   structure: ProcessedDocument,
   layout: LayoutPlan,
-  warnings: GenerationWarning[] = []
+  warnings: GenerationWarning[] = [],
+  images: ImageResources = new Map()
 ): DocxCompileResult {
   const styles = compileStyleManifest(structure.theme);
   const ctx: CompileContext = {
@@ -171,6 +197,7 @@ export function compileDocument(
     numberingByReference: new Map(),
     listCounter: 0,
     warnedMessages: new Set(),
+    images,
   };
 
   ctx.features.require('paragraphs', 'sections');
@@ -502,7 +529,9 @@ function compilePart(
     children.push(
       ...(component.name === 'paragraph'
         ? compileChromeParagraph(component, scope)
-        : compileComponent(component, scope))
+        : component.name === 'image'
+          ? compileChromeImage(component, scope)
+          : compileComponent(component, scope))
     );
   });
 
@@ -565,6 +594,104 @@ function compileChromeParagraph(
         alwaysSpacing: true,
       }),
     }),
+  ];
+}
+
+/**
+ * An image inside a header or footer.
+ *
+ * Narrower than a body image, and differently sized: page chrome has no
+ * caption, no spacing and no keep flags, its paragraph names the Normal style,
+ * and it is only aligned when the author said so. A width given as a number is
+ * taken literally rather than defaulting to the full measure — an unsized
+ * chrome image draws at its own resolution.
+ */
+function compileChromeImage(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+
+  const source = resolveImageSource(props);
+  if (!source) {
+    ctx.unsupported.push({
+      name: 'image',
+      path,
+      detail: 'missing path, base64 or svg',
+    });
+    return [];
+  }
+
+  const loaded = ctx.images.get(source);
+  if (!loaded) {
+    throw new Error(`Failed to load image from ${source.substring(0, 50)}`);
+  }
+
+  const mediaType = detectImageType(source, loaded.contentType);
+  if (mediaType === 'svg') ctx.features.require('svg-images', path);
+
+  const page = getPageSetup(ctx.theme);
+  const pageWidthPx = Math.round(twipsToPixels(page.size.width));
+  const contentWidthPx = Math.round(
+    twipsToPixels(page.size.width - page.margin.left - page.margin.right)
+  );
+  const pageHeightPx = Math.round(twipsToPixels(page.size.height));
+  const contentHeightPx = Math.round(
+    twipsToPixels(page.size.height - page.margin.top - page.margin.bottom)
+  );
+  const referenceWidthPx =
+    props.widthRelativeTo === 'page' ? pageWidthPx : contentWidthPx;
+  const referenceHeightPx =
+    props.heightRelativeTo === 'page' ? pageHeightPx : contentHeightPx;
+
+  // Only a percentage is resolved against the reference; a number is a pixel
+  // count and an absent width is genuinely absent.
+  const targetWidth =
+    typeof props.width === 'string'
+      ? parseWidthValue(props.width, referenceWidthPx)
+      : (props.width as number | undefined);
+  const targetHeight =
+    typeof props.height === 'string'
+      ? parseWidthValue(props.height, referenceHeightPx)
+      : (props.height as number | undefined);
+
+  const size = loaded.intrinsic
+    ? calculateMissingDimension(
+        loaded.intrinsic.width,
+        loaded.intrinsic.height,
+        targetWidth,
+        targetHeight
+      )
+    : fallbackSize(targetWidth, targetHeight, {
+        width: referenceWidthPx,
+        height: Math.round(referenceWidthPx * 0.6),
+      });
+
+  ctx.features.require('images', path);
+  if (props.floating) ctx.features.require('floating-images', path);
+
+  const image: DocxIrImageRun = {
+    kind: 'image',
+    resourceId: declareResource(loaded, mediaType, ctx),
+    widthEmu: pixelsToEmu(size.width),
+    heightEmu: pixelsToEmu(size.height),
+    ...(props.floating
+      ? { floating: compileFloating(props.floating, ctx, path) }
+      : {}),
+  };
+
+  return [
+    {
+      kind: 'paragraph',
+      id: scope.id,
+      path,
+      styleId: 'Normal',
+      children: [image],
+      ...(props.alignment
+        ? { formatting: { alignment: compileAlignment(props.alignment)! } }
+        : {}),
+    },
   ];
 }
 
@@ -1299,12 +1426,428 @@ function headingLevel(level: unknown): number {
  * Images
  * ------------------------------------------------------------------ */
 
+/** Image props this slice does not lower. */
+const UNLOWERED_IMAGE_PROPS = ['comment'] as const;
+
+/**
+ * An image, and the caption paragraph that may follow it.
+ *
+ * The bytes were loaded before compilation started; what happens here is the
+ * sizing — a width may be a percentage of the text column or of the page, and a
+ * missing dimension is derived from the image's own aspect ratio.
+ */
 function compileImage(
   component: ComponentDefinition,
   scope: ComponentScope
 ): DocxIrBlock[] {
-  scope.ctx.unsupported.push({ name: 'image', path: scope.path });
-  return [];
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+
+  for (const prop of UNLOWERED_IMAGE_PROPS) {
+    if (props[prop] !== undefined) {
+      ctx.unsupported.push({ name: 'image', path, detail: prop });
+      return [];
+    }
+  }
+
+  const source = resolveImageSource(props);
+  if (!source) {
+    throw new Error(
+      'Image component requires one of "path", "base64", or "svg" property'
+    );
+  }
+
+  const loaded = ctx.images.get(source);
+  if (!loaded) throw new Error(`Failed to load image from ${source}`);
+
+  const mediaType = detectImageType(source, loaded.contentType);
+  if (mediaType === 'svg') ctx.features.require('svg-images', path);
+
+  if (typeof props.alt === 'string' && props.alt) {
+    warnOnce(
+      ctx,
+      'image',
+      `Alt text is not written to the document: the DOCX pipeline has never ` +
+        `emitted \`wp:docPr\` descriptions, so the image at ${path} will have ` +
+        `none. The text is preserved in the IR.`
+    );
+  }
+
+  const size = imagePixelSize(props, loaded, ctx);
+  const resourceId = declareResource(loaded, mediaType, ctx);
+
+  const image: DocxIrImageRun = {
+    kind: 'image',
+    resourceId,
+    widthEmu: pixelsToEmu(size.width),
+    heightEmu: pixelsToEmu(size.height),
+    ...(typeof props.alt === 'string' && props.alt
+      ? { altText: props.alt }
+      : {}),
+    ...(props.floating
+      ? { floating: compileFloating(props.floating, ctx, path) }
+      : {}),
+  };
+
+  ctx.features.require('images', path);
+  if (props.floating) ctx.features.require('floating-images', path);
+
+  const spacing: DocxIrSpacing = {};
+  if (props.spacing?.before !== undefined) {
+    spacing.beforeTwips = pointsToTwips(props.spacing.before);
+  }
+  if (props.spacing?.after !== undefined) {
+    spacing.afterTwips = pointsToTwips(props.spacing.after);
+  }
+
+  const blocks: DocxIrBlock[] = [
+    {
+      kind: 'paragraph',
+      id: scope.id,
+      path,
+      children: [image],
+      formatting: {
+        // A floating image is anchored, so aligning its paragraph would move
+        // the anchor rather than the picture.
+        ...(props.floating
+          ? {}
+          : { alignment: compileAlignment(props.alignment) ?? 'center' }),
+        ...(Object.keys(spacing).length > 0 ? { spacing } : {}),
+        ...(props.keepNext !== undefined ? { keepNext: props.keepNext } : {}),
+        ...(props.keepLines !== undefined
+          ? { keepLines: props.keepLines }
+          : {}),
+      },
+    },
+  ];
+
+  if (props.caption) {
+    const caption = String(props.caption);
+    const syntax = containsUnsupportedSyntax(caption);
+    if (syntax) {
+      ctx.unsupported.push({ name: 'image', path, detail: syntax });
+      return [];
+    }
+    blocks.push({
+      kind: 'paragraph',
+      id: `${scope.id}:caption`,
+      path: `${path}.caption`,
+      styleId: 'Normal',
+      // Captions default to left alignment, whatever the figure did.
+      formatting: { alignment: 'left' },
+      children: parseInline(caption, { base: {} }),
+    });
+  }
+
+  return blocks;
+}
+
+/**
+ * The frames of reference OOXML actually has, per axis.
+ *
+ * An author may name one OOXML cannot express — `text` vertically, say — and
+ * the anchor then states no frame at all rather than an invented one, leaving
+ * the backend to apply its own default.
+ */
+function relativeFrom(
+  value: unknown,
+  axis: 'horizontal' | 'vertical'
+): string | undefined {
+  const allowed =
+    axis === 'horizontal'
+      ? ['character', 'column', 'margin', 'page']
+      : ['margin', 'page', 'paragraph', 'line'];
+  return typeof value === 'string' && allowed.includes(value)
+    ? value
+    : undefined;
+}
+
+/** The alignments OOXML has, per axis. */
+function alignValue(
+  value: unknown,
+  axis: 'horizontal' | 'vertical'
+): string | undefined {
+  const allowed =
+    axis === 'horizontal'
+      ? ['left', 'center', 'right', 'inside', 'outside']
+      : ['top', 'center', 'bottom', 'inside', 'outside'];
+  return typeof value === 'string' && allowed.includes(value)
+    ? value
+    : undefined;
+}
+
+/**
+ * Authoring wrap types, in OOXML's vocabulary.
+ *
+ * `around` and `through` are VML spellings with no OOXML element of their own;
+ * tight wrapping is the closest thing OOXML has, which is what they have always
+ * produced.
+ */
+function wrapType(value: string): DocxIrTextWrap['type'] {
+  switch (value) {
+    case 'none':
+      return 'none';
+    case 'square':
+      return 'square';
+    case 'topAndBottom':
+      return 'topAndBottom';
+    case 'around':
+    case 'through':
+      return 'tight';
+    default:
+      return 'square';
+  }
+}
+
+/**
+ * The size the image is drawn at, in pixels.
+ *
+ * A width defaults to the full measure. Percentages resolve against the text
+ * column, or the page when the author said so. Whichever dimension is left
+ * unstated comes from the image's own proportions; when those cannot be read,
+ * the pre-IR fallbacks stand in — 16:9, or a 7.36cm column.
+ */
+function imagePixelSize(
+  props: Record<string, any>,
+  loaded: LoadedImage,
+  ctx: CompileContext
+): { width: number; height: number } {
+  const widthRef = props.widthRelativeTo === 'page' ? 'page' : 'content';
+  const heightRef = props.heightRelativeTo === 'page' ? 'page' : 'content';
+  const availableWidthPx = Math.round(
+    twipsToPixels(
+      widthRef === 'page'
+        ? getPageWidthTwips(ctx.theme)
+        : getAvailableWidthTwips(ctx.theme)
+    )
+  );
+  const availableHeightPx = Math.round(
+    twipsToPixels(
+      heightRef === 'page'
+        ? getPageHeightTwips(ctx.theme)
+        : getAvailableHeightTwips(ctx.theme)
+    )
+  );
+
+  const targetWidth = parseWidthValue(props.width ?? '100%', availableWidthPx);
+  const targetHeight =
+    props.height !== undefined
+      ? parseDimensionValue(props.height, availableHeightPx)
+      : undefined;
+
+  if (loaded.intrinsic) {
+    return calculateMissingDimension(
+      loaded.intrinsic.width,
+      loaded.intrinsic.height,
+      targetWidth,
+      targetHeight
+    );
+  }
+
+  return fallbackSize(targetWidth, targetHeight, {
+    width: FALLBACK_IMAGE_WIDTH_PX,
+    height: FALLBACK_IMAGE_HEIGHT_PX,
+  });
+}
+
+/**
+ * The size to draw at when the image's own proportions cannot be read.
+ *
+ * One stated dimension implies the other at 16:9; neither leaves only the
+ * caller's fallback box.
+ */
+function fallbackSize(
+  targetWidth: number | undefined,
+  targetHeight: number | undefined,
+  fallback: { width: number; height: number }
+): { width: number; height: number } {
+  if (targetWidth && targetHeight) {
+    return { width: targetWidth, height: targetHeight };
+  }
+  if (targetWidth) {
+    return { width: targetWidth, height: Math.round((targetWidth * 9) / 16) };
+  }
+  if (targetHeight) {
+    return { width: Math.round((targetHeight * 16) / 9), height: targetHeight };
+  }
+  return fallback;
+}
+
+/** 7.36cm at 96dpi — the column width the pipeline falls back to. */
+const FALLBACK_IMAGE_WIDTH_PX = Math.round(7.36 * 37.795275591);
+const FALLBACK_IMAGE_HEIGHT_PX = Math.round(FALLBACK_IMAGE_WIDTH_PX * 0.6);
+
+/**
+ * Register an image's bytes, reusing a resource with the same content.
+ *
+ * Identity is the hash, not the source: two components pointing at different
+ * URLs that return the same bytes embed once.
+ */
+function declareResource(
+  loaded: LoadedImage,
+  mediaType: string,
+  ctx: CompileContext
+): string {
+  const bytes = new Uint8Array(loaded.bytes);
+  const sha256 = sha256Hex(bytes);
+  const existing = ctx.resourcesByHash.get(sha256);
+  if (existing) return existing;
+
+  const id = `res${ctx.resources.length + 1}`;
+  ctx.resources.push({
+    id,
+    kind: 'image',
+    mediaType,
+    bytes,
+    byteLength: bytes.byteLength,
+    sha256,
+    ...(loaded.intrinsic
+      ? {
+          intrinsic: {
+            widthPx: loaded.intrinsic.width,
+            heightPx: loaded.intrinsic.height,
+          },
+        }
+      : {}),
+  });
+  ctx.resourcesByHash.set(sha256, id);
+  return id;
+}
+
+/**
+ * Where a floating image sits, in EMU.
+ *
+ * Both axes are always stated: a drawing anchored on one axis only has no
+ * defined position on the other, so the unstated one falls back to the top-left
+ * of its natural container.
+ */
+function compileFloating(
+  floating: Record<string, any>,
+  ctx: CompileContext,
+  path: string
+): DocxIrFloating {
+  if (floating.wrap?.type === 'tight') {
+    throw new Error(
+      "Image floating wrap.type 'tight' is not supported due to invalid OOXML emitted by docx. Use 'square', 'topAndBottom', or 'none'."
+    );
+  }
+
+  const hRelative = floating.horizontalPosition?.relative;
+  const vRelative = floating.verticalPosition?.relative;
+  const hRef =
+    hRelative && hRelative !== 'page'
+      ? getAvailableWidthTwips(ctx.theme, ctx.themeName)
+      : getPageWidthTwips(ctx.theme, ctx.themeName);
+  const vRef =
+    vRelative && vRelative !== 'page'
+      ? getAvailableHeightTwips(ctx.theme, ctx.themeName)
+      : getPageHeightTwips(ctx.theme, ctx.themeName);
+
+  const hasHorizontal = Boolean(floating.horizontalPosition);
+  const hasVertical = Boolean(floating.verticalPosition);
+
+  const position = (
+    stated: Record<string, any> | undefined,
+    reference: number,
+    axis: 'horizontal' | 'vertical',
+    fallback: DocxIrFloatingPosition,
+    present: boolean
+  ): DocxIrFloatingPosition | undefined => {
+    if (!stated) return present ? fallback : undefined;
+    const relativeTo = relativeFrom(stated.relative, axis);
+    const align = alignValue(stated.align, axis);
+    return {
+      ...(relativeTo ? { relativeTo } : {}),
+      ...(align ? { align } : {}),
+      ...(stated.offset !== undefined
+        ? {
+            offsetEmu: twipsToEmu(resolveOffsetTwips(stated.offset, reference)),
+          }
+        : {}),
+    };
+  };
+
+  const pageWidth = getPageWidthTwips(ctx.theme, ctx.themeName);
+  const pageHeight = getPageHeightTwips(ctx.theme, ctx.themeName);
+  const rawMargins = floating.wrap?.margins ?? floating.margins;
+  const margin = (value: unknown, reference: number): number | undefined =>
+    value === undefined
+      ? undefined
+      : twipsToEmu(resolveOffsetTwips(value as number | string, reference));
+
+  // OOXML reads `relativeHeight` as a positive integer, and a backend with no
+  // value to use may derive one from the image height — which differs per
+  // image and can invalidate the document. So it is always stated.
+  let zIndex = floating.zIndex ?? 0;
+  if (zIndex < 0) {
+    warnOnce(
+      ctx,
+      'image',
+      `Invalid zIndex value ${zIndex} for floating image at ${path}. Using 0 instead. zIndex must be >= 0.`
+    );
+    zIndex = 0;
+  }
+
+  const horizontal = position(
+    floating.horizontalPosition,
+    hRef,
+    'horizontal',
+    { relativeTo: 'margin', align: 'left' },
+    hasVertical
+  );
+  const vertical = position(
+    floating.verticalPosition,
+    vRef,
+    'vertical',
+    { relativeTo: 'paragraph', align: 'top' },
+    hasHorizontal
+  );
+
+  return {
+    ...(horizontal ? { horizontal } : {}),
+    ...(vertical ? { vertical } : {}),
+    ...(floating.wrap
+      ? {
+          wrap: {
+            ...(floating.wrap.type
+              ? { type: wrapType(floating.wrap.type) }
+              : {}),
+            ...(floating.wrap.side ? { side: floating.wrap.side } : {}),
+          } as DocxIrTextWrap,
+        }
+      : {}),
+    ...(rawMargins
+      ? {
+          margins: {
+            ...(margin(rawMargins.top, pageHeight) !== undefined
+              ? { topEmu: margin(rawMargins.top, pageHeight)! }
+              : {}),
+            ...(margin(rawMargins.bottom, pageHeight) !== undefined
+              ? { bottomEmu: margin(rawMargins.bottom, pageHeight)! }
+              : {}),
+            ...(margin(rawMargins.left, pageWidth) !== undefined
+              ? { leftEmu: margin(rawMargins.left, pageWidth)! }
+              : {}),
+            ...(margin(rawMargins.right, pageWidth) !== undefined
+              ? { rightEmu: margin(rawMargins.right, pageWidth)! }
+              : {}),
+          },
+        }
+      : {}),
+    ...(floating.allowOverlap !== undefined
+      ? { allowOverlap: floating.allowOverlap }
+      : {}),
+    ...(floating.behindDocument !== undefined
+      ? { behindDocument: floating.behindDocument }
+      : {}),
+    ...(floating.lockAnchor !== undefined
+      ? { lockAnchor: floating.lockAnchor }
+      : {}),
+    ...(floating.layoutInCell !== undefined
+      ? { layoutInCell: floating.layoutInCell }
+      : {}),
+    zIndex,
+  };
 }
 
 /* ------------------------------------------------------------------ *
