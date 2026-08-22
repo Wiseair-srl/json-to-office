@@ -17,6 +17,7 @@ import { componentHasRevision } from '../utils/revisionUtils';
 import { componentHasAnnotation } from '../utils/componentAnnotations';
 import { getBaseDir, getGenerationDate } from '../utils/generationContext';
 import { PlaceholderRegistry } from '../utils/placeholderProcessor';
+import { hasExternalLink } from '../utils/textParser';
 import { createHash } from 'crypto';
 
 // Global component cache instance
@@ -28,7 +29,8 @@ export type ComponentBypassReason =
   | 'dynamic-context'
   | 'bookmark-id'
   | 'revision-ids'
-  | 'comment-ids';
+  | 'comment-ids'
+  | 'external-link';
 
 export interface ComponentBypassStats {
   /** Component type name. */
@@ -203,6 +205,20 @@ export function componentBypassReason(
   if (componentHasAnnotation(component, 'comment')) return 'comment-ids';
   if ('id' in component) return 'bookmark-id';
   if (DYNAMIC_CONTEXT_COMPONENTS.has(component.name)) return 'dynamic-context';
+  // An external link costs the document a relationship, and docx.js registers
+  // it by mutating the rendered tree: at pack time it replaces each
+  // `ExternalHyperlink` with a `ConcreteHyperlink` carrying a freshly minted
+  // id, and declares that id on the document being packed. A cached render
+  // hands the same objects to the next document, which therefore finds the
+  // hyperlink already concrete, registers nothing, and emits an `r:id` its own
+  // relationships part never declares — a dangling reference Word reports as a
+  // damaged file. Only the first document out of a process was ever correct.
+  //
+  // Read off the serialized component because a link can sit in any text
+  // anywhere below it — a table cell, a paragraph component inside that cell,
+  // a list item. A false positive costs one cache miss; a false negative
+  // costs a damaged document.
+  if (hasExternalLink(JSON.stringify(component))) return 'external-link';
   return null;
 }
 

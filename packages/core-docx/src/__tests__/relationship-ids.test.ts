@@ -164,7 +164,7 @@ describe('relationship id canonicalization', () => {
   it('leaves no dangling relationship reference anywhere in the corpus', async () => {
     // A reference to an id the relationships part never declares is what Word
     // reports as a damaged file. This runs over every corpus case because the
-    // one place it happens today — a markdown link inside a table cell — was
+    // one place it used to happen — a markdown link inside a table cell — was
     // found by accident, not by looking.
     const offenders: string[] = [];
 
@@ -189,12 +189,13 @@ describe('relationship id canonicalization', () => {
     expect(offenders).toEqual([]);
   }, 120_000);
 
-  it('still emits a dangling reference for a link inside a table cell', async () => {
-    // A pre-existing defect, pinned rather than fixed: the table-cell path
-    // registers the hyperlink relationship somewhere the document part cannot
-    // see, so the emitted `r:id` resolves to nothing and the file is damaged.
-    // It is deliberately absent from the corpus. When it is fixed, this test
-    // fails — which is the point.
+  it('declares the relationship for a link inside a table cell', async () => {
+    // A table is cached across renders; a paragraph is not. docx.js registers
+    // an external hyperlink by mutating the rendered tree at pack time, so a
+    // cached table handed to a second document arrived with its hyperlink
+    // already concrete: nothing was registered, and the `r:id` it emitted
+    // resolved to nothing. Only the first document out of a process was
+    // correct, which is why this renders repeatedly in one process.
     const document = {
       name: 'docx',
       props: {},
@@ -221,21 +222,30 @@ describe('relationship id canonicalization', () => {
       ],
     };
 
-    // The defect is driven by a random id, so it does not reproduce on every
-    // run; a handful of attempts is enough to see it.
-    let sawDangling = false;
-    for (let run = 0; run < 8 && !sawDangling; run += 1) {
+    const targets: string[][] = [];
+    for (let run = 0; run < 8; run += 1) {
       const zip = open(
         (await generateBufferFromJson(
           structuredClone(document) as never
         )) as Buffer
       );
-      const declared =
-        declaredIds(zip).get('word/_rels/document.xml.rels') ?? new Set();
+      const rels = zip.readAsText('word/_rels/document.xml.rels');
+      const declared = new Map(
+        [...rels.matchAll(/Id="([^"]+)"[^>]*Target="([^"]+)"/g)].map((m) => [
+          m[1],
+          m[2],
+        ])
+      );
       const used = referencedIds(zip).get('word/document.xml') ?? [];
-      sawDangling = used.some((id) => !declared.has(id));
+
+      // Every id the body references resolves to a declared target — and the
+      // hyperlink resolves to the link the cell asked for, not merely to
+      // something.
+      targets.push(used.map((id) => declared.get(id) ?? `<dangling ${id}>`));
     }
 
-    expect(sawDangling).toBe(true);
+    expect(targets).toEqual(
+      Array.from({ length: 8 }, () => ['https://example.com/alpha'])
+    );
   }, 60_000);
 });

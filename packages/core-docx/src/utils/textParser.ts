@@ -466,12 +466,15 @@ function splitNoteMarkers(
 const CROSS_REFERENCE_PATTERN =
   '\\[@([^\\]\\s:]+)(?::(relative|no_context|full_context|none))?\\]';
 
+/** Markdown link syntax: `[text](target)`. */
+const MARKDOWN_LINK_PATTERN = '\\[([^\\]]+)\\]\\(([^)]+)\\)';
+
 /**
  * One pass over both bracket syntaxes: parsing them separately would mean
  * re-scanning the segments between one kind of token for the other kind, while
  * the plain text between them still has to reach `parseTextWithDecorators`.
  */
-const INLINE_TOKEN_REGEX = `\\[([^\\]]+)\\]\\(([^)]+)\\)|${CROSS_REFERENCE_PATTERN}`;
+const INLINE_TOKEN_REGEX = `${MARKDOWN_LINK_PATTERN}|${CROSS_REFERENCE_PATTERN}`;
 
 /**
  * True when the text carries a `[@id]` token. `createHeading` renders simple
@@ -480,6 +483,25 @@ const INLINE_TOKEN_REGEX = `\\[([^\\]]+)\\]\\(([^)]+)\\)|${CROSS_REFERENCE_PATTE
  */
 export function hasCrossReference(text: string): boolean {
   return new RegExp(CROSS_REFERENCE_PATTERN).test(text);
+}
+
+/**
+ * True when the text carries a markdown link to a target outside the document.
+ *
+ * An external link is the one construct here that costs the document a
+ * relationship, which is document-scoped state a rendered component cannot
+ * carry across documents — see `componentBypassReason` in
+ * `core/cached-render.ts`. A `#anchor` target becomes an `InternalHyperlink`,
+ * which references a bookmark directly and needs no relationship, so it is not
+ * counted.
+ */
+export function hasExternalLink(text: string): boolean {
+  const regex = new RegExp(MARKDOWN_LINK_PATTERN, 'g');
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (!match[2].startsWith('#')) return true;
+  }
+  return false;
 }
 
 const REFERENCE_FORMATS = {
