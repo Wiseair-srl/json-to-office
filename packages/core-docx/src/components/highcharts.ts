@@ -140,6 +140,34 @@ function withThemeColors(
 }
 
 /**
+ * Map a chart's props to the `image` props it desugars to.
+ *
+ * Shared by the render-time component and the DocxIR desugaring pass so the two
+ * cannot drift on the one decision that is not obvious: an explicit `width` or
+ * `height` on the component replaces the chart's own canvas size outright,
+ * rather than merging with it — stating one and inheriting the other would
+ * distort the chart.
+ */
+export async function renderChartToImageProps(
+  props: HighchartsProps,
+  theme: ThemeConfig,
+  servicesConfig?: HighchartsServiceConfig
+): Promise<Record<string, unknown>> {
+  const config = withThemeColors(props, theme);
+  const chart = await generateChart(config, servicesConfig);
+
+  const hasConfigDimensions =
+    config.width !== undefined || config.height !== undefined;
+
+  return {
+    base64: chart.base64DataUri,
+    width: hasConfigDimensions ? config.width : chart.width,
+    height: hasConfigDimensions ? config.height : chart.height,
+    alignment: 'center',
+  };
+}
+
+/**
  * Render highcharts component
  */
 export async function renderHighchartsComponent(
@@ -150,32 +178,15 @@ export async function renderHighchartsComponent(
 ): Promise<(Paragraph | Table)[]> {
   if (!isHighchartsComponent(component)) return [];
 
-  const config = withThemeColors(component.props as HighchartsProps, theme);
-
-  // Generate the chart
-  const chartResult = await generateChart(
-    config,
+  const image = await renderChartToImageProps(
+    component.props as HighchartsProps,
+    theme,
     context?.services?.highcharts
   );
 
-  // If either config.width or config.height is provided, use config dimensions only
-  // Otherwise fall back to chart dimensions
-  const hasConfigDimensions =
-    config.width !== undefined || config.height !== undefined;
-  const renderWidth = hasConfigDimensions ? config.width : chartResult.width;
-  const renderHeight = hasConfigDimensions ? config.height : chartResult.height;
-
-  // Add chart image using the image component with base64 data URI
-  const imageParagraphs = await createImage(
-    chartResult.base64DataUri,
-    theme,
-    themeName,
-    {
-      width: renderWidth,
-      height: renderHeight,
-      alignment: 'center',
-    }
-  );
-
-  return imageParagraphs;
+  return await createImage(image.base64 as string, theme, themeName, {
+    width: image.width as number | undefined,
+    height: image.height as number | undefined,
+    alignment: image.alignment as 'center',
+  });
 }

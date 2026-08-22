@@ -1,23 +1,26 @@
 /**
  * The IR-based DOCX generation path.
  *
- * Same prologue as `generateBufferFromJson` — validation, normalisation, theme
- * resolution, the export-mode pre-pass, font resolution, structure and layout —
- * and then, instead of building docx.js objects directly, it compiles to
- * DocxIR, checks the selected renderer can express it, and hands the IR to an
+ * Normalisation, theme resolution, font resolution, desugaring of the
+ * service-backed components, structure and layout — and then, instead of
+ * building renderer objects directly, it compiles to DocxIR, checks the
+ * selected backend can express what the document needs, and hands the IR to an
  * adapter.
  *
- * Not the default, and not close to it: the compiler covers paragraphs,
- * headings, sections and headers/footers, and refuses everything else. It is
- * wired up so the slice can be measured against the pre-IR path case by case,
- * which is the only way the rest of the migration can be checked rather than
- * hoped for.
+ * The shape is deliberate: everything asynchronous or fallible happens before
+ * compilation, so compiling is a pure function of the document plus the
+ * resources already in hand. Two compilations of the same document give the
+ * same IR, which is what makes the IR comparable, cacheable and snapshottable.
  */
 
 import { assertRendererSupports } from '@json-to-office/shared/rendering';
 import type { GenerationWarning, ServicesConfig } from '@json-to-office/shared';
 import type { FontRuntimeOpts } from '@json-to-office/shared';
+import { resolveDocumentFonts } from './fontResolution';
+import { toRasterizeFontFaces } from '@json-to-office/shared/fonts/node';
+import { collectVisualProps } from './prerasterizeVisuals';
 import { normalizeDocument } from '../json/normalizer';
+import { desugarExternals } from './desugarExternals';
 import { loadImageResources } from './imageResources';
 import { compileDocument, type UnsupportedComponent } from '../ir/compiler';
 import type { DocxIR } from '../ir/types';
@@ -26,6 +29,7 @@ import type { DocxRendererId } from '../renderers/types';
 import type { ThemeConfig } from '../styles';
 import type { ReportComponentDefinition } from '../types';
 import { resolveThemeContext } from './generationContext';
+import { runWithBaseDir, runWithWarnings } from '../utils/generationContext';
 import { applyLayout } from './layout';
 import { processDocument } from './structure';
 
@@ -84,12 +88,31 @@ export interface CompiledDocx {
   unsupported: UnsupportedComponent[];
 }
 
-/** Compile a report definition to DocxIR without rendering it. */
+/**
+ * Compile a report definition to DocxIR without rendering it.
+ *
+ * Scoped rather than plain: a relative image path resolves against the
+ * document's own directory, and leaf utilities report warnings into the
+ * caller's collector, both through async-local state that has to be entered
+ * before the walk begins.
+ */
 export async function compileDocumentToIr(
   document: ReportComponentDefinition,
   options: IrDocxGenerationOptions = {}
 ): Promise<CompiledDocx> {
   const warnings = options.warnings ?? [];
+  return runWithWarnings(warnings, () =>
+    runWithBaseDir(options.baseDir, () =>
+      compileDocumentScoped(document, options, warnings)
+    )
+  );
+}
+
+async function compileDocumentScoped(
+  document: ReportComponentDefinition,
+  options: IrDocxGenerationOptions,
+  warnings: GenerationWarning[]
+): Promise<CompiledDocx> {
   // Authoring shorthand — string children, bare props, nested containers — is
   // expanded before anything reads the tree, exactly as the JSON entry point
   // and the plugin pipeline both do. Skipping it would make the IR path see a
@@ -101,8 +124,42 @@ export async function compileDocumentToIr(
     warnings,
   });
 
-  const structure = await processDocument(
+  // Fonts resolve for the LibreOffice preview stager's side-channel:
+  // `resolveDocumentFonts` fires `fonts.onResolved` when a listener is
+  // registered. The package never embeds the bytes.
+  //
+  // A `visual` is rasterized by an out-of-process LibreOffice that needs the
+  // real font files, so a visual-bearing document forces materialisation even
+  // with no listener. Gated on that check so a fontless-by-design build still
+  // pays no network cost.
+  const hasVisual = collectVisualProps(context.document).length > 0;
+  const resolvedFonts = await resolveDocumentFonts(
     context.document,
+    context.theme,
+    options.fonts,
+    warnings,
+    hasVisual
+  );
+  // Gated on the ENCODED faces, not on how many fonts resolved: a safe-only
+  // font resolves to an entry with no sources, which encodes to nothing, and a
+  // document with only safe fonts must send no `fonts` key at all so its
+  // rasterize request — and so its cache key — is unchanged.
+  const visualFonts = hasVisual
+    ? toRasterizeFontFaces(resolvedFonts, warnings)
+    : [];
+
+  // Charts and visuals become images before anything else reads the tree: they
+  // are the only components that need a service, and past this point nothing
+  // does.
+  const desugared = await desugarExternals(context.document, {
+    theme: context.theme,
+    ...(options.services ? { services: options.services } : {}),
+    ...(options.baseDir !== undefined ? { baseDir: options.baseDir } : {}),
+    ...(visualFonts.length > 0 ? { visualFonts } : {}),
+  });
+
+  const structure = await processDocument(
+    desugared,
     context.theme,
     context.themeName,
     options.generationDate
