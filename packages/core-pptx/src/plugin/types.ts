@@ -10,6 +10,7 @@ import type {
   SlideComponentDefinition,
   PipelineWarning,
 } from '../types';
+import type { PptxRendererId } from '../renderers/types';
 import type { PresentationPackagingOptions } from '../core/packagePresentation';
 
 // ---- Helper types ----
@@ -154,6 +155,11 @@ export interface GenerateOptions extends PresentationPackagingOptions {
    * set (#142).
    */
   baseDir?: string;
+  /**
+   * Backend that turns the compiled presentation into bytes. Overrides the
+   * constructor `renderer`; defaults to `pptxgenjs`.
+   */
+  renderer?: PptxRendererId;
 }
 
 export type GenerateFileOptions = GenerateOptions;

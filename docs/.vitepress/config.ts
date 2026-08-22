@@ -10,7 +10,9 @@ export default defineConfig({
 
   // fonts.md predates the docs site and is kept for README links;
   // its content lives at /guide/fonts on the site.
-  srcExclude: ['fonts.md'],
+  // `architecture/` holds contributor-facing design notes (renderer IR
+  // layering), not user documentation — keep them out of the published site.
+  srcExclude: ['fonts.md', 'architecture/*.md'],
 
   themeConfig: {
     nav: [

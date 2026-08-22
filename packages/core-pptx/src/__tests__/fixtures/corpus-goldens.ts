@@ -1,0 +1,108 @@
+/**
+ * Golden package hashes for the PPTX parity corpus.
+ *
+ * Recorded from the pipeline as it was before the renderer IR became the
+ * default, so the IR path has a fixed target that does not depend on any code
+ * it replaces. Generation is deterministic — ZIP entry and core metadata
+ * timestamps are pinned — so one SHA-256 per case describes the whole package.
+ *
+ * A change here means the output changed. That is only ever correct with an
+ * explanation, recorded in docs/architecture/office-renderer-ir.md.
+ */
+
+export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
+  'text/plain':
+    '6949c705d06f7c4872789c7f73f4e6f560b5c691e7c0a6ca89290f07adb306d9',
+  'text/styled':
+    '8efcd041f57a82f19e893667ab7761bdb44ddfee6f66e67ef0a96b82287e322e',
+  'text/percent-position':
+    '8b12d96045ac5e025a93285ae07268ee49a58f4312f4c6e180b48b7314669581',
+  'text/rich-runs':
+    'e95dc768905790baa2c8bc7d1f55e9fdea57b378597b2487e222673e1fc05dbb',
+  'text/named-styles':
+    '4fc0d3878aa560c577899c36b60cf2bf2ec9b8cc03de3e574d5389bebf696ae2',
+  'text/page-numbers':
+    '2fd890e52deb01785c027dbf66f50716cf3cafe39345a5af61c769099a34b378',
+  'text/font-weight-alias':
+    'a21b51c6c47c0cecdfc73e5bc2a6d8363ccb24cb39fe81ab7563df6e97a20db6',
+  'deck/language-rtl':
+    '149c42b428f092c93b18134f20b1658ea41a2bdd04d3ed6e4d750508e45695b1',
+  'deck/widescreen':
+    '38f61384404799915d735008dbcd3dd5f9159832a2baa77959ffdff6b17bd389',
+  'slide/notes-hidden':
+    '12833e50c5908945ee27fb7ee5df8bfb7d16fbdd5ca567d4c107209925c7a10f',
+  'slide/solid-background':
+    '089399b1a95f1afdfbdc1e493897ebf37f2756dd1ed0a070e50f96ef2f71b454',
+  'slide/gradient-background':
+    'ba1a15e1433aec176d98486fd232bc7277a1887a3cc5b9e09408b77236880060',
+  'shape/fills-and-lines':
+    '9ceda1ef3bca4fd5dfadc9c471339ca6a90a74cf3c9c1e92dd86c824753bc0aa',
+  'shape/with-text':
+    '72c414d2332c9b963cf35f0b4619bcabea403aafc89bc5543f344a8959cd5a33',
+  'shape/text-segments':
+    'd907678f89fd6736956efcaa8209ed3cfd9abcb4f6b2d690da7299fbc7e4d565',
+  'shape/gradient-linear':
+    'bc0e22e1917d5efbd11e080f1eee442e231ff2bdb674d7fb5b71faa4efec10e4',
+  'shape/gradient-radial':
+    '2b33b899bec813287a015ebadb1cbf2363e3fcbc2f89d511bb03de4ae2e81f57',
+  'shape/pattern':
+    '429f7dd6bbd1345284d71216634aa037913224b5df915142c08c7fe70a70a69e',
+  'shape/shadow':
+    '45e346279768c5d9b6ddafd5a1b7d5aedeefd5834788ef2fbd0f156551b76afa',
+  'image/base64':
+    '768e7c813cb5313fac7258e14069878d9234ae79334c84a26c9482d2aae06c72',
+  'image/deduplicated':
+    'd823fb4a718a2f7a8d907dc863a1b330b86e9ec8b4fe171a56b76ff0bf4aa2f4',
+  'image/aspect-from-width':
+    '09770702186e5b93cdba205f180e11f696de323a3e05e15fd228636037aa4dcb',
+  'image/aspect-from-height':
+    '09770702186e5b93cdba205f180e11f696de323a3e05e15fd228636037aa4dcb',
+  'image/contain':
+    '0149f11d8af9f59f4aeda33a7fd76b1251b298445ab96dbfe9d6e249abed5c74',
+  'image/cover':
+    'e83e1a19dcb99719c6f59389882c2b417ac6d3857b072fe7b08f4c034fc28332',
+  'image/rounding-rotate':
+    'f8956b36f5adc324af63008aa97456db3fb776aaf96876e4458234ef7867df24',
+  'link/external-and-slide':
+    'd5349ba0601c9a10ae458af63de4b14f8e12e0c099947dc233d154fbde7e9c77',
+  'layout/grid':
+    '8662617b4f34af848e068c6d7ffe4b153fbbcf52bfdecc1c3bae5c522ea1cee7',
+  'template/background-and-objects':
+    '16d542e0618a4a41dd70e2ffaf51fb2ead1e90682eae8eda49cb8c12d285c1ae',
+  'template/placeholders':
+    '5f39d43f2b9663575e758242f7a6303b350aac8a7c0d3ea19e71e9edebff965d',
+  'table/plain':
+    '02c6d56aafc2810fa3bfd64ea25dbcf5783ea8578dbecfcbfcc2475595003447',
+  'table/formatting':
+    'b8571923640c1f850c2f42173f110656c4e31db8e6940bde34bfe98b778ab8e4',
+  'table/merged-cells':
+    '674147fe1df3cd23b1b77e62621413bef2ee54c3912124e9c4a5a5ede241c070',
+  'table/rounded':
+    'e189a7b0ac5e65aaebb26f17b834310d4b3c52f8236f6f653d80dfc306cd6d45',
+  'table/emoji-text-presentation':
+    'a41539d17b1956579947dd348d810d553e68b611d02a0662c166c4003e4f1a4e',
+  'chart/bar':
+    '74b1995fbe47776ea3453a7b7a260f2866458bd2c1ec238b91756163775d6786',
+  'chart/configured':
+    'd43fbb2ab7db1744a42578ff9b30b53b4eddf5aff338f840824eaf604ca70d84',
+  'chart/two-on-one-slide':
+    'c1b26a6a8702d62d91b1bd7080a3377446c1c2893436fe84fd50c73a0359bbf9',
+  'text/single-run':
+    'ca9b3d55d175d29baad74f86a7f2145f7563e727ded2aa4bd9619ef399f0544e',
+  'text/bullets':
+    '7034f34c2389ac350fc7250acea2278f9ec809ac475b45ca0fc9d6dea6e33f11',
+  'shape/no-text':
+    '33e7bc07d17a30d4838a025f780373ecaba2d368c25364899d40705f68f4ee80',
+  'table/auto-page':
+    'dc02d781734c0390750a8605a0bd8baf42ec6386cfecc4e96fc5c21d5690f2f0',
+  'table/no-size':
+    'fc2e40f2eadb825d40398765aa1e93b8746cadf7959a015c9539c0443f67b9ab',
+  'chart/line':
+    'a1f519e6d0c5254dcab98c2fbf1910e698f49222bb8f1ddc86f90cd13f88d065',
+  'chart/doughnut':
+    'e76f696c17cbca7e51a6b5f45270d05dee7f837dcb440a4582dada7a468e6d77',
+  'image/url-free-aspect':
+    'a337e997b5781aa13f9ec769d040e9605c20d007580fa261c9a8ea0a6f2c9c0e',
+  'slide/disabled-content':
+    'f13ae2d6e4cc3a75e2aaa9c545956d9cf88f32c8deec4f866823916046f46fe8',
+};

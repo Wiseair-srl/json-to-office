@@ -1,173 +1,40 @@
 /**
- * Presentation Generator
- * Main orchestration functions for the PPTX generation pipeline
+ * Presentation generation entry points.
+ *
+ * Every path here compiles the authoring tree to PptxIR and hands it to a
+ * renderer adapter; nothing in this module knows which backend that is. The
+ * default is `pptxgenjs`, which reproduces the output this pipeline has always
+ * produced — see `src/__tests__/corpus-goldens.test.ts`.
  */
 
-import PptxGenJS from 'pptxgenjs';
 import { writeFileSync } from 'fs';
 import type {
-  PresentationComponentDefinition,
-  PptxThemeConfig,
   PipelineWarning,
-  PendingXmlFill,
+  PresentationComponentDefinition,
 } from '../types';
 import { isPresentationComponent } from '../types';
-import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
-import { processPresentation } from './structure';
-import { renderPresentation } from './render';
-import { resolveDocumentFonts } from './fontResolution';
-import { resolveThemeContext } from './generationContext';
+import { generateBufferViaIr } from './generateFromIr';
+
+export {
+  PresentationValidationError,
+  assertNoContentConflicts,
+  assertValidPresentation,
+  isPresentationComponentDefinition,
+} from './generationOptions';
+export type {
+  GenerationOptions,
+  GenerationResult,
+  GenerationValidationOptions,
+} from './generationOptions';
+
 import {
-  collectImageSourceConflicts,
-  collectTextContentConflicts,
-  validateJsonPresentationDocument,
-  validatePresentationDocument,
-  type ValidationError,
-} from '@json-to-office/shared-pptx';
-import { runWithBaseDir } from '../utils/baseDirContext';
-import {
-  packagePresentationBuffer,
-  type PresentationPackagingOptions,
-} from './packagePresentation';
-
-export interface GenerationValidationOptions {
-  /** Validate the complete component tree before rendering. Defaults to true. */
-  enabled?: boolean;
-  /** Accept unknown props while still enforcing required fields and types. */
-  allowUnknownFields?: boolean;
-}
+  isPresentationComponentDefinition,
+  type GenerationOptions,
+  type GenerationResult,
+} from './generationOptions';
 
 /**
- * Options for the generation pipeline
- */
-export interface GenerationOptions extends PresentationPackagingOptions {
-  customThemes?: Record<string, PptxThemeConfig>;
-  /**
-   * Fully resolved theme, set by the generation prologue after the
-   * export-mode pre-pass. Wins over the `props.theme` name/inline lookup in
-   * `processPresentation` — omit it (direct callers) to fall back to that.
-   */
-  theme?: PptxThemeConfig;
-  services?: ServicesConfig;
-  fonts?: FontRuntimeOpts;
-  validation?: GenerationValidationOptions;
-  /**
-   * Directory that relative asset paths (image `path` props, slide
-   * background images) resolve against. Defaults to `process.cwd()` when
-   * absent (#142).
-   */
-  baseDir?: string;
-}
-
-// Font resolution shared with the plugin path — see ./fontResolution.ts
-
-/**
- * Result from generateBufferWithWarnings
- */
-export interface GenerationResult {
-  buffer: Buffer;
-  warnings: PipelineWarning[];
-}
-
-/** Error thrown when a presentation fails the generation validation gate. */
-export class PresentationValidationError extends Error {
-  public readonly errors: ValidationError[];
-
-  constructor(errors: ValidationError[]) {
-    super(
-      `Presentation validation failed:\n${errors
-        .map((error) => `  - ${error.path}: ${error.message}`)
-        .join('\n')}`
-    );
-    this.name = 'PresentationValidationError';
-    this.errors = errors;
-  }
-}
-
-function assertValidPresentation(
-  input: string | unknown,
-  validation?: GenerationValidationOptions
-): void {
-  if (validation?.enabled === false) return;
-
-  const options = {
-    allowUnknownFields: validation?.allowUnknownFields,
-  };
-  const result =
-    typeof input === 'string'
-      ? validateJsonPresentationDocument(input, options)
-      : validatePresentationDocument(input, options);
-
-  if (!result.valid) {
-    throw new PresentationValidationError(result.errors);
-  }
-}
-
-/**
- * Structural rules the per-component schema can't express: image sources
- * (path/base64/svg) are mutually exclusive, and text components carry
- * exactly one of text/runs. Reject conflicting payloads before rendering so
- * they can't be silently resolved by runtime precedence. Matches core-docx,
- * which fails generation on the same image conflict.
- *
- * Runs unconditionally — the validators also collect these conflicts, so this
- * is the net for `validation: { enabled: false }`. Shared with the plugin
- * path, which checks the expanded tree (custom components can emit
- * conflicting payloads too).
- */
-export function assertNoContentConflicts(document: unknown): void {
-  const sourceConflicts = [
-    ...collectImageSourceConflicts(document),
-    ...collectTextContentConflicts(document),
-  ];
-  if (sourceConflicts.length > 0) {
-    throw new Error(
-      `Document validation failed:\n${sourceConflicts
-        .map((e) => `  - ${e.path}: ${e.message}`)
-        .join('\n')}`
-    );
-  }
-}
-
-/**
- * Type guard for presentation component
- */
-export function isPresentationComponentDefinition(
-  definition: unknown
-): definition is PresentationComponentDefinition {
-  if (typeof definition !== 'object' || definition === null) return false;
-  const def = definition as Record<string, unknown>;
-  return def.name === 'pptx' && 'props' in def;
-}
-
-/**
- * Generate a PptxGenJS instance from a presentation component definition
- */
-export async function generatePresentation(
-  document: PresentationComponentDefinition,
-  options?: GenerationOptions,
-  warnings?: PipelineWarning[],
-  pendingFills?: PendingXmlFill[]
-): Promise<PptxGenJS> {
-  assertValidPresentation(document, options?.validation);
-
-  if (!document || document.name !== 'pptx') {
-    throw new Error('Top-level component must be a pptx component');
-  }
-
-  assertNoContentConflicts(document);
-
-  // Scope the document base directory over process+render: relative asset
-  // paths are rewritten eagerly here — pptxgenjs reads them later, during
-  // write(), from whatever cwd it happens to have (#142).
-  return runWithBaseDir(options?.baseDir, async () => {
-    const processed = processPresentation(document, options);
-    return await renderPresentation(processed, warnings, pendingFills);
-  });
-}
-
-/**
- * Generate a buffer from JSON definition
+ * Generate a `.pptx` buffer from a presentation definition.
  */
 export async function generateBufferFromJson(
   jsonConfig: string | PresentationComponentDefinition,
@@ -178,72 +45,18 @@ export async function generateBufferFromJson(
 }
 
 /**
- * Generate a buffer from JSON definition, returning warnings alongside the buffer
+ * Generate a `.pptx` buffer, returning the pipeline warnings alongside it.
  */
 export async function generateBufferWithWarnings(
   jsonConfig: string | PresentationComponentDefinition,
   options?: GenerationOptions
 ): Promise<GenerationResult> {
-  assertValidPresentation(jsonConfig, options?.validation);
-
-  let component: PresentationComponentDefinition;
-
-  if (typeof jsonConfig === 'string') {
-    const parsed = JSON.parse(jsonConfig);
-    if (!isPresentationComponent(parsed)) {
-      throw new Error('Parsed JSON must be a presentation component');
-    }
-    component = parsed;
-  } else {
-    component = jsonConfig;
-  }
-
-  const warnings: PipelineWarning[] = [];
-
-  // Props defaulting, inline-theme normalization, theme resolution,
-  // export-mode pre-pass and cache-key scoping — shared with the plugin
-  // pipeline so the two cannot drift (see core/generationContext.ts).
-  const context = resolveThemeContext(component, {
-    customThemes: options?.customThemes,
-    fonts: options?.fonts,
-    warnings,
-  });
-  component = context.document;
-  // resolveDocumentFonts fires `fonts.onResolved` internally when a
-  // listener is registered (LibreOffice preview stager). The PPTX itself
-  // never embeds bytes.
-  await resolveDocumentFonts(
-    component,
-    context.theme,
-    warnings,
-    options?.fonts
-  );
-  // processPresentation takes the resolved theme by value — the document's
-  // `props.theme` stays as authored and is not consulted again.
-  const effectiveOptions: GenerationOptions = {
-    ...options,
-    theme: context.theme,
-  };
-  // Gradient/pattern fills render as sentinel solid fills during generation;
-  // packagePresentationBuffer splices the real fill XML in afterwards.
-  const pendingFills: PendingXmlFill[] = [];
-  const pptx = await generatePresentation(
-    component,
-    effectiveOptions,
-    warnings,
-    pendingFills
-  );
-  const data = await pptx.write({ outputType: 'nodebuffer' });
-  const buffer = await packagePresentationBuffer(data as Buffer, {
-    ...options,
-    pendingFills,
-    warnings,
-  });
+  const { buffer, warnings } = await generateBufferViaIr(jsonConfig, options);
   return { buffer, warnings };
 }
 
 /**
- * Generate and save a .pptx file from JSON definition
+ * Generate and save a `.pptx` file from a presentation definition.
  */
 export async function generateAndSaveFromJson(
   jsonConfig: string | PresentationComponentDefinition,
@@ -255,7 +68,7 @@ export async function generateAndSaveFromJson(
 }
 
 /**
- * Generate from a JSON file path
+ * Generate from a JSON file path.
  */
 export async function generateFromFile(
   filePath: string,
@@ -268,27 +81,32 @@ export async function generateFromFile(
 }
 
 /**
- * Save a PptxGenJS instance to file
+ * Parse a presentation definition from JSON text.
+ *
+ * Exported because both entry points need the same guard on what a parsed
+ * document has to be.
  */
-export async function savePresentation(
-  pptx: PptxGenJS,
-  outputPath: string,
-  options?: PresentationPackagingOptions
-): Promise<void> {
-  const data = await pptx.write({ outputType: 'nodebuffer' });
-  const buffer = await packagePresentationBuffer(data as Buffer, options);
-  writeFileSync(outputPath, buffer);
+export function parsePresentationJson(
+  json: string
+): PresentationComponentDefinition {
+  const parsed = JSON.parse(json);
+  if (!isPresentationComponent(parsed)) {
+    throw new Error('Parsed JSON must be a presentation component');
+  }
+  return parsed;
 }
 
+export type { PipelineWarning };
+
 /**
- * Export the main API
+ * The main API surface.
+ *
+ * Buffer- and file-oriented only: no member returns a renderer-native object.
  */
 export const PresentationGenerator = {
-  generate: generatePresentation,
   generateBufferFromJson,
   generateBufferWithWarnings,
   generateAndSaveFromJson,
   generateFromFile,
-  save: savePresentation,
   isPresentationComponentDefinition,
 };

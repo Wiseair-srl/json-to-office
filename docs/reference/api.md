@@ -176,14 +176,21 @@ for (const w of warnings) console.warn(`[${w.code}] ${w.message}`);
 
 ### Functions
 
-| Function                     | Signature                                                     | Description                                                                                                                                                                                                                      |
-| ---------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `generatePresentation`       | `(document, options?, warnings?) => Promise<PptxGenJS>`       | Low-level entry: returns the pptxgenjs instance. Does not run schema validation — it throws a plain `Error` if the root is not `pptx`, or if an image declares multiple sources. Pass a `PipelineWarning[]` to collect warnings. |
-| `generateBufferFromJson`     | `(jsonConfig: string \| object, options?) => Promise<Buffer>` | JSON in, `.pptx` buffer out.                                                                                                                                                                                                     |
-| `generateBufferWithWarnings` | `(jsonConfig, options?) => Promise<GenerationResult>`         | The recommended entry point: returns `{ buffer, warnings }` so you can surface pipeline warnings. Also normalizes inline theme objects and runs the font export-mode pre-pass.                                                   |
-| `generateAndSaveFromJson`    | `(jsonConfig, outputPath, options?) => Promise<void>`         | Generate and write to disk.                                                                                                                                                                                                      |
-| `generateFromFile`           | `(filePath, outputPath) => Promise<void>`                     | `.pptx.json` file in, `.pptx` file out.                                                                                                                                                                                          |
-| `savePresentation`           | `(pptx: PptxGenJS, outputPath) => Promise<void>`              | Write a `generatePresentation` result to disk.                                                                                                                                                                                   |
+| Function                     | Signature                                                     | Description                                                                                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `generateBufferFromJson`     | `(jsonConfig: string \| object, options?) => Promise<Buffer>` | JSON in, `.pptx` buffer out.                                                                                                                                                   |
+| `generateBufferWithWarnings` | `(jsonConfig, options?) => Promise<GenerationResult>`         | The recommended entry point: returns `{ buffer, warnings }` so you can surface pipeline warnings. Also normalizes inline theme objects and runs the font export-mode pre-pass. |
+| `generateAndSaveFromJson`    | `(jsonConfig, outputPath, options?) => Promise<void>`         | Generate and write to disk.                                                                                                                                                    |
+| `generateFromFile`           | `(filePath, outputPath) => Promise<void>`                     | `.pptx.json` file in, `.pptx` file out.                                                                                                                                        |
+
+::: info Renderer-native APIs were removed in 0.37
+`generatePresentation` (which returned a PptxGenJS instance) and
+`savePresentation` are gone. Generation now compiles to an internal
+representation and hands it to a renderer adapter, so no public API returns or
+accepts a backend object. Use `generateBufferFromJson` /
+`generateBufferWithWarnings` and write the buffer yourself, or
+`generateAndSaveFromJson`.
+:::
 
 `GenerationResult` is `{ buffer: Buffer; warnings: PipelineWarning[] }`, where each warning is `{ code, message, component?, slide? }`. The `WarningCodes` enum lists every code (`UNKNOWN_COMPONENT`, `CHART_INVALID_SERIES`, `IMAGE_NO_SOURCE`, `GRID_POSITION_CLAMPED`, `FONT_UNRESOLVED`, …) and is exported from the package.
 
@@ -193,14 +200,15 @@ Unlike DOCX, PPTX generation does **not** run the schema validator. Structural m
 
 ### `GenerationOptions`
 
-| Option          | Type                                  | Default | Description                                                                                                                                                                                          |
-| --------------- | ------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `customThemes`  | `Record<string, PptxThemeConfig>`     | —       | Custom themes keyed by name, referenced by `props.theme` in the document. A PPTX document can also inline a full theme object directly in `props.theme` — no options needed.                         |
-| `services`      | [`ServicesConfig`](#servicesconfig)   | —       | e.g. `{ highcharts: { serverUrl, headers } }` for the `highcharts` component.                                                                                                                        |
-| `fonts`         | [`FontRuntimeOpts`](#fontruntimeopts) | —       | Font resolution and export-mode handling, same shape as DOCX.                                                                                                                                        |
-| `validation`    | `GenerationValidationOptions`         | —       | `{ enabled, allowUnknownFields }`. Validation runs before rendering and throws `ComponentValidationError`; set `enabled: false` to skip it.                                                          |
-| `deterministic` | `boolean`                             | `true`  | Normalize package metadata and ZIP timestamps for byte-identical output, including the XLSX packages embedded in native charts. See [Reproducible output](/guide/core-concepts#reproducible-output). |
-| `generatedAt`   | `string \| Date`                      | epoch   | Timestamp written into package metadata. Defaults to a stable `2000-01-01T00:00:00Z`; must be on or after 1980-01-01 or generation throws.                                                           |
+| Option          | Type                                  | Default       | Description                                                                                                                                                                                                                                        |
+| --------------- | ------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `customThemes`  | `Record<string, PptxThemeConfig>`     | —             | Custom themes keyed by name, referenced by `props.theme` in the document. A PPTX document can also inline a full theme object directly in `props.theme` — no options needed.                                                                       |
+| `services`      | [`ServicesConfig`](#servicesconfig)   | —             | e.g. `{ highcharts: { serverUrl, headers } }` for the `highcharts` component.                                                                                                                                                                      |
+| `fonts`         | [`FontRuntimeOpts`](#fontruntimeopts) | —             | Font resolution and export-mode handling, same shape as DOCX.                                                                                                                                                                                      |
+| `renderer`      | `'pptxgenjs' \| 'office-open'`        | `'pptxgenjs'` | Backend that turns the compiled presentation into bytes. `pptxgenjs` is the default and produces the output this pipeline has always produced. `office-open` is experimental, opt-in, and fails before rendering on any feature it cannot express. |
+| `validation`    | `GenerationValidationOptions`         | —             | `{ enabled, allowUnknownFields }`. Validation runs before rendering and throws `ComponentValidationError`; set `enabled: false` to skip it.                                                                                                        |
+| `deterministic` | `boolean`                             | `true`        | Normalize package metadata and ZIP timestamps for byte-identical output, including the XLSX packages embedded in native charts. See [Reproducible output](/guide/core-concepts#reproducible-output).                                               |
+| `generatedAt`   | `string \| Date`                      | epoch         | Timestamp written into package metadata. Defaults to a stable `2000-01-01T00:00:00Z`; must be on or after 1980-01-01 or generation throws.                                                                                                         |
 
 ## Plugin API
 
