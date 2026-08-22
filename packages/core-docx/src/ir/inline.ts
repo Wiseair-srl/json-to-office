@@ -50,7 +50,23 @@ const PLACEHOLDER = /\{([^}]+)\}/;
 const UNSUPPORTED_SYNTAX: ReadonlyArray<{
   pattern: RegExp;
   what: string;
-}> = [{ pattern: /\[@[^\]]+\]/, what: 'cross-reference' }];
+}> = [];
+
+/** `[@id]` or `[@id:format]`, the cross-reference syntax. */
+const CROSS_REFERENCE =
+  /\[@([^\]\s:]+)(?::(relative|no_context|full_context|none))?\]/;
+
+/**
+ * One pass over both bracket syntaxes.
+ *
+ * Parsing them separately would mean re-scanning the segments between one kind
+ * of token for the other kind, while the plain text between them still has to
+ * reach the decorator parser.
+ */
+const INLINE_TOKEN = new RegExp(
+  `${LINK.source}|${CROSS_REFERENCE.source}`,
+  'g'
+);
 
 /** `[^id]`, the note marker syntax. */
 const NOTE_MARKER = /\[\^([^\]\s]+)\]/g;
@@ -58,6 +74,11 @@ const NOTE_MARKER = /\[\^([^\]\s]+)\]/g;
 /** True when the text carries a `{PLACEHOLDER}` token. */
 export function containsPlaceholder(text: string): boolean {
   return PLACEHOLDER.test(text);
+}
+
+/** True when the text carries a `[@id]` cross-reference. */
+export function containsCrossReference(text: string): boolean {
+  return new RegExp(CROSS_REFERENCE.source).test(text);
 }
 
 /** True when the text carries a `[text](target)` link. */
@@ -117,7 +138,25 @@ export interface ParseInlineOptions {
   resolveNote?: (
     id: string
   ) => { id: number; noteKind: 'footnote' | 'endnote' } | undefined;
+  /**
+   * Resolve a `[@id]` token to a field, or to nothing to leave it literal.
+   *
+   * The target may appear later in the document, so only a pre-pass over the
+   * whole outline can answer this — which is why the compiler supplies it.
+   */
+  resolveCrossReference?: (
+    id: string,
+    format: CrossReferenceFormat,
+    token: string
+  ) => DocxIrInline | undefined;
 }
+
+/** The `\r`-style switches a `[@id:format]` token may ask for. */
+export type CrossReferenceFormat =
+  | 'relative'
+  | 'no_context'
+  | 'full_context'
+  | 'none';
 
 /**
  * Parse authored text into inline IR nodes.
@@ -277,17 +316,30 @@ function parseLinks(
   options: ParseInlineOptions
 ): DocxIrInline[] {
   const out: DocxIrInline[] = [];
-  const link = new RegExp(LINK.source, 'g');
+  const token = new RegExp(INLINE_TOKEN.source, 'g');
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = link.exec(normalized)) !== null) {
+  while ((match = token.exec(normalized)) !== null) {
     if (match.index > lastIndex) {
       out.push(
         ...parseDecorated(normalized.slice(lastIndex, match.index), options)
       );
     }
     lastIndex = match.index + match[0].length;
+
+    // Group 1 is the link's text; absent means the cross-reference branch of
+    // the alternation matched.
+    if (match[1] === undefined) {
+      const resolved = options.resolveCrossReference?.(
+        match[3],
+        (match[4] as CrossReferenceFormat | undefined) ?? 'relative',
+        match[0]
+      );
+      if (resolved) out.push(resolved);
+      else out.push(...parseDecorated(match[0], options));
+      continue;
+    }
 
     const [, linkText, target] = match;
     out.push({

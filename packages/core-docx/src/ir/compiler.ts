@@ -75,12 +75,16 @@ import {
   type ListMarkerFontConfig,
 } from '../utils/numberingConfig';
 import { normalizeUnicodeText } from '../utils/unicode';
+import { collectDocumentOutline } from '../core/collectTocHeadings';
+import type { NumberedItemInfo } from '../utils/numberedItemsRegistry';
 import {
+  containsCrossReference,
   containsLink,
   containsPlaceholder,
   containsUnsupportedSyntax,
   parseInline,
   parseLiteral,
+  type CrossReferenceFormat,
   type PlaceholderResolution,
 } from './inline';
 import type { DocxFeature } from './features';
@@ -204,6 +208,13 @@ interface CompileContext {
   commentCounter: number;
   /** Whether anything in this document asked for a resolved state. */
   hasResolvedComment: boolean;
+  /**
+   * Cross-reference targets, from the document-outline pre-pass.
+   *
+   * A `[@id]` may point forward, so nothing but a walk of the whole document
+   * can resolve it — which is why it is computed once, before compiling.
+   */
+  numberedItems: ReadonlyMap<string, NumberedItemInfo>;
   /** Image bytes, loaded before compilation started. */
   images: ImageResources;
   /**
@@ -223,6 +234,11 @@ export function compileDocument(
   images: ImageResources = new Map()
 ): DocxCompileResult {
   const styles = compileStyleManifest(structure.theme);
+  // Walk the outline before compiling so a cross-reference can resolve a target
+  // that appears later in the document, and a TOC field can carry cached
+  // entries. Same catch-and-degrade discipline as the pre-IR path: a failure
+  // here costs the cached values, never the document.
+  const outline = collectOutline(layout, warnings);
   const ctx: CompileContext = {
     theme: structure.theme,
     themeName: structure.themeName,
@@ -247,6 +263,7 @@ export function compileDocument(
     endnotes: [],
     commentCounter: 0,
     hasResolvedComment: false,
+    numberedItems: outline.numberedItems,
     images,
     generatedAt: structure.metadata.date,
   };
@@ -305,6 +322,30 @@ export function compileDocument(
     warnings: ctx.warnings,
     unsupported: ctx.unsupported,
   };
+}
+
+/**
+ * The document outline, or an empty one if the walk fails.
+ *
+ * A failure here costs the cached cross-reference values and the TOC entries,
+ * never the document itself — a reader that refreshes fields still sees the
+ * right numbers.
+ */
+function collectOutline(
+  layout: LayoutPlan,
+  warnings: GenerationWarning[]
+): ReturnType<typeof collectDocumentOutline> {
+  try {
+    return collectDocumentOutline(layout.sections);
+  } catch (error) {
+    warnings.push({
+      component: 'document',
+      message:
+        '[core-docx] Document outline collection failed; the TOC field will rely on the reader refreshing it: ' +
+        (error instanceof Error ? error.message : String(error)),
+    });
+    return { entries: [], numberedItems: new Map() };
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -804,7 +845,12 @@ function compileComponent(
  * Paragraphs and headings
  * ------------------------------------------------------------------ */
 
-/** Markdown decorators, the syntax that makes a heading take the parser. */
+/**
+ * Markdown decorators.
+ *
+ * A heading reaches the inline parser only when its text carries one of these
+ * or a cross-reference; anything else is rendered character for character.
+ */
 const DECORATED = /(\*\*\*|___|(\*\*|__)|(\*|_))/;
 
 /** Props a paragraph or heading may carry that this slice does not lower. */
@@ -865,7 +911,7 @@ function compileHeading(
     text,
     ctx,
     path,
-    DECORATED.test(text) ? 'inline' : 'literal'
+    DECORATED.test(text) || containsCrossReference(text) ? 'inline' : 'literal'
   );
 
   // A heading is always a bookmark target: an explicit id, or a slug of the
@@ -1415,6 +1461,11 @@ function compileRuns(
     resolvePlaceholder: (name: string) =>
       resolvePlaceholder(name, ctx.generatedAt),
     ...(notes ? { resolveNote: notes.resolve } : {}),
+    resolveCrossReference: (
+      id: string,
+      format: CrossReferenceFormat,
+      token: string
+    ) => resolveCrossReference(id, format, token, ctx, path),
   };
   children.push(
     ...(mode === 'literal'
@@ -1430,6 +1481,67 @@ function compileRuns(
   notes?.reportUnemitted(text);
 
   return children;
+}
+
+/** OOXML's REF switches, by the format an author asks for. */
+const REFERENCE_SWITCH: Readonly<Record<CrossReferenceFormat, string>> = {
+  relative: '\\r',
+  no_context: '\\n',
+  full_context: '\\w',
+  none: '',
+};
+
+/**
+ * Turn one `[@id]` token into a REF field.
+ *
+ * The cached value is what makes the reference readable outside Word: headless
+ * LibreOffice — and therefore the PDF export path — never updates fields, so an
+ * uncached REF exports blank. Word recomputes it on open (the document sets
+ * `updateFields`), so an approximate cached value is corrected there.
+ *
+ * `relative` caches the full number: Word resolves it against the reference's
+ * own position in the numbering, which generation does not know.
+ */
+function resolveCrossReference(
+  id: string,
+  format: CrossReferenceFormat,
+  token: string,
+  ctx: CompileContext,
+  path: string
+): DocxIrInline | undefined {
+  const info = ctx.numberedItems.get(id);
+  if (!info) {
+    warnOnce(
+      ctx,
+      'cross-reference',
+      `[core-docx] Cross-reference ${token} has no target: no heading or list item declares the id "${id}". Rendering the token as literal text.`
+    );
+    return undefined;
+  }
+
+  const cachedText =
+    format === 'none'
+      ? info.text
+      : format === 'no_context'
+        ? info.own
+        : info.full;
+
+  if (format !== 'none' && cachedText === undefined) {
+    warnOnce(
+      ctx,
+      'cross-reference',
+      `[core-docx] Cross-reference ${token} targets an unnumbered ${info.kind} ("${id}"), so the field carries no cached number and reads blank until the reader updates fields. Use [@${id}:none] to reference its text instead.`
+    );
+  }
+
+  ctx.features.require('cross-references', path);
+  return {
+    kind: 'field',
+    // `\\h` makes the field a hyperlink to its target, which is what lets a
+    // reader click through to the thing being referenced.
+    instruction: `REF ${id} ${['\\h', REFERENCE_SWITCH[format]].filter(Boolean).join(' ')}`,
+    ...(cachedText !== undefined ? { cachedText } : {}),
+  };
 }
 
 /**

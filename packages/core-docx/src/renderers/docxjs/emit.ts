@@ -29,6 +29,7 @@ import {
   InternalHyperlink,
   PageNumber,
   Paragraph,
+  SimpleField,
   Tab,
   Table,
   TableCell,
@@ -227,6 +228,12 @@ export function inlineChildren(
         break;
 
       case 'field': {
+        if (child.instruction.startsWith('REF ')) {
+          // A REF field is a whole `w:fldSimple`, not a run child, so it goes
+          // in as its own element with its cached text inside.
+          out.push(new SimpleField(child.instruction, child.cachedText));
+          break;
+        }
         const page = PAGE_FIELD[child.instruction];
         if (!page) {
           throw new Error(
