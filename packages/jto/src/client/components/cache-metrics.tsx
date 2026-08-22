@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { API_ENDPOINTS } from '../config/api';
-import { FORMAT } from '../lib/env';
 
 interface CacheStats {
   document: {
@@ -13,38 +12,7 @@ interface CacheStats {
     itemCount: number;
     enabled: boolean;
   };
-  components?: ComponentCacheData;
   rasterizer?: RasterizerCacheData;
-}
-
-interface ComponentStatistics {
-  type: string;
-  hits: number;
-  misses: number;
-  avgProcessTime: number;
-  avgSize: number;
-  entries: number;
-  hitRate?: number;
-  totalRequests?: number;
-  memoryUsage?: number;
-}
-
-interface BypassedComponentStatistics {
-  type: string;
-  renders: number;
-  reason: string;
-}
-
-interface ComponentCacheData {
-  entries: number;
-  totalSize: number;
-  hitRate: number;
-  totalHits: number;
-  totalMisses: number;
-  avgResponseTime: number;
-  evictions: number;
-  componentStats: ComponentStatistics[];
-  bypassedComponents?: BypassedComponentStatistics[];
 }
 
 interface RasterizerCacheData {
@@ -62,12 +30,6 @@ interface RasterizerCacheData {
     unique: number;
   };
 }
-
-const BYPASS_REASON_LABELS: Record<string, string> = {
-  'dynamic-context': 'depends on render-time context',
-  'bookmark-id': 'carries a bookmark id',
-  'revision-ids': 'carries revision ids',
-};
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -175,66 +137,8 @@ export function CacheMetrics() {
         aria-label="Cache hit rate"
       />
 
-      {/* Module-level breakdown (docx only) */}
-      {FORMAT === 'docx' && stats.components && (
-        <ComponentBreakdown data={stats.components} />
-      )}
-
       {/* Visual rasterizer caches (disk PNG cache + batch dedupe) */}
       {stats.rasterizer && <RasterizerBreakdown data={stats.rasterizer} />}
-    </div>
-  );
-}
-
-function ComponentBreakdown({ data }: { data: ComponentCacheData }) {
-  const bypassed = data.bypassedComponents ?? [];
-  if (data.componentStats.length === 0 && bypassed.length === 0) return null;
-
-  return (
-    <div className="space-y-2">
-      <h4 className="text-sm font-medium">Module Breakdown</h4>
-      <div className="space-y-1">
-        {data.componentStats.map((stat) => {
-          const hitRate = (stat.hitRate || 0) * 100;
-          const requests = stat.totalRequests || stat.hits + stat.misses;
-          const memory = stat.memoryUsage || stat.entries * stat.avgSize || 0;
-
-          return (
-            <div key={stat.type} className="px-3 py-1.5 text-sm">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium">{stat.type}</span>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{hitRate.toFixed(0)}% hit</span>
-                  <span>{requests} req</span>
-                  <span>{formatBytes(memory)}</span>
-                </div>
-              </div>
-              <Progress value={hitRate} className="h-1.5" />
-            </div>
-          );
-        })}
-        {/* Types that skip the cache on purpose — rendered so the breakdown
-            covers every component the document used, not only cacheable
-            ones. No hit-rate bar: there is nothing to hit. */}
-        {bypassed.map((stat) => (
-          <div key={`bypass-${stat.type}`} className="px-3 py-1.5 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-muted-foreground">
-                {stat.type}
-              </span>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>
-                  uncached by design
-                  {BYPASS_REASON_LABELS[stat.reason]
-                    ? ` — ${BYPASS_REASON_LABELS[stat.reason]}`
-                    : ''}
-                </span>
-                <span>{stat.renders} renders</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
