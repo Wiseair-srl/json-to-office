@@ -69,9 +69,30 @@ No public type now references PptxGenJS.
 - `bullet: { type: 'bullet' }` now produces a bullet. The object form was
   passed through in a shape the backend ignored; the boolean form always
   worked.
+- `bullet: false` no longer produces a bullet. Every boolean lowered to an
+  enabled bullet, so an explicit "no bullet" could not override one inherited
+  from a style. `bullet: { type: 'number' }` with no other field now numbers
+  rather than clearing the bullet, and a custom glyph reaches both backends
+  instead of being dropped by each in its own way.
+- A four-value `margin` keeps the `[top, right, bottom, left]` order the schema
+  documents. PptxGenJS's text path reads those four numbers as
+  `[left, right, bottom, top]` — disagreeing with its own table path — and the
+  office-open adapter read them as `[left, top, right, bottom]`; both are
+  corrected in the adapter, so an asymmetric text box is no longer rotated by a
+  side.
+- Slide transitions survive processing. `transition` was accepted by the schema
+  and dropped before the IR, so `office-open` could not emit one and PptxGenJS —
+  which has no transition API — could not refuse it.
 - A rounded table positioned with percentages now gets its rounded backdrop,
   which was previously drawn only when `x` and `y` were plain numbers.
 - The `office-open` backend honours `deterministic` and `generatedAt`. It
   stamped core metadata with the wall clock and numbered drawings from a
   process-global counter, so the same deck rendered twice produced different
   bytes.
+- The `office-open` backend writes the authored theme (`theme1.xml` carries the
+  heading and body faces and the resolved palette, where it used to carry
+  Office defaults), the `company` document property, and a table's border and
+  fill. Five further gaps are now declared rather than silently dropped —
+  `image-crop`, `image-rounding`, `table-insets`, `table-rounded-corners` and
+  `table-auto-page` — so a deck using them fails with the feature name and the
+  IR path instead of losing a crop, a rounded corner or half a table.

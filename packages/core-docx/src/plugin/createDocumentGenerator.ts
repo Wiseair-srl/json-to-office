@@ -39,8 +39,6 @@ export interface DocumentGeneratorOptions {
   theme?: ThemeConfig;
   /** Custom themes keyed by name, resolved per-document via document.props.theme */
   customThemes?: Record<string, ThemeConfig>;
-  /** Enable caching for better performance */
-  enableCache?: boolean;
   /** Enable debug logging */
   debug?: boolean;
   /** External service configuration (e.g. Highcharts export server) */
@@ -82,7 +80,6 @@ interface BuilderState {
   theme?: ThemeConfig;
   customThemes?: Record<string, ThemeConfig>;
   debug: boolean;
-  enableCache: boolean;
   services?: ServicesConfig;
   fonts?: FontRuntimeOpts;
   validation?: GenerationValidationOptions;
@@ -368,7 +365,6 @@ function createBuilderImpl<
       theme: state.theme,
       customThemes: state.customThemes,
       debug: state.debug,
-      enableCache: state.enableCache,
       services: state.services,
       fonts: state.fonts,
       validation: state.validation,
@@ -548,7 +544,7 @@ function createBuilderImpl<
    * theme resolution, custom-component expansion, and normalization — but
    * skips font resolution, layout, rendering, and packaging, so it never
    * touches external services (no visual rasterization, no chart export).
-   * Orders of magnitude cheaper than `generate()` when you only need the
+   * Orders of magnitude cheaper than `generateBuffer()` when you only need the
    * JSON tree.
    */
   async function expandStandardDefinition(
@@ -781,7 +777,6 @@ export function createDocumentGenerator(
     theme: options.theme,
     customThemes: options.customThemes,
     debug: options.debug ?? false,
-    enableCache: options.enableCache ?? false,
     services: options.services,
     fonts: options.fonts,
     validation: options.validation,

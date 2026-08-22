@@ -46,6 +46,25 @@ describe('public API surface', () => {
     expect(coreDocx.CoreDocumentGenerator.generate).toBeUndefined();
   });
 
+  it('builds a generator whose methods are the ones documented', () => {
+    // `docs/reference/api.md` tabulates these. A method appearing or
+    // disappearing without the table moving is exactly the drift that sent
+    // readers to a `generate()` that no longer exists (#265).
+    const generator = coreDocx.createDocumentGenerator({});
+
+    expect(Object.keys(generator).sort()).toEqual([
+      'addComponent',
+      'expandStandardDefinition',
+      'exportSchema',
+      'generateBuffer',
+      'generateFile',
+      'generateSchema',
+      'getComponentNames',
+      'getStandardComponentsDefinition',
+      'validate',
+    ]);
+  });
+
   it('keeps the buffer and file entry points', () => {
     expect(typeof coreDocx.generateBufferFromJson).toBe('function');
     expect(typeof coreDocx.generateBufferWithWarnings).toBe('function');
@@ -95,6 +114,18 @@ describe('public API surface', () => {
       })
     ).resolves.toBeInstanceOf(Buffer);
   }, 30_000);
+
+  it('no longer offers a caching option nothing implements', () => {
+    // The component render cache went with the IR — compiling holds no
+    // cross-document state, so there is nothing left to cache between
+    // documents. Keeping the option would have left a documented performance
+    // switch that does nothing (#266).
+    const options: coreDocx.DocumentGeneratorOptions = {
+      // @ts-expect-error `enableCache` was removed with the render cache
+      enableCache: true,
+    };
+    expect(options).toBeDefined();
+  });
 
   it('does not export the IR from the package surface', () => {
     // The IR stays internal for this release — see the architecture doc.

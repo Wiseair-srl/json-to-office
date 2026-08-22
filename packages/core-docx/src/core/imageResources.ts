@@ -14,7 +14,7 @@
 import type { ComponentDefinition } from '../types';
 import {
   getImageBuffer,
-  getImageDimensions,
+  readImageDimensions,
   resolveImageSource,
 } from '../utils/imageUtils';
 
@@ -47,7 +47,11 @@ export async function loadImageResources(
     [...sources].map(async (source) => {
       try {
         const result = await getImageBuffer(source);
-        const intrinsic = await readIntrinsic(source);
+        // Probed from the bytes just loaded, never by loading the source a
+        // second time: a URL fetched twice is twice the traffic, and a URL
+        // whose response changes would embed one image and size it from
+        // another (#267).
+        const intrinsic = readIntrinsic(result.buffer, source);
         loaded.set(source, {
           bytes: result.buffer,
           ...(result.contentType ? { contentType: result.contentType } : {}),
@@ -61,11 +65,12 @@ export async function loadImageResources(
   return loaded;
 }
 
-async function readIntrinsic(
+function readIntrinsic(
+  bytes: Buffer,
   source: string
-): Promise<{ width: number; height: number } | undefined> {
+): { width: number; height: number } | undefined {
   try {
-    return await getImageDimensions(source);
+    return readImageDimensions(bytes, source);
   } catch {
     // An unreadable header is not a failure to load: the image still embeds,
     // it just cannot contribute an aspect ratio.
