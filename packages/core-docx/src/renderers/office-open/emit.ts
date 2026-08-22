@@ -38,7 +38,7 @@ import type {
   DocxIrTableOfContents,
   DocxIrTableRow,
 } from '../../ir/types';
-import { emuToPixels } from '../../ir/units';
+import { emuToPixels, pixelsToEmu } from '../../ir/units';
 
 type Opts = Record<string, unknown>;
 
@@ -391,7 +391,12 @@ function shapeOptions(shape: DocxIrShapeRun, ctx: EmitContext): Opts {
   return {
     altText: { id },
     children: shape.children.map((child) => paragraph(child, ctx)),
-    transformation: { width: shape.widthPx, height: shape.heightPx },
+    // Raw transformation numbers are EMUs in @office-open/docx, while the IR
+    // deliberately stores native shape dimensions in pixels.
+    transformation: {
+      width: pixelsToEmu(shape.widthPx),
+      height: pixelsToEmu(shape.heightPx),
+    },
     ...(shape.fill
       ? {
           fill: {
