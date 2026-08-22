@@ -45,6 +45,94 @@ function toDosTime(date: Date): number {
 }
 
 /**
+ * A relationship id that is stable across runs.
+ *
+ * docx.js numbers most relationships `rId1`, `rId2`, … but mints ids for
+ * external hyperlinks from `Math.random`, so any document containing a link
+ * produced different bytes on every render. Canonicalizing them here is
+ * generic package finalization — it is a property of an OOXML package, not of
+ * any one backend — and it is what makes a hyperlink-bearing document
+ * reproducible at all.
+ */
+const STABLE_RELATIONSHIP_ID = /^rId\d+$/;
+
+/**
+ * Rewrite volatile relationship ids to a stable sequence.
+ *
+ * Ids are renumbered per part, continuing past the highest number that part
+ * already uses so nothing can collide with an id docx.js allocated. Order
+ * follows first appearance in the owning part, which depends only on document
+ * content — not on allocation order, and not on a clock.
+ */
+function canonicalizeRelationshipIds(zip: AdmZip): void {
+  // Two phases. Updating entries while walking `getEntries()` rebuilds
+  // adm-zip's internal list, after which a `getEntry` lookup for the owning
+  // part can miss — which renamed the relationship without renaming the
+  // reference to it. Collect first, then apply.
+  const relsNames = zip
+    .getEntries()
+    .map((entry) => entry.entryName)
+    .filter((name) => /^(.*\/)?_rels\/(.+)\.rels$/.test(name));
+
+  const updates: Array<{ name: string; xml: string }> = [];
+
+  for (const relsName of relsNames) {
+    const match = /^(.*\/)?_rels\/(.+)\.rels$/.exec(relsName);
+    if (!match) continue;
+
+    const relsEntry = zip.getEntry(relsName);
+    if (!relsEntry) continue;
+    const relsXml = relsEntry.getData().toString('utf8');
+
+    const ids = [...relsXml.matchAll(/\bId="([^"]+)"/g)].map((m) => m[1]);
+    const unstable = ids.filter((id) => !STABLE_RELATIONSHIP_ID.test(id));
+    if (unstable.length === 0) continue;
+
+    const partName = `${match[1] ?? ''}${match[2]}`;
+    const partEntry = zip.getEntry(partName);
+    const partXml = partEntry?.getData().toString('utf8') ?? '';
+
+    // First appearance in the part decides the order; anything the part never
+    // references keeps its position from the relationships file.
+    const ordered = [...unstable].sort((a, b) => {
+      const ia = partXml.indexOf(`"${a}"`);
+      const ib = partXml.indexOf(`"${b}"`);
+      if (ia === ib) return unstable.indexOf(a) - unstable.indexOf(b);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+
+    const highest = ids.reduce((max, id) => {
+      const numeric = /^rId(\d+)$/.exec(id);
+      return numeric ? Math.max(max, Number(numeric[1])) : max;
+    }, 0);
+
+    const rename = new Map(
+      ordered.map((id, index) => [id, `rId${highest + 1 + index}`])
+    );
+
+    // One pass over quoted tokens, so a freshly assigned id can never be
+    // rewritten again by a later entry in the map.
+    const rewrite = (xml: string): string =>
+      xml.replace(/"([^"]+)"/g, (whole, value: string) => {
+        const replacement = rename.get(value);
+        return replacement === undefined ? whole : `"${replacement}"`;
+      });
+
+    updates.push({ name: relsName, xml: rewrite(relsXml) });
+    if (partEntry) {
+      updates.push({ name: partName, xml: rewrite(partXml) });
+    }
+  }
+
+  for (const update of updates) {
+    const entry = zip.getEntry(update.name);
+    if (entry) zip.updateFile(entry, Buffer.from(update.xml, 'utf8'));
+  }
+}
+
+/**
  * Normalize package-level values that otherwise change on every render.
  * ZIP headers are written from UTC components because DOS timestamps carry no
  * timezone; this produces identical header bits in every locale.
@@ -54,6 +142,8 @@ export function canonicalizeDocxBuffer(
   generatedAt: Date = DEFAULT_GENERATION_DATE
 ): Buffer {
   const zip = new AdmZip(buffer);
+  canonicalizeRelationshipIds(zip);
+
   const isoTimestamp = generatedAt.toISOString();
   const coreProperties = zip.getEntry('docProps/core.xml');
 
