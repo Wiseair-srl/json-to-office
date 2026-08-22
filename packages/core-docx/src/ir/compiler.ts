@@ -95,6 +95,7 @@ import {
   type DocxIrNumberingLevel,
   type DocxIrParagraph,
   type DocxIrParagraphFormatting,
+  type DocxIrParagraphMarkRevision,
   type DocxIrResource,
   type DocxIrRunFormatting,
   type DocxIrSection,
@@ -1001,28 +1002,27 @@ function compileList(
     const revision = typeof item === 'object' ? item.revision : undefined;
     const itemPath = `${path}.items[${index}]`;
 
-    if (revision !== undefined) {
-      ctx.unsupported.push({
-        name: 'list',
-        path: itemPath,
-        detail: 'revision',
-      });
-      return;
-    }
     // An item with nothing in it is not a bullet with no text; it is not an
-    // item at all.
-    if (!text.trim()) return;
+    // item at all — unless it is a deletion, whose new text is empty by
+    // definition and which still has to render its struck-through runs.
+    if (!text.trim() && revision === undefined) return;
 
-    const syntax = containsUnsupportedSyntax(text);
-    if (syntax) {
-      ctx.unsupported.push({ name: 'list', path: itemPath, detail: syntax });
-      return;
+    if (revision === undefined) {
+      const syntax = containsUnsupportedSyntax(text);
+      if (syntax) {
+        ctx.unsupported.push({ name: 'list', path: itemPath, detail: syntax });
+        return;
+      }
+    } else {
+      ctx.features.require('revisions', itemPath);
     }
 
     blocks.push(
       paragraphNode(
         { ctx, path: itemPath, id: `${scope.id}:i${index}` },
-        parseInline(text, { base: {}, hyperlinks: true }),
+        revision === undefined
+          ? parseInline(text, { base: {}, hyperlinks: true })
+          : compileRevision(revision as Record<string, any>, {}, ctx),
         {
           styleId: 'Normal',
           formatting: {
@@ -1044,7 +1044,12 @@ function compileList(
 
 type ListItem =
   | string
-  | { text?: string; level?: number; id?: string; revision?: unknown };
+  | {
+      text?: string;
+      level?: number;
+      id?: string;
+      revision?: Record<string, unknown>;
+    };
 
 /**
  * Spacing for one list item.
@@ -1405,16 +1410,14 @@ function literalLines(
   base: DocxIrRunFormatting
 ): DocxIrInline[][] {
   const formatting = Object.keys(base).length > 0 ? base : undefined;
-  return text
-    .split('\n')
-    .map((line, index) => [
-      ...(index > 0 ? [{ kind: 'lineBreak' as const }] : []),
-      {
-        kind: 'text' as const,
-        text: line,
-        ...(formatting ? { formatting } : {}),
-      },
-    ]);
+  return text.split('\n').map((line, index) => [
+    ...(index > 0 ? [{ kind: 'lineBreak' as const }] : []),
+    {
+      kind: 'text' as const,
+      text: line,
+      ...(formatting ? { formatting } : {}),
+    },
+  ]);
 }
 
 /**
@@ -2290,15 +2293,10 @@ function tableBlocker(
     const rowPath = row.isHeader
       ? `${path}.header`
       : `${path}.rows[${rowIndex - 1}]`;
-    if (row.revision !== undefined) {
-      return { path: rowPath, detail: 'revision' };
-    }
     for (const [colIndex, cell] of row.cells.entries()) {
       const cellPath = `${rowPath}.cells[${colIndex}]`;
       if (cell.comment !== undefined)
         return { path: cellPath, detail: 'comment' };
-      if (cell.revision !== undefined)
-        return { path: cellPath, detail: 'revision' };
       const content = cell.content;
       if (content === undefined || typeof content === 'string') {
         if (content && containsUnsupportedSyntax(content)) {
@@ -2315,9 +2313,6 @@ function tableBlocker(
       const text = String((content.props as { text?: unknown })?.text ?? '');
       const syntax = containsUnsupportedSyntax(text);
       if (syntax) return { path: cellPath, detail: syntax };
-      if ((content.props as { revision?: unknown })?.revision !== undefined) {
-        return { path: cellPath, detail: 'revision' };
-      }
     }
   }
   return undefined;
@@ -2334,14 +2329,47 @@ function compileTableRow(
   baseStyle: TableBaseStyle,
   scope: ComponentScope & { isHeader?: boolean; cantSplit?: boolean }
 ): DocxIrTableRow {
+  const { ctx } = scope;
+  const rowRevision = row.revision as RowRevision | undefined;
+
+  // Ids are allocated in the order the pipeline has always allocated them:
+  // the row's own mark first, then one per cell for the paragraph marks, and
+  // only then whatever the cell contents need.
+  const rowMark = rowRevision
+    ? {
+        type: rowRevision.type,
+        id: ctx.nextRevisionId++,
+        author: rowRevision.author || DEFAULT_REVISION_AUTHOR,
+        date: rowRevision.date || DEFAULT_REVISION_DATE,
+      }
+    : undefined;
+  const paragraphMarks = rowRevision
+    ? row.cells.map(() => ({
+        type: rowRevision.type,
+        id: ctx.nextRevisionId++,
+        author: rowRevision.author || DEFAULT_REVISION_AUTHOR,
+        date: rowRevision.date || DEFAULT_REVISION_DATE,
+      }))
+    : undefined;
+  if (rowRevision) ctx.features.require('revisions', scope.path);
+
   return {
     cells: row.cells.map((cell, colIndex) =>
-      compileTableCell(cell, spacing, baseStyle, row.keepNext, {
-        ctx: scope.ctx,
-        path: `${scope.path}.cells[${colIndex}]`,
-        id: `${scope.id}:c${colIndex}`,
-      })
+      compileTableCell(
+        cell,
+        spacing,
+        baseStyle,
+        row.keepNext,
+        {
+          ctx: scope.ctx,
+          path: `${scope.path}.cells[${colIndex}]`,
+          id: `${scope.id}:c${colIndex}`,
+        },
+        rowRevision,
+        paragraphMarks?.[colIndex]
+      )
     ),
+    ...(rowMark ? { revision: rowMark } : {}),
     ...(row.height !== undefined
       ? {
           heightTwips: pointsToTwips(row.height),
@@ -2353,12 +2381,21 @@ function compileTableRow(
   };
 }
 
+/** A structural tracked change on a table row. */
+interface RowRevision {
+  type: 'insert' | 'delete';
+  author?: string;
+  date?: string;
+}
+
 function compileTableCell(
   cell: ResolvedCell<unknown, unknown>,
   spacing: ReturnType<typeof getTableStyle>['cellParagraph'],
   baseStyle: TableBaseStyle,
   keepNext: boolean,
-  scope: ComponentScope
+  scope: ComponentScope,
+  rowRevision?: RowRevision,
+  markRevision?: DocxIrParagraphMarkRevision
 ): DocxIrTableCell {
   const paragraph: DocxIrParagraph = {
     kind: 'paragraph',
@@ -2367,13 +2404,7 @@ function compileTableCell(
     // A cell paragraph names no style: it takes its run properties from the
     // cell, not from Normal, so naming one would layer body-prose spacing back
     // on top of the dense table spacing.
-    children:
-      cell.missing || cellText(cell) === undefined
-        ? []
-        : parseInline(cellText(cell)!, {
-            base: cellRunFormatting(cell, baseStyle, scope.ctx),
-            hyperlinks: true,
-          }),
+    children: cellChildren(cell, baseStyle, scope.ctx, rowRevision),
     formatting: {
       alignment: cell.missing
         ? 'left'
@@ -2387,6 +2418,7 @@ function compileTableCell(
       },
       ...(keepNext ? { keepNext: true } : {}),
     },
+    ...(markRevision ? { markRevision } : {}),
   };
 
   return {
@@ -2417,6 +2449,54 @@ function compileTableCell(
       right: compileTableBorder(cell.borders.right),
     },
   };
+}
+
+/**
+ * A cell's runs.
+ *
+ * A cell inside an inserted or deleted row renders as runs marked the same
+ * way: a `w:trPr/w:del` alone leaves the text un-struck, and accepting the
+ * change would leave an empty row behind rather than removing it. A cell that
+ * carries its own revision states it directly.
+ */
+function cellChildren(
+  cell: ResolvedCell<unknown, unknown>,
+  baseStyle: TableBaseStyle,
+  ctx: CompileContext,
+  rowRevision?: RowRevision
+): DocxIrInline[] {
+  const text = cellText(cell);
+  if (cell.missing || text === undefined) return [];
+  const base = cellRunFormatting(cell, baseStyle, ctx);
+
+  const revision =
+    (cell.revision as Record<string, any> | undefined) ??
+    cellComponentRevision(cell);
+  if (revision) {
+    ctx.features.require('revisions', '');
+    return compileRevision(revision, base, ctx);
+  }
+  if (rowRevision) {
+    return compileRevision(
+      {
+        author: rowRevision.author,
+        date: rowRevision.date,
+        segments: [{ type: rowRevision.type, text }],
+      },
+      base,
+      ctx
+    );
+  }
+  return parseInline(text, { base, hyperlinks: true });
+}
+
+/** A revision stated on the `paragraph` component inside a cell. */
+function cellComponentRevision(
+  cell: ResolvedCell<unknown, unknown>
+): Record<string, any> | undefined {
+  const content = cell.content;
+  if (content === undefined || typeof content === 'string') return undefined;
+  return (content.props as { revision?: Record<string, any> })?.revision;
 }
 
 /**
