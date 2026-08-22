@@ -181,7 +181,6 @@ export {
   type DocumentGeneratorOptions,
   type GenerateOptions,
   type GenerateFileOptions,
-  type GenerationResult,
   type BufferGenerationResult,
   type FileGenerationResult,
   type StandardDefinitionResult,

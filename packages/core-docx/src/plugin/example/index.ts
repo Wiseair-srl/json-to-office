@@ -1,4 +1,3 @@
-import { Packer } from 'docx';
 import { createDocumentGenerator } from '../createDocumentGenerator';
 import { exportPluginSchema } from '../schema';
 import { weatherComponent } from './weather.component';
@@ -9,6 +8,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import type { ReportComponentDefinition } from '../../types';
+import type { GenerationWarning } from '@json-to-office/shared';
 
 // Import minimal theme
 import { minimalTheme } from '../../templates/themes';
@@ -36,7 +36,10 @@ async function runPluginDemo() {
     .addComponent(columnsLayoutComponent)
     .addComponent(nestedSectionsComponent);
 
-  console.log('✅ Registered components:', generator.getComponentNames().join(', '));
+  console.log(
+    '✅ Registered components:',
+    generator.getComponentNames().join(', ')
+  );
 
   // Validate the document
   console.log('\n📋 Validating document...');
@@ -56,14 +59,14 @@ async function runPluginDemo() {
   // Generate the document
   console.log('\n📄 Generating document...');
   try {
-    const result = await generator.generate(
+    const result = await generator.generateBuffer(
       documentDefinition as ReportComponentDefinition
     );
 
     // Log warnings if any
     if (result.warnings && result.warnings.length > 0) {
       console.log(`\n⚠️  ${result.warnings.length} warning(s) generated:`);
-      result.warnings.forEach((warning) => {
+      result.warnings.forEach((warning: GenerationWarning) => {
         console.log(`  - [${warning.component}] ${warning.message}`);
         if (warning.context) {
           console.log(`    Context: ${JSON.stringify(warning.context)}`);
@@ -85,8 +88,7 @@ async function runPluginDemo() {
     await fs.mkdir(outputDir, { recursive: true });
 
     const outputPath = path.join(outputDir, 'plugin-demo.docx');
-    const buffer = await Packer.toBuffer(result.document);
-    await fs.writeFile(outputPath, new Uint8Array(buffer));
+    await fs.writeFile(outputPath, new Uint8Array(result.buffer));
 
     console.log(`✅ Document saved to: ${outputPath}`);
 

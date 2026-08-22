@@ -1,343 +1,151 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Paragraph } from 'docx';
-import { createMockTheme } from './helpers';
-import type { ComponentDefinition } from '../../types';
+/**
+ * The shapes a `statistic` has to accept.
+ *
+ * A statistic is a figure and its caption, as two styled paragraphs — so what
+ * is worth saying here is that every shape produces exactly those two, that the
+ * styles are the ones the theme defines them under, and that a blank line stays
+ * a blank paragraph rather than becoming a run with nothing in it.
+ */
 
-// Mock createStatistic function
-vi.mock('../../core/content', async () => {
-  const { Paragraph } = await vi.importActual<typeof import('docx')>('docx');
-  return {
-    createStatistic: vi.fn().mockReturnValue([new Paragraph({})]),
-  };
-});
+import { describe, it, expect } from 'vitest';
+import { compileDocumentToIr } from '../../core/generateFromIr';
+import type { DocxIrBlock } from '../../ir/types';
+import type { ReportComponentDefinition } from '../../types';
 
-import { renderStatisticComponent } from '../statistic';
+async function statisticBlocks(
+  props: Record<string, unknown>
+): Promise<DocxIrBlock[]> {
+  const compiled = await compileDocumentToIr({
+    name: 'docx',
+    props: {},
+    children: [{ name: 'statistic', props }],
+  } as unknown as ReportComponentDefinition);
+  return compiled.ir.sections[0].children;
+}
+
+const CASES: Array<[string, Record<string, unknown>]> = [
+  ['a number and a description', { number: '42', description: 'Total Items' }],
+  ['a bare numeral', { number: '100', description: 'Percentage Complete' }],
+  [
+    'formatting in the figure',
+    { number: '$1,234.56', description: 'Total Revenue' },
+  ],
+  [
+    'a very large number',
+    { number: '999,999,999,999', description: 'Large Number' },
+  ],
+  ['a decimal', { number: '3.14159', description: 'Pi Value' }],
+  ['a percentage', { number: '87.5%', description: 'Success Rate' }],
+  ['a short description', { number: '7', description: 'Days' }],
+  ['an empty description', { number: '123', description: '' }],
+  [
+    'special characters',
+    { number: '42', description: 'Special chars: & < > " \' © ® ™' },
+  ],
+  [
+    'a multiline description',
+    { number: '500', description: 'Line one\nLine two' },
+  ],
+  [
+    'spacing on both sides',
+    {
+      number: '25',
+      description: 'With Spacing',
+      spacing: { before: 240, after: 480 },
+    },
+  ],
+  [
+    'spacing before only',
+    {
+      number: '33',
+      description: 'Before Spacing Only',
+      spacing: { before: 360 },
+    },
+  ],
+  [
+    'spacing after only',
+    {
+      number: '67',
+      description: 'After Spacing Only',
+      spacing: { after: 300 },
+    },
+  ],
+];
 
 describe('components/statistic', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it.each(CASES)('compiles a statistic with %s', async (_name, props) => {
+    const blocks = await statisticBlocks(props);
+
+    expect(blocks).toHaveLength(2);
+    expect(
+      blocks.map((block) => block.kind === 'paragraph' && block.styleId)
+    ).toEqual(['StatisticNumber', 'StatisticDescription']);
   });
 
-  describe('renderStatisticComponent', () => {
-    it('should render simple statistic with number and description', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '42',
-          description: 'Total Items',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should render statistic with numeric value', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '100',
-          description: 'Percentage Complete',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should render statistic with formatting', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '$1,234.56',
-          description: 'Total Revenue',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle statistic with left alignment', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '10',
-          description: 'Left Aligned',
-          alignment: 'left',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle statistic with center alignment', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '50%',
-          description: 'Center Aligned',
-          alignment: 'center',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle statistic with right alignment', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '999',
-          description: 'Right Aligned',
-          alignment: 'right',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle statistic with right alignment', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '75',
-          description: 'Right Aligned',
-          alignment: 'right',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle statistic with custom spacing', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '25',
-          description: 'With Spacing',
-          spacing: {
-            before: 240,
-            after: 480,
-          },
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle statistic with only before spacing', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '33',
-          description: 'Before Spacing Only',
-          spacing: {
-            before: 360,
-          },
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle statistic with only after spacing', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '67',
-          description: 'After Spacing Only',
-          spacing: {
-            after: 300,
-          },
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle statistic with short description', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '123',
-          description: 'Count',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle statistic with empty description', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '456',
-          description: '',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle very large numbers', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '999,999,999,999',
-          description: 'Large Number',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle decimal numbers', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '3.14159',
-          description: 'Pi Value',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle percentage values', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '87.5%',
-          description: 'Success Rate',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should apply theme styles', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '100',
-          description: 'Themed Statistic',
-        },
-      };
-
-      const theme = createMockTheme({
-        componentDefaults: {
-          statistic: {
-            spacing: {
-              before: 180,
-              after: 180,
-            },
-          },
-        },
+  it.each(['left', 'center', 'right'] as const)(
+    'compiles a statistic aligned %s',
+    async (alignment) => {
+      const blocks = await statisticBlocks({
+        number: '1',
+        description: 'Aligned',
+        alignment,
       });
 
-      const result = renderStatisticComponent(component, theme);
+      for (const block of blocks) {
+        expect(block.kind === 'paragraph' && block.formatting?.alignment).toBe(
+          alignment
+        );
+      }
+    }
+  );
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
+  it('takes the alignment its theme states for statistics', async () => {
+    // The default theme aligns statistics left; `center` is only the fallback
+    // for a theme that says nothing, which is why an unstated alignment here
+    // is not centred.
+    const blocks = await statisticBlocks({
+      number: '1',
+      description: 'Themed',
     });
 
-    it('should handle non-statistic component type', () => {
-      const component: ComponentDefinition = {
-        name: 'paragraph',
-        props: {
-          content: 'Not a statistic',
-        },
-      };
+    for (const block of blocks) {
+      expect(block.kind === 'paragraph' && block.formatting?.alignment).toBe(
+        'left'
+      );
+    }
+  });
 
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(0);
-      expect(result).toEqual([]);
+  it('leaves an empty line without a run at all', async () => {
+    const [, description] = await statisticBlocks({
+      number: '0',
+      description: '',
     });
 
-    it('should handle missing config', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {},
-      } as ComponentDefinition;
+    expect(description.kind === 'paragraph' && description.children).toEqual(
+      []
+    );
+  });
 
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      // Should handle gracefully
-      expect(Array.isArray(result)).toBe(true);
+  it('reads its spacing as twips, as the writer always has', async () => {
+    const [figure] = await statisticBlocks({
+      number: '25',
+      description: 'With Spacing',
+      spacing: { before: 240, after: 480 },
     });
 
-    it('should handle special characters in description', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '42',
-          description: 'Special chars: & < > " \' © ® ™',
-        },
-      };
-
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
+    expect(figure.kind === 'paragraph' && figure.formatting?.spacing).toEqual({
+      beforeTwips: 240,
+      afterTwips: 480,
     });
+  });
 
-    it('should handle multiline description', () => {
-      const component: ComponentDefinition = {
-        name: 'statistic',
-        props: {
-          number: '500',
-          description: 'Line 1\nLine 2\nLine 3',
-        },
-      };
+  it('compiles nothing for a statistic with no props at all', async () => {
+    const blocks = await statisticBlocks({});
 
-      const result = renderStatisticComponent(component, createMockTheme());
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
+    // Still two paragraphs: an empty statistic is a styled blank, not nothing.
+    expect(blocks).toHaveLength(2);
+    for (const block of blocks) {
+      expect(block.kind === 'paragraph' && block.children).toEqual([]);
+    }
   });
 });

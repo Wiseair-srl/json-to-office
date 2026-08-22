@@ -79,7 +79,7 @@ describe('Type inference for custom components', () => {
       .addComponent(summaryComponent);
 
     // This should compile without errors
-    generator.generate({
+    generator.generateBuffer({
       name: 'docx',
       props: {},
       children: [
@@ -101,7 +101,7 @@ describe('Type inference for custom components', () => {
     }).addComponent(greetingComponent);
 
     // Standard components should still work
-    generator.generate({
+    generator.generateBuffer({
       name: 'docx',
       props: {},
       children: [
@@ -207,7 +207,7 @@ describe('Multi-version type inference', () => {
     }).addComponent(multiVersionComponent);
 
     // v1 with explicit version
-    generator.generate({
+    generator.generateBuffer({
       name: 'docx',
       props: {},
       children: [
@@ -220,7 +220,7 @@ describe('Multi-version type inference', () => {
     });
 
     // v2 with explicit version
-    generator.generate({
+    generator.generateBuffer({
       name: 'docx',
       props: {},
       children: [
@@ -233,7 +233,7 @@ describe('Multi-version type inference', () => {
     });
 
     // No version — fallback resolves to latest (v2) at runtime
-    generator.generate({
+    generator.generateBuffer({
       name: 'docx',
       props: {},
       children: [

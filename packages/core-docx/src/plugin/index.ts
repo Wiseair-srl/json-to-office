@@ -47,7 +47,6 @@ export {
   type DocumentGeneratorBuilder,
   type GenerateOptions,
   type GenerateFileOptions,
-  type GenerationResult,
   type BufferGenerationResult,
   type FileGenerationResult,
   type StandardDefinitionResult,

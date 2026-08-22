@@ -141,13 +141,13 @@ describe('InferComponentDefinition type helper', () => {
     expect(components).toHaveLength(2);
 
     // Use the components with the generator
-    const result = await generator.generate({
+    const result = await generator.generateBuffer({
       name: 'docx',
       props: {},
       children: components,
     });
 
-    expect(result.document).toBeDefined();
+    expect(result.buffer.byteLength).toBeGreaterThan(0);
   });
 
   it('should type-check custom component props correctly', () => {
@@ -365,7 +365,7 @@ describe('createComponent with TComponentDefinition type parameter', () => {
     const fullGenerator = baseGenerator.addComponent(dashboardComponent);
 
     // Generate a document
-    const result = await fullGenerator.generate({
+    const result = await fullGenerator.generateBuffer({
       name: 'docx',
       props: {},
       children: [
@@ -376,7 +376,7 @@ describe('createComponent with TComponentDefinition type parameter', () => {
       ],
     });
 
-    expect(result.document).toBeDefined();
+    expect(result.buffer.byteLength).toBeGreaterThan(0);
   });
 
   it('should provide type safety for render return type', () => {
@@ -463,13 +463,13 @@ describe('createComponent with TComponentDefinition type parameter', () => {
       theme: testTheme,
     }).addComponent(simpleComponent);
 
-    const result = await generator.generate({
+    const result = await generator.generateBuffer({
       name: 'docx',
       props: {},
       children: [{ name: 'simple', props: { text: 'Hello' } }],
     });
 
-    expect(result.document).toBeDefined();
+    expect(result.buffer.byteLength).toBeGreaterThan(0);
   });
 
   it('should properly chain custom components that reference each other', async () => {
@@ -530,7 +530,7 @@ describe('createComponent with TComponentDefinition type parameter', () => {
     const finalGenerator = gen1.addComponent(headerComponent);
 
     // Step 5: Use both custom components in a document
-    const result = await finalGenerator.generate({
+    const result = await finalGenerator.generateBuffer({
       name: 'docx',
       props: {},
       children: [
@@ -542,6 +542,6 @@ describe('createComponent with TComponentDefinition type parameter', () => {
       ],
     });
 
-    expect(result.document).toBeDefined();
+    expect(result.buffer.byteLength).toBeGreaterThan(0);
   });
 });

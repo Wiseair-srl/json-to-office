@@ -1,574 +1,212 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Paragraph } from 'docx';
-import { createMockTheme } from './helpers';
-import type { ComponentDefinition } from '../../types';
+/**
+ * The shapes an `image` has to accept, and the sizes they resolve to.
+ *
+ * Every case uses a real 4×2 PNG so the aspect ratio is readable, which is what
+ * makes the sizing assertions meaningful: a width alone implies a height from
+ * it, a percentage resolves against the text column, and an image that states
+ * no width at all fills the measure.
+ */
 
-// Mock createImage function
-vi.mock('../../core/content', async () => {
-  const { Paragraph } = await vi.importActual<typeof import('docx')>('docx');
-  return {
-    createImage: vi.fn().mockResolvedValue([new Paragraph({})]),
-  };
-});
+import { describe, it, expect } from 'vitest';
+import { compileDocumentToIr } from '../../core/generateFromIr';
+import { getAvailableWidthTwips } from '../../utils/widthUtils';
+import { minimalTheme } from '../../templates/themes';
+import type { DocxIrBlock, DocxIrImageRun } from '../../ir/types';
+import type { ReportComponentDefinition } from '../../types';
 
-import { renderImageComponent } from '../image';
-import { createImage } from '../../core/content';
-const mockCreateImage = createImage as any;
+/** A real 4×2 PNG: wide enough that a derived height is unambiguous. */
+const PNG_4X2 =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABp32QpAAAAFElEQVR4nGP8z8DwnwEJMKEL0F4AAJ8fAwGZ6HXBAAAAAElFTkSuQmCC';
+
+/** 1px at 96 DPI in EMU, so pixel expectations read as pixels. */
+const EMU_PER_PIXEL = 9525;
+
+async function imageBlocks(
+  props: Record<string, unknown>
+): Promise<DocxIrBlock[]> {
+  const compiled = await compileDocumentToIr({
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [{ name: 'image', props }],
+  } as unknown as ReportComponentDefinition);
+  return compiled.ir.sections[0].children;
+}
+
+async function imageRun(
+  props: Record<string, unknown>
+): Promise<DocxIrImageRun> {
+  const [block] = await imageBlocks(props);
+  expect(block.kind).toBe('paragraph');
+  if (block.kind !== 'paragraph') throw new Error('not a paragraph');
+  const [run] = block.children;
+  expect(run.kind).toBe('image');
+  return run as DocxIrImageRun;
+}
 
 describe('components/image', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('fills the measure when no size is stated', async () => {
+    // The width defaults to the whole text column, and the height follows the
+    // 2:1 ratio of the bytes.
+    const contentPx = Math.round(
+      (getAvailableWidthTwips(minimalTheme) / 1440) * 96
+    );
+    const run = await imageRun({ base64: PNG_4X2 });
+
+    expect(run.widthEmu / EMU_PER_PIXEL).toBe(contentPx);
+    expect(run.heightEmu / EMU_PER_PIXEL).toBe(Math.round(contentPx / 2));
   });
 
-  describe('renderImageComponent', () => {
-    it('should render image with path', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-        },
-      };
+  it('derives the height from a stated width', async () => {
+    const run = await imageRun({ base64: PNG_4X2, width: 240 });
 
-      const result = await renderImageComponent(component, createMockTheme());
+    expect(run.widthEmu / EMU_PER_PIXEL).toBe(240);
+    expect(run.heightEmu / EMU_PER_PIXEL).toBe(120);
+  });
 
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          caption: undefined,
-          width: undefined,
-          height: undefined,
-          alignment: undefined,
-        })
+  it('does not narrow an image to fit a stated height', async () => {
+    // A width that is not stated defaults to the full measure before the
+    // ratio is ever consulted, so a height alone sets the height and leaves
+    // the width filling the column — the proportions are not preserved.
+    const contentPx = Math.round(
+      (getAvailableWidthTwips(minimalTheme) / 1440) * 96
+    );
+    const run = await imageRun({ base64: PNG_4X2, height: 60 });
+
+    expect(run.widthEmu / EMU_PER_PIXEL).toBe(contentPx);
+    expect(run.heightEmu / EMU_PER_PIXEL).toBe(60);
+  });
+
+  it('takes both dimensions as written, ratio or no ratio', async () => {
+    const run = await imageRun({ base64: PNG_4X2, width: 100, height: 100 });
+
+    expect(run.widthEmu / EMU_PER_PIXEL).toBe(100);
+    expect(run.heightEmu / EMU_PER_PIXEL).toBe(100);
+  });
+
+  it.each(['90%', '50%', '100%', '75.5%'])(
+    'resolves a width of %s against the text column',
+    async (width) => {
+      const contentPx = Math.round(
+        (getAvailableWidthTwips(minimalTheme) / 1440) * 96
       );
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
+      const run = await imageRun({ base64: PNG_4X2, width });
 
-    it('should render image with caption', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.jpg',
-          caption: 'Figure 1: Sample Image',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.jpg',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          caption: 'Figure 1: Sample Image',
-        })
+      expect(run.widthEmu / EMU_PER_PIXEL).toBe(
+        Math.round((contentPx * parseFloat(width)) / 100)
       );
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
+    }
+  );
 
-    it('should render image with specific width', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          width: 400,
-        },
-      };
+  it.each(['left', 'center', 'right'] as const)(
+    'aligns an image %s',
+    async (alignment) => {
+      const [block] = await imageBlocks({ base64: PNG_4X2, alignment });
 
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          width: 400,
-        })
+      expect(block.kind === 'paragraph' && block.formatting?.alignment).toBe(
+        alignment
       );
-      expect(result).toHaveLength(1);
+    }
+  );
+
+  it('takes the alignment its theme states for images', async () => {
+    // The default theme aligns images left; `center` is only the fallback for
+    // a theme that says nothing.
+    const [block] = await imageBlocks({ base64: PNG_4X2 });
+
+    expect(block.kind === 'paragraph' && block.formatting?.alignment).toBe(
+      'left'
+    );
+  });
+
+  it('adds a caption as a second, left-aligned paragraph', async () => {
+    const blocks = await imageBlocks({ base64: PNG_4X2, caption: 'Figure 1' });
+
+    expect(blocks).toHaveLength(2);
+    const caption = blocks[1];
+    expect(caption.kind === 'paragraph' && caption.styleId).toBe('Normal');
+    expect(caption.kind === 'paragraph' && caption.formatting?.alignment).toBe(
+      'left'
+    );
+  });
+
+  it('carries a long caption through whole', async () => {
+    const text = 'A caption long enough to wrap several times over. '.repeat(8);
+    const blocks = await imageBlocks({ base64: PNG_4X2, caption: text });
+
+    const caption = blocks[1];
+    expect(caption.kind).toBe('paragraph');
+    if (caption.kind !== 'paragraph') return;
+    const rendered = caption.children
+      .map((child) => (child.kind === 'text' ? child.text : ''))
+      .join('');
+    expect(rendered).toBe(text);
+  });
+
+  it('embeds the same bytes once however many times they are used', async () => {
+    const compiled = await compileDocumentToIr({
+      name: 'docx',
+      props: {},
+      children: [
+        { name: 'image', props: { base64: PNG_4X2, width: 100 } },
+        { name: 'image', props: { base64: PNG_4X2, width: 200 } },
+      ],
+    } as unknown as ReportComponentDefinition);
+
+    expect(compiled.ir.resources).toHaveLength(1);
+  });
+
+  it('prefers base64 over path when both are given', async () => {
+    // A path that does not exist: reaching for it would fail the compile.
+    const run = await imageRun({
+      path: '/no/such/image.png',
+      base64: PNG_4X2,
+      width: 100,
     });
 
-    it('should render image with specific height', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          height: 300,
-        },
-      };
+    expect(run.widthEmu / EMU_PER_PIXEL).toBe(100);
+  });
 
-      const result = await renderImageComponent(component, createMockTheme());
+  it('refuses an image with no source at all', async () => {
+    await expect(imageBlocks({})).rejects.toThrow(
+      'Image component requires one of "path", "base64", or "svg" property'
+    );
+  });
 
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          height: 300,
-        })
-      );
-      expect(result).toHaveLength(1);
+  it('refuses an image whose path is empty', async () => {
+    await expect(imageBlocks({ path: '' })).rejects.toThrow(
+      'Image component requires one of "path", "base64", or "svg" property'
+    );
+  });
+
+  it('says which image it could not load', async () => {
+    await expect(imageBlocks({ path: '/no/such/image.png' })).rejects.toThrow(
+      /Failed to load image/
+    );
+  });
+
+  it('accepts every option at once', async () => {
+    const blocks = await imageBlocks({
+      base64: PNG_4X2,
+      width: 300,
+      height: 150,
+      alignment: 'right',
+      caption: 'Everything at once',
+      spacing: { before: 12, after: 6 },
+      keepNext: true,
+      keepLines: true,
     });
 
-    it('should render image with both width and height', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          width: 600,
-          height: 400,
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          width: 600,
-          height: 400,
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should render image with left alignment', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          alignment: 'left',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          alignment: 'left',
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should render image with center alignment', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          alignment: 'center',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          alignment: 'center',
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should render image with right alignment', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          alignment: 'right',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          alignment: 'right',
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should handle various image formats', async () => {
-      const formats = [
-        '.png',
-        '.jpg',
-        '.jpeg',
-        '.gif',
-        '.bmp',
-        '.svg',
-        '.webp',
-      ];
-
-      for (const format of formats) {
-        const component: ComponentDefinition = {
-          name: 'image',
-          props: {
-            path: `/path/to/image${format}`,
-          },
-        };
-
-        const result = await renderImageComponent(component, createMockTheme());
-
-        expect(mockCreateImage).toHaveBeenCalledWith(
-          `/path/to/image${format}`,
-          expect.any(Object),
-          undefined,
-          expect.any(Object)
-        );
-        expect(result).toHaveLength(1);
-      }
-    });
-
-    it('should handle absolute file paths', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/Users/user/Documents/images/photo.jpg',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/Users/user/Documents/images/photo.jpg',
-        expect.any(Object),
-        undefined,
-        expect.any(Object)
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should handle relative file paths', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: './images/logo.png',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        './images/logo.png',
-        expect.any(Object),
-        undefined,
-        expect.any(Object)
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should handle URL paths', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: 'https://example.com/image.png',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        'https://example.com/image.png',
-        expect.any(Object),
-        undefined,
-        expect.any(Object)
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should handle base64 images', async () => {
-      const base64Data =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          base64: base64Data,
-          width: 100,
-          height: 100,
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        base64Data,
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          width: 100,
-          height: 100,
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should prioritize base64 over path when both provided', async () => {
-      const base64Data =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          base64: base64Data,
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      // Should use base64 when both are provided
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        base64Data,
-        expect.any(Object),
-        undefined,
-        expect.any(Object)
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should apply theme defaults', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-        },
-      };
-
-      const theme = createMockTheme({
-        componentDefaults: {
-          image: {
-            width: 500,
-            height: 350,
-            alignment: 'center',
-          },
-        },
-      });
-
-      const result = await renderImageComponent(component, theme);
-
-      expect(mockCreateImage).toHaveBeenCalled();
-      expect(result).toHaveLength(1);
-    });
-
-    it('should handle non-image component type', async () => {
-      const component: ComponentDefinition = {
-        name: 'paragraph',
-        props: {
-          content: 'Not an image',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).not.toHaveBeenCalled();
-      expect(result).toHaveLength(0);
-      expect(result).toEqual([]);
-    });
-
-    it('should handle missing config', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {},
-      } as ComponentDefinition;
-
-      // Should throw error when no image source is provided
-      await expect(
-        renderImageComponent(component, createMockTheme())
-      ).rejects.toThrow(
-        'Image component requires one of "path", "base64", or "svg" property'
-      );
-    });
-
-    it('should handle empty path', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '',
-        },
-      };
-
-      // Should throw error when path is empty and no other source is provided
-      await expect(
-        renderImageComponent(component, createMockTheme())
-      ).rejects.toThrow(
-        'Image component requires one of "path", "base64", or "svg" property'
-      );
-    });
-
-    it('should handle very long caption', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          caption:
-            'This is a very long caption that describes the image in great detail. It contains multiple sentences and should wrap properly when rendered in the document. The caption provides context and explanation for the image.',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          caption: expect.stringContaining('This is a very long caption'),
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should handle all options combined', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/complex/path/to/image.jpg',
-          caption: 'Complex Image with All Options',
-          width: 800,
-          height: 600,
-          alignment: 'center',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/complex/path/to/image.jpg',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          caption: 'Complex Image with All Options',
-          width: 800,
-          height: 600,
-          alignment: 'center',
-        })
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle percentage width (90%)', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          width: '90%',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          width: '90%',
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should handle percentage width (50%)', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          width: '50%',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          width: '50%',
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should handle percentage width (100%)', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          width: '100%',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          width: '100%',
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should handle decimal percentage width (75.5%)', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-          width: '75.5%',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          width: '75.5%',
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should pass undefined width when not specified (default 100% applied in createImage)', async () => {
-      const component: ComponentDefinition = {
-        name: 'image',
-        props: {
-          path: '/path/to/image.png',
-        },
-      };
-
-      const result = await renderImageComponent(component, createMockTheme());
-
-      // renderImageComponent passes undefined, createImage applies 100% default
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        '/path/to/image.png',
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({
-          width: undefined,
-        })
-      );
-      expect(result).toHaveLength(1);
-    });
+    expect(blocks).toHaveLength(2);
+    const [figure] = blocks;
+    expect(figure.kind).toBe('paragraph');
+    if (figure.kind !== 'paragraph') return;
+    expect(figure.formatting).toEqual(
+      expect.objectContaining({
+        alignment: 'right',
+        spacing: { beforeTwips: 240, afterTwips: 120 },
+        keepNext: true,
+        keepLines: true,
+      })
+    );
   });
 });

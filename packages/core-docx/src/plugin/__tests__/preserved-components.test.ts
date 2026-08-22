@@ -71,7 +71,7 @@ describe('preserveCustomComponents', () => {
       .addComponent(greetingComponent)
       .addComponent(summaryComponent);
 
-    const result = await generator.generate({
+    const result = await generator.generateBuffer({
       name: 'docx',
       props: { metadata: { title: 't' } },
       children: [{ name: 'greeting', props: { name: 'Alice' } }],
@@ -87,7 +87,7 @@ describe('preserveCustomComponents', () => {
       theme: testTheme,
     }).addComponent(greetingComponent);
 
-    const result = await generator.generate(
+    const result = await generator.generateBuffer(
       {
         name: 'docx',
         props: {},
@@ -104,7 +104,7 @@ describe('preserveCustomComponents', () => {
       .addComponent(greetingComponent)
       .addComponent(summaryComponent);
 
-    const result = await generator.generate(
+    const result = await generator.generateBuffer(
       {
         name: 'docx',
         props: {},
@@ -153,7 +153,7 @@ describe('preserveCustomComponents', () => {
       .addComponent(containerComponent)
       .addComponent(summaryComponent);
 
-    const result = await generator.generate(
+    const result = await generator.generateBuffer(
       {
         name: 'docx',
         props: {},
@@ -181,7 +181,7 @@ describe('preserveCustomComponents', () => {
     }).addComponent(greetingComponent);
 
     await expect(
-      generator.generate(
+      generator.generateBuffer(
         {
           name: 'docx',
           props: {},
@@ -192,7 +192,7 @@ describe('preserveCustomComponents', () => {
     ).rejects.toBeInstanceOf(UnknownPreservedComponentError);
 
     try {
-      await generator.generate(
+      await generator.generateBuffer(
         {
           name: 'docx',
           props: {},
@@ -215,7 +215,7 @@ describe('preserveCustomComponents', () => {
       .addComponent(greetingComponent)
       .addComponent(summaryComponent);
 
-    const result = await generator.generate(
+    const result = await generator.generateBuffer(
       {
         name: 'docx',
         props: {},
