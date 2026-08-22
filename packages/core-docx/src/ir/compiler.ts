@@ -75,7 +75,11 @@ import {
   type ListMarkerFontConfig,
 } from '../utils/numberingConfig';
 import { normalizeUnicodeText } from '../utils/unicode';
-import { collectDocumentOutline } from '../core/collectTocHeadings';
+import {
+  collectDocumentOutline,
+  type TocHeadingEntry,
+} from '../core/collectTocHeadings';
+import { resolveTocField } from '../core/tocField';
 import { parseMarkdownList } from '../core/markdownList';
 import type { NumberedItemInfo } from '../utils/numberedItemsRegistry';
 import {
@@ -222,6 +226,8 @@ interface CompileContext {
    * can resolve it — which is why it is computed once, before compiling.
    */
   numberedItems: ReadonlyMap<string, NumberedItemInfo>;
+  /** Every heading and mapped-style paragraph, for a TOC's cached entries. */
+  tocEntries: readonly TocHeadingEntry[];
   /** Image bytes, loaded before compilation started. */
   images: ImageResources;
   /**
@@ -271,6 +277,7 @@ export function compileDocument(
     commentCounter: 0,
     hasResolvedComment: false,
     numberedItems: outline.numberedItems,
+    tocEntries: outline.entries,
     images,
     generatedAt: structure.metadata.date,
   };
@@ -509,6 +516,13 @@ function compileSection(
   }
 
   const children: DocxIrBlock[] = [];
+  // Every layout chunk of one user-defined section resolves to the same
+  // bookmark, which is what a section-scoped table of contents restricts to.
+  const sectionBookmarkName =
+    section.belongsToUserSection && ordinal.ordinal !== undefined
+      ? `_Section_${ordinal.ordinal}`
+      : undefined;
+
   section.components.forEach((component, i) => {
     if ('enabled' in component && component.enabled === false) return;
     children.push(
@@ -516,6 +530,7 @@ function compileSection(
         ctx,
         path: `${path}.children[${i}]`,
         id: blockId(index, [i]),
+        ...(sectionBookmarkName ? { sectionBookmarkName } : {}),
       })
     );
   });
@@ -820,6 +835,12 @@ interface ComponentScope {
   ctx: CompileContext;
   path: string;
   id: string;
+  /**
+   * The bookmark covering the section this component sits in, if any.
+   *
+   * A table of contents scoped to its own section needs it; nothing else does.
+   */
+  sectionBookmarkName?: string;
 }
 
 function compileComponent(
@@ -835,6 +856,8 @@ function compileComponent(
       return compileList(component, scope);
     case 'statistic':
       return compileStatistic(component, scope);
+    case 'toc':
+      return compileToc(component, scope);
     case 'image':
       return compileImage(component, scope);
     case 'table':
@@ -1025,6 +1048,81 @@ function declareHeadingNumbering(
 
   ctx.features.require('numbering', path);
   return { reference: HEADING_NUMBERING_REFERENCE, level: level - 1 };
+}
+
+/* ------------------------------------------------------------------ *
+ * Table of contents
+ * ------------------------------------------------------------------ */
+
+/**
+ * A table of contents: an optional title paragraph, then the field itself.
+ *
+ * The field is a top-level block rather than a paragraph's child. Wrapping it
+ * in one produces an empty structured-document-tag above the entries in Word.
+ */
+function compileToc(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+
+  const field = resolveTocField(props, ctx.theme, {
+    ...(scope.sectionBookmarkName
+      ? { sectionBookmarkId: scope.sectionBookmarkName }
+      : {}),
+    collected: ctx.tocEntries,
+  });
+  for (const message of field.warnings) warnOnce(ctx, 'toc', message);
+
+  const blocks: DocxIrBlock[] = [];
+
+  if (props.title) {
+    blocks.push({
+      kind: 'paragraph',
+      id: `${scope.id}:title`,
+      path: `${path}.title`,
+      children: [
+        {
+          kind: 'text',
+          text: String(props.title),
+          formatting: { bold: true, sizeHalfPoints: 28 },
+        },
+      ],
+      formatting: {
+        alignment: 'left',
+        spacing: {
+          beforeTwips:
+            (ctx.theme.componentDefaults as any)?.heading?.spacing?.before ??
+            240,
+          // ~9pt, which separates the title from the list clearly enough to
+          // read as a heading rather than a first entry.
+          afterTwips: 180,
+        },
+      },
+    });
+  }
+
+  ctx.features.require('toc', path);
+  if (field.entries.length > 0) ctx.features.require('cached-toc', path);
+
+  blocks.push({
+    kind: 'toc',
+    id: scope.id,
+    path,
+    alias: String(props.title ?? 'Table of Contents'),
+    headingRange: field.headingRange,
+    ...(field.styleLevels.length > 0 ? { styleLevels: field.styleLevels } : {}),
+    ...(field.bookmarkScope ? { bookmarkScope: field.bookmarkScope } : {}),
+    hyperlink: true,
+    ...(field.omitPageNumbersForLevels.length > 0
+      ? { omitPageNumbersForLevels: field.omitPageNumbersForLevels }
+      : {}),
+    entrySeparator: field.entrySeparator,
+    ...(field.entries.length > 0 ? { cachedEntries: field.entries } : {}),
+  });
+
+  return blocks;
 }
 
 /* ------------------------------------------------------------------ *

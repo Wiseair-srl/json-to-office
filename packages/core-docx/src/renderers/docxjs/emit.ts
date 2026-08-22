@@ -30,10 +30,12 @@ import {
   PageNumber,
   Paragraph,
   SimpleField,
+  StyleLevel,
   Tab,
   Table,
   TableCell,
   TableLayoutType,
+  TableOfContents,
   TableRow,
   TextRun,
   VerticalAlign,
@@ -58,6 +60,7 @@ import type {
   DocxIrRunFormatting,
   DocxIrTable,
   DocxIrTableCell,
+  DocxIrTableOfContents,
   DocxIrTableRow,
 } from '../../ir/types';
 
@@ -462,19 +465,60 @@ function frameOptions(frame: DocxIrFrame): IFrameOptions {
 export function emitBlock(
   block: DocxIrBlock,
   resources: EmitResources = new Map()
-): Paragraph | Table {
+): Paragraph | Table | TableOfContents {
   switch (block.kind) {
     case 'paragraph':
       return emitParagraph(block, resources);
     case 'table':
       return emitTable(block, resources);
     case 'toc':
-      throw new Error(
-        `the docxjs renderer has no emitter for "${block.kind}" (${block.path})`
-      );
+      return emitToc(block);
     default:
       return assertNever(block, 'DocxIrBlock');
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Table of contents
+ * ------------------------------------------------------------------ */
+
+/**
+ * The TOC field.
+ *
+ * A top-level block, not a paragraph child: wrapping it in a paragraph makes
+ * Word draw an empty structured-document-tag above the entries.
+ */
+function emitToc(block: DocxIrTableOfContents): TableOfContents {
+  return new TableOfContents(block.alias ?? 'Table of Contents', {
+    ...(block.hyperlink !== undefined ? { hyperlink: block.hyperlink } : {}),
+    ...(block.headingRange
+      ? {
+          headingStyleRange: `${block.headingRange.from}-${block.headingRange.to}`,
+        }
+      : {}),
+    stylesWithLevels: (block.styleLevels ?? []).map(
+      (style) => new StyleLevel(style.styleName, style.level)
+    ),
+    entriesFromBookmark: block.bookmarkScope,
+    ...(block.omitPageNumbersForLevels?.length
+      ? {
+          pageNumbersEntryLevelsRange: block.omitPageNumbersForLevels
+            .map((range) => `${range.from}-${range.to}`)
+            .join(','),
+        }
+      : {}),
+    ...(block.entrySeparator !== undefined
+      ? { entryAndPageNumberSeparator: block.entrySeparator }
+      : {}),
+    ...(block.cachedEntries?.length
+      ? {
+          cachedEntries: block.cachedEntries.map((entry) => ({
+            title: entry.text,
+            level: entry.level,
+          })),
+        }
+      : {}),
+  });
 }
 
 /* ------------------------------------------------------------------ *
