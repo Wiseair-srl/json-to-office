@@ -339,6 +339,17 @@ function checkInline(inline: DocxIrInline, path: string, scope: Scope): void {
       }
       return;
 
+    case 'shape':
+      for (const key of ['widthPx', 'heightPx'] as const) {
+        if (!Number.isInteger(inline[key]) || inline[key] <= 0) {
+          scope.add(`${path}.${key}`, 'expected a positive integer pixel size');
+        }
+      }
+      inline.children.forEach((child, i) =>
+        checkBlock(child, `${path}.children[${i}]`, scope)
+      );
+      return;
+
     case 'lineBreak':
     case 'pageBreak':
     case 'columnBreak':

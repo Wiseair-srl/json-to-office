@@ -337,7 +337,34 @@ export type DocxIrInline =
   | DocxIrCommentRangeStart
   | DocxIrCommentRangeEnd
   | DocxIrCommentReference
-  | DocxIrRevisionRange;
+  | DocxIrRevisionRange
+  | DocxIrShapeRun;
+
+/**
+ * A native text box: a shape holding paragraphs.
+ *
+ * Distinct from the one-cell table a text box usually becomes. A shape carries
+ * an absolute size in the file, so it has no autofit and no lazy percentage
+ * width, and it draws one uniform outline rather than four sides — which is why
+ * a text box only becomes one when the author asks.
+ */
+export interface DocxIrShapeRun {
+  kind: 'shape';
+  widthPx: number;
+  heightPx: number;
+  children: DocxIrParagraph[];
+  fill?: DocxIrColor;
+  outline?: { color: DocxIrColor; widthEmu?: number };
+  /** Text insets, in EMU like every other DrawingML length. */
+  insetsEmu?: {
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  };
+  /** Absent makes it an inline drawing rather than an anchored one. */
+  floating?: DocxIrFloating;
+}
 
 export interface DocxIrTextRun {
   kind: 'text';

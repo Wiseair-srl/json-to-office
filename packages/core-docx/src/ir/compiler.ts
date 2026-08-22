@@ -100,6 +100,7 @@ import {
   type DocxIrBlock,
   type DocxIrBorder,
   type DocxIrBorders,
+  type DocxIrColor,
   type DocxIrComment,
   type DocxIrNote,
   type DocxIrFloating,
@@ -1079,11 +1080,6 @@ function compileTextBox(
   const { ctx, path } = scope;
   const props = (component.props ?? {}) as Record<string, any>;
 
-  if (props.renderAs === 'shape') {
-    ctx.unsupported.push({ name: 'text-box', path, detail: 'renderAs shape' });
-    return [];
-  }
-
   const children: DocxIrBlock[] = [];
   const contents =
     (component as { children?: ComponentDefinition[] }).children ?? [];
@@ -1099,6 +1095,13 @@ function compileTextBox(
 
   const style = props.style as Record<string, any> | undefined;
   const padding = style?.padding as Record<string, number> | undefined;
+
+  if (props.renderAs === 'shape') {
+    const shape = compileShape(props, children, scope);
+    if (shape) return shape;
+    // Everything a shape cannot express falls back to the table below, rather
+    // than shipping a box that clips its content or redraws its border.
+  }
 
   ctx.features.require('tables', path);
   if (props.floating) ctx.features.require('floating-tables', path);
@@ -1160,6 +1163,229 @@ function compileTextBox(
       ],
     },
   ];
+}
+
+/** 1px at 96 DPI in EMU — 914400 EMU per inch over 96 pixels per inch. */
+const EMU_PER_PIXEL = 9525;
+
+/**
+ * A text box as a native Word shape, or nothing when it cannot be one.
+ *
+ * A shape has no autofit, one uniform outline and no dash patterns, so a text
+ * box that needs any of those is better served by the table rendering. Each
+ * refusal says why: the author asked for something the shape cannot draw, and
+ * silently drawing something else would change the design.
+ */
+function compileShape(
+  props: Record<string, any>,
+  children: DocxIrBlock[],
+  scope: ComponentScope
+): DocxIrBlock[] | undefined {
+  const { ctx, path } = scope;
+  const width = shapeSize(props.width, 'width', ctx);
+  const height = shapeSize(props.height, 'height', ctx);
+
+  if (width.pixels === undefined || height.pixels === undefined) {
+    warnOnce(
+      ctx,
+      'text-box',
+      '[core-docx] text-box renderAs "shape" needs an explicit width and height (a shape has no autofit); falling back to table rendering.'
+    );
+    return undefined;
+  }
+
+  const style = props.style as Record<string, any> | undefined;
+  const outline = shapeOutline(style, ctx);
+  if (outline.unsupportedStyles.length > 0) {
+    warnOnce(
+      ctx,
+      'text-box',
+      `[core-docx] text-box renderAs "shape" cannot draw a ${outline.unsupportedStyles.join('/')} border (a shape outline has no dash pattern); falling back to table rendering, which draws it.`
+    );
+    return undefined;
+  }
+
+  // A shape holds paragraphs and nothing else: a nested `columns` renders as a
+  // table, which has nowhere to go inside one.
+  if (children.some((child) => child.kind !== 'paragraph')) {
+    warnOnce(
+      ctx,
+      'text-box',
+      '[core-docx] text-box renderAs "shape" requires paragraph-only content; falling back to table rendering.'
+    );
+    return undefined;
+  }
+
+  if (width.resolvedPercentage || height.resolvedPercentage) {
+    warnOnce(
+      ctx,
+      'text-box',
+      '[core-docx] text-box renderAs "shape" resolves percentage sizes at generation time, against the current page content box; the shape will not reflow if the page size changes.'
+    );
+  }
+  if (outline.ignoredSides.length > 0) {
+    warnOnce(
+      ctx,
+      'text-box',
+      `[core-docx] text-box renderAs "shape" has one uniform outline; using the first declared border side and ignoring ${outline.ignoredSides.join(', ')}.`
+    );
+  }
+
+  // A shape cannot carry both: the two fill groups come out in the wrong order
+  // for CT_ShapeProperties and Word rejects the document. The fill wins.
+  const fill = style?.shading?.fill as string | undefined;
+  const dropOutline = Boolean(fill) && Boolean(outline.outline);
+  if (dropOutline) {
+    warnOnce(
+      ctx,
+      'text-box',
+      '[core-docx] text-box renderAs "shape" cannot carry a fill and a border at once (docx emits invalid shape properties); keeping the fill and dropping the border.'
+    );
+  }
+
+  ctx.features.require('text-boxes', path);
+  if (props.floating) ctx.features.require('floating-images', path);
+
+  const insets = shapeInsets(
+    style?.padding as Record<string, number> | undefined
+  );
+
+  return [
+    {
+      kind: 'paragraph',
+      id: scope.id,
+      path,
+      formatting: { spacing: { beforeTwips: 0, afterTwips: 0 } },
+      children: [
+        {
+          kind: 'shape',
+          widthPx: width.pixels,
+          heightPx: height.pixels,
+          children: children as DocxIrParagraph[],
+          ...(fill ? { fill: irColor(resolveColor(fill, ctx.theme)) } : {}),
+          ...(outline.outline && !dropOutline
+            ? { outline: outline.outline }
+            : {}),
+          ...(insets ? { insetsEmu: insets } : {}),
+          ...(props.floating
+            ? { floating: compileFloating(props.floating, ctx, path) }
+            : {}),
+        },
+      ],
+    },
+  ];
+}
+
+/**
+ * A shape's `width`/`height`, in whole pixels.
+ *
+ * A shape carries an absolute size in the file, so a percentage cannot stay
+ * lazy the way a table's `w:tblW` can: it is resolved against the page's
+ * content box and frozen here.
+ */
+function shapeSize(
+  value: unknown,
+  axis: 'width' | 'height',
+  ctx: CompileContext
+): { pixels?: number; resolvedPercentage: boolean } {
+  if (typeof value === 'number') {
+    return { pixels: Math.round(value), resolvedPercentage: false };
+  }
+  if (typeof value !== 'string') return { resolvedPercentage: false };
+
+  const fraction = parseFloat(value) / 100;
+  if (!Number.isFinite(fraction) || fraction <= 0) {
+    return { resolvedPercentage: false };
+  }
+  const availableTwips =
+    axis === 'width'
+      ? getAvailableWidthTwips(ctx.theme, ctx.themeName)
+      : getAvailableHeightTwips(ctx.theme, ctx.themeName);
+  return {
+    pixels: Math.round((availableTwips * fraction) / TWIPS_PER_PIXEL),
+    resolvedPercentage: true,
+  };
+}
+
+/**
+ * The per-side border config collapsed into the single outline a shape has.
+ *
+ * Sides are read in top/left/bottom/right order; when they disagree, the first
+ * one wins and the caller is told which were dropped. A dash pattern has no
+ * DrawingML equivalent at all, so it is reported instead of flattened.
+ */
+function shapeOutline(
+  style: Record<string, any> | undefined,
+  ctx: CompileContext
+): {
+  outline?: { color: DocxIrColor; widthEmu?: number };
+  ignoredSides: string[];
+  unsupportedStyles: string[];
+} {
+  const border = style?.border as Record<string, any> | undefined;
+  if (!border) return { ignoredSides: [], unsupportedStyles: [] };
+
+  const declared = (['top', 'left', 'bottom', 'right'] as const)
+    .map((side) => [side, border[side]] as const)
+    .filter((entry) => Boolean(entry[1]));
+  if (declared.length === 0) return { ignoredSides: [], unsupportedStyles: [] };
+
+  const unsupportedStyles = [
+    ...new Set(
+      declared
+        .map(([, config]) => config.style)
+        .filter(
+          (value) =>
+            value === 'dashed' || value === 'dotted' || value === 'double'
+        )
+    ),
+  ] as string[];
+  if (unsupportedStyles.length > 0) {
+    return { ignoredSides: [], unsupportedStyles };
+  }
+
+  const [, used] = declared[0];
+  const ignoredSides = declared
+    .slice(1)
+    .filter(
+      ([, config]) =>
+        config.style !== used.style ||
+        config.width !== used.width ||
+        config.color !== used.color
+    )
+    .map(([side]) => side as string);
+
+  if (used.style === 'none') return { ignoredSides, unsupportedStyles };
+
+  return {
+    outline: {
+      color: irColor(
+        used.color ? resolveColor(used.color, ctx.theme) : '000000'
+      ),
+      ...(used.width !== undefined
+        ? { widthEmu: Math.round(used.width * EMU_PER_PIXEL) }
+        : {}),
+    },
+    ignoredSides,
+    unsupportedStyles,
+  };
+}
+
+/** `bodyPr` insets are EMU, like every other DrawingML length. */
+function shapeInsets(
+  padding: Record<string, number> | undefined
+):
+  | { top?: number; bottom?: number; left?: number; right?: number }
+  | undefined {
+  if (!padding) return undefined;
+  const toEmu = (value: number | undefined) =>
+    value === undefined ? undefined : Math.round(value * EMU_PER_PIXEL);
+  return {
+    ...(padding.top !== undefined ? { top: toEmu(padding.top)! } : {}),
+    ...(padding.bottom !== undefined ? { bottom: toEmu(padding.bottom)! } : {}),
+    ...(padding.left !== undefined ? { left: toEmu(padding.left)! } : {}),
+    ...(padding.right !== undefined ? { right: toEmu(padding.right)! } : {}),
+  };
 }
 
 /** Every side off, which is how the container stays invisible. */

@@ -23,7 +23,6 @@ import {
   Packer,
   Paragraph,
   Table,
-  TextWrappingType,
   type ICommentOptions,
   type ILevelsOptions,
   type ISectionOptions,
@@ -32,7 +31,6 @@ import type { ThemeConfig } from '../../styles';
 import { createWordStyles } from '../../styles/themeToDocxAdapter';
 import type {
   DocxIR,
-  DocxIrFloating,
   DocxIrHeaderFooter,
   DocxIrNote,
   DocxIrNumbering,
@@ -48,6 +46,7 @@ import type { DocxRenderOptions, DocxRenderer, DocxRendererId } from '../types';
 import {
   ALIGNMENT,
   emitBlock,
+  floatingOptions,
   runOptions,
   type EmitResources,
   type ImageRunFactory,
@@ -65,7 +64,6 @@ export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
 const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'table-merged-cells',
   'svg-images',
-  'text-boxes',
   'cached-fields',
   'shading',
   'borders',
@@ -257,91 +255,6 @@ async function prepareImages(ir: DocxIR): Promise<EmitResources> {
     });
   }
   return resources;
-}
-
-/** docx.js numbers its wrap types; OOXML names them. */
-const WRAP_TYPE: Readonly<
-  Record<string, (typeof TextWrappingType)[keyof typeof TextWrappingType]>
-> = {
-  none: TextWrappingType.NONE,
-  square: TextWrappingType.SQUARE,
-  tight: TextWrappingType.TIGHT,
-  topAndBottom: TextWrappingType.TOP_AND_BOTTOM,
-};
-
-/** An IR anchor as docx.js floating options. */
-function floatingOptions(floating: DocxIrFloating): Record<string, unknown> {
-  return {
-    ...(floating.horizontal
-      ? {
-          horizontalPosition: {
-            ...(floating.horizontal.relativeTo
-              ? { relative: floating.horizontal.relativeTo }
-              : {}),
-            ...(floating.horizontal.align !== undefined
-              ? { align: floating.horizontal.align }
-              : {}),
-            ...(floating.horizontal.offsetEmu !== undefined
-              ? { offset: floating.horizontal.offsetEmu }
-              : {}),
-          },
-        }
-      : {}),
-    ...(floating.vertical
-      ? {
-          verticalPosition: {
-            ...(floating.vertical.relativeTo
-              ? { relative: floating.vertical.relativeTo }
-              : {}),
-            ...(floating.vertical.align !== undefined
-              ? { align: floating.vertical.align }
-              : {}),
-            ...(floating.vertical.offsetEmu !== undefined
-              ? { offset: floating.vertical.offsetEmu }
-              : {}),
-          },
-        }
-      : {}),
-    ...(floating.wrap
-      ? {
-          wrap: {
-            type: WRAP_TYPE[floating.wrap.type],
-            ...(floating.wrap.side ? { side: floating.wrap.side } : {}),
-          },
-        }
-      : {}),
-    ...(floating.margins
-      ? {
-          margins: {
-            ...(floating.margins.topEmu !== undefined
-              ? { top: floating.margins.topEmu }
-              : {}),
-            ...(floating.margins.bottomEmu !== undefined
-              ? { bottom: floating.margins.bottomEmu }
-              : {}),
-            ...(floating.margins.leftEmu !== undefined
-              ? { left: floating.margins.leftEmu }
-              : {}),
-            ...(floating.margins.rightEmu !== undefined
-              ? { right: floating.margins.rightEmu }
-              : {}),
-          },
-        }
-      : {}),
-    ...(floating.allowOverlap !== undefined
-      ? { allowOverlap: floating.allowOverlap }
-      : {}),
-    ...(floating.behindDocument !== undefined
-      ? { behindDocument: floating.behindDocument }
-      : {}),
-    ...(floating.lockAnchor !== undefined
-      ? { lockAnchor: floating.lockAnchor }
-      : {}),
-    ...(floating.layoutInCell !== undefined
-      ? { layoutInCell: floating.layoutInCell }
-      : {}),
-    zIndex: floating.zIndex,
-  };
 }
 
 function sectionOptions(
