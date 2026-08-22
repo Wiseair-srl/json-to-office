@@ -25,9 +25,6 @@ export function GlobalPreviewHeader({
   const warnings = useOutputStore((s) => s.warnings);
   const isRendering = useOutputStore((s) => s.isRendering);
 
-  const autoReload = useSettingsStore((s) => s.autoReload);
-  const renderingLibrary = useSettingsStore((s) => s.renderingLibrary);
-  const setSettings = useSettingsStore((s) => s.setSettings);
   const useGlobalPreviewHeader = useSettingsStore(
     (s: any) => s.useGlobalPreviewHeader ?? true
   );
@@ -59,15 +56,6 @@ export function GlobalPreviewHeader({
 
   if (!useGlobalPreviewHeader) return null;
 
-  const onToggleAutoReload = useCallback(
-    () =>
-      setSettings({
-        saveDocumentDebounceWait: 2000,
-        autoReload: !autoReload,
-      } as any),
-    [autoReload, setSettings]
-  );
-
   const onManualRender = useCallback(() => {
     window.dispatchEvent(new CustomEvent('preview:manualRender'));
   }, []);
@@ -86,9 +74,6 @@ export function GlobalPreviewHeader({
       <PreviewHeaderMemoized
         name={displayName}
         blob={blob}
-        displayReloadButton={false}
-        autoReload={autoReload}
-        onToggleAutoReload={onToggleAutoReload}
         onManualRender={onManualRender}
         isGenerating={isGenerating}
         isRendering={Boolean(isRendering)}
@@ -98,10 +83,6 @@ export function GlobalPreviewHeader({
         documentText={text}
         editorDocumentText={editorDocumentText}
         warnings={warnings}
-        renderingLibrary={renderingLibrary}
-        setRenderingLibrary={(lib) =>
-          setSettings({ renderingLibrary: lib } as any)
-        }
         onToggleChat={__AI_ENABLED__ ? toggleChat : undefined}
         chatOpen={__AI_ENABLED__ ? chatOpen : undefined}
         onTogglePreview={onTogglePreview}

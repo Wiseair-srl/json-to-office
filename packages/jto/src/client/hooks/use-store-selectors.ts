@@ -54,7 +54,6 @@ export const useSettings = () =>
   useSettingsStore(
     useShallow((state) => ({
       saveDocumentDebounceWait: state.saveDocumentDebounceWait,
-      autoReload: state.autoReload,
     }))
   );
 

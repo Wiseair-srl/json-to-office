@@ -2,7 +2,6 @@ import React, { useState, useCallback, useContext } from 'react';
 import { ThemesStoreContext } from '../../store/themes-store-provider';
 import {
   SaveIcon,
-  RefreshCwIcon,
   InfoIcon,
   PlayIcon,
   BarChart3Icon,
@@ -34,8 +33,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { Switch } from '../ui/switch';
-import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import {
   Select,
@@ -54,7 +51,6 @@ import { useSettingsStore } from '../../store/settings-store-provider';
 import { buildWarningsDocumentJson } from '../../lib/warnings-document-builder';
 import type { GenerationWarning } from '../../store/output-store';
 import { FORMAT, FORMAT_EXT } from '../../lib/env';
-import type { RenderingLibrary } from '../../lib/types';
 import {
   collectFontNamesFromDocx,
   collectFontNamesFromPptx,
@@ -62,24 +58,9 @@ import {
 } from '@json-to-office/shared';
 import { ExportModeDialog, type ExportFontMode } from './export-mode-dialog';
 
-const RENDERING_LIBRARIES: RenderingLibrary[] =
-  FORMAT === 'docx' ? ['docxjs', 'LibreOffice'] : ['LibreOffice'];
-
-const tooltips: Record<RenderingLibrary, [string, string]> = {
-  docxjs: ['⚡', '(Fast) works in the browser — lower fidelity'],
-  LibreOffice: [
-    '🖨️',
-    '(High fidelity) converts to PDF locally with LibreOffice',
-  ],
-};
-
 function PreviewHeader({
   name,
   blob,
-  displayReloadButton,
-  iframeRef,
-  autoReload,
-  onToggleAutoReload,
   onManualRender,
   isGenerating,
   isRendering,
@@ -89,8 +70,6 @@ function PreviewHeader({
   documentText,
   editorDocumentText,
   warnings,
-  renderingLibrary,
-  setRenderingLibrary,
   onToggleChat,
   chatOpen,
   onTogglePreview,
@@ -98,10 +77,6 @@ function PreviewHeader({
 }: {
   name: string;
   blob?: Blob;
-  displayReloadButton: boolean;
-  iframeRef?: React.RefObject<HTMLIFrameElement | null>;
-  autoReload: boolean;
-  onToggleAutoReload: () => void;
   onManualRender: () => void;
   isGenerating?: boolean;
   isRendering?: boolean;
@@ -116,17 +91,13 @@ function PreviewHeader({
    */
   editorDocumentText?: string;
   warnings?: GenerationWarning[] | null;
-  renderingLibrary?: RenderingLibrary;
-  setRenderingLibrary?: (lib: RenderingLibrary) => void;
   onToggleChat?: () => void;
   chatOpen?: boolean;
   onTogglePreview?: () => void;
   previewOpen?: boolean;
 }) {
-  const usesManualRenderByDefault = renderingLibrary !== 'docxjs';
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDownloadingWarnings, setIsDownloadingWarnings] = useState(false);
-  const [isReloading, setIsReloading] = useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isCopyingStandardComponents, setIsCopyingStandardComponents] =
@@ -141,11 +112,9 @@ function PreviewHeader({
   // PPTX-specific generator.
   const { generateDocument } = usePresentationGenerator();
   const themesStore = useContext(ThemesStoreContext)!;
-  // The *generation* backend, unrelated to `renderingLibrary` above even
-  // though the DOCX default is also spelled `docxjs`. Read from the store
-  // rather than taken as a prop: `usePresentationGenerator` reads the same
-  // value, so a control that only informed this component would drift from
-  // what actually rendered.
+  // Read from the store rather than taken as a prop: the generator hook reads
+  // the same value, so a control that only informed this component would drift
+  // from what actually rendered.
   const backends = useRendererIds();
   const generationBackend = useSettingsStore((s) => s.generationBackend);
   const setSettings = useSettingsStore((s) => s.setSettings);
@@ -314,63 +283,6 @@ function PreviewHeader({
       setTimeout(() => setIsDownloadingWarnings(false), 500);
     }
   }, [warnings, name, generateDocument, toast]);
-
-  const handleReload = useCallback(async () => {
-    const iframeEl = iframeRef?.current;
-    if (!iframeEl?.src) return;
-
-    setIsReloading(true);
-
-    try {
-      // Create a promise that resolves when iframe loads or times out
-      const reloadPromise = new Promise<void>((resolve) => {
-        let timeoutId: ReturnType<typeof setTimeout> | null = null;
-        let resolved = false;
-
-        const cleanup = () => {
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-            timeoutId = null;
-          }
-          iframeEl.removeEventListener('load', onLoad);
-          iframeEl.removeEventListener('error', onError);
-        };
-
-        const resolveOnce = () => {
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            resolve();
-          }
-        };
-
-        const onLoad = () => resolveOnce();
-        const onError = () => resolveOnce();
-
-        // Add event listeners
-        iframeEl.addEventListener('load', onLoad);
-        iframeEl.addEventListener('error', onError);
-
-        // Set fallback timeout
-        timeoutId = setTimeout(() => {
-          console.warn('Iframe reload timed out after 5 seconds');
-          resolveOnce();
-        }, 5000);
-
-        // Trigger reload by modifying src with timestamp to ensure actual reload
-        const originalSrc = iframeEl.src;
-        const separator = originalSrc.includes('?') ? '&' : '?';
-        const timestamp = Date.now();
-        iframeEl.src = `${originalSrc}${separator}_reload=${timestamp}`;
-      });
-
-      await reloadPromise;
-    } catch (error) {
-      console.error('Iframe reload failed:', error);
-    } finally {
-      setIsReloading(false);
-    }
-  }, [iframeRef]);
 
   const handleClearCache = useCallback(async () => {
     setIsClearingCache(true);
@@ -558,96 +470,44 @@ function PreviewHeader({
             </TooltipTrigger>
             <TooltipContent className="max-w-sm">
               <p className="text-sm">
-                Preview uses{' '}
-                {FORMAT === 'docx'
-                  ? 'docx-preview'
-                  : 'LibreOffice PDF conversion'}
-                . Download the {FORMAT_EXT} to verify fidelity.
+                Preview converts the file to a PDF with LibreOffice. Download
+                the {FORMAT_EXT} to verify fidelity.
               </p>
             </TooltipContent>
           </Tooltip>
         </div>
         <div className="flex flex-row items-center gap-x-1 shrink-0">
           {/* ── Render group ── */}
-          {(!autoReload || usesManualRenderByDefault) && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="gap-1.5 h-7 px-2.5"
-                  onClick={onManualRender}
-                  aria-label="Render preview"
-                  disabled={
-                    isGenerating || isRendering || previewOpen === false
-                  }
-                >
-                  {isRendering ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <PlayIcon className="h-3.5 w-3.5" />
-                  )}
-                  <span className="text-xs font-medium hidden sm:inline">
-                    Run
-                  </span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  {previewOpen === false
-                    ? 'Open preview to run'
-                    : isRendering
-                      ? 'Rendering preview...'
-                      : 'Render preview'}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          {FORMAT === 'docx' && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1.5 cursor-help ml-2 mr-1">
-                  <Label className="text-xs text-muted-foreground hidden sm:inline">
-                    Auto
-                  </Label>
-                  <Switch
-                    checked={autoReload}
-                    onCheckedChange={onToggleAutoReload}
-                    disabled={usesManualRenderByDefault}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  {usesManualRenderByDefault
-                    ? 'Auto-reload is not available for Office, Docs, and LibreOffice renderers'
-                    : `${autoReload ? 'Disable' : 'Enable'} automatic preview reload on content changes`}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          {displayReloadButton && autoReload && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={handleReload}
-                  disabled={isReloading || isGenerating || isRendering}
-                >
-                  {isReloading ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <RefreshCwIcon className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isReloading ? 'Reloading...' : 'Reload'}</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-1.5 h-7 px-2.5"
+                onClick={onManualRender}
+                aria-label="Render preview"
+                disabled={isGenerating || isRendering || previewOpen === false}
+              >
+                {isRendering ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <PlayIcon className="h-3.5 w-3.5" />
+                )}
+                <span className="text-xs font-medium hidden sm:inline">
+                  Run
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {previewOpen === false
+                  ? 'Open preview to run'
+                  : isRendering
+                    ? 'Rendering preview...'
+                    : 'Render preview'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
 
           {/* ── Divider ── */}
           <div className="w-px h-4 bg-border/60 mx-1" />
@@ -724,37 +584,6 @@ function PreviewHeader({
                   <SelectItem value={id} key={id}>
                     {id}
                     {id === backends.default ? '' : ' (experimental)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          {renderingLibrary && setRenderingLibrary && (
-            <Select
-              value={renderingLibrary}
-              onValueChange={setRenderingLibrary}
-            >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <SelectTrigger className="w-[140px] h-7 text-xs hidden lg:flex">
-                    <SelectValue placeholder="Renderer" />
-                  </SelectTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Select the rendering library</p>
-                </TooltipContent>
-              </Tooltip>
-              <SelectContent className="text-sidebar-foreground">
-                {RENDERING_LIBRARIES.map((library) => (
-                  <SelectItem value={library} key={library}>
-                    <Tooltip>
-                      <TooltipTrigger tabIndex={-1}>
-                        {tooltips[library][0]}
-                      </TooltipTrigger>
-                      <TooltipContent>{tooltips[library][1]}</TooltipContent>
-                    </Tooltip>{' '}
-                    {library}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -850,25 +679,6 @@ function PreviewHeader({
                       </span>
                       {id}
                       {id === backends.default ? '' : ' (experimental)'}
-                    </DropdownMenuItem>
-                  ))}
-                </>
-              )}
-
-              {/* Renderer select for small screens */}
-              {renderingLibrary && setRenderingLibrary && (
-                <>
-                  <DropdownMenuSeparator className="lg:hidden" />
-                  {RENDERING_LIBRARIES.map((library) => (
-                    <DropdownMenuItem
-                      key={library}
-                      className="lg:hidden"
-                      onClick={() => setRenderingLibrary(library)}
-                    >
-                      <span className="mr-2">
-                        {renderingLibrary === library ? '●' : '○'}
-                      </span>
-                      {tooltips[library][0]} {library}
                     </DropdownMenuItem>
                   ))}
                 </>

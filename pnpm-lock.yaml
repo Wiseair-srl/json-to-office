@@ -345,9 +345,6 @@ importers:
       cosmiconfig:
         specifier: 9.0.0
         version: 9.0.0(typescript@5.3.3)
-      docx-preview:
-        specifier: 0.3.3
-        version: 0.3.3
       dotenv:
         specifier: 16.3.1
         version: 16.3.1
@@ -3402,9 +3399,6 @@ packages:
   doctrine@3.0.0:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
-
-  docx-preview@0.3.3:
-    resolution: {integrity: sha512-vg0bjmp5Q/hWYgalvVsnOOdqKlSBvgzdbrqX8pKw4KuTH8FkX2FIs21w10HZdx6ZhApmMbgfae+lOXjdCSsc8A==}
 
   docx@9.7.1:
     resolution: {integrity: sha512-ilXFf9Moz47ABjFpDiA5s1w9lpb4EFSp7+5iiJSbfyYDM+bpZdAgLlSr7fW4aXhVe/E+F6QCv0EvRVFEd5CsWg==}
@@ -8644,10 +8638,6 @@ snapshots:
   doctrine@3.0.0:
     dependencies:
       esutils: 2.0.3
-
-  docx-preview@0.3.3:
-    dependencies:
-      jszip: 3.10.1
 
   docx@9.7.1:
     dependencies:

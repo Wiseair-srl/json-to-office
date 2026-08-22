@@ -13,8 +13,6 @@ export type SettingsStore = SettingsState & SettingsActions;
 export const initSettingsStore = (): SettingsState => {
   return {
     saveDocumentDebounceWait: 300,
-    autoReload: true,
-    renderingLibrary: 'LibreOffice',
     // UI preference to use a single preview header spanning editor + preview
     useGlobalPreviewHeader: true,
   };

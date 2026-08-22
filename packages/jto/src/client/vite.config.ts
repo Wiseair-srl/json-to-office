@@ -61,7 +61,6 @@ export default defineConfig({
             return 'query-vendor';
           if (id.includes('@radix-ui')) return 'radix-ui';
           if (id.includes('zustand')) return 'state-vendor';
-          if (id.includes('docx-preview')) return 'docx-preview';
         },
         chunkFileNames: () => 'assets/[name]-[hash].js',
       },
