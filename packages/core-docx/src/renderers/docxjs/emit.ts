@@ -38,6 +38,7 @@ import {
   TextRun,
   VerticalAlign,
   WidthType,
+  type IFrameOptions,
   type IParagraphOptions,
   type IRunOptions,
   type ITableCellOptions,
@@ -47,6 +48,7 @@ import { assertNever } from '@json-to-office/shared/rendering';
 import type {
   DocxIrBlock,
   DocxIrBorder,
+  DocxIrFrame,
   DocxIrImageRun,
   DocxIrInline,
   DocxIrParagraph,
@@ -406,6 +408,7 @@ export function emitParagraph(
     ...(block.styleId ? { style: block.styleId } : {}),
     ...paragraphOptions(block.formatting),
     ...(block.markRevision ? { run: revisionMark(block.markRevision) } : {}),
+    ...(block.frame ? { frame: frameOptions(block.frame) } : {}),
     ...(block.numbering
       ? {
           numbering: block.numbering.none
@@ -419,6 +422,41 @@ export function emitParagraph(
         }
       : {}),
   });
+}
+
+/**
+ * A paragraph positioned as a floating box (`w:framePr`).
+ *
+ * Exactly one positioning mode: absolute when the frame states coordinates,
+ * alignment otherwise. OOXML cannot mix them, and docx.js takes the choice as
+ * a discriminant.
+ */
+function frameOptions(frame: DocxIrFrame): IFrameOptions {
+  const base = {
+    width: frame.widthTwips,
+    height: frame.heightTwips,
+    anchor: {
+      horizontal: frame.anchorHorizontal,
+      vertical: frame.anchorVertical,
+    },
+    ...(frame.wrap ? { wrap: frame.wrap } : {}),
+    ...(frame.anchorLock !== undefined ? { anchorLock: frame.anchorLock } : {}),
+    ...(frame.rule ? { rule: frame.rule } : {}),
+  };
+
+  return (
+    frame.xTwips !== undefined || frame.yTwips !== undefined
+      ? {
+          type: 'absolute',
+          position: { x: frame.xTwips ?? 0, y: frame.yTwips ?? 0 },
+          ...base,
+        }
+      : {
+          type: 'alignment',
+          alignment: { x: frame.xAlign, y: frame.yAlign },
+          ...base,
+        }
+  ) as IFrameOptions;
 }
 
 export function emitBlock(
