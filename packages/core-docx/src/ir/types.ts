@@ -673,6 +673,23 @@ export interface DocxIrSection {
   properties: DocxIrSectionProperties;
   headers?: DocxIrHeaderFooterSet;
   footers?: DocxIrHeaderFooterSet;
+  /**
+   * A bookmark covering this section's content.
+   *
+   * OOXML has no notion of a bookmarked section, so a section that something
+   * can point at — a table of contents scoped to it, an internal link — is a
+   * bookmark range around its content. One authored section can be split into
+   * several layout sections, which is why `opens` and `closes` are separate:
+   * the range starts in the first and ends in the last, and they share an id.
+   */
+  bookmark?: DocxIrSectionBookmark;
+}
+
+export interface DocxIrSectionBookmark {
+  id: number;
+  name: string;
+  opens: boolean;
+  closes: boolean;
 }
 
 export interface DocxIrSectionProperties {
@@ -690,6 +707,11 @@ export interface DocxIrPageSetup {
   widthTwips: number;
   heightTwips: number;
   orientation: 'portrait' | 'landscape';
+  /**
+   * OOXML `w:pgSz/@w:code` — the paper code a printer driver keys off.
+   * Present only for a named size; a custom width/height has none.
+   */
+  code?: number;
   margins: DocxIrPageMargins;
 }
 

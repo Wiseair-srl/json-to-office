@@ -42,9 +42,24 @@ export interface WordSectionProperties {
       right: number;
       bottom: number;
       left: number;
+      // Present only when a section overrides them; the theme's page setup
+      // states the four edges and leaves these to Word's own defaults.
+      header?: number;
+      footer?: number;
+      gutter?: number;
     };
   };
-  column: ColumnSettings & { children?: DocxColumn[] };
+  column: ColumnSettings & {
+    children?: DocxColumn[];
+    /**
+     * The same explicit columns as `children`, in twips.
+     *
+     * `children` holds docx `Column` instances, which keep their width and
+     * space private, so anything downstream of a renderer boundary cannot read
+     * them back. This is the plain-numbers copy the DocxIR compiler reads.
+     */
+    widths?: Array<{ width: number; space?: number }>;
+  };
   type?: (typeof SectionType)[keyof typeof SectionType];
 }
 
@@ -444,10 +459,14 @@ export function createSectionProperties(
     // Also remove top-level space to avoid conflicting with per-column spaces
     delete properties.column.space;
 
-    properties.column.children = children.map(
+    properties.column.widths = children.map((c) => ({
+      width: c.width as number,
+      ...(c.space !== undefined ? { space: c.space } : {}),
+    }));
+    properties.column.children = properties.column.widths.map(
       (c) =>
         new DocxColumn({
-          width: c.width as number,
+          width: c.width,
           ...(c.space !== undefined ? { space: c.space } : {}),
         })
     );
