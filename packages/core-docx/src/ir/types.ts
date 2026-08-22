@@ -99,10 +99,31 @@ export interface DocxIrSettings {
  * ------------------------------------------------------------------ */
 
 export interface DocxIrStyles {
-  /** Formatting every paragraph and run starts from. */
+  /** Formatting every paragraph and run starts from — `w:docDefaults`. */
   defaults: DocxIrStyleDefaults;
   paragraph: DocxIrParagraphStyle[];
   character: DocxIrCharacterStyle[];
+  /**
+   * Overrides for styles Word defines itself.
+   *
+   * A backend ships its own definitions for these, carrying Word's defaults
+   * rather than the document's theme — a note in a Georgia document would
+   * otherwise set in Calibri. Naming the slot rather than the style id keeps
+   * the two backends' built-in vocabularies from leaking into the IR.
+   */
+  builtIn?: DocxIrBuiltInStyles;
+}
+
+export interface DocxIrBuiltInStyle {
+  run?: DocxIrRunFormatting;
+  paragraph?: DocxIrParagraphFormatting;
+}
+
+export interface DocxIrBuiltInStyles {
+  footnoteText?: DocxIrBuiltInStyle;
+  footnoteReference?: DocxIrBuiltInStyle;
+  endnoteText?: DocxIrBuiltInStyle;
+  endnoteReference?: DocxIrBuiltInStyle;
 }
 
 export interface DocxIrStyleDefaults {
@@ -244,7 +265,8 @@ export interface DocxIrBorder {
   color?: DocxIrColor;
   /** Eighths of a point, which is the OOXML unit for `w:sz` on a border. */
   sizeEighthPoints?: number;
-  spaceTwips?: number;
+  /** Points, which is the OOXML unit for `w:space` on a border. */
+  spacePoints?: number;
 }
 
 export interface DocxIrBorders {
@@ -254,6 +276,8 @@ export interface DocxIrBorders {
   right?: DocxIrBorder;
   insideHorizontal?: DocxIrBorder;
   insideVertical?: DocxIrBorder;
+  /** `w:between` — the rule drawn between consecutive paragraphs sharing it. */
+  between?: DocxIrBorder;
 }
 
 export interface DocxIrShading {

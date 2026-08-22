@@ -1,11 +1,32 @@
-import {
-  IStylesOptions,
-  IRunStylePropertiesOptions,
-  IParagraphStylePropertiesOptions,
-  AlignmentType,
-  TabStopPosition,
-} from 'docx';
+/**
+ * A theme, compiled into the document's style set.
+ *
+ * The output is DocxIR: style ids and their resolved formatting, in the units
+ * OOXML uses, naming no backend. Both adapters map it to their own option
+ * shape, so which styles a document defines — and what each one says — is
+ * decided once, here, rather than once per renderer.
+ */
+
 import { getTheme } from '../templates/themes';
+
+/**
+ * A right tab at the text-measure edge, which is where a TOC page number sits.
+ *
+ * Twice `TabStopPosition.MAX` (9026 twips) — the historical value, kept
+ * because it is what every recorded document was produced with.
+ */
+const RIGHT_MARGIN_TAB_TWIPS = 9026 * 2;
+import type {
+  DocxIrAlignment,
+  DocxIrBorder,
+  DocxIrBorders,
+  DocxIrCharacterStyle,
+  DocxIrParagraphFormatting,
+  DocxIrParagraphStyle,
+  DocxIrRunFormatting,
+  DocxIrStyles,
+  DocxIrTabStop,
+} from '../ir/types';
 import type { ThemeConfig } from './index';
 import { resolveColor } from './utils/colorUtils';
 import {
@@ -178,18 +199,16 @@ function resolveStyleWithBaseStyle(
   return mergedStyle;
 }
 
-function convertAlignment(
-  alignment: string
-): (typeof AlignmentType)[keyof typeof AlignmentType] {
+function convertAlignment(alignment: string): DocxIrAlignment {
   switch (alignment) {
     case 'center':
-      return AlignmentType.CENTER;
+      return 'center';
     case 'right':
-      return AlignmentType.RIGHT;
+      return 'right';
     case 'justify':
-      return AlignmentType.JUSTIFIED;
+      return 'justified';
     default:
-      return AlignmentType.LEFT;
+      return 'left';
   }
 }
 
@@ -197,12 +216,12 @@ function convertAlignment(
  * Resolve spacing from new nested format
  */
 function resolveSpacing(spacing?: { before?: number; after?: number }): {
-  before?: number;
-  after?: number;
+  beforeTwips?: number;
+  afterTwips?: number;
 } {
   return {
-    before: spacing?.before ? pointsToTwips(spacing.before) : undefined,
-    after: spacing?.after ? pointsToTwips(spacing.after) : undefined,
+    ...(spacing?.before ? { beforeTwips: pointsToTwips(spacing.before) } : {}),
+    ...(spacing?.after ? { afterTwips: pointsToTwips(spacing.after) } : {}),
   };
 }
 
@@ -214,25 +233,44 @@ function convertRunProperties(
   theme: ThemeConfig,
   defaultColor?: string,
   defaultSize?: number
-): IRunStylePropertiesOptions {
+): DocxIrRunFormatting {
   return {
-    font: merged.family || 'Arial',
-    size: (merged.size || defaultSize || 11) * 2,
-    color: resolveColor(
-      merged.color || defaultColor || theme.colors.text,
-      theme
-    ),
+    fontFamily: merged.family || 'Arial',
+    sizeHalfPoints: (merged.size || defaultSize || 11) * 2,
+    color: {
+      hex: resolveColor(
+        merged.color || defaultColor || theme.colors.text,
+        theme
+      ),
+    },
     ...(merged.bold !== undefined && { bold: merged.bold }),
     ...(merged.italic !== undefined && { italic: merged.italic }),
     ...(merged.underline !== undefined &&
       merged.underline && { underline: { type: 'single' } }),
     ...(merged.characterSpacing && {
-      characterSpacing:
+      characterSpacingTwentieths:
         merged.characterSpacing.type === 'condensed'
           ? -merged.characterSpacing.value
           : merged.characterSpacing.value,
     }),
-    ...(merged.scale && { scale: merged.scale }),
+    ...(merged.scale && { scalePercent: merged.scale }),
+  };
+}
+
+/** `convertLineSpacing`'s result, in the IR's vocabulary. */
+function irLineSpacing(lineSpacing?: unknown): {
+  lineTwips?: number;
+  lineRule?: 'auto' | 'exact' | 'atLeast';
+} {
+  const converted = convertLineSpacing(lineSpacing as never);
+  if (!converted) return {};
+  return {
+    ...(typeof converted.line === 'number'
+      ? { lineTwips: converted.line }
+      : {}),
+    ...(converted.lineRule
+      ? { lineRule: converted.lineRule as 'auto' | 'exact' | 'atLeast' }
+      : {}),
   };
 }
 
@@ -243,11 +281,11 @@ function convertParagraphProperties(
   merged: any,
   styleProps?: StyleProperties,
   theme?: ThemeConfig
-): IParagraphStylePropertiesOptions {
+): DocxIrParagraphFormatting {
   return {
     spacing: {
       ...resolveSpacing(merged.spacing),
-      ...convertLineSpacing(merged.lineSpacing),
+      ...irLineSpacing(merged.lineSpacing),
     },
     alignment: convertAlignment(merged.alignment || 'left'),
     ...(styleProps?.keepNext !== undefined && {
@@ -264,44 +302,37 @@ function convertParagraphProperties(
     }),
     ...(styleProps?.borders &&
       theme && {
-        border: convertBorders(styleProps.borders, theme),
+        borders: convertBorders(styleProps.borders, theme),
       }),
     ...(styleProps?.indent && {
       indent: {
         ...(styleProps.indent.left !== undefined && {
-          left: styleProps.indent.left,
+          leftTwips: styleProps.indent.left,
         }),
         ...(styleProps.indent.hanging !== undefined && {
-          hanging: styleProps.indent.hanging,
+          hangingTwips: styleProps.indent.hanging,
         }),
       },
     }),
-  } as IParagraphStylePropertiesOptions;
+  };
 }
 
 /**
  * Convert theme border definitions to docx paragraph border options
  */
-type ConvertedBorder = {
-  style: string;
-  size: number;
-  color: string;
-  space?: number;
-};
-
 function convertBorders(
   borders: ThemeBorders | undefined,
   theme: ThemeConfig
-): Partial<Record<keyof ThemeBorders, ConvertedBorder>> | undefined {
+): DocxIrBorders | undefined {
   if (!borders) return undefined;
 
-  const mapSide = (side?: ThemeBorderDefinition) =>
+  const mapSide = (side?: ThemeBorderDefinition): DocxIrBorder | undefined =>
     side
       ? {
           style: side.style,
-          size: side.size,
-          color: resolveColor(side.color, theme),
-          ...(side.space !== undefined ? { space: side.space } : {}),
+          sizeEighthPoints: side.size,
+          color: { hex: resolveColor(side.color, theme) },
+          ...(side.space !== undefined ? { spacePoints: side.space } : {}),
         }
       : undefined;
 
@@ -312,7 +343,7 @@ function convertBorders(
     'right',
     'between',
   ];
-  const converted: Partial<Record<keyof ThemeBorders, ConvertedBorder>> = {};
+  const converted: DocxIrBorders = {};
   for (const side of sides) {
     const value = mapSide(borders[side]);
     if (value) converted[side] = value;
@@ -321,31 +352,63 @@ function convertBorders(
   return Object.keys(converted).length > 0 ? converted : undefined;
 }
 
-export interface WordStyleDefinition {
-  id: string;
-  name: string;
-  basedOn?: string;
-  next?: string;
-  quickFormat?: boolean;
-  run?: IRunStylePropertiesOptions;
-  paragraph?: IParagraphStylePropertiesOptions;
+/**
+ * Compile a theme into the document's style set.
+ *
+ * @param themeNameOrObject The theme to use for styling (name string or theme object)
+ * @param language Document-default proofing language (BCP-47)
+ */
+/**
+ * The run a fallback style uses when the theme declares nothing for it.
+ *
+ * Only the font's own properties are read, so `bold`/`italic`/`underline`
+ * appear only when the font declares them — which is why this is not
+ * `convertRunProperties` with an empty style.
+ */
+function fallbackRun(
+  fontProps: any,
+  theme: ThemeConfig,
+  defaultColor: string,
+  defaultSize: number
+): DocxIrRunFormatting {
+  return {
+    fontFamily: fontProps.family || 'Arial',
+    sizeHalfPoints: (fontProps.size || defaultSize) * 2,
+    color: { hex: resolveColor(fontProps.color || defaultColor, theme) },
+    ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
+    ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
+    ...(fontProps.underline !== undefined &&
+      fontProps.underline && { underline: { type: 'single' } }),
+  };
 }
 
-/**
- * Creates Word document styles from theme configuration
- * @param themeNameOrObject The theme to use for styling (name string or theme object)
- * @returns IStylesOptions for docx Document
- */
-export function createWordStyles(
+/** Header and footer runs, which pin their own size rather than inherit one. */
+function chromeRun(
+  fontProps: any,
+  theme: ThemeConfig,
+  sizeHalfPoints: number
+): DocxIrRunFormatting {
+  return {
+    fontFamily: fontProps.family || 'Arial',
+    sizeHalfPoints,
+    color: {
+      hex: resolveColor(fontProps.color || theme.colors.secondary, theme),
+    },
+    ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
+    ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
+  };
+}
+
+export function createDocumentStyles(
   themeNameOrObject: string | ThemeConfig = 'minimal',
   language?: string
-): IStylesOptions {
+): DocxIrStyles {
   const theme: ThemeConfig =
     typeof themeNameOrObject === 'string'
       ? getTheme(themeNameOrObject) || getTheme('minimal')!
       : themeNameOrObject;
 
-  const paragraphStyles: WordStyleDefinition[] = [
+  const paragraphStyles: DocxIrParagraphStyle[] = [
     // Normal body text style
     {
       id: 'Normal',
@@ -438,20 +501,12 @@ export function createWordStyles(
         basedOn: 'Normal',
         next: 'Normal',
         quickFormat: true,
-        run: {
-          font: fontProps.family || 'Arial',
-          size: (fontProps.size || 20) * 2,
-          color: resolveColor(fontProps.color || theme.colors.primary, theme),
-          ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
-          ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
-          ...(fontProps.underline !== undefined &&
-            fontProps.underline && { underline: { type: 'single' } }),
-        },
+        run: fallbackRun(fontProps, theme, theme.colors.primary, 20),
         paragraph: {
           spacing: {
-            before: 240 - (i - 1) * 40,
-            after: 120 - (i - 1) * 20,
-            ...convertLineSpacing(fontProps.lineSpacing),
+            beforeTwips: 240 - (i - 1) * 40,
+            afterTwips: 120 - (i - 1) * 20,
+            ...irLineSpacing(fontProps.lineSpacing),
           },
           alignment: convertAlignment(fontProps.alignment || 'left'),
         },
@@ -521,20 +576,12 @@ export function createWordStyles(
         basedOn: 'Normal',
         next: 'Normal',
         quickFormat: false,
-        run: {
-          font: fontProps.family || 'Arial',
-          size: (fontProps.size || 20) * 2,
-          color: resolveColor(fontProps.color || theme.colors.primary, theme),
-          ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
-          ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
-          ...(fontProps.underline !== undefined &&
-            fontProps.underline && { underline: { type: 'single' } }),
-        },
+        run: fallbackRun(fontProps, theme, theme.colors.primary, 20),
         paragraph: {
           spacing: {
-            before: 240 - (i - 1) * 40,
-            after: 120 - (i - 1) * 20,
-            ...convertLineSpacing(fontProps.lineSpacing),
+            beforeTwips: 240 - (i - 1) * 40,
+            afterTwips: 120 - (i - 1) * 20,
+            ...irLineSpacing(fontProps.lineSpacing),
           },
           alignment: convertAlignment(fontProps.alignment || 'left'),
         },
@@ -592,19 +639,11 @@ export function createWordStyles(
       basedOn: 'Normal',
       next: 'Normal',
       quickFormat: true,
-      run: {
-        font: fontProps.family || 'Arial',
-        size: (fontProps.size || 20) * 2,
-        color: resolveColor(fontProps.color || theme.colors.primary, theme),
-        ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
-        ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
-        ...(fontProps.underline !== undefined &&
-          fontProps.underline && { underline: { type: 'single' } }),
-      },
+      run: fallbackRun(fontProps, theme, theme.colors.primary, 20),
       paragraph: {
         spacing: {
-          after: 400,
-          ...convertLineSpacing(fontProps.lineSpacing),
+          afterTwips: 400,
+          ...irLineSpacing(fontProps.lineSpacing),
         },
         alignment: convertAlignment(fontProps.alignment || 'left'),
       },
@@ -661,19 +700,11 @@ export function createWordStyles(
       basedOn: 'Normal',
       next: 'Normal',
       quickFormat: true,
-      run: {
-        font: fontProps.family || 'Arial',
-        size: (fontProps.size || 11) * 2,
-        color: resolveColor(fontProps.color || theme.colors.secondary, theme),
-        ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
-        ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
-        ...(fontProps.underline !== undefined &&
-          fontProps.underline && { underline: { type: 'single' } }),
-      },
+      run: fallbackRun(fontProps, theme, theme.colors.secondary, 11),
       paragraph: {
         spacing: {
-          after: 600,
-          ...convertLineSpacing(fontProps.lineSpacing),
+          afterTwips: 600,
+          ...irLineSpacing(fontProps.lineSpacing),
         },
         alignment: convertAlignment(fontProps.alignment || 'left'),
       },
@@ -690,13 +721,7 @@ export function createWordStyles(
         basedOn: 'Normal',
         next: 'Header',
         quickFormat: false,
-        run: {
-          font: fontProps.family || 'Arial',
-          size: 20, // 10pt (override default)
-          color: resolveColor(fontProps.color || theme.colors.secondary, theme),
-          ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
-          ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
-        },
+        run: chromeRun(fontProps, theme, 20),
         paragraph: {
           alignment: 'right',
         },
@@ -712,16 +737,10 @@ export function createWordStyles(
         basedOn: 'Normal',
         next: 'Footer',
         quickFormat: false,
-        run: {
-          font: fontProps.family || 'Arial',
-          size: 18, // 9pt (override default)
-          color: resolveColor(fontProps.color || theme.colors.secondary, theme),
-          ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
-          ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
-        },
+        run: chromeRun(fontProps, theme, 18),
         paragraph: {
           spacing: {
-            before: 120,
+            beforeTwips: 120,
           },
           alignment: 'center',
           // Note: Borders are applied at the paragraph instance level, not in style definitions
@@ -847,14 +866,18 @@ export function createWordStyles(
           return {
             ...baseProps,
             ...(effectiveTabStops && {
-              tabStops: effectiveTabStops.map((ts: any) => ({
-                type: ts.type,
-                position:
-                  ts.position === 'max' ? TabStopPosition.MAX * 2 : ts.position,
-                ...(ts.leader && { leader: ts.leader }),
-              })),
+              tabStops: effectiveTabStops.map(
+                (ts: any): DocxIrTabStop => ({
+                  type: ts.type,
+                  positionTwips:
+                    ts.position === 'max'
+                      ? RIGHT_MARGIN_TAB_TWIPS
+                      : ts.position,
+                  ...(ts.leader && { leader: ts.leader }),
+                })
+              ),
             }),
-          } as IParagraphStylePropertiesOptions;
+          };
         })(),
       });
     }
@@ -879,9 +902,9 @@ export function createWordStyles(
       next: 'Normal',
       quickFormat: false,
       run: {
-        font: 'Arial',
-        size: 22, // 11pt
-        color: resolveColor(theme.colors.text, theme),
+        fontFamily: 'Arial',
+        sizeHalfPoints: 22, // 11pt
+        color: { hex: resolveColor(theme.colors.text, theme) },
       },
       paragraph: {
         spacing: {
@@ -889,7 +912,7 @@ export function createWordStyles(
         },
         alignment: convertAlignment('left'),
         // Increase left indent per level for visual hierarchy
-        indent: { left: (i - 1) * 360 }, // 0.25" per level (360 twips)
+        indent: { leftTwips: (i - 1) * 360 }, // 0.25" per level (360 twips)
       },
     });
   }
@@ -912,49 +935,31 @@ export function createWordStyles(
   // Word's convention is note text two points below body text. `size` is in
   // half-points here, so that is four — floored so a tiny body size cannot
   // produce an illegible note.
-  const noteRun = {
+  const noteRun: DocxIrRunFormatting = {
     ...bodyRun,
-    ...(typeof bodyRun.size === 'number' && {
-      size: Math.max(12, bodyRun.size - 4),
+    ...(typeof bodyRun.sizeHalfPoints === 'number' && {
+      sizeHalfPoints: Math.max(12, bodyRun.sizeHalfPoints - 4),
     }),
   };
 
   return {
-    paragraphStyles: paragraphStyles as WordStyleDefinition[], // Cast needed due to docx typing
-    default: {
-      // Document-default proofing language (w:docDefaults/w:rPrDefault). Runs
-      // that don't set their own w:lang inherit this, so Word spell-checks the
-      // whole document in the requested language unless a component overrides
-      // it.
-      ...(language && {
-        document: {
-          run: {
-            language: { value: language },
-          },
-        },
-      }),
-      // Run properties only: docx's own note paragraph defaults (single line
-      // spacing, no space after) are already what a note wants, and an empty
-      // spacing override would drop its line rule.
+    // Document defaults (`w:docDefaults`). A run that states no `w:lang` of its
+    // own inherits this, so Word proofs the whole document in the requested
+    // language unless a component overrides it.
+    defaults: {
+      run: { ...(language ? { language } : {}) },
+      paragraph: {},
+    },
+    paragraph: paragraphStyles,
+    character: [] as DocxIrCharacterStyle[],
+    // Run properties only: the note paragraph defaults a backend already ships
+    // (single line spacing, no space after) are what a note wants, and an empty
+    // spacing override would drop its line rule.
+    builtIn: {
       footnoteText: { run: noteRun },
       footnoteReference: { run: { ...noteRun, superScript: true } },
       endnoteText: { run: noteRun },
       endnoteReference: { run: { ...noteRun, superScript: true } },
     },
   };
-}
-
-/**
- * Maps section levels to Word style IDs
- */
-export function getStyleIdForLevel(level: number): string {
-  const styleMap: { [key: number]: string } = {
-    1: 'Heading1',
-    2: 'Heading2',
-    3: 'Heading3',
-    4: 'Heading4',
-    5: 'Heading5',
-    6: 'Heading6',
-  };
-  return styleMap[level] || 'Heading1';
 }

@@ -5,11 +5,6 @@
  * once the migration completes. It consumes DocxIR and nothing else — no author
  * JSON, no `ProcessedDocument`, no theme lookups.
  *
- * One exception is deliberate and temporary: `styles.xml` is still built by
- * `createWordStyles`, which turns a theme into docx.js style objects directly.
- * Compiling the style set into the IR is the next piece of the migration; until
- * then the IR carries a manifest of style *ids* so a paragraph cannot reference
- * a style that does not exist, and the definitions come from the theme.
  */
 
 import {
@@ -27,8 +22,7 @@ import {
   type ILevelsOptions,
   type ISectionOptions,
 } from 'docx';
-import type { ThemeConfig } from '../../styles';
-import { createWordStyles } from '../../styles/themeToDocxAdapter';
+import { emitStyles } from './styles';
 import { rasterizeSvgFallback } from '../../utils/imageUtils';
 import type {
   DocxIR,
@@ -76,18 +70,7 @@ const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set(
   [...ALL_DOCX_FEATURES].filter((feature) => !NOT_YET_EMITTED.has(feature))
 );
 
-export interface DocxJsRendererOptions {
-  /**
-   * Theme the style set is built from.
-   *
-   * Supplied by the generation path until styles are compiled into the IR.
-   */
-  theme: ThemeConfig;
-}
-
-export function createDocxJsRenderer(
-  options: DocxJsRendererOptions
-): DocxRenderer {
+export function createDocxJsRenderer(): DocxRenderer {
   return {
     id: DOCXJS_RENDERER_ID,
     format: 'docx',
@@ -97,7 +80,7 @@ export function createDocxJsRenderer(
       renderOptions?: DocxRenderOptions
     ): Promise<Uint8Array> {
       const resources = await prepareImages(ir);
-      const document = buildDocument(ir, options.theme, resources);
+      const document = buildDocument(ir, resources);
       const packed = (await Packer.toBuffer(document)) as Buffer;
       const fixed = fixFloatingImageIdsInBuffer(packed);
 
@@ -123,11 +106,10 @@ export function createDocxJsRenderer(
  */
 export function buildDocument(
   ir: DocxIR,
-  theme: ThemeConfig,
   resources: EmitResources = new Map()
 ): Document {
   return new Document({
-    styles: createWordStyles(theme, ir.settings.language),
+    styles: emitStyles(ir.styles),
     sections: ir.sections.map((section) => sectionOptions(section, resources)),
     ...coreProperties(ir),
     features: {
