@@ -248,27 +248,27 @@ not exported from `@json-to-office/json-to-docx` or
 
 ### PPTX
 
-| Feature                                      | `pptxgenjs`                                            | `office-open` (0.11.0, verified against the package)                                       |
-| -------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| masters, layouts, placeholders               | yes                                                    | yes                                                                                        |
-| slides, slide size, theme                    | yes                                                    | yes                                                                                        |
-| text bodies, rich runs, paragraph properties | yes                                                    | yes (no `txBox="1"` is ever emitted — a text box renders as a shape)                       |
-| images (raster)                              | yes                                                    | yes                                                                                        |
-| SVG images                                   | yes (raster fallback repaired during packaging)        | **no** — `PictureOptions.type` excludes `svg`, and no code path creates an SVG media entry |
-| preset shapes                                | yes                                                    | yes, but `preset` is a free-form string with no validation                                 |
-| transforms — position/size                   | yes                                                    | yes                                                                                        |
-| transforms — rotation                        | yes                                                    | shapes and groups only; `PictureOptions` has no `rotation`                                 |
-| transforms — flip                            | yes                                                    | `flipHorizontal` only; `flipVertical` is not on any pptx option type                       |
-| solid / gradient / pattern fills             | yes (gradient and pattern via a sentinel + XML splice) | yes, natively                                                                              |
-| image fills                                  | **no** — no shape image-fill API                       | yes                                                                                        |
-| lines, shadows                               | yes                                                    | yes                                                                                        |
-| tables incl. merged cells                    | yes                                                    | yes                                                                                        |
-| native charts                                | yes, with an embedded workbook                         | chart XML only — **no embedded workbook**, so "Edit Data" fails                            |
-| hyperlinks (external + slide)                | yes                                                    | yes                                                                                        |
-| speaker notes, hidden slides                 | yes                                                    | yes                                                                                        |
-| transitions                                  | **no** API                                             | yes                                                                                        |
-| groups                                       | **no** API                                             | yes                                                                                        |
-| RTL                                          | deck-level                                             | deck- and paragraph-level; run-level `rightToLeft` is declared but never emitted           |
+| Feature                                      | `pptxgenjs`                                            | `office-open` (0.11.0, verified against the package)                                                       |
+| -------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| masters, layouts, placeholders               | yes                                                    | yes                                                                                                        |
+| slides, slide size, theme                    | yes                                                    | yes                                                                                                        |
+| text bodies, rich runs, paragraph properties | yes                                                    | yes (no `txBox="1"` is ever emitted — a text box renders as a shape)                                       |
+| images (raster)                              | yes                                                    | yes                                                                                                        |
+| SVG images                                   | yes (raster fallback repaired during packaging)        | **no** — `PictureOptions.type` excludes `svg`, and no code path creates an SVG media entry                 |
+| preset shapes                                | yes                                                    | yes, but `preset` is a free-form string with no validation                                                 |
+| transforms — position/size                   | yes                                                    | yes                                                                                                        |
+| transforms — rotation                        | yes                                                    | shapes and groups only; `PictureOptions` has no `rotation`, which is why `image-transform` is not declared |
+| transforms — flip                            | yes                                                    | `flipHorizontal` only; `flipVertical` is not on any pptx option type                                       |
+| solid / gradient / pattern fills             | yes (gradient and pattern via a sentinel + XML splice) | yes, natively                                                                                              |
+| image fills                                  | **no** — no shape image-fill API                       | yes                                                                                                        |
+| lines, shadows                               | yes                                                    | yes                                                                                                        |
+| tables incl. merged cells                    | yes                                                    | yes                                                                                                        |
+| native charts                                | yes, with an embedded workbook                         | chart XML only — **no embedded workbook**, so "Edit Data" fails                                            |
+| hyperlinks (external + slide)                | yes                                                    | yes                                                                                                        |
+| speaker notes, hidden slides                 | yes                                                    | yes                                                                                                        |
+| transitions                                  | **no** API                                             | yes                                                                                                        |
+| groups                                       | **no** API                                             | yes                                                                                                        |
+| RTL                                          | deck-level                                             | deck- and paragraph-level; run-level `rightToLeft` is declared but never emitted                           |
 
 ### What the office-open adapter declares
 
@@ -315,125 +315,43 @@ Two constraints matter:
 
 ## Recorded output differences
 
-Everything else is byte-identical; these are the deliberate exceptions.
+Everything else is byte-identical, checked case by case against the pre-IR
+implementation. These are the deliberate exceptions.
 
 | Change                                                                                                | Why                                                                                                                                                                                                                                                                                                                          |
 | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A number in `[20, 100)` used as a table `x`/`y`/`w`/`h` now means inches, as it does everywhere else. | The backend's table path used a different inch/EMU threshold (20) from the rest of its API (100), so the same authored number meant different things depending on which component it was on. The compiler applies one rule. The affected range is meaningless under either reading (20–100 inches, or 20–100 EMU ≈ 0.0001"). |
-| Image `sizing` and aspect-ratio auto-fill are resolved once, before compilation.                      | Previously split between the writer and the backend. Same results — the corpus goldens for `image/contain`, `image/cover`, `image/aspect-from-*` were recorded from the old implementation and still pass.                                                                                                                   |
-| A `highcharts` component inside a template placeholder is now rejected rather than rendered.          | Placeholder content is merged with its declaration during compilation, so expanding the chart beforehand would size it from pre-merge dimensions. Failing is better than rendering it at the wrong size; slide-level and template-level highcharts are unaffected.                                                           |
+| `underline: false` no longer underlines.                                                              | The pre-IR writer treated any boolean as "underline", so `false` turned it on.                                                                                                                                                                                                                                               |
+| `bullet: { type: 'bullet' }` now produces a bullet.                                                   | The object form was passed through in a shape the backend ignored, so an authored bullet silently did nothing. The boolean form always worked.                                                                                                                                                                               |
+| A rounded table positioned with percentages now gets its rounded backdrop.                            | The backdrop was drawn only when `x` and `y` happened to be plain numbers, so a percentage-positioned rounded table came out square. The IR always carries a resolved absolute origin.                                                                                                                                       |
+| A `highcharts` component inside a template placeholder is now rejected rather than rendered.          | Placeholder content is merged with its declaration during compilation, so expanding the chart beforehand would size it from pre-merge dimensions. Failing is better than rendering it at the wrong size; slide- and template-level highcharts are unaffected.                                                                |
+
+Image `sizing` and aspect-ratio auto-fill moved into a pre-pass rather than
+being split between the writer and the backend, but the results are unchanged —
+the corpus cases for `contain`, `cover` and the auto-fill were recorded from the
+old implementation and still pass.
 
 `transition` remains authored-but-ignored on the default backend: PptxGenJS has
-no transition API, and it was silently dropped before the IR existed too. It is
-now visible as a capability the `pptxgenjs` adapter does not declare.
+no transition API, and the compiler does not lower it, so it is dropped exactly
+as it always was. It is modelled in the IR and supported by `office-open`, and
+becomes real for both when the compiler lowers it.
 
-## The DOCX half: what the migration has to absorb
+### How these were found
 
-DocxIR exists and its invariants are tested; the compiler and adapters do not.
-What follows is what a compiler has to account for, gathered by reading the
-current implementation rather than by guessing. It is written down because
-these are the details that decide whether a migration preserves behaviour.
+A corpus built feature by feature does not reach inputs where a prop only
+matters in combination with another, or where a default only shows up because
+something else is absent. Nine such inputs were losing content or shifting
+layout: template objects rendered without their slide's context, so
+`{PAGE_NUMBER}` shipped as literal braces and the deck language never reached
+them; component-level `underline` and `strike` never reached the runs of a
+rich-text body; a template's `margin` was dropped, silently resizing any
+unconstrained table on that master; a body-level hyperlink was attached to every
+run, emitting one duplicate relationship per run; and several derived geometries
+disagreed. All are byte-identical again and are pinned in
+`src/__tests__/fixtures/corpus-regressions.ts`.
 
-### Where the work is
-
-| Module                         | Lines | What it holds                                      |
-| ------------------------------ | ----- | -------------------------------------------------- |
-| `core/content.ts`              | 2855  | every primitive that builds a docx.js object       |
-| `styles/themeToDocxAdapter.ts` | 960   | theme → `IStylesOptions`, i.e. the whole style set |
-| `utils/textParser.ts`          | 661   | the inline text mini-language                      |
-| `core/layout.ts`               | ~700  | section chunking and column layout                 |
-
-The component files themselves are thin: they read props and call a primitive.
-Migrating the components is not the job — migrating `content.ts`,
-`themeToDocxAdapter.ts` and `textParser.ts` is.
-
-### The inline mini-language
-
-`**bold**`, `__bold__`, `*italic*`, `***both***`, `\n`, `\t`,
-`[text](url)`, `[text](#id)`, `[@id]` and `[@id:format]` cross-references,
-`[^id]` note markers, and the `{PAGE}` / `{TOTAL_PAGES}` / `{DATE}` /
-`{DATETIME}` / `{YEAR}` placeholders. All of it resolves to `DocxIrInline`
-nodes before the IR exists — the IR carries runs, hyperlinks, fields and note
-references, never markup.
-
-### Six registries become IR data
-
-Bookmarks, revision ids, numbering, section bookmarks, comments and notes are
-currently `AsyncLocalStorage`-scoped registries entered per render
-(`core/render.ts`). In the IR they are ordinary data: ids are allocated by the
-compiler in document order, comment and note bodies live on the root, and
-bookmark and comment ranges are explicit paired inline nodes. That is what
-makes concurrent generations independent without a storage trick.
-
-### Author units are inconsistent, and the IR is not
-
-The compiler normalises all of this; the IR states the unit in every property
-name.
-
-| Author prop                                   | Unit at the boundary                           |
-| --------------------------------------------- | ---------------------------------------------- |
-| `spacing.before/after`                        | points                                         |
-| `font.size`                                   | points                                         |
-| `font.characterSpacing.value`                 | twentieths of a point                          |
-| `indent.*`, `tabStops[].position`             | **twips already**                              |
-| table `padding`, row `height`, column `width` | points (or a percentage)                       |
-| table `borderSize`                            | points → eighths of a point                    |
-| image `width`/`height`                        | **pixels at 96 DPI** (or a percentage)         |
-| image floating offsets                        | twips → EMU                                    |
-| paragraph frame `floating.width/height`       | **twips**                                      |
-| `text-box` `width`/`height`                   | **pixels**                                     |
-| `text-box` `style.padding` and `border.width` | **points in table mode, pixels in shape mode** |
-| `columns` `width`/`gap`                       | points (or a percentage)                       |
-| list level `indent`                           | points                                         |
-| `visual` `canvas.width/height`                | **inches**                                     |
-| page size and margins                         | twips                                          |
-
-Two known defects sit in this table and must be preserved deliberately or fixed
-deliberately, not by accident: `statistic.spacing` is passed through as twips
-without the points conversion every other component applies, and the same
-`text-box` padding prop means points or pixels depending on the render mode.
-
-### Backend-specific repairs to move into `renderers/docxjs/`
-
-Each of these exists because of docx.js, not because of Word:
-
-- bookmarks are emitted as raw `BookmarkStart`/`BookmarkEnd` with a scoped
-  counter, because docx.js 9.7.1 gives every bookmark `w:id="1"`
-- `CommentReference` is wrapped in a `TextRun`, or LibreOffice drops every
-  annotation
-- duplicate `wp:docPr@id` values are rewritten in the produced zip
-- `text-box` shape mode falls back to table mode in five documented cases, and
-  drops the border when fill and outline are set together, because docx.js
-  emits two fill groups in an order Word rejects
-- `wrap.type: 'tight'` throws, because docx.js emits invalid OOXML without
-  polygon geometry
-
-Generic finalization — deterministic zip and core-metadata timestamps — stays
-outside the adapter, as it does for PPTX.
-
-### Diagnostics are the biggest gap
-
-Only three structured warning codes exist today, all in the image path
-(`IMAGE_SVG_RASTER_FAILED`, `IMAGE_SVG_RASTER_SKIPPED`,
-`TABLE_CELL_COLOR_INVALID`). Everything else — the five text-box fallbacks, two
-TOC no-ops, three note-resolution failures, two cross-reference failures,
-duplicate bookmarks, unresolved comments, invalid z-index, column overflow — is
-a bare `console.warn` with no code and no collector. The compiler is where that
-should become structured, because it is the layer that knows both the authoring
-path and the reason.
-
-### Order of work
-
-1. **Goldens first.** `src/__tests__/fixtures/corpus.ts` and its recorded
-   hashes exist now, so any compiler can be checked against the output the
-   current implementation produces. Nothing else should start before this.
-2. Compile the body: paragraphs, runs, headings, bookmarks, images, tables.
-3. Compile the document: styles, numbering, sections, headers/footers.
-4. Compile the annotations: comments, notes, revisions, fields, TOC.
-5. Write the docx.js adapter against the IR, and cut over only when the corpus
-   passes through it.
-6. Remove the native docx.js APIs and the `docx` dependency from packages with
-   no remaining source imports.
+The lesson is in that file's header: a differential comparison against the
+previous implementation finds what a feature checklist does not.
 
 ## Source map
 

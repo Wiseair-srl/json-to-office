@@ -21,13 +21,13 @@ const document = {
   ],
 } as unknown as PresentationComponentDefinition;
 
-function ir() {
-  return compileDocumentToIr(structuredClone(document)).ir;
+async function ir() {
+  return (await compileDocumentToIr(structuredClone(document))).ir;
 }
 
 describe('PptxIR debug snapshots', () => {
-  it('replaces image bytes with a hash and byte length', () => {
-    const snapshot = snapshotPptxIr(ir()) as {
+  it('replaces image bytes with a hash and byte length', async () => {
+    const snapshot = snapshotPptxIr(await ir()) as {
       resources: Array<{ origin: Record<string, unknown> }>;
     };
 
@@ -39,12 +39,12 @@ describe('PptxIR debug snapshots', () => {
     expect(JSON.stringify(snapshot)).not.toContain('Uint8Array');
   });
 
-  it('is stable across repeated compilations', () => {
-    expect(formatPptxIr(ir())).toBe(formatPptxIr(ir()));
+  it('is stable across repeated compilations', async () => {
+    expect(formatPptxIr(await ir())).toBe(formatPptxIr(await ir()));
   });
 
-  it('sorts object keys but preserves array order', () => {
-    const snapshot = snapshotPptxIr(ir()) as Record<string, unknown> & {
+  it('sorts object keys but preserves array order', async () => {
+    const snapshot = snapshotPptxIr(await ir()) as Record<string, unknown> & {
       slides: Array<{ elements: Array<{ kind: string }> }>;
     };
 
@@ -56,17 +56,17 @@ describe('PptxIR debug snapshots', () => {
     ]);
   });
 
-  it('omits undefined values so optional fields do not churn the snapshot', () => {
-    expect(formatPptxIr(ir())).not.toContain('undefined');
+  it('omits undefined values so optional fields do not churn the snapshot', async () => {
+    expect(formatPptxIr(await ir())).not.toContain('undefined');
   });
 
-  it('serialises to JSON with a trailing newline', () => {
-    const text = formatPptxIr(ir());
+  it('serialises to JSON with a trailing newline', async () => {
+    const text = formatPptxIr(await ir());
     expect(text.endsWith('\n')).toBe(true);
     expect(() => JSON.parse(text)).not.toThrow();
   });
 
-  it('matches a recorded snapshot', () => {
-    expect(formatPptxIr(ir())).toMatchSnapshot();
+  it('matches a recorded snapshot', async () => {
+    expect(formatPptxIr(await ir())).toMatchSnapshot();
   });
 });

@@ -272,6 +272,7 @@ function createBuilderImpl<
       validation: state.validation,
       packaging: state.packaging,
       baseDir: state.baseDir,
+      renderer: state.renderer,
     };
 
     return createBuilderImpl<readonly [...TComponents, TNewComponent]>(

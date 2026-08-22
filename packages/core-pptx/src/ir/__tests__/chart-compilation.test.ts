@@ -72,7 +72,7 @@ function chartDoc(
   } as unknown as PresentationComponentDefinition;
 }
 
-function compile(
+async function compile(
   colors: ThemeColors,
   props: Record<string, unknown> = {},
   options: IrGenerationOptions = {}
@@ -113,7 +113,7 @@ interface CompiledChart extends EmittedChart {
   warnings: PipelineWarning[];
 }
 
-function compileChart(
+async function compileChart(
   colors: ThemeColors,
   props: Record<string, unknown> = {},
   /**
@@ -122,20 +122,20 @@ function compileChart(
    * one deliberately opt out — the malformed slot is what they are about.
    */
   { validateIr = true }: { validateIr?: boolean } = {}
-): CompiledChart {
-  const { ir, warnings } = compile(colors, props);
+): Promise<CompiledChart> {
+  const { ir, warnings } = await compile(colors, props);
   if (validateIr) assertValidPptxIr(ir);
   const chart = ir.slides[0].elements[0] as PptxIrChartElement;
   return { chart, warnings, ...emit(chart) };
 }
 
 describe('chart series palette', () => {
-  it('resolves a token whose value names another token', () => {
+  it('resolves a token whose value names another token', async () => {
     // The theme schema allows "accent4": "primary". pptxgenjs answers an
     // unresolved token name with a console log and a black series, so the
     // reference has to be walked in the compiler. DOCX resolves the same theme
     // to ['#0066cc', '#6c757d', '#17a2b8', '#0066CC'].
-    const { chart, opts, warnings } = compileChart({
+    const { chart, opts, warnings } = await compileChart({
       ...baseColors,
       accent4: 'primary',
     });
@@ -151,8 +151,8 @@ describe('chart series palette', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('drops a token whose value resolves to nothing', () => {
-    const { chart, opts, warnings } = compileChart(
+  it('drops a token whose value resolves to nothing', async () => {
+    const { chart, opts, warnings } = await compileChart(
       { ...baseColors, accent4: 'notAThemeColor' },
       {},
       { validateIr: false }
@@ -163,8 +163,8 @@ describe('chart series palette', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('drops tokens caught in a reference cycle', () => {
-    const { chart, opts } = compileChart({
+  it('drops tokens caught in a reference cycle', async () => {
+    const { chart, opts } = await compileChart({
       ...baseColors,
       accent4: 'accent5',
       accent5: 'accent4',
@@ -174,10 +174,10 @@ describe('chart series palette', () => {
     expect(opts.chartColors).toEqual(['0066CC', '6C757D', '17A2B8']);
   });
 
-  it('warns and falls back for an explicit chartColors entry that resolves to nothing', () => {
+  it('warns and falls back for an explicit chartColors entry that resolves to nothing', async () => {
     // Only the implicit palette skips silently — naming a broken token is an
     // authoring error, so it stays loud and never reaches pptxgenjs verbatim.
-    const { chart, opts, warnings } = compileChart(
+    const { chart, opts, warnings } = await compileChart(
       { ...baseColors, accent4: 'notAThemeColor' },
       { chartColors: ['accent4'] },
       { validateIr: false }
@@ -190,8 +190,8 @@ describe('chart series palette', () => {
     expect(warnings[0].message).toMatch(/accent4/);
   });
 
-  it('resolves an explicit chartColors entry through the reference chain', () => {
-    const { chart, opts, warnings } = compileChart(
+  it('resolves an explicit chartColors entry through the reference chain', async () => {
+    const { chart, opts, warnings } = await compileChart(
       { ...baseColors, accent4: 'primary' },
       { chartColors: ['accent4'] }
     );
@@ -201,12 +201,12 @@ describe('chart series palette', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('leaves chartColors unset when no token resolves', () => {
+  it('leaves chartColors unset when no token resolves', async () => {
     // pptxgenjs indexes `chartColors[i % length]`; an empty array yields
     // undefined and paints every series black without a warning. The compiler
     // keeps the palette empty and the adapter omits the option, handing
     // pptxgenjs its own palette instead.
-    const { chart, opts } = compileChart(
+    const { chart, opts } = await compileChart(
       {
         primary: 'blue',
         secondary: 'red',
@@ -224,8 +224,8 @@ describe('chart series palette', () => {
 });
 
 describe('chart styling passthrough', () => {
-  it('passes styling options through with resolved colors', () => {
-    const { chart, opts, warnings } = compileChart(baseColors, {
+  it('passes styling options through with resolved colors', async () => {
+    const { chart, opts, warnings } = await compileChart(baseColors, {
       dataBorder: { pt: 0.75, color: 'primary' },
       catGridLine: { style: 'none' },
       valGridLine: { style: 'dash', size: 0.5, color: 'accent' },
@@ -264,8 +264,8 @@ describe('chart styling passthrough', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('leaves the styling passthrough opts unset when absent', () => {
-    const { chart, opts } = compileChart(baseColors);
+  it('leaves the styling passthrough opts unset when absent', async () => {
+    const { chart, opts } = await compileChart(baseColors);
 
     expect(chart.options.dataBorder).toBeUndefined();
     expect(chart.options.categoryAxis.gridLine).toBeUndefined();
@@ -286,8 +286,8 @@ describe('chart styling passthrough', () => {
 });
 
 describe('chart axis options', () => {
-  it('passes axis line visibility and val label font size through', () => {
-    const { chart, opts } = compileChart(baseColors, {
+  it('passes axis line visibility and val label font size through', async () => {
+    const { chart, opts } = await compileChart(baseColors, {
       catAxisLineShow: false,
       valAxisLineShow: false,
       valAxisLabelFontSize: 12,
@@ -302,8 +302,8 @@ describe('chart axis options', () => {
     expect(opts.valAxisLabelFontSize).toBe(12);
   });
 
-  it('leaves axis line options unset when not given', () => {
-    const { chart, opts } = compileChart(baseColors);
+  it('leaves axis line options unset when not given', async () => {
+    const { chart, opts } = await compileChart(baseColors);
 
     expect(chart.options.categoryAxis.showLine).toBeUndefined();
     expect(chart.options.valueAxis.showLine).toBeUndefined();
@@ -314,8 +314,8 @@ describe('chart axis options', () => {
     expect(opts.valAxisLabelFontSize).toBeUndefined();
   });
 
-  it('carries axis titles, bounds and the value label format code', () => {
-    const { chart, opts } = compileChart(baseColors, {
+  it('carries axis titles, bounds and the value label format code', async () => {
+    const { chart, opts } = await compileChart(baseColors, {
       catAxisTitle: 'Quarter',
       catAxisHidden: false,
       catAxisLabelRotate: -45,
@@ -359,8 +359,8 @@ describe('chart label font weights', () => {
   // survives as a synthesized sub-family name — the same seam text runs use.
   const themed = baseColors;
 
-  it('rewrites every label face to the sub-family for a non-RIBBI weight', () => {
-    const { chart, opts } = compileChart(themed, {
+  it('rewrites every label face to the sub-family for a non-RIBBI weight', async () => {
+    const { chart, opts } = await compileChart(themed, {
       titleFontFace: 'Inter',
       titleFontWeight: 300,
       legendFontFace: 'Inter',
@@ -400,8 +400,8 @@ describe('chart label font weights', () => {
     expect(opts.dataLabelFontBold).toBe(false);
   });
 
-  it('keeps the canonical family and uses the bold toggle at 400/700', () => {
-    const { chart, opts } = compileChart(themed, {
+  it('keeps the canonical family and uses the bold toggle at 400/700', async () => {
+    const { chart, opts } = await compileChart(themed, {
       titleFontFace: 'Inter',
       titleFontWeight: 700,
       catAxisLabelFontFace: 'Inter',
@@ -423,15 +423,17 @@ describe('chart label font weights', () => {
     expect(opts.catAxisLabelFontBold).toBe(false);
   });
 
-  it('falls back to the theme body font when only a weight is given', () => {
-    const { chart, opts } = compileChart(themed, { dataLabelFontWeight: 300 });
+  it('falls back to the theme body font when only a weight is given', async () => {
+    const { chart, opts } = await compileChart(themed, {
+      dataLabelFontWeight: 300,
+    });
 
     expect(chart.options.dataLabelFont.fontFamily).toBe('Inter Light');
     expect(opts.dataLabelFontFace).toBe('Inter Light');
   });
 
-  it('lets the weight win over dataLabelFontBold', () => {
-    const { chart, opts } = compileChart(themed, {
+  it('lets the weight win over dataLabelFontBold', async () => {
+    const { chart, opts } = await compileChart(themed, {
       dataLabelFontFace: 'Inter',
       dataLabelFontBold: true,
       dataLabelFontWeight: 300,
@@ -446,8 +448,8 @@ describe('chart label font weights', () => {
     expect(opts.dataLabelFontBold).toBe(false);
   });
 
-  it('leaves dataLabelFontBold alone when no weight accompanies it', () => {
-    const { chart, opts } = compileChart(themed, {
+  it('leaves dataLabelFontBold alone when no weight accompanies it', async () => {
+    const { chart, opts } = await compileChart(themed, {
       dataLabelFontFace: 'Inter',
       dataLabelFontBold: true,
     });
@@ -461,10 +463,10 @@ describe('chart label font weights', () => {
     expect(opts.dataLabelFontBold).toBe(true);
   });
 
-  it('warns that a bold legend weight is dropped', () => {
+  it('warns that a bold legend weight is dropped', async () => {
     // pptxgenjs writes no `b=` for the legend, so 700 has nowhere to land and
     // the legend renders Regular. Every other slot has a bold companion.
-    const { chart, opts, warnings } = compileChart(themed, {
+    const { chart, opts, warnings } = await compileChart(themed, {
       legendFontFace: 'Inter',
       legendFontWeight: 700,
     });
@@ -481,8 +483,8 @@ describe('chart label font weights', () => {
     ]);
   });
 
-  it('passes a face through untouched when no weight accompanies it', () => {
-    const { chart, opts, warnings } = compileChart(themed, {
+  it('passes a face through untouched when no weight accompanies it', async () => {
+    const { chart, opts, warnings } = await compileChart(themed, {
       legendFontFace: 'Inter',
     });
 
@@ -512,13 +514,13 @@ describe('chart type mapping', () => {
     'scatter',
   ];
 
-  it('carries every supported type onto the IR and into addChart', () => {
+  it('carries every supported type onto the IR and into addChart', async () => {
     for (const type of types) {
       const {
         chart,
         type: emitted,
         warnings,
-      } = compileChart(baseColors, {
+      } = await compileChart(baseColors, {
         type,
       });
 
@@ -528,8 +530,8 @@ describe('chart type mapping', () => {
     }
   });
 
-  it('records the charts feature requirement with the element path', () => {
-    const { required } = compile(baseColors);
+  it('records the charts feature requirement with the element path', async () => {
+    const { required } = await compile(baseColors);
 
     expect(required).toContainEqual({
       feature: 'charts',
@@ -537,10 +539,10 @@ describe('chart type mapping', () => {
     });
   });
 
-  it('drops the chart and warns on an unknown type', () => {
+  it('drops the chart and warns on an unknown type', async () => {
     // Schema-invalid on purpose: the compiler must not depend on the
     // validator having run.
-    const { ir, warnings } = compile(
+    const { ir, warnings } = await compile(
       baseColors,
       { type: 'donut' },
       { validation: { enabled: false } }
@@ -559,8 +561,8 @@ describe('chart type mapping', () => {
 });
 
 describe('chart data validation', () => {
-  it('carries series names, labels, values and bubble sizes through', () => {
-    const { chart, data } = compileChart(baseColors, {
+  it('carries series names, labels, values and bubble sizes through', async () => {
+    const { chart, data } = await compileChart(baseColors, {
       type: 'bubble',
       data: [
         { name: 'Alpha', labels: ['a', 'b'], values: [1, 2], sizes: [3, 4] },
@@ -578,8 +580,8 @@ describe('chart data validation', () => {
     ]);
   });
 
-  it('drops the chart and warns when there are no data series', () => {
-    const { ir, warnings } = compile(
+  it('drops the chart and warns when there are no data series', async () => {
+    const { ir, warnings } = await compile(
       baseColors,
       { data: [] },
       { validation: { enabled: false } }
@@ -596,8 +598,8 @@ describe('chart data validation', () => {
     ]);
   });
 
-  it('drops the chart and warns when a named series has no values', () => {
-    const { ir, warnings } = compile(baseColors, {
+  it('drops the chart and warns when a named series has no values', async () => {
+    const { ir, warnings } = await compile(baseColors, {
       data: [{ name: 'S', labels: ['a', 'b'] }],
     });
     assertValidPptxIr(ir);
@@ -612,8 +614,8 @@ describe('chart data validation', () => {
     ]);
   });
 
-  it('names an unnamed invalid series "(unnamed)"', () => {
-    const { ir, warnings } = compile(baseColors, {
+  it('names an unnamed invalid series "(unnamed)"', async () => {
+    const { ir, warnings } = await compile(baseColors, {
       data: [{ values: [1, 2] }],
     });
     assertValidPptxIr(ir);
@@ -628,10 +630,10 @@ describe('chart data validation', () => {
     ]);
   });
 
-  it('warns but still compiles a multi-series pie chart', () => {
+  it('warns but still compiles a multi-series pie chart', async () => {
     // PowerPoint renders only the first series; the chart is kept so the deck
     // still shows something rather than a hole.
-    const { chart, warnings } = compileChart(baseColors, {
+    const { chart, warnings } = await compileChart(baseColors, {
       type: 'pie',
       data: [
         { name: 'A', labels: ['a', 'b'], values: [1, 2] },

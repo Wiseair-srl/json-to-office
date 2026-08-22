@@ -30,15 +30,15 @@ const slide = (
   props: Record<string, unknown> = {}
 ): unknown => ({ name: 'slide', props, children });
 
-function compile(document: PresentationComponentDefinition) {
-  const result = compileDocumentToIr(document);
+async function compile(document: PresentationComponentDefinition) {
+  const result = await compileDocumentToIr(document);
   assertValidPptxIr(result.ir);
   return result;
 }
 
 describe('PptxIR shape and identity', () => {
-  it('carries the schema version and resolved deck metadata', () => {
-    const { ir } = compile(
+  it('carries the schema version and resolved deck metadata', async () => {
+    const { ir } = await compile(
       deck([slide([{ name: 'text', props: { text: 'Hi' } }])], {
         title: 'Deck',
         author: 'Ada',
@@ -59,8 +59,8 @@ describe('PptxIR shape and identity', () => {
     expect(ir.rtl).toBe(false);
   });
 
-  it('resolves the slide size to EMU', () => {
-    const { ir } = compile(
+  it('resolves the slide size to EMU', async () => {
+    const { ir } = await compile(
       deck([slide([])], { slideWidth: 13.333, slideHeight: 7.5 })
     );
 
@@ -70,13 +70,13 @@ describe('PptxIR shape and identity', () => {
     });
   });
 
-  it('defaults the slide size to 10x7.5 inches', () => {
-    const { ir } = compile(deck([slide([])]));
+  it('defaults the slide size to 10x7.5 inches', async () => {
+    const { ir } = await compile(deck([slide([])]));
     expect(ir.size).toEqual({ widthEmu: 9144000, heightEmu: 6858000 });
   });
 
-  it('derives element ids from position, not a counter', () => {
-    const { ir } = compile(
+  it('derives element ids from position, not a counter', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           { name: 'text', props: { text: 'a' } },
@@ -91,7 +91,7 @@ describe('PptxIR shape and identity', () => {
     expect(ir.slides[1].elements.map((e) => e.id)).toEqual(['s2.e0']);
   });
 
-  it('produces identical ids across repeated compilations', () => {
+  it('produces identical ids across repeated compilations', async () => {
     const document = deck([
       slide([
         { name: 'text', props: { text: 'a' } },
@@ -99,23 +99,23 @@ describe('PptxIR shape and identity', () => {
       ]),
     ]);
 
-    const first = compile(structuredClone(document));
-    const second = compile(structuredClone(document));
+    const first = await compile(structuredClone(document));
+    const second = await compile(structuredClone(document));
 
     expect(first.ir.slides[0].elements.map((e) => e.id)).toEqual(
       second.ir.slides[0].elements.map((e) => e.id)
     );
   });
 
-  it('records an IR path on every element', () => {
-    const { ir } = compile(
+  it('records an IR path on every element', async () => {
+    const { ir } = await compile(
       deck([slide([{ name: 'text', props: { text: 'a' } }])])
     );
     expect(ir.slides[0].elements[0].path).toBe('slides[0].elements[0]');
   });
 
-  it('drops disabled slides and keeps ordering stable', () => {
-    const { ir } = compile(
+  it('drops disabled slides and keeps ordering stable', async () => {
+    const { ir } = await compile(
       deck([
         slide([{ name: 'text', props: { text: 'one' } }]),
         { ...(slide([]) as object), enabled: false },
@@ -127,8 +127,8 @@ describe('PptxIR shape and identity', () => {
     expect(ir.slides.map((s) => s.id)).toEqual(['slide1', 'slide2']);
   });
 
-  it('holds no functions or renderer instances', () => {
-    const { ir } = compile(
+  it('holds no functions or renderer instances', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           { name: 'text', props: { text: 'a' } },
@@ -160,8 +160,8 @@ describe('PptxIR shape and identity', () => {
 });
 
 describe('PptxIR unit resolution', () => {
-  it('converts inch positions to EMU', () => {
-    const { ir } = compile(
+  it('converts inch positions to EMU', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           {
@@ -180,8 +180,8 @@ describe('PptxIR unit resolution', () => {
     });
   });
 
-  it('resolves percentage positions against the slide extent in EMU', () => {
-    const { ir } = compile(
+  it('resolves percentage positions against the slide extent in EMU', async () => {
+    const { ir } = await compile(
       deck(
         [
           slide([
@@ -203,8 +203,8 @@ describe('PptxIR unit resolution', () => {
     });
   });
 
-  it('treats a value of 100 or more as EMU, matching the authoring contract', () => {
-    const { ir } = compile(
+  it('treats a value of 100 or more as EMU, matching the authoring contract', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           {
@@ -218,8 +218,8 @@ describe('PptxIR unit resolution', () => {
     expect(ir.slides[0].elements[0].transform.xEmu).toBe(914400);
   });
 
-  it('resolves grid cells to explicit EMU transforms', () => {
-    const { ir } = compile(
+  it('resolves grid cells to explicit EMU transforms', async () => {
+    const { ir } = await compile(
       deck(
         [
           slide([
@@ -248,8 +248,8 @@ describe('PptxIR unit resolution', () => {
     ).not.toHaveProperty('grid');
   });
 
-  it('keeps font sizes in points and geometry in EMU', () => {
-    const { ir } = compile(
+  it('keeps font sizes in points and geometry in EMU', async () => {
+    const { ir } = await compile(
       deck([
         slide([{ name: 'text', props: { text: 'x', fontSize: 24, y: 1 } }]),
       ])
@@ -262,8 +262,8 @@ describe('PptxIR unit resolution', () => {
 });
 
 describe('PptxIR value resolution', () => {
-  it('resolves theme colour tokens to bare uppercase hex', () => {
-    const { ir } = compile(
+  it('resolves theme colour tokens to bare uppercase hex', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           { name: 'text', props: { text: 'x', color: 'primary' } },
@@ -292,15 +292,15 @@ describe('PptxIR value resolution', () => {
     });
   });
 
-  it('resolves the theme palette to hex', () => {
-    const { ir } = compile(deck([slide([])]));
+  it('resolves the theme palette to hex', async () => {
+    const { ir } = await compile(deck([slide([])]));
     for (const value of Object.values(ir.theme.palette)) {
       expect(value).toMatch(/^[0-9A-F]{6}$/);
     }
   });
 
-  it('flattens the font cascade onto every run', () => {
-    const { ir } = compile(
+  it('flattens the font cascade onto every run', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           {
@@ -329,8 +329,8 @@ describe('PptxIR value resolution', () => {
     });
   });
 
-  it('applies weight aliasing once, from the base family', () => {
-    const { ir } = compile(
+  it('applies weight aliasing once, from the base family', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           {
@@ -350,8 +350,8 @@ describe('PptxIR value resolution', () => {
     expect(element.runs[1].fontFamily).toBe('Inter Medium');
   });
 
-  it('substitutes page-number placeholders per slide', () => {
-    const { ir } = compile(
+  it('substitutes page-number placeholders per slide', async () => {
+    const { ir } = await compile(
       deck(
         [
           slide([
@@ -371,8 +371,8 @@ describe('PptxIR value resolution', () => {
     expect(textOf(1)).toBe('2/2');
   });
 
-  it('rebases slide hyperlinks onto generated numbering', () => {
-    const { ir } = compile(
+  it('rebases slide hyperlinks onto generated numbering', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           { name: 'text', props: { text: 'link', hyperlink: { slide: 3 } } },
@@ -386,8 +386,8 @@ describe('PptxIR value resolution', () => {
     expect(element.hyperlink).toEqual({ kind: 'slide', slideIndex: 2 });
   });
 
-  it('drops an unresolvable slide hyperlink with a warning', () => {
-    const { ir, warnings } = compile(
+  it('drops an unresolvable slide hyperlink with a warning', async () => {
+    const { ir, warnings } = await compile(
       deck([
         slide([
           { name: 'text', props: { text: 'link', hyperlink: { slide: 9 } } },
@@ -400,8 +400,8 @@ describe('PptxIR value resolution', () => {
     expect(warnings.map((w) => w.code)).toContain('HYPERLINK_SLIDE_UNRESOLVED');
   });
 
-  it('compiles a gradient background into a full-bleed shape behind content', () => {
-    const { ir } = compile(
+  it('compiles a gradient background into a full-bleed shape behind content', async () => {
+    const { ir } = await compile(
       deck([
         slide([{ name: 'text', props: { text: 'over' } }], {
           background: {
@@ -435,8 +435,8 @@ describe('PptxIR value resolution', () => {
 });
 
 describe('PptxIR resources', () => {
-  it('deduplicates identical inline images by content hash', () => {
-    const { ir } = compile(
+  it('deduplicates identical inline images by content hash', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           { name: 'image', props: { base64: PNG_1PX, x: 0, y: 0, w: 1, h: 1 } },
@@ -452,8 +452,8 @@ describe('PptxIR resources', () => {
     expect(ids).toEqual(['res1', 'res1']);
   });
 
-  it('keeps distinct images apart', () => {
-    const { ir } = compile(
+  it('keeps distinct images apart', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           { name: 'image', props: { base64: PNG_1PX, x: 0, y: 0, w: 1, h: 1 } },
@@ -468,8 +468,8 @@ describe('PptxIR resources', () => {
     expect(ir.resources.map((r) => r.id)).toEqual(['res1', 'res2']);
   });
 
-  it('stores inline bytes with a content hash and media type', () => {
-    const { ir } = compile(
+  it('stores inline bytes with a content hash and media type', async () => {
+    const { ir } = await compile(
       deck([
         slide([
           { name: 'image', props: { base64: PNG_1PX, x: 0, y: 0, w: 1, h: 1 } },
@@ -486,8 +486,8 @@ describe('PptxIR resources', () => {
     expect(resource.origin.sha256).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('wraps raw SVG markup as an inline svg resource', () => {
-    const { ir, required } = compile(
+  it('wraps raw SVG markup as an inline svg resource', async () => {
+    const { ir, required } = await compile(
       deck([
         slide([
           {
@@ -510,16 +510,16 @@ describe('PptxIR resources', () => {
 });
 
 describe('PptxIR feature requirements', () => {
-  const featuresFor = (document: PresentationComponentDefinition) =>
-    new Set(compile(document).required.map((r) => r.feature));
+  const featuresFor = async (document: PresentationComponentDefinition) =>
+    new Set((await compile(document)).required.map((r) => r.feature));
 
-  it('records text and rich-text separately', () => {
+  it('records text and rich-text separately', async () => {
     expect(
-      featuresFor(deck([slide([{ name: 'text', props: { text: 'x' } }])]))
+      await featuresFor(deck([slide([{ name: 'text', props: { text: 'x' } }])]))
     ).toContain('text');
 
     expect(
-      featuresFor(
+      await featuresFor(
         deck([
           slide([
             { name: 'text', props: { runs: [{ text: 'a' }, { text: 'b' }] } },
@@ -529,9 +529,9 @@ describe('PptxIR feature requirements', () => {
     ).toContain('rich-text');
   });
 
-  it('records the fill kind actually used', () => {
+  it('records the fill kind actually used', async () => {
     expect(
-      featuresFor(
+      await featuresFor(
         deck([
           slide([
             {
@@ -559,7 +559,7 @@ describe('PptxIR feature requirements', () => {
     ).toContain('gradient-fills');
 
     expect(
-      featuresFor(
+      await featuresFor(
         deck([
           slide([
             {
@@ -585,8 +585,8 @@ describe('PptxIR feature requirements', () => {
     ).toContain('pattern-fills');
   });
 
-  it('records notes, hidden slides and backgrounds', () => {
-    const features = featuresFor(
+  it('records notes, hidden slides and backgrounds', async () => {
+    const features = await featuresFor(
       deck([
         slide([{ name: 'text', props: { text: 'x' } }], {
           notes: 'hello',
@@ -601,16 +601,16 @@ describe('PptxIR feature requirements', () => {
     expect(features).toContain('backgrounds');
   });
 
-  it('records each requirement with the IR path that needs it', () => {
-    const { required } = compile(
+  it('records each requirement with the IR path that needs it', async () => {
+    const { required } = await compile(
       deck([slide([{ name: 'text', props: { text: 'x' } }])])
     );
     const textRequirement = required.find((r) => r.feature === 'text');
     expect(textRequirement?.path).toBe('slides[0].elements[0]');
   });
 
-  it('does not require features the document never uses', () => {
-    const features = featuresFor(
+  it('does not require features the document never uses', async () => {
+    const features = await featuresFor(
       deck([slide([{ name: 'text', props: { text: 'x' } }])])
     );
     expect(features.has('charts')).toBe(false);
@@ -620,31 +620,42 @@ describe('PptxIR feature requirements', () => {
 });
 
 describe('PptxIR uncompiled components', () => {
-  it('reports a component it cannot lower instead of dropping it', () => {
-    const { unsupported } = compileDocumentToIr(
+  it('reports a component it cannot lower instead of dropping it', async () => {
+    // The highcharts pre-pass now runs before compilation, so a slide-level
+    // `highcharts` is fetched from the export server and replaced by an image
+    // before the compiler ever sees it. Placeholder content is merged with its
+    // declaration during compilation, so the pre-pass deliberately leaves it
+    // alone — which makes a placeholder the case where "cannot lower" still has
+    // to be reported rather than silently dropped. Both seams report it: the
+    // pre-pass that could not expand it, and the compiler that could not lower
+    // it.
+    const { unsupported } = await compileDocumentToIr(
       deck([
-        slide([
-          {
-            name: 'highcharts',
-            props: {
-              options: { chart: { width: 960, height: 720 }, series: [] },
-              x: 1,
-              y: 1,
-              w: 4,
-              h: 3,
+        slide([], {
+          placeholders: {
+            body: {
+              name: 'highcharts',
+              props: {
+                options: { chart: { width: 960, height: 720 }, series: [] },
+                x: 1,
+                y: 1,
+                w: 4,
+                h: 3,
+              },
             },
           },
-        ]),
+        }),
       ])
     );
 
     expect(unsupported).toEqual([
       { name: 'highcharts', path: 'slides[0].elements[0]' },
+      { name: 'highcharts', path: 'slides[0].placeholders.body' },
     ]);
   });
 
-  it('lowers tables rather than reporting them', () => {
-    const { unsupported, ir } = compileDocumentToIr(
+  it('lowers tables rather than reporting them', async () => {
+    const { unsupported, ir } = await compileDocumentToIr(
       deck([
         slide([
           {

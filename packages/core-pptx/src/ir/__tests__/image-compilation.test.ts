@@ -63,15 +63,15 @@ const image = (props: Record<string, unknown>): unknown => ({
 });
 
 /** One image component, compiled to IR through the public entry point. */
-function compileImage(
+async function compileImage(
   props: Record<string, unknown>,
   options?: Parameters<typeof compileDocumentToIr>[1]
-): {
+): Promise<{
   element: PptxIrImageElement | undefined;
   resources: PptxIrResource[];
   warnings: PipelineWarning[];
-} {
-  const { ir, warnings } = compileDocumentToIr(
+}> {
+  const { ir, warnings } = await compileDocumentToIr(
     deck([slide([image(props)])]),
     options
   );
@@ -97,8 +97,10 @@ function inlineBytes(resource: PptxIrResource): Uint8Array {
  * The old test mocked `slide.addImage`; this does the same thing one layer
  * down, where the call is now made.
  */
-function imageOpts(props: Record<string, unknown>): Record<string, unknown> {
-  const { ir } = compileDocumentToIr(deck([slide([image(props)])]));
+async function imageOpts(
+  props: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const { ir } = await compileDocumentToIr(deck([slide([image(props)])]));
   const element = ir.slides[0].elements[0] as PptxIrImageElement;
   const calls: Record<string, unknown>[] = [];
   const slideStub = {
@@ -146,8 +148,8 @@ async function slideXml(
 }
 
 describe('PptxIR image sources', () => {
-  it('wraps raw svg markup into an inline image/svg+xml resource', () => {
-    const { element, resources } = compileImage({ svg: SVG, w: 4, h: 2 });
+  it('wraps raw svg markup into an inline image/svg+xml resource', async () => {
+    const { element, resources } = await compileImage({ svg: SVG, w: 4, h: 2 });
 
     expect(resources).toHaveLength(1);
     expect(resources[0].mediaType).toBe('image/svg+xml');
@@ -155,7 +157,7 @@ describe('PptxIR image sources', () => {
     expect(element?.resourceId).toBe('res1');
   });
 
-  it('prefers svg over base64 and path (precedence svg > base64 > path)', () => {
+  it('prefers svg over base64 and path (precedence svg > base64 > path)', async () => {
     // Authoring more than one source is now a document-level conflict (see the
     // next test), so the precedence rule is exercised at the compiler seam
     // that still applies it, past the validator.
@@ -184,8 +186,8 @@ describe('PptxIR image sources', () => {
     );
   });
 
-  it('rejects a document that authors more than one source', () => {
-    expect(() =>
+  it('rejects a document that authors more than one source', async () => {
+    await expect(
       compileImage({
         svg: SVG,
         base64: 'data:image/png;base64,AAAA',
@@ -193,11 +195,11 @@ describe('PptxIR image sources', () => {
         w: 4,
         h: 2,
       })
-    ).toThrow(/only one source/);
+    ).rejects.toThrow(/only one source/);
   });
 
-  it('routes a base64 data URI to an inline resource', () => {
-    const { resources } = compileImage({
+  it('routes a base64 data URI to an inline resource', async () => {
+    const { resources } = await compileImage({
       base64: 'data:image/png;base64,AAAA',
       w: 4,
       h: 2,
@@ -211,8 +213,8 @@ describe('PptxIR image sources', () => {
     );
   });
 
-  it('routes a URL to a remote resource, not inline bytes', () => {
-    const { resources } = compileImage({
+  it('routes a URL to a remote resource, not inline bytes', async () => {
+    const { resources } = await compileImage({
       path: 'https://example.com/x.png',
       w: 4,
       h: 2,
@@ -226,16 +228,16 @@ describe('PptxIR image sources', () => {
     expect(resources[0].mediaType).toBe('image/png');
   });
 
-  it('warns and skips when no source is provided', () => {
-    const { element, resources, warnings } = compileImage({ w: 4, h: 2 });
+  it('warns and skips when no source is provided', async () => {
+    const { element, resources, warnings } = await compileImage({ w: 4, h: 2 });
 
     expect(element).toBeUndefined();
     expect(resources).toHaveLength(0);
     expect(warnings.map((w) => w.code)).toContain('IMAGE_NO_SOURCE');
   });
 
-  it('ignores a blank base64 and falls through to a valid path', () => {
-    const { element, resources, warnings } = compileImage({
+  it('ignores a blank base64 and falls through to a valid path', async () => {
+    const { element, resources, warnings } = await compileImage({
       base64: '   ',
       path: 'https://example.com/x.png',
       w: 4,
@@ -250,8 +252,8 @@ describe('PptxIR image sources', () => {
     expect(warnings).toHaveLength(0);
   });
 
-  it('warns and skips when all sources are blank', () => {
-    const { element, resources, warnings } = compileImage({
+  it('warns and skips when all sources are blank', async () => {
+    const { element, resources, warnings } = await compileImage({
       svg: '  ',
       base64: '',
       path: '   ',
@@ -266,8 +268,8 @@ describe('PptxIR image sources', () => {
 });
 
 describe('PptxIR image path policy', () => {
-  it('resolves a relative local path against the working directory', () => {
-    const { resources } = compileImage({
+  it('resolves a relative local path against the working directory', async () => {
+    const { resources } = await compileImage({
       path: 'assets/logo.png',
       w: 4,
       h: 2,
@@ -279,8 +281,8 @@ describe('PptxIR image path policy', () => {
     });
   });
 
-  it('warns and drops an image whose path escapes the allowed roots', () => {
-    const { element, resources, warnings } = compileImage({
+  it('warns and drops an image whose path escapes the allowed roots', async () => {
+    const { element, resources, warnings } = await compileImage({
       path: '../../../etc/passwd',
       w: 4,
       h: 2,
@@ -294,15 +296,15 @@ describe('PptxIR image path policy', () => {
 });
 
 describe('PptxGenJS image option bag', () => {
-  it('passes raw svg markup as an image/svg+xml data URI via data', () => {
-    const opts = imageOpts({ svg: SVG, w: 4, h: 2 });
+  it('passes raw svg markup as an image/svg+xml data URI via data', async () => {
+    const opts = await imageOpts({ svg: SVG, w: 4, h: 2 });
 
     expect(opts.data).toBe(SVG_DATA_URI);
     expect(opts.path).toBeUndefined();
   });
 
-  it('routes a base64 data URI through data', () => {
-    const opts = imageOpts({
+  it('routes a base64 data URI through data', async () => {
+    const opts = await imageOpts({
       base64: 'data:image/png;base64,AAAA',
       w: 4,
       h: 2,
@@ -312,15 +314,19 @@ describe('PptxGenJS image option bag', () => {
     expect(opts.path).toBeUndefined();
   });
 
-  it('routes a URL through path', () => {
-    const opts = imageOpts({ path: 'https://example.com/x.png', w: 4, h: 2 });
+  it('routes a URL through path', async () => {
+    const opts = await imageOpts({
+      path: 'https://example.com/x.png',
+      w: 4,
+      h: 2,
+    });
 
     expect(opts.path).toBe('https://example.com/x.png');
     expect(opts.data).toBeUndefined();
   });
 
-  it('routes a local file through path, already resolved', () => {
-    const opts = imageOpts({ path: 'assets/logo.png', w: 4, h: 2 });
+  it('routes a local file through path, already resolved', async () => {
+    const opts = await imageOpts({ path: 'assets/logo.png', w: 4, h: 2 });
 
     expect(opts.path).toBe(path.resolve(process.cwd(), 'assets/logo.png'));
     expect(opts.data).toBeUndefined();
@@ -451,8 +457,8 @@ describe('image layout resolution', () => {
     }
   );
 
-  it('passes a crop box through to the IR in EMU', () => {
-    const { element } = compileImage({
+  it('passes a crop box through to the IR in EMU', async () => {
+    const { element } = await compileImage({
       base64: PNG_4X2,
       x: 1,
       y: 1,

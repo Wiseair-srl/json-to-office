@@ -58,11 +58,11 @@ const text = (props: Record<string, unknown>): unknown => ({
   props,
 });
 
-function compile(
+async function compile(
   document: PresentationComponentDefinition,
   options?: Parameters<typeof compileDocumentToIr>[1]
 ) {
-  const result = compileDocumentToIr(document, options);
+  const result = await compileDocumentToIr(document, options);
   assertValidPptxIr(result.ir);
   return result;
 }
@@ -73,8 +73,10 @@ function textBox(ir: PptxIR, slideIndex = 0): PptxIrTextBoxElement {
 }
 
 /** Compile a single text component and return its IR element. */
-function compileTextBox(props: Record<string, unknown>): PptxIrTextBoxElement {
-  return textBox(compile(deck([slide([text(props)])])).ir);
+async function compileTextBox(
+  props: Record<string, unknown>
+): Promise<PptxIrTextBoxElement> {
+  return textBox((await compile(deck([slide([text(props)])]))).ir);
 }
 
 type Segment = { text: string; options: Record<string, unknown> };
@@ -105,8 +107,8 @@ function emitCall(element: PptxIrTextBoxElement): AddTextCall {
 }
 
 describe('text runs compile to IR runs', () => {
-  it('resolves every run property, cascading what the run leaves unset', () => {
-    const { ir, warnings } = compile(
+  it('resolves every run property, cascading what the run leaves unset', async () => {
+    const { ir, warnings } = await compile(
       deck([
         slide([
           text({
@@ -171,8 +173,8 @@ describe('text runs compile to IR runs', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('keeps the component defaults on the body, not on the runs', () => {
-    const element = compileTextBox({
+  it('keeps the component defaults on the body, not on the runs', async () => {
+    const element = await compileTextBox({
       x: 1,
       y: 1,
       w: 4,
@@ -193,8 +195,8 @@ describe('text runs compile to IR runs', () => {
     });
   });
 
-  it('runs inherit component-level bold/italic unless overridden', () => {
-    const element = compileTextBox({
+  it('runs inherit component-level bold/italic unless overridden', async () => {
+    const element = await compileTextBox({
       runs: [{ text: 'a' }, { text: 'b', bold: false, italic: false }],
       bold: true,
       italic: true,
@@ -205,8 +207,8 @@ describe('text runs compile to IR runs', () => {
     expect(element.runs[1]).toMatchObject({ bold: false, italic: false });
   });
 
-  it('aliases an inherited font weight onto a synthesized family', () => {
-    const element = compileTextBox({
+  it('aliases an inherited font weight onto a synthesized family', async () => {
+    const element = await compileTextBox({
       runs: [{ text: 'light' }, { text: 'heavy', fontWeight: 700 }],
       fontWeight: 300,
       h: 1,
@@ -220,8 +222,8 @@ describe('text runs compile to IR runs', () => {
     expect(element.runs[1]).toMatchObject({ fontFamily: 'Arial', bold: true });
   });
 
-  it('does not re-alias a run that names its own font face', () => {
-    const element = compileTextBox({
+  it('does not re-alias a run that names its own font face', async () => {
+    const element = await compileTextBox({
       runs: [{ text: 'own face', fontFace: 'Georgia Light' }],
       fontWeight: 300,
       h: 1,
@@ -230,7 +232,7 @@ describe('text runs compile to IR runs', () => {
     expect(element.runs[0].fontFamily).toBe('Georgia Light');
   });
 
-  it('resolves {PAGE_NUMBER} placeholders inside runs', () => {
+  it('resolves {PAGE_NUMBER} placeholders inside runs', async () => {
     // The slide context is derived from the deck now: nine slides, the text on
     // the second, so the run reads "Page 2/9" exactly as before.
     const slides = Array.from({ length: 9 }, (_, index) =>
@@ -244,12 +246,12 @@ describe('text runs compile to IR runs', () => {
         : slide([])
     );
 
-    const { ir } = compile(deck(slides));
+    const { ir } = await compile(deck(slides));
 
     expect(textBox(ir, 1).runs[0].text).toBe('Page 2/9');
   });
 
-  it('pads page numbers when the deck asks for the 09 format', () => {
+  it('pads page numbers when the deck asks for the 09 format', async () => {
     // Twelve slides so the padding is observable: both numbers widen to two
     // digits, the width of the total.
     const slides = Array.from({ length: 12 }, (_, index) =>
@@ -260,13 +262,13 @@ describe('text runs compile to IR runs', () => {
         : slide([])
     );
 
-    const { ir } = compile(deck(slides, { pageNumberFormat: '09' }));
+    const { ir } = await compile(deck(slides, { pageNumberFormat: '09' }));
 
     expect(textBox(ir, 1).runs[0].text).toBe('02/12');
   });
 
-  it('derives the default height from run line breaks', () => {
-    const element = compileTextBox({
+  it('derives the default height from run line breaks', async () => {
+    const element = await compileTextBox({
       runs: [
         { text: 'line 1', breakLine: true },
         { text: 'line 2', breakLine: true },
@@ -282,30 +284,33 @@ describe('text runs compile to IR runs', () => {
     expect(element.style.autoFit).toBe(true);
   });
 
-  it('warns and skips when neither text nor runs carries content', () => {
+  it('warns and skips when neither text nor runs carries content', async () => {
     // An empty `runs` array is the shape that still reaches the compiler's own
     // guard: it satisfies the structural "one of text/runs" check but has
     // nothing to render. Validation is off because the component schema also
     // rejects it, and the guard being tested lives past that.
-    const { ir, warnings } = compile(deck([slide([text({ runs: [] })])]), {
-      validation: { enabled: false },
-    });
+    const { ir, warnings } = await compile(
+      deck([slide([text({ runs: [] })])]),
+      {
+        validation: { enabled: false },
+      }
+    );
 
     expect(ir.slides[0].elements).toEqual([]);
     expect(warnings.map((w) => w.code)).toEqual(['TEXT_NO_CONTENT']);
   });
 
-  it('rejects a text component with neither text nor runs before compiling', () => {
+  it('rejects a text component with neither text nor runs before compiling', async () => {
     // The original test drove the writer with `{}` directly. On the public
     // entry point that shape now dies earlier — the structural content check
     // runs even with validation disabled — so it never reaches the compiler.
-    expect(() =>
+    await expect(
       compile(deck([slide([text({})])]), { validation: { enabled: false } })
-    ).toThrow(/Text component requires content/);
+    ).rejects.toThrow(/Text component requires content/);
   });
 
-  it('compiles plain text into a single fully-resolved run', () => {
-    const element = compileTextBox({ text: 'Hello', h: 1 });
+  it('compiles plain text into a single fully-resolved run', async () => {
+    const element = await compileTextBox({ text: 'Hello', h: 1 });
 
     expect(element.runs).toEqual([
       {
@@ -319,8 +324,8 @@ describe('text runs compile to IR runs', () => {
 });
 
 describe('text line spacing compiles to IR body style', () => {
-  it('keeps lineSpacingMultiple and drops point lineSpacing', () => {
-    const element = compileTextBox({
+  it('keeps lineSpacingMultiple and drops point lineSpacing', async () => {
+    const element = await compileTextBox({
       text: 'Hero',
       fontSize: 80,
       lineSpacing: 72,
@@ -331,8 +336,8 @@ describe('text line spacing compiles to IR body style', () => {
     expect(element.style.lineSpacingPoints).toBeUndefined();
   });
 
-  it('keeps point lineSpacing when no multiple is given', () => {
-    const element = compileTextBox({
+  it('keeps point lineSpacing when no multiple is given', async () => {
+    const element = await compileTextBox({
       text: 'Hero',
       fontSize: 20,
       lineSpacing: 24,
@@ -344,8 +349,8 @@ describe('text line spacing compiles to IR body style', () => {
 });
 
 describe('text IR emits PptxGenJS calls', () => {
-  it('maps runs to pptxgenjs [{ text, options }] arrays', () => {
-    const element = compileTextBox({
+  it('maps runs to pptxgenjs [{ text, options }] arrays', async () => {
+    const element = await compileTextBox({
       x: 1,
       y: 1,
       w: 4,
@@ -425,16 +430,18 @@ describe('text IR emits PptxGenJS calls', () => {
     });
   });
 
-  it('still passes plain text as a string', () => {
-    const [content, opts] = emitCall(compileTextBox({ text: 'Hello', h: 1 }));
+  it('still passes plain text as a string', async () => {
+    const [content, opts] = emitCall(
+      await compileTextBox({ text: 'Hello', h: 1 })
+    );
 
     expect(content).toBe('Hello');
     expect(opts).toMatchObject({ fontSize: 18 });
   });
 
-  it('marks a box with a derived height as a text box', () => {
+  it('marks a box with a derived height as a text box', async () => {
     const [, opts] = emitCall(
-      compileTextBox({
+      await compileTextBox({
         runs: [
           { text: 'line 1', breakLine: true },
           { text: 'line 2', breakLine: true },
@@ -448,9 +455,9 @@ describe('text IR emits PptxGenJS calls', () => {
     expect(opts.isTextBox).toBe(true);
   });
 
-  it('passes lineSpacingMultiple through and drops point lineSpacing', () => {
+  it('passes lineSpacingMultiple through and drops point lineSpacing', async () => {
     const [, opts] = emitCall(
-      compileTextBox({
+      await compileTextBox({
         text: 'Hero',
         fontSize: 80,
         lineSpacing: 72,
@@ -462,9 +469,9 @@ describe('text IR emits PptxGenJS calls', () => {
     expect(opts.lineSpacing).toBeUndefined();
   });
 
-  it('keeps point lineSpacing when no multiple is given', () => {
+  it('keeps point lineSpacing when no multiple is given', async () => {
     const [, opts] = emitCall(
-      compileTextBox({ text: 'Hero', fontSize: 20, lineSpacing: 24 })
+      await compileTextBox({ text: 'Hero', fontSize: 20, lineSpacing: 24 })
     );
 
     expect(opts.lineSpacing).toBe(24);

@@ -164,9 +164,9 @@ function checkElement(
         checkFill(element.fill, `${path}.fill`, resourceIds, add);
       if (
         element.cornerRadius !== undefined &&
-        (element.cornerRadius < 0 || element.cornerRadius > 1)
+        (!Number.isFinite(element.cornerRadius) || element.cornerRadius < 0)
       ) {
-        add(`${path}.cornerRadius`, 'expected a fraction in [0, 1]');
+        add(`${path}.cornerRadius`, 'expected a non-negative radius in inches');
       }
       return;
     case 'image':

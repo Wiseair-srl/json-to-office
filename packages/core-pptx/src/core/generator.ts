@@ -12,7 +12,6 @@ import type {
   PipelineWarning,
   PresentationComponentDefinition,
 } from '../types';
-import { isPresentationComponent } from '../types';
 import { generateBufferViaIr } from './generateFromIr';
 
 export {
@@ -78,22 +77,6 @@ export async function generateFromFile(
   const { readFileSync } = await import('fs');
   const json = readFileSync(filePath, 'utf-8');
   await generateAndSaveFromJson(json, outputPath, options);
-}
-
-/**
- * Parse a presentation definition from JSON text.
- *
- * Exported because both entry points need the same guard on what a parsed
- * document has to be.
- */
-export function parsePresentationJson(
-  json: string
-): PresentationComponentDefinition {
-  const parsed = JSON.parse(json);
-  if (!isPresentationComponent(parsed)) {
-    throw new Error('Parsed JSON must be a presentation component');
-  }
-  return parsed;
 }
 
 export type { PipelineWarning };
