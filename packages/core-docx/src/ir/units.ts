@@ -40,6 +40,11 @@ export function pixelsToEmu(pixels: number): number {
   return Math.round(pixels * 9525);
 }
 
+/** EMU → pixels at 96 DPI, the inverse of {@link pixelsToEmu}. */
+export function emuToPixels(emu: number): number {
+  return emu / 9525;
+}
+
 /** Pixels at 96 DPI → twips. */
 export function pixelsToTwips(pixels: number): number {
   return Math.round(pixels * 15);

@@ -36,6 +36,7 @@ import { assertNever } from '@json-to-office/shared/rendering';
 import type {
   DocxIrBlock,
   DocxIrBorder,
+  DocxIrImageRun,
   DocxIrInline,
   DocxIrParagraph,
   DocxIrParagraphFormatting,
@@ -55,6 +56,18 @@ export const ALIGNMENT: Readonly<
   start: AlignmentType.START,
   end: AlignmentType.END,
 };
+
+/**
+ * Image runs, keyed by IR resource id.
+ *
+ * docx.js needs an `ImageRun` object, and building one for a vector image is
+ * asynchronous — it rasterises a fallback. So the renderer builds them all
+ * before the document, and this layer only places them.
+ */
+export type EmitResources = ReadonlyMap<string, ImageRunFactory>;
+
+/** Builds the run for one placement, which carries its own size and anchor. */
+export type ImageRunFactory = (image: DocxIrImageRun) => ParagraphChild;
 
 /* ------------------------------------------------------------------ *
  * Runs
@@ -98,7 +111,8 @@ export function runOptions(
  * comes next, which is where docx.js puts them.
  */
 export function inlineChildren(
-  children: readonly DocxIrInline[]
+  children: readonly DocxIrInline[],
+  resources: EmitResources = new Map()
 ): ParagraphChild[] {
   const out: ParagraphChild[] = [];
   let pendingBreaks = 0;
@@ -151,7 +165,21 @@ export function inlineChildren(
         out.push(new BookmarkEnd(child.id));
         break;
 
-      case 'image':
+      case 'image': {
+        const build = resources.get(child.resourceId);
+        if (!build) {
+          throw new Error(
+            `no image was prepared for resource "${child.resourceId}"`
+          );
+        }
+        // A break before an image belongs on a run of its own: docx.js puts a
+        // break and a drawing in the same run only by dropping one.
+        const pending = breakOption();
+        if (pending.break) out.push(new TextRun(pending));
+        out.push(build(child));
+        break;
+      }
+
       case 'hyperlink':
       case 'field':
       case 'noteReference':
@@ -238,9 +266,12 @@ export function paragraphOptions(
   return options as Partial<IParagraphOptions>;
 }
 
-export function emitParagraph(block: DocxIrParagraph): Paragraph {
+export function emitParagraph(
+  block: DocxIrParagraph,
+  resources: EmitResources = new Map()
+): Paragraph {
   return new Paragraph({
-    children: inlineChildren(block.children),
+    children: inlineChildren(block.children, resources),
     // A paragraph with no style named is one that deliberately has none — a
     // table cell, whose run properties come from the cell itself.
     ...(block.styleId ? { style: block.styleId } : {}),
@@ -260,12 +291,15 @@ export function emitParagraph(block: DocxIrParagraph): Paragraph {
   });
 }
 
-export function emitBlock(block: DocxIrBlock): Paragraph | Table {
+export function emitBlock(
+  block: DocxIrBlock,
+  resources: EmitResources = new Map()
+): Paragraph | Table {
   switch (block.kind) {
     case 'paragraph':
-      return emitParagraph(block);
+      return emitParagraph(block, resources);
     case 'table':
-      return emitTable(block);
+      return emitTable(block, resources);
     case 'toc':
       throw new Error(
         `the docxjs renderer has no emitter for "${block.kind}" (${block.path})`
@@ -287,7 +321,10 @@ const VERTICAL_ALIGN: Readonly<
   bottom: VerticalAlign.BOTTOM,
 };
 
-export function emitTable(block: DocxIrTable): Table {
+export function emitTable(
+  block: DocxIrTable,
+  resources: EmitResources = new Map()
+): Table {
   return new Table({
     width: {
       size: block.width.kind === 'auto' ? 0 : block.width.value,
@@ -298,13 +335,13 @@ export function emitTable(block: DocxIrTable): Table {
         ? TableLayoutType.FIXED
         : TableLayoutType.AUTOFIT,
     columnWidths: block.columnGrid.values,
-    rows: block.rows.map(emitTableRow),
+    rows: block.rows.map((row) => emitTableRow(row, resources)),
   });
 }
 
-function emitTableRow(row: DocxIrTableRow): TableRow {
+function emitTableRow(row: DocxIrTableRow, resources: EmitResources): TableRow {
   return new TableRow({
-    children: row.cells.map(emitTableCell),
+    children: row.cells.map((cell) => emitTableCell(cell, resources)),
     ...(row.heightTwips !== undefined
       ? {
           height: { value: row.heightTwips, rule: row.heightRule ?? 'atLeast' },
@@ -315,9 +352,12 @@ function emitTableRow(row: DocxIrTableRow): TableRow {
   });
 }
 
-function emitTableCell(cell: DocxIrTableCell): TableCell {
+function emitTableCell(
+  cell: DocxIrTableCell,
+  resources: EmitResources
+): TableCell {
   const options: Record<string, unknown> = {
-    children: cell.children.map(emitBlock),
+    children: cell.children.map((child) => emitBlock(child, resources)),
   };
 
   if (cell.verticalAlign) {

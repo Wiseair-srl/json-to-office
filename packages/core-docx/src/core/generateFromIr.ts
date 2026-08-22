@@ -18,6 +18,7 @@ import { assertRendererSupports } from '@json-to-office/shared/rendering';
 import type { GenerationWarning, ServicesConfig } from '@json-to-office/shared';
 import type { FontRuntimeOpts } from '@json-to-office/shared';
 import { normalizeDocument } from '../json/normalizer';
+import { loadImageResources } from './imageResources';
 import { compileDocument, type UnsupportedComponent } from '../ir/compiler';
 import type { DocxIR } from '../ir/types';
 import { createDocxJsRenderer } from '../renderers/docxjs/index';
@@ -111,7 +112,16 @@ export async function compileDocumentToIr(
     context.theme,
     context.themeName
   );
-  const compiled = compileDocument(structure, layout, warnings);
+  // Image bytes are fetched up front so compilation itself stays synchronous
+  // and pure: same document, same map, same IR.
+  const images = await loadImageResources(
+    layout.sections.flatMap((section) => [
+      ...section.components,
+      ...(Array.isArray(section.header) ? section.header : []),
+      ...(Array.isArray(section.footer) ? section.footer : []),
+    ])
+  );
+  const compiled = compileDocument(structure, layout, warnings, images);
 
   return {
     ir: compiled.ir,

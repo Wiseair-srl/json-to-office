@@ -19,9 +19,11 @@ import {
   Document,
   Footer,
   Header,
+  ImageRun,
   Packer,
   Paragraph,
   Table,
+  TextWrappingType,
   type ILevelsOptions,
   type ISectionOptions,
 } from 'docx';
@@ -29,6 +31,7 @@ import type { ThemeConfig } from '../../styles';
 import { createWordStyles } from '../../styles/themeToDocxAdapter';
 import type {
   DocxIR,
+  DocxIrFloating,
   DocxIrHeaderFooter,
   DocxIrNumbering,
   DocxIrSection,
@@ -40,7 +43,14 @@ import {
 } from '../../utils/packageDocument';
 import { fixFloatingImageIdsInBuffer } from '../../utils/fixFloatingImageIds';
 import type { DocxRenderOptions, DocxRenderer, DocxRendererId } from '../types';
-import { ALIGNMENT, emitBlock, runOptions } from './emit';
+import {
+  ALIGNMENT,
+  emitBlock,
+  runOptions,
+  type EmitResources,
+  type ImageRunFactory,
+} from './emit';
+import { emuToPixels } from '../../ir/units';
 
 export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
 
@@ -53,8 +63,6 @@ export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
 const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'table-merged-cells',
   'floating-tables',
-  'images',
-  'floating-images',
   'svg-images',
   'text-frames',
   'text-boxes',
@@ -98,7 +106,8 @@ export function createDocxJsRenderer(
       ir: DocxIR,
       renderOptions?: DocxRenderOptions
     ): Promise<Uint8Array> {
-      const document = buildDocument(ir, options.theme);
+      const resources = await prepareImages(ir);
+      const document = buildDocument(ir, options.theme, resources);
       const packed = (await Packer.toBuffer(document)) as Buffer;
       const fixed = fixFloatingImageIdsInBuffer(packed);
 
@@ -122,10 +131,14 @@ export function createDocxJsRenderer(
  * Exported for tests: asserting on the object graph is far cheaper, and far
  * more legible, than unzipping a package.
  */
-export function buildDocument(ir: DocxIR, theme: ThemeConfig): Document {
+export function buildDocument(
+  ir: DocxIR,
+  theme: ThemeConfig,
+  resources: EmitResources = new Map()
+): Document {
   return new Document({
     styles: createWordStyles(theme, ir.settings.language),
-    sections: ir.sections.map(sectionOptions),
+    sections: ir.sections.map((section) => sectionOptions(section, resources)),
     ...coreProperties(ir),
     features: {
       updateFields: ir.settings.updateFields,
@@ -173,7 +186,132 @@ function numberingConfig(numbering: DocxIrNumbering): {
   };
 }
 
-function sectionOptions(section: DocxIrSection): ISectionOptions {
+/**
+ * Build an image run factory per resource.
+ *
+ * Separate from `buildDocument` because a vector image has to be rasterised
+ * for the fallback Word draws, and that is asynchronous while building the
+ * document is not.
+ */
+async function prepareImages(ir: DocxIR): Promise<EmitResources> {
+  const resources = new Map<string, ImageRunFactory>();
+  for (const resource of ir.resources) {
+    if (resource.kind !== 'image') continue;
+    const type = resource.mediaType as 'jpg' | 'png' | 'gif' | 'bmp' | 'svg';
+    const data = Buffer.from(resource.bytes);
+    // One run per placement: the same bytes may be drawn at two sizes, and the
+    // transformation lives on the run rather than the resource.
+    resources.set(resource.id, (image) => {
+      const run = new ImageRun({
+        type,
+        data,
+        transformation: {
+          width: emuToPixels(image.widthEmu),
+          height: emuToPixels(image.heightEmu),
+        },
+        ...(image.floating
+          ? { floating: floatingOptions(image.floating) }
+          : {}),
+        // `altText` is deliberately not passed. docx.js would write it into
+        // `wp:docPr`, and no DOCX this pipeline has ever produced carries it —
+        // adding it now would rewrite every document with an alt-bearing
+        // image. The compiler warns instead, so the gap is visible.
+      } as ConstructorParameters<typeof ImageRun>[0]);
+      return run;
+    });
+  }
+  return resources;
+}
+
+/** docx.js numbers its wrap types; OOXML names them. */
+const WRAP_TYPE: Readonly<
+  Record<string, (typeof TextWrappingType)[keyof typeof TextWrappingType]>
+> = {
+  none: TextWrappingType.NONE,
+  square: TextWrappingType.SQUARE,
+  tight: TextWrappingType.TIGHT,
+  topAndBottom: TextWrappingType.TOP_AND_BOTTOM,
+};
+
+/** An IR anchor as docx.js floating options. */
+function floatingOptions(floating: DocxIrFloating): Record<string, unknown> {
+  return {
+    ...(floating.horizontal
+      ? {
+          horizontalPosition: {
+            ...(floating.horizontal.relativeTo
+              ? { relative: floating.horizontal.relativeTo }
+              : {}),
+            ...(floating.horizontal.align !== undefined
+              ? { align: floating.horizontal.align }
+              : {}),
+            ...(floating.horizontal.offsetEmu !== undefined
+              ? { offset: floating.horizontal.offsetEmu }
+              : {}),
+          },
+        }
+      : {}),
+    ...(floating.vertical
+      ? {
+          verticalPosition: {
+            ...(floating.vertical.relativeTo
+              ? { relative: floating.vertical.relativeTo }
+              : {}),
+            ...(floating.vertical.align !== undefined
+              ? { align: floating.vertical.align }
+              : {}),
+            ...(floating.vertical.offsetEmu !== undefined
+              ? { offset: floating.vertical.offsetEmu }
+              : {}),
+          },
+        }
+      : {}),
+    ...(floating.wrap
+      ? {
+          wrap: {
+            type: WRAP_TYPE[floating.wrap.type],
+            ...(floating.wrap.side ? { side: floating.wrap.side } : {}),
+          },
+        }
+      : {}),
+    ...(floating.margins
+      ? {
+          margins: {
+            ...(floating.margins.topEmu !== undefined
+              ? { top: floating.margins.topEmu }
+              : {}),
+            ...(floating.margins.bottomEmu !== undefined
+              ? { bottom: floating.margins.bottomEmu }
+              : {}),
+            ...(floating.margins.leftEmu !== undefined
+              ? { left: floating.margins.leftEmu }
+              : {}),
+            ...(floating.margins.rightEmu !== undefined
+              ? { right: floating.margins.rightEmu }
+              : {}),
+          },
+        }
+      : {}),
+    ...(floating.allowOverlap !== undefined
+      ? { allowOverlap: floating.allowOverlap }
+      : {}),
+    ...(floating.behindDocument !== undefined
+      ? { behindDocument: floating.behindDocument }
+      : {}),
+    ...(floating.lockAnchor !== undefined
+      ? { lockAnchor: floating.lockAnchor }
+      : {}),
+    ...(floating.layoutInCell !== undefined
+      ? { layoutInCell: floating.layoutInCell }
+      : {}),
+    zIndex: floating.zIndex,
+  };
+}
+
+function sectionOptions(
+  section: DocxIrSection,
+  resources: EmitResources
+): ISectionOptions {
   const { page, columns } = section.properties;
   const options: Record<string, unknown> = {
     properties: {
@@ -229,25 +367,25 @@ function sectionOptions(section: DocxIrSection): ISectionOptions {
           }
         : {}),
     },
-    children: sectionChildren(section),
+    children: sectionChildren(section, resources),
   };
 
   const header = section.headers?.default;
   if (header)
     options.headers = {
-      default: new Header({ children: partChildren(header) }),
+      default: new Header({ children: partChildren(header, resources) }),
     };
   const footer = section.footers?.default;
   if (footer)
     options.footers = {
-      default: new Footer({ children: partChildren(footer) }),
+      default: new Footer({ children: partChildren(footer, resources) }),
     };
 
   return options as unknown as ISectionOptions;
 }
 
-function partChildren(part: DocxIrHeaderFooter) {
-  return part.children.map(emitBlock);
+function partChildren(part: DocxIrHeaderFooter, resources: EmitResources) {
+  return part.children.map((block) => emitBlock(block, resources));
 }
 
 /**
@@ -258,8 +396,11 @@ function partChildren(part: DocxIrHeaderFooter) {
  * one before its content and closing it after, without the anchor paragraphs
  * themselves adding visible space.
  */
-function sectionChildren(section: DocxIrSection): (Paragraph | Table)[] {
-  const blocks = section.children.map(emitBlock);
+function sectionChildren(
+  section: DocxIrSection,
+  resources: EmitResources
+): (Paragraph | Table)[] {
+  const blocks = section.children.map((block) => emitBlock(block, resources));
   const bookmark = section.bookmark;
   if (!bookmark) return blocks;
 

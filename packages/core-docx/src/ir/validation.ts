@@ -259,10 +259,6 @@ function checkInline(inline: DocxIrInline, path: string, scope: Scope): void {
           scope.add(`${path}.${key}`, `expected a non-negative integer EMU`);
         }
       }
-      if (inline.floating?.wrap?.type === 'through') {
-        // Allowed, but the compiler must never emit `tight`, which needs
-        // polygon geometry no backend here can supply.
-      }
       return;
 
     case 'hyperlink':
