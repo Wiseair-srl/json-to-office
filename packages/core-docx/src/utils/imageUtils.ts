@@ -41,21 +41,30 @@ function toRasterPx(px: number): number {
 }
 
 /**
- * Shrink a `fitTo` edge until the bitmap it implies fits `SVG_MAX_TOTAL_PX`.
+ * Shrink a `fitTo` edge until the bitmap it implies fits `SVG_MAX_TOTAL_PX`,
+ * or `undefined` when nothing does.
  *
  * `aspect` is the other edge over this one, so `edge * aspect` is the edge
  * resvg derives. Area scales with the square of the edge, hence the sqrt.
+ *
+ * A sliver — an SVG whose viewBox is thousands of times longer than it is
+ * wide — cannot be squared with both bounds at once: at `SVG_MIN_EDGE_PX` its
+ * area is still `256 * aspect`, so a ratio of 10,000 is already 2.5x over
+ * budget and grows from there. Clamping to the minimum edge in that case would
+ * hand back exactly the oversized bitmap this budget exists to prevent, so the
+ * caller is told to skip the fallback instead. Word 2016+ draws the vector
+ * either way.
  */
-function capToPixelBudget(edge: number, aspect: number): number {
-  if (!Number.isFinite(aspect) || aspect <= 0) return edge;
+function capToPixelBudget(edge: number, aspect: number): number | undefined {
+  // A degenerate ratio means the probe gave a zero or non-finite dimension;
+  // there is no bitmap size that can be reasoned about.
+  if (!Number.isFinite(aspect) || aspect <= 0) return undefined;
 
   const total = edge * edge * aspect;
   if (total <= SVG_MAX_TOTAL_PX) return edge;
 
-  return Math.max(
-    SVG_MIN_EDGE_PX,
-    Math.floor(edge * Math.sqrt(SVG_MAX_TOTAL_PX / total))
-  );
+  const scaled = Math.floor(edge * Math.sqrt(SVG_MAX_TOTAL_PX / total));
+  return scaled >= SVG_MIN_EDGE_PX ? scaled : undefined;
 }
 
 /**
@@ -93,23 +102,27 @@ async function rasterizeSvgFallback(
       transformation.width / transformation.height;
     // resvg derives the other edge from the SVG's own aspect ratio, so the
     // budget has to be applied against that, not against the placed box.
-    const fitTo = wide
-      ? {
-          mode: 'height' as const,
-          value: capToPixelBudget(
-            toRasterPx(transformation.height),
-            probeImage.width / probeImage.height
-          ),
-        }
-      : {
-          mode: 'width' as const,
-          value: capToPixelBudget(
-            toRasterPx(transformation.width),
-            probeImage.height / probeImage.width
-          ),
-        };
+    const mode = wide ? ('height' as const) : ('width' as const);
+    const value = capToPixelBudget(
+      toRasterPx(wide ? transformation.height : transformation.width),
+      wide
+        ? probeImage.width / probeImage.height
+        : probeImage.height / probeImage.width
+    );
 
-    return Buffer.from(new Resvg(markup, { fitTo }).render().asPng());
+    if (value === undefined) {
+      reportWarning(
+        'image',
+        'IMAGE_SVG_RASTER_SKIPPED',
+        'Inline SVG is too far from square to rasterize within the fallback ' +
+          'pixel budget, so its fallback only renders in Word 2016+.'
+      );
+      return undefined;
+    }
+
+    return Buffer.from(
+      new Resvg(markup, { fitTo: { mode, value } }).render().asPng()
+    );
   } catch (error) {
     reportWarning(
       'image',

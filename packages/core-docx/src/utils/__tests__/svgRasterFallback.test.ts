@@ -104,6 +104,36 @@ describe('inline SVG raster fallback', () => {
     expect(size!.width / size!.height).toBeCloseTo(827 / 1169, 1);
   });
 
+  it('skips the fallback for a sliver too extreme to fit the budget', async () => {
+    // At an aspect ratio this far from square, even the smallest edge the
+    // rasterizer will accept implies an area well over budget — clamping to
+    // that minimum would hand back the oversized bitmap the cap exists to
+    // prevent, so no fallback is written at all.
+    const sliver =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 10000"><rect width="1" height="10000" fill="#333333"/></svg>';
+    const warnings: GenerationWarning[] = [];
+
+    const buffer = await generateBufferFromJson(
+      doc({ base64: toDataUri(sliver), width: 200, height: 100 }),
+      { warnings }
+    );
+
+    // The document still renders and the vector still ships; the fallback
+    // slot keeps the historical SVG bytes, exactly as it does when the
+    // rasterizer is unavailable. What matters is that no oversized bitmap
+    // was produced.
+    expect(buffer.byteLength).toBeGreaterThan(0);
+    const media = await mediaOf(buffer);
+    expect(
+      media.filter((part) => isSvgBytes(part.data)).length
+    ).toBeGreaterThan(0);
+    expect(media.filter((part) => !isSvgBytes(part.data))).toHaveLength(0);
+
+    expect(warnings.map((entry) => entry.context?.code)).toContain(
+      'IMAGE_SVG_RASTER_SKIPPED'
+    );
+  });
+
   it('leaves an SVG below the budget at full 3x resolution', async () => {
     const buffer = await generateBufferFromJson(
       doc({ base64: toDataUri(SVG), width: 120 })
