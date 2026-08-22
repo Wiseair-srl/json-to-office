@@ -2,7 +2,20 @@
  * Border utilities for consistent border styling across modules
  */
 
-import { BorderStyle } from 'docx';
+/**
+ * OOXML border styles, by name.
+ *
+ * The literal values rather than a backend's enum: `w:val` on a border is a
+ * plain OOXML token, and this module is read by the compiler, which imports no
+ * renderer.
+ */
+export type BorderStyleName =
+  | 'none'
+  | 'single'
+  | 'double'
+  | 'dashed'
+  | 'dotted'
+  | 'thick';
 import { resolveColor } from './colorUtils';
 import { ThemeConfig } from '../index';
 
@@ -11,33 +24,31 @@ import { ThemeConfig } from '../index';
  * Used when borders should be invisible/disabled
  */
 export const NONE_BORDERS = {
-  top: { style: BorderStyle.NONE, size: 0, color: '000000' },
-  right: { style: BorderStyle.NONE, size: 0, color: '000000' },
-  bottom: { style: BorderStyle.NONE, size: 0, color: '000000' },
-  left: { style: BorderStyle.NONE, size: 0, color: '000000' },
-  insideHorizontal: { style: BorderStyle.NONE, size: 0, color: '000000' },
-  insideVertical: { style: BorderStyle.NONE, size: 0, color: '000000' },
+  top: { style: 'none', size: 0, color: '000000' },
+  right: { style: 'none', size: 0, color: '000000' },
+  bottom: { style: 'none', size: 0, color: '000000' },
+  left: { style: 'none', size: 0, color: '000000' },
+  insideHorizontal: { style: 'none', size: 0, color: '000000' },
+  insideVertical: { style: 'none', size: 0, color: '000000' },
 } as const;
 
 /**
- * Maps border style string to docx BorderStyle enum
+ * Maps a theme border style name to its OOXML token
  * @param s - Border style string ('dashed', 'dotted', 'double', 'none', 'single')
- * @returns Corresponding BorderStyle enum value
+ * @returns The `w:val` OOXML writes for it
  */
-export function mapBorderStyle(
-  s?: string
-): (typeof BorderStyle)[keyof typeof BorderStyle] {
+export function mapBorderStyle(s?: string): BorderStyleName {
   switch (s) {
     case 'dashed':
-      return BorderStyle.DASHED;
+      return 'dashed';
     case 'dotted':
-      return BorderStyle.DOTTED;
+      return 'dotted';
     case 'double':
-      return BorderStyle.DOUBLE;
+      return 'double';
     case 'none':
-      return BorderStyle.NONE;
+      return 'none';
     default:
-      return BorderStyle.SINGLE;
+      return 'single';
   }
 }
 
@@ -61,7 +72,7 @@ export function convertBorder(
   theme: ThemeConfig
 ):
   | {
-      style: (typeof BorderStyle)[keyof typeof BorderStyle];
+      style: BorderStyleName;
       size: number;
       color: string;
     }
@@ -99,7 +110,7 @@ export function convertBorders(
   | Record<
       string,
       {
-        style: (typeof BorderStyle)[keyof typeof BorderStyle];
+        style: BorderStyleName;
         size: number;
         color: string;
       }
@@ -110,7 +121,7 @@ export function convertBorders(
   const borders: Record<
     string,
     {
-      style: (typeof BorderStyle)[keyof typeof BorderStyle];
+      style: BorderStyleName;
       size: number;
       color: string;
     }

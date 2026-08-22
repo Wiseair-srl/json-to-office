@@ -1,4 +1,3 @@
-import { BorderStyle } from 'docx';
 import { LineSpacing } from '@json-to-office/shared-docx';
 import { ThemeConfig } from '../index';
 import { resolveColor } from './colorUtils';
@@ -129,7 +128,7 @@ export const getTableStyle = (theme?: ThemeConfig, themeName?: string) => {
       },
       borders: {
         top: {
-          style: BorderStyle.SINGLE,
+          style: 'single',
           size: 1,
           color: resolveColor(
             themeConfig.colors?.secondary || '#CCCCCC',
@@ -137,7 +136,7 @@ export const getTableStyle = (theme?: ThemeConfig, themeName?: string) => {
           ),
         },
         bottom: {
-          style: BorderStyle.SINGLE,
+          style: 'single',
           size: 1,
           color: resolveColor(
             themeConfig.colors?.secondary || '#CCCCCC',
@@ -145,7 +144,7 @@ export const getTableStyle = (theme?: ThemeConfig, themeName?: string) => {
           ),
         },
         left: {
-          style: BorderStyle.SINGLE,
+          style: 'single',
           size: 1,
           color: resolveColor(
             themeConfig.colors?.secondary || '#CCCCCC',
@@ -153,7 +152,7 @@ export const getTableStyle = (theme?: ThemeConfig, themeName?: string) => {
           ),
         },
         right: {
-          style: BorderStyle.SINGLE,
+          style: 'single',
           size: 1,
           color: resolveColor(
             themeConfig.colors?.secondary || '#CCCCCC',
@@ -184,15 +183,15 @@ export const getTableStyle = (theme?: ThemeConfig, themeName?: string) => {
       fill: 'F5F5F5',
     },
     borders: {
-      top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+      top: { style: 'single', size: 1, color: '000000' },
       bottom: {
-        style: BorderStyle.SINGLE,
+        style: 'single',
         size: 1,
         color: '000000',
       },
-      left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+      left: { style: 'single', size: 1, color: '000000' },
       right: {
-        style: BorderStyle.SINGLE,
+        style: 'single',
         size: 1,
         color: '000000',
       },

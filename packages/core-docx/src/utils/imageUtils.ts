@@ -1,7 +1,6 @@
 import { readFileSync } from 'fs';
 import probe from 'probe-image-size';
 import { reportWarning, resolveFromBaseDir } from './generationContext';
-import { ImageRun, IFloating } from 'docx';
 import { parsePercentageStringToFraction } from './widthUtils';
 
 type ResvgModule = typeof import('@resvg/resvg-js');
@@ -335,37 +334,6 @@ export function detectImageType(
 
   // Default to PNG for backward compatibility
   return 'png';
-}
-
-/**
- * Create an ImageRun with correct type handling, including SVG fallback.
- *
- * An SVG run carries a raster `fallback` for readers that cannot draw the
- * vector — Word before 2016, and anything else consuming the package. That
- * fallback is rasterized here; if rasterization is unavailable the run keeps
- * the SVG bytes, which renders in Word 2016+ and reports a warning for the
- * rest rather than failing the document.
- */
-export async function createTypedImageRun(opts: {
-  type: 'jpg' | 'png' | 'gif' | 'bmp' | 'svg';
-  data: Buffer;
-  transformation: { width: number; height: number };
-  floating?: IFloating;
-}): Promise<ImageRun> {
-  const base = {
-    data: opts.data,
-    transformation: opts.transformation,
-    ...(opts.floating && { floating: opts.floating }),
-  };
-  if (opts.type === 'svg') {
-    const raster = await rasterizeSvgFallback(opts.data, opts.transformation);
-    return new ImageRun({
-      type: 'svg',
-      ...base,
-      fallback: { type: 'png', data: raster ?? opts.data },
-    });
-  }
-  return new ImageRun({ type: opts.type, ...base });
 }
 
 /**

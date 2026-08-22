@@ -3,7 +3,6 @@
  * Handle all layout concerns including columns, breaks, and section properties
  */
 
-import { SectionType, Column as DocxColumn } from 'docx';
 import {
   ComponentDefinition,
   ColumnSettings,
@@ -50,7 +49,6 @@ export interface WordSectionProperties {
     };
   };
   column: ColumnSettings & {
-    children?: DocxColumn[];
     /**
      * The same explicit columns as `children`, in twips.
      *
@@ -60,7 +58,7 @@ export interface WordSectionProperties {
      */
     widths?: Array<{ width: number; space?: number }>;
   };
-  type?: (typeof SectionType)[keyof typeof SectionType];
+  type?: 'continuous' | 'nextColumn' | 'nextPage' | 'evenPage' | 'oddPage';
 }
 
 export interface SectionLayout {
@@ -444,7 +442,6 @@ export function createSectionProperties(
     },
   };
 
-  // If explicit children were provided, convert to docx Column instances
   if (
     (columnSettings as any).children &&
     Array.isArray((columnSettings as any).children)
@@ -463,20 +460,10 @@ export function createSectionProperties(
       width: c.width as number,
       ...(c.space !== undefined ? { space: c.space } : {}),
     }));
-    properties.column.children = properties.column.widths.map(
-      (c) =>
-        new DocxColumn({
-          width: c.width,
-          ...(c.space !== undefined ? { space: c.space } : {}),
-        })
-    );
   }
 
   if (sectionType) {
-    properties.type =
-      sectionType === 'continuous'
-        ? SectionType.CONTINUOUS
-        : SectionType.NEXT_PAGE;
+    properties.type = sectionType === 'continuous' ? 'continuous' : 'nextPage';
   }
 
   return properties;

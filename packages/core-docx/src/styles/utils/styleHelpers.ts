@@ -2,8 +2,13 @@ import { getTheme } from '../../templates/themes';
 import { ThemeConfig } from '../index';
 import { resolveColor } from './colorUtils';
 import { LineSpacing } from '@json-to-office/shared-docx';
-import { ISpacingProperties } from 'docx';
 import { getNormalStyle } from '../../themes/defaults';
+
+/** `w:spacing`'s line height and rule, in the units OOXML uses. */
+export interface LineSpacingProperties {
+  line?: number;
+  lineRule?: 'auto' | 'exact' | 'atLeast';
+}
 
 // Constants for line spacing calculations
 const TWIPS_PER_POINT = 20;
@@ -211,7 +216,7 @@ export const getBodyTextStyle = (theme?: ThemeConfig, themeName?: string) => {
  */
 export function convertLineSpacing(
   lineSpacing?: LineSpacing | number
-): ISpacingProperties | undefined {
+): LineSpacingProperties | undefined {
   if (lineSpacing === undefined) {
     return undefined;
   }
