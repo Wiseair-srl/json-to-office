@@ -675,8 +675,8 @@ export interface DocxIrTableCell {
 }
 
 export interface DocxIrTableFloating {
-  horizontalAnchor: string;
-  verticalAnchor: string;
+  horizontalAnchor?: string;
+  verticalAnchor?: string;
   absoluteHorizontalPositionTwips?: number;
   absoluteVerticalPositionTwips?: number;
   relativeHorizontalPosition?: string;

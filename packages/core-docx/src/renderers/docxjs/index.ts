@@ -64,7 +64,6 @@ export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
  */
 const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'table-merged-cells',
-  'floating-tables',
   'svg-images',
   'text-boxes',
   'cached-fields',

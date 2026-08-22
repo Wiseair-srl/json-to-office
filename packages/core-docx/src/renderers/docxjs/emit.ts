@@ -27,12 +27,16 @@ import {
   FootnoteReferenceRun,
   InsertedTextRun,
   InternalHyperlink,
+  OverlapType,
   PageNumber,
   Paragraph,
+  RelativeHorizontalPosition,
+  RelativeVerticalPosition,
   SimpleField,
   StyleLevel,
   Tab,
   Table,
+  TableAnchorType,
   TableCell,
   TableLayoutType,
   TableOfContents,
@@ -60,6 +64,7 @@ import type {
   DocxIrRunFormatting,
   DocxIrTable,
   DocxIrTableCell,
+  DocxIrTableFloating,
   DocxIrTableOfContents,
   DocxIrTableRow,
 } from '../../ir/types';
@@ -546,9 +551,112 @@ export function emitTable(
       block.layout === 'fixed'
         ? TableLayoutType.FIXED
         : TableLayoutType.AUTOFIT,
-    columnWidths: block.columnGrid.values,
+    // An empty grid is a table with nothing to say about its columns, which is
+    // not the same as one whose columns are all zero wide.
+    ...(block.columnGrid.values.length > 0
+      ? { columnWidths: block.columnGrid.values }
+      : {}),
+    ...(block.borders
+      ? {
+          borders: {
+            top: emitBorder(block.borders.top),
+            right: emitBorder(block.borders.right),
+            bottom: emitBorder(block.borders.bottom),
+            left: emitBorder(block.borders.left),
+            insideHorizontal: emitBorder(block.borders.insideHorizontal),
+            insideVertical: emitBorder(block.borders.insideVertical),
+          },
+        }
+      : {}),
+    ...(block.floating ? { float: tableFloat(block.floating) } : {}),
     rows: block.rows.map((row) => emitTableRow(row, resources)),
   });
+}
+
+const TABLE_ANCHOR: Readonly<
+  Record<string, (typeof TableAnchorType)[keyof typeof TableAnchorType]>
+> = {
+  margin: TableAnchorType.MARGIN,
+  page: TableAnchorType.PAGE,
+  text: TableAnchorType.TEXT,
+};
+
+const HORIZONTAL_POSITION: Readonly<
+  Record<
+    string,
+    (typeof RelativeHorizontalPosition)[keyof typeof RelativeHorizontalPosition]
+  >
+> = {
+  left: RelativeHorizontalPosition.LEFT,
+  center: RelativeHorizontalPosition.CENTER,
+  right: RelativeHorizontalPosition.RIGHT,
+  inside: RelativeHorizontalPosition.INSIDE,
+  outside: RelativeHorizontalPosition.OUTSIDE,
+};
+
+const VERTICAL_POSITION: Readonly<
+  Record<
+    string,
+    (typeof RelativeVerticalPosition)[keyof typeof RelativeVerticalPosition]
+  >
+> = {
+  top: RelativeVerticalPosition.TOP,
+  center: RelativeVerticalPosition.CENTER,
+  bottom: RelativeVerticalPosition.BOTTOM,
+  inside: RelativeVerticalPosition.INSIDE,
+  outside: RelativeVerticalPosition.OUTSIDE,
+};
+
+/** Where a floating table sits, in the vocabulary docx.js takes. */
+function tableFloat(floating: DocxIrTableFloating): Record<string, unknown> {
+  return {
+    ...(floating.horizontalAnchor
+      ? { horizontalAnchor: TABLE_ANCHOR[floating.horizontalAnchor] }
+      : {}),
+    ...(floating.verticalAnchor
+      ? { verticalAnchor: TABLE_ANCHOR[floating.verticalAnchor] }
+      : {}),
+    ...(floating.absoluteHorizontalPositionTwips !== undefined
+      ? {
+          absoluteHorizontalPosition: floating.absoluteHorizontalPositionTwips,
+        }
+      : {}),
+    ...(floating.relativeHorizontalPosition
+      ? {
+          relativeHorizontalPosition:
+            HORIZONTAL_POSITION[floating.relativeHorizontalPosition],
+        }
+      : {}),
+    ...(floating.absoluteVerticalPositionTwips !== undefined
+      ? { absoluteVerticalPosition: floating.absoluteVerticalPositionTwips }
+      : {}),
+    ...(floating.relativeVerticalPosition
+      ? {
+          relativeVerticalPosition:
+            VERTICAL_POSITION[floating.relativeVerticalPosition],
+        }
+      : {}),
+    ...(floating.topFromTextTwips !== undefined
+      ? { topFromText: floating.topFromTextTwips }
+      : {}),
+    ...(floating.rightFromTextTwips !== undefined
+      ? { rightFromText: floating.rightFromTextTwips }
+      : {}),
+    ...(floating.bottomFromTextTwips !== undefined
+      ? { bottomFromText: floating.bottomFromTextTwips }
+      : {}),
+    ...(floating.leftFromTextTwips !== undefined
+      ? { leftFromText: floating.leftFromTextTwips }
+      : {}),
+    ...(floating.overlap
+      ? {
+          overlap:
+            floating.overlap === 'never'
+              ? OverlapType.NEVER
+              : OverlapType.OVERLAP,
+        }
+      : {}),
+  };
 }
 
 function emitTableRow(row: DocxIrTableRow, resources: EmitResources): TableRow {

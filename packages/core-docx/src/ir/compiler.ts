@@ -99,6 +99,7 @@ import {
   type DocxIrAlignment,
   type DocxIrBlock,
   type DocxIrBorder,
+  type DocxIrBorders,
   type DocxIrComment,
   type DocxIrNote,
   type DocxIrFloating,
@@ -119,6 +120,8 @@ import {
   type DocxIrSpacing,
   type DocxIrStyles,
   type DocxIrTableCell,
+  type DocxIrTableFloating,
+  type DocxIrTableWidth,
   type DocxIrTableRow,
   type DocxIrTextWrap,
   type DocxIrVerticalAlign,
@@ -858,6 +861,8 @@ function compileComponent(
       return compileStatistic(component, scope);
     case 'toc':
       return compileToc(component, scope);
+    case 'text-box':
+      return compileTextBox(component, scope);
     case 'image':
       return compileImage(component, scope);
     case 'table':
@@ -1048,6 +1053,262 @@ function declareHeadingNumbering(
 
   ctx.features.require('numbering', path);
   return { reference: HEADING_NUMBERING_REFERENCE, level: level - 1 };
+}
+
+/* ------------------------------------------------------------------ *
+ * Text boxes
+ * ------------------------------------------------------------------ */
+
+/** 1px at 96 DPI in twips — 1440 twips per inch over 96 pixels per inch. */
+const TWIPS_PER_PIXEL = 15;
+
+/** ~333px, the width a floating text box takes when it states none. */
+const DEFAULT_TEXT_BOX_WIDTH_TWIPS = 5000;
+
+/**
+ * A text box: a borderless one-cell table holding its children.
+ *
+ * A table rather than a shape because that is the only rendering with autofit,
+ * per-side borders and a width that stays a percentage — a shape freezes all
+ * three at generation time. `renderAs: 'shape'` asks for the other one.
+ */
+function compileTextBox(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+
+  if (props.renderAs === 'shape') {
+    ctx.unsupported.push({ name: 'text-box', path, detail: 'renderAs shape' });
+    return [];
+  }
+
+  const children: DocxIrBlock[] = [];
+  const contents =
+    (component as { children?: ComponentDefinition[] }).children ?? [];
+  contents.forEach((child, index) => {
+    children.push(
+      ...compileComponent(child, {
+        ...scope,
+        path: `${path}.children[${index}]`,
+        id: `${scope.id}:c${index}`,
+      })
+    );
+  });
+
+  const style = props.style as Record<string, any> | undefined;
+  const padding = style?.padding as Record<string, number> | undefined;
+
+  ctx.features.require('tables', path);
+  if (props.floating) ctx.features.require('floating-tables', path);
+
+  return [
+    {
+      kind: 'table',
+      id: scope.id,
+      path,
+      // No grid: one cell, whose width the table itself decides.
+      columnGrid: { unit: 'twips', values: [] },
+      width: textBoxWidth(props),
+      layout: 'fixed',
+      // The container is invisible; whatever border the author asked for is
+      // drawn by the cell inside it.
+      borders: NO_BORDERS,
+      ...(props.floating
+        ? { floating: compileTableFloat(props.floating, ctx) }
+        : {}),
+      rows: [
+        {
+          cells: [
+            {
+              // A cell with nothing in it still needs a paragraph, or the row
+              // has no content at all and Word rejects the table.
+              children: children.length
+                ? children
+                : [
+                    {
+                      kind: 'paragraph',
+                      id: `${scope.id}:empty`,
+                      path: `${path}.children[0]`,
+                      children: [],
+                    },
+                  ],
+              margins: {
+                topTwips: padding?.top ? pointsToTwips(padding.top) : 0,
+                rightTwips: padding?.right ? pointsToTwips(padding.right) : 0,
+                bottomTwips: padding?.bottom
+                  ? pointsToTwips(padding.bottom)
+                  : 0,
+                leftTwips: padding?.left ? pointsToTwips(padding.left) : 0,
+              },
+              ...(style?.shading?.fill
+                ? {
+                    shading: {
+                      fill: irColor(
+                        resolveColor(style.shading.fill, ctx.theme)
+                      ),
+                    },
+                  }
+                : {}),
+              ...(compileBorders(style?.border, ctx)
+                ? { borders: compileBorders(style?.border, ctx)! }
+                : {}),
+            },
+          ],
+        },
+      ],
+    },
+  ];
+}
+
+/** Every side off, which is how the container stays invisible. */
+const NO_BORDERS = {
+  top: { style: 'none', sizeEighthPoints: 0, color: { hex: '000000' } },
+  right: { style: 'none', sizeEighthPoints: 0, color: { hex: '000000' } },
+  bottom: { style: 'none', sizeEighthPoints: 0, color: { hex: '000000' } },
+  left: { style: 'none', sizeEighthPoints: 0, color: { hex: '000000' } },
+  insideHorizontal: {
+    style: 'none',
+    sizeEighthPoints: 0,
+    color: { hex: '000000' },
+  },
+  insideVertical: {
+    style: 'none',
+    sizeEighthPoints: 0,
+    color: { hex: '000000' },
+  },
+} as const;
+
+/**
+ * How wide a text box is.
+ *
+ * An inline one always fills the measure — the cell inside it is what has a
+ * size. A floating one is as wide as it says: a number is pixels, a percentage
+ * stays one, and saying nothing means about 3.5 inches.
+ */
+function textBoxWidth(props: Record<string, any>): DocxIrTableWidth {
+  if (!props.floating) return { kind: 'percent', value: 100 };
+
+  const raw = props.width ?? props.floating?.width;
+  if (raw === undefined) {
+    return { kind: 'twips', value: DEFAULT_TEXT_BOX_WIDTH_TWIPS };
+  }
+  if (typeof raw === 'string' && raw.endsWith('%')) {
+    return { kind: 'percent', value: parseFloat(raw) };
+  }
+  return {
+    kind: 'twips',
+    value:
+      typeof raw === 'number'
+        ? raw * TWIPS_PER_PIXEL
+        : DEFAULT_TEXT_BOX_WIDTH_TWIPS,
+  };
+}
+
+/** Per-side borders as the authoring surface states them. */
+function compileBorders(
+  border: Record<string, any> | undefined,
+  ctx: CompileContext
+): DocxIrBorders | undefined {
+  if (!border) return undefined;
+  const side = (value: Record<string, any> | undefined) =>
+    value
+      ? {
+          style: String(value.style ?? 'single'),
+          // Points to eighths of a point, never thinner than the hairline a
+          // reader can actually see.
+          sizeEighthPoints:
+            value.width !== undefined
+              ? Math.max(1, Math.round(value.width * 8))
+              : 1,
+          color: irColor(
+            value.color ? resolveColor(value.color, ctx.theme) : '000000'
+          ),
+        }
+      : undefined;
+
+  const borders: DocxIrBorders = {
+    ...(side(border.top) ? { top: side(border.top)! } : {}),
+    ...(side(border.right) ? { right: side(border.right)! } : {}),
+    ...(side(border.bottom) ? { bottom: side(border.bottom)! } : {}),
+    ...(side(border.left) ? { left: side(border.left)! } : {}),
+  };
+  return Object.keys(borders).length > 0 ? borders : undefined;
+}
+
+/**
+ * Where a floating table sits.
+ *
+ * A table anchors differently from a drawing: in twips against an anchor rather
+ * than in EMU against a frame of reference, and with clearance distances rather
+ * than wrap margins.
+ */
+function compileTableFloat(
+  floating: Record<string, any>,
+  ctx: CompileContext
+): DocxIrTableFloating {
+  const anchor = (relative: unknown): string | undefined =>
+    relative === 'margin' || relative === 'page'
+      ? relative
+      : relative
+        ? 'text'
+        : undefined;
+
+  const hRelative = floating.horizontalPosition?.relative;
+  const vRelative = floating.verticalPosition?.relative;
+  const hRef =
+    hRelative && hRelative !== 'page'
+      ? getAvailableWidthTwips(ctx.theme, ctx.themeName)
+      : getPageWidthTwips(ctx.theme, ctx.themeName);
+  const vRef =
+    vRelative && vRelative !== 'page'
+      ? getAvailableHeightTwips(ctx.theme, ctx.themeName)
+      : getPageHeightTwips(ctx.theme, ctx.themeName);
+
+  const horizontal = floating.horizontalPosition;
+  const vertical = floating.verticalPosition;
+  const pageWidth = getPageWidthTwips(ctx.theme, ctx.themeName);
+  const pageHeight = getPageHeightTwips(ctx.theme, ctx.themeName);
+  const margins = floating.wrap?.margins as Record<string, any> | undefined;
+
+  return {
+    ...(anchor(hRelative) ? { horizontalAnchor: anchor(hRelative)! } : {}),
+    ...(anchor(vRelative) ? { verticalAnchor: anchor(vRelative)! } : {}),
+    ...(horizontal?.offset !== undefined
+      ? {
+          absoluteHorizontalPositionTwips: resolveOffsetTwips(
+            horizontal.offset,
+            hRef
+          ),
+        }
+      : horizontal?.align
+        ? { relativeHorizontalPosition: horizontal.align }
+        : {}),
+    ...(vertical?.offset !== undefined
+      ? {
+          absoluteVerticalPositionTwips: resolveOffsetTwips(
+            vertical.offset,
+            vRef
+          ),
+        }
+      : vertical?.align
+        ? { relativeVerticalPosition: vertical.align }
+        : {}),
+    ...(margins?.top !== undefined
+      ? { topFromTextTwips: resolveOffsetTwips(margins.top, pageHeight) }
+      : {}),
+    ...(margins?.right !== undefined
+      ? { rightFromTextTwips: resolveOffsetTwips(margins.right, pageWidth) }
+      : {}),
+    ...(margins?.bottom !== undefined
+      ? { bottomFromTextTwips: resolveOffsetTwips(margins.bottom, pageHeight) }
+      : {}),
+    ...(margins?.left !== undefined
+      ? { leftFromTextTwips: resolveOffsetTwips(margins.left, pageWidth) }
+      : {}),
+    overlap: 'overlap',
+  };
 }
 
 /* ------------------------------------------------------------------ *
