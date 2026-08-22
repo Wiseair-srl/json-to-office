@@ -67,3 +67,8 @@ No public type now references docx.js.
   rather than from that library's module-level counter, which made the same
   document come out differently on a second call and let two concurrent renders
   interleave. 38 of the 272 corpus cases were affected; none are now.
+- `text-frames` and `custom-properties` are now recorded as required when a
+  document uses them. Both adapters declared and emitted both, but nothing ever
+  demanded them, so the capability check for a floating paragraph or a custom
+  document property could not fire — a backend that declared them falsely would
+  have dropped the content silently.

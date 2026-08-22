@@ -241,6 +241,11 @@ not exported from `@json-to-office/json-to-docx` or
 - **API tests** — compile-time consumer fixtures proving buffer APIs expose no
   backend types, that renderer IDs are format-specific, that an unsupported id
   fails type checking, and that removed native APIs are gone.
+- **Requirement tests** — that a construct records the feature it needs, and
+  that the set of features nothing can require is exactly the vocabulary no
+  lowering covers yet. Only an adapter's _claim_ is visible in its source, so a
+  feature declared but never required is a check that cannot fire: the document
+  renders and a backend that could not express it drops the content silently.
 
 ## Backend capabilities
 
@@ -339,11 +344,10 @@ and concurrently, on both backends.
 Deliberately **not** declared, so a document using them fails before rendering
 rather than losing content:
 
-| Feature                                           | Why                                                                                                                                                       |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `comment-threads`                                 | `CommentOptions` is `{id, author, initials, date, children}` — no parent, no resolved state, so a reply would flatten into an unrelated top-level comment |
-| `cached-fields`                                   | vocabulary no backend here emits; `docxjs` does not declare it either                                                                                     |
-| `table-merged-cells`, `shading`, `borders`, `rtl` | vocabulary the compiler does not require of any backend yet; both adapters leave them out so a declared set means "proven by a test"                      |
+| Feature                                                            | Why                                                                                                                                                       |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `comment-threads`                                                  | `CommentOptions` is `{id, author, initials, date, children}` — no parent, no resolved state, so a reply would flatten into an unrelated top-level comment |
+| `table-merged-cells`, `cached-fields`, `shading`, `borders`, `rtl` | the vocabulary no lowering covers yet, so nothing can require them; both adapters leave them out so a declared set means "proven by a test"               |
 
 Both backends are exercised over the **whole** corpus in
 `renderers/office-open/__tests__/cross-backend.test.ts`: 265 cases are compared
