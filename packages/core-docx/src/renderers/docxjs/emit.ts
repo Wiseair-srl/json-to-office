@@ -829,6 +829,9 @@ function emitTableCell(
     children: cell.children.map((child) => emitBlock(child, resources)),
   };
 
+  if (cell.widthTwips !== undefined) {
+    options.width = { size: cell.widthTwips, type: WidthType.DXA };
+  }
   if (cell.verticalAlign) {
     options.verticalAlign = VERTICAL_ALIGN[cell.verticalAlign];
   }

@@ -67,6 +67,7 @@ import {
   getAvailableWidthTwips,
   getPageHeightTwips,
   getPageWidthTwips,
+  relativeLengthToTwips,
   resolveOffsetTwips,
 } from '../utils/widthUtils';
 import {
@@ -864,6 +865,8 @@ function compileComponent(
       return compileToc(component, scope);
     case 'text-box':
       return compileTextBox(component, scope);
+    case 'columns':
+      return compileColumns(component, scope);
     case 'image':
       return compileImage(component, scope);
     case 'table':
@@ -1059,6 +1062,154 @@ function declareHeadingNumbering(
 /* ------------------------------------------------------------------ *
  * Text boxes
  * ------------------------------------------------------------------ */
+
+/**
+ * Columns nested inside a text box, as a one-row table.
+ *
+ * At the top level a `columns` component becomes a section with a real column
+ * layout, and the layout stage has already unwrapped it by the time the
+ * compiler runs. Inside a text box there is no section to give, so the columns
+ * become cells: children are dealt round-robin across them, and the gap between
+ * two columns is split as a margin on each side of the boundary.
+ */
+function compileColumns(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+  const configs = columnConfigs(props.columns);
+  if (configs.length === 0) return [];
+
+  const available = getAvailableWidthTwips(ctx.theme, ctx.themeName);
+  const { widths, gaps } = columnMetrics(configs, props.gap, available);
+
+  // Round-robin: the only distribution available without measuring text, and
+  // the one this has always used.
+  const contents: ComponentDefinition[][] = configs.map(() => []);
+  const children =
+    (component as { children?: ComponentDefinition[] }).children ?? [];
+  children.forEach((child, index) => {
+    contents[index % configs.length].push(child);
+  });
+
+  ctx.features.require('tables', path);
+
+  return [
+    {
+      kind: 'table',
+      id: scope.id,
+      path,
+      columnGrid: { unit: 'twips', values: [] },
+      width: { kind: 'percent', value: 100 },
+      layout: 'fixed',
+      borders: NO_BORDERS,
+      rows: [
+        {
+          cells: configs.map((_, index) => {
+            const blocks = contents[index].flatMap((child, childIndex) =>
+              compileComponent(child, {
+                ...scope,
+                path: `${path}.children[${index}][${childIndex}]`,
+                id: `${scope.id}:c${index}:${childIndex}`,
+              })
+            );
+            return {
+              // An empty column is still a column: it needs a paragraph or the
+              // cell has no content at all.
+              children: blocks.length
+                ? blocks
+                : [
+                    {
+                      kind: 'paragraph' as const,
+                      id: `${scope.id}:c${index}:empty`,
+                      path: `${path}.children[${index}][0]`,
+                      children: [],
+                    },
+                  ],
+              widthTwips: widths[index],
+              margins: {
+                topTwips: 0,
+                rightTwips: gaps[index] / 2,
+                bottomTwips: 0,
+                leftTwips: index > 0 ? gaps[index - 1] / 2 : 0,
+              },
+              verticalAlign: 'top' as const,
+              borders: {
+                top: NO_BORDERS.top,
+                right: NO_BORDERS.right,
+                bottom: NO_BORDERS.bottom,
+                left: NO_BORDERS.left,
+              },
+            };
+          }),
+        },
+      ],
+    },
+  ];
+}
+
+/** A column count or an explicit list, as a list either way. */
+function columnConfigs(
+  columns: unknown
+): Array<{ width?: number | string; gap?: number | string }> {
+  if (typeof columns === 'number') {
+    return Array.from({ length: columns }, () => ({ width: 'auto' as const }));
+  }
+  return Array.isArray(columns) ? columns : [];
+}
+
+/**
+ * Column widths and the gaps between them, in twips.
+ *
+ * Stated widths are taken as written; whatever the page has left over after
+ * them and the gaps is split evenly between the columns that stated none.
+ */
+function columnMetrics(
+  configs: Array<{ width?: number | string; gap?: number | string }>,
+  defaultGap: number | string | undefined,
+  available: number
+): { widths: number[]; gaps: number[] } {
+  const widths: number[] = [];
+  const gaps: number[] = [];
+  const autoIndexes: number[] = [];
+  let stated = 0;
+  let totalGaps = 0;
+
+  configs.forEach((column, index) => {
+    if (column.width === undefined || column.width === 'auto') {
+      autoIndexes.push(index);
+      widths.push(0);
+    } else {
+      const width = relativeLengthToTwips(column.width, available);
+      widths.push(width);
+      stated += width;
+    }
+
+    if (index < configs.length - 1) {
+      // Half an inch between columns unless something says otherwise.
+      const gap =
+        column.gap !== undefined
+          ? relativeLengthToTwips(column.gap, available)
+          : defaultGap !== undefined
+            ? relativeLengthToTwips(defaultGap, available)
+            : 720;
+      gaps.push(gap);
+      totalGaps += gap;
+    } else {
+      gaps.push(0);
+    }
+  });
+
+  if (autoIndexes.length > 0) {
+    const share = Math.floor(
+      Math.max(0, available - stated - totalGaps) / autoIndexes.length
+    );
+    for (const index of autoIndexes) widths[index] = share;
+  }
+
+  return { widths, gaps };
+}
 
 /** 1px at 96 DPI in twips — 1440 twips per inch over 96 pixels per inch. */
 const TWIPS_PER_PIXEL = 15;
