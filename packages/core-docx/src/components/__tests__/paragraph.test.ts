@@ -137,6 +137,25 @@ describe('components/paragraph', () => {
     }
   );
 
+  it.each([
+    ['left', 'left'],
+    ['center', 'center'],
+    ['right', 'right'],
+    // OOXML calls justified text `both`, which the IR spells `justified`.
+    ['justify', 'justified'],
+    // Anything unrecognised is left-aligned rather than rejected.
+    ['sideways', 'left'],
+  ])('compiles alignment %s as %s', async (authored, expected) => {
+    const [block] = await paragraphBlocks({
+      text: 'Aligned.',
+      alignment: authored,
+    });
+
+    expect(block.kind === 'paragraph' && block.formatting?.alignment).toBe(
+      expected
+    );
+  });
+
   it('positions a floating paragraph as a frame, not as an anchored drawing', async () => {
     const [block] = await paragraphBlocks({
       text: 'Framed.',

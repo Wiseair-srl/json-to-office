@@ -78,11 +78,11 @@ import {
 import { normalizeUnicodeText } from '../utils/unicode';
 import {
   collectDocumentOutline,
+  type NumberedItemInfo,
   type TocHeadingEntry,
 } from '../core/collectTocHeadings';
 import { resolveTocField } from '../core/tocField';
 import { parseMarkdownList } from '../core/markdownList';
-import type { NumberedItemInfo } from '../utils/numberedItemsRegistry';
 import {
   containsCrossReference,
   containsLink,
