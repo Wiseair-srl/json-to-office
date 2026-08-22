@@ -74,7 +74,6 @@ const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'comment-threads',
   'footnotes',
   'endnotes',
-  'revisions',
   'shading',
   'borders',
   'rtl',

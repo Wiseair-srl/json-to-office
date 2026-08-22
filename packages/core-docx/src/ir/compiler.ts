@@ -46,6 +46,10 @@ import {
   type TableSource,
 } from '../core/tableModel';
 import { getPageSetup, getTableStyle } from '../styles/utils/layoutUtils';
+import {
+  DEFAULT_REVISION_AUTHOR,
+  DEFAULT_REVISION_DATE,
+} from '../utils/revisionUtils';
 import type { ImageResources, LoadedImage } from '../core/imageResources';
 import {
   calculateMissingDimension,
@@ -177,6 +181,14 @@ interface CompileContext {
   listCounter: number;
   /** Warning messages already collected, so one bad value warns once. */
   warnedMessages: Set<string>;
+  /**
+   * Ids for `w:ins` / `w:del`, allocated in document order.
+   *
+   * OOXML wants a number on every tracked change, unique within the document;
+   * allocating them here rather than while rendering is what keeps two
+   * compilations of the same document identical.
+   */
+  nextRevisionId: number;
   /** Image bytes, loaded before compilation started. */
   images: ImageResources;
   /**
@@ -214,6 +226,7 @@ export function compileDocument(
     numberingByReference: new Map(),
     listCounter: 0,
     warnedMessages: new Set(),
+    nextRevisionId: 1,
     images,
     generatedAt: structure.metadata.date,
   };
@@ -760,7 +773,6 @@ const DECORATED = /(\*\*\*|___|(\*\*|__)|(\*|_))/;
 
 /** Props a paragraph or heading may carry that this slice does not lower. */
 const UNLOWERED_PARAGRAPH_PROPS = [
-  'revision',
   'comment',
   'footnotes',
   'endnotes',
@@ -1289,6 +1301,14 @@ function compileRuns(
     ctx.features.require('breaks', path);
   }
 
+  if (props.revision) {
+    ctx.features.require('revisions', path);
+    return [
+      ...(props.columnBreak ? [{ kind: 'columnBreak' as const }] : []),
+      ...compileRevision(props.revision, base, ctx),
+    ];
+  }
+
   const parseOptions = {
     base,
     ...(props.boldColor
@@ -1311,6 +1331,90 @@ function compileRuns(
   }
 
   return children;
+}
+
+/**
+ * Tracked-change segments, as revision ranges and plain runs.
+ *
+ * Segment text is literal — no decorators. A `**` opened in one segment could
+ * close in another, so per-segment decorator parsing cannot work; the diff
+ * engine strips markdown before diffing for the same reason. Placeholders are
+ * still resolved, but only in unchanged text: inside an insertion or a deletion
+ * they stay as written, because what was changed is the token, not its value.
+ *
+ * Each emitted run gets its own range, and so its own id, which is what the
+ * pipeline has always produced.
+ */
+function compileRevision(
+  revision: Record<string, any>,
+  base: DocxIrRunFormatting,
+  ctx: CompileContext
+): DocxIrInline[] {
+  const author = revision.author || DEFAULT_REVISION_AUTHOR;
+  const date = revision.date || DEFAULT_REVISION_DATE;
+  const out: DocxIrInline[] = [];
+
+  for (const segment of (revision.segments ?? []) as {
+    type?: string;
+    text?: string;
+  }[]) {
+    if (!segment.text) continue;
+    const text = normalizeUnicodeText(segment.text);
+
+    if (segment.type === 'insert' || segment.type === 'delete') {
+      for (const line of literalLines(text, base)) {
+        out.push({
+          kind: 'revision',
+          type: segment.type,
+          id: ctx.nextRevisionId++,
+          author,
+          date,
+          children: line,
+        });
+      }
+      continue;
+    }
+
+    // Unchanged text is literal too — the same segment rule applies — unless it
+    // carries a placeholder, which is resolved as it would be anywhere else.
+    if (containsPlaceholder(text)) {
+      out.push(
+        ...parseInline(text, {
+          base,
+          resolvePlaceholder: (name) =>
+            resolvePlaceholder(name, ctx.generatedAt),
+        })
+      );
+      continue;
+    }
+    for (const line of literalLines(text, base)) out.push(...line);
+  }
+
+  return out;
+}
+
+/**
+ * One run per line, character for character.
+ *
+ * A revision segment carries no mini-language at all: a `**` opened in one
+ * segment could close in another, so nothing inside one can be parsed. Even an
+ * empty line becomes a run, because the break is what makes it visible.
+ */
+function literalLines(
+  text: string,
+  base: DocxIrRunFormatting
+): DocxIrInline[][] {
+  const formatting = Object.keys(base).length > 0 ? base : undefined;
+  return text
+    .split('\n')
+    .map((line, index) => [
+      ...(index > 0 ? [{ kind: 'lineBreak' as const }] : []),
+      {
+        kind: 'text' as const,
+        text: line,
+        ...(formatting ? { formatting } : {}),
+      },
+    ]);
 }
 
 /**

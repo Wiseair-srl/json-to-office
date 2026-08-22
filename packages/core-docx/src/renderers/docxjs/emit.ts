@@ -18,7 +18,9 @@ import {
   BookmarkStart,
   BorderStyle,
   ColumnBreak,
+  DeletedTextRun,
   ExternalHyperlink,
+  InsertedTextRun,
   InternalHyperlink,
   PageNumber,
   Paragraph,
@@ -43,6 +45,7 @@ import type {
   DocxIrInline,
   DocxIrParagraph,
   DocxIrParagraphFormatting,
+  DocxIrRevisionRange,
   DocxIrRunFormatting,
   DocxIrTable,
   DocxIrTableCell,
@@ -234,11 +237,14 @@ export function inlineChildren(
         break;
       }
 
+      case 'revision':
+        out.push(...emitRevision(child, breakOption()));
+        break;
+
       case 'noteReference':
       case 'commentRangeStart':
       case 'commentRangeEnd':
       case 'commentReference':
-      case 'revision':
         // Reachable only if capability checking let it through, which would be
         // a bug — never a silent drop.
         throw new Error(
@@ -248,6 +254,51 @@ export function inlineChildren(
       default:
         assertNever(child, 'DocxIrInline');
     }
+  }
+
+  return out;
+}
+
+/**
+ * A tracked change, as runs marked with its id.
+ *
+ * Every text child becomes a run carrying the range's `w:ins` / `w:del`
+ * attributes: docx.js has no wrapper element, so the mark rides on the runs.
+ */
+function emitRevision(
+  range: DocxIrRevisionRange,
+  pending: { break?: number }
+): ParagraphChild[] {
+  const mark = {
+    id: range.id,
+    author: range.author,
+    date: range.date,
+  };
+  const out: ParagraphChild[] = [];
+  let breaks = pending.break ?? 0;
+
+  for (const child of range.children) {
+    if (child.kind === 'lineBreak') {
+      breaks += 1;
+      continue;
+    }
+    if (child.kind !== 'text') {
+      throw new Error(
+        `the docxjs renderer has no emitter for "${child.kind}" inside a revision`
+      );
+    }
+    const options = {
+      text: child.text,
+      ...runOptions(child.formatting),
+      ...(breaks > 0 ? { break: breaks } : {}),
+      ...mark,
+    };
+    breaks = 0;
+    out.push(
+      range.type === 'insert'
+        ? new InsertedTextRun(options)
+        : new DeletedTextRun(options)
+    );
   }
 
   return out;
