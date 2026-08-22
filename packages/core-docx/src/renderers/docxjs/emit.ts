@@ -33,7 +33,7 @@ import type {
   DocxIrRunFormatting,
 } from '../../ir/types';
 
-const ALIGNMENT: Readonly<
+export const ALIGNMENT: Readonly<
   Record<string, (typeof AlignmentType)[keyof typeof AlignmentType]>
 > = {
   left: AlignmentType.LEFT,
@@ -233,8 +233,17 @@ export function emitParagraph(block: DocxIrParagraph): Paragraph {
     // emitted XML carries `w:pStyle` either way.
     style: block.styleId ?? 'Normal',
     ...paragraphOptions(block.formatting),
-    ...(block.numbering?.none
-      ? { numbering: { reference: '', level: 0, instance: 0 } }
+    ...(block.numbering
+      ? {
+          numbering: block.numbering.none
+            ? // An empty reference is how docx.js is told to suppress the
+              // numbering a style would otherwise apply.
+              { reference: '', level: 0, instance: 0 }
+            : {
+                reference: block.numbering.reference,
+                level: block.numbering.level,
+              },
+        }
       : {}),
   });
 }
