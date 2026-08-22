@@ -29,6 +29,7 @@ import type { ProcessedDocument } from '../core/structure';
 import type { ComponentDefinition } from '../types';
 import type { ThemeConfig } from '../styles';
 import { resolveColor } from '../styles/utils/colorUtils';
+import { createDocumentStyles } from '../styles/themeToStyles';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import { getNormalStyle, getThemeFonts } from '../themes/defaults';
 import { computeSectionOrdinals } from '../core/sectionOrdinals';
@@ -120,7 +121,6 @@ import {
   type DocxIrSection,
   type DocxIrSectionProperties,
   type DocxIrSpacing,
-  type DocxIrStyles,
   type DocxIrTableCell,
   type DocxIrTableFloating,
   type DocxIrTableWidth,
@@ -254,7 +254,7 @@ export function compileDocument(
   images: ImageResources = new Map(),
   options: { echoWarnings?: boolean } = {}
 ): DocxCompileResult {
-  const styles = compileStyleManifest(structure.theme);
+  const styles = createDocumentStyles(structure.theme, structure.language);
   // Walk the outline before compiling so a cross-reference can resolve a target
   // that appears later in the document, and a TOC field can carry cached
   // entries. Same catch-and-degrade discipline as the pre-IR path: a failure
@@ -418,40 +418,6 @@ function mergeNoProofWords(
   const own = Array.isArray(componentWords) ? (componentWords as string[]) : [];
   const merged = [...(themeWords ?? []), ...own];
   return merged.length > 0 ? [...new Set(merged)] : undefined;
-}
-
-/**
- * The style ids a paragraph may reference.
- *
- * A manifest rather than a full compilation: the style *definitions* still come
- * from the theme adapter, which is the next piece of the migration. Recording
- * the ids here is what lets IR validation catch a paragraph pointing at a style
- * that does not exist.
- */
-function compileStyleManifest(theme: ThemeConfig): DocxIrStyles {
-  const builtIn = [
-    'Normal',
-    'Title',
-    'Subtitle',
-    'Header',
-    'Footer',
-    'StatisticNumber',
-    'StatisticDescription',
-    ...[1, 2, 3, 4, 5, 6].flatMap((level) => [
-      `Heading${level}`,
-      `JTD_HeadingText${level}`,
-    ]),
-  ];
-  const custom = Object.keys(theme.styles ?? {});
-
-  return {
-    defaults: { run: {}, paragraph: {} },
-    paragraph: [...new Set([...builtIn, ...custom])].map((id) => ({
-      id,
-      name: id,
-    })),
-    character: [],
-  };
 }
 
 /* ------------------------------------------------------------------ *

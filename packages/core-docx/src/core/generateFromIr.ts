@@ -249,7 +249,7 @@ async function renderScoped(
     );
   }
 
-  const renderer = createDocxJsRenderer({ theme: compiled.theme });
+  const renderer = createDocxJsRenderer();
   assertRendererSupports(compiled.required, renderer);
 
   const bytes = await renderer.render(compiled.ir, {

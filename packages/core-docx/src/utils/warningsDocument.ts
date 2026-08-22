@@ -45,7 +45,10 @@ export function generateWarningsDocument(
   }
 
   // Create sections for each component with warnings
-  for (const [componentName, componentWarnings] of warningsByComponent.entries()) {
+  for (const [
+    componentName,
+    componentWarnings,
+  ] of warningsByComponent.entries()) {
     children.push({
       name: 'heading',
       props: {
@@ -118,7 +121,10 @@ export function formatWarningsText(
     warningsByComponent.set(warning.component, existing);
   }
 
-  for (const [componentName, componentWarnings] of warningsByComponent.entries()) {
+  for (const [
+    componentName,
+    componentWarnings,
+  ] of warningsByComponent.entries()) {
     lines.push(`Component: ${componentName}`);
     lines.push('-'.repeat(30));
 

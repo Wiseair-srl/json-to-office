@@ -108,6 +108,12 @@ importers:
         specifier: 7.2.3
         version: 7.2.3
     devDependencies:
+      '@office-open/core':
+        specifier: 0.11.0
+        version: 0.11.0
+      '@office-open/docx':
+        specifier: 0.11.0
+        version: 0.11.0
       '@types/adm-zip':
         specifier: 0.5.7
         version: 0.5.7
@@ -1700,6 +1706,9 @@ packages:
 
   '@office-open/core@0.11.0':
     resolution: {integrity: sha512-Tr8ltzQJnVrf5qSsQXocRdwluo/RI5he7siMxZWBvGBpYkF71u1vT1zxfmZ0jSkJQt9hvLTsf4CD+n1VZMzd1w==}
+
+  '@office-open/docx@0.11.0':
+    resolution: {integrity: sha512-wFtYqGYpg1Gc4RQoC90KSeYZuWF3sBESQ3aFbrDkcTRkKUL5jCqnw7pRY3xHo8x0NEr5KTN3Yz17A51/OashVw==}
 
   '@office-open/pptx@0.11.0':
     resolution: {integrity: sha512-9599vqkpUzXe2NjiZXYOIYWe0ys90PGYtHtpZmDVYwkL+a70U4+ThXYRJK8n1K8FE/wD0B3CQPTXAU6xGUJEcQ==}
@@ -6996,6 +7005,11 @@ snapshots:
       '@noble/hashes': 2.2.0
       '@office-open/xml': 0.11.0
       fflate: 0.8.3
+
+  '@office-open/docx@0.11.0':
+    dependencies:
+      '@office-open/core': 0.11.0
+      '@office-open/xml': 0.11.0
 
   '@office-open/pptx@0.11.0':
     dependencies:
