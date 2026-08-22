@@ -43,6 +43,10 @@ export const LooseDocumentGenerationRequestSchema = Type.Object(
           bypassCache: Type.Optional(Type.Boolean()),
           returnUrl: Type.Optional(Type.Boolean()),
           fonts: Type.Optional(FontOptionsSchema),
+          // Backend to render with. Left as a bounded string rather than an
+          // enum: the registry owns the list, answers an unknown id with the
+          // ids that exist, and the route turns that into a 400.
+          renderer: Type.Optional(Type.String({ maxLength: 64 })),
           // Name of the discovered document this definition came from; the
           // server maps it to that document's directory so relative asset
           // paths resolve against it (#142). Names, never paths — a client

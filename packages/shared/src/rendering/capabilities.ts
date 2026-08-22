@@ -1,4 +1,5 @@
 import {
+  UnknownRendererError,
   UnsupportedRendererFeatureError,
   rendererError,
   type RendererDiagnostic,
@@ -177,19 +178,16 @@ export class RendererRegistry<
   /**
    * Resolve a renderer, defaulting when `id` is omitted.
    *
-   * Throws with the list of valid ids for an unknown id, and re-throws a
-   * missing optional dependency with an actionable install hint.
+   * An unknown id is `UnknownRendererError`, which carries the id asked for and
+   * the ones that exist, so a caller boundary can answer "bad request" rather
+   * than "the server broke". A missing optional dependency is re-thrown with an
+   * actionable install hint.
    */
   async resolve(id?: TId): Promise<OfficeRenderer<TIR, TFeature, TId>> {
     const selected = id ?? this.defaultId;
     const factory = this.renderers.get(selected);
     if (!factory) {
-      const known = this.ids()
-        .map((k) => `"${k}"`)
-        .join(', ');
-      throw new Error(
-        `Unknown ${this.format} renderer "${selected}". Available renderers: ${known}.`
-      );
+      throw new UnknownRendererError(this.format, selected, this.ids());
     }
     try {
       return await factory();

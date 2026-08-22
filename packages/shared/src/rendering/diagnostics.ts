@@ -72,6 +72,43 @@ export class UnsupportedRendererFeatureError<
   }
 }
 
+/**
+ * A renderer id that is not registered for the format asked for.
+ *
+ * Caller input, not an infrastructure failure — which is the whole reason it is
+ * a class with a `code` rather than a bare `Error`. A server matching on the
+ * message text could only answer `500`, so an unknown id looked like the
+ * service falling over, and a retry looked worth attempting (#263).
+ */
+export class UnknownRendererError extends Error {
+  public readonly code = 'UNKNOWN_RENDERER';
+  public readonly format: OfficeFormat;
+  /** What the caller asked for. */
+  public readonly rendererId: string;
+  /** Every id registered for this format, in registration order. */
+  public readonly availableIds: readonly string[];
+
+  constructor(
+    format: OfficeFormat,
+    rendererId: string,
+    availableIds: readonly string[]
+  ) {
+    const known = availableIds.map((id) => `"${id}"`).join(', ');
+    super(
+      `Unknown ${format} renderer "${rendererId}". Available renderers: ${known}.`
+    );
+
+    this.name = 'UnknownRendererError';
+    this.format = format;
+    this.rendererId = rendererId;
+    this.availableIds = [...availableIds];
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, UnknownRendererError);
+    }
+  }
+}
+
 function distinct<T>(values: readonly T[]): T[] {
   return [...new Set(values)];
 }

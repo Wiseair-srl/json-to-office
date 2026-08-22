@@ -48,7 +48,10 @@ function throwIfClientError(error: unknown): void {
   const code = (error as { code?: unknown } | undefined)?.code;
   if (
     code === 'UNSUPPORTED_RENDERER_FEATURE' ||
-    code === 'UNCOMPILED_COMPONENT'
+    code === 'UNCOMPILED_COMPONENT' ||
+    // An id nobody registered is the caller naming a backend that does not
+    // exist. The message already lists the ones that do.
+    code === 'UNKNOWN_RENDERER'
   ) {
     throw new HTTPException(400, { message: (error as Error).message });
   }
@@ -518,7 +521,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
       const { jsonDefinition, customThemes, options } = getValidated<{
         jsonDefinition: any;
         customThemes?: Record<string, any>;
-        options?: { sourceName?: string };
+        options?: { sourceName?: string; renderer?: string };
       }>(c, 'json');
 
       try {
@@ -540,6 +543,14 @@ export function createFormatRouter(adapter: FormatAdapter) {
           options: {
             bypassCache: true,
             ...(baseDir !== undefined && { baseDir }),
+            // The preview has to come from the backend the caller picked.
+            // Regenerating with the default made the picker lie: the PDF on
+            // screen and the bytes on download came from different renderers,
+            // and a capability refusal was invisible until you downloaded
+            // (#255).
+            ...(options?.renderer !== undefined && {
+              renderer: options.renderer,
+            }),
           },
         });
 
@@ -560,6 +571,10 @@ export function createFormatRouter(adapter: FormatAdapter) {
           requestId,
         });
         if (error instanceof HTTPException) throw error;
+        // Generation runs inside this route now, so the same document faults
+        // the download reports — an unknown backend, a feature it cannot
+        // express — have to reach the previewer with the same status.
+        throwIfClientError(error);
         if (error instanceof LibreOfficeBinaryNotFoundError) {
           throw new HTTPException(503, {
             message:
