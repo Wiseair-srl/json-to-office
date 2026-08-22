@@ -547,4 +547,12 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     '3cc6df3729d6b0af2d818d410aa6d72d671c6ac1d5a301b25c537703439602b8',
   'theme/example-technical-guide':
     '81068707e23b56d8519691ce985ba6e4c40b5d225881fbe5374eda4b5b9715d2',
+  'blocks/text-box-nested-columns':
+    '5e8aa2e438ec73cb4e4e9a09191e9d85f09ed70eee9ded6f7bf124fffd5e1caf',
+  'blocks/text-box-nested-columns-widths':
+    '7067deb8b157d0a13a802002091af42cf19da46f393e00661fc2a31e0afc58c9',
+  'blocks/text-box-nested-columns-sparse':
+    'ccd61a0170b0240790e9c9969b964b2cb7960caacea41db67b0b043ec5ad797a',
+  'blocks/text-box-nested-columns-floating':
+    '85e46904f7ed19052a48179e401d8d189676c38dabd78be2f983656e5faacbd5',
 };

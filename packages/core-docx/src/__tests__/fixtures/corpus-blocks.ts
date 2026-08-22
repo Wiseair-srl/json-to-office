@@ -73,6 +73,11 @@ const textBox = (
   props: Record<string, unknown> = {}
 ): unknown => ({ name: 'text-box', props, children });
 
+const columns = (
+  props: Record<string, unknown>,
+  children: unknown[]
+): unknown => ({ name: 'columns', props, children });
+
 export const CASES: CorpusCase[] = [
   // ==========================================================================
   // image — inline
@@ -658,6 +663,84 @@ export const CASES: CorpusCase[] = [
             },
           },
         }),
+      ]),
+    ]),
+  },
+
+  // ==========================================================================
+  // text-box — nested columns
+  // ==========================================================================
+  {
+    // Columns inside a text box have no section to become, so they become a
+    // table of cells within the box's own cell.
+    name: 'blocks/text-box-nested-columns',
+    document: doc([
+      section([
+        textBox(
+          [
+            columns({ columns: 2 }, [
+              paragraph('Left column.'),
+              paragraph('Right column.'),
+            ]),
+          ],
+          { style: { padding: { top: 6, right: 6, bottom: 6, left: 6 } } }
+        ),
+      ]),
+    ]),
+  },
+  {
+    // Explicit widths and gaps, a percentage among them, and a final column
+    // that takes whatever the others left.
+    name: 'blocks/text-box-nested-columns-widths',
+    document: doc([
+      section([
+        textBox([
+          columns(
+            { columns: [{ width: 200, gap: 24 }, { width: '30%' }, {}] },
+            [
+              paragraph('One.'),
+              paragraph('Two.'),
+              paragraph('Three.'),
+              paragraph('Four.'),
+            ]
+          ),
+        ]),
+      ]),
+    ]),
+  },
+  {
+    // More columns than items: the ones nothing was dealt to still exist.
+    name: 'blocks/text-box-nested-columns-sparse',
+    document: doc([
+      section([
+        textBox([
+          columns({ columns: 3, gap: 36 }, [paragraph('Only one item.')]),
+        ]),
+      ]),
+    ]),
+  },
+  {
+    // A floating box whose contents are columns: the box floats, the columns
+    // inside it do not.
+    name: 'blocks/text-box-nested-columns-floating',
+    document: doc([
+      section([
+        textBox(
+          [
+            paragraph('Header text.'),
+            columns({ columns: [{ width: '50%' }, { width: '50%' }] }, [
+              paragraph('Left.'),
+              paragraph('Right.'),
+            ]),
+          ],
+          {
+            floating: {
+              horizontalPosition: { relative: 'margin', align: 'right' },
+              verticalPosition: { relative: 'page', align: 'top' },
+            },
+            width: 300,
+          }
+        ),
       ]),
     ]),
   },

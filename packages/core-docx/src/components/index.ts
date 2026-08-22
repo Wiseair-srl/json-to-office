@@ -1,21 +1,27 @@
 /**
- * Standard and Custom Components
- * This folder contains all components that extend the document generator
+ * Components with behaviour of their own.
+ *
+ * Not a renderer registry: the DocxIR compiler knows every standard component
+ * by name. What is left here is the two components that need an external
+ * service before they can become anything — a `visual` and a `highcharts`, both
+ * of which desugar to an image — and the bundled custom component.
  */
 
-// Export standard components
-export { renderHeadingComponent } from './heading';
-export { renderParagraphComponent } from './paragraph';
-export { renderListComponent } from './list';
-export { renderImageComponent } from './image';
-export { renderTextBoxComponent } from './text-box';
-export { renderTableComponent } from './table';
-export { renderSectionComponent } from './section';
-export { renderColumnsComponent } from './columns';
-export { renderStatisticComponent } from './statistic';
-export { renderTocComponent } from './toc';
-export { renderHighchartsComponent } from './highcharts';
-export { renderVisualComponent } from './visual';
+export {
+  buildVisualPresentation,
+  defaultVisualWidthPx,
+  effectiveVisualServerUrl,
+  rasterizeVisualSlide,
+  visualRasterKey,
+  visualToImageOptions,
+  visualToImageProps,
+  type ImageOptions,
+} from './visual';
 
-// Export custom components
+export {
+  renderChartToImageProps,
+  type ChartGenerationResult,
+  type HighchartsProps,
+} from './highcharts';
+
 export { textSpaceAfterComponent } from './text-space-after';

@@ -1,16 +1,13 @@
 /**
- * Highcharts Component
- * Standard component for generating charts using Highcharts Export Server
+ * The `highcharts` component: a chart drawn by an export server.
+ *
+ * Nothing here renders a document. A chart has no OOXML form of its own — it
+ * becomes a PNG and then an `image` — so what lives here is the request the
+ * export server needs, the theme palette that goes into it, and the image props
+ * the result desugars to.
  */
 
-import { Paragraph, Table } from 'docx';
-import {
-  ComponentDefinition,
-  RenderContext,
-  isHighchartsComponent,
-} from '../types';
 import { ThemeConfig } from '../styles';
-import { createImage } from '../core/content';
 import { resolveColor } from '../styles/utils/colorUtils';
 import { isNodeEnvironment } from '../utils/environment';
 import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
@@ -165,28 +162,4 @@ export async function renderChartToImageProps(
     height: hasConfigDimensions ? config.height : chart.height,
     alignment: 'center',
   };
-}
-
-/**
- * Render highcharts component
- */
-export async function renderHighchartsComponent(
-  component: ComponentDefinition,
-  theme: ThemeConfig,
-  themeName: string,
-  context?: RenderContext
-): Promise<(Paragraph | Table)[]> {
-  if (!isHighchartsComponent(component)) return [];
-
-  const image = await renderChartToImageProps(
-    component.props as HighchartsProps,
-    theme,
-    context?.services?.highcharts
-  );
-
-  return await createImage(image.base64 as string, theme, themeName, {
-    width: image.width as number | undefined,
-    height: image.height as number | undefined,
-    alignment: image.alignment as 'center',
-  });
 }
