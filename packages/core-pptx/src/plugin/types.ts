@@ -11,7 +11,7 @@ import type {
   PipelineWarning,
 } from '../types';
 import type { PptxRendererId } from '../renderers/types';
-import type { PresentationPackagingOptions } from '../core/packagePresentation';
+import type { PresentationPackagingOptions } from '../core/finalizePackage';
 
 // ---- Helper types ----
 

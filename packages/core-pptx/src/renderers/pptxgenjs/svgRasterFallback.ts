@@ -16,8 +16,8 @@
  */
 import path from 'node:path';
 import type JSZip from 'jszip';
-import type { PipelineWarning } from '../types';
-import { W, warn } from '../utils/warn';
+import type { PipelineWarning } from '../../types';
+import { W, warn } from '../../utils/warn';
 
 type ResvgModule = typeof import('@resvg/resvg-js');
 type FitTo = { mode: 'width' | 'height'; value: number };

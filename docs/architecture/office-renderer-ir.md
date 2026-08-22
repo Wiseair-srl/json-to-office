@@ -8,16 +8,16 @@ This is a contributor document. It is excluded from the published VitePress site
 
 ## Status
 
-| Area                                                                  | State                                                                                                                         |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Shared renderer contract (`packages/shared/src/rendering/`)           | done                                                                                                                          |
-| PptxIR + compiler + validation + debug snapshots                      | done                                                                                                                          |
-| PptxGenJS adapter                                                     | done — the default, byte-identical to the previous implementation                                                             |
-| PPTX cutover: buffer/file APIs, plugin generator, native APIs removed | done                                                                                                                          |
-| PPTX packaging split (generic vs backend)                             | call site separated; the implementation still lives in `core/packagePresentation.ts` (see `renderers/pptxgenjs/packaging.ts`) |
-| `office-open` PPTX adapter                                            | not implemented — the id is registered and fails with an actionable error; capability research is recorded below              |
-| DocxIR, docx.js adapter, DOCX cutover                                 | not started — DOCX still uses the pre-IR pipeline and still exposes docx.js objects                                           |
-| `office-open` DOCX adapter                                            | not started                                                                                                                   |
+| Area                                                                  | State                                                                                                                |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Shared renderer contract (`packages/shared/src/rendering/`)           | done                                                                                                                 |
+| PptxIR + compiler + validation + debug snapshots                      | done                                                                                                                 |
+| PptxGenJS adapter                                                     | done — the default, byte-identical to the previous implementation                                                    |
+| PPTX cutover: buffer/file APIs, plugin generator, native APIs removed | done                                                                                                                 |
+| PPTX packaging split (generic vs backend)                             | done — repairs in `renderers/pptxgenjs/packaging.ts`, finalization in `core/finalizePackage.ts`, one shared zip pass |
+| `office-open` PPTX adapter                                            | not implemented — the id is registered and fails with an actionable error; capability research is recorded below     |
+| DocxIR, docx.js adapter, DOCX cutover                                 | not started — DOCX still uses the pre-IR pipeline and still exposes docx.js objects                                  |
+| `office-open` DOCX adapter                                            | not started                                                                                                          |
 
 Everything below describes the intended architecture for both formats. The DOCX
 half is the design the PPTX half was built to, not a description of shipped

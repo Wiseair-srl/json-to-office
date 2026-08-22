@@ -24,7 +24,7 @@ import type {
 import { validatePresentation, cleanComponentProps } from './validation';
 import { generatePluginPresentationSchema, exportPluginSchema } from './schema';
 import { processPresentation } from '../core/structure';
-import type { PresentationPackagingOptions } from '../core/packagePresentation';
+import type { PresentationPackagingOptions } from '../core/finalizePackage';
 import { renderProcessedViaIr } from '../core/generateFromIr';
 import type { PptxRendererId } from '../renderers/types';
 import { getPptxTheme, hasPptxTheme } from '../themes';
