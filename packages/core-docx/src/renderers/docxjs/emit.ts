@@ -45,6 +45,7 @@ import type {
   DocxIrInline,
   DocxIrParagraph,
   DocxIrParagraphFormatting,
+  DocxIrParagraphMarkRevision,
   DocxIrRevisionRange,
   DocxIrRunFormatting,
   DocxIrTable,
@@ -379,6 +380,7 @@ export function emitParagraph(
     // table cell, whose run properties come from the cell itself.
     ...(block.styleId ? { style: block.styleId } : {}),
     ...paragraphOptions(block.formatting),
+    ...(block.markRevision ? { run: revisionMark(block.markRevision) } : {}),
     ...(block.numbering
       ? {
           numbering: block.numbering.none
@@ -452,7 +454,23 @@ function emitTableRow(row: DocxIrTableRow, resources: EmitResources): TableRow {
       : {}),
     ...(row.isHeader !== undefined ? { tableHeader: row.isHeader } : {}),
     ...(row.cantSplit !== undefined ? { cantSplit: row.cantSplit } : {}),
+    ...(row.revision ? revisionMark(row.revision) : {}),
   });
+}
+
+/** `w:trPr/w:ins` or `w:trPr/w:del` — the row itself was inserted or deleted. */
+function revisionMark(revision: DocxIrParagraphMarkRevision): {
+  insertion?: { id: number; author: string; date: string };
+  deletion?: { id: number; author: string; date: string };
+} {
+  const attributes = {
+    id: revision.id,
+    author: revision.author,
+    date: revision.date,
+  };
+  return revision.type === 'insert'
+    ? { insertion: attributes }
+    : { deletion: attributes };
 }
 
 function emitTableCell(
