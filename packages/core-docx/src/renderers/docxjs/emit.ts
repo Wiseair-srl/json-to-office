@@ -18,6 +18,9 @@ import {
   BookmarkStart,
   BorderStyle,
   ColumnBreak,
+  CommentRangeEnd,
+  CommentRangeStart,
+  CommentReference,
   DeletedTextRun,
   ExternalHyperlink,
   InsertedTextRun,
@@ -242,10 +245,22 @@ export function inlineChildren(
         out.push(...emitRevision(child, breakOption()));
         break;
 
-      case 'noteReference':
       case 'commentRangeStart':
+        out.push(new CommentRangeStart(child.id));
+        break;
+
       case 'commentRangeEnd':
+        out.push(new CommentRangeEnd(child.id));
+        break;
+
       case 'commentReference':
+        // `w:commentReference` is run-inner content, so it has to sit inside a
+        // `w:r`. Emitted as a direct child of `w:p` it is schema-invalid and
+        // readers drop the comment without saying so.
+        out.push(new TextRun({ children: [new CommentReference(child.id)] }));
+        break;
+
+      case 'noteReference':
         // Reachable only if capability checking let it through, which would be
         // a bug — never a silent drop.
         throw new Error(

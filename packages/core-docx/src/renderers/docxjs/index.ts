@@ -24,6 +24,7 @@ import {
   Paragraph,
   Table,
   TextWrappingType,
+  type ICommentOptions,
   type ILevelsOptions,
   type ISectionOptions,
 } from 'docx';
@@ -70,8 +71,6 @@ const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'cached-toc',
   'cached-fields',
   'cross-references',
-  'comments',
-  'comment-threads',
   'footnotes',
   'endnotes',
   'shading',
@@ -143,6 +142,28 @@ export function buildDocument(
     },
     ...(ir.numbering.length > 0
       ? { numbering: { config: ir.numbering.map(numberingConfig) } }
+      : {}),
+    // word/comments.xml, written only when something was actually commented.
+    ...(ir.comments.length > 0
+      ? {
+          comments: {
+            children: ir.comments.map((comment) => ({
+              id: comment.id,
+              author: comment.author,
+              ...(comment.initials ? { initials: comment.initials } : {}),
+              date: new Date(comment.date),
+              children: comment.children.map((block) =>
+                emitBlock(block, resources)
+              ),
+              ...(comment.parentId !== undefined
+                ? { parentId: comment.parentId }
+                : {}),
+              ...(comment.resolved !== undefined
+                ? { resolved: comment.resolved }
+                : {}),
+            })) as ICommentOptions[],
+          },
+        }
       : {}),
   });
 }
