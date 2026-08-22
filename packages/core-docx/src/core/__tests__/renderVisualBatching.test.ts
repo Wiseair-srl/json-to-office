@@ -4,8 +4,7 @@
  * visual), while per-visual rendering remains the fallback.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { Document } from 'docx';
-import { generateDocumentFromJson } from '../generator';
+import { generateBufferFromJson } from '../generator';
 
 // A real (decodable) 1×1 PNG so createImage can measure it.
 const VALID_PNG =
@@ -42,12 +41,12 @@ describe('renderDocument visual batching (#153)', () => {
     }));
     const render = vi.fn();
 
-    const document = await generateDocumentFromJson(doc() as any, {
+    const buffer = await generateBufferFromJson(doc() as any, {
       validation: { enabled: false },
       services: { pptx: { render, renderBatch } },
     });
 
-    expect(document).toBeInstanceOf(Document);
+    expect(buffer.byteLength).toBeGreaterThan(0);
     expect(renderBatch).toHaveBeenCalledOnce();
     expect(renderBatch.mock.calls[0][0].slides).toHaveLength(2); // deduped
     expect(render).not.toHaveBeenCalled();
@@ -60,12 +59,12 @@ describe('renderDocument visual batching (#153)', () => {
       height: 1,
     }));
 
-    const document = await generateDocumentFromJson(doc() as any, {
+    const buffer = await generateBufferFromJson(doc() as any, {
       validation: { enabled: false },
       services: { pptx: { render } },
     });
 
-    expect(document).toBeInstanceOf(Document);
+    expect(buffer.byteLength).toBeGreaterThan(0);
     // The pre-pass parallelizes but still dedupes: 2 unique visuals.
     expect(render).toHaveBeenCalledTimes(2);
   });
@@ -80,7 +79,7 @@ describe('renderDocument visual batching (#153)', () => {
     }));
 
     await expect(
-      generateDocumentFromJson(doc() as any, {
+      generateBufferFromJson(doc() as any, {
         validation: { enabled: false },
         services: { pptx: { renderBatch } },
       })

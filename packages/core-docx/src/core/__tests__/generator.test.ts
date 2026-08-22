@@ -1,25 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  generateDocument,
-  generateFromConfig,
-  generateDocumentFromJson,
-} from '../generator';
-import * as docx from 'docx';
+/**
+ * The generator entry points, on documents that exercise each shape.
+ *
+ * These assert that a document builds, not what it builds: the corpus goldens
+ * pin the bytes. What matters here is that every entry point reaches the
+ * pipeline and that a document which is not a `docx` root is rejected with a
+ * message that says so.
+ */
+
+import { describe, it, expect } from 'vitest';
+import { generateBufferFromJson, generateBufferFromConfig } from '../generator';
 import type {
   ComponentDefinition,
   ReportProps,
   ReportComponentDefinition,
 } from '../../types';
 
-vi.mock('docx');
-
 describe('core/generator', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('generateDocument', () => {
-    it('should generate a document with minimal config', async () => {
+  describe('generateBufferFromJson', () => {
+    it('generates from a minimal document', async () => {
       const minimalComponent: ComponentDefinition = {
         name: 'docx',
         props: {
@@ -35,13 +33,12 @@ describe('core/generator', () => {
         ],
       };
 
-      const result = await generateDocument(minimalComponent);
+      const buffer = await generateBufferFromJson(minimalComponent);
 
-      expect(result).toBeDefined();
-      expect(result).toBeInstanceOf(docx.Document);
+      expect(buffer.byteLength).toBeGreaterThan(0);
     });
 
-    it('should handle document with theme', async () => {
+    it('generates from a document naming a theme', async () => {
       const componentWithTheme: ComponentDefinition = {
         name: 'docx',
         props: {
@@ -58,11 +55,11 @@ describe('core/generator', () => {
         ],
       };
 
-      const result = await generateDocument(componentWithTheme);
-      expect(result).toBeDefined();
+      const buffer = await generateBufferFromJson(componentWithTheme);
+      expect(buffer.byteLength).toBeGreaterThan(0);
     });
 
-    it('should handle document with custom components', async () => {
+    it('generates from a document with a table in the flat shape', async () => {
       const componentWithTable: ComponentDefinition = {
         name: 'docx',
         props: {},
@@ -84,23 +81,31 @@ describe('core/generator', () => {
         ],
       };
 
-      const result = await generateDocument(componentWithTable);
-      expect(result).toBeDefined();
+      // The flat `headers`/`rows` shape predates the schema, which only knows
+      // the column form, so it is generated without validation.
+      const buffer = await generateBufferFromJson(componentWithTable, {
+        validation: { enabled: false },
+      });
+      expect(buffer.byteLength).toBeGreaterThan(0);
     });
 
-    it('should throw error for invalid component', async () => {
+    it('rejects a root that is not a docx component', async () => {
       const invalidComponent = {
         name: 'not-a-report',
         props: {},
         children: [],
-      } as any;
+      } as never;
 
-      await expect(generateDocument(invalidComponent)).rejects.toThrow(
-        'Top-level component must be a docx component'
-      );
+      // Validation off on purpose: the guard under test is the one inside
+      // theme resolution, which is what a caller that skips the schema hits.
+      await expect(
+        generateBufferFromJson(invalidComponent, {
+          validation: { enabled: false },
+        })
+      ).rejects.toThrow('Top-level document must be a docx component');
     });
 
-    it('should handle JSON report definition', async () => {
+    it('generates from a definition carrying a $schema', async () => {
       const jsonDefinition: ReportComponentDefinition = {
         name: 'docx',
         $schema: 'https://example.com/schema',
@@ -117,65 +122,11 @@ describe('core/generator', () => {
         ],
       };
 
-      const result = await generateDocument(jsonDefinition);
-      expect(result).toBeDefined();
-    });
-  });
-
-  describe('generateFromConfig', () => {
-    it('should generate document from config and components', async () => {
-      const config: ReportProps = {
-        theme: 'minimal',
-        metadata: {
-          title: 'Test Document',
-          author: 'Test Author',
-        },
-      };
-
-      const components: ComponentDefinition[] = [
-        {
-          name: 'paragraph',
-          props: {
-            text: 'Test content',
-          },
-        },
-      ];
-
-      const result = await generateFromConfig(config, components);
-      expect(result).toBeDefined();
-      expect(result).toBeInstanceOf(docx.Document);
-    });
-  });
-
-  describe('generateDocumentFromJson', () => {
-    it('should generate document from JSON definition', async () => {
-      const jsonDef: ReportComponentDefinition = {
-        name: 'docx',
-        props: {
-          theme: 'minimal',
-        },
-        children: [
-          {
-            name: 'heading',
-            props: {
-              level: 1,
-              text: 'JSON Title',
-            },
-          },
-          {
-            name: 'paragraph',
-            props: {
-              text: 'JSON content',
-            },
-          },
-        ],
-      };
-
-      const result = await generateDocumentFromJson(jsonDef);
-      expect(result).toBeDefined();
+      const buffer = await generateBufferFromJson(jsonDefinition);
+      expect(buffer.byteLength).toBeGreaterThan(0);
     });
 
-    it('should handle JSON with metadata', async () => {
+    it('generates from a definition carrying metadata', async () => {
       const jsonWithMetadata: ReportComponentDefinition = {
         name: 'docx',
         props: {
@@ -196,8 +147,53 @@ describe('core/generator', () => {
         ],
       };
 
-      const result = await generateDocumentFromJson(jsonWithMetadata);
-      expect(result).toBeDefined();
+      const buffer = await generateBufferFromJson(jsonWithMetadata);
+      expect(buffer.byteLength).toBeGreaterThan(0);
+    });
+
+    it('generates the same document from a JSON string as from an object', async () => {
+      const definition: ReportComponentDefinition = {
+        name: 'docx',
+        props: { theme: 'minimal' },
+        children: [{ name: 'paragraph', props: { text: 'Same either way.' } }],
+      };
+
+      const fromObject = await generateBufferFromJson(definition);
+      const fromString = await generateBufferFromJson(
+        JSON.stringify(definition)
+      );
+
+      expect(fromString.equals(fromObject)).toBe(true);
+    });
+  });
+
+  describe('generateBufferFromConfig', () => {
+    it('builds the same document as passing the root directly', async () => {
+      const config: ReportProps = {
+        theme: 'minimal',
+        metadata: {
+          title: 'Test Document',
+          author: 'Test Author',
+        },
+      };
+
+      const components: ComponentDefinition[] = [
+        {
+          name: 'paragraph',
+          props: {
+            text: 'Test content',
+          },
+        },
+      ];
+
+      const fromConfig = await generateBufferFromConfig(config, components);
+      const fromRoot = await generateBufferFromJson({
+        name: 'docx',
+        props: config,
+        children: components,
+      } as ReportComponentDefinition);
+
+      expect(fromConfig.equals(fromRoot)).toBe(true);
     });
   });
 });

@@ -208,6 +208,8 @@ interface CompileContext {
   listCounter: number;
   /** Warning messages already collected, so one bad value warns once. */
   warnedMessages: Set<string>;
+  /** Echo warnings to the console, because the caller collects none itself. */
+  echoWarnings: boolean;
   /**
    * Ids for `w:ins` / `w:del`, allocated in document order.
    *
@@ -249,7 +251,8 @@ export function compileDocument(
   structure: ProcessedDocument,
   layout: LayoutPlan,
   warnings: GenerationWarning[] = [],
-  images: ImageResources = new Map()
+  images: ImageResources = new Map(),
+  options: { echoWarnings?: boolean } = {}
 ): DocxCompileResult {
   const styles = compileStyleManifest(structure.theme);
   // Walk the outline before compiling so a cross-reference can resolve a target
@@ -275,6 +278,7 @@ export function compileDocument(
     numberingByReference: new Map(),
     listCounter: 0,
     warnedMessages: new Set(),
+    echoWarnings: options.echoWarnings === true,
     nextRevisionId: 1,
     comments: [],
     footnotes: [],
@@ -1909,6 +1913,8 @@ function compileList(
               base: {},
               hyperlinks: true,
               ...(notes ? { resolveNote: notes.resolve } : {}),
+              resolvePlaceholder: placeholderResolver(ctx),
+              resolveCrossReference: crossReferenceResolver(ctx, itemPath),
             })
           : compileRevision(revision as Record<string, any>, {}, ctx),
         {
@@ -2227,7 +2233,7 @@ function compileRuns(
     // Revision segments render literally, so a `[^id]` marker inside them
     // stays literal text and its body is never emitted. Report that rather
     // than dropping the declared notes in silence.
-    notes?.reportUnemitted('');
+    reportNotesInRevision(props, ctx);
     ctx.features.require('revisions', path);
     return [
       ...(props.columnBreak ? [{ kind: 'columnBreak' as const }] : []),
@@ -2241,8 +2247,7 @@ function compileRuns(
       ? { boldColor: irColor(resolveColor(props.boldColor, ctx.theme)) }
       : {}),
     ...(words ? { noProofWords: words } : {}),
-    resolvePlaceholder: (name: string) =>
-      resolvePlaceholder(name, ctx.generatedAt),
+    resolvePlaceholder: placeholderResolver(ctx),
     ...(notes ? { resolveNote: notes.resolve } : {}),
     resolveCrossReference: (
       id: string,
@@ -2264,6 +2269,26 @@ function compileRuns(
   notes?.reportUnemitted(text);
 
   return children;
+}
+
+/** Bind the placeholder resolver to one compilation's generation date. */
+function placeholderResolver(
+  ctx: CompileContext
+): (name: string) => PlaceholderResolution | undefined {
+  return (name) => resolvePlaceholder(name, ctx.generatedAt);
+}
+
+/** Bind the cross-reference resolver to one compilation and one path. */
+function crossReferenceResolver(
+  ctx: CompileContext,
+  path: string
+): (
+  id: string,
+  format: CrossReferenceFormat,
+  token: string
+) => DocxIrInline | undefined {
+  return (id, format, token) =>
+    resolveCrossReference(id, format, token, ctx, path);
 }
 
 /** OOXML's REF switches, by the format an author asks for. */
@@ -2443,6 +2468,45 @@ function createNoteBinding(
   };
 }
 
+/**
+ * Say why a revised paragraph's declared notes will not appear.
+ *
+ * Tracked-change text renders literally, so a marker inside it is never
+ * resolved and the body it names is never emitted. Naming the markers that are
+ * actually present makes the difference between "you declared a note you never
+ * used" and "your note is in the document but will not render".
+ */
+function reportNotesInRevision(
+  props: Record<string, any>,
+  ctx: CompileContext
+): void {
+  const declared = [
+    ...((props.footnotes ?? []) as { id: string }[]),
+    ...((props.endnotes ?? []) as { id: string }[]),
+  ];
+  if (declared.length === 0) return;
+
+  const text = ((props.revision?.segments ?? []) as { text?: string }[])
+    .map((segment) => segment.text ?? '')
+    .join('');
+  const referenced = declared.filter((note) => text.includes(`[^${note.id}]`));
+
+  warnOnce(
+    ctx,
+    'footnote',
+    `Paragraph declares ${declared.length} note(s) (${declared
+      .map((note) => note.id)
+      .join(', ')}) alongside a \`revision\`. Tracked-change text renders ` +
+      'literally, so note markers are not resolved there' +
+      (referenced.length > 0
+        ? ` — the marker(s) ${referenced
+            .map((note) => `[^${note.id}]`)
+            .join(', ')} will render as literal text`
+        : '') +
+      '. The notes will not appear in the document.'
+  );
+}
+
 interface NoteBinding {
   resolve: (
     id: string
@@ -2574,8 +2638,7 @@ function compileRevision(
       out.push(
         ...parseInline(text, {
           base,
-          resolvePlaceholder: (name) =>
-            resolvePlaceholder(name, ctx.generatedAt),
+          resolvePlaceholder: placeholderResolver(ctx),
         })
       );
       continue;
@@ -3017,7 +3080,12 @@ function compileImage(
       // A caption reaches the parser only when it carries a decorator, which
       // is why a link in an otherwise plain caption stays literal.
       children: DECORATED.test(caption)
-        ? parseInline(caption, { base: {}, hyperlinks: true })
+        ? parseInline(caption, {
+            base: {},
+            hyperlinks: true,
+            resolvePlaceholder: placeholderResolver(ctx),
+            resolveCrossReference: crossReferenceResolver(ctx, path),
+          })
         : parseLiteral(caption, { base: {} }),
     });
   }
@@ -3420,7 +3488,7 @@ function compileTable(
     source,
     ctx.theme,
     ctx.themeName,
-    { onWarning: (_code, message) => warnOnce(ctx, 'table', message) }
+    { onWarning: (code, message) => warnOnce(ctx, 'table', message, code) }
   );
 
   if (model.overflow) {
@@ -3771,7 +3839,14 @@ function cellChildren(
       )
     );
   }
-  return wrap(parseInline(text, { base, hyperlinks: true }));
+  return wrap(
+    parseInline(text, {
+      base,
+      hyperlinks: true,
+      resolvePlaceholder: placeholderResolver(ctx),
+      resolveCrossReference: crossReferenceResolver(ctx, 'table'),
+    })
+  );
 }
 
 /**
@@ -3966,13 +4041,30 @@ function lineRule(value: unknown): DocxIrSpacing['lineRule'] {
   return 'auto';
 }
 
-/** Collect a warning at most once per compilation, keyed by its message. */
+/**
+ * Report a warning once per compilation, keyed by its message.
+ *
+ * Collected either way, and echoed to the console when the caller supplied no
+ * collector of its own — the same contract `reportWarning` gives every other
+ * leaf in the pipeline. Without the echo a warning a caller never asked to
+ * collect would simply disappear.
+ */
 function warnOnce(
   ctx: CompileContext,
   component: string,
-  message: string
+  message: string,
+  code?: string
 ): void {
   if (ctx.warnedMessages.has(message)) return;
   ctx.warnedMessages.add(message);
-  ctx.warnings.push({ component, message });
+  ctx.warnings.push({
+    component,
+    message,
+    severity: 'warning',
+    ...(code ? { context: { code } } : {}),
+  });
+  if (ctx.echoWarnings) {
+    // eslint-disable-next-line no-console
+    console.warn(code ? `[json-to-docx] ${code}: ${message}` : message);
+  }
 }

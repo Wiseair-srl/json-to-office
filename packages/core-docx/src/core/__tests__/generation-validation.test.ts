@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateBufferFromJson, generateDocumentFromJson } from '../generator';
+import { generateBufferFromJson } from '../generator';
 import { JsonValidationError } from '../../json/parser';
 import type { ReportComponentDefinition } from '../../types';
 
@@ -85,10 +85,10 @@ describe('generation validation (standard path)', () => {
       lineSpacing: { name: 'single' },
     };
     // Would throw with validation on; opting out lets it through.
-    const document = await generateDocumentFromJson(doc, {
+    const buffer = await generateBufferFromJson(doc, {
       validation: { enabled: false },
     });
-    expect(document).toBeDefined();
+    expect(buffer.byteLength).toBeGreaterThan(0);
   });
 
   it('throws on invalid JSON-string structure', async () => {

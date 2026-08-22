@@ -5,10 +5,12 @@
 
 // Main API
 export {
-  generateDocument,
-  generateFromConfig,
-  saveDocument,
-  generateAndSave,
+  generateBufferFromJson,
+  generateBufferWithWarnings,
+  generateBufferFromConfig,
+  generateBufferFromFile,
+  generateAndSaveFromJson,
+  generateAndSaveFromFile,
   DocumentGenerator,
 } from './generator';
 

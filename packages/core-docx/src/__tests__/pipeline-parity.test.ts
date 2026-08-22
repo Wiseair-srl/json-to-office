@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import { generateBufferFromJson, generateDocument } from '../core/generator';
+import { generateBufferFromJson } from '../core/generator';
 import { createDocumentGenerator } from './../plugin/createDocumentGenerator';
 import { corporateTheme } from '../templates/themes';
 
@@ -117,24 +117,25 @@ describe('generateBufferFromJson vs createDocumentGenerator', () => {
 
 describe('root props defaulting', () => {
   // `props` is optional in the schema, but every downstream read assumes an
-  // object. `generateDocument` on a document without `$schema` runs no
-  // validator, so a null here used to surface as `Cannot read properties of
-  // null (reading 'theme')` from deep inside theme resolution.
+  // object. A document without `$schema` runs no validator, so a null here
+  // used to surface as `Cannot read properties of null (reading 'theme')` from
+  // deep inside theme resolution.
   it('accepts a document with no props at all', async () => {
-    const doc = await generateDocument({
+    const buffer = await generateBufferFromJson({
       name: 'docx',
       children: [{ name: 'paragraph', props: { text: 'No root props.' } }],
     } as never);
-    expect(doc).toBeDefined();
+    expect(buffer.byteLength).toBeGreaterThan(0);
   });
 
   it('rejects props: null with a clear message, not a TypeError', async () => {
+    // Validation off on purpose: the guard under test is the one inside theme
+    // resolution, which is what a caller that skips the schema still hits.
     await expect(
-      generateDocument({
-        name: 'docx',
-        props: null,
-        children: [],
-      } as never)
+      generateBufferFromJson(
+        { name: 'docx', props: null, children: [] } as never,
+        { validation: { enabled: false } }
+      )
     ).rejects.toThrow(/props` is null/);
   });
 });

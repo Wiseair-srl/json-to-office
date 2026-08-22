@@ -76,7 +76,7 @@ function capToPixelBudget(edge: number, aspect: number): number | undefined {
  * unavailable or fails; the caller then keeps the historical bytes, which is
  * no worse than before and never fails the render.
  */
-async function rasterizeSvgFallback(
+export async function rasterizeSvgFallback(
   svg: Buffer,
   transformation: { width: number; height: number }
 ): Promise<Buffer | undefined> {

@@ -3,22 +3,24 @@ export function getCoreVersion(): string {
   return 'Core v1.0.0';
 }
 
-// Core functional API
+// Core functional API — buffer and file oriented. No export returns or accepts
+// a renderer-native object; the backend is chosen with the `renderer` option.
 export {
-  generateDocument,
-  generateFromConfig,
-  generateDocumentFromJson,
-  generateDocumentFromFile,
   generateBufferFromJson,
+  generateBufferWithWarnings,
+  generateBufferFromConfig,
   generateBufferFromFile,
   generateAndSaveFromJson,
   generateAndSaveFromFile,
   validateJsonSchema,
   isReportComponentDefinition,
-  saveDocument,
-  generateAndSave,
   DocumentGenerator as CoreDocumentGenerator,
+  type DocxGenerationResult,
 } from './core/generator';
+
+// Renderer selection
+export type { DocxRendererId } from './renderers/types';
+export { UncompiledComponentError } from './core/generateFromIr';
 
 // Visual flattening (desugar `visual` → `image` for portable, service-free docs)
 export {

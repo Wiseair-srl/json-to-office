@@ -29,9 +29,12 @@ import {
 } from 'docx';
 import type { ThemeConfig } from '../../styles';
 import { createWordStyles } from '../../styles/themeToDocxAdapter';
+import { rasterizeSvgFallback } from '../../utils/imageUtils';
 import type {
   DocxIR,
+  DocxIrBlock,
   DocxIrHeaderFooter,
+  DocxIrInline,
   DocxIrNote,
   DocxIrNumbering,
   DocxIrSection,
@@ -63,7 +66,6 @@ export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
  */
 const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'table-merged-cells',
-  'svg-images',
   'cached-fields',
   'shading',
   'borders',
@@ -224,25 +226,59 @@ function numberingConfig(numbering: DocxIrNumbering): {
  * Build an image run factory per resource.
  *
  * Separate from `buildDocument` because a vector image has to be rasterised
- * for the fallback Word draws, and that is asynchronous while building the
- * document is not.
+ * for the fallback Word draws below 2016, and that is asynchronous while
+ * building the document is not. The raster depends on the size the image is
+ * drawn at, so every placement of a vector resource is rasterised up front and
+ * the factory looks the right one up.
  */
 async function prepareImages(ir: DocxIR): Promise<EmitResources> {
+  const placements = collectImagePlacements(ir);
+  const rasters = new Map<string, Buffer | undefined>();
+
+  for (const resource of ir.resources) {
+    if (resource.kind !== 'image' || resource.mediaType !== 'svg') continue;
+    for (const size of placements.get(resource.id) ?? []) {
+      const [width, height] = size.split('x').map(Number);
+      rasters.set(
+        `${resource.id}:${size}`,
+        await rasterizeSvgFallback(Buffer.from(resource.bytes), {
+          width,
+          height,
+        })
+      );
+    }
+  }
+
   const resources = new Map<string, ImageRunFactory>();
   for (const resource of ir.resources) {
     if (resource.kind !== 'image') continue;
     const type = resource.mediaType as 'jpg' | 'png' | 'gif' | 'bmp' | 'svg';
     const data = Buffer.from(resource.bytes);
     // One run per placement: the same bytes may be drawn at two sizes, and the
-    // transformation lives on the run rather than the resource.
+    // transformation lives on the run rather than on the resource.
     resources.set(resource.id, (image) => {
-      const run = new ImageRun({
+      const transformation = {
+        width: emuToPixels(image.widthEmu),
+        height: emuToPixels(image.heightEmu),
+      };
+      return new ImageRun({
         type,
         data,
-        transformation: {
-          width: emuToPixels(image.widthEmu),
-          height: emuToPixels(image.heightEmu),
-        },
+        transformation,
+        ...(type === 'svg'
+          ? {
+              // Word before 2016 draws the fallback rather than the vector. A
+              // raster that could not be produced falls back to the SVG bytes,
+              // which is what the pipeline has always shipped.
+              fallback: {
+                type: 'png',
+                data:
+                  rasters.get(
+                    `${image.resourceId}:${transformation.width}x${transformation.height}`
+                  ) ?? data,
+              },
+            }
+          : {}),
         ...(image.floating
           ? { floating: floatingOptions(image.floating) }
           : {}),
@@ -251,10 +287,58 @@ async function prepareImages(ir: DocxIR): Promise<EmitResources> {
         // adding it now would rewrite every document with an alt-bearing
         // image. The compiler warns instead, so the gap is visible.
       } as ConstructorParameters<typeof ImageRun>[0]);
-      return run;
     });
   }
   return resources;
+}
+
+/**
+ * Every size each image resource is drawn at, as `WxH` in pixels.
+ *
+ * Only vector resources need this, but the walk cannot know which is which
+ * without the resource list, and walking twice would cost more than it saves.
+ */
+function collectImagePlacements(ir: DocxIR): Map<string, Set<string>> {
+  const placements = new Map<string, Set<string>>();
+
+  const visitInline = (inline: DocxIrInline): void => {
+    if (inline.kind === 'image') {
+      const key = `${emuToPixels(inline.widthEmu)}x${emuToPixels(inline.heightEmu)}`;
+      const sizes = placements.get(inline.resourceId) ?? new Set<string>();
+      sizes.add(key);
+      placements.set(inline.resourceId, sizes);
+      return;
+    }
+    if (inline.kind === 'hyperlink' || inline.kind === 'revision') {
+      inline.children.forEach(visitInline);
+      return;
+    }
+    if (inline.kind === 'shape') inline.children.forEach(visitBlock);
+  };
+
+  const visitBlock = (block: DocxIrBlock): void => {
+    if (block.kind === 'paragraph') {
+      block.children.forEach(visitInline);
+      return;
+    }
+    if (block.kind === 'table') {
+      for (const row of block.rows) {
+        for (const cell of row.cells) cell.children.forEach(visitBlock);
+      }
+    }
+  };
+
+  for (const section of ir.sections) {
+    section.children.forEach(visitBlock);
+    section.headers?.default?.children.forEach(visitBlock);
+    section.footers?.default?.children.forEach(visitBlock);
+  }
+  for (const comment of ir.comments) comment.children.forEach(visitBlock);
+  for (const note of [...ir.footnotes, ...ir.endnotes]) {
+    note.children.forEach(visitBlock);
+  }
+
+  return placements;
 }
 
 function sectionOptions(
