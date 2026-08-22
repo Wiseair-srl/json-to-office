@@ -312,8 +312,13 @@ function collectImagePlacements(ir: DocxIR): Map<string, Set<string>> {
 
   for (const section of ir.sections) {
     section.children.forEach(visitBlock);
-    section.headers?.default?.children.forEach(visitBlock);
-    section.footers?.default?.children.forEach(visitBlock);
+    // Every chrome slot, not only `default`: an SVG that appears solely in a
+    // first-page or even-page header would otherwise reach the package with
+    // its own bytes labelled `image/png` as the raster fallback (#256).
+    for (const slot of ['default', 'first', 'even'] as const) {
+      section.headers?.[slot]?.children.forEach(visitBlock);
+      section.footers?.[slot]?.children.forEach(visitBlock);
+    }
   }
   for (const comment of ir.comments) comment.children.forEach(visitBlock);
   for (const note of [...ir.footnotes, ...ir.endnotes]) {
@@ -385,18 +390,35 @@ function sectionOptions(
     children: sectionChildren(section, resources),
   };
 
-  const header = section.headers?.default;
-  if (header)
-    options.headers = {
-      default: new Header({ children: partChildren(header, resources) }),
-    };
-  const footer = section.footers?.default;
-  if (footer)
-    options.footers = {
-      default: new Footer({ children: partChildren(footer, resources) }),
-    };
+  const headers = chromeSlots(section.headers, Header, resources);
+  if (headers) options.headers = headers;
+  const footers = chromeSlots(section.footers, Footer, resources);
+  if (footers) options.footers = footers;
 
   return options as unknown as ISectionOptions;
+}
+
+/**
+ * The `default` / `first` / `even` parts a section carries, if any.
+ *
+ * All three slots, not only `default`: the IR distinguishes them and dropping
+ * one here would lose a whole header without any diagnostic — the same gap the
+ * SVG walk had (#256).
+ */
+function chromeSlots(
+  set: DocxIrSection['headers'],
+  Part: typeof Header | typeof Footer,
+  resources: EmitResources
+): Record<string, Header | Footer> | undefined {
+  if (!set) return undefined;
+  const out: Record<string, Header | Footer> = {};
+  for (const slot of ['default', 'first', 'even'] as const) {
+    const part = set[slot];
+    if (part) {
+      out[slot] = new Part({ children: partChildren(part, resources) });
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function partChildren(part: DocxIrHeaderFooter, resources: EmitResources) {
