@@ -6,6 +6,7 @@
 '@json-to-office/core-pptx': minor
 '@json-to-office/json-to-docx': minor
 '@json-to-office/json-to-pptx': minor
+'@json-to-office/jto-cli': patch
 ---
 
 Document JSON can now select its renderer with an optional top-level

@@ -237,6 +237,10 @@ export class JsonValidator {
         allErrors: true,
         verbose: true,
         strict: strict ?? false,
+        // Renderer profiles make the DOCX schema substantially larger. Keep
+        // recursive refs as functions instead of inlining them into one giant
+        // validator, which overflows Ajv 8.12's compile stack.
+        inlineRefs: false,
       });
       addFormats(ajv);
 
