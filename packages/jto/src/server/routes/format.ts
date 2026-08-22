@@ -657,10 +657,10 @@ export function createFormatRouter(adapter: FormatAdapter) {
     try {
       const cacheService = getContainer().get('cacheService');
       const stats = cacheService.getStats();
-      const components = (await adapter.getComponentCacheStats?.()) ?? null;
-      // Rasterizer cache observability (#156): the disk cache + batch dedupe
-      // are where `visual` caching actually lives — the component cache
-      // bypasses `visual` by design.
+      // Rasterizer cache observability (#156): the disk cache and the batch
+      // dedupe are where `visual` caching lives. There is no component render
+      // cache to report any more — compiling a document to an IR is cheap and
+      // holds no cross-document state.
       const rasterizer = await (async () => {
         try {
           const cli = await import('@json-to-office/jto-cli');
@@ -683,7 +683,6 @@ export function createFormatRouter(adapter: FormatAdapter) {
             itemCount: stats.itemCount,
             enabled: stats.enabled,
           },
-          ...(components ? { components } : {}),
           ...(rasterizer ? { rasterizer } : {}),
         },
         meta: { timestamp: new Date().toISOString() },
@@ -696,30 +695,6 @@ export function createFormatRouter(adapter: FormatAdapter) {
     }
   });
 
-  // GET /cache-analytics
-  router.get('/cache-analytics', async (c) => {
-    try {
-      const analytics = await adapter.getComponentCacheAnalytics?.();
-      if (!analytics) {
-        return c.json({
-          success: true,
-          data: null,
-          meta: { timestamp: new Date().toISOString() },
-        });
-      }
-      return c.json({
-        success: true,
-        data: analytics,
-        meta: { timestamp: new Date().toISOString() },
-      });
-    } catch (error) {
-      logger.error('Failed to get cache analytics', { error });
-      throw new HTTPException(500, {
-        message: 'Failed to get cache analytics',
-      });
-    }
-  });
-
   // DELETE /cache
   router.delete('/cache', async (c) => {
     try {
@@ -727,8 +702,8 @@ export function createFormatRouter(adapter: FormatAdapter) {
       cacheService.clear();
       const cli = await import('@json-to-office/jto-cli');
       cli.invalidateAllCaches();
-      // "Clear all caches" means all of them: the component render cache and
-      // the rasterizer's PNG disk cache used to survive this call (#156).
+      // "Clear all caches" means all of them: the rasterizer's PNG disk cache
+      // used to survive this call (#156).
       await adapter.clearComponentCache?.();
       await cli.clearRasterizerCache?.();
       return c.json({
