@@ -164,6 +164,7 @@ interface GeneratorBuilder {
       generatedAt?: string | Date;
       validation?: { allowUnknownFields?: boolean };
       baseDir?: string;
+      renderer?: string;
     }
   ): Promise<{ buffer: Buffer; warnings: any }>;
   /**
@@ -175,6 +176,20 @@ interface GeneratorBuilder {
     options?: { validation?: { allowUnknownFields?: boolean } }
   ) => Promise<{ standardDefinition: any; warnings: any }>;
 }
+
+/**
+ * Each format's renderer-id union, read from its core without importing it.
+ *
+ * `typeof import(...)` is a type query — erased at compile time — so this keeps
+ * the ids honest while the cores stay dynamically loaded. `GeneratorOptions`
+ * carries a bare string because one options bag serves both formats; these are
+ * what it narrows to at each call site, and an id outside the union is rejected
+ * by the core's registry with the list of valid ones.
+ */
+type DocxRendererId =
+  (typeof import('@json-to-office/core-docx'))['DEFAULT_DOCX_RENDERER_ID'];
+type PptxRendererId =
+  (typeof import('@json-to-office/core-pptx'))['DEFAULT_PPTX_RENDERER_ID'];
 
 export interface GeneratorOptions {
   theme?: string | any;
@@ -192,6 +207,15 @@ export interface GeneratorOptions {
    * normally the input document's own directory (#142).
    */
   baseDir?: string;
+  /**
+   * Backend that turns the compiled document into bytes.
+   *
+   * Format-specific and validated by the core's renderer registry, which is
+   * why this is a bare string here: naming the id union would make this
+   * package import both cores statically, and they are loaded on demand.
+   * Undefined means the format's default (`docxjs` / `pptxgenjs`).
+   */
+  renderer?: string;
   /**
    * Optional sink for structured generation warnings (FONT_UNRESOLVED and
    * friends). Mirrors core-docx's `JsonGenerationOptions.warnings`, and is the
@@ -261,6 +285,14 @@ export interface FormatAdapter {
     options: GeneratorOptions
   ): Promise<Record<string, any> | undefined>;
 
+  /**
+   * Renderer ids this format registers, defaults first.
+   *
+   * Async because the core that owns the registry is imported on demand — the
+   * list is read from it rather than repeated here, so the two cannot drift.
+   */
+  rendererIds(): Promise<readonly string[]>;
+
   /** Cumulative visual pre-pass dedupe counters (DOCX only) (#156). */
   getVisualPrepassStats?(): Promise<any>;
   /**
@@ -278,6 +310,11 @@ export class DocxFormatAdapter implements FormatAdapter {
   extension = '.docx';
   label = 'document';
   defaultPort = 3003;
+
+  async rendererIds(): Promise<readonly string[]> {
+    const core = await import('@json-to-office/core-docx');
+    return core.docxRendererIds();
+  }
 
   async generateBuffer(
     json: unknown,
@@ -306,6 +343,7 @@ export class DocxFormatAdapter implements FormatAdapter {
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
       baseDir: options.baseDir,
+      renderer: options.renderer as DocxRendererId | undefined,
       warnings,
     });
     emitGenerationWarnings(warnings);
@@ -348,6 +386,7 @@ export class DocxFormatAdapter implements FormatAdapter {
             deterministic: options.deterministic,
             generatedAt: options.generatedAt,
             baseDir: options.baseDir,
+            renderer: options.renderer as DocxRendererId | undefined,
             warnings,
           });
           emitGenerationWarnings(warnings);
@@ -377,6 +416,7 @@ export class DocxFormatAdapter implements FormatAdapter {
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
       baseDir: options.baseDir,
+      renderer: options.renderer as DocxRendererId | undefined,
     });
 
     for (const plugin of plugins) {
@@ -399,6 +439,7 @@ export class DocxFormatAdapter implements FormatAdapter {
           deterministic: options.deterministic,
           generatedAt: options.generatedAt,
           baseDir: options.baseDir,
+          renderer: options.renderer as DocxRendererId | undefined,
         });
         emitGenerationWarnings(result.warnings ?? []);
         options.warnings?.push(...toGenerationWarnings(result.warnings));
@@ -582,6 +623,11 @@ export class PptxFormatAdapter implements FormatAdapter {
   label = 'presentation';
   defaultPort = 3004;
 
+  async rendererIds(): Promise<readonly string[]> {
+    const core = await import('@json-to-office/core-pptx');
+    return core.pptxRendererIds();
+  }
+
   async generateBuffer(
     json: unknown,
     options: GeneratorOptions
@@ -609,6 +655,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
       baseDir: options.baseDir,
+      renderer: options.renderer as PptxRendererId | undefined,
     });
     const normalized = toGenerationWarnings(result.warnings);
     emitGenerationWarnings(normalized);
@@ -650,6 +697,7 @@ export class PptxFormatAdapter implements FormatAdapter {
             deterministic: options.deterministic,
             generatedAt: options.generatedAt,
             baseDir: options.baseDir,
+            renderer: options.renderer as PptxRendererId | undefined,
           });
           const normalized = toGenerationWarnings(result.warnings);
           emitGenerationWarnings(normalized);
@@ -679,6 +727,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       deterministic: options.deterministic,
       generatedAt: options.generatedAt,
       baseDir: options.baseDir,
+      renderer: options.renderer as PptxRendererId | undefined,
     });
 
     for (const plugin of plugins) {
@@ -701,6 +750,7 @@ export class PptxFormatAdapter implements FormatAdapter {
           deterministic: options.deterministic,
           generatedAt: options.generatedAt,
           baseDir: options.baseDir,
+          renderer: options.renderer as PptxRendererId | undefined,
         });
         const normalized = toGenerationWarnings(result.warnings);
         emitGenerationWarnings(normalized);

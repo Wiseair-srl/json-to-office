@@ -60,6 +60,77 @@ describe('generate command contract', () => {
     );
   });
 
+  it('offers a --renderer flag', () => {
+    expect(command.options.map((option) => option.long)).toContain(
+      '--renderer'
+    );
+  });
+
+  it('passes the chosen backend to the generator', async () => {
+    const adapter = new DocxFormatAdapter();
+    const generateBuffer = vi.fn(async () => Buffer.from('preview'));
+    const createGenerator = vi
+      .spyOn(adapter, 'createGenerator')
+      .mockResolvedValue({
+        generateBuffer,
+        hasPlugins: false,
+        pluginNames: [],
+      });
+    const directory = mkdtempSync(join(tmpdir(), 'jto-renderer-'));
+    const input = join(directory, 'input.json');
+    writeFileSync(input, JSON.stringify({ name: 'docx', children: [] }));
+
+    await createGenerateCommand(adapter).parseAsync(
+      [input, '--dry-run', '--renderer', 'office-open'],
+      { from: 'user' }
+    );
+
+    expect(createGenerator).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ renderer: 'office-open' })
+    );
+  });
+
+  it('refuses a backend the format does not register, and names the real ones', async () => {
+    const adapter = new DocxFormatAdapter();
+    const createGenerator = vi.spyOn(adapter, 'createGenerator');
+    const directory = mkdtempSync(join(tmpdir(), 'jto-renderer-bad-'));
+    const input = join(directory, 'input.json');
+    writeFileSync(input, JSON.stringify({ name: 'docx', children: [] }));
+
+    // The command reports and exits rather than throwing. `formatError` reaches
+    // stderr through a call *inside* the ui module, which the module mock above
+    // cannot intercept — so the stream itself is what gets read.
+    const exit = vi
+      .spyOn(process, 'exit')
+      .mockImplementation((() => undefined) as never);
+    let printed = '';
+    let exited = false;
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(((
+      chunk: unknown
+    ) => {
+      printed += String(chunk);
+      return true;
+    }) as never);
+
+    try {
+      await createGenerateCommand(adapter).parseAsync(
+        [input, '--dry-run', '--renderer', 'libreoffice'],
+        { from: 'user' }
+      );
+    } finally {
+      exited = exit.mock.calls.length > 0;
+      exit.mockRestore();
+      stderr.mockRestore();
+    }
+
+    expect(exited).toBe(true);
+    expect(printed).toContain('Unknown docx renderer "libreoffice"');
+    expect(printed).toContain('"docxjs", "office-open"');
+    // Checked before any rendering work, so the generator is never built.
+    expect(createGenerator).not.toHaveBeenCalled();
+  });
+
   it('does not duplicate format extension for *.docx.json input', () => {
     expect(defaultOutputName('invoice.docx.json', '.docx')).toBe(
       'invoice.docx'
