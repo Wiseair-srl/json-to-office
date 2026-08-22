@@ -6,10 +6,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { computeSectionOrdinals } from '../sectionOrdinals';
-import {
-  globalSectionBookmarkRegistry,
-  type SectionBookmark,
-} from '../sectionBookmarks';
+import { sectionBookmark } from '../sectionBookmarks';
 
 const outside = { isUserSection: false, belongsToUserSection: false };
 const opens = { isUserSection: true, belongsToUserSection: true };
@@ -65,48 +62,14 @@ describe('computeSectionOrdinals', () => {
   });
 });
 
-describe('globalSectionBookmarkRegistry', () => {
-  it('maps a layout ordinal to a stable bookmark', () => {
-    expect(globalSectionBookmarkRegistry.forLayoutSection(3)).toEqual({
-      id: '_Section_3',
-      linkId: 3,
-    });
-    expect(globalSectionBookmarkRegistry.forLayoutSection(3)).toEqual(
-      globalSectionBookmarkRegistry.forLayoutSection(3)
-    );
+describe('sectionBookmark', () => {
+  it('names a layout section after its ordinal', () => {
+    expect(sectionBookmark(3)).toEqual({ id: '_Section_3', linkId: 3 });
   });
 
-  it('allocates one bookmark per section component and remembers it', () => {
-    globalSectionBookmarkRegistry.runScoped(() => {
-      const a = { name: 'section' };
-      const b = { name: 'section' };
-
-      const first = globalSectionBookmarkRegistry.forSectionComponent(a);
-      const second = globalSectionBookmarkRegistry.forSectionComponent(b);
-      const firstAgain = globalSectionBookmarkRegistry.forSectionComponent(a);
-
-      expect(first).toEqual({ id: '_NestedSection_1', linkId: 1_000_001 });
-      expect(second).toEqual({ id: '_NestedSection_2', linkId: 1_000_002 });
-      expect(firstAgain).toEqual(first);
-    });
-  });
-
-  it('keeps nested link ids clear of layout link ids', () => {
-    globalSectionBookmarkRegistry.runScoped(() => {
-      const nested: SectionBookmark =
-        globalSectionBookmarkRegistry.forSectionComponent({});
-      expect(nested.linkId).toBeGreaterThan(
-        globalSectionBookmarkRegistry.forLayoutSection(999).linkId
-      );
-    });
-  });
-
-  it('restarts numbering in each render scope', () => {
-    const ids = [1, 2].map(() =>
-      globalSectionBookmarkRegistry.runScoped(
-        () => globalSectionBookmarkRegistry.forSectionComponent({}).id
-      )
-    );
-    expect(ids).toEqual(['_NestedSection_1', '_NestedSection_1']);
+  it('resolves the same ordinal to the same bookmark, every time', () => {
+    // The two ends of one section are written at different moments, and both
+    // derive the name rather than remembering it.
+    expect(sectionBookmark(3)).toEqual(sectionBookmark(3));
   });
 });

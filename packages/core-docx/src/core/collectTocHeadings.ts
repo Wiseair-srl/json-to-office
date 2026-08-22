@@ -44,13 +44,27 @@ import { getStandardComponent } from '@json-to-office/shared-docx';
 import type { ComponentDefinition } from '../types';
 import type { SectionLayout } from './layout';
 import { computeSectionOrdinals } from './sectionOrdinals';
-import { globalSectionBookmarkRegistry } from './sectionBookmarks';
+import { sectionBookmark } from './sectionBookmarks';
 import { normalizeUnicodeText } from '../utils/unicode';
 import {
   slugifyBookmarkText,
   dedupeBookmarkId,
 } from '../utils/bookmarkRegistry';
-import type { NumberedItemInfo } from '../utils/numberedItemsRegistry';
+/**
+ * A cross-reference target: a numbered heading or list item.
+ *
+ * Resolved by the outline pre-pass and read back while text is compiled, which
+ * is why a `[@id]` can point at something further down the document.
+ */
+export interface NumberedItemInfo {
+  kind: 'heading' | 'list-item';
+  /** Rendered text of the target, for a `:none` (text) reference. */
+  text: string;
+  /** Full multilevel number ("2.1.3"), absent when the target is unnumbered. */
+  full?: string;
+  /** The target's own level counter ("3"), absent when unnumbered. */
+  own?: string;
+}
 import { resolveListLevels } from '../utils/listLevels';
 import type { ListLevelConfig } from '../utils/numberingConfig';
 import { formatNumberForLevel } from '../utils/numberFormatting';
@@ -285,9 +299,7 @@ export function collectDocumentOutline(
     // treat 0 as a real ordinal would emit entries scoped to a `_Section_0`
     // bookmark the renderer never writes.
     const ordinal = ordinals[index]?.ordinal;
-    const sectionBookmarkId = ordinal
-      ? globalSectionBookmarkRegistry.forLayoutSection(ordinal).id
-      : undefined;
+    const sectionBookmarkId = ordinal ? sectionBookmark(ordinal).id : undefined;
 
     const visit = (component: ComponentDefinition): void => {
       if (!isEnabled(component)) return;

@@ -90,7 +90,6 @@ export type {
 
 // Utilities
 export * from './utils/formatters';
-export { parseTextWithDecorators } from './utils/textParser';
 export { isNodeEnvironment, hasNodeBuiltins } from './utils/environment';
 export {
   generateWarningsDocument,

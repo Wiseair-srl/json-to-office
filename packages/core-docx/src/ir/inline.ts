@@ -19,8 +19,33 @@
  */
 
 import { normalizeUnicodeText } from '../utils/unicode';
-import { buildNoProofWordsRegex } from '../utils/textParser';
 import type { DocxIrInline, DocxIrRunFormatting } from './types';
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * A matcher for the known-words allowlist, or null when there is nothing to
+ * match.
+ *
+ * Each word matches as a whole token — no letter or digit directly either side
+ * — so `Wiseair` does not match inside `Wiseairy`, while internal punctuation
+ * like `json-to-office` matches literally.
+ */
+export function buildNoProofWordsRegex(noProofWords?: string[]): RegExp | null {
+  const words = (noProofWords ?? []).filter((word) => word?.trim().length > 0);
+  if (words.length === 0) return null;
+  // Longest first, so the alternation prefers the most specific match.
+  const escaped = words
+    .slice()
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp);
+  return new RegExp(
+    `(?<![\\p{L}\\p{N}])(?:${escaped.join('|')})(?![\\p{L}\\p{N}])`,
+    'giu'
+  );
+}
 
 /**
  * Decorator pairs, longest first so `***` wins over `**` and `*`.
