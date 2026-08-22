@@ -38,8 +38,15 @@ jobs:
   test:
     if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
     strategy:
+      # Both ends of the advertised `>=20` range, not just the old end. The
+      # corpus goldens are this pipeline's proof that output has not changed,
+      # and they used to hash raw package bytes — which include the runtime's
+      # deflate output, so a runtime whose zlib differs fails every case at
+      # once while changing nothing about any document. The goldens cover part
+      # content instead now (#264); these entries are what keeps that claim
+      # exercised rather than asserted.
       matrix:
-        node-version: [20, 22]
+        node-version: [20, 22, 24, 26]
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
