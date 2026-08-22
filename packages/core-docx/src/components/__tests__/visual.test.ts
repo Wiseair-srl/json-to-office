@@ -1,48 +1,63 @@
+/**
+ * How a `visual` reaches the rasterizer, and what it becomes afterwards.
+ *
+ * A visual is a nested presentation that LibreOffice draws into a PNG, so
+ * everything worth checking is on the way there: which service is called, at
+ * what resolution, with which fonts, and whether the batch pre-pass is
+ * consulted before any of it. What comes back is an ordinary image, and the
+ * corpus covers images.
+ */
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Paragraph } from 'docx';
-import { createMockTheme, TEST_THEME_NAME } from './helpers';
-
-// Mock createImage so we can assert the desugaring without touching the docx lib
-vi.mock('../../core/content', async () => {
-  const { Paragraph } = await vi.importActual<typeof import('docx')>('docx');
-  return {
-    createImage: vi.fn().mockResolvedValue([new Paragraph({})]),
-    createText: vi.fn().mockReturnValue(new Paragraph({})),
-  };
-});
-
 import {
-  renderVisualComponent,
-  visualRasterKey,
   buildVisualPresentation,
+  visualRasterKey,
+  visualToImageProps,
 } from '../visual';
-import { createImage } from '../../core/content';
+import { desugarExternals } from '../../core/desugarExternals';
+import { compileDocumentToIr } from '../../core/generateFromIr';
+import { createMockTheme } from './helpers';
+import type { ReportComponentDefinition } from '../../types';
 
-const mockCreateImage = createImage as any;
-
-// Force Node environment
+// Force a Node environment: rasterization refuses to run in a browser.
 vi.mock('../../utils/environment', () => ({
   isNodeEnvironment: vi.fn().mockReturnValue(true),
   isBrowserEnvironment: vi.fn().mockReturnValue(false),
 }));
 
-const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
-
 const PNG_DATA_URI =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-function visualComponent(props: Record<string, unknown> = {}) {
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
+
+function visualProps(overrides: Record<string, unknown> = {}) {
   return {
-    name: 'visual' as const,
-    props: {
-      canvas: { width: 6, height: 4 },
-      elements: [
-        { name: 'text', props: { text: 'Hi', x: 1, y: 1, w: 4, h: 1 } },
-      ],
-      ...props,
-    },
-  } as any;
+    canvas: { width: 6, height: 4 },
+    elements: [{ name: 'text', props: { text: 'Hi', x: 1, y: 1, w: 4, h: 1 } }],
+    ...overrides,
+  };
+}
+
+const visualComponent = (overrides: Record<string, unknown> = {}) => ({
+  name: 'visual',
+  props: visualProps(overrides),
+});
+
+/** Run the desugaring pass over a document holding one visual. */
+async function desugar(
+  component: Record<string, unknown>,
+  options: Record<string, unknown> = {}
+) {
+  const document = {
+    name: 'docx',
+    props: {},
+    children: [component],
+  };
+  return (await desugarExternals(document, {
+    theme: createMockTheme(),
+    ...options,
+  })) as { children: Array<{ name: string; props: Record<string, unknown> }> };
 }
 
 describe('components/visual', () => {
@@ -69,29 +84,21 @@ describe('components/visual', () => {
       height: 800,
     });
 
-    const context = { services: { pptx: { render } } } as any;
-
-    const result = await renderVisualComponent(
-      visualComponent(),
-      createMockTheme(),
-      TEST_THEME_NAME,
-      context
-    );
+    const result = await desugar(visualComponent(), {
+      services: { pptx: { render } },
+    });
 
     expect(render).toHaveBeenCalledOnce();
     expect(mockFetch).not.toHaveBeenCalled();
-    expect(mockCreateImage).toHaveBeenCalledWith(
-      PNG_DATA_URI,
-      expect.anything(),
-      TEST_THEME_NAME,
+    expect(result.children[0].name).toBe('image');
+    expect(result.children[0].props).toEqual(
       expect.objectContaining({
-        // canvas is 6in → default rendered width = 6 * 96 px
+        base64: PNG_DATA_URI,
+        // A 6in canvas draws 6in wide: 6 × 96px.
         width: 576,
         alignment: 'center',
       })
     );
-    expect(result).toHaveLength(1);
-    expect(result[0]).toBeInstanceOf(Paragraph);
   });
 
   it('builds a single-slide pptx presentation from canvas + elements', async () => {
@@ -101,7 +108,7 @@ describe('components/visual', () => {
       height: 10,
     });
 
-    await renderVisualComponent(
+    await desugar(
       visualComponent({
         canvas: {
           width: 7.5,
@@ -110,9 +117,7 @@ describe('components/visual', () => {
           background: { color: '#EEE' },
         },
       }),
-      createMockTheme(),
-      TEST_THEME_NAME,
-      { services: { pptx: { render } } } as any
+      { services: { pptx: { render } } }
     );
 
     const { presentation } = render.mock.calls[0][0];
@@ -134,71 +139,40 @@ describe('components/visual', () => {
       .fn()
       .mockResolvedValue({ base64DataUri: PNG_DATA_URI, width: 1, height: 1 });
 
-    // default
-    await renderVisualComponent(
-      visualComponent(),
-      createMockTheme(),
-      TEST_THEME_NAME,
-      {
-        services: { pptx: { render } },
-      } as any
-    );
+    await desugar(visualComponent(), { services: { pptx: { render } } });
     expect(render.mock.calls[0][0].dpi).toBe(200);
 
-    // services default
     render.mockClear();
-    await renderVisualComponent(
-      visualComponent(),
-      createMockTheme(),
-      TEST_THEME_NAME,
-      {
-        services: { pptx: { render, dpi: 144 } },
-      } as any
-    );
+    await desugar(visualComponent(), {
+      services: { pptx: { render, dpi: 144 } },
+    });
     expect(render.mock.calls[0][0].dpi).toBe(144);
 
-    // per-component override
     render.mockClear();
-    await renderVisualComponent(
-      visualComponent({ dpi: 300 }),
-      createMockTheme(),
-      TEST_THEME_NAME,
-      { services: { pptx: { render, dpi: 144 } } } as any
-    );
+    await desugar(visualComponent({ dpi: 300 }), {
+      services: { pptx: { render, dpi: 144 } },
+    });
     expect(render.mock.calls[0][0].dpi).toBe(300);
   });
 
   it('POSTs to {serverUrl}/rasterize and parses the JSON result', async () => {
-    const context = {
+    const result = await desugar(visualComponent(), {
       services: { pptx: { serverUrl: 'http://localhost:9000' } },
-    } as any;
-
-    await renderVisualComponent(
-      visualComponent(),
-      createMockTheme(),
-      TEST_THEME_NAME,
-      context
-    );
+    });
 
     expect(mockFetch).toHaveBeenCalledWith(
       'http://localhost:9000/rasterize',
       expect.objectContaining({ method: 'POST' })
     );
-    expect(mockCreateImage).toHaveBeenCalledWith(
-      PNG_DATA_URI,
-      expect.anything(),
-      TEST_THEME_NAME,
-      expect.objectContaining({ width: 576 })
+    expect(result.children[0].props).toEqual(
+      expect.objectContaining({ base64: PNG_DATA_URI, width: 576 })
     );
   });
 
   it('prefers per-component serverUrl over services config', async () => {
-    await renderVisualComponent(
-      visualComponent({ serverUrl: 'http://prop-server:1234' }),
-      createMockTheme(),
-      TEST_THEME_NAME,
-      { services: { pptx: { serverUrl: 'http://services:5555' } } } as any
-    );
+    await desugar(visualComponent({ serverUrl: 'http://prop-server:1234' }), {
+      services: { pptx: { serverUrl: 'http://services:5555' } },
+    });
 
     expect(mockFetch).toHaveBeenCalledWith(
       'http://prop-server:1234/rasterize',
@@ -206,198 +180,190 @@ describe('components/visual', () => {
     );
   });
 
-  it('returns [] for a non-visual component', async () => {
-    const result = await renderVisualComponent(
-      { name: 'paragraph', props: { text: 'x' } } as any,
-      createMockTheme(),
-      TEST_THEME_NAME
+  it('leaves a component that is not a visual alone', async () => {
+    const result = await desugar({
+      name: 'paragraph',
+      props: { text: 'x' },
+    });
+
+    expect(result.children[0].name).toBe('paragraph');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('leaves a disabled visual unrasterized', async () => {
+    const render = vi.fn();
+    await desugar(
+      { ...visualComponent(), enabled: false },
+      { services: { pptx: { render } } }
     );
-    expect(result).toEqual([]);
-    expect(mockCreateImage).not.toHaveBeenCalled();
+
+    expect(render).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('throws an actionable error when the service is unreachable', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
 
-    await expect(
-      renderVisualComponent(
-        visualComponent(),
-        createMockTheme(),
-        TEST_THEME_NAME
-      )
-    ).rejects.toThrow(/services\.pptx/s);
+    await expect(desugar(visualComponent())).rejects.toThrow(/services\.pptx/s);
   });
 
-  describe('pre-rasterized results map (#153)', () => {
-    const mapKeyFor = (component: any, dpi = 200, serverUrl?: string) =>
-      visualRasterKey(buildVisualPresentation(component.props), dpi, serverUrl);
+  describe('batching across a document (#153)', () => {
+    it('rasterizes two identical visuals once between them', async () => {
+      const render = vi.fn().mockResolvedValue({
+        base64DataUri: PNG_DATA_URI,
+        width: 1,
+        height: 1,
+      });
 
-    it('uses a pre-rasterized result without calling any service', async () => {
-      const render = vi.fn();
-      const component = visualComponent();
-      const context = {
-        services: { pptx: { render } },
-        visualRasterResults: new Map([
-          [
-            mapKeyFor(component),
-            { ok: true, base64DataUri: PNG_DATA_URI, width: 1200, height: 800 },
-          ],
-        ]),
-      } as any;
-
-      await renderVisualComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        context
+      await desugarExternals(
+        {
+          name: 'docx',
+          props: {},
+          children: [visualComponent(), visualComponent()],
+        },
+        { theme: createMockTheme(), services: { pptx: { render } } }
       );
 
-      expect(render).not.toHaveBeenCalled();
-      expect(mockFetch).not.toHaveBeenCalled();
-      expect(mockCreateImage).toHaveBeenCalledWith(
-        PNG_DATA_URI,
-        expect.anything(),
-        TEST_THEME_NAME,
-        expect.objectContaining({ width: 576 })
-      );
+      expect(render).toHaveBeenCalledOnce();
     });
 
-    it('throws a recorded pre-rasterization error for this visual', async () => {
-      const component = visualComponent();
-      const context = {
-        visualRasterResults: new Map([
-          [mapKeyFor(component), { ok: false, error: 'slide 3 is broken' }],
-        ]),
-      } as any;
+    it('rasterizes visuals that differ separately', async () => {
+      const render = vi.fn().mockResolvedValue({
+        base64DataUri: PNG_DATA_URI,
+        width: 1,
+        height: 1,
+      });
+
+      await desugarExternals(
+        {
+          name: 'docx',
+          props: {},
+          children: [
+            visualComponent(),
+            visualComponent({ canvas: { width: 3, height: 2 } }),
+          ],
+        },
+        { theme: createMockTheme(), services: { pptx: { render } } }
+      );
+
+      expect(render).toHaveBeenCalledTimes(2);
+    });
+
+    it('surfaces a recorded batch failure against the visual it belongs to', async () => {
+      const renderBatch = vi.fn().mockResolvedValue({
+        results: [{ ok: false, error: 'slide 3 is broken' }],
+      });
 
       await expect(
-        renderVisualComponent(
-          component,
-          createMockTheme(),
-          TEST_THEME_NAME,
-          context
-        )
+        desugar(visualComponent(), { services: { pptx: { renderBatch } } })
       ).rejects.toThrow('slide 3 is broken');
-      expect(mockFetch).not.toHaveBeenCalled();
-    });
-
-    it('falls back to per-visual rasterization on a map miss', async () => {
-      const component = visualComponent();
-      const context = {
-        services: { pptx: { serverUrl: 'http://localhost:9000' } },
-        visualRasterResults: new Map(), // empty — pre-pass missed this visual
-      } as any;
-
-      await renderVisualComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        context
-      );
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:9000/rasterize',
-        expect.any(Object)
-      );
     });
 
     it('keys a serverUrl-overridden visual distinctly under an HTTP config', async () => {
-      const component = visualComponent({
-        serverUrl: 'http://prop-server:1234',
-      });
-      // Entry stored WITHOUT the override url must not be picked up.
-      const context = {
+      // A visual pointing at its own server must not be served from a batch
+      // keyed against the shared one.
+      await desugar(visualComponent({ serverUrl: 'http://prop-server:1234' }), {
         services: { pptx: { serverUrl: 'http://services:5555' } },
-        visualRasterResults: new Map([
-          [
-            mapKeyFor(component),
-            { ok: true, base64DataUri: PNG_DATA_URI, width: 1, height: 1 },
-          ],
-        ]),
-      } as any;
+      });
 
-      await renderVisualComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        context
-      );
-
-      // Miss → rasterized against its own override server.
       expect(mockFetch).toHaveBeenCalledWith(
         'http://prop-server:1234/rasterize',
         expect.any(Object)
       );
     });
   });
-  describe('context.visualFonts forwarding (Area 6)', () => {
+
+  describe('fonts reaching the rasterizer', () => {
     const fonts = [
       { family: 'Inter', weight: 400, italic: false, data: 'AAECAw==' },
     ];
 
-    it('forwards context.visualFonts to an in-process render on a pre-pass miss', async () => {
+    it('forwards them to an in-process render', async () => {
       const render = vi.fn().mockResolvedValue({
         base64DataUri: PNG_DATA_URI,
         width: 1200,
         height: 800,
       });
-      const context = {
+
+      await desugar(visualComponent(), {
         services: { pptx: { render } },
         visualFonts: fonts,
-      } as any;
-
-      await renderVisualComponent(
-        visualComponent(),
-        createMockTheme(),
-        TEST_THEME_NAME,
-        context
-      );
+      });
 
       expect(render.mock.calls[0][0].fonts).toEqual(fonts);
     });
 
-    it('forwards context.visualFonts into the per-visual HTTP body', async () => {
-      const context = {
+    it('forwards them in the HTTP body', async () => {
+      await desugar(visualComponent(), {
         services: { pptx: { serverUrl: 'http://svc:9000' } },
         visualFonts: fonts,
-      } as any;
-
-      await renderVisualComponent(
-        visualComponent(),
-        createMockTheme(),
-        TEST_THEME_NAME,
-        context
-      );
+      });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.fonts).toEqual(fonts);
     });
 
-    it('emits no fonts key when the context carries none', async () => {
+    it('emits no fonts key when there are none', async () => {
       const render = vi.fn().mockResolvedValue({
         base64DataUri: PNG_DATA_URI,
         width: 1200,
         height: 800,
       });
-      await renderVisualComponent(
-        visualComponent(),
-        createMockTheme(),
-        TEST_THEME_NAME,
-        { services: { pptx: { render } } } as any
-      );
+
+      await desugar(visualComponent(), { services: { pptx: { render } } });
+
       expect(render.mock.calls[0][0]).not.toHaveProperty('fonts');
     });
 
     it('leaves visualRasterKey untouched by fonts (three args, by design)', () => {
-      // The pre-pass map lives inside ONE renderDocument call, which has
-      // exactly one font set, so pre-pass and render-time can never disagree
+      // The pre-pass map lives inside ONE build, which has exactly one font
+      // set, so the pre-pass and the per-visual fallback can never disagree
       // about fonts. Keying on them here would only fragment the map. The
-      // load-bearing font key is the rasterizer's on-disk cache key.
+      // load-bearing font key is the rasterizer's own on-disk cache key.
       expect(visualRasterKey.length).toBe(3);
-      const presentation = buildVisualPresentation(visualComponent().props);
+      const presentation = buildVisualPresentation(visualProps() as never);
       expect(visualRasterKey(presentation, 200)).toBe(
         visualRasterKey(presentation, 200)
       );
     });
+  });
+
+  it('carries its placement props onto the image it becomes', async () => {
+    const props = visualProps({
+      width: 320,
+      alignment: 'right',
+      caption: 'A figure',
+      alt: 'Described',
+    });
+
+    expect(visualToImageProps(props as never, PNG_DATA_URI)).toEqual({
+      base64: PNG_DATA_URI,
+      width: 320,
+      alignment: 'right',
+      caption: 'A figure',
+      alt: 'Described',
+    });
+  });
+
+  it('compiles all the way to an image once rasterized', async () => {
+    const render = vi.fn().mockResolvedValue({
+      base64DataUri: PNG_DATA_URI,
+      width: 1,
+      height: 1,
+    });
+
+    const compiled = await compileDocumentToIr(
+      {
+        name: 'docx',
+        props: {},
+        children: [visualComponent({ width: 100 })],
+      } as unknown as ReportComponentDefinition,
+      { services: { pptx: { render } } as never }
+    );
+
+    const [block] = compiled.ir.sections[0].children;
+    expect(block.kind).toBe('paragraph');
+    if (block.kind !== 'paragraph') return;
+    expect(block.children[0].kind).toBe('image');
   });
 });

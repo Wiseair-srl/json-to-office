@@ -1,34 +1,26 @@
+/**
+ * How a `highcharts` chart reaches the export server, and what it becomes.
+ *
+ * The chart itself is drawn by a service, so everything worth checking is on
+ * the way there: which server is called, with which headers, and with which
+ * colour palette. What comes back is an ordinary image, and the corpus covers
+ * images.
+ */
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Paragraph } from 'docx';
 import { isValidThemeConfig } from '@json-to-office/shared-docx';
-import { createMockTheme, TEST_THEME_NAME } from './helpers';
+import { createMockTheme } from './helpers';
 import { corporateTheme } from '../../templates/themes';
 import type { ThemeConfig } from '../../styles';
 
-// Mock createImage and createText functions
-vi.mock('../../core/content', async () => {
-  const { Paragraph } = await vi.importActual<typeof import('docx')>('docx');
-  return {
-    createImage: vi.fn().mockResolvedValue([new Paragraph({})]),
-    createText: vi.fn().mockReturnValue(new Paragraph({})),
-  };
-});
-
-// Mock placeholder image
-vi.mock('../../utils/placeholderImage', () => ({
-  createPlaceholderImageFile: vi.fn().mockResolvedValue('/tmp/placeholder.png'),
-}));
-
-import { renderHighchartsComponent } from '../highcharts';
-import { createImage } from '../../core/content';
-
-const mockCreateImage = createImage as any;
-
-// Mock environment utils
+// Force a Node environment: chart export refuses to run in a browser.
 vi.mock('../../utils/environment', () => ({
   isNodeEnvironment: vi.fn().mockReturnValue(true),
   isBrowserEnvironment: vi.fn().mockReturnValue(false),
 }));
+
+import { renderChartToImageProps } from '../highcharts';
+import { desugarExternals } from '../../core/desugarExternals';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -56,7 +48,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
     vi.resetModules();
   });
 
-  describe('renderHighchartsComponent', () => {
+  describe('rendering a chart', () => {
     it('should render chart with basic configuration', async () => {
       const component = {
         name: 'highcharts' as const,
@@ -77,15 +69,12 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      const result = await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
-      expect(mockCreateImage).toHaveBeenCalled();
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
+      expect(result.base64).toMatch(/^data:image\/png;base64,/);
     }, 10000);
 
     it('should handle chart with dimensions', async () => {
@@ -103,14 +92,12 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      const result = await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
-      expect(mockCreateImage).toHaveBeenCalled();
-      expect(result).toHaveLength(1);
+      expect(result.base64).toMatch(/^data:image\/png;base64,/);
     });
 
     it('should handle multiple series', async () => {
@@ -132,13 +119,12 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      const result = await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
-      expect(result).toHaveLength(1);
+      expect(result.base64).toMatch(/^data:image\/png;base64,/);
     });
 
     it('should handle chart with axes configuration', async () => {
@@ -165,13 +151,12 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      const result = await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
-      expect(result).toHaveLength(1);
+      expect(result.base64).toMatch(/^data:image\/png;base64,/);
     });
 
     it('should handle chart with legend configuration', async () => {
@@ -197,13 +182,12 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      const result = await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
-      expect(result).toHaveLength(1);
+      expect(result.base64).toMatch(/^data:image\/png;base64,/);
     });
 
     it('should handle chart with tooltip configuration', async () => {
@@ -226,30 +210,56 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      const result = await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
-      expect(result).toHaveLength(1);
+      expect(result.base64).toMatch(/^data:image\/png;base64,/);
     });
 
-    it('should handle non-highcharts component type', async () => {
-      const component = {
-        name: 'paragraph' as const,
-        props: { content: 'Not a chart' },
-      };
-
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+    it('leaves a component that is not a chart alone', async () => {
+      const document = await desugarExternals(
+        {
+          name: 'docx',
+          props: {},
+          children: [{ name: 'paragraph', props: { text: 'Not a chart' } }],
+        },
+        { theme: createMockTheme() }
       );
 
-      expect(result).toHaveLength(0);
-      expect(result).toEqual([]);
-      expect(mockCreateImage).not.toHaveBeenCalled();
+      expect(document.children[0].name).toBe('paragraph');
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('turns a chart into an image, centred, at the size it asked for', async () => {
+      const document = await desugarExternals(
+        {
+          name: 'docx',
+          props: {},
+          children: [
+            {
+              name: 'highcharts',
+              props: {
+                options: {
+                  chart: { width: 400, height: 300 },
+                  series: [{ type: 'column', data: [1, 2, 3] }],
+                },
+              },
+            },
+          ],
+        },
+        { theme: createMockTheme() }
+      );
+
+      expect(document.children[0]).toEqual({
+        name: 'image',
+        props: expect.objectContaining({
+          width: 400,
+          height: 300,
+          alignment: 'center',
+        }),
+      });
     });
 
     it('should handle empty chart options', async () => {
@@ -267,13 +277,12 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      const result = await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
-      expect(result).toHaveLength(1);
+      expect(result.base64).toMatch(/^data:image\/png;base64,/);
     });
 
     it('should apply theme colors to chart', async () => {
@@ -301,13 +310,12 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      const result = await renderHighchartsComponent(
-        component,
-        theme,
-        TEST_THEME_NAME
+      const result = await renderChartToImageProps(
+        component.props as never,
+        theme
       );
 
-      expect(result).toHaveLength(1);
+      expect(result.base64).toMatch(/^data:image\/png;base64,/);
     });
 
     it('should handle large datasets', async () => {
@@ -327,13 +335,12 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      const result = await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      const result = await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
-      expect(result).toHaveLength(1);
+      expect(result.base64).toMatch(/^data:image\/png;base64,/);
     });
 
     it('throws when export server unavailable', async () => {
@@ -354,7 +361,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       };
 
       await expect(
-        renderHighchartsComponent(component, createMockTheme(), TEST_THEME_NAME)
+        renderChartToImageProps(component.props as never, createMockTheme())
       ).rejects.toThrow(/not running.*enableServer/s);
     });
 
@@ -370,10 +377,9 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -399,11 +405,10 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       } as any;
 
-      await renderHighchartsComponent(
-        component,
+      await renderChartToImageProps(
+        component.props as never,
         createMockTheme(),
-        TEST_THEME_NAME,
-        context
+        context.services?.highcharts
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -430,11 +435,10 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       } as any;
 
-      await renderHighchartsComponent(
-        component,
+      await renderChartToImageProps(
+        component.props as never,
         createMockTheme(),
-        TEST_THEME_NAME,
-        context
+        context.services?.highcharts
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -462,11 +466,10 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       } as any;
 
-      await renderHighchartsComponent(
-        component,
+      await renderChartToImageProps(
+        component.props as never,
         createMockTheme(),
-        TEST_THEME_NAME,
-        context
+        context.services?.highcharts
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -500,11 +503,10 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         services: { highcharts: { headers: headersFn } },
       } as any;
 
-      await renderHighchartsComponent(
-        component,
+      await renderChartToImageProps(
+        component.props as never,
         createMockTheme(),
-        TEST_THEME_NAME,
-        context
+        context.services?.highcharts
       );
 
       expect(headersFn).toHaveBeenCalledOnce();
@@ -548,11 +550,10 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         services: { highcharts: { headers: headersFn } },
       } as any;
 
-      await renderHighchartsComponent(
-        component,
+      await renderChartToImageProps(
+        component.props as never,
         createMockTheme(),
-        TEST_THEME_NAME,
-        context
+        context.services?.highcharts
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -576,10 +577,9 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -612,10 +612,9 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -634,10 +633,9 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -671,7 +669,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       };
       expect(isValidThemeConfig(theme)).toBe(true);
 
-      await renderHighchartsComponent(chartComponent, theme, 'corporate');
+      await renderChartToImageProps(chartComponent.props as never, theme);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       // Same token order as PPTX: primary, secondary, accent, accent4-6.
@@ -698,7 +696,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
+      await renderChartToImageProps(chartComponent.props as never, theme);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.infile.colors).toEqual([
@@ -721,7 +719,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
+      await renderChartToImageProps(chartComponent.props as never, theme);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.infile.colors).toEqual([
@@ -743,7 +741,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
+      await renderChartToImageProps(chartComponent.props as never, theme);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.infile.colors).toEqual(['#0066cc', '#6c757d', '#17a2b8']);
@@ -766,17 +764,16 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
+      await renderChartToImageProps(chartComponent.props as never, theme);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.infile.colors).toEqual(['#111111', '#222222', '#CC785C']);
     });
 
     it('emits a three-color palette for a bundled theme, which defines no accent4-6', async () => {
-      await renderHighchartsComponent(
-        chartComponent,
-        corporateTheme,
-        'corporate'
+      await renderChartToImageProps(
+        chartComponent.props as never,
+        corporateTheme
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -799,7 +796,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(chartComponent, theme, TEST_THEME_NAME);
+      await renderChartToImageProps(chartComponent.props as never, theme);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.infile.colors).toEqual([
@@ -822,10 +819,9 @@ describe('components/highcharts', { timeout: 30000 }, () => {
         },
       };
 
-      await renderHighchartsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
+      await renderChartToImageProps(
+        component.props as never,
+        createMockTheme()
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
