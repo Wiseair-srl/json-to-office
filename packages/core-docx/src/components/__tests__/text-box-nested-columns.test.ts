@@ -1,92 +1,62 @@
 /**
- * Tests for nested columns inside text-box components
+ * Columns nested inside a text box.
+ *
+ * A text box is a one-cell table, and a `columns` inside one becomes a table of
+ * its own within that cell — there is no section to give it, so the columns
+ * have to be cells. This pins the shape that produces, including the case that
+ * catches the mistake: a text box that also floats.
  */
 
 import { describe, it, expect } from 'vitest';
-import { renderTextBoxComponent } from '../text-box';
-import { minimalTheme } from '../../templates/themes';
-import type { TextBoxComponentDefinition, RenderContext } from '../../types';
-import { Table } from 'docx';
+import { compileDocumentToIr } from '../../core/generateFromIr';
+import type { DocxIrTable } from '../../ir/types';
+import type { ReportComponentDefinition } from '../../types';
 
-// Mock render context
-const mockContext: RenderContext = {
-  theme: {
-    name: 'minimal',
-    colors: {},
-    fonts: {},
-    spacing: {},
-  },
-  fullTheme: minimalTheme,
-  document: {
-    title: 'Test',
-    date: new Date(),
-  },
-  section: {
-    currentLayout: 'single',
-    columnCount: 1,
-    pageNumber: 1,
-  },
-  utils: {
-    formatDate: (date: Date) => date.toISOString(),
-    parseText: (text: string) => [{ text }],
-    getStyle: (name: string) => ({ name }),
-  },
-  depth: 0,
-};
+const p = (text: string) => ({ name: 'paragraph', props: { text } });
 
-describe('Text-Box with Nested Columns', () => {
-  it('should render columns as table when nested in text-box', async () => {
-    const component: TextBoxComponentDefinition = {
-      name: 'text-box',
-      props: {
-        style: {
-          padding: { top: 6, right: 6, bottom: 6, left: 6 },
-        },
-      },
-      children: [
-        {
-          name: 'columns',
-          props: {
-            columns: 2,
-          },
-          children: [
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Column 1 content',
-              },
-            },
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Column 2 content',
-              },
-            },
-          ],
-        },
-      ],
-    };
+/** The outer text-box table, and the columns table inside its single cell. */
+async function nested(
+  textBoxProps: Record<string, unknown>,
+  children: unknown[]
+): Promise<{ box: DocxIrTable; columns: DocxIrTable }> {
+  const compiled = await compileDocumentToIr({
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [{ name: 'text-box', props: textBoxProps, children }],
+  } as unknown as ReportComponentDefinition);
 
-    const result = await renderTextBoxComponent(
-      component,
-      minimalTheme,
-      'minimal',
-      mockContext
+  const [outer] = compiled.ir.sections[0].children;
+  expect(outer.kind).toBe('table');
+  const box = outer as DocxIrTable;
+
+  const inner = box.rows[0].cells[0].children.find(
+    (block) => block.kind === 'table'
+  );
+  expect(inner).toBeDefined();
+  return { box, columns: inner as DocxIrTable };
+}
+
+const twoColumns = (props: Record<string, unknown> = { columns: 2 }) => ({
+  name: 'columns',
+  props,
+  children: [p('Left column'), p('Right column')],
+});
+
+describe('text-box with nested columns', () => {
+  it('puts a columns table inside the text box cell', async () => {
+    const { box, columns } = await nested(
+      { style: { padding: { top: 6, right: 6, bottom: 6, left: 6 } } },
+      [twoColumns()]
     );
 
-    // Should return a single table (the text-box container)
-    expect(result).toHaveLength(1);
-    expect(result[0]).toBeInstanceOf(Table);
-
-    // The table should contain nested tables (the columns rendered as a table)
-    const textBoxTable = result[0] as Table;
-    expect(textBoxTable).toBeDefined();
+    expect(box.rows).toHaveLength(1);
+    expect(box.rows[0].cells).toHaveLength(1);
+    expect(columns.rows[0].cells).toHaveLength(2);
   });
 
-  it('should render floating text-box with columns', async () => {
-    const component: TextBoxComponentDefinition = {
-      name: 'text-box',
-      props: {
+  it('keeps the columns inside a floating text box', async () => {
+    const { box, columns } = await nested(
+      {
         floating: {
           horizontalPosition: { relative: 'margin', align: 'right' },
           verticalPosition: { relative: 'page', align: 'top' },
@@ -94,185 +64,52 @@ describe('Text-Box with Nested Columns', () => {
           height: 1800,
         },
       },
-      children: [
-        {
-          name: 'paragraph',
-          props: {
-            text: 'Header text',
-          },
-        },
-        {
-          name: 'columns',
-          props: {
-            columns: [{ width: '50%' }, { width: '50%' }],
-          },
-          children: [
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Left column',
-              },
-            },
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Right column',
-              },
-            },
-          ],
-        },
-      ],
-    };
-
-    const result = await renderTextBoxComponent(
-      component,
-      minimalTheme,
-      'minimal',
-      mockContext
+      [
+        p('Header text'),
+        twoColumns({ columns: [{ width: '50%' }, { width: '50%' }] }),
+      ]
     );
 
-    // Should return a single floating table
-    expect(result).toHaveLength(1);
-    expect(result[0]).toBeInstanceOf(Table);
+    // The box floats; the columns inside it do not float independently.
+    expect(box.floating).toBeDefined();
+    expect(columns.floating).toBeUndefined();
+    expect(columns.rows[0].cells).toHaveLength(2);
   });
 
-  it('should render three-column layout in text-box', async () => {
-    const component: TextBoxComponentDefinition = {
-      name: 'text-box',
-      props: {},
-      children: [
-        {
-          name: 'columns',
-          props: {
-            columns: 3,
-            gap: 360,
-          },
-          children: [
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Column 1',
-              },
-            },
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Column 2',
-              },
-            },
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Column 3',
-              },
-            },
-          ],
-        },
-      ],
-    };
-
-    const result = await renderTextBoxComponent(
-      component,
-      minimalTheme,
-      'minimal',
-      mockContext
-    );
-
-    expect(result).toHaveLength(1);
-    expect(result[0]).toBeInstanceOf(Table);
-  });
-
-  it('should handle mixed content with columns', async () => {
-    const component: TextBoxComponentDefinition = {
-      name: 'text-box',
-      props: {
-        style: {
-          shading: { fill: '#F0F8FF' },
-        },
+  it('compiles a three-column layout', async () => {
+    const { columns } = await nested({}, [
+      {
+        name: 'columns',
+        props: { columns: 3 },
+        children: [p('One'), p('Two'), p('Three')],
       },
-      children: [
-        {
-          name: 'paragraph',
-          props: {
-            text: 'Title above columns',
-          },
-        },
-        {
-          name: 'columns',
-          props: {
-            columns: 2,
-          },
-          children: [
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Text in column 1',
-              },
-            },
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Text in column 2',
-              },
-            },
-          ],
-        },
-        {
-          name: 'paragraph',
-          props: {
-            text: 'Footer below columns',
-          },
-        },
-      ],
-    };
+    ]);
 
-    const result = await renderTextBoxComponent(
-      component,
-      minimalTheme,
-      'minimal',
-      mockContext
-    );
-
-    expect(result).toHaveLength(1);
-    expect(result[0]).toBeInstanceOf(Table);
+    expect(columns.rows[0].cells).toHaveLength(3);
   });
 
-  it('should handle custom column widths', async () => {
-    const component: TextBoxComponentDefinition = {
-      name: 'text-box',
-      props: {},
-      children: [
-        {
-          name: 'columns',
-          props: {
-            columns: [{ width: '30%', gap: 240 }, { width: '70%' }],
-          },
-          children: [
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Narrow column',
-              },
-            },
-            {
-              name: 'paragraph',
-              props: {
-                text: 'Wide column',
-              },
-            },
-          ],
-        },
-      ],
-    };
+  it('keeps content around the columns in the same cell', async () => {
+    const { box } = await nested({}, [
+      { name: 'heading', props: { level: 2, text: 'Title' } },
+      twoColumns(),
+      p('After the columns'),
+    ]);
 
-    const result = await renderTextBoxComponent(
-      component,
-      minimalTheme,
-      'minimal',
-      mockContext
+    const kinds = box.rows[0].cells[0].children.map((block) => block.kind);
+    expect(kinds).toEqual(['paragraph', 'table', 'paragraph']);
+  });
+
+  it('takes percentage widths, resolved against the text column', async () => {
+    const { columns } = await nested({}, [
+      twoColumns({ columns: [{ width: '30%', gap: 12 }, { width: '70%' }] }),
+    ]);
+
+    const [narrow, wide] = columns.rows[0].cells.map(
+      (cell) => cell.widthTwips!
     );
-
-    expect(result).toHaveLength(1);
-    expect(result[0]).toBeInstanceOf(Table);
+    expect(narrow).toBeGreaterThan(0);
+    // Roughly 30:70, allowing for the gap taken out of the measure.
+    expect(wide / narrow).toBeGreaterThan(2);
+    expect(wide / narrow).toBeLessThan(2.7);
   });
 });

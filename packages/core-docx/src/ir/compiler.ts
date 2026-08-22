@@ -1724,6 +1724,9 @@ function compileToc(
       kind: 'paragraph',
       id: `${scope.id}:title`,
       path: `${path}.title`,
+      // No style, not even Normal: a title with an outline level would collect
+      // itself into the very list it introduces. It carries its own weight and
+      // size instead.
       children: [
         {
           kind: 'text',
