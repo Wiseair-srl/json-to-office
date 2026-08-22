@@ -66,7 +66,12 @@ import type {
   ListMarkerFontConfig,
 } from '../utils/numberingConfig';
 import { normalizeUnicodeText } from '../utils/unicode';
-import { containsUnsupportedSyntax, parseInline } from './inline';
+import {
+  containsLink,
+  containsUnsupportedSyntax,
+  parseInline,
+  parseLiteral,
+} from './inline';
 import type { DocxFeature } from './features';
 import {
   DOCX_IR_SCHEMA_VERSION,
@@ -738,6 +743,9 @@ function compileComponent(
  * Paragraphs and headings
  * ------------------------------------------------------------------ */
 
+/** Markdown decorators, the syntax that makes a heading take the parser. */
+const DECORATED = /(\*\*\*|___|(\*\*|__)|(\*|_))/;
+
 /** Props a paragraph or heading may carry that this slice does not lower. */
 const UNLOWERED_PARAGRAPH_PROPS = [
   'revision',
@@ -799,7 +807,16 @@ function compileHeading(
   }
 
   const level = headingLevel(props.level);
-  const children = compileRuns(props, text, ctx, path);
+  // A heading with no decorators is rendered character for character — the
+  // cheaper path the writer has always taken, and the reason a bare link in a
+  // heading stays literal text.
+  const children = compileRuns(
+    props,
+    text,
+    ctx,
+    path,
+    DECORATED.test(text) ? 'inline' : 'literal'
+  );
 
   // A heading is always a bookmark target: an explicit id, or a slug of the
   // text. That is what makes it reachable from a TOC or an internal link.
@@ -946,7 +963,7 @@ function compileList(
     blocks.push(
       paragraphNode(
         { ctx, path: itemPath, id: `${scope.id}:i${index}` },
-        parseInline(text, { base: {} }),
+        parseInline(text, { base: {}, hyperlinks: true }),
         {
           styleId: 'Normal',
           formatting: {
@@ -1206,7 +1223,8 @@ function compileRuns(
   props: Record<string, any>,
   text: string,
   ctx: CompileContext,
-  path: string
+  path: string,
+  mode: 'inline' | 'literal' = 'inline'
 ): DocxIrInline[] {
   const font = (props.font ?? {}) as Record<string, any>;
   const base = runFormatting(font, props, ctx);
@@ -1224,15 +1242,21 @@ function compileRuns(
     ctx.features.require('breaks', path);
   }
 
+  const parseOptions = {
+    base,
+    ...(props.boldColor
+      ? { boldColor: irColor(resolveColor(props.boldColor, ctx.theme)) }
+      : {}),
+    ...(words ? { noProofWords: words } : {}),
+  };
   children.push(
-    ...parseInline(text, {
-      base,
-      ...(props.boldColor
-        ? { boldColor: irColor(resolveColor(props.boldColor, ctx.theme)) }
-        : {}),
-      ...(words ? { noProofWords: words } : {}),
-    })
+    ...(mode === 'literal'
+      ? parseLiteral(text, parseOptions)
+      : parseInline(text, { ...parseOptions, hyperlinks: true }))
   );
+  if (mode === 'inline' && containsLink(text)) {
+    ctx.features.require('hyperlinks', path);
+  }
 
   return children;
 }
@@ -1603,7 +1627,11 @@ function compileImage(
       styleId: 'Normal',
       // Captions default to left alignment, whatever the figure did.
       formatting: { alignment: 'left' },
-      children: parseInline(caption, { base: {} }),
+      // A caption reaches the parser only when it carries a decorator, which
+      // is why a link in an otherwise plain caption stays literal.
+      children: DECORATED.test(caption)
+        ? parseInline(caption, { base: {}, hyperlinks: true })
+        : parseLiteral(caption, { base: {} }),
     });
   }
 
@@ -2148,6 +2176,7 @@ function compileTableCell(
         ? []
         : parseInline(cellText(cell)!, {
             base: cellRunFormatting(cell, baseStyle, scope.ctx),
+            hyperlinks: true,
           }),
     formatting: {
       alignment: cell.missing

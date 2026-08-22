@@ -30,12 +30,14 @@ import type { DocxIrInline, DocxIrRunFormatting } from './types';
 const DECORATOR =
   /(\*\*\*|___)([\s\S]*?)\1|(\*\*|__)([\s\S]*?)\3|(\*|_)([\s\S]*?)\5/g;
 
+/** Markdown link syntax: `[text](target)`. */
+const LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
+
 /** Syntax this parser does not lower, each with the feature that would cover it. */
 const UNSUPPORTED_SYNTAX: ReadonlyArray<{
   pattern: RegExp;
   what: string;
 }> = [
-  { pattern: /\[[^\]]*\]\([^)]*\)/, what: 'hyperlink' },
   { pattern: /\[@[^\]]+\]/, what: 'cross-reference' },
   { pattern: /\[\^[^\]]+\]/, what: 'note marker' },
   { pattern: /\{[^}]+\}/, what: 'field placeholder' },
@@ -48,6 +50,11 @@ const UNSUPPORTED_SYNTAX: ReadonlyArray<{
  * reported rather than silently rendered as the literal characters an author
  * wrote as markup.
  */
+/** True when the text carries a `[text](target)` link. */
+export function containsLink(text: string): boolean {
+  return new RegExp(LINK.source).test(text);
+}
+
 export function containsUnsupportedSyntax(text: string): string | undefined {
   for (const { pattern, what } of UNSUPPORTED_SYNTAX) {
     if (pattern.test(text)) return what;
@@ -58,6 +65,14 @@ export function containsUnsupportedSyntax(text: string): string | undefined {
 export interface ParseInlineOptions {
   /** Formatting every run starts from. */
   base: DocxIrRunFormatting;
+  /**
+   * Lower `[text](target)` into hyperlink nodes.
+   *
+   * Off by default: a component that does not accept links renders the
+   * brackets as the literal characters the author typed, which is what the
+   * pipeline has always done.
+   */
+  hyperlinks?: boolean;
   /**
    * Colour applied to a run only because a decorator made it bold.
    *
@@ -86,7 +101,80 @@ export function parseInline(
       { kind: 'text', text: '', formatting: emptyToUndefined(options.base) },
     ];
   }
+  if (options.hyperlinks) return parseLinks(normalized, options);
+  return parseDecorated(normalized, options);
+}
 
+/**
+ * Text with no mini-language at all.
+ *
+ * A heading with no decorators and no cross-reference is rendered character for
+ * character: brackets stay brackets, and a newline stays inside the text rather
+ * than breaking the line. Only no-proof words are still split out, because the
+ * flag has to sit on exactly those runs.
+ */
+export function parseLiteral(
+  text: string,
+  options: ParseInlineOptions
+): DocxIrInline[] {
+  const out: DocxIrInline[] = [];
+  pushWords(
+    out,
+    normalizeUnicodeText(text),
+    emptyToUndefined(options.base),
+    options
+  );
+  return out;
+}
+
+/**
+ * Split on `[text](target)`, parsing each side for decorators.
+ *
+ * A link's own text is parsed the same way any other span is, so
+ * `[**bold link**](url)` keeps its emphasis: the link wraps runs rather than
+ * being one.
+ */
+function parseLinks(
+  normalized: string,
+  options: ParseInlineOptions
+): DocxIrInline[] {
+  const out: DocxIrInline[] = [];
+  const link = new RegExp(LINK.source, 'g');
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = link.exec(normalized)) !== null) {
+    if (match.index > lastIndex) {
+      out.push(
+        ...parseDecorated(normalized.slice(lastIndex, match.index), options)
+      );
+    }
+    lastIndex = match.index + match[0].length;
+
+    const [, linkText, target] = match;
+    out.push({
+      kind: 'hyperlink',
+      // A `#anchor` target names a bookmark in this document and needs no
+      // relationship; anything else leaves the document.
+      target: target.startsWith('#')
+        ? { kind: 'bookmark', anchor: target.slice(1) }
+        : { kind: 'external', url: target },
+      children: parseDecorated(linkText, options),
+    });
+  }
+
+  if (lastIndex < normalized.length) {
+    out.push(...parseDecorated(normalized.slice(lastIndex), options));
+  }
+
+  if (out.length === 0) return parseDecorated(normalized, options);
+  return out;
+}
+
+function parseDecorated(
+  normalized: string,
+  options: ParseInlineOptions
+): DocxIrInline[] {
   const out: DocxIrInline[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
