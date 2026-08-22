@@ -319,9 +319,16 @@ export function compileDocument(
     );
   }
 
+  const metadata = compileMetadata(structure);
+  // `docProps/custom.xml` is a part of its own, and a backend that does not
+  // write it would drop the properties without saying so.
+  if (metadata.custom?.length) {
+    ctx.features.require('custom-properties', 'metadata.custom');
+  }
+
   const ir: DocxIR = {
     schemaVersion: DOCX_IR_SCHEMA_VERSION,
-    metadata: compileMetadata(structure),
+    metadata,
     settings: {
       ...(structure.language ? { language: structure.language } : {}),
       updateFields: true,
@@ -925,7 +932,9 @@ function compileParagraph(
   return [
     paragraphNode(scope, children, {
       ...(styleId ? { styleId } : {}),
-      ...(props.floating ? { frame: compileFrame(props.floating, ctx) } : {}),
+      ...(props.floating
+        ? { frame: compileFrame(props.floating, ctx, path) }
+        : {}),
       formatting: paragraphFormatting(props, ctx, {
         outlineLevel: customOutlineLevel(props.themeStyle, ctx.theme),
         // A paragraph always states its spacing, even when empty, so a
@@ -3252,8 +3261,10 @@ function declareResource(
  */
 function compileFrame(
   floating: Record<string, any>,
-  ctx: CompileContext
+  ctx: CompileContext,
+  path: string
 ): DocxIrFrame {
+  ctx.features.require('text-frames', path);
   const hasHorizontalOffset = floating.horizontalPosition?.offset !== undefined;
   const hasVerticalOffset = floating.verticalPosition?.offset !== undefined;
   const useAbsolute = hasHorizontalOffset || hasVerticalOffset;
