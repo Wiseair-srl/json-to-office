@@ -26,6 +26,7 @@ import type {
   PptxIrResource,
   PptxIrShadow,
   PptxIrShapeElement,
+  PptxIrTableBorder,
   PptxIrTableElement,
   PptxIrTextBodyStyle,
   PptxIrTextBoxElement,
@@ -282,13 +283,21 @@ export function textBody(
   return body;
 }
 
+/**
+ * A body or cell inset, in the backend's per-side form.
+ *
+ * The four-value tuple is CSS-ordered — `[top, right, bottom, left]` — which is
+ * what the authoring schema states and what the default backend reads. Naming
+ * the sides here rather than positionally is what keeps the two adapters
+ * agreeing on which edge a value belongs to.
+ */
 function insetMargins(inset: number | [number, number, number, number]): Opts {
   const toEmu = (points: number) => Math.round(points * 12700);
   if (typeof inset === 'number') {
     const value = toEmu(inset);
     return { left: value, top: value, right: value, bottom: value };
   }
-  const [left, top, right, bottom] = inset;
+  const [top, right, bottom, left] = inset;
   return {
     left: toEmu(left),
     top: toEmu(top),
@@ -311,18 +320,29 @@ function paragraphProperties(style: PptxIrTextBodyStyle): Opts {
   if (style.spaceAfterPoints !== undefined) {
     opts.spaceAfter = style.spaceAfterPoints;
   }
-  if (style.bullet) {
-    opts.bullet =
-      style.bullet.type === 'number'
-        ? {
-            type: 'autoNumber',
-            ...(style.bullet.startAt !== undefined
-              ? { startAt: style.bullet.startAt }
-              : {}),
-          }
-        : { type: 'character', character: style.bullet.style ?? '•' };
-  }
+  if (style.bullet) opts.bullet = bulletOption(style.bullet);
   return opts;
+}
+
+/**
+ * A bullet in the backend's vocabulary.
+ *
+ * The discriminants are the backend's own — `char`, `autoNum`, `none` — and it
+ * writes nothing at all for a value it does not recognise, so a near-miss here
+ * is a silent loss rather than a type error.
+ */
+function bulletOption(
+  bullet: NonNullable<PptxIrTextBodyStyle['bullet']>
+): Opts {
+  if (bullet.type === 'none') return { type: 'none' };
+  if (bullet.type === 'number') {
+    return {
+      type: 'autoNum',
+      ...(bullet.style ? { format: bullet.style } : {}),
+      ...(bullet.startAt !== undefined ? { startAt: bullet.startAt } : {}),
+    };
+  }
+  return { type: 'char', char: bullet.style ?? '•' };
 }
 
 /* ------------------------------------------------------------------ *
@@ -431,10 +451,17 @@ function pictureChild(
  * flattened onto the single run each cell holds — the authoring surface gives a
  * cell one string, so one run is the whole of it.
  *
- * Merged cells are deliberately absent from this adapter's capabilities: the
- * backend expresses a merge as `restart`/`continue` markers on the covered
- * cells, whereas the IR carries span counts, and inventing the covered cells
- * without a test to prove the geometry would be guesswork.
+ * Table-level border, fill and inset are cell properties here. The backend's
+ * own `TableOptions.borders` distributes only to the *edge* cells, which is a
+ * frame rather than the grid the IR describes, and it has no table-level fill
+ * at all — so both are pushed onto every cell that does not override them,
+ * which is the same thing the default backend's table options mean.
+ *
+ * Merged cells, rounded corners and pagination are deliberately absent from
+ * this adapter's capabilities: the backend expresses a merge as
+ * `restart`/`continue` markers on the covered cells whereas the IR carries span
+ * counts, OOXML has no table corner radius, and nothing here can flow a table
+ * onto a second slide.
  */
 function tableChild(
   element: PptxIrTableElement,
@@ -497,8 +524,69 @@ function tableCell(
     children: [paragraph],
     verticalAlign: ANCHOR[formatting?.verticalAlign ?? defaults.verticalAlign],
   };
-  if (cell.fill) out.fill = { type: 'solid', color: color(cell.fill) };
+
+  // Cell first, table second — the table's value is the default a cell may
+  // override, exactly as `tblPr` layers under `tcPr`.
+  const fill = cell.fill ?? element.fill;
+  if (fill) out.fill = { type: 'solid', color: color(fill) };
+
+  // No cell inset. `TableCellOptions.margins` writes `lIns`/`tIns` onto the
+  // cell's own `a:bodyPr`, and a reader takes a cell's padding from
+  // `a:tcPr/@marL` — a LibreOffice render moves not one point for a 40pt
+  // margin written that way. `table-insets` is therefore not declared, and a
+  // table with one is refused before any of this runs.
+
+  const borders = cellBorders(cell, element);
+  if (borders) out.borders = borders;
+
   return out;
+}
+
+/** OOXML dash names for the IR's border vocabulary. `none` draws nothing. */
+const BORDER_DASH: Record<string, string | undefined> = {
+  solid: 'solid',
+  dash: 'dash',
+  dot: 'sysDot',
+};
+
+/**
+ * A cell's four edges.
+ *
+ * Per-side borders win where the IR carries them; otherwise the table's uniform
+ * border applies to every edge of every cell, which is what "uniform" means and
+ * what the default backend draws.
+ */
+function cellBorders(
+  cell: PptxIrTableElement['rows'][number]['cells'][number],
+  element: PptxIrTableElement
+): Opts | undefined {
+  if (cell.borders) {
+    const [top, right, bottom, left] = cell.borders;
+    const out: Opts = {};
+    if (top.type !== 'none') out.top = borderLine(top);
+    if (right.type !== 'none') out.right = borderLine(right);
+    if (bottom.type !== 'none') out.bottom = borderLine(bottom);
+    if (left.type !== 'none') out.left = borderLine(left);
+    return Object.keys(out).length > 0 ? out : undefined;
+  }
+
+  const border = element.border;
+  if (!border || border.type === 'none') return undefined;
+  const line = borderLine(border);
+  return { top: line, right: line, bottom: line, left: line };
+}
+
+function borderLine(border: PptxIrTableBorder): Opts {
+  const dashStyle = BORDER_DASH[border.type];
+  return {
+    // Points → EMU: a bare number is EMU to this backend, and a border stated
+    // in points would otherwise be drawn 12,700 times too thin.
+    ...(border.widthPoints !== undefined
+      ? { width: Math.round(border.widthPoints * 12700) }
+      : {}),
+    ...(border.color ? { color: color(border.color) } : {}),
+    ...(dashStyle ? { dashStyle } : {}),
+  };
 }
 
 /** Even column widths when the IR did not carry a matching set. */

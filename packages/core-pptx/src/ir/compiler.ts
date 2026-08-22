@@ -85,6 +85,7 @@ import {
   type PptxIrTextBodyStyle,
   type PptxIrTextRun,
   type PptxIrTransform,
+  type PptxIrTransition,
 } from './types';
 import {
   defaultWidthEmu,
@@ -401,6 +402,9 @@ function compileSlide(
   if (slide.hidden) ctx.features.require('hidden-slides', `${path}.hidden`);
   if (background) ctx.features.require('backgrounds', `${path}.background`);
 
+  const transition = compileTransition(slide.transition);
+  if (transition) ctx.features.require('transitions', `${path}.transition`);
+
   return {
     id: `slide${slideIndex + 1}`,
     path,
@@ -409,6 +413,27 @@ function compileSlide(
     elements,
     ...(slide.notes ? { notes: slide.notes } : {}),
     hidden: slide.hidden === true,
+    ...(transition ? { transition } : {}),
+  };
+}
+
+/**
+ * An authored transition.
+ *
+ * `none` is an authored transition too — it says "do not inherit one" — but
+ * OOXML expresses that by omitting `<p:transition>`, so it lowers to nothing
+ * and asks nothing of the backend.
+ */
+function compileTransition(
+  transition: ProcessedSlide['transition']
+): PptxIrTransition | undefined {
+  const type = transition?.type;
+  if (!type || type === 'none') return undefined;
+  return {
+    type,
+    ...(transition?.speed
+      ? { speed: transition.speed as PptxIrTransition['speed'] }
+      : {}),
   };
 }
 
@@ -949,10 +974,20 @@ function bodyDefaults(cascade: FontCascade): PptxIrRunFormatting {
   };
 }
 
+/**
+ * An authored bullet value, as the IR states it.
+ *
+ * `false` is a statement, not an absence: it has to reach the backend as an
+ * explicit "no bullet", because the paragraph may be inheriting one from a
+ * named style or from the format's own list style. Compiling it to an enabled
+ * bullet is what #254 was.
+ */
 function compileBullet(
   bullet: boolean | { type?: string; style?: string; startAt?: number }
 ): PptxIrBullet {
-  if (typeof bullet === 'boolean') return { type: 'bullet' };
+  if (typeof bullet === 'boolean') {
+    return { type: bullet ? 'bullet' : 'none' };
+  }
   return {
     type: bullet.type === 'number' ? 'number' : 'bullet',
     ...(bullet.style ? { style: bullet.style } : {}),
@@ -1246,6 +1281,9 @@ function compileImage(
   requireTransformFeatures(transform, path, 'image', ctx);
 
   const sizing = compileImageSizing(props.sizing, ctx);
+  if (sizing) ctx.features.require('image-crop', `${path}.sizing`);
+  if (props.rounding)
+    ctx.features.require('image-rounding', `${path}.rounding`);
 
   return {
     kind: 'image',
@@ -1409,6 +1447,20 @@ function compileTable(
     )
   ) {
     ctx.features.require('table-merged-cells', path);
+  }
+  if (props.borderRadius !== undefined) {
+    ctx.features.require('table-rounded-corners', `${path}.borderRadius`);
+  }
+  if (props.autoPage || props.autoPageRepeatHeader) {
+    ctx.features.require('table-auto-page', `${path}.autoPage`);
+  }
+  if (
+    defaults.insetPoints !== undefined ||
+    rows.some((row) =>
+      row.cells.some((cell) => cell.formatting?.insetPoints !== undefined)
+    )
+  ) {
+    ctx.features.require('table-insets', `${path}.margin`);
   }
 
   const element: PptxIrTableElement = {

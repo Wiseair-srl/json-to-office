@@ -147,7 +147,9 @@ export function applyFill(
 
 export function textBodyOpts(style: PptxIrTextBodyStyle): Opts {
   const opts: Opts = { valign: style.verticalAlign };
-  if (style.insetPoints !== undefined) opts.margin = style.insetPoints;
+  if (style.insetPoints !== undefined) {
+    opts.margin = textBodyMargin(style.insetPoints);
+  }
   if (style.align) opts.align = style.align;
   if (style.lineSpacingMultiple !== undefined) {
     opts.lineSpacingMultiple = style.lineSpacingMultiple;
@@ -160,20 +162,71 @@ export function textBodyOpts(style: PptxIrTextBodyStyle): Opts {
   if (style.spaceAfterPoints !== undefined) {
     opts.paraSpaceAfter = style.spaceAfterPoints;
   }
-  if (style.bullet) {
-    opts.bullet =
-      style.bullet.style === undefined && style.bullet.startAt === undefined
-        ? style.bullet.type === 'bullet'
-        : {
-            type: style.bullet.type,
-            ...(style.bullet.style ? { style: style.bullet.style } : {}),
-            ...(style.bullet.startAt !== undefined
-              ? { startAt: style.bullet.startAt }
-              : {}),
-          };
-  }
+  if (style.bullet) opts.bullet = bulletOpt(style.bullet);
   if (style.autoFit) opts.isTextBox = true;
   return opts;
+}
+
+/**
+ * A bullet in PptxGenJS's vocabulary.
+ *
+ * The backend reads three shapes and each has to be hit exactly:
+ * - `false` is how it spells `<a:buNone/>`, and an object never reaches that
+ *   branch, so `type: 'none'` has to become the boolean;
+ * - an object with `type: 'number'` becomes `<a:buAutoNum>`;
+ * - a custom glyph goes through `characterCode`, a 4-digit hex code point —
+ *   PptxGenJS ignores `style` on a character bullet and writes no bullet at
+ *   all, so passing the glyph as `style` loses it silently.
+ *
+ * Anything else is the default glyph, which is what `true` asks for.
+ */
+function bulletOpt(
+  bullet: NonNullable<PptxIrTextBodyStyle['bullet']>
+): unknown {
+  if (bullet.type === 'none') return false;
+  if (bullet.type === 'number') {
+    return {
+      type: 'number',
+      ...(bullet.style ? { style: bullet.style } : {}),
+      ...(bullet.startAt !== undefined ? { startAt: bullet.startAt } : {}),
+    };
+  }
+  const characterCode = bmpCharacterCode(bullet.style);
+  return characterCode === undefined ? true : { characterCode };
+}
+
+/**
+ * A glyph as the 4-digit hex code PptxGenJS validates against.
+ *
+ * Undefined for anything it would reject — an astral code point, or more than
+ * one character — so those fall back to the default glyph rather than making
+ * the backend warn and substitute one anyway.
+ */
+function bmpCharacterCode(glyph: string | undefined): string | undefined {
+  if (glyph === undefined) return undefined;
+  const points = [...glyph];
+  if (points.length !== 1) return undefined;
+  const code = points[0].codePointAt(0);
+  if (code === undefined || code > 0xffff) return undefined;
+  return code.toString(16).toUpperCase().padStart(4, '0');
+}
+
+/**
+ * A text-body inset, in the order PptxGenJS's *text* path reads.
+ *
+ * The IR states `[top, right, bottom, left]`, which is what the authoring
+ * schema documents and what PptxGenJS's table path reads. Its text path reads
+ * the same four numbers as `[left, right, bottom, top]` — the two disagree
+ * inside the library — so the tuple is reordered here rather than in the IR,
+ * because it is a property of this backend and nothing else. A scalar is the
+ * same on every side and passes through.
+ */
+function textBodyMargin(
+  inset: number | [number, number, number, number]
+): number | [number, number, number, number] {
+  if (typeof inset === 'number') return inset;
+  const [top, right, bottom, left] = inset;
+  return [left, right, bottom, top];
 }
 
 /** Run-level options. Every value is already resolved; nothing cascades here. */

@@ -38,6 +38,10 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  *   chart that was asked for.
  * - `image-transform` — `PictureOptions` carries neither `rotation` nor a flip,
  *   so any transform on a picture would be silently discarded.
+ * - `image-crop`, `image-rounding` — `PictureOptions` is `{data, type}` plus a
+ *   frame and effects: no source rectangle, no geometry. A cropped picture
+ *   would be drawn whole into the frame and a circular one would come out
+ *   rectangular, neither with anything to show for it.
  * - `flip-vertical` — no pptx option type carries it, on any element.
  * - `element-hyperlinks` — `NonVisualDrawingPropertiesOptions` is
  *   `{name, description, title, hidden}`: a shape or picture cannot carry a
@@ -49,18 +53,36 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  * - `table-merged-cells` — the backend marks merges as `restart`/`continue` on
  *   the covered cells while the IR carries span counts; the translation is
  *   real work and is not yet proven by a test.
+ * - `table-rounded-corners` — OOXML tables have no corner radius. The default
+ *   backend fakes one with shapes drawn behind the table; that technique is
+ *   not in the IR and is not reproduced here.
+ * - `table-auto-page` — nothing in this backend flows a table onto a second
+ *   slide, so an over-long table would run off the bottom of the first.
+ * - `table-insets` — `TableCellOptions.margins` writes the insets onto the
+ *   cell's own `a:bodyPr`, and a reader takes a cell's padding from
+ *   `a:tcPr/@marL`: rendering the same table with a 0pt and a 40pt margin puts
+ *   the text in exactly the same place.
  * - `image-fills` on a shape are supported and declared; the resource bytes are
  *   fetched before rendering.
+ *
+ * Table border and fill *are* declared: the backend has no table-level form of
+ * either, but both are cell properties there and the adapter pushes them onto
+ * every cell — see `tableChild` in `emit.ts`.
  */
 const UNSUPPORTED: ReadonlySet<PptxFeature> = new Set<PptxFeature>([
   'svg',
   'charts',
   'image-transform',
+  'image-crop',
+  'image-rounding',
   'flip-vertical',
   'element-hyperlinks',
   'masters',
   'placeholders',
   'table-merged-cells',
+  'table-rounded-corners',
+  'table-auto-page',
+  'table-insets',
 ]);
 
 const OFFICE_OPEN_CAPABILITIES: ReadonlySet<PptxFeature> = new Set(
@@ -157,8 +179,85 @@ export async function buildPresentationOptions(
   if (ir.metadata.title) presentation.title = ir.metadata.title;
   if (ir.metadata.author) presentation.creator = ir.metadata.author;
   if (ir.metadata.subject) presentation.subject = ir.metadata.subject;
+  // `company` is an *extended* property — `docProps/app.xml`, not `core.xml` —
+  // which is why it is not a sibling of the three above (#262).
+  if (ir.metadata.company) {
+    presentation.appProperties = { company: ir.metadata.company };
+  }
+
+  const theme = themeOptions(ir);
+  if (theme) {
+    // A theme belongs to a master, and the backend generates a default master
+    // when none is declared. Declaring one here is what gives the deck a
+    // `theme1.xml` carrying the authored fonts and palette rather than
+    // PowerPoint's Office defaults (#258).
+    presentation.masters = [{ name: ir.theme.name || 'Default', theme }];
+  }
 
   return presentation;
+}
+
+/**
+ * The authored theme, as the backend's `ThemeOptions`.
+ *
+ * Only what survives IR theme resolution: the major/minor font faces, which
+ * are set on the presentation rather than on any element, and the resolved
+ * palette. Element colours are already literal hex by this point, so the
+ * scheme is not what draws the deck — it is what PowerPoint offers when
+ * someone edits it, and what newly inserted content picks up.
+ */
+function themeOptions(ir: PptxIR): Record<string, unknown> | undefined {
+  const { headingFont, bodyFont, palette, name } = ir.theme;
+  const colorScheme = colorSchemeOptions(palette);
+  if (!headingFont && !bodyFont && !colorScheme) return undefined;
+
+  return {
+    ...(name ? { name } : {}),
+    fontScheme: {
+      ...(name ? { name } : {}),
+      ...(headingFont
+        ? { majorFont: { latin: { typeface: headingFont } } }
+        : {}),
+      ...(bodyFont ? { minorFont: { latin: { typeface: bodyFont } } } : {}),
+    },
+    ...(colorScheme ? { colorScheme } : {}),
+  };
+}
+
+/**
+ * OOXML scheme slot ← the IR palette's project-owned slot.
+ *
+ * `PptxIrTheme.palette` is keyed by the project's own vocabulary, so an adapter
+ * that writes a real `<a:clrScheme>` has to know which of those names each
+ * OOXML slot holds. The pairing is the one the authoring surface already
+ * accepts as aliases — see `SEMANTIC_TO_THEME_KEY` in `utils/color.ts`, which
+ * resolves `accent1`, `tx1` and friends against the same slots.
+ *
+ * A palette entry with no OOXML counterpart is left out rather than invented
+ * into a spare accent.
+ */
+const SCHEME_SLOTS: ReadonlyArray<readonly [string, string]> = [
+  ['dark1', 'text'],
+  ['light1', 'background'],
+  ['dark2', 'text2'],
+  ['light2', 'background2'],
+  ['accent1', 'primary'],
+  ['accent2', 'secondary'],
+  ['accent3', 'accent'],
+  ['accent4', 'accent4'],
+  ['accent5', 'accent5'],
+  ['accent6', 'accent6'],
+];
+
+function colorSchemeOptions(
+  palette: Readonly<Record<string, string>>
+): Record<string, string> | undefined {
+  const scheme: Record<string, string> = {};
+  for (const [slot, key] of SCHEME_SLOTS) {
+    const value = palette[key];
+    if (value) scheme[slot] = value;
+  }
+  return Object.keys(scheme).length > 0 ? scheme : undefined;
 }
 
 /**
