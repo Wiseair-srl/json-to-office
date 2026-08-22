@@ -6,13 +6,6 @@
  * from `Math.random`, so any linked document produced different bytes on every
  * render and had no golden hash to record. See
  * `utils/packageDocument.ts#canonicalizeRelationshipIds`.
- *
- * A link inside a *table cell* is deliberately absent. That path emits a
- * relationship reference the relationships part never declares, so the document
- * is damaged and its bytes vary run to run — a defect that predates the
- * renderer IR work and is not something a golden should enshrine. The
- * `no dangling relationship references` test in `relationship-ids.test.ts`
- * documents it.
  */
 
 import type { CorpusCase } from './corpus-types';
@@ -116,6 +109,36 @@ export const CASES: CorpusCase[] = [
             'Plain item',
             'Item with [a link](https://example.com/one)',
             'Item with [another](https://example.com/two)',
+          ],
+        },
+      },
+    ]),
+  },
+  {
+    // A table is cached across renders while a paragraph is not, so this is
+    // the case that catches a hyperlink relationship registered against the
+    // wrong document. Both a header cell and a body cell carry one, and one
+    // body cell carries none, so a link is pinned wherever a cell can hold it.
+    name: 'links/in-table-cell',
+    document: doc([
+      {
+        name: 'table',
+        props: {
+          columns: [
+            {
+              header: { content: 'Source' },
+              cells: [
+                { content: 'See [alpha](https://example.com/alpha)' },
+                { content: 'No link here' },
+              ],
+            },
+            {
+              header: { content: 'See [the docs](https://example.com/docs)' },
+              cells: [
+                { content: 'Read [beta](https://example.org/beta) too' },
+                { content: 'Then [gamma](https://example.net/gamma)' },
+              ],
+            },
           ],
         },
       },
