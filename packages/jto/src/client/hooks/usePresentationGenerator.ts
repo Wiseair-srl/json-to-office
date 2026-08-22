@@ -20,9 +20,26 @@ export interface DocumentGenerationResult {
   warnings: GenerationWarning[];
 }
 
+/**
+ * True for `application/json` and the `+json` structured suffix, whatever the
+ * casing or parameters.
+ *
+ * Media types are case-insensitive and usually arrive with a charset, and an
+ * error body may well be `application/problem+json` — treating any of those as
+ * "not JSON" would discard the very message this code exists to surface.
+ */
+export function isJsonMediaType(contentType: string | null): boolean {
+  const mediaType = contentType?.split(';', 1)[0]?.trim().toLowerCase();
+  if (!mediaType) return false;
+  return (
+    mediaType === 'application/json' ||
+    (mediaType.startsWith('application/') && mediaType.endsWith('+json'))
+  );
+}
+
 /** The JSON body, or undefined when the response is not JSON at all. */
 async function readJsonBody(response: Response): Promise<any | undefined> {
-  if (!response.headers.get('content-type')?.includes('application/json')) {
+  if (!isJsonMediaType(response.headers.get('content-type'))) {
     return undefined;
   }
   try {
@@ -40,12 +57,19 @@ async function readJsonBody(response: Response): Promise<any | undefined> {
  * only signal there is — so name the likely cause rather than echoing a raw
  * status code.
  */
-function describeFailure(
+export function describeFailure(
   response: Response,
   body: { error?: string; message?: string } | undefined
 ): string {
   if (body?.error) return body.error;
   if (body?.message) return body.message;
+
+  if (response.ok) {
+    return (
+      `The server answered ${response.status} but not with a document. ` +
+      'This usually means a proxy or extension replaced the response.'
+    );
+  }
 
   switch (response.status) {
     case 502:
