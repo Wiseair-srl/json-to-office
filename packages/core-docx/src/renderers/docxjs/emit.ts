@@ -43,7 +43,9 @@ import {
   TableRow,
   TextRun,
   VerticalAlign,
+  TextWrappingType,
   WidthType,
+  WpsShapeRun,
   type IFrameOptions,
   type IParagraphOptions,
   type IRunOptions,
@@ -54,6 +56,7 @@ import { assertNever } from '@json-to-office/shared/rendering';
 import type {
   DocxIrBlock,
   DocxIrBorder,
+  DocxIrFloating,
   DocxIrFrame,
   DocxIrImageRun,
   DocxIrInline,
@@ -62,6 +65,7 @@ import type {
   DocxIrParagraphMarkRevision,
   DocxIrRevisionRange,
   DocxIrRunFormatting,
+  DocxIrShapeRun,
   DocxIrTable,
   DocxIrTableCell,
   DocxIrTableFloating,
@@ -279,6 +283,10 @@ export function inlineChildren(
         out.push(new TextRun({ children: [new CommentReference(child.id)] }));
         break;
 
+      case 'shape':
+        out.push(emitShape(child, resources));
+        break;
+
       case 'noteReference':
         out.push(
           child.noteKind === 'endnote'
@@ -338,6 +346,131 @@ function emitRevision(
   }
 
   return out;
+}
+
+/** docx.js numbers its wrap types; OOXML names them. */
+const WRAP_TYPE: Readonly<
+  Record<string, (typeof TextWrappingType)[keyof typeof TextWrappingType]>
+> = {
+  none: TextWrappingType.NONE,
+  square: TextWrappingType.SQUARE,
+  tight: TextWrappingType.TIGHT,
+  topAndBottom: TextWrappingType.TOP_AND_BOTTOM,
+};
+
+/** An IR anchor as docx.js floating options. */
+export function floatingOptions(
+  floating: DocxIrFloating
+): Record<string, unknown> {
+  return {
+    ...(floating.horizontal
+      ? {
+          horizontalPosition: {
+            ...(floating.horizontal.relativeTo
+              ? { relative: floating.horizontal.relativeTo }
+              : {}),
+            ...(floating.horizontal.align !== undefined
+              ? { align: floating.horizontal.align }
+              : {}),
+            ...(floating.horizontal.offsetEmu !== undefined
+              ? { offset: floating.horizontal.offsetEmu }
+              : {}),
+          },
+        }
+      : {}),
+    ...(floating.vertical
+      ? {
+          verticalPosition: {
+            ...(floating.vertical.relativeTo
+              ? { relative: floating.vertical.relativeTo }
+              : {}),
+            ...(floating.vertical.align !== undefined
+              ? { align: floating.vertical.align }
+              : {}),
+            ...(floating.vertical.offsetEmu !== undefined
+              ? { offset: floating.vertical.offsetEmu }
+              : {}),
+          },
+        }
+      : {}),
+    ...(floating.wrap
+      ? {
+          wrap: {
+            type: WRAP_TYPE[floating.wrap.type],
+            ...(floating.wrap.side ? { side: floating.wrap.side } : {}),
+          },
+        }
+      : {}),
+    ...(floating.margins
+      ? {
+          margins: {
+            ...(floating.margins.topEmu !== undefined
+              ? { top: floating.margins.topEmu }
+              : {}),
+            ...(floating.margins.bottomEmu !== undefined
+              ? { bottom: floating.margins.bottomEmu }
+              : {}),
+            ...(floating.margins.leftEmu !== undefined
+              ? { left: floating.margins.leftEmu }
+              : {}),
+            ...(floating.margins.rightEmu !== undefined
+              ? { right: floating.margins.rightEmu }
+              : {}),
+          },
+        }
+      : {}),
+    ...(floating.allowOverlap !== undefined
+      ? { allowOverlap: floating.allowOverlap }
+      : {}),
+    ...(floating.behindDocument !== undefined
+      ? { behindDocument: floating.behindDocument }
+      : {}),
+    ...(floating.lockAnchor !== undefined
+      ? { lockAnchor: floating.lockAnchor }
+      : {}),
+    ...(floating.layoutInCell !== undefined
+      ? { layoutInCell: floating.layoutInCell }
+      : {}),
+    zIndex: floating.zIndex,
+  };
+}
+
+/**
+ * A native text box, as a `wps:wsp` shape run.
+ *
+ * docx 9.7.1 emits `a:noFill` + `a:ln` for an outline and then `a:solidFill`
+ * for the fill — two fill groups, in the wrong order for CT_ShapeProperties,
+ * which Word rejects. The compiler resolves that conflict before it gets here,
+ * so a shape never arrives with both.
+ */
+function emitShape(
+  shape: DocxIrShapeRun,
+  resources: EmitResources
+): ParagraphChild {
+  return new WpsShapeRun({
+    type: 'wps',
+    children: shape.children.map((child) => emitParagraph(child, resources)),
+    transformation: { width: shape.widthPx, height: shape.heightPx },
+    ...(shape.fill
+      ? { solidFill: { type: 'rgb', value: shape.fill.hex } as const }
+      : {}),
+    ...(shape.outline
+      ? {
+          outline: {
+            type: 'solidFill' as const,
+            solidFillType: 'rgb' as const,
+            value: shape.outline.color.hex,
+            ...(shape.outline.widthEmu !== undefined
+              ? { width: shape.outline.widthEmu }
+              : {}),
+          },
+        }
+      : {}),
+    ...(shape.insetsEmu
+      ? { bodyProperties: { margins: shape.insetsEmu } }
+      : {}),
+    ...(shape.floating ? { floating: floatingOptions(shape.floating) } : {}),
+  } as ConstructorParameters<typeof WpsShapeRun>[0]);
 }
 
 /* ------------------------------------------------------------------ *
