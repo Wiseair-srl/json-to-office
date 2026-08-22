@@ -3,7 +3,7 @@
  * Provides common functionality for running examples
  */
 
-import { generateDocument, saveDocument } from '../core/generator';
+import { generateAndSaveFromJson } from '../core/generator';
 import { ReportComponentDefinition } from '../types';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -47,8 +47,7 @@ export async function runExample(
     // Ensure output directory exists
     await fs.promises.mkdir(finalOutputDir, { recursive: true });
 
-    const document = await generateDocument(example);
-    await saveDocument(document, filename);
+    await generateAndSaveFromJson(example, filename);
 
     if (verbose) {
       console.log(`✓ ${reportTitle} saved: ${filename}`);

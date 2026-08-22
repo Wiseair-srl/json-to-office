@@ -207,10 +207,16 @@ function parsePlaceholders(
   normalized: string,
   parseOptions: ParseInlineOptions
 ): DocxIrInline[] {
-  // A separate colour for emphasised text does not apply here: the pipeline's
-  // placeholder path has never consulted it, so a bold span alongside a
-  // placeholder keeps the paragraph's colour.
-  const options: ParseInlineOptions = { ...parseOptions, boldColor: undefined };
+  // Two things the placeholder path has never done, reproduced rather than
+  // tidied: it does not consult a separate colour for emphasised text, so a
+  // bold span alongside a placeholder keeps the paragraph's colour; and it does
+  // not recognise `[^id]` markers, so one written alongside a placeholder stays
+  // as the characters the author typed. The note binding reports that.
+  const options: ParseInlineOptions = {
+    ...parseOptions,
+    boldColor: undefined,
+    resolveNote: undefined,
+  };
   const out: DocxIrInline[] = [];
   const token = new RegExp(DECORATOR_OR_PLACEHOLDER.source, 'g');
   let lastIndex = 0;

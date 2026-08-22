@@ -1,18 +1,25 @@
+/**
+ * Which font faces reach the visual rasterizer.
+ *
+ * A `visual` is drawn by an out-of-process LibreOffice, which can only use a
+ * font it has been handed the bytes for — so the question is not whether the
+ * document resolved a font but whether the rasterizer received it. The stub
+ * rasterizer here records exactly that.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Intercept renderDocument so we can inspect the options the generator built
-// without producing an actual .docx.
-const renderDocumentMock = vi.fn(async () => ({}) as any);
-vi.mock('../render', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../render')>();
-  return {
-    ...actual,
-    renderDocument: (...a: any[]) => renderDocumentMock(...a),
-  };
-});
-
-import { generateDocument } from '../generator';
+import { generateBufferFromJson } from '../generator';
 import type { ReportComponentDefinition } from '../../types';
+
+/** A real, decodable 1×1 PNG, so image measurement has something to read. */
+const PNG =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+const rasterize = vi.fn(async () => ({
+  base64DataUri: PNG,
+  width: 1,
+  height: 1,
+}));
 
 const TTF = Buffer.concat([
   Buffer.from([0x00, 0x01, 0x00, 0x00]),
@@ -48,42 +55,57 @@ function doc(children: unknown[]): ReportComponentDefinition {
   } as unknown as ReportComponentDefinition;
 }
 
-const lastOptions = () => renderDocumentMock.mock.calls.at(-1)![2] as any;
+/** The fonts handed to the rasterizer for the last visual it drew. */
+const lastFonts = () =>
+  (rasterize.mock.calls.at(-1)?.[0] as { fonts?: unknown[] } | undefined) ?? {};
+
+async function build(
+  document: ReportComponentDefinition,
+  options?: Parameters<typeof generateBufferFromJson>[1]
+): Promise<void> {
+  await generateBufferFromJson(document as never, {
+    validation: { enabled: false },
+    ...options,
+    services: { pptx: { render: rasterize } },
+  });
+}
 
 beforeEach(() => {
-  renderDocumentMock.mockClear();
+  rasterize.mockClear();
 });
 
-describe('generator → renderDocument visualFonts', () => {
-  it('passes non-empty visualFonts for a document with a visual and a custom font', async () => {
-    await generateDocument(
+describe('fonts reaching the visual rasterizer', () => {
+  it('hands over the custom font a visual-bearing document resolved', async () => {
+    await build(
       doc([
         { name: 'paragraph', props: { text: 'x', font: { family: 'Inter' } } },
         visualNode,
       ])
     );
 
-    const options = lastOptions();
-    expect(options.visualFonts).toBeDefined();
-    expect(options.visualFonts.length).toBeGreaterThan(0);
-    expect(options.visualFonts[0].family).toBe('Inter');
+    const fonts = lastFonts().fonts as
+      | Array<{ family: string; data: string }>
+      | undefined;
+    expect(fonts).toBeDefined();
+    expect(fonts!.length).toBeGreaterThan(0);
+    expect(fonts![0].family).toBe('Inter');
     // Wire shape: base64, no `data:` prefix, catalog family (not "Inter Light").
-    expect(options.visualFonts[0].data).not.toMatch(/^data:/);
-    expect(Buffer.from(options.visualFonts[0].data, 'base64').length).toBe(68);
+    expect(fonts![0].data).not.toMatch(/^data:/);
+    expect(Buffer.from(fonts![0].data, 'base64').length).toBe(68);
   });
 
-  it('passes NO visualFonts (and materializes nothing) without a visual', async () => {
+  it('rasterizes nothing, and materializes nothing, without a visual', async () => {
     // Guards the force-materialize path from adding font I/O to every build.
-    await generateDocument(
+    await build(
       doc([
         { name: 'paragraph', props: { text: 'x', font: { family: 'Inter' } } },
       ])
     );
-    expect(lastOptions()).not.toHaveProperty('visualFonts');
+    expect(rasterize).not.toHaveBeenCalled();
   });
 
-  it('passes no visualFonts when a visual-bearing doc has only safe fonts', async () => {
-    await generateDocument({
+  it('hands over no fonts when a visual-bearing doc has only safe ones', async () => {
+    await build({
       name: 'docx',
       props: {},
       children: [
@@ -91,17 +113,17 @@ describe('generator → renderDocument visualFonts', () => {
         visualNode,
       ],
     } as unknown as ReportComponentDefinition);
-    expect(lastOptions()).not.toHaveProperty('visualFonts');
+    expect(lastFonts()).not.toHaveProperty('fonts');
   });
 
-  it('passes no visualFonts in substitute mode (every family is rewritten to a safe one)', async () => {
-    await generateDocument(
+  it('hands over no fonts in substitute mode (every family becomes a safe one)', async () => {
+    await build(
       doc([
         { name: 'paragraph', props: { text: 'x', font: { family: 'Inter' } } },
         visualNode,
       ]),
       { fonts: { mode: 'substitute' } }
     );
-    expect(lastOptions()).not.toHaveProperty('visualFonts');
+    expect(lastFonts()).not.toHaveProperty('fonts');
   });
 });

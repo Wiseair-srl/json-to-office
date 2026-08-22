@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  generateDocument,
-  generateDocumentFromJson,
-} from '../../core/generator';
-import { Packer } from 'docx';
+import { generateBufferFromJson } from '../../core/generator';
 import type {
   ComponentDefinition,
   ReportComponentDefinition,
@@ -71,10 +67,12 @@ describe('E2E: Document Generation', () => {
         ],
       };
 
-      const document = await generateDocument(reportComponent);
-      expect(document).toBeDefined();
-
-      const buffer = await Packer.toBuffer(document);
+      // These fixtures use the flat `headers`/`rows` table shape, which
+      // predates the schema — the pipeline still renders it, the validator no
+      // longer accepts it.
+      const buffer = await generateBufferFromJson(reportComponent, {
+        validation: { enabled: false },
+      });
       expect(buffer).toBeInstanceOf(Buffer);
       expect(buffer.length).toBeGreaterThan(0);
     });
@@ -150,8 +148,8 @@ describe('E2E: Document Generation', () => {
         ],
       };
 
-      const document = await generateDocument(multiSectionComponent);
-      expect(document).toBeDefined();
+      const buffer = await generateBufferFromJson(multiSectionComponent);
+      expect(buffer.length).toBeGreaterThan(0);
     });
 
     it('should generate document with lists', async () => {
@@ -189,8 +187,13 @@ describe('E2E: Document Generation', () => {
         ],
       };
 
-      const document = await generateDocument(listComponent);
-      expect(document).toBeDefined();
+      // These fixtures use the flat `headers`/`rows` table shape, which
+      // predates the schema — the pipeline still renders it, the validator no
+      // longer accepts it.
+      const buffer = await generateBufferFromJson(listComponent, {
+        validation: { enabled: false },
+      });
+      expect(buffer.length).toBeGreaterThan(0);
     });
 
     it('should generate document with columns', async () => {
@@ -235,8 +238,8 @@ describe('E2E: Document Generation', () => {
         ],
       };
 
-      const document = await generateDocument(columnsComponent);
-      expect(document).toBeDefined();
+      const buffer = await generateBufferFromJson(columnsComponent);
+      expect(buffer.length).toBeGreaterThan(0);
     });
 
     it('should generate document with JSON definition', async () => {
@@ -278,8 +281,8 @@ describe('E2E: Document Generation', () => {
         ],
       };
 
-      const document = await generateDocumentFromJson(jsonDefinition);
-      expect(document).toBeDefined();
+      const buffer = await generateBufferFromJson(jsonDefinition);
+      expect(buffer.length).toBeGreaterThan(0);
     });
 
     it('should generate document with different themes', async () => {
@@ -308,8 +311,8 @@ describe('E2E: Document Generation', () => {
           ],
         };
 
-        const document = await generateDocument(themedComponent);
-        expect(document).toBeDefined();
+        const buffer = await generateBufferFromJson(themedComponent);
+        expect(buffer.length).toBeGreaterThan(0);
       }
     });
 
@@ -348,10 +351,15 @@ describe('E2E: Document Generation', () => {
       };
 
       const start = Date.now();
-      const document = await generateDocument(largeComponent);
+      // These fixtures use the flat `headers`/`rows` table shape, which
+      // predates the schema — the pipeline still renders it, the validator no
+      // longer accepts it.
+      const buffer = await generateBufferFromJson(largeComponent, {
+        validation: { enabled: false },
+      });
       const duration = Date.now() - start;
 
-      expect(document).toBeDefined();
+      expect(buffer.length).toBeGreaterThan(0);
       expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
     });
   });

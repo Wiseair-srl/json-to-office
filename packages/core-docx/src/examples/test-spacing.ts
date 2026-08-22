@@ -3,10 +3,9 @@
  * Generate document to test that spacing values are in points
  */
 
-import { generateDocumentFromJson } from '../core/generator';
+import { generateBufferFromJson } from '../core/generator';
 import { join, dirname } from 'path';
 import { readFileSync, writeFileSync } from 'fs';
-import { Packer } from 'docx';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -20,9 +19,7 @@ async function generateTestSpacingDocument() {
 
   const jsonContent = JSON.parse(readFileSync(jsonPath, 'utf-8'));
 
-  const document = await generateDocumentFromJson(jsonContent);
-  const buffer = await Packer.toBuffer(document);
-  writeFileSync(outputPath, buffer);
+  writeFileSync(outputPath, await generateBufferFromJson(jsonContent));
 
   console.log('Document generated successfully at:', outputPath);
   console.log('\nSpacing values used:');

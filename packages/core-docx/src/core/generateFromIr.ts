@@ -28,6 +28,7 @@ import { createDocxJsRenderer } from '../renderers/docxjs/index';
 import type { DocxRendererId } from '../renderers/types';
 import type { ThemeConfig } from '../styles';
 import type { ReportComponentDefinition } from '../types';
+import { resolveGenerationDate } from '../utils/packageDocument';
 import { resolveThemeContext } from './generationContext';
 import { runWithBaseDir, runWithWarnings } from '../utils/generationContext';
 import { applyLayout } from './layout';
@@ -38,7 +39,6 @@ export interface IrDocxGenerationOptions {
   services?: ServicesConfig;
   fonts?: FontRuntimeOpts;
   warnings?: GenerationWarning[];
-  generationDate?: Date;
   baseDir?: string;
   deterministic?: boolean;
   generatedAt?: string | Date;
@@ -98,9 +98,10 @@ export interface CompiledDocx {
  */
 export async function compileDocumentToIr(
   document: ReportComponentDefinition,
-  options: IrDocxGenerationOptions = {}
+  options: IrDocxGenerationOptions = {},
+  collector?: GenerationWarning[]
 ): Promise<CompiledDocx> {
-  const warnings = options.warnings ?? [];
+  const warnings = collector ?? options.warnings ?? [];
   return runWithWarnings(warnings, () =>
     runWithBaseDir(options.baseDir, () =>
       compileDocumentScoped(document, options, warnings)
@@ -158,11 +159,14 @@ async function compileDocumentScoped(
     ...(visualFonts.length > 0 ? { visualFonts } : {}),
   });
 
+  // One date for the whole build: the metadata Word shows, the `{DATE}` a
+  // paragraph resolves and the timestamps the package is pinned to all have to
+  // agree, or a document says it was made at two different moments.
   const structure = await processDocument(
     desugared,
     context.theme,
     context.themeName,
-    options.generationDate
+    resolveGenerationDate(options)
   );
   const layout = applyLayout(
     structure.sections,
@@ -178,7 +182,11 @@ async function compileDocumentScoped(
       ...(Array.isArray(section.footer) ? section.footer : []),
     ])
   );
-  const compiled = compileDocument(structure, layout, warnings, images);
+  const compiled = compileDocument(structure, layout, warnings, images, {
+    // A caller that collects nothing still needs to hear about a dropped
+    // value, so warnings go to the console when there is no collector.
+    echoWarnings: options.warnings === undefined,
+  });
 
   return {
     ir: compiled.ir,
@@ -194,7 +202,27 @@ export async function generateBufferViaIr(
   document: ReportComponentDefinition,
   options: IrDocxGenerationOptions = {}
 ): Promise<IrDocxGenerationResult> {
-  const compiled = await compileDocumentToIr(document, options);
+  const warnings = options.warnings ?? [];
+  // The same scope covers rendering, not only compiling: an adapter reports
+  // through the same leaf helpers, and a warning raised while packaging bytes
+  // belongs to the caller that asked for them.
+  //
+  // `options` is passed through unchanged, so the compiler can still tell
+  // whether the caller supplied a collector — a caller that did not still
+  // needs to hear about a dropped value, on the console.
+  return runWithWarnings(warnings, () =>
+    runWithBaseDir(options.baseDir, () =>
+      renderScoped(document, options, warnings)
+    )
+  );
+}
+
+async function renderScoped(
+  document: ReportComponentDefinition,
+  options: IrDocxGenerationOptions,
+  warnings: GenerationWarning[]
+): Promise<IrDocxGenerationResult> {
+  const compiled = await compileDocumentToIr(document, options, warnings);
 
   if (compiled.unsupported.length > 0) {
     throw new UncompiledComponentError(compiled.unsupported);

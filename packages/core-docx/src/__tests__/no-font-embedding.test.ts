@@ -6,8 +6,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import { Packer } from 'docx';
-import { generateDocument, generateBufferFromJson } from '../core/generator';
+import { generateBufferFromJson } from '../core/generator';
 
 async function listZipEntries(buf: Buffer): Promise<string[]> {
   const zip = await JSZip.loadAsync(buf);
@@ -34,7 +33,7 @@ const DOC_REFERENCING_INTER = {
 
 describe('docx output contains no font bytes', () => {
   it('produces no word/fonts/ entries for a basic document', async () => {
-    const doc = await generateDocument({
+    const buf = await generateBufferFromJson({
       name: 'docx',
       props: { theme: 'minimal' },
       children: [
@@ -42,7 +41,6 @@ describe('docx output contains no font bytes', () => {
         { name: 'paragraph', props: { text: 'Body.' } },
       ],
     } as any);
-    const buf = (await Packer.toBuffer(doc)) as Buffer;
     const entries = await listZipEntries(buf);
     const fontEntries = entries.filter((e) => e.startsWith('word/fonts/'));
     expect(fontEntries).toEqual([]);
