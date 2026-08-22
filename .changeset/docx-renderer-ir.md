@@ -30,6 +30,8 @@ implementation (`src/__tests__/corpus-ir-parity.test.ts`).
   and are rejected up front rather than flattened.
 - `DEFAULT_DOCX_RENDERER_ID`, `docxRendererIds()`, `isDocxRendererId()`,
   `UncompiledComponentError`, `DocxRendererId`.
+- `renderer` on `createDocumentGenerator({...})` and on each
+  `generateBuffer` / `generateFile` call, the latter overriding the former.
 
 **Breaking**
 
@@ -61,3 +63,7 @@ No public type now references docx.js.
 - A threaded or resolved comment now records a required feature, so a backend
   that cannot write `commentsExtended.xml` refuses the document instead of
   silently flattening the thread.
+- Every `wp:docPr` id the `office-open` backend writes is allocated per render
+  rather than from that library's module-level counter, which made the same
+  document come out differently on a second call and let two concurrent renders
+  interleave. 38 of the 272 corpus cases were affected; none are now.
