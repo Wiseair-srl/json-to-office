@@ -703,8 +703,16 @@ export interface DocxIrTableOfContents {
   /** Restrict the TOC to a bookmarked region. */
   bookmarkScope?: string;
   hyperlink?: boolean;
-  /** Outline levels whose entries should omit a page number. */
-  omitPageNumbersForLevels?: number[];
+  /** The field's alias, shown while the entries are collapsed. */
+  alias?: string;
+  /**
+   * Outline level ranges whose entries omit a page number.
+   *
+   * Ranges rather than a level list because that is what OOXML's `\n` switch
+   * takes, and because the levels omitted are always contiguous blocks either
+   * side of the range that keeps its numbers.
+   */
+  omitPageNumbersForLevels?: Array<{ from: number; to: number }>;
   /** Separator between entry text and page number. */
   entrySeparator?: string;
   /**
@@ -717,7 +725,14 @@ export interface DocxIrTableOfContents {
 export interface DocxIrTocEntry {
   text: string;
   level: number;
-  bookmark: string;
+  /**
+   * The bookmark the entry links to, when one is known.
+   *
+   * A cached entry does not need one: Word rebuilds the links the moment it
+   * refreshes the field, and a reader that never refreshes shows the text
+   * without following it anywhere.
+   */
+  bookmark?: string;
 }
 
 /* ------------------------------------------------------------------ *
