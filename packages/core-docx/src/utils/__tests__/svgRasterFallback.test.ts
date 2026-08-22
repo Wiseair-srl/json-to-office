@@ -78,6 +78,46 @@ describe('inline SVG raster fallback', () => {
     ).toEqual([]);
   });
 
+  it('keeps a page-sized SVG inside the pixel budget', async () => {
+    // A4 at 3x would be 2382x3367 ≈ 8 MP ≈ 32 MB of live RGBA. Two dozen of
+    // those in one report took a render past 1.1 GB and had the hosted
+    // playground's container killed, so the bitmap is capped by area.
+    const page =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="8.27in" height="11.69in" viewBox="0 0 827 1169"><rect width="827" height="1169" fill="#EEEEEE"/></svg>';
+
+    const buffer = await generateBufferFromJson(
+      doc({ base64: toDataUri(page), width: 793.92, height: 1122.24 })
+    );
+
+    const raster = (await mediaOf(buffer)).filter(
+      (part) => !isSvgBytes(part.data)
+    );
+    expect(raster).toHaveLength(1);
+
+    const size = probe.sync(raster[0].data);
+    expect(size?.mime).toBe('image/png');
+    expect(size!.width * size!.height).toBeLessThanOrEqual(1_000_000);
+    // Still large enough to read: the cap trims resolution, it does not
+    // collapse the image to a thumbnail.
+    expect(size!.width * size!.height).toBeGreaterThan(500_000);
+    // The page's own proportions survive the trim.
+    expect(size!.width / size!.height).toBeCloseTo(827 / 1169, 1);
+  });
+
+  it('leaves an SVG below the budget at full 3x resolution', async () => {
+    const buffer = await generateBufferFromJson(
+      doc({ base64: toDataUri(SVG), width: 120 })
+    );
+
+    const raster = (await mediaOf(buffer)).filter(
+      (part) => !isSvgBytes(part.data)
+    );
+    const size = probe.sync(raster[0].data);
+    // 120px at 3x, untouched by the area cap.
+    expect(size!.width).toBeGreaterThanOrEqual(356);
+    expect(size!.width).toBeLessThanOrEqual(364);
+  });
+
   it('warns and keeps the document renderable when the SVG cannot be parsed', async () => {
     const warnings: GenerationWarning[] = [];
     const buffer = await generateBufferFromJson(

@@ -20,6 +20,54 @@ export interface DocumentGenerationResult {
   warnings: GenerationWarning[];
 }
 
+/** The JSON body, or undefined when the response is not JSON at all. */
+async function readJsonBody(response: Response): Promise<any | undefined> {
+  if (!response.headers.get('content-type')?.includes('application/json')) {
+    return undefined;
+  }
+  try {
+    return await response.json();
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Turn a failed generation into a sentence that says what to do next.
+ *
+ * The API's own error text is always the best answer. When there is none the
+ * response came from the platform rather than the app, and the status is the
+ * only signal there is — so name the likely cause rather than echoing a raw
+ * status code.
+ */
+function describeFailure(
+  response: Response,
+  body: { error?: string; message?: string } | undefined
+): string {
+  if (body?.error) return body.error;
+  if (body?.message) return body.message;
+
+  switch (response.status) {
+    case 502:
+    case 503:
+    case 504:
+      return (
+        `The server did not finish generating (${response.status}). It usually ` +
+        'ran out of memory or restarted mid-request — documents with many ' +
+        'full-page images or inline SVGs are the common cause. Try again, or ' +
+        'split the document and generate it in parts.'
+      );
+    case 413:
+      return 'The document is too large for the server to accept (413). Remove or shrink its largest embedded assets.';
+    case 429:
+      return 'Too many requests (429). Wait a moment before generating again.';
+    default:
+      return `Generation failed (${response.status}${
+        response.statusText ? ` ${response.statusText}` : ''
+      }).`;
+  }
+}
+
 export function usePresentationGenerator() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -105,15 +153,15 @@ export function usePresentationGenerator() {
           signal: abortController.signal,
         });
 
-        // Parse JSON response
-        const responseData = await response.json();
+        // The body is only JSON when the API itself answered. A proxy that
+        // never reached the API — or reached one that died mid-request —
+        // answers with its own HTML error page, and parsing that unguarded is
+        // what produced `Unexpected token '<', "<!DOCTYPE "...` instead of
+        // anything an author could act on.
+        const responseData = await readJsonBody(response);
 
-        if (!response.ok || !responseData.success) {
-          const errorMessage =
-            responseData.error ||
-            responseData.message ||
-            `API request failed with status: ${response.status}`;
-          throw new Error(errorMessage);
+        if (!response.ok || !responseData?.success) {
+          throw new Error(describeFailure(response, responseData));
         }
 
         // Extract data from structured response
