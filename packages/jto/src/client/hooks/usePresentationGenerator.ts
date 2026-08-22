@@ -14,11 +14,21 @@ export interface DocumentGenerationResult {
   name: string;
   text: string;
   blob: Blob;
+  /** Renderer captured when these bytes were requested. */
+  renderer?: string;
   filename: string;
   fileId: string | null;
   cacheStatus: 'HIT' | 'MISS' | 'UNKNOWN';
   cacheHitRate: string;
   warnings: GenerationWarning[];
+}
+
+/** Resolve once per request so a later picker change cannot relabel its bytes. */
+export function resolveGenerationRenderer(
+  explicitRenderer: string | undefined,
+  selectedRenderer: string | undefined
+): string | undefined {
+  return explicitRenderer ?? selectedRenderer;
 }
 
 /**
@@ -126,6 +136,10 @@ export function usePresentationGenerator() {
 
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
+      const effectiveRenderer = resolveGenerationRenderer(
+        options?.renderer,
+        generationBackend
+      );
 
       try {
         // Parse JSON content
@@ -166,9 +180,7 @@ export function usePresentationGenerator() {
             sourceName: name,
             // An explicit per-call renderer still wins, which is what lets a
             // comparison view ask for both without changing the setting.
-            ...(options?.renderer ?? generationBackend
-              ? { renderer: options?.renderer ?? generationBackend }
-              : {}),
+            ...(effectiveRenderer ? { renderer: effectiveRenderer } : {}),
           },
         };
 
@@ -238,6 +250,7 @@ export function usePresentationGenerator() {
           name,
           text,
           blob,
+          ...(effectiveRenderer ? { renderer: effectiveRenderer } : {}),
           filename: data.filename,
           fileId: data.fileId,
           cacheStatus,

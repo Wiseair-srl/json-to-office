@@ -26,29 +26,42 @@ const SVG =
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
-/** A document whose only image lives in the section header. */
-const document: ReportComponentDefinition = {
-  name: 'docx',
-  props: { theme: 'minimal' },
-  children: [
-    {
-      name: 'section',
-      props: {
-        header: [{ name: 'image', props: { svg: SVG, width: 1, height: 0.5 } }],
+type ChromeKind = 'header' | 'footer';
+
+/** A document whose only image lives in one section chrome part. */
+function document(kind: ChromeKind): ReportComponentDefinition {
+  return {
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [
+      {
+        name: 'section',
+        props: {
+          [kind]: [
+            { name: 'image', props: { svg: SVG, width: 1, height: 0.5 } },
+          ],
+        },
+        children: [{ name: 'paragraph', props: { text: 'Body' } }],
       },
-      children: [{ name: 'paragraph', props: { text: 'Body' } }],
-    },
-  ],
-} as unknown as ReportComponentDefinition;
+    ],
+  } as unknown as ReportComponentDefinition;
+}
 
 /** Move a section's compiled chrome from `default` into another slot. */
-function moveChrome(ir: DocxIR, slot: 'first' | 'even'): DocxIR {
+function moveChrome(
+  ir: DocxIR,
+  kind: ChromeKind,
+  slot: 'first' | 'even'
+): DocxIR {
   return {
     ...ir,
     sections: ir.sections.map((section) => {
-      const part: DocxIrHeaderFooter | undefined = section.headers?.default;
+      const part: DocxIrHeaderFooter | undefined =
+        kind === 'header' ? section.headers?.default : section.footers?.default;
       if (!part) return section;
-      return { ...section, headers: { [slot]: part } };
+      return kind === 'header'
+        ? { ...section, headers: { [slot]: part } }
+        : { ...section, footers: { [slot]: part } };
     }),
   };
 }
@@ -59,40 +72,46 @@ async function renderParts(ir: DocxIR): Promise<JSZip> {
   return JSZip.loadAsync(Buffer.from(bytes));
 }
 
-describe.each(['default', 'first', 'even'] as const)(
-  'an SVG in the %s header',
-  (slot) => {
-    it('ships a real raster fallback', async () => {
-      const compiled = await compileDocumentToIr(document);
-      const ir =
-        slot === 'default' ? compiled.ir : moveChrome(compiled.ir, slot);
+describe.each(['header', 'footer'] as const)('%s SVG slots', (kind) => {
+  describe.each(['default', 'first', 'even'] as const)(
+    `an SVG in the %s ${kind}`,
+    (slot) => {
+      it('ships a real raster fallback', async () => {
+        const compiled = await compileDocumentToIr(document(kind));
+        const ir =
+          slot === 'default'
+            ? compiled.ir
+            : moveChrome(compiled.ir, kind, slot);
 
-      const zip = await renderParts(ir);
-      const media = Object.keys(zip.files).filter((name) =>
-        name.startsWith('word/media/')
-      );
+        const zip = await renderParts(ir);
+        const media = Object.keys(zip.files).filter((name) =>
+          name.startsWith('word/media/')
+        );
 
-      // Two parts: the vector and the raster Word before 2016 draws instead.
-      const pngs = media.filter((name) => name.endsWith('.png'));
-      expect(pngs.length).toBeGreaterThan(0);
+        // Two parts: the vector and the raster Word before 2016 draws instead.
+        const pngs = media.filter((name) => name.endsWith('.png'));
+        expect(pngs.length).toBeGreaterThan(0);
 
-      for (const name of pngs) {
-        const bytes = await zip.file(name)!.async('nodebuffer');
-        expect(bytes.subarray(0, 4)).toEqual(PNG_SIGNATURE);
-      }
-    });
+        for (const name of pngs) {
+          const bytes = await zip.file(name)!.async('nodebuffer');
+          expect(bytes.subarray(0, 4)).toEqual(PNG_SIGNATURE);
+        }
+      });
 
-    it('emits the part rather than dropping it', async () => {
-      const compiled = await compileDocumentToIr(document);
-      const ir =
-        slot === 'default' ? compiled.ir : moveChrome(compiled.ir, slot);
+      it('emits the part rather than dropping it', async () => {
+        const compiled = await compileDocumentToIr(document(kind));
+        const ir =
+          slot === 'default'
+            ? compiled.ir
+            : moveChrome(compiled.ir, kind, slot);
 
-      const zip = await renderParts(ir);
-      const headers = Object.keys(zip.files).filter((name) =>
-        /^word\/header\d+\.xml$/.test(name)
-      );
+        const zip = await renderParts(ir);
+        const parts = Object.keys(zip.files).filter((name) =>
+          new RegExp(`^word/${kind}\\d+\\.xml$`).test(name)
+        );
 
-      expect(headers.length).toBeGreaterThan(0);
-    });
-  }
-);
+        expect(parts.length).toBeGreaterThan(0);
+      });
+    }
+  );
+});

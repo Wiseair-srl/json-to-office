@@ -187,6 +187,8 @@ describe('image crop and rounding', () => {
 
   it.each([
     ['a cover fit', { sizing: { type: 'cover', w: 2, h: 1 } }],
+    ['an explicit crop', { sizing: { type: 'crop', w: 1, h: 1 } }],
+    ['a contain fit', { sizing: { type: 'contain', w: 2, h: 1 } }],
     ['rounding', { rounding: true }],
   ])('pptxgenjs still draws %s', async (_name, props) => {
     const { buffer } = await generateBufferViaIr(image(props) as never, {

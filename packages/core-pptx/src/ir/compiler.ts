@@ -681,18 +681,21 @@ function compileText(
   const shadow = compileShadow(props.shadow, ctx);
   if (shadow) ctx.features.require('shadows', `${path}.shadow`);
 
+  const bodyStyle = textBodyStyle(props, named, cascade, {
+    autoFit,
+    // Text boxes have always defaulted their inset to 0 so the text lines up
+    // exactly with the position the author (or the grid) gave it.
+    defaultInsetPoints: 0,
+  });
+  requireBulletFeatures(bodyStyle.bullet, path, ctx);
+
   return {
     kind: 'textBox',
     id: scope.id,
     path,
     transform,
     runs,
-    style: textBodyStyle(props, named, cascade, {
-      autoFit,
-      // Text boxes have always defaulted their inset to 0 so the text lines up
-      // exactly with the position the author (or the grid) gave it.
-      defaultInsetPoints: 0,
-    }),
+    style: bodyStyle,
     ...(fill ? { fill } : {}),
     ...(shadow ? { shadow } : {}),
     ...(hyperlink ? { hyperlink } : {}),
@@ -995,6 +998,20 @@ function compileBullet(
   };
 }
 
+/** Record glyphs the default backend cannot represent without substitution. */
+function requireBulletFeatures(
+  bullet: PptxIrBullet | undefined,
+  path: string,
+  ctx: CompileContext
+): void {
+  if (bullet?.type !== 'bullet' || bullet.style === undefined) return;
+  const points = [...bullet.style];
+  const codePoint = points[0]?.codePointAt(0);
+  if (points.length !== 1 || codePoint === undefined || codePoint > 0xffff) {
+    ctx.features.require('complex-bullet-glyphs', `${path}.bullet.style`);
+  }
+}
+
 /**
  * Position a text box, reproducing the pre-IR default height.
  *
@@ -1026,9 +1043,7 @@ function textTransform(
         ? resolveDimensionEmu(props.w, 'X', ctx.extent)
         : defaultWidthEmu(ctx.extent),
     heightEmu,
-    ...(props.rotate !== undefined
-      ? { rotationDegrees: props.rotate as number }
-      : {}),
+    ...rotationProperty(props.rotate),
   };
 }
 
@@ -1077,6 +1092,7 @@ function compileShape(
         )
       : [{ text: props.text as string, ...baseRunFormatting(cascade) }];
     style = textBodyStyle(props, named, cascade);
+    requireBulletFeatures(style.bullet, path, ctx);
     ctx.features.require('text', path);
     if (runs.length > 1) ctx.features.require('rich-text', path);
   }
@@ -1198,12 +1214,18 @@ function shapeTransform(
         : defaultWidthEmu(ctx.extent),
     heightEmu:
       props.h !== undefined ? resolveDimensionEmu(props.h, 'Y', ctx.extent) : 0,
-    ...(props.rotate !== undefined
-      ? { rotationDegrees: props.rotate as number }
-      : {}),
+    ...rotationProperty(props.rotate),
     ...(props.flipH ? { flipHorizontal: true } : {}),
     ...(props.flipV ? { flipVertical: true } : {}),
   };
+}
+
+/** Omit full-turn rotations: they are identity, not a backend requirement. */
+function rotationProperty(
+  value: unknown
+): Pick<PptxIrTransform, 'rotationDegrees'> {
+  if (typeof value !== 'number' || value % 360 === 0) return {};
+  return { rotationDegrees: value };
 }
 
 /**
@@ -1439,6 +1461,10 @@ function compileTable(
   }));
 
   const border = compileTableBorder(props.border, ctx);
+  const cornerRadius =
+    typeof props.borderRadius === 'number' && props.borderRadius > 0
+      ? props.borderRadius
+      : undefined;
 
   ctx.features.require('tables', path);
   if (
@@ -1448,20 +1474,28 @@ function compileTable(
   ) {
     ctx.features.require('table-merged-cells', path);
   }
-  if (props.borderRadius !== undefined) {
+  if (cornerRadius !== undefined) {
     ctx.features.require('table-rounded-corners', `${path}.borderRadius`);
   }
-  if (props.autoPage || props.autoPageRepeatHeader) {
+  if (props.autoPage) {
     ctx.features.require('table-auto-page', `${path}.autoPage`);
   }
-  if (
-    defaults.insetPoints !== undefined ||
-    rows.some((row) =>
-      row.cells.some((cell) => cell.formatting?.insetPoints !== undefined)
-    )
-  ) {
+  if (props.autoPageRepeatHeader) {
+    ctx.features.require('table-auto-page', `${path}.autoPageRepeatHeader`);
+  }
+  if (defaults.insetPoints !== undefined) {
     ctx.features.require('table-insets', `${path}.margin`);
   }
+  rows.forEach((row, rowIndex) =>
+    row.cells.forEach((cell, cellIndex) => {
+      if (cell.formatting?.insetPoints !== undefined) {
+        ctx.features.require(
+          'table-insets',
+          `${path}.rows[${rowIndex}][${cellIndex}].margin`
+        );
+      }
+    })
+  );
 
   const element: PptxIrTableElement = {
     kind: 'table',
@@ -1476,9 +1510,7 @@ function compileTable(
     ...(props.fill
       ? { fill: irColor(resolveColor(props.fill, ctx.theme, ctx.warnings)) }
       : {}),
-    ...(props.borderRadius !== undefined
-      ? { cornerRadiusInches: props.borderRadius as number }
-      : {}),
+    ...(cornerRadius !== undefined ? { cornerRadiusInches: cornerRadius } : {}),
     ...(props.autoPage ? { autoPage: true } : {}),
     ...(props.autoPageRepeatHeader ? { autoPageRepeatHeader: true } : {}),
   };
@@ -1618,8 +1650,12 @@ function compileTableCell(
     ...(cell.fill
       ? { fill: irColor(resolveColor(cell.fill, ctx.theme, ctx.warnings)) }
       : {}),
-    ...(cell.colspan ? { colSpan: cell.colspan } : {}),
-    ...(cell.rowspan ? { rowSpan: cell.rowspan } : {}),
+    ...(cell.colspan !== undefined && cell.colspan > 1
+      ? { colSpan: cell.colspan }
+      : {}),
+    ...(cell.rowspan !== undefined && cell.rowspan > 1
+      ? { rowSpan: cell.rowspan }
+      : {}),
   };
 }
 

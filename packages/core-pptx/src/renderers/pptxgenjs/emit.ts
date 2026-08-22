@@ -191,16 +191,21 @@ function bulletOpt(
       ...(bullet.startAt !== undefined ? { startAt: bullet.startAt } : {}),
     };
   }
+  if (bullet.style === undefined) return true;
   const characterCode = bmpCharacterCode(bullet.style);
-  return characterCode === undefined ? true : { characterCode };
+  if (characterCode === undefined) {
+    throw new Error(
+      'PptxGenJS cannot emit an astral or multi-code-point bullet glyph'
+    );
+  }
+  return { characterCode };
 }
 
 /**
  * A glyph as the 4-digit hex code PptxGenJS validates against.
  *
  * Undefined for anything it would reject — an astral code point, or more than
- * one character — so those fall back to the default glyph rather than making
- * the backend warn and substitute one anyway.
+ * one character. Capability preflight refuses those values before emission.
  */
 function bmpCharacterCode(glyph: string | undefined): string | undefined {
   if (glyph === undefined) return undefined;

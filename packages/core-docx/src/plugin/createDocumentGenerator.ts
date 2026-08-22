@@ -46,7 +46,7 @@ export interface DocumentGeneratorOptions {
   /** Font resolution options — extraEntries, Google Fonts config, onResolved hook. */
   fonts?: FontRuntimeOpts;
   /**
-   * Default validation behavior for every generate/generateBuffer/generateFile
+   * Default validation behavior for every generateBuffer/generateFile
    * call. Per-call `options.validation` overrides these. Validation is on by
    * default; pass `{ enabled: false }` to opt out.
    */

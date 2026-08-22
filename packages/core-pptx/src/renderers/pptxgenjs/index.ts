@@ -31,13 +31,15 @@ export const PPTXGENJS_RENDERER_ID: PptxRendererId = 'pptxgenjs';
  * - `image-fills` — no shape image-fill API
  * - `transitions` — no transition API (and none in the pre-IR pipeline either)
  * - `groups` — no grouping API; groups are flattened upstream or rejected
+ * - `complex-bullet-glyphs` — the API accepts only a four-digit BMP code
  */
 const PPTXGENJS_CAPABILITIES: ReadonlySet<PptxFeature> = new Set(
   [...ALL_PPTX_FEATURES].filter(
     (feature) =>
       feature !== 'image-fills' &&
       feature !== 'transitions' &&
-      feature !== 'groups'
+      feature !== 'groups' &&
+      feature !== 'complex-bullet-glyphs'
   )
 );
 

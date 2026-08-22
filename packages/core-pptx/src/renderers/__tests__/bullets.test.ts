@@ -101,3 +101,27 @@ describe.each(RENDERERS)('%s bullets', (renderer) => {
     expect(elements.some((el) => el.includes('startAt="4"'))).toBe(true);
   });
 });
+
+describe('complex custom bullet glyphs', () => {
+  it.each(['😀', '→️'])('office-open preserves %s', async (glyph) => {
+    const elements = await bulletElements(
+      { type: 'bullet', style: glyph },
+      'office-open'
+    );
+
+    expect(elements.some((element) => element.includes(glyph))).toBe(true);
+  });
+
+  it.each(['😀', '→️'])(
+    'pptxgenjs refuses %s instead of substituting the default bullet',
+    async (glyph) => {
+      await expect(
+        generateBufferViaIr(deck({ type: 'bullet', style: glyph }) as never, {
+          renderer: 'pptxgenjs',
+        })
+      ).rejects.toThrow(
+        /complex-bullet-glyphs.*slides\[0\]\.elements\[0\]\.bullet\.style/s
+      );
+    }
+  );
+});
