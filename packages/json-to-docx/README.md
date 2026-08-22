@@ -10,17 +10,16 @@ Part of the [json-to-office](https://github.com/Wiseair-srl/json-to-office) mono
 ## Install
 
 ```bash
-npm install @json-to-office/json-to-docx docx
+pnpm add @json-to-office/json-to-docx
 ```
 
 ## Usage
 
 ```ts
-import { generateDocument } from '@json-to-office/json-to-docx';
-import { Packer } from 'docx';
+import { generateBufferFromJson } from '@json-to-office/json-to-docx';
 import { writeFileSync } from 'fs';
 
-const doc = await generateDocument({
+const buffer = await generateBufferFromJson({
   name: 'docx',
   props: { theme: 'minimal' },
   children: [
@@ -59,7 +58,6 @@ const doc = await generateDocument({
   ],
 });
 
-const buffer = await Packer.toBuffer(doc);
 writeFileSync('report.docx', buffer);
 ```
 

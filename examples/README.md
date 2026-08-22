@@ -34,12 +34,9 @@ Every example is validated in CI. The invoice and quarterly review are also rend
 ## Render programmatically
 
 ```ts
-import { generateDocument } from '@json-to-office/json-to-docx';
-import { Packer } from 'docx';
+import { generateBufferFromJson } from '@json-to-office/json-to-docx';
 import { readFileSync, writeFileSync } from 'fs';
 
 const definition = JSON.parse(readFileSync('./invoice.docx.json', 'utf-8'));
-const doc = await generateDocument(definition);
-const buffer = await Packer.toBuffer(doc);
-writeFileSync('invoice.docx', buffer);
+writeFileSync('invoice.docx', await generateBufferFromJson(definition));
 ```
