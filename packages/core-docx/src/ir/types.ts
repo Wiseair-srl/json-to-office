@@ -361,8 +361,16 @@ export interface DocxIrColumnBreakRun {
   kind: 'columnBreak';
 }
 
+/**
+ * A tab, as its own run.
+ *
+ * A tab character inside `<w:t>` is dropped by Word and paragraph tab stops
+ * only bind to real tab runs — and the run carries formatting like any other,
+ * because the space it advances through is drawn in that font.
+ */
 export interface DocxIrTabRun {
   kind: 'tab';
+  formatting?: DocxIrRunFormatting;
 }
 
 /**

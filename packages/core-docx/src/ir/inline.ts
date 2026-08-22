@@ -11,10 +11,11 @@
  * become a real tab run because a tab character inside `<w:t>` is dropped, and
  * a no-proof word has to be its own run so the flag can sit on it alone.
  *
- * Scope: decorators, line breaks, tabs and no-proof words. Hyperlinks,
- * cross-references, note markers and `{PLACEHOLDER}` fields are recognised only
- * so the compiler can refuse them explicitly rather than render them as
- * literal text — see `containsUnsupportedSyntax`.
+ * Scope: decorators, line breaks, tabs, no-proof words, `[text](target)` links
+ * and `{PLACEHOLDER}` tokens. Cross-references and note markers are recognised
+ * only so the compiler can refuse them explicitly rather than render them as
+ * the literal characters an author wrote as markup — see
+ * `containsUnsupportedSyntax`.
  */
 
 import { normalizeUnicodeText } from '../utils/unicode';
@@ -33,6 +34,18 @@ const DECORATOR =
 /** Markdown link syntax: `[text](target)`. */
 const LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
 
+/**
+ * Decorators and `{PLACEHOLDER}` in one pass.
+ *
+ * They cannot be parsed separately: a placeholder may sit inside a decorated
+ * span, and a decorated span may sit between two placeholders.
+ */
+const DECORATOR_OR_PLACEHOLDER =
+  /(\*\*\*|___)([\s\S]*?)\1|(\*\*|__)([\s\S]*?)\3|(\*|_)([\s\S]*?)\5|\{([^}]+)\}/g;
+
+/** `{NAME}`, the placeholder syntax. */
+const PLACEHOLDER = /\{([^}]+)\}/;
+
 /** Syntax this parser does not lower, each with the feature that would cover it. */
 const UNSUPPORTED_SYNTAX: ReadonlyArray<{
   pattern: RegExp;
@@ -40,8 +53,17 @@ const UNSUPPORTED_SYNTAX: ReadonlyArray<{
 }> = [
   { pattern: /\[@[^\]]+\]/, what: 'cross-reference' },
   { pattern: /\[\^[^\]]+\]/, what: 'note marker' },
-  { pattern: /\{[^}]+\}/, what: 'field placeholder' },
 ];
+
+/** True when the text carries a `{PLACEHOLDER}` token. */
+export function containsPlaceholder(text: string): boolean {
+  return PLACEHOLDER.test(text);
+}
+
+/** True when the text carries a `[text](target)` link. */
+export function containsLink(text: string): boolean {
+  return new RegExp(LINK.source).test(text);
+}
 
 /**
  * Name the first piece of syntax in `text` this parser cannot lower.
@@ -50,11 +72,6 @@ const UNSUPPORTED_SYNTAX: ReadonlyArray<{
  * reported rather than silently rendered as the literal characters an author
  * wrote as markup.
  */
-/** True when the text carries a `[text](target)` link. */
-export function containsLink(text: string): boolean {
-  return new RegExp(LINK.source).test(text);
-}
-
 export function containsUnsupportedSyntax(text: string): string | undefined {
   for (const { pattern, what } of UNSUPPORTED_SYNTAX) {
     if (pattern.test(text)) return what;
@@ -82,6 +99,14 @@ export interface ParseInlineOptions {
   boldColor?: { hex: string };
   /** Words to mark `noProof`, each split into a run of its own. */
   noProofWords?: string[];
+  /**
+   * Resolve a `{NAME}` token. Returning nothing leaves it as literal text.
+   *
+   * A placeholder's meaning is document state — the generation date, the page
+   * being drawn — so the compiler supplies it rather than this module knowing
+   * any of it.
+   */
+  resolvePlaceholder?: (name: string) => PlaceholderResolution | undefined;
 }
 
 /**
@@ -101,8 +126,111 @@ export function parseInline(
       { kind: 'text', text: '', formatting: emptyToUndefined(options.base) },
     ];
   }
+  // A placeholder-bearing text takes its own parser, which is also where
+  // decorators are handled for it — links and note markers never reach it,
+  // exactly as in the pre-IR writer.
+  if (containsPlaceholder(normalized)) {
+    return parsePlaceholders(normalized, options);
+  }
   if (options.hyperlinks) return parseLinks(normalized, options);
   return parseDecorated(normalized, options);
+}
+
+/**
+ * A placeholder resolved to something concrete.
+ *
+ * `field` is a live field Word recomputes (a page number); `text` is resolved
+ * once, at generation time (a date). An unknown name resolves to nothing and
+ * the token stays as the characters the author typed.
+ */
+export type PlaceholderResolution =
+  | { kind: 'field'; instruction: string }
+  | { kind: 'text'; text: string };
+
+/**
+ * Split on decorators and placeholders together.
+ *
+ * A decorated span is re-parsed rather than emitted directly, because it may
+ * contain a placeholder of its own; the emphasis it applies is folded into the
+ * base style for that pass.
+ */
+function parsePlaceholders(
+  normalized: string,
+  parseOptions: ParseInlineOptions
+): DocxIrInline[] {
+  // A separate colour for emphasised text does not apply here: the pipeline's
+  // placeholder path has never consulted it, so a bold span alongside a
+  // placeholder keeps the paragraph's colour.
+  const options: ParseInlineOptions = { ...parseOptions, boldColor: undefined };
+  const out: DocxIrInline[] = [];
+  const token = new RegExp(DECORATOR_OR_PLACEHOLDER.source, 'g');
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  const literal = (text: string, base = options.base): void => {
+    if (!text) return;
+    out.push(...parseLiteralLines(text, { ...options, base }));
+  };
+
+  while ((match = token.exec(normalized)) !== null) {
+    if (match.index > lastIndex) {
+      literal(normalized.slice(lastIndex, match.index));
+    }
+    lastIndex = match.index + match[0].length;
+
+    if (match[7]) {
+      const resolved = options.resolvePlaceholder?.(match[7]);
+      if (!resolved) {
+        // Unknown name: the token stays as written.
+        literal(match[0]);
+      } else if (resolved.kind === 'text') {
+        literal(resolved.text);
+      } else {
+        // A field run carries only the character formatting a reader sees on
+        // the number itself. Proofing language, scale and letter spacing are
+        // properties of prose, and the pipeline has never put them on a field.
+        const formatting = emptyToUndefined({
+          fontFamily: options.base.fontFamily,
+          sizeHalfPoints: options.base.sizeHalfPoints,
+          color: options.base.color,
+          bold: options.base.bold,
+          italic: options.base.italic,
+          underline: options.base.underline,
+        });
+        out.push({
+          kind: 'field',
+          instruction: resolved.instruction,
+          ...(formatting ? { formatting } : {}),
+        });
+      }
+      continue;
+    }
+
+    const style = decoratedStyle(match, options.base);
+    out.push(
+      ...parsePlaceholders(decoratedText(match), {
+        ...options,
+        base: { ...options.base, ...style },
+        // No-proof words do not survive into a decorated span here: the
+        // recursion has always been entered without them.
+        noProofWords: undefined,
+      })
+    );
+  }
+
+  if (lastIndex < normalized.length) literal(normalized.slice(lastIndex));
+  if (out.length === 0 && normalized) literal(normalized);
+  return out;
+}
+
+/** Text split on newlines, tabs and no-proof words, with no other syntax. */
+function parseLiteralLines(
+  text: string,
+  options: ParseInlineOptions
+): DocxIrInline[] {
+  const out: DocxIrInline[] = [];
+  pushSegment(out, text, options);
+  return out;
 }
 
 /**
@@ -257,7 +385,7 @@ function pushSegment(
 
     const tabSegments = line.split('\t');
     for (const [tabIndex, segment] of tabSegments.entries()) {
-      if (tabIndex > 0) out.push({ kind: 'tab' });
+      if (tabIndex > 0) out.push({ kind: 'tab', formatting });
       // An empty piece around a tab carries nothing; a line that is *only*
       // empty still needs its run so the break has somewhere to sit.
       if (!segment && tabSegments.length > 1) continue;

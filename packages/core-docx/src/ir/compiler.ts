@@ -69,9 +69,11 @@ import {
 import { normalizeUnicodeText } from '../utils/unicode';
 import {
   containsLink,
+  containsPlaceholder,
   containsUnsupportedSyntax,
   parseInline,
   parseLiteral,
+  type PlaceholderResolution,
 } from './inline';
 import type { DocxFeature } from './features';
 import {
@@ -177,6 +179,14 @@ interface CompileContext {
   warnedMessages: Set<string>;
   /** Image bytes, loaded before compilation started. */
   images: ImageResources;
+  /**
+   * When this document was generated.
+   *
+   * A `{DATE}` placeholder resolves against it here rather than at render
+   * time, so the document says when it was made and two compilations of the
+   * same document agree.
+   */
+  generatedAt: Date;
 }
 
 export function compileDocument(
@@ -205,6 +215,7 @@ export function compileDocument(
     listCounter: 0,
     warnedMessages: new Set(),
     images,
+    generatedAt: structure.metadata.date,
   };
 
   ctx.features.require('paragraphs', 'sections');
@@ -1284,6 +1295,8 @@ function compileRuns(
       ? { boldColor: irColor(resolveColor(props.boldColor, ctx.theme)) }
       : {}),
     ...(words ? { noProofWords: words } : {}),
+    resolvePlaceholder: (name: string) =>
+      resolvePlaceholder(name, ctx.generatedAt),
   };
   children.push(
     ...(mode === 'literal'
@@ -1293,8 +1306,51 @@ function compileRuns(
   if (mode === 'inline' && containsLink(text)) {
     ctx.features.require('hyperlinks', path);
   }
+  if (mode === 'inline' && containsPlaceholder(text)) {
+    ctx.features.require('fields', path);
+  }
 
   return children;
+}
+
+/**
+ * What each built-in `{PLACEHOLDER}` stands for.
+ *
+ * A page number is a field: only Word knows which page a run lands on, so the
+ * document carries the instruction and Word computes it. A date is not — it is
+ * resolved once, at generation time, so the document says when it was made
+ * rather than when it was opened. An unrecognised name resolves to nothing and
+ * stays as the characters the author typed.
+ */
+function resolvePlaceholder(
+  name: string,
+  generatedAt: Date
+): PlaceholderResolution | undefined {
+  switch (name.toUpperCase()) {
+    case 'PAGE':
+      return { kind: 'field', instruction: 'PAGE' };
+    case 'TOTAL_PAGES':
+      return { kind: 'field', instruction: 'NUMPAGES' };
+    case 'DATE':
+      return { kind: 'text', text: isoDate(generatedAt) };
+    case 'DATETIME':
+      return { kind: 'text', text: isoDateTime(generatedAt) };
+    case 'YEAR':
+      return { kind: 'text', text: String(generatedAt.getUTCFullYear()) };
+    default:
+      return undefined;
+  }
+}
+
+function isoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function isoDateTime(date: Date): string {
+  return date
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/\.\d{3}Z$/, 'Z');
 }
 
 /**

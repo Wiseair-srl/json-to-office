@@ -20,6 +20,7 @@ import {
   ColumnBreak,
   ExternalHyperlink,
   InternalHyperlink,
+  PageNumber,
   Paragraph,
   Tab,
   Table,
@@ -70,6 +71,19 @@ export type EmitResources = ReadonlyMap<string, ImageRunFactory>;
 
 /** Builds the run for one placement, which carries its own size and anchor. */
 export type ImageRunFactory = (image: DocxIrImageRun) => ParagraphChild;
+
+/**
+ * The field instructions docx.js has a run child for.
+ *
+ * Anything else would need the begin/instrText/end triple written by hand,
+ * which is why an unknown instruction is refused rather than approximated.
+ */
+const PAGE_FIELD: Readonly<
+  Record<string, (typeof PageNumber)[keyof typeof PageNumber]>
+> = {
+  PAGE: PageNumber.CURRENT,
+  NUMPAGES: PageNumber.TOTAL_PAGES,
+};
 
 /* ------------------------------------------------------------------ *
  * Runs
@@ -146,6 +160,7 @@ export function inlineChildren(
         out.push(
           new TextRun({
             children: [new Tab()],
+            ...runOptions(child.formatting),
             ...breakOption(),
           })
         );
@@ -202,7 +217,23 @@ export function inlineChildren(
         );
         break;
 
-      case 'field':
+      case 'field': {
+        const page = PAGE_FIELD[child.instruction];
+        if (!page) {
+          throw new Error(
+            `the docxjs renderer has no emitter for the field "${child.instruction}"`
+          );
+        }
+        out.push(
+          new TextRun({
+            children: [page],
+            ...runOptions(child.formatting),
+            ...breakOption(),
+          })
+        );
+        break;
+      }
+
       case 'noteReference':
       case 'commentRangeStart':
       case 'commentRangeEnd':
