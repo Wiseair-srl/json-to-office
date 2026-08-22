@@ -1,4 +1,3 @@
-import { ISectionOptions } from 'docx';
 import type { ThemeName } from '../styles';
 import type { TocHeadingEntry } from '../core/collectTocHeadings';
 import type {
@@ -160,8 +159,21 @@ export interface SectionProperties {
   };
   column?: ColumnSettings;
   type?: 'continuous' | 'nextColumn' | 'nextPage' | 'evenPage' | 'oddPage';
-  headers?: ISectionOptions['headers'];
-  footers?: ISectionOptions['footers'];
+  /**
+   * Header and footer parts, by slot.
+   *
+   * Content is deliberately opaque here: a section's chrome is authored as
+   * components and resolved into IR blocks, and naming a renderer's part type
+   * would put that renderer back into a public type.
+   */
+  headers?: HeaderFooterSlots;
+  footers?: HeaderFooterSlots;
+}
+
+export interface HeaderFooterSlots {
+  default?: unknown;
+  first?: unknown;
+  even?: unknown;
 }
 
 // Internal interfaces used by DocumentGenerator helper methods

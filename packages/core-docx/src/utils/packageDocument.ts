@@ -1,6 +1,4 @@
 import AdmZip from 'adm-zip';
-import { type Document, Packer } from 'docx';
-import { fixFloatingImageIdsInBuffer } from './fixFloatingImageIds';
 
 export interface DocumentPackageOptions {
   /** Normalize volatile OOXML metadata and ZIP timestamps. Defaults to true. */
@@ -171,19 +169,4 @@ export function canonicalizeDocxBuffer(
   }
 
   return zip.toBuffer();
-}
-
-/** Package a DOCX and apply all required OOXML post-processing once. */
-export async function packageDocument(
-  document: Document,
-  options?: DocumentPackageOptions
-): Promise<Buffer> {
-  const packed = (await Packer.toBuffer(document)) as Buffer;
-  const fixed = fixFloatingImageIdsInBuffer(packed);
-
-  if (options?.deterministic === false) {
-    return fixed;
-  }
-
-  return canonicalizeDocxBuffer(fixed, resolveGenerationDate(options));
 }

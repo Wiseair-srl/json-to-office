@@ -15,13 +15,11 @@ This is a contributor document. It is excluded from the published VitePress site
 | PptxGenJS adapter                                                     | done — the default, byte-identical to the previous implementation                                                    |
 | PPTX cutover: buffer/file APIs, plugin generator, native APIs removed | done                                                                                                                 |
 | PPTX packaging split (generic vs backend)                             | done — repairs in `renderers/pptxgenjs/packaging.ts`, finalization in `core/finalizePackage.ts`, one shared zip pass |
-| `office-open` PPTX adapter                                            | not implemented — the id is registered and fails with an actionable error; capability research is recorded below     |
-| DocxIR, docx.js adapter, DOCX cutover                                 | not started — DOCX still uses the pre-IR pipeline and still exposes docx.js objects                                  |
-| `office-open` DOCX adapter                                            | not started                                                                                                          |
-
-Everything below describes the intended architecture for both formats. The DOCX
-half is the design the PPTX half was built to, not a description of shipped
-code.
+| `office-open` PPTX adapter                                            | done — experimental, opt-in, declares a verified subset                                                              |
+| DocxIR + compiler                                                     | done — including the style set, so the IR describes every part of the document                                       |
+| docx.js adapter                                                       | done — the default, byte-identical across all 272 corpus cases                                                       |
+| DOCX cutover: buffer/file APIs, plugin generator, native APIs removed | done                                                                                                                 |
+| `office-open` DOCX adapter                                            | done — experimental, opt-in; 265 of 272 corpus cases, the rest refused by name                                       |
 
 ## Why
 
@@ -270,7 +268,7 @@ not exported from `@json-to-office/json-to-docx` or
 | groups                                       | **no** API                                             | yes                                                                                                        |
 | RTL                                          | deck-level                                             | deck- and paragraph-level; run-level `rightToLeft` is declared but never emitted                           |
 
-### What the office-open adapter declares
+### What the office-open PPTX adapter declares
 
 Supported and mapped: text bodies and rich runs, paragraph properties, preset
 shapes, images, solid/gradient/pattern/image fills, lines, shadows, plain
@@ -302,6 +300,58 @@ and from generating, unzipping and rendering real files — not from its README.
 Anything not proven by a test stays out of the adapter's capability set, so it
 fails loudly instead of producing a deck with content missing.
 
+### DOCX
+
+`@office-open/docx` 0.11.0 is not a thin wrapper — it is a second full
+implementation with the same option vocabulary as docx.js, taken as plain JSON
+rather than an object graph. That is why the adapter is a sibling of the
+docx.js one rather than a translation layer on top of it.
+
+| Feature                             | `docxjs`                                              | `office-open` (0.11.0, verified against the package)                                |
+| ----------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| paragraphs, runs, styles, numbering | yes                                                   | yes                                                                                 |
+| sections, columns, headers, footers | yes                                                   | yes, including `first` and `even` parts                                             |
+| tables, floating tables             | yes                                                   | yes                                                                                 |
+| merged cells                        | `verticalMerge` / `columnSpan`                        | the same two, spelled identically                                                   |
+| inline and floating images          | yes                                                   | yes                                                                                 |
+| SVG with a raster fallback          | yes                                                   | yes — `PictureOptions` has an `svg` type with a `fallback`, unlike its pptx sibling |
+| text boxes (`wps:wsp`), text frames | yes                                                   | yes                                                                                 |
+| footnotes, endnotes                 | yes                                                   | yes                                                                                 |
+| comments                            | yes                                                   | yes, but flat — see below                                                           |
+| revisions                           | one `w:ins`/`w:del` per run                           | a real wrapper element, so the id appears once per range                            |
+| fields                              | a run child per known instruction, plus `w:fldSimple` | `simpleField` takes any instruction with its cached result                          |
+| table of contents, cached entries   | title/level pairs, entry paragraphs built internally  | fully-built entry blocks, so this adapter writes them                               |
+| run size                            | half-points                                           | **points** — the backend doubles what it is given                                   |
+| cell margins                        | `{marginUnitType, top, …}`                            | `{top: {size, type}, …}`                                                            |
+
+Deliberately **not** declared, so a document using them fails before rendering
+rather than losing content:
+
+| Feature                                           | Why                                                                                                                                                       |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `comment-threads`                                 | `CommentOptions` is `{id, author, initials, date, children}` — no parent, no resolved state, so a reply would flatten into an unrelated top-level comment |
+| `cached-fields`                                   | vocabulary no backend here emits; `docxjs` does not declare it either                                                                                     |
+| `table-merged-cells`, `shading`, `borders`, `rtl` | vocabulary the compiler does not require of any backend yet; both adapters leave them out so a declared set means "proven by a test"                      |
+
+Both backends are exercised over the **whole** corpus in
+`renderers/office-open/__tests__/cross-backend.test.ts`: 265 cases are compared
+on text, structural element counts, media parts and note/comment counts, and the
+7 that use comment threads are asserted to be refused by feature name. Identical
+OOXML between different renderers is not the goal and is not asserted. A
+LibreOffice conversion smoke test covers both and skips itself when the tool is
+absent.
+
+Where the two libraries disagree about a unit or a field name, the difference is
+pinned in `renderers/office-open/__tests__/emit.test.ts` rather than left to the
+type checker: the adapter builds plain option bags on purpose, because typing
+them against `@office-open/docx` would put an optional peer dependency into this
+package's published `.d.ts`.
+
+`office-open` findings come from reading the shipped types and compiled source
+and from generating, unzipping and rendering real files — not from its README.
+Anything not proven by a test stays out of the adapter's capability set, so it
+fails loudly instead of producing a document with content missing.
+
 ### Packaging notes for `@office-open/*`
 
 ESM-only, no `require` condition, no peer dependencies, no install scripts, no
@@ -312,6 +362,10 @@ Two constraints matter:
   bundling it cannot be emitted as CJS.
 - `@office-open/core` is a de-facto direct dependency of a PPTX adapter: the
   drawing and theme option types live there and are only partly re-exported.
+- `@office-open/docx` re-exports `MediaTransformation` and `Floating` from
+  `@office-open/core`, which does not declare them. Referencing those types
+  directly would not compile; the DOCX adapter does not, because it builds plain
+  option bags.
 
 ## Recorded output differences
 
