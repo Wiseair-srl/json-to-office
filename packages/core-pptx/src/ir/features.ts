@@ -46,10 +46,20 @@ export const PPTX_FEATURES = [
   'external-links',
   /** Hyperlinks targeting another slide in the same deck. */
   'internal-links',
+  /** A link covering a text body — realisable on the runs inside it. */
+  'text-hyperlinks',
+  /** A link on a shape or image as a whole, which runs cannot stand in for. */
+  'element-hyperlinks',
   /** Rotation on a shape, text box or table. */
   'rotation',
-  /** Rotation on a picture — a separate ability from shape rotation. */
-  'image-rotation',
+  /**
+   * Any transform on a picture — rotation or flip.
+   *
+   * One feature rather than three: a backend that cannot rotate a picture
+   * generally cannot flip one either, because the option carrying both is
+   * simply absent from its picture type.
+   */
+  'image-transform',
   'flip-horizontal',
   'flip-vertical',
   /** Grouped elements sharing a transform. */

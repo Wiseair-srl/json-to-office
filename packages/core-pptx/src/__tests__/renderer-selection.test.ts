@@ -9,6 +9,7 @@ import {
   generateBufferWithWarnings,
 } from '../core/generator';
 import { compileDocumentToIr } from '../core/generateFromIr';
+import type { PptxIrImageElement } from '../ir/types';
 import { createPresentationGenerator } from '../plugin/createPresentationGenerator';
 import type { PresentationComponentDefinition } from '../types';
 import { CORPUS } from './fixtures/corpus';
@@ -27,8 +28,41 @@ const deck = (text: string): PresentationComponentDefinition =>
     ],
   }) as PresentationComponentDefinition;
 
+/** Two distinct 1x1 PNGs, so each deck interns bytes nothing else shares. */
+const PNG_1PX =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+const OTHER_PNG =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+/** The same deck, plus one inline image so the compilation interns a resource. */
+const deckWithImage = (
+  text: string,
+  base64: string
+): PresentationComponentDefinition =>
+  ({
+    name: 'pptx',
+    props: { title: 'Corpus', author: 'JTO' },
+    children: [
+      {
+        name: 'slide',
+        props: {},
+        children: [
+          { name: 'text', props: { text } },
+          { name: 'image', props: { base64, x: 0, y: 0, w: 1, h: 1 } },
+        ],
+      },
+    ],
+  }) as PresentationComponentDefinition;
+
 const sha = (buffer: Buffer) =>
   createHash('sha256').update(buffer).digest('hex');
+
+const imageOf = (element: { kind: string }): PptxIrImageElement => {
+  if (element.kind !== 'image') {
+    throw new Error(`expected an image element, got "${element.kind}"`);
+  }
+  return element as PptxIrImageElement;
+};
 
 describe('renderer selection', () => {
   it('defaults to pptxgenjs', async () => {
@@ -92,13 +126,23 @@ describe('concurrent generation isolation', () => {
 
   it('does not share resource ids between concurrent compilations', async () => {
     const [a, b] = await Promise.all([
-      Promise.resolve(compileDocumentToIr(deck('one') as never)),
-      Promise.resolve(compileDocumentToIr(deck('two') as never)),
+      compileDocumentToIr(deckWithImage('one', PNG_1PX) as never),
+      compileDocumentToIr(deckWithImage('two', OTHER_PNG) as never),
     ]);
 
     expect(a.ir.slides[0].elements[0].id).toBe(b.ir.slides[0].elements[0].id);
-    expect(a.ir.resources).toEqual([]);
-    expect(b.ir.resources).toEqual([]);
+
+    // Each compilation interns its own image starting from res1: the counter
+    // restarts per compilation rather than being shared or continued across
+    // them, so neither deck ever names a resource the other owns.
+    expect(a.ir.resources.map((r) => r.id)).toEqual(['res1']);
+    expect(b.ir.resources.map((r) => r.id)).toEqual(['res1']);
+    expect(imageOf(a.ir.slides[0].elements[1]).resourceId).toBe('res1');
+    expect(imageOf(b.ir.slides[0].elements[1]).resourceId).toBe('res1');
+
+    // Same id, genuinely different bytes — which is exactly why the ids must
+    // not be treated as global.
+    expect(a.ir.resources[0].origin).not.toEqual(b.ir.resources[0].origin);
   });
 
   it('keeps warnings separate between concurrent generations', async () => {

@@ -16,6 +16,7 @@ import type {
   PptxIrSlide,
 } from '../../ir/types';
 import { emuToInches } from '../../ir/units';
+import type { PipelineWarning } from '../../types';
 import type { PptxRenderOptions, PptxRenderer, PptxRendererId } from '../types';
 import { emitElement, imageSourceOpts, type EmitContext } from './emit';
 import type { PendingFillSink } from './fills';
@@ -47,7 +48,7 @@ export function createPptxGenJsRenderer(): PptxRenderer {
     capabilities: PPTXGENJS_CAPABILITIES,
     async render(ir: PptxIR, options?: PptxRenderOptions): Promise<Uint8Array> {
       const pendingFills: PendingFillSink = [];
-      const pptx = buildPresentation(ir, pendingFills);
+      const pptx = buildPresentation(ir, pendingFills, options?.warnings);
       const raw = (await pptx.write({
         outputType: 'nodebuffer',
       })) as Buffer;
@@ -70,7 +71,8 @@ export function createPptxGenJsRenderer(): PptxRenderer {
  */
 export function buildPresentation(
   ir: PptxIR,
-  pendingFills?: PendingFillSink
+  pendingFills?: PendingFillSink,
+  warnings?: PipelineWarning[]
 ): PptxGenJS {
   const pptx = new PptxGenJS();
 
@@ -96,7 +98,7 @@ export function buildPresentation(
   const resources = new Map<string, PptxIrResource>(
     ir.resources.map((resource) => [resource.id, resource])
   );
-  const ctx: EmitContext = { pptx, resources, pendingFills };
+  const ctx: EmitContext = { pptx, resources, pendingFills, warnings };
 
   for (const master of ir.masters) {
     pptx.defineSlideMaster(masterProps(master, resources) as never);
@@ -124,6 +126,7 @@ function masterProps(
 
   const background = backgroundProps(master.background, resources);
   if (background) props.background = background;
+  if (master.margin !== undefined) props.margin = master.margin;
 
   if (master.slideNumber) {
     const slideNumber: Record<string, unknown> = {

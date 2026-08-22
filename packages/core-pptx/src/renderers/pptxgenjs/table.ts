@@ -34,6 +34,10 @@ export function emitTable(
   pptx: PptxGenJS
 ): void {
   const rounded = roundedCornerPlan(element);
+  // The IR always carries a resolved absolute origin, so the backdrop can
+  // always be placed. The pre-IR pipeline drew it only when the author happened
+  // to write x and y as plain numbers, which left a percentage-positioned
+  // rounded table with square corners — see the recorded output differences.
   if (rounded) emitRoundedBackground(slide, element, rounded, pptx);
 
   const rows = element.rows.map((row, rowIndex) =>
@@ -214,12 +218,12 @@ function roundedCornerPlan(
  * the table exactly; otherwise the table's own width.
  */
 function roundedWidthEmu(element: PptxIrTableElement): number {
+  // An explicit column list is summed as given — including a single-entry
+  // list, which names one column rather than a width for every column. With no
+  // list the table's own width applies, falling back to 5in when it has none.
   const columns = element.columnWidthsEmu;
-  if (columns.length > 1) {
+  if (columns.length > 0) {
     return columns.reduce((sum, width) => sum + width, 0);
-  }
-  if (columns.length === 1) {
-    return columns[0] * (element.rows[0]?.cells.length ?? 1);
   }
   return element.transform.autoWidth
     ? Math.round(5 * 914400)

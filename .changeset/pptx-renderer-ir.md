@@ -54,3 +54,14 @@ No public type now references PptxGenJS.
 - Post-render repairs — the SVG preview fix in particular — report into the
   same structured warning list as the rest of the pipeline on every path,
   including the plugin generator.
+- `underline: false` no longer underlines. Any boolean used to turn underline
+  on, so saying `false` switched it on.
+- `bullet: { type: 'bullet' }` now produces a bullet. The object form was
+  passed through in a shape the backend ignored; the boolean form always
+  worked.
+- A rounded table positioned with percentages now gets its rounded backdrop,
+  which was previously drawn only when `x` and `y` were plain numbers.
+- The `office-open` backend honours `deterministic` and `generatedAt`. It
+  stamped core metadata with the wall clock and numbered drawings from a
+  process-global counter, so the same deck rendered twice produced different
+  bytes.

@@ -105,4 +105,38 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     'a337e997b5781aa13f9ec769d040e9605c20d007580fa261c9a8ea0a6f2c9c0e',
   'slide/disabled-content':
     'f13ae2d6e4cc3a75e2aaa9c545956d9cf88f32c8deec4f866823916046f46fe8',
+  'template/object-page-number':
+    'e3f97e4cf31f1998a768960807a4d0d83364baa277f95c8a58cbdfa13024196f',
+  'template/object-language':
+    'd7959bdf5ef4aa0b18383312604cf4abf64a07041b6be78653756f4d3465939d',
+  'template/margin':
+    '8849bd0228c599f63a6e93b3e6c0679915b637753adb207c56039a7fd3eff7ef',
+  'text/runs-inherit-underline':
+    '7c198a468cbbc913f4dc993c2663f19406f2450f9ddf67fb4f0e394c2030e590',
+  'text/runs-inherit-strike':
+    'eb916d8ce4d651937a05aa5bc547fdd2e73c67cd55467c0a998ea5e03a7aed22',
+  'text/runs-override-inherited-underline':
+    '3a25083a801ae862181f987e847ec9dd61e25ef7e8922da7489eef0e5284cbb1',
+  'text/body-hyperlink-over-runs':
+    '8e9fe9c604f5ef0d2928cbc534491bfd1b3bef8f76664ab9f0d8141b72d96492',
+  'text/underline-false':
+    '4bd85d6a50e38cfa8c0db3adee5fb3c0be69f2ceb86b0f254c6c25c0f2471ae0',
+  'text/bullet-object-form':
+    '23f89da77b57968cda2f3ba3767350a0020589e9903867edafe18ce8ef90076c',
+  'shape/empty-line-object':
+    '109cc1ab2ce45db7cf87272638d75bdc11f955fd8fc3a0488ccdea66feaf8da4',
+  'image/contain-without-box':
+    '9045e43efd2d4912f56a0f8e9fda459e07deac1a447a59c3e6423c4671822af8',
+  'table/rounded-single-column-width':
+    'c872f9202d070616c2f24e17c9b30dbdad342d79f8a3099c7d12794c880cb92e',
+  'table/rounded-percent-position':
+    '7c2f86b1e43675851706599ed9943d5c1e4dbd88f4af83dc8572ae4c44467776',
+  'link/on-image':
+    'afb404811286372fc40ccbe61df2ce298c24c601b320640669911f01bbdffa83',
+  'image/rotated':
+    'a4721bd0f9fcc2c9bdcebfcfba0fabe43a548ef1aca4051db2ec27aeabbf861a',
+  'shape/arc-family':
+    '0afa8cbbaa8bf020e0689a9665fa0fbbd14c48a9b6b735290a755636ae717471',
+  'shape/geometry-aliases':
+    'dfa08cf091ca6cd9169172041e899b6e1e744ca293f39fcc190a643f32031f02',
 };

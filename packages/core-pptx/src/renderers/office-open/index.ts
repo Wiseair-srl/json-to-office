@@ -13,6 +13,7 @@
  */
 
 import { readFile } from 'node:fs/promises';
+import { finalizePptxPackage } from '../../core/packagePresentation';
 import { ALL_PPTX_FEATURES, type PptxFeature } from '../../ir/features';
 import type { PptxIR, PptxIrResource } from '../../ir/types';
 import type { PptxRenderOptions, PptxRenderer, PptxRendererId } from '../types';
@@ -35,9 +36,13 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  * - `charts` — chart XML is written without the embedded workbook, so the
  *   chart renders but "Edit Data" fails. A chart you cannot edit is not the
  *   chart that was asked for.
- * - `image-rotation` — `PictureOptions` has no `rotation`; the transform is
- *   silently discarded.
- * - `flip-vertical` — no pptx option type carries it.
+ * - `image-transform` — `PictureOptions` carries neither `rotation` nor a flip,
+ *   so any transform on a picture would be silently discarded.
+ * - `flip-vertical` — no pptx option type carries it, on any element.
+ * - `element-hyperlinks` — `NonVisualDrawingPropertiesOptions` is
+ *   `{name, description, title, hidden}`: a shape or picture cannot carry a
+ *   link. Only runs can, which is why `text-hyperlinks` *is* declared and is
+ *   realised by putting the link on the runs inside the body.
  * - `masters`, `placeholders` — layout and master generation are supported by
  *   the backend but not yet mapped here, and an unmapped master would lose
  *   every template object.
@@ -50,8 +55,9 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
 const UNSUPPORTED: ReadonlySet<PptxFeature> = new Set<PptxFeature>([
   'svg',
   'charts',
-  'image-rotation',
+  'image-transform',
   'flip-vertical',
+  'element-hyperlinks',
   'masters',
   'placeholders',
   'table-merged-cells',
@@ -90,8 +96,19 @@ export async function createOfficeOpenPptxRenderer(): Promise<PptxRenderer> {
       const bytes = await backend.generatePresentation(presentation, {
         type: 'uint8array',
       });
-      void options;
-      return bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+      const raw = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+
+      if (options?.deterministic === false) return raw;
+      // Generic package finalization. The backend stamps core metadata and ZIP
+      // entries with the wall clock, so the same deck rendered twice differs.
+      // Pinning those is a property of an OOXML package rather than of this
+      // backend, which is why the same pass runs over the default backend's
+      // output too.
+      return new Uint8Array(
+        await finalizePptxPackage(Buffer.from(raw), {
+          generatedAt: options?.generatedAt,
+        })
+      );
     },
   };
 }
@@ -105,14 +122,19 @@ export async function createOfficeOpenPptxRenderer(): Promise<PptxRenderer> {
 export async function buildPresentationOptions(
   ir: PptxIR
 ): Promise<Record<string, unknown>> {
+  // Drawing ids restart at 2 on each slide — 1 is the slide's own group — so
+  // they depend on position in the deck and nothing else.
+  let nextDrawingId = 2;
   const ctx: OfficeOpenEmitContext = {
     resources: new Map(ir.resources.map((r) => [r.id, r])),
     resourceBytes: await loadResourceBytes(ir.resources),
+    nextId: () => nextDrawingId++,
   };
 
   const presentation: Record<string, unknown> = {
     size: { width: ir.size.widthEmu, height: ir.size.heightEmu },
     slides: ir.slides.map((slide) => {
+      nextDrawingId = 2;
       const out: Record<string, unknown> = {
         children: slide.elements.map((element) => slideChild(element, ctx)),
       };

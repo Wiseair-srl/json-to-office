@@ -9,7 +9,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { EMU_PER_INCH, EMU_PER_POINT } from './types';
+import { EMU_PER_INCH } from './types';
 import type { PptxIrColor } from './types';
 
 /** Inches → EMU. */
@@ -20,11 +20,6 @@ export function inchesToEmu(inches: number): number {
 /** EMU → inches. Lossless against `inchesToEmu` for realistic magnitudes. */
 export function emuToInches(emu: number): number {
   return emu / EMU_PER_INCH;
-}
-
-/** Points → EMU. */
-export function pointsToEmu(points: number): number {
-  return Math.round(points * EMU_PER_POINT);
 }
 
 /** Slide size in EMU, the frame percentages resolve against. */
@@ -86,15 +81,6 @@ export function defaultWidthEmu(extent: SlideExtentEmu): number {
   return Math.round(0.75 * extent.widthEmu);
 }
 
-/** Resolve an authored dimension to inches (for intermediate layout maths). */
-export function resolveDimensionInches(
-  value: number | string,
-  axis: 'X' | 'Y',
-  extent: SlideExtentEmu
-): number {
-  return emuToInches(resolveDimensionEmu(value, axis, extent));
-}
-
 /**
  * Build an IR colour from an already-resolved bare hex string.
  *
@@ -131,12 +117,4 @@ export function elementId(
   indexPath: readonly number[]
 ): string {
   return `s${slideIndex + 1}.${indexPath.map((i) => `e${i}`).join('.')}`;
-}
-
-/** Deterministic id for an element belonging to a master rather than a slide. */
-export function masterElementId(
-  masterName: string,
-  indexPath: readonly number[]
-): string {
-  return `m:${masterName}.${indexPath.map((i) => `e${i}`).join('.')}`;
 }

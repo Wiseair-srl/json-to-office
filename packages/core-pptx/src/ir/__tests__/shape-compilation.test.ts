@@ -53,11 +53,11 @@ function deck(
   } as unknown as PresentationComponentDefinition;
 }
 
-function compileShapes(
+async function compileShapes(
   shapeProps: Array<Record<string, unknown>>,
   options?: IrGenerationOptions
 ) {
-  const result = compileDocumentToIr(deck(shapeProps), options);
+  const result = await compileDocumentToIr(deck(shapeProps), options);
   assertValidPptxIr(result.ir);
   return {
     shapes: result.ir.slides[0].elements.map((element, index) =>
@@ -108,18 +108,29 @@ function emit(
 }
 
 /** Compile one shape and emit it — the old `shapeOpts` helper, in two layers. */
-function shapeOpts(
+async function shapeOpts(
   props: Record<string, unknown>,
   pendingFills?: PendingXmlFill[],
   options?: IrGenerationOptions
-): Record<string, unknown> {
-  const { shapes } = compileShapes([props], options);
+): Promise<Record<string, unknown>> {
+  const { shapes } = await compileShapes([props], options);
   return emit(shapes[0], pendingFills).opts;
 }
 
+/** Emit one shape purely to see what it warns about. */
+function emitCollectingWarnings(shape: PptxIrShapeElement): PipelineWarning[] {
+  const warnings: PipelineWarning[] = [];
+  emitShape(
+    { addShape: vi.fn(), addText: vi.fn() } as unknown as PptxGenJS.Slide,
+    shape,
+    { pptx, resources: new Map(), warnings }
+  );
+  return warnings;
+}
+
 describe('shape gradient fill', () => {
-  it('resolves gradient stops, angle and transparency into the IR', () => {
-    const { shapes, warnings } = compileShapes([
+  it('resolves gradient stops, angle and transparency into the IR', async () => {
+    const { shapes, warnings } = await compileShapes([
       {
         type: 'rect',
         fill: {
@@ -149,9 +160,9 @@ describe('shape gradient fill', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('registers a pending gradient fill and renders a tagged sentinel', () => {
+  it('registers a pending gradient fill and renders a tagged sentinel', async () => {
     const pendingFills: PendingXmlFill[] = [];
-    const opts = shapeOpts(
+    const opts = await shapeOpts(
       {
         type: 'rect',
         fill: {
@@ -182,9 +193,9 @@ describe('shape gradient fill', () => {
     expect(opts.fill).toEqual({ color: '0066CC' });
   });
 
-  it('builds radial gradients with a corner-focus fillToRect', () => {
+  it('builds radial gradients with a corner-focus fillToRect', async () => {
     const pendingFills: PendingXmlFill[] = [];
-    shapeOpts(
+    await shapeOpts(
       {
         type: 'ellipse',
         fill: {
@@ -207,13 +218,13 @@ describe('shape gradient fill', () => {
     expect(pendingFills[0].xml).not.toContain('<a:lin');
   });
 
-  it('falls back to a solid sentinel fill without a pending-fill registry', () => {
+  it('falls back to a solid sentinel fill without a pending-fill registry', async () => {
     // The old writer also pushed an ADVANCED_FILL_FALLBACK warning here. That
     // warning belonged to a renderer that could not reach the pipeline's
     // warning list any other way; the adapter has no warning channel at all, so
     // the observable contract is now just the fallback itself — sentinel colour
     // kept, no sentinel name written, nothing registered for splicing.
-    const opts = shapeOpts({
+    const opts = await shapeOpts({
       type: 'rect',
       fill: {
         gradient: {
@@ -230,10 +241,10 @@ describe('shape gradient fill', () => {
     expect(opts.fill).toEqual({ color: '0066CC' });
   });
 
-  it('warns with ADVANCED_FILL_FALLBACK and drops a gradient with no stops', () => {
+  it('warns with ADVANCED_FILL_FALLBACK and drops a gradient with no stops', async () => {
     // Schema-invalid on purpose: the authoring schema requires two stops, so
     // this only reaches the compiler with validation off.
-    const { shapes, warnings } = compileShapes(
+    const { shapes, warnings } = await compileShapes(
       [{ type: 'rect', fill: { gradient: { type: 'linear', stops: [] } } }],
       { validation: { enabled: false } }
     );
@@ -242,8 +253,8 @@ describe('shape gradient fill', () => {
     expect(warnings.map((w) => w.code)).toEqual(['ADVANCED_FILL_FALLBACK']);
   });
 
-  it('warns with ADVANCED_FILL_FALLBACK and prefers the gradient over a pattern', () => {
-    const { shapes, warnings } = compileShapes([
+  it('warns with ADVANCED_FILL_FALLBACK and prefers the gradient over a pattern', async () => {
+    const { shapes, warnings } = await compileShapes([
       {
         type: 'rect',
         fill: {
@@ -270,8 +281,8 @@ describe('shape gradient fill', () => {
 });
 
 describe('shape pattern fill', () => {
-  it('resolves pattern colours into the IR', () => {
-    const { shapes, warnings } = compileShapes([
+  it('resolves pattern colours into the IR', async () => {
+    const { shapes, warnings } = await compileShapes([
       {
         type: 'rect',
         fill: {
@@ -293,9 +304,9 @@ describe('shape pattern fill', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('registers a pending pattern fill with resolved colors', () => {
+  it('registers a pending pattern fill with resolved colors', async () => {
     const pendingFills: PendingXmlFill[] = [];
-    const opts = shapeOpts(
+    const opts = await shapeOpts(
       {
         type: 'rect',
         fill: {
@@ -318,7 +329,7 @@ describe('shape pattern fill', () => {
     expect(opts.fill).toEqual({ color: '0066CC' });
   });
 
-  it('warns and falls back to solid foreground on an unknown preset', () => {
+  it('warns and falls back to solid foreground on an unknown preset', async () => {
     // `polkaDots` is not an OOXML preset, so the document is schema-invalid.
     const options: IrGenerationOptions = { validation: { enabled: false } };
     const props = {
@@ -331,7 +342,7 @@ describe('shape pattern fill', () => {
         },
       },
     };
-    const { shapes, warnings } = compileShapes([props], options);
+    const { shapes, warnings } = await compileShapes([props], options);
 
     expect(warnings.some((w) => w.code === 'UNKNOWN_PATTERN_PRESET')).toBe(
       true
@@ -344,14 +355,14 @@ describe('shape pattern fill', () => {
     });
 
     const pendingFills: PendingXmlFill[] = [];
-    const opts = shapeOpts(props, pendingFills, options);
+    const opts = await shapeOpts(props, pendingFills, options);
     expect(pendingFills).toHaveLength(0);
     expect(opts.objectName).toBeUndefined();
     expect(opts.fill).toEqual({ color: '0066CC' });
   });
 
-  it('prefers an explicit fill.color over the foreground fallback', () => {
-    const opts = shapeOpts(
+  it('prefers an explicit fill.color over the foreground fallback', async () => {
+    const opts = await shapeOpts(
       {
         type: 'rect',
         fill: {
@@ -370,7 +381,7 @@ describe('shape pattern fill', () => {
     expect(opts.fill).toEqual({ color: '17A2B8' });
   });
 
-  it('numbers sentinel names sequentially across a generation', () => {
+  it('numbers sentinel names sequentially across a generation', async () => {
     const gradient = {
       type: 'linear',
       stops: [
@@ -378,7 +389,7 @@ describe('shape pattern fill', () => {
         { color: '445566', pos: 100 },
       ],
     };
-    const { shapes } = compileShapes([
+    const { shapes } = await compileShapes([
       { type: 'rect', fill: { gradient } },
       { type: 'rect', fill: { gradient } },
     ]);
@@ -439,8 +450,8 @@ describe('shape pattern fill', () => {
 });
 
 describe('shape geometry', () => {
-  it('maps known geometry names straight through', () => {
-    const { shapes } = compileShapes([
+  it('maps known geometry names straight through', async () => {
+    const { shapes } = await compileShapes([
       { type: 'rect' },
       { type: 'ellipse' },
       { type: 'star5' },
@@ -449,8 +460,8 @@ describe('shape geometry', () => {
     expect(shapes.map((s) => s.geometry)).toEqual(['rect', 'ellipse', 'star5']);
   });
 
-  it('aliases the authoring names PptxGenJS spells differently', () => {
-    const { shapes } = compileShapes([
+  it('aliases the authoring names PptxGenJS spells differently', async () => {
+    const { shapes } = await compileShapes([
       { type: 'arrow' },
       { type: 'lightning' },
     ]);
@@ -469,11 +480,11 @@ describe('shape geometry', () => {
     );
   });
 
-  it('renders arc-family shape types', () => {
+  it('renders arc-family shape types', async () => {
     // Arc-family geometry is outside the IR's known set, so it travels as a
     // `{ custom }` name; the adapter still resolves it to a PptxGenJS preset.
     for (const type of ['arc', 'pie', 'blockArc', 'chord']) {
-      const { shapes } = compileShapes([{ type }]);
+      const { shapes } = await compileShapes([{ type }]);
       expect(shapes[0].geometry).toEqual({ custom: type });
       expect(emit(shapes[0]).addShape).toHaveBeenCalledWith(
         type,
@@ -482,21 +493,26 @@ describe('shape geometry', () => {
     }
   });
 
-  it('carries an unrecognised geometry name to a precise adapter error', () => {
-    // The old writer warned UNKNOWN_SHAPE and dropped the shape. The IR keeps
-    // the authored name instead — a backend with a wider preset set can honour
-    // it — and the PptxGenJS adapter fails loudly rather than silently.
-    const { shapes } = compileShapes([{ type: 'sprocket' }], {
+  it('carries an unrecognised geometry name for the adapter to judge', async () => {
+    // The IR keeps the authored name — the backends do not agree on which
+    // presets exist, so only an adapter can tell an arc from a typo. The
+    // PptxGenJS adapter then warns and skips that one shape, which is what the
+    // pre-IR writer did.
+    const { shapes } = await compileShapes([{ type: 'sprocket' }], {
       validation: { enabled: false },
     });
 
     expect(shapes[0].geometry).toEqual({ custom: 'sprocket' });
-    expect(() => emit(shapes[0])).toThrow(/sprocket/);
+
+    const warnings = emitCollectingWarnings(shapes[0]);
+    expect(warnings).toEqual([
+      expect.objectContaining({ code: 'UNKNOWN_SHAPE', component: 'shape' }),
+    ]);
   });
 });
 
 describe('shape angleRange and flips', () => {
-  it('passes angleRange, flipH, and flipV straight through', () => {
+  it('passes angleRange, flipH, and flipV straight through', async () => {
     const props = {
       type: 'pie',
       angleRange: [-90, 180],
@@ -504,7 +520,7 @@ describe('shape angleRange and flips', () => {
       flipV: true,
       fill: { color: 'accent' },
     };
-    const { shapes } = compileShapes([props]);
+    const { shapes } = await compileShapes([props]);
 
     expect(shapes[0].angleRangeDegrees).toEqual([-90, 180]);
     expect(shapes[0].transform).toMatchObject({
@@ -520,8 +536,8 @@ describe('shape angleRange and flips', () => {
     });
   });
 
-  it('leaves the passthrough opts unset when absent', () => {
-    const { shapes } = compileShapes([
+  it('leaves the passthrough opts unset when absent', async () => {
+    const { shapes } = await compileShapes([
       { type: 'rect', fill: { color: 'primary' } },
     ]);
 
@@ -537,8 +553,8 @@ describe('shape angleRange and flips', () => {
 });
 
 describe('shape solid fill and line', () => {
-  it('resolves a solid fill with transparency', () => {
-    const { shapes } = compileShapes([
+  it('resolves a solid fill with transparency', async () => {
+    const { shapes } = await compileShapes([
       { type: 'rect', fill: { color: 'accent', transparency: 40 } },
     ]);
 
@@ -552,8 +568,8 @@ describe('shape solid fill and line', () => {
     });
   });
 
-  it('resolves line colour, width and dash type', () => {
-    const { shapes } = compileShapes([
+  it('resolves line colour, width and dash type', async () => {
+    const { shapes } = await compileShapes([
       {
         type: 'rect',
         line: { color: 'primary', width: 2.5, dashType: 'dash' },
@@ -572,8 +588,8 @@ describe('shape solid fill and line', () => {
     });
   });
 
-  it('leaves fill and line absent when unstated', () => {
-    const { shapes } = compileShapes([{ type: 'rect' }]);
+  it('leaves fill and line absent when unstated', async () => {
+    const { shapes } = await compileShapes([{ type: 'rect' }]);
 
     expect(shapes[0].fill).toBeUndefined();
     expect(shapes[0].line).toBeUndefined();
@@ -584,8 +600,8 @@ describe('shape solid fill and line', () => {
 });
 
 describe('shape text segments', () => {
-  it('cascades shape font props onto each segment run', () => {
-    const { shapes } = compileShapes([
+  it('cascades shape font props onto each segment run', async () => {
+    const { shapes } = await compileShapes([
       {
         type: 'rect',
         fontSize: 20,
@@ -615,8 +631,8 @@ describe('shape text segments', () => {
     ]);
   });
 
-  it('emits a text-carrying shape through addText with the geometry attached', () => {
-    const { shapes } = compileShapes([
+  it('emits a text-carrying shape through addText with the geometry attached', async () => {
+    const { shapes } = await compileShapes([
       {
         type: 'roundRect',
         text: [{ text: 'a' }, { text: 'b', breakLine: true }],
@@ -632,8 +648,8 @@ describe('shape text segments', () => {
     ]);
   });
 
-  it('keeps a plain-string shape text as a single run', () => {
-    const { shapes } = compileShapes([
+  it('keeps a plain-string shape text as a single run', async () => {
+    const { shapes } = await compileShapes([
       { type: 'rect', text: 'Label', fontSize: 14 },
     ]);
 

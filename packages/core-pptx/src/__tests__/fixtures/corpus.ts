@@ -44,6 +44,8 @@ const SERIES = [
   { name: 'Revenue', labels: ['Q1', 'Q2', 'Q3'], values: [10, 20, 15] },
 ];
 
+import { CASES as REGRESSIONS } from './corpus-regressions';
+
 export const CORPUS: CorpusCase[] = [
   {
     name: 'text/plain',
@@ -904,4 +906,5 @@ export const CORPUS: CorpusCase[] = [
       slide([{ name: 'text', props: { text: 'last' } }]),
     ]),
   },
+  ...REGRESSIONS,
 ];

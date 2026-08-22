@@ -30,6 +30,8 @@ import type {
   PptxIrTransform,
 } from '../../ir/types';
 import { emuToInches } from '../../ir/units';
+import type { PipelineWarning } from '../../types';
+import { W, warn } from '../../utils/warn';
 import type { PendingFillSink } from './fills';
 import { registerAdvancedFill } from './fills';
 import { emitChart } from './chart';
@@ -45,6 +47,8 @@ export interface EmitContext {
   resources: ResourceLookup;
   /** Registry for fills PptxGenJS cannot express. Absent disables the splice. */
   pendingFills?: PendingFillSink;
+  /** Sink for a shape this backend has no preset for. */
+  warnings?: PipelineWarning[];
 }
 
 /* ------------------------------------------------------------------ *
@@ -249,8 +253,8 @@ function emitRuns(
 ): void {
   if (runs.length === 1) {
     const [only] = runs;
-    // A lone run's formatting is already hoisted into `opts` by
-    // `commonRunOpts`; anything run-specific still has to be applied.
+    // A lone run's shared formatting is already hoisted into `opts` by
+    // `bodyDefaultOpts`; anything run-specific still has to be applied.
     Object.assign(opts, runOpts(only));
     slide.addText(only.text, opts as never);
     return;
@@ -282,10 +286,16 @@ export function emitShape(
 ): void {
   const type = shapeType(element.geometry, ctx.pptx);
   if (type === undefined) {
-    // Capability checking rejects unknown geometry before render.
-    throw new Error(
-      `PptxGenJS has no shape for geometry "${describeGeometry(element.geometry)}" (${element.path})`
+    // The IR carries any geometry name; only the backend knows which of them
+    // it has a preset for. One unrecognised name costs that shape, not the
+    // document.
+    warn(
+      ctx.warnings,
+      W.UNKNOWN_SHAPE,
+      `Unknown shape type: ${describeGeometry(element.geometry)}`,
+      { component: 'shape' }
     );
+    return;
   }
 
   const opts: Opts = { ...transformOpts(element.transform) };
@@ -357,6 +367,10 @@ export function emitImage(
     ...imageSourceOpts(resource),
     ...transformOpts(element.transform),
   };
+  // An extent the author did not state is left to the backend, which derives
+  // it from the sizing box. Passing the IR's fallback would override that.
+  if (element.transform.autoWidth) delete opts.w;
+  if (element.transform.autoHeight) delete opts.h;
   if (element.sizing) {
     // EMU rather than inches: PptxGenJS reads these through the same parser as
     // positions, which treats anything at or above 100 as already-EMU, so

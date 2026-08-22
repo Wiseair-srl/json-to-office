@@ -41,6 +41,15 @@ export interface OfficeOpenEmitContext {
   resources: ResourceLookup;
   /** Bytes for file and remote resources, fetched before rendering. */
   resourceBytes: ReadonlyMap<string, Uint8Array>;
+  /**
+   * Allocates the drawing id for the next element on the current slide.
+   *
+   * The backend numbers elements from a counter that lives for the life of the
+   * process, so a second render of the same deck produces different ids and
+   * different bytes. Numbering them here, per slide, makes a render depend only
+   * on its input.
+   */
+  nextId: () => number;
 }
 
 /* ------------------------------------------------------------------ *
@@ -324,10 +333,17 @@ function textBoxChild(
   element: PptxIrTextBoxElement,
   ctx: OfficeOpenEmitContext
 ): Opts {
+  // A shape cannot carry a link here, so a body-level link is pushed onto the
+  // runs it covers — which is what the link means anyway.
+  const runs = element.hyperlink
+    ? element.runs.map((run) => ({ ...run, hyperlink: element.hyperlink }))
+    : element.runs;
+
   const shape: Opts = {
+    id: ctx.nextId(),
     ...frame(element.transform),
     geometry: 'rect',
-    textBody: textBody(element.runs, element.style),
+    textBody: textBody(runs, element.style),
   };
   if (element.fill) shape.fill = fill(element.fill, ctx);
   else shape.fill = { type: 'none' };
@@ -345,6 +361,7 @@ function shapeChild(
   ctx: OfficeOpenEmitContext
 ): Opts {
   const shape: Opts = {
+    id: ctx.nextId(),
     ...frame(element.transform),
     geometry: geometryName(element.geometry),
   };
@@ -374,8 +391,14 @@ function pictureType(resource: PptxIrResource): string {
     case 'image/png':
       return 'png';
     default:
-      // Capability checking rejects SVG, and the backend takes no other types.
-      return 'png';
+      // Guessing would label an SVG — or anything else — as a PNG and ship a
+      // broken image. Capability checking rejects the types this backend
+      // cannot take, so an unknown one here means the media type could not be
+      // determined at all.
+      throw new Error(
+        `cannot determine the picture type for resource "${resource.id}"` +
+          (resource.mediaType ? ` (media type ${resource.mediaType})` : '')
+      );
   }
 }
 
@@ -391,6 +414,7 @@ function pictureChild(
     );
   }
   const picture: Opts = {
+    id: ctx.nextId(),
     ...frame(element.transform),
     data: bytes,
     type: pictureType(resource),
@@ -416,7 +440,6 @@ function tableChild(
   element: PptxIrTableElement,
   ctx: OfficeOpenEmitContext
 ): Opts {
-  void ctx;
   const columnCount = Math.max(
     ...element.rows.map((row) => row.cells.length),
     1
@@ -436,7 +459,12 @@ function tableChild(
   });
 
   return {
-    table: { ...frame(element.transform), columnWidths, rows },
+    table: {
+      id: ctx.nextId(),
+      ...frame(element.transform),
+      columnWidths,
+      rows,
+    },
   };
 }
 
@@ -487,6 +515,7 @@ function groupChild(
   ctx: OfficeOpenEmitContext
 ): Opts {
   const group: Opts = {
+    id: ctx.nextId(),
     ...frame(element.transform),
     childOffset: { x: element.transform.xEmu, y: element.transform.yEmu },
     childExtents: {

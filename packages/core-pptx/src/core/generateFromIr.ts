@@ -68,16 +68,21 @@ export class UncompiledComponentError extends Error {
   }
 }
 
-/** Compile a presentation document to PptxIR without rendering it. */
-export function compileDocumentToIr(
+/**
+ * Compile a presentation document to PptxIR without rendering it.
+ *
+ * Runs the same pre-passes as generation, so what comes back is the IR that
+ * would be rendered — not a near-miss that omits image fitting.
+ */
+export async function compileDocumentToIr(
   jsonConfig: string | PresentationComponentDefinition,
   options?: IrGenerationOptions
-): {
+): Promise<{
   ir: PptxIR;
   warnings: PipelineWarning[];
   required: ReturnType<typeof compilePresentation>['required'];
   unsupported: ReturnType<typeof compilePresentation>['unsupported'];
-} {
+}> {
   assertValidPresentation(jsonConfig, options?.validation);
   const component = parseDocument(jsonConfig);
   const warnings: PipelineWarning[] = [];
@@ -90,11 +95,24 @@ export function compileDocumentToIr(
 
   assertNoContentConflicts(context.document);
 
-  const processed = processPresentation(context.document, {
-    ...options,
-    theme: context.theme,
+  const result = await runWithBaseDir(options?.baseDir, async () => {
+    const processed = processPresentation(context.document, {
+      ...options,
+      theme: context.theme,
+    });
+    const expansion = await expandHighchartsComponents(
+      processed,
+      options?.services?.highcharts,
+      warnings
+    );
+    const laidOut = await resolveImageLayout(expansion.presentation, warnings);
+    const compiled = compilePresentation(laidOut, warnings);
+    return {
+      ...compiled,
+      unsupported: [...compiled.unsupported, ...expansion.unexpanded],
+    };
   });
-  const result = compilePresentation(processed, warnings);
+
   return {
     ir: result.ir,
     warnings: result.warnings,

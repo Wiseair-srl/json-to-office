@@ -251,7 +251,8 @@ export type PptxIrLineDash =
   | 'sysDash'
   | 'sysDashDot'
   | 'sysDashDotDot'
-  | 'sysDot';
+  | 'sysDot'
+  | 'dot';
 
 export interface PptxIrShadow {
   type: 'outer' | 'inner' | 'none';
@@ -429,7 +430,7 @@ export interface PptxIrShapeElement extends PptxIrElementBase {
   fill?: PptxIrFill;
   line?: PptxIrLine;
   shadow?: PptxIrShadow;
-  /** Corner radius as a fraction of the short side, 0-1. `roundRect` only. */
+  /** Corner radius in inches. `roundRect` and friends only. */
   cornerRadius?: number;
   /** Start/end angle in degrees for arc-like geometries. */
   angleRangeDegrees?: [number, number];
@@ -476,7 +477,11 @@ export interface PptxIrImageElement extends PptxIrElementBase {
 }
 
 export interface PptxIrImageSizing {
-  type: 'cover' | 'crop';
+  /**
+   * `contain` survives only when the fit could not be computed — the compiler
+   * normally resolves it into the transform and drops the sizing.
+   */
+  type: 'contain' | 'cover' | 'crop';
   widthEmu: number;
   heightEmu: number;
   /** Crop origin in EMU, `crop` only. */
@@ -719,6 +724,13 @@ export interface PptxIrTransition {
 export interface PptxIrMaster {
   name: string;
   background?: PptxIrBackground;
+  /**
+   * Content margin, in inches: a single value or [top, right, bottom, left].
+   *
+   * Not decoration — a format sizes an unconstrained table against the master's
+   * margins, so dropping this silently resizes tables.
+   */
+  margin?: number | [number, number, number, number];
   /** Fixed decoration drawn on every slide using this master. */
   elements: PptxIrElement[];
   /** Slide-number field placement, when the template defines one. */

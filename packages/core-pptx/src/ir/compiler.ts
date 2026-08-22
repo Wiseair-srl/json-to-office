@@ -250,6 +250,7 @@ function compileMaster(
   const master: PptxIrMaster = {
     name: template.name,
     ...(background ? { background } : {}),
+    ...(template.margin !== undefined ? { margin: template.margin } : {}),
     elements,
     placeholders,
   };
@@ -337,8 +338,8 @@ function compileSlide(
         geometry: 'rect',
         fill: { kind: 'gradient', gradient },
       });
+      ctx.features.require('shapes', `${path}.elements[${nextIndex}]`);
       nextIndex += 1;
-      ctx.features.require('shapes', `${path}.elements[0]`);
     }
   } else {
     background = compileBackground(slide.background, `${path}.background`, ctx);
@@ -347,12 +348,16 @@ function compileSlide(
   const effectiveGrid = mergeGridConfigs(processed.grid, template?.grid);
 
   // Template fixed objects draw beneath slide content.
+  // Template objects are drawn onto this slide, so they see this slide's
+  // context: a `{PAGE_NUMBER}` in a template header has to resolve, and its
+  // runs inherit the deck language like any other.
   for (const object of template?.objects ?? []) {
     push(
       compileComponent(object, {
         ctx,
         path: `${path}.elements[${nextIndex}]`,
         id: elementId(slideIndex, [nextIndex]),
+        slideCtx: slideContextFor(slideIndex, processed),
       })
     );
   }
@@ -620,26 +625,28 @@ function compileText(
   const transform = textTransform(props, heightFontSize, lineCount, ctx);
   const autoFit = props.h === undefined;
 
-  const hyperlink = compileHyperlink(props.hyperlink, 'text', ctx);
+  const hyperlink = compileHyperlink(props.hyperlink, 'text', ctx, path);
+  // The link belongs to the text box, not to each run: attaching it per run
+  // emits one identical external relationship per run.
   const runs: PptxIrTextRun[] = runProps
     ? runProps.map((run) =>
-        compileRichRun(run, cascade, hyperlink, scope.slideCtx, ctx)
+        compileRichRun(run, cascade, undefined, scope.slideCtx, ctx)
       )
     : [
         {
           text: substitutePageNumbers(props.text as string, scope.slideCtx),
           ...baseRunFormatting(cascade),
-          ...(props.strike ? { strike: true } : {}),
+          ...(cascade.strike != null ? { strike: cascade.strike } : {}),
           ...(cascade.underline ? { underline: cascade.underline } : {}),
           ...(cascade.language ? { language: cascade.language } : {}),
           ...(props.breakLine ? { breakAfter: true } : {}),
-          ...(hyperlink ? { hyperlink } : {}),
         },
       ];
 
   ctx.features.require('text', path);
   if (runs.length > 1) ctx.features.require('rich-text', path);
   if (cascade.language) ctx.features.require('proofing-language', path);
+  if (hyperlink) ctx.features.require('text-hyperlinks', path);
 
   const fill = props.fill
     ? compileSolidFillFromProps(props.fill, `${path}.fill`, ctx)
@@ -678,6 +685,7 @@ interface FontCascade {
   fontWeight?: number;
   characterSpacing?: number;
   underline?: PptxIrTextRun['underline'];
+  strike?: boolean;
   language?: string;
 }
 
@@ -760,6 +768,7 @@ function fontCascade(
     ...(props.underline !== undefined
       ? { underline: compileUnderline(props.underline, ctx) }
       : {}),
+    ...(props.strike != null ? { strike: props.strike as boolean } : {}),
     ...(language ? { language } : {}),
   };
 }
@@ -814,10 +823,14 @@ function compileRichRun(
     if (aliased.italic !== undefined) italic = aliased.italic;
   }
 
+  // Component-level underline and strike cascade into every run, exactly as
+  // size, family and colour do. Reading only the run's own value silently drops
+  // formatting the author set once for the whole body.
   const underline =
     run.underline !== undefined
       ? compileUnderline(run.underline, ctx)
-      : undefined;
+      : cascade.underline;
+  const strike = run.strike ?? cascade.strike;
 
   return {
     text: substitutePageNumbers(run.text, slideCtx),
@@ -829,7 +842,7 @@ function compileRichRun(
         : cascade.color,
     ...(bold != null ? { bold } : {}),
     ...(italic != null ? { italic } : {}),
-    ...(run.strike != null ? { strike: run.strike } : {}),
+    ...(strike != null ? { strike } : {}),
     ...(underline ? { underline } : {}),
     ...(run.superscript != null ? { superscript: run.superscript } : {}),
     ...(run.subscript != null ? { subscript: run.subscript } : {}),
@@ -1000,6 +1013,9 @@ function compileShape(
   const { ctx, path } = scope;
   const props = component.props as Record<string, any>;
 
+  // A geometry outside the known preset set is carried as `{ custom }` rather
+  // than rejected: the backends do not agree on which presets exist, so only
+  // an adapter can tell an arc from a typo.
   const geometry = compileGeometry(props.type);
   const named = namedStyle(props.style, ctx.theme);
 
@@ -1030,11 +1046,12 @@ function compileShape(
     if (runs.length > 1) ctx.features.require('rich-text', path);
   }
 
-  const hyperlink = compileHyperlink(props.hyperlink, 'shape', ctx);
+  const hyperlink = compileHyperlink(props.hyperlink, 'shape', ctx, path);
 
   ctx.features.require('shapes', path);
+  if (hyperlink) ctx.features.require('element-hyperlinks', path);
   const transform = shapeTransform(props, ctx);
-  requireTransformFeatures(transform, path, 'rotation', ctx);
+  requireTransformFeatures(transform, path, 'shape', ctx);
 
   return {
     kind: 'shape',
@@ -1128,9 +1145,14 @@ function compileTextSegment(
  */
 function shapeTransform(
   props: Record<string, any>,
-  ctx: CompileContext
+  ctx: CompileContext,
+  options: { markAuto?: boolean } = {}
 ): PptxIrTransform {
+  const autoWidth = options.markAuto && props.w === undefined;
+  const autoHeight = options.markAuto && props.h === undefined;
   return {
+    ...(autoWidth ? { autoWidth: true } : {}),
+    ...(autoHeight ? { autoHeight: true } : {}),
     xEmu:
       props.x !== undefined ? resolveDimensionEmu(props.x, 'X', ctx.extent) : 0,
     yEmu:
@@ -1158,11 +1180,24 @@ function shapeTransform(
 function requireTransformFeatures(
   transform: PptxIrTransform,
   path: string,
-  rotationFeature: 'rotation' | 'image-rotation',
+  kind: 'shape' | 'image',
   ctx: CompileContext
 ): void {
+  const transformed =
+    transform.rotationDegrees !== undefined ||
+    transform.flipHorizontal === true ||
+    transform.flipVertical === true;
+  if (!transformed) return;
+
+  if (kind === 'image') {
+    // A picture type that carries no rotation generally carries no flip
+    // either, so one requirement covers both.
+    ctx.features.require('image-transform', path);
+    return;
+  }
+
   if (transform.rotationDegrees !== undefined) {
-    ctx.features.require(rotationFeature, path);
+    ctx.features.require('rotation', path);
   }
   if (transform.flipHorizontal) ctx.features.require('flip-horizontal', path);
   if (transform.flipVertical) ctx.features.require('flip-vertical', path);
@@ -1202,10 +1237,13 @@ function compileImage(
   const shadow = compileShadow(props.shadow, ctx);
   if (shadow) ctx.features.require('shadows', `${path}.shadow`);
 
-  const hyperlink = compileHyperlink(props.hyperlink, 'image', ctx);
+  const hyperlink = compileHyperlink(props.hyperlink, 'image', ctx, path);
+  if (hyperlink) ctx.features.require('element-hyperlinks', path);
 
-  const transform = shapeTransform(props, ctx);
-  requireTransformFeatures(transform, path, 'image-rotation', ctx);
+  // An image with a sizing box and no stated extent takes its size from that
+  // box; materialising a default width here would override it.
+  const transform = shapeTransform(props, ctx, { markAuto: true });
+  requireTransformFeatures(transform, path, 'image', ctx);
 
   const sizing = compileImageSizing(props.sizing, ctx);
 
@@ -1294,8 +1332,13 @@ function compileImageSizing(
     | undefined,
   ctx: CompileContext
 ): PptxIrImageSizing | undefined {
-  if (!sizing?.type || sizing.type === 'contain') return undefined;
-  const type = sizing.type === 'cover' ? 'cover' : 'crop';
+  if (!sizing?.type) return undefined;
+  const type =
+    sizing.type === 'cover'
+      ? 'cover'
+      : sizing.type === 'contain'
+        ? 'contain'
+        : 'crop';
   return {
     type,
     widthEmu: resolveDimensionEmu(sizing.w ?? 0, 'X', ctx.extent),
@@ -2096,7 +2139,9 @@ function compileLine(
   }
   if (line.width !== undefined) compiled.widthPoints = line.width;
   if (line.dashType) compiled.dash = line.dashType as PptxIrLine['dash'];
-  return Object.keys(compiled).length > 0 ? compiled : undefined;
+  // An empty `line: {}` is an authored request for the format's default
+  // outline, which is not the same as no outline at all.
+  return compiled;
 }
 
 function compileShadow(
@@ -2135,11 +2180,13 @@ function compileShadow(
 function compileHyperlink(
   hyperlink: HyperlinkProps | undefined,
   componentName: string,
-  ctx: CompileContext
+  ctx: CompileContext,
+  path: string
 ): PptxIrHyperlink | undefined {
   if (!hyperlink) return undefined;
 
   if (hyperlink.url) {
+    ctx.features.require('external-links', path);
     return {
       kind: 'external',
       url: hyperlink.url,
@@ -2161,6 +2208,7 @@ function compileHyperlink(
   }
 
   if (hyperlink.slide) {
+    ctx.features.require('internal-links', path);
     return {
       kind: 'slide',
       slideIndex: hyperlink.slide,

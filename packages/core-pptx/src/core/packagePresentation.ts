@@ -206,6 +206,24 @@ async function canonicalizePackage(
 }
 
 /**
+ * Generic package finalization.
+ *
+ * Canonical chart identifiers, pinned core-metadata and ZIP timestamps, and a
+ * stable zip encoding — all properties of an OOXML package rather than of the
+ * backend that produced it, so any renderer's output goes through this.
+ */
+export async function finalizePptxPackage(
+  buffer: Buffer,
+  options: { generatedAt?: Date | string } = {}
+): Promise<Buffer> {
+  const zip = await JSZip.loadAsync(buffer);
+  const generatedAt = resolveGeneratedAt(options.generatedAt);
+  await canonicalizeChartIds(zip);
+  await canonicalizePackage(zip, generatedAt);
+  return generateZip(zip);
+}
+
+/**
  * Apply post-generation OOXML fixes and deterministic package metadata.
  *
  * PptxGenJS stamps both core.xml and ZIP entries with the wall clock. Rewriting

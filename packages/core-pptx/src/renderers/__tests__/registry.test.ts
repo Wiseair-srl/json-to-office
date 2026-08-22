@@ -62,8 +62,9 @@ describe('PPTX renderer registry', () => {
     for (const feature of [
       'svg',
       'charts',
-      'image-rotation',
+      'image-transform',
       'flip-vertical',
+      'element-hyperlinks',
       'masters',
       'table-merged-cells',
     ] as const) {

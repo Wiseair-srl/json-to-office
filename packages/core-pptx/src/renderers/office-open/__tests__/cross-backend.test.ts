@@ -425,7 +425,7 @@ describe('office-open capability failures', () => {
     );
   });
 
-  it('rejects a rotated image, which the backend would silently un-rotate', async () => {
+  it('rejects a transformed image, which the backend would silently flatten', async () => {
     await expectRejected(
       deck([
         slide([
@@ -435,7 +435,7 @@ describe('office-open capability failures', () => {
           },
         ]),
       ]),
-      'image-rotation'
+      'image-transform'
     );
   });
 
