@@ -7,6 +7,11 @@
 import { Type, TSchema } from '@sinclair/typebox';
 import { latestVersion } from '@json-to-office/shared';
 import { createAllPptxComponentSchemasNarrowed } from './component-registry';
+import {
+  DEFAULT_PPTX_RENDERER_ID,
+  PPTX_RENDERER_IDS,
+  type PptxRendererId,
+} from './renderer';
 
 export interface VersionedPropsEntry {
   version: string;
@@ -68,6 +73,25 @@ export function generateUnifiedDocumentSchema(
 ): TSchema {
   const { customComponents = [] } = options;
 
+  const branches = PPTX_RENDERER_IDS.map((renderer) =>
+    generateRendererSchema(
+      customComponents,
+      renderer,
+      renderer !== DEFAULT_PPTX_RENDERER_ID
+    )
+  );
+
+  return Type.Union(branches, {
+    description:
+      'Presentation definition, discriminated by the optional renderer field. Omitted renderer means pptxgenjs.',
+  });
+}
+
+function generateRendererSchema(
+  customComponents: CustomComponentInfo[],
+  renderer: PptxRendererId,
+  requireDiscriminator: boolean
+): TSchema {
   return Type.Recursive((Self) => {
     // ── Phase 1: Build plugin schemas (plugins get Self for arbitrary nesting) ──
     const pluginSchemas: TSchema[] = [];
@@ -94,7 +118,8 @@ export function generateUnifiedDocumentSchema(
     // ── Phase 2: Build standard components with narrowed children ──
     const standardSchemas = createAllPptxComponentSchemasNarrowed(
       Self,
-      pluginSchemas
+      pluginSchemas,
+      { renderer, requireDiscriminator }
     );
 
     const componentSchemas = [...standardSchemas, ...pluginSchemas];

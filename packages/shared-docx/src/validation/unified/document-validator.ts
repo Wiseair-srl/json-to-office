@@ -25,6 +25,7 @@ import type {
   ValidationOptions,
 } from './types';
 import { validateAgainstSchema, validateJson } from './base-validator';
+import { collectDocxRendererErrors } from '../../schemas/renderer';
 
 /**
  * The semantic rules the structural schema cannot express.
@@ -62,6 +63,10 @@ const SEMANTIC_COLLECTORS: readonly {
     // request could only ever come back as a table.
     why: 'a text box asking for a shape rendering a shape cannot give it',
     collect: collectTextBoxShapeConflicts,
+  },
+  {
+    why: 'renderer profile compatibility',
+    collect: collectDocxRendererErrors,
   },
 ];
 

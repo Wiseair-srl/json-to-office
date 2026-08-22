@@ -26,7 +26,10 @@ import { generateBufferViaIr } from './generateFromIr';
 import type { DocxRendererId } from '../renderers/types';
 
 // JSON support imports
-import { DocumentValidationResult } from '@json-to-office/shared-docx';
+import {
+  DOCX_RENDERER_IDS,
+  DocumentValidationResult,
+} from '@json-to-office/shared-docx';
 import type { GenerationWarning } from '@json-to-office/shared';
 import {
   validateJsonComponent,
@@ -116,20 +119,27 @@ export async function generateBufferWithWarnings(
   jsonConfig: string | ComponentDefinition | ReportComponentDefinition,
   options?: JsonGenerationOptions
 ): Promise<DocxGenerationResult> {
+  const document = parseDocument(jsonConfig);
+  const renderer = options?.renderer ?? document.renderer;
   const validation = options?.validation;
   if (validation?.enabled !== false) {
-    const result = validateJsonComponent(jsonConfig, {
-      allowUnknownFields: validation?.allowUnknownFields,
-    });
-    if (!result.valid) {
-      throw new JsonValidationError(
-        'Document validation failed',
-        result.errors
-      );
+    const result = validateJsonComponent(
+      renderer && DOCX_RENDERER_IDS.includes(renderer)
+        ? { ...document, renderer }
+        : document,
+      {
+        allowUnknownFields: validation?.allowUnknownFields,
+      }
+    );
+    const errors = result.errors.filter(
+      (error) => error.code !== 'unsupported_renderer_feature'
+    );
+    if (errors.length > 0) {
+      throw new JsonValidationError('Document validation failed', errors);
     }
   }
 
-  return generateBufferViaIr(parseDocument(jsonConfig), {
+  return generateBufferViaIr(document, {
     ...(options?.customThemes ? { customThemes: options.customThemes } : {}),
     ...(options?.services ? { services: options.services } : {}),
     ...(options?.fonts ? { fonts: options.fonts } : {}),
@@ -141,7 +151,7 @@ export async function generateBufferWithWarnings(
     ...(options?.generatedAt !== undefined
       ? { generatedAt: options.generatedAt }
       : {}),
-    ...(options?.renderer ? { renderer: options.renderer } : {}),
+    ...(renderer ? { renderer } : {}),
   });
 }
 

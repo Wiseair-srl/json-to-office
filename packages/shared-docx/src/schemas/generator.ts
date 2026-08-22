@@ -31,6 +31,12 @@ import {
   getStandardComponent,
 } from './component-registry';
 import { latestVersion } from '@json-to-office/shared';
+import {
+  DEFAULT_DOCX_RENDERER_ID,
+  DOCX_RENDERER_IDS,
+  docxPropsSchemaForRenderer,
+  type DocxRendererId,
+} from './renderer';
 
 /**
  * Per-version props schema entry
@@ -85,6 +91,26 @@ export interface GenerateDocumentSchemaOptions {
  */
 export function generateUnifiedDocumentSchema(
   options: GenerateDocumentSchemaOptions = {}
+): TSchema {
+  return Type.Union(
+    DOCX_RENDERER_IDS.map((renderer) =>
+      generateRendererDocumentSchema(
+        options,
+        renderer,
+        renderer !== DEFAULT_DOCX_RENDERER_ID
+      )
+    ),
+    {
+      description:
+        'Document definition, discriminated by the optional renderer field. Omitted renderer means docxjs.',
+    }
+  );
+}
+
+function generateRendererDocumentSchema(
+  options: GenerateDocumentSchemaOptions,
+  renderer: DocxRendererId,
+  requireDiscriminator: boolean
 ): TSchema {
   const {
     includeStandardComponents = true,
@@ -187,7 +213,10 @@ export function generateUnifiedDocumentSchema(
 
       // ── Phase 2: Build standard components with narrowed children ──
       const { schemas: standardSchemas, byName } = includeStandardComponents
-        ? createAllComponentSchemasNarrowed(This, pluginSchemas)
+        ? createAllComponentSchemasNarrowed(This, pluginSchemas, {
+            renderer,
+            requireDiscriminator,
+          })
         : { schemas: [] as TSchema[], byName: new Map<string, TSchema>() };
 
       // Capture the root's permitted children + plugins. Must happen inside
@@ -248,10 +277,21 @@ export function generateUnifiedDocumentSchema(
       name: Type.Literal('docx'),
       id: Type.Optional(Type.String()),
       $schema: Type.Optional(Type.String({ format: 'uri' })),
+      renderer: requireDiscriminator
+        ? Type.Literal(renderer, {
+            description: 'Renderer backend for this document',
+          })
+        : Type.Optional(
+            Type.Literal(renderer, {
+              description: 'Renderer backend. Omitted defaults to "docxjs".',
+            })
+          ),
       // Optional so the exported schema agrees with the runtime validator and
       // the generator, both of which treat a propless root as `props: {}`.
       // Schema-driven editors would otherwise flag a document that builds.
-      props: Type.Optional(reportComponent.propsSchema),
+      props: Type.Optional(
+        docxPropsSchemaForRenderer(reportComponent.propsSchema, renderer)
+      ),
       // Required, matching the runtime validator: a root without `children`
       // is rejected (deep-validator.ts), so the exported schema says so too.
       children: Type.Array(

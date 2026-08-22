@@ -10,6 +10,7 @@ import type {
 import type {
   ComponentDefinition as SharedComponentDefinition,
   ReportComponent,
+  ReportComponentFor,
   SectionComponent,
   ColumnsComponent,
   HeadingComponent,
@@ -59,6 +60,11 @@ export {
 export type ComponentDefinition = SharedComponentDefinition;
 export type ReportComponentDefinition = ReportComponent & {
   /** Optional schema field for JSON validation */
+  $schema?: string;
+};
+export type ReportComponentDefinitionFor<
+  R extends import('@json-to-office/shared-docx').DocxRendererId,
+> = ReportComponentFor<R> & {
   $schema?: string;
 };
 export type SectionComponentDefinition = SectionComponent;

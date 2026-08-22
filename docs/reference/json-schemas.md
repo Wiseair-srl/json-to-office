@@ -14,6 +14,24 @@ Running the schema generator creates three local build artifacts in `schemas/`:
 
 Because they follow the standard `name` / `props` / `children` shape with `name` as a discriminator, the schemas drive precise per-component autocomplete: once an editor sees `"name": "table"`, it only offers `table` props.
 
+The optional root `renderer` field selects a renderer-specific branch from the
+same canonical schema. Omission selects the format default (`docxjs` for DOCX,
+`pptxgenjs` for PPTX):
+
+```json
+{
+  "name": "pptx",
+  "renderer": "office-open",
+  "props": {},
+  "children": []
+}
+```
+
+Validation and autocomplete then exclude features the selected adapter cannot
+express. Compiler capability checks still run before rendering because asset
+types and custom-component expansion can introduce requirements a static schema
+cannot decide.
+
 ## How they are generated
 
 The schemas are not hand-written. A generator script converts the TypeBox schemas from `@json-to-office/shared-docx` and `@json-to-office/shared-pptx` into draft-07 JSON Schema:

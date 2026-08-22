@@ -91,6 +91,16 @@ describe('renderer selection', () => {
     expect(buffer.subarray(0, 2).toString('latin1')).toBe('PK');
   });
 
+  it('selects the backend from the document discriminator', async () => {
+    const document = {
+      ...deck('document-selected'),
+      renderer: 'office-open',
+    } as PresentationComponentDefinition;
+    const buffer = await generateBufferFromJson(document);
+
+    expect(buffer.subarray(0, 2).toString('latin1')).toBe('PK');
+  });
+
   it('rejects an unknown renderer id with the valid ids', async () => {
     await expect(
       generateBufferFromJson(deck('x') as never, {
@@ -100,8 +110,12 @@ describe('renderer selection', () => {
   });
 
   it('accepts the renderer option on the plugin generator', async () => {
-    const generator = createPresentationGenerator({ renderer: 'pptxgenjs' });
-    const { buffer } = await generator.generateBuffer(deck('plugin') as never);
+    const generator = createPresentationGenerator({ renderer: 'office-open' });
+    const transitionDeck = deck('plugin');
+    transitionDeck.children[0].props = {
+      transition: { type: 'fade' },
+    } as never;
+    const { buffer } = await generator.generateBuffer(transitionDeck as never);
 
     expect(buffer.length).toBeGreaterThan(0);
   });

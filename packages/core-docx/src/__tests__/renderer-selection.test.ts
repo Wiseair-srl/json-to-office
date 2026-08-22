@@ -13,6 +13,7 @@ import {
   generateBufferFromJson,
   generateBufferWithWarnings,
 } from '../core/generator';
+import { createDocumentGenerator } from '../plugin/createDocumentGenerator';
 import {
   docxRendererIds,
   isDocxRendererId,
@@ -73,6 +74,15 @@ describe('generation', () => {
     expect(buffer.subarray(0, 2).toString('latin1')).toBe('PK');
   }, 30_000);
 
+  it('selects the backend from the document discriminator', async () => {
+    const buffer = await generateBufferFromJson({
+      ...structuredClone(document),
+      renderer: 'office-open',
+    });
+
+    expect(buffer.subarray(0, 2).toString('latin1')).toBe('PK');
+  }, 30_000);
+
   it('refuses a document needing a feature the backend does not declare', async () => {
     const threaded = {
       name: 'docx',
@@ -122,6 +132,30 @@ describe('generation', () => {
     const { buffer } = await generateBufferWithWarnings(threaded, {
       validation: { enabled: false },
     });
+    expect(buffer.length).toBeGreaterThan(0);
+  }, 30_000);
+
+  it('uses the plugin renderer override for validation', async () => {
+    const threaded = {
+      name: 'docx',
+      renderer: 'office-open',
+      props: {},
+      children: [
+        {
+          name: 'paragraph',
+          props: {
+            text: 'Commented.',
+            comment: {
+              text: 'Parent',
+              replies: [{ text: 'Reply' }],
+            },
+          },
+        },
+      ],
+    } as unknown as ReportComponentDefinition;
+
+    const generator = createDocumentGenerator({ renderer: 'docxjs' });
+    const { buffer } = await generator.generateBuffer(threaded);
     expect(buffer.length).toBeGreaterThan(0);
   }, 30_000);
 });

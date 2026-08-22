@@ -24,6 +24,7 @@ import type {
 
 import type { TextSpaceAfterPropsSchema } from '../schemas/custom-components';
 import type { TextBoxPropsSchema } from '../schemas/components/text-box';
+import type { DocxRendererId } from '../schemas/renderer';
 
 // ============================================================================
 // Standard Component Types with Discriminated Union Support
@@ -35,11 +36,20 @@ import type { TextBoxPropsSchema } from '../schemas/components/text-box';
 export interface ReportComponent {
   name: 'docx';
   id?: string;
+  /** Renderer backend. Omitted defaults to docxjs. */
+  renderer?: DocxRendererId;
   /** When false, this component is filtered out and not rendered. Defaults to true */
   enabled?: boolean;
   props: Static<typeof ReportPropsSchema>;
   children?: ComponentDefinition[];
 }
+
+/** A document explicitly targeted at one renderer profile. */
+export type ReportComponentFor<R extends DocxRendererId> = Omit<
+  ReportComponent,
+  'renderer'
+> &
+  (R extends 'docxjs' ? { renderer?: R } : { renderer: R });
 
 /**
  * Section component with literal name discriminator

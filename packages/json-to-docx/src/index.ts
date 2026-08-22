@@ -23,6 +23,10 @@ export {
 
 // Renderer selection
 export type { DocxRendererId } from '@json-to-office/core-docx';
+export type {
+  ReportComponentDefinition,
+  ReportComponentDefinitionFor,
+} from '@json-to-office/core-docx';
 export {
   DEFAULT_DOCX_RENDERER_ID,
   docxRendererIds,

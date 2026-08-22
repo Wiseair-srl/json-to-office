@@ -12,6 +12,7 @@ import { transformValueErrors } from '@json-to-office/shared';
 import { ThemeConfigSchema } from '../../schemas/theme';
 import { collectImageSourceConflicts } from '../image-source-conflicts';
 import { collectTextContentConflicts } from '../text-content-conflicts';
+import { collectPptxRendererErrors } from '../../schemas/renderer';
 import {
   comprehensiveValidatePresentation,
   type DeepValidateOptions,
@@ -66,6 +67,7 @@ export function validatePresentationDocument(
   const errors = comprehensiveValidatePresentation(data, [], opts);
   errors.push(...collectImageSourceConflicts(data));
   errors.push(...collectTextContentConflicts(data));
+  errors.push(...collectPptxRendererErrors(data));
   const valid = errors.length === 0;
   return {
     valid,

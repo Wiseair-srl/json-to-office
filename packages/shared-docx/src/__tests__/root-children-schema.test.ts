@@ -18,7 +18,10 @@ function rootChildNames(): string[] {
   const json = convertToJsonSchema(
     generateUnifiedDocumentSchema({ customComponents: [] })
   ) as Record<string, any>;
-  const items = json.properties.children.items;
+  const defaultProfile = unionBranches(json).find(
+    (branch: any) => !branch.required?.includes('renderer')
+  );
+  const items = defaultProfile.properties.children.items;
   const variants = unionBranches(items);
   const branches = variants.length > 0 ? variants : [items];
   return branches

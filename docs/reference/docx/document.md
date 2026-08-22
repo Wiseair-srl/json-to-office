@@ -6,15 +6,16 @@ Reference for the two container components at the top of every Word document tre
 
 Every component in a document is an object with this shape:
 
-| Field      | Type      | Required             | Description                                                                                       |
-| ---------- | --------- | -------------------- | ------------------------------------------------------------------------------------------------- |
-| `name`     | `string`  | **yes**              | Component name (`"docx"`, `"section"`, `"paragraph"`, ...)                                        |
-| `props`    | `object`  | per component        | Component properties                                                                              |
-| `children` | `array`   | container components | Child components                                                                                  |
-| `id`       | `string`  | no                   | Author-assigned node identifier                                                                   |
-| `enabled`  | `boolean` | no                   | `false` removes the component (and its subtree) from the render without deleting it from the JSON |
+| Field      | Type                        | Required             | Description                                                                                       |
+| ---------- | --------------------------- | -------------------- | ------------------------------------------------------------------------------------------------- |
+| `name`     | `string`                    | **yes**              | Component name (`"docx"`, `"section"`, `"paragraph"`, ...)                                        |
+| `renderer` | `"docxjs" \| "office-open"` | root only, no        | Backend compatibility profile. Omitted means `docxjs`. Generation options override this field.    |
+| `props`    | `object`                    | per component        | Component properties                                                                              |
+| `children` | `array`                     | container components | Child components                                                                                  |
+| `id`       | `string`                    | no                   | Author-assigned node identifier                                                                   |
+| `enabled`  | `boolean`                   | no                   | `false` removes the component (and its subtree) from the render without deleting it from the JSON |
 
-The root `docx` node additionally accepts a `$schema` field, so editors can wire up autocompletion against the published [JSON Schemas](/reference/json-schemas). All schemas reject unknown props (`additionalProperties: false`) unless you opt into `allowUnknownFields` at generation time — see [Validation](/guide/validation).
+The root `docx` node additionally accepts a `$schema` field, so editors can wire up autocompletion against the published [JSON Schemas](/reference/json-schemas). The schema uses `renderer` to select its backend-specific branch. All schemas reject unknown props (`additionalProperties: false`) unless you opt into `allowUnknownFields` at generation time — see [Validation](/guide/validation).
 
 ## `docx` (root)
 

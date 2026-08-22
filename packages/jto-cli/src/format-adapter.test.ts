@@ -47,6 +47,25 @@ describe('PptxFormatAdapter.validateDocument', () => {
       ])
     );
   });
+
+  it('uses the root renderer profile and the omitted default', () => {
+    const transition = {
+      ...deck({ text: 'Hello' }),
+      children: [
+        {
+          name: 'slide',
+          props: { transition: { type: 'fade' } },
+          children: [],
+        },
+      ],
+    };
+    const adapter = new PptxFormatAdapter();
+
+    expect(adapter.validateDocument(transition).valid).toBe(false);
+    expect(
+      adapter.validateDocument({ ...transition, renderer: 'office-open' }).valid
+    ).toBe(true);
+  });
 });
 
 describe('DocxFormatAdapter.validateDocument', () => {
@@ -59,6 +78,31 @@ describe('DocxFormatAdapter.validateDocument', () => {
 
     expect(result.valid).toBe(false);
     expect(result.errors?.length).toBeGreaterThan(0);
+  });
+
+  it('uses the root renderer profile and the omitted default', () => {
+    const threaded = {
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'paragraph',
+          props: {
+            text: 'Hello',
+            comment: {
+              text: 'Parent',
+              replies: [{ text: 'Reply' }],
+            },
+          },
+        },
+      ],
+    };
+    const adapter = new DocxFormatAdapter();
+
+    expect(adapter.validateDocument(threaded).valid).toBe(true);
+    expect(
+      adapter.validateDocument({ ...threaded, renderer: 'office-open' }).valid
+    ).toBe(false);
   });
 });
 

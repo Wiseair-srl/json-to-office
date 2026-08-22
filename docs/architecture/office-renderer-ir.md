@@ -233,6 +233,17 @@ outside that subset fails before bytes are produced.
 await generateBufferFromJson(document, { renderer: 'office-open' });
 ```
 
+Author JSON may instead select the backend with an optional root discriminator:
+
+```json
+{ "name": "pptx", "renderer": "office-open", "props": {}, "children": [] }
+```
+
+Omission selects `docxjs` / `pptxgenjs`. A generation option overrides the
+document field. Generated schemas contain one branch per renderer, derived from
+the canonical component schemas; compiler capability checking remains the final
+gate for value-dependent and plugin-expanded requirements.
+
 ## API migration
 
 Retained: `generateBufferFromJson`, `generateBufferFromFile`,

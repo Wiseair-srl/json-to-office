@@ -14,6 +14,7 @@
  */
 
 import { assertRendererSupports } from '@json-to-office/shared/rendering';
+import { PPTX_RENDERER_IDS } from '@json-to-office/shared-pptx';
 import { runWithBaseDir } from '../utils/baseDirContext';
 import { compilePresentation } from '../ir/compiler';
 import type { PptxIR } from '../ir/types';
@@ -28,7 +29,7 @@ import { resolveDocumentFonts } from './fontResolution';
 import { resolveThemeContext } from './generationContext';
 import {
   assertNoContentConflicts,
-  assertValidPresentation,
+  assertValidPresentationForGeneration,
   type GenerationOptions,
 } from './generationOptions';
 import { expandHighchartsComponents } from './expandHighcharts';
@@ -83,8 +84,14 @@ export async function compileDocumentToIr(
   required: ReturnType<typeof compilePresentation>['required'];
   unsupported: ReturnType<typeof compilePresentation>['unsupported'];
 }> {
-  assertValidPresentation(jsonConfig, options?.validation);
   const component = parseDocument(jsonConfig);
+  const selectedRenderer = options?.renderer ?? component.renderer;
+  assertValidPresentationForGeneration(
+    selectedRenderer && PPTX_RENDERER_IDS.includes(selectedRenderer)
+      ? { ...component, renderer: selectedRenderer }
+      : component,
+    options?.validation
+  );
   const warnings: PipelineWarning[] = [];
 
   const context = resolveThemeContext(component, {
@@ -126,8 +133,17 @@ export async function generateBufferViaIr(
   jsonConfig: string | PresentationComponentDefinition,
   options?: IrGenerationOptions
 ): Promise<IrGenerationResult> {
-  assertValidPresentation(jsonConfig, options?.validation);
   const component = parseDocument(jsonConfig);
+  const selectedRenderer = options?.renderer ?? component.renderer;
+  const effectiveOptions = selectedRenderer
+    ? { ...options, renderer: selectedRenderer }
+    : options;
+  assertValidPresentationForGeneration(
+    selectedRenderer && PPTX_RENDERER_IDS.includes(selectedRenderer)
+      ? { ...component, renderer: selectedRenderer }
+      : component,
+    options?.validation
+  );
   const warnings: PipelineWarning[] = [];
 
   const context = resolveThemeContext(component, {
@@ -152,11 +168,11 @@ export async function generateBufferViaIr(
   const buffer = await runWithBaseDir(options?.baseDir, () =>
     renderProcessedViaIr(
       processPresentation(context.document, {
-        ...options,
+        ...effectiveOptions,
         theme: context.theme,
       }),
       warnings,
-      options
+      effectiveOptions
     )
   );
 
