@@ -49,8 +49,33 @@ type Opts = Record<string, unknown>;
  * producing it is asynchronous while this layer is not — so the renderer builds
  * the pictures first and this only places them.
  */
-export type ImagePictureFactory = (image: DocxIrImageRun) => Opts;
-export type EmitResources = ReadonlyMap<string, ImagePictureFactory>;
+export type ImagePictureFactory = (
+  image: DocxIrImageRun,
+  drawingId: number
+) => Opts;
+
+/**
+ * What emitting a document needs beyond the IR itself.
+ *
+ * `nextDrawingId` exists because the backend numbers `wp:docPr` from a
+ * module-level counter whenever a drawing does not state an id. That counter is
+ * process-global: the same document rendered twice comes out with different
+ * ids, and two rendered at once interleave. Every drawing this adapter emits
+ * therefore states its own id, allocated per render in document order — which
+ * is deterministic and cannot leak between documents.
+ */
+export interface EmitContext {
+  /** Prepared pictures, keyed by IR resource id. */
+  pictures: ReadonlyMap<string, ImagePictureFactory>;
+  /** Allocate the next `wp:docPr` id for this document. */
+  nextDrawingId: () => number;
+}
+
+/** A context for content that holds no drawings, and for tests. */
+export function emptyContext(): EmitContext {
+  let next = 1;
+  return { pictures: new Map(), nextDrawingId: () => next++ };
+}
 
 /**
  * Where a field becomes a whole `w:fldSimple` rather than a run child.
@@ -133,7 +158,7 @@ function shading(value: DocxIrShading): Opts {
  */
 export function inlineChildren(
   children: readonly DocxIrInline[],
-  resources: EmitResources = new Map()
+  ctx: EmitContext = emptyContext()
 ): Opts[] {
   const out: Opts[] = [];
   let pendingBreaks = 0;
@@ -192,7 +217,7 @@ export function inlineChildren(
         break;
 
       case 'image': {
-        const build = resources.get(child.resourceId);
+        const build = ctx.pictures.get(child.resourceId);
         if (!build) {
           throw new Error(
             `no image was prepared for resource "${child.resourceId}"`
@@ -203,7 +228,7 @@ export function inlineChildren(
         // the break then lands inside the anchor rather than before it.
         const pending = breakOption();
         if (pending.break) out.push(pending);
-        out.push({ picture: build(child) });
+        out.push({ picture: build(child, ctx.nextDrawingId()) });
         break;
       }
 
@@ -213,7 +238,7 @@ export function inlineChildren(
             ...(child.target.kind === 'bookmark'
               ? { anchor: child.target.anchor }
               : { url: child.target.url }),
-            children: inlineChildren(child.children, resources),
+            children: inlineChildren(child.children, ctx),
           },
         });
         break;
@@ -239,7 +264,7 @@ export function inlineChildren(
         break;
 
       case 'shape':
-        out.push({ wpsShape: shapeOptions(child, resources) });
+        out.push({ wpsShape: shapeOptions(child, ctx) });
         break;
 
       case 'noteReference':
@@ -360,9 +385,12 @@ export function floatingOptions(floating: DocxIrFloating): Opts {
 }
 
 /** A native text box: a `wps:wsp` shape holding paragraphs. */
-function shapeOptions(shape: DocxIrShapeRun, resources: EmitResources): Opts {
+function shapeOptions(shape: DocxIrShapeRun, ctx: EmitContext): Opts {
+  // Allocated before the children, so ids run in document order.
+  const id = String(ctx.nextDrawingId());
   return {
-    children: shape.children.map((child) => paragraph(child, resources)),
+    altText: { id },
+    children: shape.children.map((child) => paragraph(child, ctx)),
     transformation: { width: shape.widthPx, height: shape.heightPx },
     ...(shape.fill
       ? {
@@ -486,10 +514,10 @@ function alignment(value: string): string {
 
 export function paragraph(
   block: DocxIrParagraph,
-  resources: EmitResources = new Map()
+  ctx: EmitContext = emptyContext()
 ): Opts {
   return {
-    children: inlineChildren(block.children, resources),
+    children: inlineChildren(block.children, ctx),
     // A paragraph with no style named is one that deliberately has none — a
     // table cell, whose run properties come from the cell itself.
     ...(block.styleId ? { style: block.styleId } : {}),
@@ -559,13 +587,13 @@ function revisionMark(revision: DocxIrParagraphMarkRevision): Opts {
 /** One IR block as a tagged section child, which is how the backend takes it. */
 export function block(
   value: DocxIrBlock,
-  resources: EmitResources = new Map()
+  ctx: EmitContext = emptyContext()
 ): Opts {
   switch (value.kind) {
     case 'paragraph':
-      return { paragraph: paragraph(value, resources) };
+      return { paragraph: paragraph(value, ctx) };
     case 'table':
-      return { table: table(value, resources) };
+      return { table: table(value, ctx) };
     case 'toc':
       return { toc: tableOfContents(value) };
     default:
@@ -647,9 +675,9 @@ function tableOfContents(value: DocxIrTableOfContents): Opts {
  * Tables
  * ------------------------------------------------------------------ */
 
-export function table(value: DocxIrTable, resources: EmitResources): Opts {
+export function table(value: DocxIrTable, ctx: EmitContext): Opts {
   return {
-    rows: value.rows.map((row) => tableRow(row, resources)),
+    rows: value.rows.map((row) => tableRow(row, ctx)),
     width: {
       size: value.width.kind === 'auto' ? 0 : value.width.value,
       type:
@@ -708,9 +736,9 @@ function tableFloat(floating: DocxIrTableFloating): Opts {
   };
 }
 
-function tableRow(row: DocxIrTableRow, resources: EmitResources): Opts {
+function tableRow(row: DocxIrTableRow, ctx: EmitContext): Opts {
   return {
-    cells: row.cells.map((cell) => tableCell(cell, resources)),
+    cells: row.cells.map((cell) => tableCell(cell, ctx)),
     ...(row.heightTwips !== undefined
       ? {
           height: { value: row.heightTwips, rule: row.heightRule ?? 'atLeast' },
@@ -722,9 +750,9 @@ function tableRow(row: DocxIrTableRow, resources: EmitResources): Opts {
   };
 }
 
-function tableCell(cell: DocxIrTableCell, resources: EmitResources): Opts {
+function tableCell(cell: DocxIrTableCell, ctx: EmitContext): Opts {
   return {
-    children: cell.children.map((child) => block(child, resources)),
+    children: cell.children.map((child) => block(child, ctx)),
     ...(cell.widthTwips !== undefined
       ? { width: { size: cell.widthTwips, type: 'dxa' } }
       : {}),
@@ -792,7 +820,7 @@ function borders(value: DocxIrBorders): Opts {
  * Sections
  * ------------------------------------------------------------------ */
 
-export function section(value: DocxIrSection, resources: EmitResources): Opts {
+export function section(value: DocxIrSection, ctx: EmitContext): Opts {
   const { page, columns } = value.properties;
   return {
     properties: {
@@ -878,13 +906,9 @@ export function section(value: DocxIrSection, resources: EmitResources): Opts {
           }
         : {}),
     },
-    children: sectionChildren(value, resources),
-    ...(value.headers
-      ? { headers: headerFooterSet(value.headers, resources) }
-      : {}),
-    ...(value.footers
-      ? { footers: headerFooterSet(value.footers, resources) }
-      : {}),
+    children: sectionChildren(value, ctx),
+    ...(value.headers ? { headers: headerFooterSet(value.headers, ctx) } : {}),
+    ...(value.footers ? { footers: headerFooterSet(value.footers, ctx) } : {}),
   };
 }
 
@@ -894,12 +918,12 @@ function headerFooterSet(
     first?: DocxIrHeaderFooter;
     even?: DocxIrHeaderFooter;
   },
-  resources: EmitResources
+  ctx: EmitContext
 ): Opts {
   const out: Opts = {};
   for (const slot of ['default', 'first', 'even'] as const) {
     const part = set[slot];
-    if (part) out[slot] = part.children.map((child) => block(child, resources));
+    if (part) out[slot] = part.children.map((child) => block(child, ctx));
   }
   return out;
 }
@@ -912,11 +936,8 @@ function headerFooterSet(
  * and closes between blocks, which is what OOXML allows and what a reader
  * expects to find.
  */
-function sectionChildren(
-  value: DocxIrSection,
-  resources: EmitResources
-): Opts[] {
-  const blocks = value.children.map((child) => block(child, resources));
+function sectionChildren(value: DocxIrSection, ctx: EmitContext): Opts[] {
+  const blocks = value.children.map((child) => block(child, ctx));
   const bookmark = value.bookmark;
   if (!bookmark) return blocks;
 

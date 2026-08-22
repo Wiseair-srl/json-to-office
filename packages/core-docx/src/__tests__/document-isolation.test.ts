@@ -11,11 +11,19 @@
  * creates per compilation. That makes the whole class of bug structurally
  * impossible rather than avoided — which is worth a test of its own, because it
  * is the reason the cache bypass no longer needs to exist.
+ *
+ * One id the compiler does *not* own is `wp:docPr`, which belongs to the
+ * drawing a backend writes. Both backends are therefore checked below, on a
+ * document that actually carries drawings: an adapter that leaves the id to a
+ * library's module-level counter produces a different file on the second call
+ * and interleaves under concurrency, and neither shows up on a fixture made of
+ * paragraphs.
  */
 
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
 import { generateBufferFromJson } from '../core/generator';
+import type { DocxRendererId } from '../renderers/types';
 import type { ReportComponentDefinition } from '../types';
 
 const REVISION = {
@@ -139,3 +147,79 @@ describe('documents built in one process', () => {
     }
   }, 30_000);
 });
+
+/** A 4x2 PNG, small enough to inline and real enough to measure. */
+const PNG_4X2 =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+
+/** Drawings in the body, in a shape, and in a header — three different parts. */
+const drawings = {
+  name: 'docx',
+  props: { theme: 'minimal' },
+  children: [
+    { name: 'image', props: { base64: PNG_4X2, width: '40%' } },
+    {
+      name: 'text-box',
+      props: { renderAs: 'shape', width: 200, height: 80, text: 'Boxed' },
+    },
+    {
+      name: 'section',
+      props: {
+        header: [{ name: 'image', props: { base64: PNG_4X2, width: 40 } }],
+      },
+      children: [{ name: 'paragraph', props: { text: 'Body.' } }],
+    },
+  ],
+} as unknown as ReportComponentDefinition;
+
+/** Every `wp:docPr` id in the package, by the part that holds it. */
+async function drawingIds(buffer: Buffer): Promise<Record<string, string[]>> {
+  const zip = await JSZip.loadAsync(buffer);
+  const found: Record<string, string[]> = {};
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (entry.dir || !path.endsWith('.xml')) continue;
+    const ids = [
+      ...(await entry.async('string')).matchAll(
+        /<wp:docPr\b[^>]*?\bid="(\d+)"/g
+      ),
+    ].map((match) => match[1]);
+    if (ids.length > 0) found[path] = ids;
+  }
+  return found;
+}
+
+describe.each<[DocxRendererId]>([['docxjs'], ['office-open']])(
+  'drawing ids on the %s backend',
+  (renderer) => {
+    const build = (): Promise<Buffer> =>
+      generateBufferFromJson(structuredClone(drawings), {
+        renderer,
+        validation: { enabled: false },
+        generatedAt: '2024-01-01T00:00:00Z',
+      });
+
+    it('number from scratch on every build', async () => {
+      const first = await build();
+      const second = await build();
+
+      expect(await drawingIds(second)).toEqual(await drawingIds(first));
+      expect(second.equals(first)).toBe(true);
+    }, 30_000);
+
+    it('do not interleave when two documents build at once', async () => {
+      const [a, b] = await Promise.all([build(), build()]);
+
+      expect(await drawingIds(b)).toEqual(await drawingIds(a));
+      expect(b.equals(a)).toBe(true);
+    }, 30_000);
+
+    it('are unique within each part', async () => {
+      const parts = await drawingIds(await build());
+
+      expect(Object.keys(parts).length).toBeGreaterThan(1);
+      for (const ids of Object.values(parts)) {
+        expect(new Set(ids).size).toBe(ids.length);
+      }
+    }, 30_000);
+  }
+);

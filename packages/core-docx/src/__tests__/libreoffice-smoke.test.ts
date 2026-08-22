@@ -74,6 +74,17 @@ const document = {
     { name: 'list', props: { items: ['One', 'Two'], format: 'numbered' } },
     { name: 'image', props: { base64: PNG_4X2, width: '40%' } },
     {
+      // A native shape, which is the one drawing kind that is not a picture.
+      name: 'text-box',
+      props: {
+        renderAs: 'shape',
+        width: 200,
+        height: 80,
+        text: 'In a shape',
+        fill: 'f0f0f0',
+      },
+    },
+    {
       name: 'table',
       props: {
         columns: [

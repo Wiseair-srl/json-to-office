@@ -202,6 +202,9 @@ describe('the office-open backend', () => {
     }
   }, 30_000);
 
+  // Drawings are the interesting case for determinism — a `wp:docPr` id left
+  // to a library counter changes on the second call — and they are covered for
+  // both backends in `__tests__/document-isolation.test.ts`.
   it('renders the same bytes twice', async () => {
     const [first, second] = await Promise.all([
       generateBufferViaIr(structuredClone(document) as never, {

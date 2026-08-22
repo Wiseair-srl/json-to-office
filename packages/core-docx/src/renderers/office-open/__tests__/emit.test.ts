@@ -12,11 +12,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   block,
+  emptyContext,
   floatingOptions,
   inlineChildren,
   numberingConfig,
   paragraphProperties,
   runProperties,
+  type EmitContext,
 } from '../emit';
 import type { DocxIrTable } from '../../../ir/types';
 
@@ -85,16 +87,50 @@ describe('inline children', () => {
   });
 
   it('gives a break before a drawing a run of its own', () => {
-    const resources = new Map([['res1', () => ({ type: 'png' })]]);
+    const ctx: EmitContext = {
+      ...emptyContext(),
+      pictures: new Map([
+        [
+          'res1',
+          (_image, id) => ({ type: 'png', altText: { id: String(id) } }),
+        ],
+      ]),
+    };
     const emitted = inlineChildren(
       [
         { kind: 'lineBreak' },
         { kind: 'image', resourceId: 'res1', widthEmu: 100, heightEmu: 100 },
       ],
-      resources
+      ctx
     );
 
-    expect(emitted).toEqual([{ break: 1 }, { picture: { type: 'png' } }]);
+    expect(emitted).toEqual([
+      { break: 1 },
+      { picture: { type: 'png', altText: { id: '1' } } },
+    ]);
+  });
+
+  it('numbers each drawing in document order', () => {
+    const ctx: EmitContext = {
+      ...emptyContext(),
+      pictures: new Map([['res1', (_image, id) => ({ id })]]),
+    };
+    const image = {
+      kind: 'image' as const,
+      resourceId: 'res1',
+      widthEmu: 100,
+      heightEmu: 100,
+    };
+
+    // A `wp:docPr` id left to the backend's module-level counter would keep
+    // climbing across documents; these restart with the context.
+    expect(inlineChildren([image, image], ctx)).toEqual([
+      { picture: { id: 1 } },
+      { picture: { id: 2 } },
+    ]);
+    expect(
+      inlineChildren([image], { ...emptyContext(), pictures: ctx.pictures })
+    ).toEqual([{ picture: { id: 1 } }]);
   });
 
   it('wraps a revision once rather than marking every run', () => {
