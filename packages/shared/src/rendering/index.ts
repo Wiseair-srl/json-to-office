@@ -18,6 +18,7 @@ export type {
   UnsupportedRendererFeatureErrorInit,
 } from './diagnostics';
 export {
+  UnknownRendererError,
   UnsupportedRendererFeatureError,
   partitionDiagnostics,
   rendererError,

@@ -148,4 +148,20 @@ describe('/api/docx/renderers', () => {
 
     expect(response.status).toBe(200);
   }, 30_000);
+
+  it('answers an unregistered backend with 400 and the ids that exist', async () => {
+    const response = await post(app, '/api/docx/generate', {
+      jsonDefinition: document,
+      options: { renderer: 'nope' },
+    });
+
+    // Naming a backend that does not exist is bad input, not the service
+    // falling over — a 500 here told clients to retry something that can only
+    // fail again (#263).
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error?: string };
+    expect(body.error).toContain('"nope"');
+    expect(body.error).toContain('"docxjs"');
+    expect(body.error).toContain('"office-open"');
+  }, 30_000);
 });

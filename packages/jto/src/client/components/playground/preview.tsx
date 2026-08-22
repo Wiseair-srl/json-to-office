@@ -49,6 +49,11 @@ export function Preview() {
   // the transform. A selector that returns a freshly-constructed object on
   // every call would burn through Zustand's Object.is equality and retrigger
   // renders indefinitely.
+  // The preview regenerates server-side, so it has to name the same backend
+  // the download does — otherwise the picker's two halves disagree (#255).
+  const generationBackend = useSettingsStore(
+    (state) => state.generationBackend
+  );
   const customThemesMap = useThemesStore((state) => state.customThemes);
   const themesForServer = useMemo(() => {
     const out: Record<string, unknown> = {};
@@ -81,7 +86,8 @@ export function Preview() {
       docName: string,
       docBlob: Blob,
       docText?: string,
-      themes?: Record<string, unknown>
+      themes?: Record<string, unknown>,
+      renderer?: string
     ) => {
       setOutput({
         isRendering: true,
@@ -94,7 +100,8 @@ export function Preview() {
           docName,
           docBlob,
           docText,
-          themes
+          themes,
+          renderer
         );
 
         if (status !== 'success') {
@@ -146,11 +153,19 @@ export function Preview() {
     if (!blob || !name) return;
     if (pendingManualRenderRef.current) {
       pendingManualRenderRef.current = false;
-      doRender(name, blob, text, themesForServer);
+      doRender(name, blob, text, themesForServer, generationBackend);
       return;
     }
     setOutput({ isPreviewStale: true });
-  }, [blob, name, text, themesForServer, doRender, setOutput]);
+  }, [
+    blob,
+    name,
+    text,
+    themesForServer,
+    generationBackend,
+    doRender,
+    setOutput,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {
