@@ -323,6 +323,18 @@ docx.js one rather than a translation layer on top of it.
 | table of contents, cached entries   | title/level pairs, entry paragraphs built internally  | fully-built entry blocks, so this adapter writes them                               |
 | run size                            | half-points                                           | **points** — the backend doubles what it is given                                   |
 | cell margins                        | `{marginUnitType, top, …}`                            | `{top: {size, type}, …}`                                                            |
+| `wp:docPr` ids                      | duplicated, repaired after packaging                  | a **module-level counter** — see below                                              |
+
+`@office-open/docx` numbers `wp:docPr` from `_docPropsIdGen`, a module-level
+generator, whenever a drawing does not state an id. That is process-global: the
+same document rendered twice came out with different ids, and two rendered at
+once interleaved — 38 of the 272 corpus cases were byte-unstable because of it.
+The adapter therefore states an id on every drawing, allocated per render in
+document order. docx.js has the mirror-image problem — it _duplicates_ ids
+(dolanmiu/docx#2719) — and is repaired by renumbering the packaged
+`document.xml`. Both are covered by `__tests__/document-isolation.test.ts`,
+which renders a document carrying a picture, a shape and a header image twice
+and concurrently, on both backends.
 
 Deliberately **not** declared, so a document using them fails before rendering
 rather than losing content:

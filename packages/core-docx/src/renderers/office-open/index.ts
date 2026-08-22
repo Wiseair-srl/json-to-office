@@ -31,7 +31,7 @@ import {
   floatingOptions,
   numberingConfig,
   section,
-  type EmitResources,
+  type EmitContext,
   type ImagePictureFactory,
 } from './emit';
 import { emitStyles } from './styles';
@@ -129,11 +129,18 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
 export async function buildDocumentOptions(
   ir: DocxIR
 ): Promise<Record<string, unknown>> {
-  const resources = await prepareImages(ir);
+  // One counter for the whole document. `wp:docPr` ids only have to be unique
+  // within their part, and numbering across every part is both simpler and
+  // strictly stronger — see `EmitContext`.
+  let nextDrawingId = 1;
+  const ctx: EmitContext = {
+    pictures: await prepareImages(ir),
+    nextDrawingId: () => nextDrawingId++,
+  };
 
   return {
     styles: emitStyles(ir.styles),
-    sections: ir.sections.map((value) => section(value, resources)),
+    sections: ir.sections.map((value) => section(value, ctx)),
     ...coreProperties(ir),
     features: {
       updateFields: ir.settings.updateFields,
@@ -143,10 +150,10 @@ export async function buildDocumentOptions(
       ? { numbering: { config: ir.numbering.map(numberingConfig) } }
       : {}),
     ...(ir.footnotes.length > 0
-      ? { footnotes: noteBodies(ir.footnotes, resources) }
+      ? { footnotes: noteBodies(ir.footnotes, ctx) }
       : {}),
     ...(ir.endnotes.length > 0
-      ? { endnotes: noteBodies(ir.endnotes, resources) }
+      ? { endnotes: noteBodies(ir.endnotes, ctx) }
       : {}),
     ...(ir.comments.length > 0
       ? {
@@ -157,7 +164,7 @@ export async function buildDocumentOptions(
               ...(comment.initials ? { initials: comment.initials } : {}),
               date: comment.date,
               children: comment.children.map((child) =>
-                paragraphOf(child, resources)
+                paragraphOf(child, ctx)
               ),
             })),
           },
@@ -174,9 +181,9 @@ export async function buildDocumentOptions(
  */
 function paragraphOf(
   value: DocxIrBlock,
-  resources: EmitResources
+  ctx: EmitContext
 ): Record<string, unknown> {
-  const emitted = block(value, resources);
+  const emitted = block(value, ctx);
   const asParagraph = emitted.paragraph as Record<string, unknown> | undefined;
   if (!asParagraph) {
     throw new Error(
@@ -189,12 +196,12 @@ function paragraphOf(
 /** Note bodies keyed by id, which is how the backend takes them. */
 function noteBodies(
   notes: readonly DocxIrNote[],
-  resources: EmitResources
+  ctx: EmitContext
 ): Record<string, { children: Record<string, unknown>[] }> {
   const bodies: Record<string, { children: Record<string, unknown>[] }> = {};
   for (const note of notes) {
     bodies[String(note.id)] = {
-      children: note.children.map((child) => paragraphOf(child, resources)),
+      children: note.children.map((child) => paragraphOf(child, ctx)),
     };
   }
   return bodies;
@@ -208,7 +215,9 @@ function noteBodies(
  * raster depends on the size the image is drawn at — so every placement of a
  * vector resource is rasterised up front and the factory looks the right one up.
  */
-async function prepareImages(ir: DocxIR): Promise<EmitResources> {
+async function prepareImages(
+  ir: DocxIR
+): Promise<ReadonlyMap<string, ImagePictureFactory>> {
   const placements = collectImagePlacements(ir);
   const rasters = new Map<string, Buffer | undefined>();
 
@@ -231,7 +240,7 @@ async function prepareImages(ir: DocxIR): Promise<EmitResources> {
     if (resource.kind !== 'image') continue;
     const type = resource.mediaType;
     const data = Buffer.from(resource.bytes);
-    resources.set(resource.id, (image) => {
+    resources.set(resource.id, (image, drawingId) => {
       const transformation = {
         width: emuToPixels(image.widthEmu),
         height: emuToPixels(image.heightEmu),
@@ -240,6 +249,10 @@ async function prepareImages(ir: DocxIR): Promise<EmitResources> {
         type,
         data,
         transformation,
+        // The id is stated rather than left to the backend's process-global
+        // counter. `name` stays empty, which is what it was before and what
+        // the backend falls back to.
+        altText: { id: String(drawingId) },
         ...(type === 'svg'
           ? {
               // Word before 2016 draws the fallback rather than the vector. A
@@ -257,9 +270,9 @@ async function prepareImages(ir: DocxIR): Promise<EmitResources> {
         ...(image.floating
           ? { floating: floatingOptions(image.floating) }
           : {}),
-        // `altText` is deliberately not passed, matching the default backend:
-        // no DOCX this pipeline has produced carries `wp:docPr` descriptions,
-        // and the compiler warns so the gap is visible rather than silent.
+        // No `description` or `title`: no DOCX this pipeline has produced
+        // carries `wp:docPr` alt text, and the compiler warns so the gap is
+        // visible rather than silent.
       };
     });
   }
