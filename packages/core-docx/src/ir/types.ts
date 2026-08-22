@@ -590,6 +590,8 @@ export interface DocxIrFrame {
   yAlign?: string;
   wrap?: string;
   rule?: 'auto' | 'exact' | 'atLeast';
+  /** Keep the frame with the paragraph it is anchored to. */
+  anchorLock?: boolean;
 }
 
 /* ------------------------------------------------------------------ *

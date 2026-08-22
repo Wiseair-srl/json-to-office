@@ -66,7 +66,6 @@ const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'table-merged-cells',
   'floating-tables',
   'svg-images',
-  'text-frames',
   'text-boxes',
   'toc',
   'cached-toc',

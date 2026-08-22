@@ -99,6 +99,7 @@ import {
   type DocxIrNote,
   type DocxIrFloating,
   type DocxIrFloatingPosition,
+  type DocxIrFrame,
   type DocxIrHeaderFooter,
   type DocxIrImageRun,
   type DocxIrInline,
@@ -878,9 +879,6 @@ const MARKDOWN_LIST_LEVELS: Readonly<Record<string, ListLevelConfig[]>> = {
  */
 const DECORATED = /(\*\*\*|___|(\*\*|__)|(\*|_))/;
 
-/** Props a paragraph or heading may carry that this slice does not lower. */
-const UNLOWERED_PARAGRAPH_PROPS = ['floating'] as const;
-
 function compileParagraph(
   component: ComponentDefinition,
   scope: ComponentScope
@@ -925,6 +923,7 @@ function compileParagraph(
   return [
     paragraphNode(scope, children, {
       ...(styleId ? { styleId } : {}),
+      ...(props.floating ? { frame: compileFrame(props.floating, ctx) } : {}),
       formatting: paragraphFormatting(props, ctx, {
         outlineLevel: customOutlineLevel(props.themeStyle, ctx.theme),
         // A paragraph always states its spacing, even when empty, so a
@@ -1095,9 +1094,6 @@ function compileStatistic(
  * Lists
  * ------------------------------------------------------------------ */
 
-/** List props this slice does not lower. */
-const UNLOWERED_LIST_PROPS = ['footnotes', 'endnotes'] as const;
-
 /**
  * A list: one numbering definition plus one paragraph per item.
  *
@@ -1116,15 +1112,12 @@ function compileList(
   const { ctx, path } = scope;
   const props = (component.props ?? {}) as Record<string, any>;
 
-  for (const prop of UNLOWERED_LIST_PROPS) {
-    if (props[prop] !== undefined) {
-      ctx.unsupported.push({ name: 'list', path, detail: prop });
-      return [];
-    }
-  }
-
   const items = (props.items ?? []) as ListItem[];
   if (items.length === 0) return [];
+
+  // One binding for the whole list: ids are declared on the list, and markers
+  // may appear in any item.
+  const notes = createNoteBinding(props.footnotes, props.endnotes, ctx);
 
   // A markdown list states its levels in full rather than deriving them: it
   // always defines three, however few the text actually uses.
@@ -1176,7 +1169,11 @@ function compileList(
       paragraphNode(
         { ctx, path: itemPath, id: `${scope.id}:i${index}` },
         revision === undefined
-          ? parseInline(text, { base: {}, hyperlinks: true })
+          ? parseInline(text, {
+              base: {},
+              hyperlinks: true,
+              ...(notes ? { resolveNote: notes.resolve } : {}),
+            })
           : compileRevision(revision as Record<string, any>, {}, ctx),
         {
           styleId: 'Normal',
@@ -1198,6 +1195,14 @@ function compileList(
       )
     );
   });
+
+  notes?.reportUnemitted(
+    items
+      .map((item) =>
+        typeof item === 'string' ? item : String(item.text ?? '')
+      )
+      .join('\n')
+  );
 
   if (blocks.length > 0) ctx.features.require('numbering', path);
   return blocks;
@@ -1360,6 +1365,8 @@ function paragraphNode(
     bookmarkName?: string;
     numberingNone?: boolean;
     numbering?: { reference: string; level: number };
+    /** Position this paragraph as a floating box. */
+    frame?: DocxIrFrame;
     /** Ids of a comment thread anchored over this paragraph's content. */
     commentIds?: readonly number[];
     /**
@@ -1419,6 +1426,7 @@ function paragraphNode(
     // Body text always names a style; leaving it out is how a table cell says
     // it has none.
     styleId: options.styleId ?? 'Normal',
+    ...(options.frame ? { frame: options.frame } : {}),
     ...(options.formatting ? { formatting: options.formatting } : {}),
     ...(options.numberingNone
       ? { numbering: { none: true as const } }
@@ -1440,17 +1448,7 @@ function reportUnlowered(
   text: string,
   scope: ComponentScope
 ): boolean {
-  for (const prop of UNLOWERED_PARAGRAPH_PROPS) {
-    if (props[prop] !== undefined) {
-      scope.ctx.unsupported.push({
-        name: component.name,
-        path: scope.path,
-        detail: prop,
-      });
-      return true;
-    }
-  }
-
+  void props;
   const syntax = containsUnsupportedSyntax(text);
   if (syntax) {
     scope.ctx.unsupported.push({
@@ -2464,6 +2462,64 @@ function declareResource(
 }
 
 /**
+ * A paragraph positioned as a floating box (`w:framePr`).
+ *
+ * Distinct from a floating drawing: this positions the paragraph itself, so it
+ * is measured in twips rather than EMU and has no wrap margins of its own.
+ * Exactly one positioning mode applies — absolute if either axis states an
+ * offset, alignment otherwise — because OOXML cannot mix them on one frame.
+ */
+function compileFrame(
+  floating: Record<string, any>,
+  ctx: CompileContext
+): DocxIrFrame {
+  const hasHorizontalOffset = floating.horizontalPosition?.offset !== undefined;
+  const hasVerticalOffset = floating.verticalPosition?.offset !== undefined;
+  const useAbsolute = hasHorizontalOffset || hasVerticalOffset;
+
+  const frame: DocxIrFrame = {
+    // 2in by 1in when the author gave no size.
+    widthTwips: floating.width || 2880,
+    heightTwips: floating.height || 1440,
+    anchorHorizontal: floating.horizontalPosition?.relative || 'page',
+    anchorVertical: floating.verticalPosition?.relative || 'page',
+    ...(floating.wrap?.type ? { wrap: floating.wrap.type } : {}),
+  };
+
+  const anchorLock = floating.lockAnchor ?? floating.anchorLock;
+  if (anchorLock !== undefined) frame.anchorLock = anchorLock;
+
+  if (useAbsolute) {
+    const rawX = floating.horizontalPosition?.offset ?? 0;
+    const rawY = floating.verticalPosition?.offset ?? 0;
+    if (typeof rawX === 'string' || typeof rawY === 'string') {
+      const hRelative = floating.horizontalPosition?.relative;
+      const vRelative = floating.verticalPosition?.relative;
+      frame.xTwips = resolveOffsetTwips(
+        rawX,
+        hRelative && hRelative !== 'page'
+          ? getAvailableWidthTwips(ctx.theme, ctx.themeName)
+          : getPageWidthTwips(ctx.theme, ctx.themeName)
+      );
+      frame.yTwips = resolveOffsetTwips(
+        rawY,
+        vRelative && vRelative !== 'page'
+          ? getAvailableHeightTwips(ctx.theme, ctx.themeName)
+          : getPageHeightTwips(ctx.theme, ctx.themeName)
+      );
+    } else {
+      frame.xTwips = rawX;
+      frame.yTwips = rawY;
+    }
+    return frame;
+  }
+
+  frame.xAlign = floating.horizontalPosition?.align ?? 'left';
+  frame.yAlign = floating.verticalPosition?.align ?? 'top';
+  return frame;
+}
+
+/**
  * Where a floating image sits, in EMU.
  *
  * Both axes are always stated: a drawing anchored on one axis only has no
@@ -2759,9 +2815,10 @@ function tableBlocker(
         }
         continue;
       }
-      if (content.name !== 'paragraph') {
-        return { path: cellPath, detail: content.name };
-      }
+      // An image or a paragraph is rendered; anything else falls back to a
+      // placeholder run, which is content in its own right — the cell says
+      // what it could not render rather than going blank.
+      if (content.name !== 'paragraph') continue;
       const text = String((content.props as { text?: unknown })?.text ?? '');
       const syntax = containsUnsupportedSyntax(text);
       if (syntax) return { path: cellPath, detail: syntax };
@@ -2934,9 +2991,29 @@ function cellChildren(
         ]
       : children;
 
-  const text = cellText(cell);
-  if (cell.missing || text === undefined) return wrap([]);
+  if (cell.missing) return wrap([]);
+
+  const content = cell.content;
   const base = cellRunFormatting(cell, baseStyle, ctx);
+  if (content !== undefined && typeof content !== 'string') {
+    if (content.name === 'image') {
+      return wrap(cellImage(content, base, ctx));
+    }
+    if (content.name !== 'paragraph') {
+      // The cell says what it could not render, in the same grey the missing
+      // image placeholder uses.
+      return wrap([
+        {
+          kind: 'text',
+          text: `[Unsupported component type: ${content.name}]`,
+          formatting: placeholderFormatting(base),
+        },
+      ]);
+    }
+  }
+
+  const text = cellText(cell);
+  if (text === undefined) return wrap([]);
 
   const revision =
     (cell.revision as Record<string, any> | undefined) ??
@@ -2959,6 +3036,79 @@ function cellChildren(
     );
   }
   return wrap(parseInline(text, { base, hyperlinks: true }));
+}
+
+/**
+ * An image inside a table cell.
+ *
+ * Sized against a notional 300×200 box rather than the page: a cell has no
+ * width the compiler can see, and those are the reference dimensions this path
+ * has always used. An image that cannot be loaded leaves a placeholder naming
+ * its source rather than an empty cell.
+ */
+function cellImage(
+  component: ComponentDefinition,
+  base: DocxIrRunFormatting,
+  ctx: CompileContext
+): DocxIrInline[] {
+  const props = (component.props ?? {}) as Record<string, any>;
+  const source = resolveImageSource(props);
+  const loaded = source ? ctx.images.get(source) : undefined;
+
+  if (!source || !loaded) {
+    const preview = String(
+      props.svg?.trim() ? 'inline-svg' : props.base64 || props.path || 'unknown'
+    );
+    return [
+      {
+        kind: 'text',
+        text: `[IMAGE: ${preview.substring(0, 50)}${preview.length > 50 ? '...' : ''}]`,
+        formatting: placeholderFormatting(base),
+      },
+    ];
+  }
+
+  const targetWidth =
+    typeof props.width === 'string'
+      ? parseWidthValue(props.width, 300)
+      : (props.width as number | undefined);
+  const targetHeight =
+    typeof props.height === 'string'
+      ? parseWidthValue(props.height, 200)
+      : (props.height as number | undefined);
+
+  const size = loaded.intrinsic
+    ? calculateMissingDimension(
+        loaded.intrinsic.width,
+        loaded.intrinsic.height,
+        targetWidth,
+        targetHeight
+      )
+    : fallbackSize(targetWidth, targetHeight, { width: 60, height: 20 });
+
+  const mediaType = detectImageType(source, loaded.contentType);
+  if (mediaType === 'svg') ctx.features.require('svg-images', 'table');
+  ctx.features.require('images', 'table');
+
+  return [
+    {
+      kind: 'image',
+      resourceId: declareResource(loaded, mediaType, ctx),
+      widthEmu: pixelsToEmu(size.width),
+      heightEmu: pixelsToEmu(size.height),
+    },
+  ];
+}
+
+/** The grey a cell uses to say what it could not render. */
+function placeholderFormatting(base: DocxIrRunFormatting): DocxIrRunFormatting {
+  return {
+    ...(base.fontFamily ? { fontFamily: base.fontFamily } : {}),
+    ...(base.sizeHalfPoints !== undefined
+      ? { sizeHalfPoints: base.sizeHalfPoints }
+      : {}),
+    color: irColor('#999999'),
+  };
 }
 
 /** A revision stated on the `paragraph` component inside a cell. */
