@@ -36,6 +36,16 @@ await generateAndSaveFromJson(
 );
 ```
 
+::: info Renderer-native APIs were removed in 0.39
+`generateDocument`, `generateDocumentFromJson` and `generateDocumentFromFile`
+(which returned a [docx](https://github.com/dolanmiu/docx) `Document`),
+`saveDocument`, `generateFromConfig` and `DocumentGenerator.generate` are gone.
+Generation now compiles to an internal representation and hands it to a
+renderer adapter, so no public API returns or accepts a backend object. Use
+`generateBufferFromJson` / `generateBufferWithWarnings` and write the buffer
+yourself, or `generateAndSaveFromJson`.
+:::
+
 ### Functions
 
 Except where noted below, these functions accept an optional [`JsonGenerationOptions`](#jsongenerationoptions) as their last parameter. Every entry point returns bytes or writes a file: no renderer object crosses the package boundary, so the backend that produced them stays swappable through the `renderer` option.
@@ -67,17 +77,19 @@ if (!result.valid) {
 
 ### `JsonGenerationOptions`
 
-| Option                          | Type                                  | Default | Description                                                                                                                                                                                                                   |
-| ------------------------------- | ------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `validation.enabled`            | `boolean`                             | `true`  | Validate the definition before building; schema errors throw `JsonValidationError`.                                                                                                                                           |
-| `validation.allowUnknownFields` | `boolean`                             | `false` | Strip unknown props instead of rejecting them — an escape hatch when migrating documents across versions.                                                                                                                     |
-| `customThemes`                  | `Record<string, ThemeConfig>`         | —       | Custom themes keyed by name; `props.theme` in the document is matched case-insensitively against this map before falling back to built-in themes. See [Themes & styling](/guide/themes).                                      |
-| `services`                      | [`ServicesConfig`](#servicesconfig)   | —       | External service wiring for `highcharts` and `visual` components.                                                                                                                                                             |
-| `fonts`                         | [`FontRuntimeOpts`](#fontruntimeopts) | —       | Font resolution: extra registry entries, Google Fonts fetching, export mode, strictness. See [Fonts](/guide/fonts).                                                                                                           |
-| `warnings`                      | `GenerationWarning[]`                 | —       | Pass an array to collect non-fatal warnings; without it, warnings go to `console.warn`.                                                                                                                                       |
-| `outputPath`                    | `string`                              | —       | Optional output path hint.                                                                                                                                                                                                    |
-| `deterministic`                 | `boolean`                             | `true`  | Normalize volatile OOXML metadata and ZIP timestamps so equivalent input yields byte-identical output. Set `false` to stamp the real wall clock instead. See [Reproducible output](/guide/core-concepts#reproducible-output). |
-| `generatedAt`                   | `string \| Date`                      | epoch   | Timestamp written into package metadata and `{DATE}` / `{DATETIME}` placeholders. Defaults to a stable `2000-01-01T00:00:00Z`. Must be a valid date on or after 1980-01-01 (a ZIP format limit) or generation throws.         |
+| Option                          | Type                                  | Default         | Description                                                                                                                                                                                                                                 |
+| ------------------------------- | ------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validation.enabled`            | `boolean`                             | `true`          | Validate the definition before building; schema errors throw `JsonValidationError`.                                                                                                                                                         |
+| `validation.allowUnknownFields` | `boolean`                             | `false`         | Strip unknown props instead of rejecting them — an escape hatch when migrating documents across versions.                                                                                                                                   |
+| `customThemes`                  | `Record<string, ThemeConfig>`         | —               | Custom themes keyed by name; `props.theme` in the document is matched case-insensitively against this map before falling back to built-in themes. See [Themes & styling](/guide/themes).                                                    |
+| `services`                      | [`ServicesConfig`](#servicesconfig)   | —               | External service wiring for `highcharts` and `visual` components.                                                                                                                                                                           |
+| `fonts`                         | [`FontRuntimeOpts`](#fontruntimeopts) | —               | Font resolution: extra registry entries, Google Fonts fetching, export mode, strictness. See [Fonts](/guide/fonts).                                                                                                                         |
+| `renderer`                      | `'docxjs' \| 'office-open'`           | `'docxjs'`      | Backend that turns the compiled document into bytes. `docxjs` is the default and produces the output this pipeline has always produced. `office-open` is experimental, opt-in, and fails before rendering on any feature it cannot express. |
+| `baseDir`                       | `string`                              | `process.cwd()` | Directory that relative asset paths (image `path` props) resolve against.                                                                                                                                                                   |
+| `warnings`                      | `GenerationWarning[]`                 | —               | Pass an array to collect non-fatal warnings; without it, warnings go to `console.warn`.                                                                                                                                                     |
+| `outputPath`                    | `string`                              | —               | Optional output path hint.                                                                                                                                                                                                                  |
+| `deterministic`                 | `boolean`                             | `true`          | Normalize volatile OOXML metadata and ZIP timestamps so equivalent input yields byte-identical output. Set `false` to stamp the real wall clock instead. See [Reproducible output](/guide/core-concepts#reproducible-output).               |
+| `generatedAt`                   | `string \| Date`                      | epoch           | Timestamp written into package metadata and `{DATE}` / `{DATETIME}` placeholders. Defaults to a stable `2000-01-01T00:00:00Z`. Must be a valid date on or after 1980-01-01 (a ZIP format limit) or generation throws.                       |
 
 ### `flattenVisuals`
 

@@ -10,6 +10,7 @@ import type {
   GenerationWarning,
 } from '@json-to-office/shared-docx';
 import type { ReportComponentDefinition } from '../types';
+import type { DocxRendererId } from '../renderers/types';
 
 /**
  * Helper to infer the versions map type from a CustomComponent
@@ -149,6 +150,11 @@ export interface GenerateOptions {
    * `process.cwd()` when neither is set (#142).
    */
   baseDir?: string;
+  /**
+   * Backend that turns the compiled document into bytes for this call.
+   * Overrides the constructor `renderer`; defaults to `docxjs`.
+   */
+  renderer?: DocxRendererId;
 }
 
 /**

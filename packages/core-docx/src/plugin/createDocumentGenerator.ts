@@ -1,6 +1,7 @@
 import type { TSchema } from '@sinclair/typebox';
 import type { CustomComponent } from './createComponent';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
+import type { DocxRendererId } from '../renderers/types';
 import { type ThemeConfig } from '../styles';
 import { resolveBuiltInTheme } from '../styles/theme-resolver';
 import { hasTheme } from '../templates/themes';
@@ -62,6 +63,14 @@ export interface DocumentGeneratorOptions {
    * when neither is set (#142).
    */
   baseDir?: string;
+  /**
+   * Backend that turns the compiled document into bytes.
+   *
+   * Defaults to `docxjs`, which is what every existing caller gets.
+   * `office-open` is experimental and opt-in: it declares a subset of features
+   * and fails before rendering on anything outside it.
+   */
+  renderer?: DocxRendererId;
 }
 
 /**
@@ -80,6 +89,7 @@ interface BuilderState {
   deterministic: boolean;
   generatedAt?: string | Date;
   baseDir?: string;
+  renderer?: DocxRendererId;
 }
 
 /**
@@ -365,6 +375,7 @@ function createBuilderImpl<
       deterministic: state.deterministic,
       generatedAt: state.generatedAt,
       baseDir: state.baseDir,
+      renderer: state.renderer,
     };
 
     // Return NEW builder with expanded type
@@ -584,6 +595,7 @@ function createBuilderImpl<
       const baseDir = options?.baseDir ?? state.baseDir;
       const deterministic = options?.deterministic ?? state.deterministic;
       const generatedAt = options?.generatedAt ?? state.generatedAt;
+      const renderer = options?.renderer ?? state.renderer;
 
       const { buffer } = await generateBufferViaIr(modedDoc, {
         // The prologue already ran: the theme had to be resolved before custom
@@ -594,6 +606,7 @@ function createBuilderImpl<
         ...(baseDir !== undefined ? { baseDir } : {}),
         ...(deterministic !== undefined ? { deterministic } : {}),
         ...(generatedAt !== undefined ? { generatedAt } : {}),
+        ...(renderer !== undefined ? { renderer } : {}),
         warnings,
       });
 
@@ -775,6 +788,7 @@ export function createDocumentGenerator(
     deterministic: options.deterministic ?? true,
     generatedAt: options.generatedAt,
     baseDir: options.baseDir,
+    renderer: options.renderer,
   };
 
   return createBuilderImpl<readonly []>(initialState);
