@@ -127,7 +127,7 @@ The four disagree about something more basic: **what a document is, in a system.
 
 > **The document is a value. Rendering is a function.**
 
-json-to-office splits the two apart. The definition is a JSON tree of components and props, and it is inert data: no code, no raw OOXML, no escape hatch. The renderer is a pinned library version that turns that data into Office bytes. The only thing the two halves agree on is a schema.
+json-to-office splits the two apart. The definition is a JSON tree of components and props, and it is inert data: no code, no raw OOXML, no escape hatch. Rendering is a pinned pipeline that turns that data into Office bytes, behind a swappable backend. The only thing the two halves agree on is a schema.
 
 ```jsonc
 // This is a complete document definition. Store it, send it, generate it.
@@ -195,9 +195,11 @@ The tree carries what the document _means_ — this is a heading, this is a tabl
 
 A JSON document is a tree of **components**. Every node has the same shape, and comes in two flavours: **base components** (heading, paragraph, table, etc.) and **custom components** that you define in your project via a plugin system.
 
-![Architecture](docs/architecture.png)
+![The document model: an authored tree of base and custom components, expanded by the processor into the standard definition, a tree of base components only](docs/document-model.png)
 
-The **processor** walks the tree. When it encounters a custom component, it validates the props against the schema, resolves the requested semver version, calls `render()`, and splices the result back into the tree. If `render()` returns other custom components, the processor re-expands them recursively (up to 20 levels deep). The output is a flat tree of base components only, which the **renderer** converts into native Office objects via docx.js or pptxgenjs.
+The **processor** walks the tree. When it encounters a custom component, it validates the props against the schema, resolves the requested semver version, calls `render()`, and splices the result back into the tree. If `render()` returns other custom components, the processor re-expands them recursively (up to 20 levels deep). The output is a flat tree of base components only. That tree is then **compiled** to a renderer-neutral intermediate representation (`DocxIR` / `PptxIR`) — theme colours resolved, fonts substituted, units explicit, authoring-only components expanded — and a **renderer adapter** turns the IR into bytes. docx.js and pptxgenjs are the defaults; an experimental `office-open` backend is opt-in per document or per invocation. Each adapter declares what it supports, so an unsupported feature fails before any bytes exist rather than going missing in the file.
+
+![The json-to-office generation pipeline: validate, expand, resolve, compile to IR, then a renderer adapter and a deterministic packaging pass](docs/architecture.png)
 
 ### Custom components (plugin system)
 
