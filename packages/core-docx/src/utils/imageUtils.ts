@@ -10,6 +10,21 @@ type ResvgModule = typeof import('@resvg/resvg-js');
 const SVG_RASTER_SCALE = 3;
 const SVG_MAX_EDGE_PX = 4096;
 const SVG_MIN_EDGE_PX = 16;
+/**
+ * Ceiling on the whole bitmap, not just its longest side.
+ *
+ * An edge cap alone says nothing about area, and area is what costs memory:
+ * resvg renders RGBA, so a page-sized SVG at 3x is 2382x3367 ≈ 8 MP ≈ 32 MB
+ * live before it is even encoded to PNG. The annual-report templates carry two
+ * dozen full-page SVGs, which took one render past 1.1 GB and had the hosted
+ * playground's 512 MB container killed mid-request — the reader saw the
+ * proxy's HTML error page, not a document.
+ *
+ * 1 MP keeps a full page near 120 DPI, which is enough for what this bitmap is:
+ * Word 2016+ draws the vector, and only older readers ever fall back to it.
+ * Small SVGs are unaffected — an icon at 3x is nowhere near the budget.
+ */
+const SVG_MAX_TOTAL_PX = 1_000_000;
 
 let resvgModule: Promise<ResvgModule> | undefined;
 
@@ -22,6 +37,24 @@ function toRasterPx(px: number): number {
   return Math.min(
     SVG_MAX_EDGE_PX,
     Math.max(SVG_MIN_EDGE_PX, Math.round(px * SVG_RASTER_SCALE))
+  );
+}
+
+/**
+ * Shrink a `fitTo` edge until the bitmap it implies fits `SVG_MAX_TOTAL_PX`.
+ *
+ * `aspect` is the other edge over this one, so `edge * aspect` is the edge
+ * resvg derives. Area scales with the square of the edge, hence the sqrt.
+ */
+function capToPixelBudget(edge: number, aspect: number): number {
+  if (!Number.isFinite(aspect) || aspect <= 0) return edge;
+
+  const total = edge * edge * aspect;
+  if (total <= SVG_MAX_TOTAL_PX) return edge;
+
+  return Math.max(
+    SVG_MIN_EDGE_PX,
+    Math.floor(edge * Math.sqrt(SVG_MAX_TOTAL_PX / total))
   );
 }
 
@@ -58,9 +91,23 @@ async function rasterizeSvgFallback(
     const wide =
       probeImage.width / probeImage.height >
       transformation.width / transformation.height;
+    // resvg derives the other edge from the SVG's own aspect ratio, so the
+    // budget has to be applied against that, not against the placed box.
     const fitTo = wide
-      ? { mode: 'height' as const, value: toRasterPx(transformation.height) }
-      : { mode: 'width' as const, value: toRasterPx(transformation.width) };
+      ? {
+          mode: 'height' as const,
+          value: capToPixelBudget(
+            toRasterPx(transformation.height),
+            probeImage.width / probeImage.height
+          ),
+        }
+      : {
+          mode: 'width' as const,
+          value: capToPixelBudget(
+            toRasterPx(transformation.width),
+            probeImage.height / probeImage.width
+          ),
+        };
 
     return Buffer.from(new Resvg(markup, { fitTo }).render().asPng());
   } catch (error) {

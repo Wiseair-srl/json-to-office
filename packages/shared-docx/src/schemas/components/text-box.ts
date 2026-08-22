@@ -171,7 +171,46 @@ export const TextBoxPropsSchema = Type.Object(
       )
     ),
   },
-  { additionalProperties: false }
+  {
+    additionalProperties: false,
+    /**
+     * The same two shape limits `collectTextBoxShapeConflicts` enforces, said
+     * in JSON Schema so an editor can say it too.
+     *
+     * The deep validator only runs when a document is generated, so until now
+     * an author learned that a shape needs a height by pressing Run. These are
+     * plain cross-field rules, and `if`/`then` expresses them — which is what
+     * Monaco checks the buffer against, so the editor underlines the mistake
+     * while it is being made. The deep validator stays as the backstop: it
+     * carries the remediation text, and it is what the API enforces for
+     * callers who never see an editor.
+     */
+    allOf: [
+      {
+        if: {
+          properties: { renderAs: { const: 'shape' } },
+          required: ['renderAs'],
+        },
+        then: {
+          required: ['width', 'height'],
+          properties: {
+            style: {
+              properties: {
+                border: {
+                  properties: Object.fromEntries(
+                    ['top', 'right', 'bottom', 'left'].map((side) => [
+                      side,
+                      { properties: { style: { enum: ['solid', 'none'] } } },
+                    ])
+                  ),
+                },
+              },
+            },
+          },
+        },
+      },
+    ],
+  }
 );
 
 export type TextBoxProps = Static<typeof TextBoxPropsSchema>;
