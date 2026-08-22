@@ -215,7 +215,7 @@ export interface SlideRenderContext {
   /**
    * Per-generation registry of fills (gradient/pattern) that pptxgenjs cannot
    * express. Components render a sentinel solid fill tagged with a unique
-   * objectName; packagePresentationBuffer swaps the sentinel for the real
+   * objectName; the PptxGenJS packaging pass swaps the sentinel for the real
    * fill XML after generation.
    */
   pendingFills?: PendingXmlFill[];

@@ -18,7 +18,7 @@ import type {
   PptxThemeConfig,
   PresentationComponentDefinition,
 } from '../types';
-import type { PresentationPackagingOptions } from './packagePresentation';
+import type { PresentationPackagingOptions } from './finalizePackage';
 import type { PptxRendererId } from '../renderers/types';
 
 export interface GenerationValidationOptions {

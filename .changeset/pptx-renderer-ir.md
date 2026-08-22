@@ -44,6 +44,16 @@ implementation (`src/__tests__/corpus-goldens.test.ts`).
 - The component renderer exports (`renderTextComponent`, `renderImageComponent`,
   `renderShapeComponent`, `renderTableComponent`, `renderHighchartsComponent`,
   `renderComponent`) are removed — they were the PptxGenJS writer layer.
+- `packagePresentationBuffer` is removed from `@json-to-office/core-pptx`.
+  Packaging is split along the seam it was straddling: the PptxGenJS repairs
+  (gradient/pattern fill splice, table-style GUID, SVG preview) belong to that
+  adapter, and generic OOXML finalization — canonical chart ids, pinned
+  timestamps, stable zip encoding — is what every backend gets. Both halves
+  share one open zip, so the package is still read once and written once.
+- `PresentationPackagingOptions` no longer carries `pendingFills` or
+  `warnings`. Both were adapter plumbing that had leaked into the public
+  generation options; what a caller can say is `deterministic` and
+  `generatedAt`.
 
 No public type now references PptxGenJS.
 

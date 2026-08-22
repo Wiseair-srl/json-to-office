@@ -1,12 +1,12 @@
 import JSZip from 'jszip';
 import probe from 'probe-image-size';
 import { describe, expect, it } from 'vitest';
-import { generateBufferWithWarnings } from '../generator';
+import { generateBufferWithWarnings } from '../../../core/generator';
 import { repairSvgRasterFallbacks } from '../svgRasterFallback';
 import type {
   PipelineWarning,
   PresentationComponentDefinition,
-} from '../../types';
+} from '../../../types';
 
 const SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#3C44E3"/></svg>';

@@ -25,11 +25,8 @@ export type { PptxRendererId } from './renderers/types';
 export { DEFAULT_PPTX_RENDERER_ID } from './renderers/types';
 export { isPptxRendererId, pptxRendererIds } from './renderers/registry';
 export { UncompiledComponentError } from './core/generateFromIr';
-export {
-  DEFAULT_GENERATED_AT,
-  packagePresentationBuffer,
-} from './core/packagePresentation';
-export type { PresentationPackagingOptions } from './core/packagePresentation';
+export { DEFAULT_GENERATED_AT } from './core/finalizePackage';
+export type { PresentationPackagingOptions } from './core/finalizePackage';
 
 // Types
 export type {

@@ -1,74 +1,39 @@
-import JSZip from 'jszip';
-import type { PendingXmlFill, PipelineWarning } from '../types';
-import { repairSvgRasterFallbacks } from './svgRasterFallback';
+/**
+ * Generic OOXML package finalization.
+ *
+ * Canonical chart identifiers, pinned core-metadata and ZIP timestamps, and a
+ * stable zip encoding. Every one of those is a property of the package rather
+ * than of the backend that produced it, so any renderer's output goes through
+ * this and nothing here knows which one ran.
+ *
+ * Backend repairs — the sentinel gradient/pattern splice, the table-style
+ * GUID, the SVG preview fix — live with the backend that needs them, in
+ * `renderers/pptxgenjs/packaging.ts`. Both halves share one `JSZip` so the
+ * package is still read once and written once.
+ */
 
-const MEDIUM_STYLE_2_ACCENT_1 = '{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}';
-const NO_STYLE_NO_GRID = '{2D5ABB26-0587-4C30-8999-92F81FD0307C}';
+import JSZip from 'jszip';
 
 /** Stable default shared by package entries and OOXML core metadata. */
 export const DEFAULT_GENERATED_AT = '2000-01-01T00:00:00.000Z';
 
+/** What a caller may say about how the package is stamped. */
 export interface PresentationPackagingOptions {
   /** Normalize metadata and ZIP timestamps. Defaults to true. */
   deterministic?: boolean;
   /** Clock used when deterministic packaging is enabled. */
   generatedAt?: Date | string;
-  /**
-   * Gradient/pattern fills registered during rendering. Each entry names a
-   * shape (via its sentinel `cNvPr name`) whose `<a:solidFill>` is swapped for
-   * the registered fill XML.
-   */
-  pendingFills?: PendingXmlFill[];
-  /**
-   * Warning sink for post-generation repairs. Only the SVG raster fallback
-   * pass reports here; when omitted its failures go to `console.warn`.
-   */
-  warnings?: PipelineWarning[];
 }
 
-/**
- * Splice registered gradient/pattern fills into a slide XML string. For every
- * pending fill whose sentinel objectName appears in this slide, the first
- * `<a:solidFill>` inside that shape's `<p:sp>` (its shape fill — line and run
- * fills come later in the element) is replaced with the registered fill XML,
- * and the sentinel marker name is swapped for a normal shape name.
- */
-function applyPendingFills(
-  xml: string,
-  pendingFills: readonly PendingXmlFill[]
-): string {
-  let out = xml;
-  for (const [index, fill] of pendingFills.entries()) {
-    const marker = `name="${fill.objectName}"`;
-    const markerIdx = out.indexOf(marker);
-    if (markerIdx === -1) continue;
-
-    const spEnd = out.indexOf('</p:sp>', markerIdx);
-    const solidStart = out.indexOf('<a:solidFill>', markerIdx);
-    const solidEndTag = '</a:solidFill>';
-    const solidEnd = out.indexOf(solidEndTag, solidStart);
-    if (
-      solidStart !== -1 &&
-      solidEnd !== -1 &&
-      spEnd !== -1 &&
-      solidStart < spEnd
-    ) {
-      out =
-        out.slice(0, solidStart) +
-        fill.xml +
-        out.slice(solidEnd + solidEndTag.length);
-    }
-
-    // Restore a normal name attribute so the sentinel never ships.
-    out =
-      out.slice(0, markerIdx) +
-      `name="Fill ${index + 1}"` +
-      out.slice(markerIdx + marker.length);
-  }
-  return out;
+export async function readPackage(buffer: Buffer): Promise<JSZip> {
+  return JSZip.loadAsync(buffer);
 }
 
-function resolveGeneratedAt(value?: Date | string): Date {
+export async function writePackage(zip: JSZip): Promise<Buffer> {
+  return generateZip(zip);
+}
+
+export function resolveGeneratedAt(value?: Date | string): Date {
   const date =
     value === undefined ? new Date(DEFAULT_GENERATED_AT) : new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -80,6 +45,30 @@ function resolveGeneratedAt(value?: Date | string): Date {
     );
   }
   return date;
+}
+
+/**
+ * Finalize a package in place: canonical chart ids, then pinned timestamps.
+ *
+ * In place rather than buffer-in/buffer-out so an adapter that has already
+ * opened the zip for its own repairs does not pay for a second pass.
+ */
+export async function finalizePackage(
+  zip: JSZip,
+  generatedAt: Date
+): Promise<void> {
+  await canonicalizeChartIds(zip);
+  await canonicalizePackage(zip, generatedAt);
+}
+
+/** Finalize a package a caller holds only as bytes. */
+export async function finalizePackageBuffer(
+  buffer: Buffer,
+  options: { generatedAt?: Date | string } = {}
+): Promise<Buffer> {
+  const zip = await readPackage(buffer);
+  await finalizePackage(zip, resolveGeneratedAt(options.generatedAt));
+  return writePackage(zip);
 }
 
 function replaceCoreTimestamp(
@@ -203,70 +192,4 @@ async function canonicalizePackage(
   for (const entry of Object.values(zip.files)) {
     entry.date = generatedAt;
   }
-}
-
-/**
- * Generic package finalization.
- *
- * Canonical chart identifiers, pinned core-metadata and ZIP timestamps, and a
- * stable zip encoding — all properties of an OOXML package rather than of the
- * backend that produced it, so any renderer's output goes through this.
- */
-export async function finalizePptxPackage(
-  buffer: Buffer,
-  options: { generatedAt?: Date | string } = {}
-): Promise<Buffer> {
-  const zip = await JSZip.loadAsync(buffer);
-  const generatedAt = resolveGeneratedAt(options.generatedAt);
-  await canonicalizeChartIds(zip);
-  await canonicalizePackage(zip, generatedAt);
-  return generateZip(zip);
-}
-
-/**
- * Apply post-generation OOXML fixes and deterministic package metadata.
- *
- * PptxGenJS stamps both core.xml and ZIP entries with the wall clock. Rewriting
- * both layers makes equivalent inputs byte-identical across invocations.
- */
-export async function packagePresentationBuffer(
-  buffer: Buffer,
-  options: PresentationPackagingOptions = {}
-): Promise<Buffer> {
-  const zip = await JSZip.loadAsync(buffer);
-  let changed = false;
-
-  for (const [path, entry] of Object.entries(zip.files)) {
-    if (!path.match(/^ppt\/slides\/slide\d+\.xml$/)) continue;
-    let xml = await entry.async('string');
-    let fileChanged = false;
-    if (xml.includes(MEDIUM_STYLE_2_ACCENT_1)) {
-      xml = xml.replaceAll(MEDIUM_STYLE_2_ACCENT_1, NO_STYLE_NO_GRID);
-      fileChanged = true;
-    }
-    if (options.pendingFills?.length) {
-      const withFills = applyPendingFills(xml, options.pendingFills);
-      if (withFills !== xml) {
-        xml = withFills;
-        fileChanged = true;
-      }
-    }
-    if (fileChanged) {
-      zip.file(path, xml);
-      changed = true;
-    }
-  }
-
-  changed = (await repairSvgRasterFallbacks(zip, options.warnings)) || changed;
-
-  if (options.deterministic !== false) {
-    const generatedAt = resolveGeneratedAt(options.generatedAt);
-    await canonicalizeChartIds(zip);
-    await canonicalizePackage(zip, generatedAt);
-    changed = true;
-  }
-
-  if (!changed) return buffer;
-
-  return generateZip(zip);
 }

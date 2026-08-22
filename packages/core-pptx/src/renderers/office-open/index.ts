@@ -13,7 +13,7 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import { finalizePptxPackage } from '../../core/packagePresentation';
+import { finalizePackageBuffer } from '../../core/finalizePackage';
 import { ALL_PPTX_FEATURES, type PptxFeature } from '../../ir/features';
 import type { PptxIR, PptxIrResource } from '../../ir/types';
 import type { PptxRenderOptions, PptxRenderer, PptxRendererId } from '../types';
@@ -105,7 +105,7 @@ export async function createOfficeOpenPptxRenderer(): Promise<PptxRenderer> {
       // backend, which is why the same pass runs over the default backend's
       // output too.
       return new Uint8Array(
-        await finalizePptxPackage(Buffer.from(raw), {
+        await finalizePackageBuffer(Buffer.from(raw), {
           generatedAt: options?.generatedAt,
         })
       );
