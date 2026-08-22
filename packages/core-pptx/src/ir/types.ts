@@ -363,7 +363,11 @@ export interface PptxIrTextBodyStyle {
   spaceAfterPoints?: number;
   bullet?: PptxIrBullet;
   /**
-   * Inset in points: a single value or [left, top, right, bottom].
+   * Inset in points: a single value or [top, right, bottom, left].
+   *
+   * The four-value order is CSS's, which is what the authoring schema states
+   * and what the default backend already reads — an adapter that rotates it
+   * moves content to the wrong side of the box.
    *
    * Absent means "no inset stated" — the format's own default applies. That is
    * a real distinction: a text box states `0` so it aligns exactly to its
@@ -378,8 +382,16 @@ export interface PptxIrTextBodyStyle {
 }
 
 export interface PptxIrBullet {
-  /** `bullet` for a glyph, `number` for an ordered list. */
-  type: 'bullet' | 'number';
+  /**
+   * `bullet` for a glyph, `number` for an ordered list, `none` for a paragraph
+   * that states it has no bullet.
+   *
+   * `none` is not the same as leaving `bullet` unset. Unset inherits whatever
+   * the list style or the backend's default provides; `none` is the author
+   * saying so, and lowers to `<a:buNone/>` — which is what overriding an
+   * inherited bullet takes.
+   */
+  type: 'bullet' | 'number' | 'none';
   /** Glyph character or numbering style, as OOXML names it. */
   style?: string;
   startAt?: number;
@@ -532,7 +544,7 @@ export interface PptxIrTableFormatting {
   bold?: boolean;
   align?: PptxIrHorizontalAlign;
   verticalAlign: PptxIrVerticalAlign;
-  /** Inset in points: one value or [left, top, right, bottom]. */
+  /** Inset in points: one value or [top, right, bottom, left]. */
   insetPoints?: number | [number, number, number, number];
 }
 

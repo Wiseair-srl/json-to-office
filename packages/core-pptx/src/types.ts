@@ -91,6 +91,14 @@ export interface ProcessedSlide {
     gradient?: GradientFill;
     image?: { path?: string; base64?: string };
   };
+  /**
+   * Slide transition, as authored.
+   *
+   * Carried through processing rather than dropped there: a backend without a
+   * transition API has to be told the deck wants one so it can refuse, and a
+   * backend with one has to be able to write it (#257).
+   */
+  transition?: { type?: string; speed?: string };
   notes?: string;
   layout?: string;
   hidden?: boolean;

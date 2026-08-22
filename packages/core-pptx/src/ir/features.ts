@@ -26,9 +26,43 @@ export const PPTX_FEATURES = [
   'images',
   /** SVG images specifically — many backends need a raster fallback. */
   'svg',
+  /**
+   * Drawing only part of a picture: `cover`, `crop`, or a `contain` fit the
+   * compiler could not resolve into the frame.
+   *
+   * A backend without it draws the whole picture into the frame, which is a
+   * different image — the wrong region at the wrong scale — with nothing to
+   * show that anything was lost.
+   */
+  'image-crop',
+  /** Masking a picture to rounded corners or a circle. */
+  'image-rounding',
   'tables',
   /** Merged table cells (colSpan / rowSpan). */
   'table-merged-cells',
+  /**
+   * Cell insets on a table.
+   *
+   * Separate from the inset on a text body: a reader takes a cell's padding
+   * from `a:tcPr`, and a backend that can only write text-body insets puts the
+   * numbers somewhere nothing reads them.
+   */
+  'table-insets',
+  /**
+   * Rounded table corners.
+   *
+   * A separate ability because OOXML has no such property: a backend realises
+   * it by drawing shapes behind the table, or it cannot realise it at all.
+   */
+  'table-rounded-corners',
+  /**
+   * Flowing an over-long table onto further slides, header row included.
+   *
+   * Pagination is the backend's, not the IR's — the IR describes one table and
+   * says it may split, so a backend that cannot split has to refuse rather than
+   * emit a table running off the slide.
+   */
+  'table-auto-page',
   /** Native OOXML charts with an embedded workbook. */
   'charts',
   'solid-fills',

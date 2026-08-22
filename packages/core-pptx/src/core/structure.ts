@@ -173,6 +173,7 @@ export function processPresentation(
       slides.push({
         components: resolvedComponents,
         background: child.props.background,
+        transition: child.props.transition,
         notes: child.props.notes,
         layout: child.props.layout,
         hidden: child.props.hidden,
