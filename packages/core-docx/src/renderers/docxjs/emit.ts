@@ -300,9 +300,9 @@ export function emitParagraph(
     ...(block.numbering
       ? {
           numbering: block.numbering.none
-            ? // An empty reference is how docx.js is told to suppress the
-              // numbering a style would otherwise apply.
-              { reference: '', level: 0, instance: 0 }
+            ? // docx.js writes `numId 0` for a literal false, which is how a
+              // paragraph detaches from the numbering its style applies.
+              (false as const)
             : {
                 reference: block.numbering.reference,
                 level: block.numbering.level,

@@ -61,9 +61,10 @@ import {
   getPageWidthTwips,
   resolveOffsetTwips,
 } from '../utils/widthUtils';
-import type {
-  ListLevelConfig,
-  ListMarkerFontConfig,
+import {
+  HEADING_NUMBERING_REFERENCE,
+  type ListLevelConfig,
+  type ListMarkerFontConfig,
 } from '../utils/numberingConfig';
 import { normalizeUnicodeText } from '../utils/unicode';
 import {
@@ -797,14 +798,6 @@ function compileHeading(
   const text = String(props.text ?? '');
 
   if (reportUnlowered(component, props, text, scope)) return [];
-  if (props.numbering === true) {
-    ctx.unsupported.push({
-      name: 'heading',
-      path,
-      detail: 'numbering',
-    });
-    return [];
-  }
 
   const level = headingLevel(props.level);
   // A heading with no decorators is rendered character for character — the
@@ -834,8 +827,51 @@ function compileHeading(
       formatting: paragraphFormatting(props, ctx, { defaultAlignment: 'left' }),
       bookmarkName,
       numberingNone: props.numbering === false,
+      ...(props.numbering === true
+        ? { numbering: declareHeadingNumbering(level, ctx, path) }
+        : {}),
     }),
   ];
+}
+
+/**
+ * The one numbering definition every numbered heading shares.
+ *
+ * Shared so that 1., 1.1., 1.1.1. is a single continuous sequence rather than
+ * one that restarts at each heading. Levels bind to `Heading1`..`Heading6`
+ * through `pStyle`, which is what makes Word's own restart/continue UI and the
+ * `\r` cross-reference switch recognise them.
+ */
+function declareHeadingNumbering(
+  level: number,
+  ctx: CompileContext,
+  path: string
+): { reference: string; level: number } {
+  if (!ctx.numberingByReference.has(HEADING_NUMBERING_REFERENCE)) {
+    const numbering: DocxIrNumbering = {
+      reference: HEADING_NUMBERING_REFERENCE,
+      levels: Array.from({ length: 6 }, (_, index) => ({
+        level: index,
+        format: 'decimal',
+        // Each level accumulates the ones above it: %1, %1.%2, %1.%2.%3, …
+        text: `${Array.from({ length: index + 1 }, (_, i) => `%${i + 1}`).join('.')}.`,
+        alignment: 'left' as const,
+        start: 1,
+        // A space, not the default tab: a tab would push the heading text to
+        // the next tab stop and misalign it against unnumbered headings.
+        suffix: 'space' as const,
+        // A numbered heading stays flush left and takes its indentation from
+        // the heading style, so the level supplies none of its own.
+        indent: { leftTwips: 0, hangingTwips: 0 },
+        paragraphStyleId: `Heading${index + 1}`,
+      })),
+    };
+    ctx.numbering.push(numbering);
+    ctx.numberingByReference.set(HEADING_NUMBERING_REFERENCE, numbering);
+  }
+
+  ctx.features.require('numbering', path);
+  return { reference: HEADING_NUMBERING_REFERENCE, level: level - 1 };
 }
 
 /* ------------------------------------------------------------------ *
@@ -1165,7 +1201,7 @@ function paragraphNode(
     styleId: options.styleId ?? 'Normal',
     ...(options.formatting ? { formatting: options.formatting } : {}),
     ...(options.numberingNone
-      ? { numbering: { reference: '', level: 0, none: true } }
+      ? { numbering: { none: true as const } }
       : options.numbering
         ? { numbering: options.numbering }
         : {}),
