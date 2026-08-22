@@ -65,6 +65,7 @@ import type {
   ListLevelConfig,
   ListMarkerFontConfig,
 } from '../utils/numberingConfig';
+import { normalizeUnicodeText } from '../utils/unicode';
 import { containsUnsupportedSyntax, parseInline } from './inline';
 import type { DocxFeature } from './features';
 import {
@@ -304,6 +305,8 @@ function compileStyleManifest(theme: ThemeConfig): DocxIrStyles {
     'Subtitle',
     'Header',
     'Footer',
+    'StatisticNumber',
+    'StatisticDescription',
     ...[1, 2, 3, 4, 5, 6].flatMap((level) => [
       `Heading${level}`,
       `JTD_HeadingText${level}`,
@@ -716,6 +719,8 @@ function compileComponent(
       return compileHeading(component, scope);
     case 'list':
       return compileList(component, scope);
+    case 'statistic':
+      return compileStatistic(component, scope);
     case 'image':
       return compileImage(component, scope);
     case 'table':
@@ -812,6 +817,69 @@ function compileHeading(
       formatting: paragraphFormatting(props, ctx, { defaultAlignment: 'left' }),
       bookmarkName,
       numberingNone: props.numbering === false,
+    }),
+  ];
+}
+
+/* ------------------------------------------------------------------ *
+ * Statistics
+ * ------------------------------------------------------------------ */
+
+/**
+ * A statistic: a figure and its caption, as two styled paragraphs.
+ *
+ * The text is taken literally — no decorators, no links — because a statistic
+ * is a number and a label, not prose. Its spacing is stated in twips: the
+ * authoring value has always been passed to the writer unconverted, and
+ * reinterpreting it now would move every statistic in every document.
+ */
+function compileStatistic(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const { path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+  const alignment = compileAlignment(props.alignment) ?? 'center';
+
+  // Stating `spacing` at all, even empty, is a statement: it produces a
+  // `w:spacing` element that overrides whatever the style would apply.
+  const spacing: DocxIrSpacing | undefined = props.spacing
+    ? {
+        ...(props.spacing.before !== undefined
+          ? { beforeTwips: props.spacing.before }
+          : {}),
+        ...(props.spacing.after !== undefined
+          ? { afterTwips: props.spacing.after }
+          : {}),
+      }
+    : undefined;
+
+  const line = (
+    text: unknown,
+    styleId: string,
+    suffix: string,
+    formatting: DocxIrParagraphFormatting
+  ): DocxIrParagraph => {
+    const value = normalizeUnicodeText(String(text ?? ''));
+    return {
+      kind: 'paragraph',
+      id: `${scope.id}:${suffix}`,
+      path: `${path}.${suffix}`,
+      styleId,
+      formatting,
+      // Nothing to say is not the same as saying nothing: an empty statistic
+      // line is a styled blank paragraph, with no run inside it at all.
+      children: value ? [{ kind: 'text', text: value }] : [],
+    };
+  };
+
+  return [
+    line(props.number, 'StatisticNumber', 'number', {
+      alignment,
+      ...(spacing ? { spacing } : {}),
+    }),
+    line(props.description, 'StatisticDescription', 'description', {
+      alignment,
     }),
   ];
 }
