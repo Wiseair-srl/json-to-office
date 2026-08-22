@@ -293,7 +293,12 @@ not exported from `@json-to-office/json-to-docx` or
 | solid / gradient / pattern fills             | yes (gradient and pattern via a sentinel + XML splice) | yes, natively                                                                                              |
 | image fills                                  | **no** — no shape image-fill API                       | yes                                                                                                        |
 | lines, shadows                               | yes                                                    | yes                                                                                                        |
-| tables incl. merged cells                    | yes                                                    | yes                                                                                                        |
+| tables — rows, cells, column widths          | yes                                                    | yes                                                                                                        |
+| tables — border, fill                        | table-level options                                    | pushed onto every cell; the backend has no table-level form of either                                      |
+| tables — merged cells                        | yes                                                    | **no** — `restart`/`continue` markers vs the IR's span counts                                              |
+| tables — cell insets                         | `a:tcPr/@marL`                                         | **no** — `margins` writes `a:bodyPr` insets, which a reader ignores in a cell                              |
+| tables — rounded corners, auto-pagination    | yes (corners via shapes drawn behind the table)        | **no** — no corner radius in OOXML, and nothing here flows a table onto a second slide                     |
+| image crop / cover, rounding                 | yes                                                    | **no** — `PictureOptions` has no source rectangle and no geometry                                          |
 | native charts                                | yes, with an embedded workbook                         | chart XML only — **no embedded workbook**, so "Edit Data" fails                                            |
 | hyperlinks (external + slide)                | yes                                                    | yes                                                                                                        |
 | speaker notes, hidden slides                 | yes                                                    | yes                                                                                                        |
@@ -304,22 +309,28 @@ not exported from `@json-to-office/json-to-docx` or
 ### What the office-open PPTX adapter declares
 
 Supported and mapped: text bodies and rich runs, paragraph properties, preset
-shapes, images, solid/gradient/pattern/image fills, lines, shadows, plain
-tables, backgrounds, speaker notes, hidden slides, transitions, groups,
-external and slide hyperlinks, shape rotation, horizontal flip, proofing
-language, RTL.
+shapes, images, solid/gradient/pattern/image fills, lines, shadows, tables with
+their border and fill, backgrounds, speaker notes, hidden slides, transitions,
+groups, external and slide hyperlinks, shape rotation, horizontal flip, proofing
+language, RTL, the authored theme (`theme1.xml` fonts and colour scheme) and the
+`company` document property.
 
 Deliberately **not** declared, so a document using them fails before rendering
 rather than losing content:
 
-| Feature                   | Why                                                                                                            |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `svg`                     | `PictureOptions.type` excludes SVG and nothing creates an SVG media entry                                      |
-| `charts`                  | chart XML ships without its embedded workbook, so "Edit Data" fails                                            |
-| `image-rotation`          | `PictureOptions` has no `rotation`; it would be discarded                                                      |
-| `flip-vertical`           | no pptx option type carries it                                                                                 |
-| `masters`, `placeholders` | the backend supports them; the mapping is not written, and an unmapped master would drop every template object |
-| `table-merged-cells`      | the backend marks merges as `restart`/`continue` on covered cells while the IR carries span counts             |
+| Feature                   | Why                                                                                                                                                                                                               |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `svg`                     | `PictureOptions.type` excludes SVG and nothing creates an SVG media entry                                                                                                                                         |
+| `charts`                  | chart XML ships without its embedded workbook, so "Edit Data" fails                                                                                                                                               |
+| `image-transform`         | `PictureOptions` has no `rotation` and no flip; either would be discarded                                                                                                                                         |
+| `image-crop`              | no source rectangle, so a cropped picture would be drawn whole into its frame                                                                                                                                     |
+| `image-rounding`          | no geometry on a picture, so a circular image would come out rectangular                                                                                                                                          |
+| `flip-vertical`           | no pptx option type carries it                                                                                                                                                                                    |
+| `masters`, `placeholders` | the backend supports them; the mapping is not written, and an unmapped master would drop every template object                                                                                                    |
+| `table-merged-cells`      | the backend marks merges as `restart`/`continue` on covered cells while the IR carries span counts                                                                                                                |
+| `table-insets`            | `TableCellOptions.margins` writes the insets onto the cell's own `a:bodyPr`; a reader takes a cell's padding from `a:tcPr/@marL`, and a LibreOffice render moves not one point for a 40pt margin written that way |
+| `table-rounded-corners`   | OOXML tables have no corner radius; the default backend fakes one with shapes drawn behind the table, and that technique is not in the IR                                                                         |
+| `table-auto-page`         | nothing here flows a table onto a second slide, so an over-long table would run off the bottom of the first                                                                                                       |
 
 Both backends are exercised over the same common-subset corpus in
 `renderers/office-open/__tests__/cross-backend.test.ts`, which compares package
@@ -416,25 +427,30 @@ Two constraints matter:
 Everything else is identical part for part, checked case by case against the pre-IR
 implementation. These are the deliberate exceptions.
 
-| Change                                                                                                | Why                                                                                                                                                                                                                                                                                                                          |
-| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A number in `[20, 100)` used as a table `x`/`y`/`w`/`h` now means inches, as it does everywhere else. | The backend's table path used a different inch/EMU threshold (20) from the rest of its API (100), so the same authored number meant different things depending on which component it was on. The compiler applies one rule. The affected range is meaningless under either reading (20–100 inches, or 20–100 EMU ≈ 0.0001"). |
-| `underline: false` no longer underlines.                                                              | The pre-IR writer treated any boolean as "underline", so `false` turned it on.                                                                                                                                                                                                                                               |
-| `bullet: { type: 'bullet' }` now produces a bullet.                                                   | The object form was passed through in a shape the backend ignored, so an authored bullet silently did nothing. The boolean form always worked.                                                                                                                                                                               |
-| A rounded table positioned with percentages now gets its rounded backdrop.                            | The backdrop was drawn only when `x` and `y` happened to be plain numbers, so a percentage-positioned rounded table came out square. The IR always carries a resolved absolute origin.                                                                                                                                       |
-| A `highcharts` component inside a template placeholder is now rejected rather than rendered.          | Placeholder content is merged with its declaration during compilation, so expanding the chart beforehand would size it from pre-merge dimensions. Failing is better than rendering it at the wrong size; slide- and template-level highcharts are unaffected.                                                                |
+### PPTX
+
+| Change                                                                                                | Why                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A number in `[20, 100)` used as a table `x`/`y`/`w`/`h` now means inches, as it does everywhere else. | The backend's table path used a different inch/EMU threshold (20) from the rest of its API (100), so the same authored number meant different things depending on which component it was on. The compiler applies one rule. The affected range is meaningless under either reading (20–100 inches, or 20–100 EMU ≈ 0.0001").  |
+| `underline: false` no longer underlines.                                                              | The pre-IR writer treated any boolean as "underline", so `false` turned it on.                                                                                                                                                                                                                                                |
+| `bullet: { type: 'bullet' }` now produces a bullet.                                                   | The object form was passed through in a shape the backend ignored, so an authored bullet silently did nothing. The boolean form always worked.                                                                                                                                                                                |
+| `bullet: false` no longer produces a bullet.                                                          | Every boolean lowered to an enabled bullet, so an explicit "no bullet" could not override one inherited from a style. `{ type: 'number' }` with no other field now numbers instead of clearing the bullet, and a custom glyph reaches both backends — PptxGenJS through `characterCode`, which is the only spelling it reads. |
+| A four-value `margin` keeps the schema's `[top, right, bottom, left]` order.                          | PptxGenJS's text path reads those four numbers as `[left, right, bottom, top]`, disagreeing with its own table path, and the office-open adapter read them as `[left, top, right, bottom]`. Both are corrected in the adapter; a symmetric margin is unaffected, which is why nothing in the corpus moved.                    |
+| A rounded table positioned with percentages now gets its rounded backdrop.                            | The backdrop was drawn only when `x` and `y` happened to be plain numbers, so a percentage-positioned rounded table came out square. The IR always carries a resolved absolute origin.                                                                                                                                        |
+| A `highcharts` component inside a template placeholder is now rejected rather than rendered.          | Placeholder content is merged with its declaration during compilation, so expanding the chart beforehand would size it from pre-merge dimensions. Failing is better than rendering it at the wrong size; slide- and template-level highcharts are unaffected.                                                                 |
 
 Image `sizing` and aspect-ratio auto-fill moved into a pre-pass rather than
 being split between the writer and the backend, but the results are unchanged —
 the corpus cases for `contain`, `cover` and the auto-fill were recorded from the
 old implementation and still pass.
 
-`transition` remains authored-but-ignored on the default backend: PptxGenJS has
-no transition API, and the compiler does not lower it, so it is dropped exactly
-as it always was. It is modelled in the IR and supported by `office-open`, and
-becomes real for both when the compiler lowers it.
+`transition` is lowered now, so it is no longer authored-but-ignored. It reaches
+the package through `office-open`, and PptxGenJS — which has no transition API —
+refuses a deck that asks for one rather than dropping it. A `transition` of
+`none` lowers to nothing, because OOXML says "no transition" by omitting the
+element, so it asks nothing of either backend.
 
-### How these were found
+#### How the PPTX ones were found
 
 A corpus built feature by feature does not reach inputs where a prop only
 matters in combination with another, or where a default only shows up because
@@ -450,6 +466,13 @@ disagreed. All agree again and are pinned in
 
 The lesson is in that file's header: a differential comparison against the
 previous implementation finds what a feature checklist does not.
+
+### DOCX
+
+| Change                                                                                | Why                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A header or footer whose components are all `enabled: false` breaks link-to-previous. | It used to compile to no part at all, which is how Word spells "inherit", so a section that explicitly disabled its chrome showed the previous section's — stale or confidential content included. Disabling everything is a statement about this section, exactly like an explicit empty array. |
+| An SVG in a first-page or even-page part ships a real raster fallback.                | The adapter's image walk read only the `default` chrome slot, so such an SVG got its own bytes labelled `image/png` as the fallback, and the section options dropped the part outright.                                                                                                          |
 
 ## Source map
 
