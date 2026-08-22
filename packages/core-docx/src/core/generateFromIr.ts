@@ -24,7 +24,7 @@ import { desugarExternals } from './desugarExternals';
 import { loadImageResources } from './imageResources';
 import { compileDocument, type UnsupportedComponent } from '../ir/compiler';
 import type { DocxIR } from '../ir/types';
-import { createDocxJsRenderer } from '../renderers/docxjs/index';
+import { resolveDocxRenderer } from '../renderers/registry';
 import type { DocxRendererId } from '../renderers/types';
 import type { ThemeConfig } from '../styles';
 import type { ReportComponentDefinition } from '../types';
@@ -242,14 +242,7 @@ async function renderScoped(
     throw new UncompiledComponentError(compiled.unsupported);
   }
 
-  if (options.renderer && options.renderer !== 'docxjs') {
-    throw new Error(
-      `The "${options.renderer}" DOCX renderer is not implemented yet. ` +
-        'Use the default "docxjs" renderer.'
-    );
-  }
-
-  const renderer = createDocxJsRenderer();
+  const renderer = await resolveDocxRenderer(options.renderer);
   assertRendererSupports(compiled.required, renderer);
 
   const bytes = await renderer.render(compiled.ir, {
