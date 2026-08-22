@@ -50,6 +50,10 @@ import {
   DEFAULT_REVISION_AUTHOR,
   DEFAULT_REVISION_DATE,
 } from '../utils/revisionUtils';
+import {
+  DEFAULT_COMMENT_AUTHOR,
+  DEFAULT_COMMENT_DATE,
+} from '../utils/commentRegistry';
 import type { ImageResources, LoadedImage } from '../core/imageResources';
 import {
   calculateMissingDimension,
@@ -86,6 +90,7 @@ import {
   type DocxIrAlignment,
   type DocxIrBlock,
   type DocxIrBorder,
+  type DocxIrComment,
   type DocxIrFloating,
   type DocxIrFloatingPosition,
   type DocxIrHeaderFooter,
@@ -190,6 +195,11 @@ interface CompileContext {
    * compilations of the same document identical.
    */
   nextRevisionId: number;
+  /** Comment bodies, in id order, with the ids their anchors carry. */
+  comments: DocxIrComment[];
+  commentCounter: number;
+  /** Whether anything in this document asked for a resolved state. */
+  hasResolvedComment: boolean;
   /** Image bytes, loaded before compilation started. */
   images: ImageResources;
   /**
@@ -228,6 +238,9 @@ export function compileDocument(
     listCounter: 0,
     warnedMessages: new Set(),
     nextRevisionId: 1,
+    comments: [],
+    commentCounter: 0,
+    hasResolvedComment: false,
     images,
     generatedAt: structure.metadata.date,
   };
@@ -244,6 +257,22 @@ export function compileDocument(
     compileSection(section, index, ordinals[index], chrome[index], ctx)
   );
 
+  // A resolved flag lives in `word/commentsExtended.xml`, which is written only
+  // for threaded comments. A document whose only resolved comment has no
+  // replies would lose that state, so say so rather than dropping it quietly.
+  if (
+    ctx.hasResolvedComment &&
+    !ctx.comments.some((comment) => comment.parentId !== undefined)
+  ) {
+    warnOnce(
+      ctx,
+      'comment',
+      'A comment sets `resolved` but the document has no replies. Word stores ' +
+        'the resolved flag in commentsExtended.xml, which is written only for ' +
+        'threaded comments, so the flag will not survive.'
+    );
+  }
+
   const ir: DocxIR = {
     schemaVersion: DOCX_IR_SCHEMA_VERSION,
     metadata: compileMetadata(structure),
@@ -259,7 +288,7 @@ export function compileDocument(
     numbering: ctx.numbering,
     resources: ctx.resources,
     sections,
-    comments: [],
+    comments: ctx.comments,
     footnotes: [],
     endnotes: [],
   };
@@ -774,7 +803,6 @@ const DECORATED = /(\*\*\*|___|(\*\*|__)|(\*|_))/;
 
 /** Props a paragraph or heading may carry that this slice does not lower. */
 const UNLOWERED_PARAGRAPH_PROPS = [
-  'comment',
   'footnotes',
   'endnotes',
   'floating',
@@ -809,6 +837,9 @@ function compileParagraph(
         alwaysSpacing: true,
       }),
       bookmarkName,
+      ...(props.comment
+        ? { commentIds: declareComment(props.comment, ctx) }
+        : {}),
     }),
   ];
 }
@@ -850,6 +881,9 @@ function compileHeading(
       // spacing is left untouched.
       formatting: paragraphFormatting(props, ctx, { defaultAlignment: 'left' }),
       bookmarkName,
+      ...(props.comment
+        ? { commentIds: declareComment(props.comment, ctx) }
+        : {}),
       numberingNone: props.numbering === false,
       ...(props.numbering === true
         ? { numbering: declareHeadingNumbering(level, ctx, path) }
@@ -966,7 +1000,7 @@ function compileStatistic(
  * ------------------------------------------------------------------ */
 
 /** List props this slice does not lower. */
-const UNLOWERED_LIST_PROPS = ['comment', 'footnotes', 'endnotes'] as const;
+const UNLOWERED_LIST_PROPS = ['footnotes', 'endnotes'] as const;
 
 /**
  * A list: one numbering definition plus one paragraph per item.
@@ -995,6 +1029,21 @@ function compileList(
 
   const reference = declareNumbering(props, ctx);
   const blocks: DocxIrBlock[] = [];
+
+  // A list-level comment spans the whole list, so its range opens on the first
+  // item that actually renders and closes on the last. Empty items are skipped
+  // below, so neither end can be read off the item index.
+  const rendersAt = items.map((item) => {
+    const text = typeof item === 'string' ? item : String(item.text ?? '');
+    const revision = typeof item === 'object' ? item.revision : undefined;
+    return Boolean(text.trim()) || revision !== undefined;
+  });
+  const firstRendered = rendersAt.indexOf(true);
+  const lastRendered = rendersAt.lastIndexOf(true);
+  const commentIds =
+    firstRendered !== -1 && props.comment
+      ? declareComment(props.comment, ctx)
+      : undefined;
 
   items.forEach((item, index) => {
     const text = typeof item === 'string' ? item : String(item.text ?? '');
@@ -1029,6 +1078,12 @@ function compileList(
             alignment: compileAlignment(props.alignment) ?? 'left',
             spacing: itemSpacing(props.spacing, index, items.length),
           },
+          ...(commentIds && index === firstRendered
+            ? { commentOpen: commentIds }
+            : {}),
+          ...(commentIds && index === lastRendered
+            ? { commentClose: commentIds }
+            : {}),
           ...(typeof item === 'object' && typeof item.id === 'string'
             ? { bookmarkName: item.id }
             : {}),
@@ -1197,6 +1252,16 @@ function paragraphNode(
     bookmarkName?: string;
     numberingNone?: boolean;
     numbering?: { reference: string; level: number };
+    /** Ids of a comment thread anchored over this paragraph's content. */
+    commentIds?: readonly number[];
+    /**
+     * Halves of a range that spans more than this paragraph.
+     *
+     * A comment on a whole list opens on its first item and closes on its
+     * last, so the two ends land on different paragraphs.
+     */
+    commentOpen?: readonly number[];
+    commentClose?: readonly number[];
   }
 ): DocxIrParagraph {
   const { ctx } = scope;
@@ -1217,6 +1282,25 @@ function paragraphNode(
       { kind: 'bookmarkEnd', id },
     ];
     ctx.features.require('bookmarks', scope.path);
+  }
+
+  const opening = options.commentIds ?? options.commentOpen;
+  const closing = options.commentIds ?? options.commentClose;
+  if (opening?.length || closing?.length) {
+    // The range opens after a leading break so it covers exactly the commented
+    // content, and closes around the bookmark rather than inside it.
+    const breakCount = content.findIndex((c) => c.kind !== 'columnBreak');
+    const split = breakCount === -1 ? content.length : breakCount;
+    content = [
+      ...content.slice(0, split),
+      ...(opening ?? []).map((id) => ({
+        kind: 'commentRangeStart' as const,
+        id,
+      })),
+      ...content.slice(split),
+      ...(closing ? closeComment(closing) : []),
+    ];
+    ctx.features.require('comments', scope.path);
   }
 
   return {
@@ -1336,6 +1420,82 @@ function compileRuns(
   }
 
   return children;
+}
+
+/**
+ * Register a comment thread and return the ids its anchors must carry.
+ *
+ * Every comment in a thread anchors over the same range — root first, then
+ * each reply in order — which is how Word writes threads and how it groups
+ * them in the review pane.
+ */
+function declareComment(
+  comment: Record<string, any>,
+  ctx: CompileContext
+): number[] {
+  const resolved = comment.resolved as boolean | undefined;
+  const rootId = ++ctx.commentCounter;
+  const toComment = (
+    source: Record<string, any>,
+    id: number,
+    parentId?: number
+  ): DocxIrComment => {
+    const author = (source.author as string) || DEFAULT_COMMENT_AUTHOR;
+    return {
+      id,
+      author,
+      initials: (source.initials as string) || deriveInitials(author),
+      date: String(source.date || DEFAULT_COMMENT_DATE),
+      // One paragraph per line, so an author can write a short list.
+      children: normalizeUnicodeText(String(source.text ?? ''))
+        .split('\n')
+        .map((line, index) => ({
+          kind: 'paragraph' as const,
+          id: `comment${id}:p${index}`,
+          path: `comments[${id}].children[${index}]`,
+          children: [{ kind: 'text' as const, text: line }],
+        })),
+      ...(parentId !== undefined ? { parentId } : {}),
+      ...(resolved !== undefined ? { resolved } : {}),
+    };
+  };
+
+  ctx.comments.push(toComment(comment, rootId));
+  const ids = [rootId];
+  for (const reply of (comment.replies ?? []) as Record<string, any>[]) {
+    const replyId = ++ctx.commentCounter;
+    // Word resolves a thread as a whole, so the flag rides every member.
+    ctx.comments.push(toComment(reply, replyId, rootId));
+    ids.push(replyId);
+  }
+
+  if (resolved !== undefined) ctx.hasResolvedComment = true;
+  return ids;
+}
+
+/**
+ * Initials shown on the comment bubble.
+ *
+ * Word derives them from the author when the file omits them; doing it here
+ * makes the value stable across viewers instead of viewer-dependent.
+ */
+function deriveInitials(author: string): string {
+  const initials = author
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 3);
+  return initials || author.slice(0, 2).toUpperCase();
+}
+
+/** The anchors that close a comment range: each end, then its reference run. */
+function closeComment(ids: readonly number[]): DocxIrInline[] {
+  return ids.flatMap((id) => [
+    { kind: 'commentRangeEnd' as const, id },
+    { kind: 'commentReference' as const, id },
+  ]);
 }
 
 /**
@@ -2295,8 +2455,6 @@ function tableBlocker(
       : `${path}.rows[${rowIndex - 1}]`;
     for (const [colIndex, cell] of row.cells.entries()) {
       const cellPath = `${rowPath}.cells[${colIndex}]`;
-      if (cell.comment !== undefined)
-        return { path: cellPath, detail: 'comment' };
       const content = cell.content;
       if (content === undefined || typeof content === 'string') {
         if (content && containsUnsupportedSyntax(content)) {
@@ -2465,8 +2623,25 @@ function cellChildren(
   ctx: CompileContext,
   rowRevision?: RowRevision
 ): DocxIrInline[] {
+  // A comment on an empty cell still has to anchor somewhere: Word writes a
+  // zero-length range plus the reference, so the anchors are placed before the
+  // content is known to exist.
+  const comment = cell.comment as Record<string, any> | undefined;
+  const commentIds = comment ? declareComment(comment, ctx) : undefined;
+  const wrap = (children: DocxIrInline[]): DocxIrInline[] =>
+    commentIds
+      ? [
+          ...commentIds.map((id) => ({
+            kind: 'commentRangeStart' as const,
+            id,
+          })),
+          ...children,
+          ...closeComment(commentIds),
+        ]
+      : children;
+
   const text = cellText(cell);
-  if (cell.missing || text === undefined) return [];
+  if (cell.missing || text === undefined) return wrap([]);
   const base = cellRunFormatting(cell, baseStyle, ctx);
 
   const revision =
@@ -2474,20 +2649,22 @@ function cellChildren(
     cellComponentRevision(cell);
   if (revision) {
     ctx.features.require('revisions', '');
-    return compileRevision(revision, base, ctx);
+    return wrap(compileRevision(revision, base, ctx));
   }
   if (rowRevision) {
-    return compileRevision(
-      {
-        author: rowRevision.author,
-        date: rowRevision.date,
-        segments: [{ type: rowRevision.type, text }],
-      },
-      base,
-      ctx
+    return wrap(
+      compileRevision(
+        {
+          author: rowRevision.author,
+          date: rowRevision.date,
+          segments: [{ type: rowRevision.type, text }],
+        },
+        base,
+        ctx
+      )
     );
   }
-  return parseInline(text, { base, hyperlinks: true });
+  return wrap(parseInline(text, { base, hyperlinks: true }));
 }
 
 /** A revision stated on the `paragraph` component inside a cell. */
