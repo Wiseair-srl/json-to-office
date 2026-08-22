@@ -4,7 +4,7 @@ json-to-office is validation-first: every component's props are described by a T
 
 The two formats take different stances on _when_ that check runs:
 
-- **DOCX**: validation is built into generation. `generateDocumentFromJson` refuses to render an invalid document, throwing `JsonValidationError`.
+- **DOCX**: validation is built into generation. `generateBufferFromJson` refuses to render an invalid document, throwing `JsonValidationError`.
 - **PPTX**: generation does **not** validate — validation is an explicit, separate step (`validate.document(...)` or `jto pptx validate`). Render-time problems the schema can't catch — an invalid chart series, an unknown color — surface as coded **pipeline warnings** rather than sinking the whole deck.
 
 ::: tip Validate your PPTX before generating
@@ -71,17 +71,17 @@ The error carries code `mutually_exclusive` and the path to the offending compon
 
 ### Errors at generation time
 
-`generateDocumentFromJson` (and the buffer/file variants built on it) validates before building, unless you opt out with `options.validation.enabled = false`:
+`generateBufferFromJson` (and the file variants built on it) validates before building, unless you opt out with `options.validation.enabled = false`:
 
 ```ts
 import {
-  generateDocumentFromJson,
+  generateBufferFromJson,
   JsonValidationError,
   JsonParsingError,
 } from '@json-to-office/json-to-docx';
 
 try {
-  await generateDocumentFromJson(jsonString);
+  await generateBufferFromJson(jsonString);
 } catch (err) {
   if (err instanceof JsonParsingError) {
     // Input string was not valid JSON at all (error code JSON_PARSE_ERROR)

@@ -15,13 +15,11 @@ cd json-to-office/examples
 Or programmatically — every example is a plain JSON file you can feed to the [library API](/reference/api):
 
 ```ts
-import { generateDocument } from '@json-to-office/json-to-docx';
-import { Packer } from 'docx';
+import { generateBufferFromJson } from '@json-to-office/json-to-docx';
 import { readFileSync, writeFileSync } from 'fs';
 
 const definition = JSON.parse(readFileSync('./invoice.docx.json', 'utf-8'));
-const doc = await generateDocument(definition);
-writeFileSync('invoice.docx', await Packer.toBuffer(doc));
+writeFileSync('invoice.docx', await generateBufferFromJson(definition));
 ```
 
 ## `invoice.docx.json` — a branded invoice
