@@ -13,6 +13,10 @@ import type {
 import type { PptxFeature } from '../ir/features';
 import type { PptxIR } from '../ir/types';
 import type { PipelineWarning } from '../types';
+import {
+  DEFAULT_PPTX_RENDERER_ID,
+  type PptxRendererId,
+} from '@json-to-office/shared-pptx';
 
 /**
  * Renderer ids available for PPTX.
@@ -20,9 +24,8 @@ import type { PipelineWarning } from '../types';
  * `pptxgenjs` is the default and must keep producing today's output.
  * `office-open` is experimental and opt-in.
  */
-export type PptxRendererId = 'pptxgenjs' | 'office-open';
-
-export const DEFAULT_PPTX_RENDERER_ID: PptxRendererId = 'pptxgenjs';
+export { DEFAULT_PPTX_RENDERER_ID };
+export type { PptxRendererId };
 
 /**
  * Render options for PPTX.

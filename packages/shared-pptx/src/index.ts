@@ -122,6 +122,14 @@ export type {
   GenerateSchemaOptions,
 } from './schemas/generator';
 
+// Renderer-discriminated schema profiles
+export {
+  PPTX_RENDERER_IDS,
+  DEFAULT_PPTX_RENDERER_ID,
+  collectPptxRendererErrors,
+} from './schemas/renderer';
+export type { PptxRendererId } from './schemas/renderer';
+
 // Types
 export type { ReportComponent } from './types/components';
 

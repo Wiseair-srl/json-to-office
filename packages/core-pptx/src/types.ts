@@ -9,6 +9,7 @@ import type {
 import type {
   GradientFill,
   PptxComponentDefaults,
+  PptxRendererId,
 } from '@json-to-office/shared-pptx';
 
 export interface PptxComponentInput {
@@ -22,6 +23,8 @@ export interface PptxComponentInput {
 export interface PresentationComponentDefinition {
   name: 'pptx';
   $schema?: string;
+  /** Renderer backend. Omitted defaults to pptxgenjs. */
+  renderer?: PptxRendererId;
   id?: string;
   props: {
     title?: string;
@@ -41,6 +44,13 @@ export interface PresentationComponentDefinition {
   };
   children?: PptxComponentInput[];
 }
+
+/** A presentation explicitly targeted at one renderer profile. */
+export type PresentationComponentDefinitionFor<R extends PptxRendererId> = Omit<
+  PresentationComponentDefinition,
+  'renderer'
+> &
+  (R extends 'pptxgenjs' ? { renderer?: R } : { renderer: R });
 
 export interface SlideComponentDefinition {
   name: 'slide';

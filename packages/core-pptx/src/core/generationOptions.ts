@@ -80,6 +80,22 @@ export function assertValidPresentation(
   input: string | unknown,
   validation?: GenerationValidationOptions
 ): void {
+  assertValidPresentationInternal(input, validation, false);
+}
+
+/** Keep compiler capability diagnostics authoritative during generation. */
+export function assertValidPresentationForGeneration(
+  input: string | unknown,
+  validation?: GenerationValidationOptions
+): void {
+  assertValidPresentationInternal(input, validation, true);
+}
+
+function assertValidPresentationInternal(
+  input: string | unknown,
+  validation: GenerationValidationOptions | undefined,
+  deferRendererProfileErrors: boolean
+): void {
   if (validation?.enabled === false) return;
 
   const options = {
@@ -90,8 +106,13 @@ export function assertValidPresentation(
       ? validateJsonPresentationDocument(input, options)
       : validatePresentationDocument(input, options);
 
-  if (!result.valid) {
-    throw new PresentationValidationError(result.errors);
+  const errors = deferRendererProfileErrors
+    ? result.errors.filter(
+        (error) => error.code !== 'unsupported_renderer_feature'
+      )
+    : result.errors;
+  if (errors.length > 0) {
+    throw new PresentationValidationError(errors);
   }
 }
 

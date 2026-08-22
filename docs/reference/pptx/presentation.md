@@ -16,15 +16,16 @@ Every component in the tree is an object of the form:
 }
 ```
 
-| Field      | Type    | Required            | Description                                                                                                                                                        |
-| ---------- | ------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `name`     | string  | yes                 | Component type. The root must be `"pptx"`.                                                                                                                         |
-| `id`       | string  | no                  | Free-form identifier, useful for tooling.                                                                                                                          |
-| `enabled`  | boolean | no (default `true`) | When `false`, the component is filtered out and not rendered — content components, template objects and `slide` components alike. See [`enabled`](#enabled) below. |
-| `props`    | object  | per component       | Component properties (tables below).                                                                                                                               |
-| `children` | array   | containers only     | `pptx` accepts only `slide` children; `slide` accepts only content components; content components must not carry `children`.                                       |
+| Field      | Type                           | Required            | Description                                                                                                                                                        |
+| ---------- | ------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`     | string                         | yes                 | Component type. The root must be `"pptx"`.                                                                                                                         |
+| `renderer` | `"pptxgenjs" \| "office-open"` | root only, no       | Backend compatibility profile. Omitted means `pptxgenjs`. Generation options override this field.                                                                  |
+| `id`       | string                         | no                  | Free-form identifier, useful for tooling.                                                                                                                          |
+| `enabled`  | boolean                        | no (default `true`) | When `false`, the component is filtered out and not rendered — content components, template objects and `slide` components alike. See [`enabled`](#enabled) below. |
+| `props`    | object                         | per component       | Component properties (tables below).                                                                                                                               |
+| `children` | array                          | containers only     | `pptx` accepts only `slide` children; `slide` accepts only content components; content components must not carry `children`.                                       |
 
-The root component additionally allows a `$schema` field, so editors can wire up JSON Schema autocompletion (see [JSON schemas](/reference/json-schemas)). Both `pptx` props and `slide` props reject unknown keys (`additionalProperties: false`) — the deep validator reports them as errors unless you opt into `allowUnknownFields` (see [Validation](/guide/validation)).
+The root component additionally allows a `$schema` field, so editors can wire up JSON Schema autocompletion (see [JSON schemas](/reference/json-schemas)). The schema uses `renderer` to select its backend-specific branch. Both `pptx` props and `slide` props reject unknown keys (`additionalProperties: false`) — the deep validator reports them as errors unless you opt into `allowUnknownFields` (see [Validation](/guide/validation)).
 
 ### `enabled`
 
@@ -131,18 +132,14 @@ Supported keys: `text`, `image`, `shape`, `table`, `highcharts`, `chart`. Themes
 | -------------- | --------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `meta`         | `{ title? }`                | —       | Authoring metadata; never rendered. `meta.title` labels the slide in editors and outlines (e.g. the playground sidebar), overriding the label otherwise derived from the slide's title text. |
 | `background`   | `{ color?, image? }`        | —       | Slide background. `color` is a hex value or semantic theme name; `image` is `{ path? }` or `{ base64? }`.                                                                                    |
-| `transition`   | `{ type?, speed? }`         | —       | Slide transition. `type`: `fade` \| `push` \| `wipe` \| `zoom` \| `none`; `speed`: `slow` \| `medium` \| `fast`. **Schema-only for now** — see warning below.                                |
+| `transition`   | `{ type?, speed? }`         | —       | Slide transition. `type`: `fade` \| `push` \| `wipe` \| `zoom` \| `none`; `speed`: `slow` \| `medium` \| `fast`. Supported by `office-open` only.                                            |
 | `notes`        | string                      | —       | Speaker notes, shown in presenter view.                                                                                                                                                      |
 | `layout`       | string                      | —       | Slide layout name. Accepted by the schema and carried through processing, but not currently consumed by the renderer.                                                                        |
 | `hidden`       | boolean                     | —       | `true` marks the slide as hidden: it stays in the file but is skipped during the slideshow.                                                                                                  |
 | `template`     | string                      | —       | Name of a template from the root `templates` array; the template is applied as this slide's master. An unknown name emits a `MISSING_TEMPLATE` warning and the slide renders without it.     |
 | `placeholders` | `Record<string, Component>` | —       | Maps placeholder names (defined by the template) to full components that fill them.                                                                                                          |
 
-All props are optional; unknown keys are rejected.
-
-::: warning `transition` is not applied yet
-The `transition` prop validates against the schema but is currently **not applied at render time** — generated files play without transitions regardless of the value. It is reserved for forward compatibility; treat it as a no-op today.
-:::
+All props are optional; unknown keys and props outside the selected renderer profile are rejected. Templates, slide `template`/`placeholders`, and charts are currently `pptxgenjs`-only; transitions are `office-open`-only.
 
 ### `background`
 

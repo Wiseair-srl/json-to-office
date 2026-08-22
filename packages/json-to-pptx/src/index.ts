@@ -21,6 +21,8 @@ export type {
   GenerationOptions,
   GenerationResult,
   GenerationValidationOptions,
+  PresentationComponentDefinition,
+  PresentationComponentDefinitionFor,
   PipelineWarning,
   WarningCode,
 } from '@json-to-office/core-pptx';

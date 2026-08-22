@@ -77,6 +77,8 @@ export {
 
 // Export core-specific types only
 export type {
+  ReportComponentDefinition,
+  ReportComponentDefinitionFor,
   // Core-specific types
   ImageContent,
   StatisticContent,

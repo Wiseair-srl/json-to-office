@@ -57,12 +57,17 @@ jto <docx|pptx> generate <input> [options]
 
 ### Choosing a backend
 
-`--renderer` picks which library turns the compiled document into bytes. The
-default produces the output this pipeline has always produced; `office-open` is
+The root JSON `renderer` field picks which library turns the compiled document
+into bytes. When omitted, DOCX uses `docxjs` and PPTX uses `pptxgenjs`.
+`--renderer` overrides the document field for that invocation. `office-open` is
 experimental and opt-in.
 
 ```bash
 jto docx generate report.docx.json --renderer office-open -o report.docx
+```
+
+```json
+{ "name": "docx", "renderer": "office-open", "children": [] }
 ```
 
 The two backends do not support the same set of features. A document needing one

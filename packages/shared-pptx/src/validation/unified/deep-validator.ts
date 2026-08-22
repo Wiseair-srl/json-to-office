@@ -46,6 +46,7 @@ const CUSTOM_COMPONENT_OBJECT_KEYS = new Set([
   'version',
 ]);
 const ROOT_OBJECT_KEYS = new Set([...COMPONENT_OBJECT_KEYS, '$schema']);
+ROOT_OBJECT_KEYS.add('renderer');
 
 /**
  * Options that tune deep validation.

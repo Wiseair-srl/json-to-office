@@ -290,6 +290,12 @@ function createBuilderImpl<
     try {
       let internalDocument =
         document as unknown as PresentationComponentDefinition;
+      const renderer =
+        options?.renderer ?? state.renderer ?? internalDocument.renderer;
+      const validationDocument =
+        renderer === undefined
+          ? internalDocument
+          : { ...internalDocument, renderer };
 
       const validationOptions: GenerationValidationOptions = {
         ...state.validation,
@@ -297,7 +303,7 @@ function createBuilderImpl<
       };
       if (validationOptions.enabled !== false) {
         const result = validatePresentation(
-          internalDocument,
+          validationDocument,
           state.components as unknown as CustomComponent<TSchema>[],
           { allowUnknownFields: validationOptions.allowUnknownFields }
         );
@@ -355,10 +361,15 @@ function createBuilderImpl<
           : (emitted, componentLabel, parentName) => {
               let validationDocument: PresentationComponentDefinition;
               if (parentName === 'pptx') {
-                validationDocument = { ...modedRoot, children: emitted };
+                validationDocument = {
+                  ...modedRoot,
+                  ...(renderer !== undefined ? { renderer } : {}),
+                  children: emitted,
+                };
               } else if (parentName === 'slide') {
                 validationDocument = {
                   ...modedRoot,
+                  ...(renderer !== undefined ? { renderer } : {}),
                   children: [{ name: 'slide', props: {}, children: emitted }],
                 };
               } else {
@@ -402,9 +413,16 @@ function createBuilderImpl<
       // nested custom containers whose intermediate parent semantics are
       // plugin-defined and therefore cannot be checked at render time.
       if (validationOptions.enabled !== false) {
-        const result = validatePresentation(processedDocument, [], {
-          allowUnknownFields: validationOptions.allowUnknownFields,
-        });
+        const result = validatePresentation(
+          {
+            ...processedDocument,
+            ...(renderer !== undefined ? { renderer } : {}),
+          },
+          [],
+          {
+            allowUnknownFields: validationOptions.allowUnknownFields,
+          }
+        );
         if (!result.valid) {
           throw new ComponentValidationError(
             result.errors.map((error) => ({
@@ -450,7 +468,7 @@ function createBuilderImpl<
             }),
             warnings,
             {
-              renderer: options?.renderer ?? state.renderer,
+              renderer,
               services: state.services,
               deterministic:
                 options?.deterministic ?? state.packaging.deterministic,

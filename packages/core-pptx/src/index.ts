@@ -32,6 +32,7 @@ export type { PresentationPackagingOptions } from './core/finalizePackage';
 export type {
   PptxComponentInput,
   PresentationComponentDefinition,
+  PresentationComponentDefinitionFor,
   SlideComponentDefinition,
   ProcessedPresentation,
   ProcessedSlide,

@@ -7,6 +7,12 @@
 
 import { Type, TSchema } from '@sinclair/typebox';
 import { PPTX_SLIDE_CONTENT_COMPONENTS } from '@json-to-office/shared/schemas/slide-content';
+import {
+  PPTX_RENDERER_IDS,
+  isPptxComponentSupported,
+  pptxPropsSchemaForRenderer,
+  type PptxRendererId,
+} from './renderer';
 
 /**
  * Component definition with metadata
@@ -109,7 +115,8 @@ export function isPptxStandardComponent(name: string): boolean {
 export function createPptxComponentSchemaObject(
   component: PptxStandardComponentDefinition,
   recursiveRef?: TSchema,
-  placeholderRef?: TSchema
+  placeholderRef?: TSchema,
+  profile?: { renderer: PptxRendererId; requireDiscriminator: boolean }
 ): TSchema {
   const schema: Record<string, TSchema> = {
     name: Type.Literal(component.name),
@@ -125,16 +132,44 @@ export function createPptxComponentSchemaObject(
 
   if (component.special?.hasSchemaField) {
     schema.$schema = Type.Optional(Type.String({ format: 'uri' }));
+    schema.renderer = profile
+      ? profile.requireDiscriminator
+        ? Type.Literal(profile.renderer, {
+            description: 'Renderer backend for this presentation',
+          })
+        : Type.Optional(
+            Type.Literal(profile.renderer, {
+              description: 'Renderer backend. Omitted defaults to "pptxgenjs".',
+            })
+          )
+      : Type.Optional(
+          Type.Union(
+            PPTX_RENDERER_IDS.map((renderer) => Type.Literal(renderer)),
+            {
+              description: 'Renderer backend. Omitted defaults to "pptxgenjs".',
+            }
+          )
+        );
   }
 
-  schema.props = component.propsSchema;
+  schema.props = profile
+    ? pptxPropsSchemaForRenderer(
+        component.name,
+        component.propsSchema,
+        profile.renderer
+      )
+    : component.propsSchema;
 
   if (component.hasChildren && recursiveRef) {
     schema.children = Type.Optional(Type.Array(recursiveRef));
   }
 
-  if (component.hasPlaceholders && (placeholderRef ?? recursiveRef)) {
-    const baseProperties = (component.propsSchema as any).properties ?? {};
+  if (
+    component.hasPlaceholders &&
+    (placeholderRef ?? recursiveRef) &&
+    profile?.renderer !== 'office-open'
+  ) {
+    const baseProperties = (schema.props as any).properties ?? {};
     const phRef = placeholderRef ?? recursiveRef!;
     schema.props = Type.Object(
       {
@@ -180,15 +215,19 @@ export function createAllPptxComponentSchemas(
  */
 export function createAllPptxComponentSchemasNarrowed(
   selfRef: TSchema,
-  pluginSchemas: TSchema[] = []
+  pluginSchemas: TSchema[] = [],
+  profile?: { renderer: PptxRendererId; requireDiscriminator: boolean }
 ): TSchema[] {
   // Phase 1: Build leaf (non-container) component schemas — no children
   const leafSchemas = new Map<string, TSchema>();
   for (const comp of PPTX_STANDARD_COMPONENTS_REGISTRY) {
-    if (!comp.hasChildren) {
+    if (
+      !comp.hasChildren &&
+      (!profile || isPptxComponentSupported(comp.name, profile.renderer))
+    ) {
       leafSchemas.set(
         comp.name,
-        createPptxComponentSchemaObject(comp, undefined, selfRef)
+        createPptxComponentSchemaObject(comp, undefined, selfRef, profile)
       );
     }
   }
@@ -209,7 +248,7 @@ export function createAllPptxComponentSchemasNarrowed(
         // No allowedChildren declared — fallback to full recursive ref
         resolved.set(
           comp.name,
-          createPptxComponentSchemaObject(comp, selfRef, selfRef)
+          createPptxComponentSchemaObject(comp, selfRef, selfRef, profile)
         );
         pending.splice(i, 1);
         continue;
@@ -234,7 +273,7 @@ export function createAllPptxComponentSchemasNarrowed(
 
       resolved.set(
         comp.name,
-        createPptxComponentSchemaObject(comp, childrenType, selfRef)
+        createPptxComponentSchemaObject(comp, childrenType, selfRef, profile)
       );
       pending.splice(i, 1);
     }

@@ -32,6 +32,11 @@ import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
 import { HighchartsPropsSchema } from './components/highcharts';
 import { VisualPropsSchema } from './components/visual';
+import {
+  DOCX_RENDERER_IDS,
+  docxPropsSchemaForRenderer,
+  type DocxRendererId,
+} from './renderer';
 
 /**
  * Component definition with metadata
@@ -302,7 +307,8 @@ function demandsProps(propsSchema: TSchema): boolean {
 export function createComponentSchemaObject(
   component: StandardComponentDefinition,
   childrenType?: TSchema,
-  selfRef?: TSchema
+  selfRef?: TSchema,
+  profile?: { renderer: DocxRendererId; requireDiscriminator: boolean }
 ): TSchema {
   const schema: Record<string, TSchema> = {
     name: Type.Literal(component.name),
@@ -319,14 +325,35 @@ export function createComponentSchemaObject(
   // Special handling for report component (has $schema field)
   if (component.special?.hasSchemaField) {
     schema.$schema = Type.Optional(Type.String({ format: 'uri' }));
+    schema.renderer = profile
+      ? profile.requireDiscriminator
+        ? Type.Literal(profile.renderer, {
+            description: 'Renderer backend for this document',
+          })
+        : Type.Optional(
+            Type.Literal(profile.renderer, {
+              description: 'Renderer backend. Omitted defaults to "docxjs".',
+            })
+          )
+      : Type.Optional(
+          Type.Union(
+            DOCX_RENDERER_IDS.map((renderer) => Type.Literal(renderer)),
+            {
+              description: 'Renderer backend. Omitted defaults to "docxjs".',
+            }
+          )
+        );
   }
 
   // selfRef (full union) is intentionally passed to createPropsSchema so that
   // header/footer sub-schemas and table cell content can reference any component.
-  const propsSchema =
+  const basePropsSchema =
     component.createPropsSchema && selfRef
       ? component.createPropsSchema(selfRef)
       : component.propsSchema;
+  const propsSchema = profile
+    ? docxPropsSchemaForRenderer(basePropsSchema, profile.renderer)
+    : basePropsSchema;
 
   // `props` is required only when the props schema itself demands a field.
   // The runtime validator treats an omitted `props` as `{}` and lets the props
@@ -386,7 +413,8 @@ export function createAllComponentSchemas(
  */
 export function createAllComponentSchemasNarrowed(
   selfRef: TSchema,
-  pluginSchemas: TSchema[] = []
+  pluginSchemas: TSchema[] = [],
+  profile?: { renderer: DocxRendererId; requireDiscriminator: boolean }
 ): { schemas: TSchema[]; byName: Map<string, TSchema> } {
   // Phase 1: Build leaf (non-container) component schemas — no children
   // selfRef is passed so factories (e.g. table) can wire up recursive refs.
@@ -395,7 +423,7 @@ export function createAllComponentSchemasNarrowed(
     if (!comp.hasChildren) {
       leafSchemas.set(
         comp.name,
-        createComponentSchemaObject(comp, undefined, selfRef)
+        createComponentSchemaObject(comp, undefined, selfRef, profile)
       );
     }
   }
@@ -414,7 +442,7 @@ export function createAllComponentSchemasNarrowed(
         // No allowedChildren declared — fallback to full recursive ref
         resolved.set(
           comp.name,
-          createComponentSchemaObject(comp, selfRef, selfRef)
+          createComponentSchemaObject(comp, selfRef, selfRef, profile)
         );
         pending.splice(i, 1);
         continue;
@@ -439,7 +467,7 @@ export function createAllComponentSchemasNarrowed(
 
       resolved.set(
         comp.name,
-        createComponentSchemaObject(comp, childrenType, selfRef)
+        createComponentSchemaObject(comp, childrenType, selfRef, profile)
       );
       pending.splice(i, 1);
     }

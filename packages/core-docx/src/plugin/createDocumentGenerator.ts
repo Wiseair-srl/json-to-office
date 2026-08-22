@@ -434,6 +434,12 @@ function createBuilderImpl<
     const rootIn = document as unknown as ReportComponentDefinition;
     const internalDocument: ReportComponentDefinition =
       rootIn.props === undefined ? { ...rootIn, props: {} } : rootIn;
+    const renderer =
+      options?.renderer ?? state.renderer ?? internalDocument.renderer;
+    const validationDocument =
+      renderer === undefined
+        ? internalDocument
+        : { ...internalDocument, renderer };
 
     // Validate the document first (plugin-aware), unless disabled. Throwing
     // here stops a malformed document from silently building into a corrupt
@@ -444,7 +450,7 @@ function createBuilderImpl<
     };
     if (vOpts.enabled !== false) {
       const result = validateDocument(
-        internalDocument,
+        validationDocument,
         state.components as unknown as CustomComponent<TSchema>[],
         { allowUnknownFields: vOpts.allowUnknownFields }
       );
@@ -472,7 +478,11 @@ function createBuilderImpl<
         ? undefined
         : (emitted: ComponentDefinition[], componentLabel: string) => {
             const result = validateDocument(
-              { ...internalDocument, children: emitted },
+              {
+                ...internalDocument,
+                ...(renderer !== undefined ? { renderer } : {}),
+                children: emitted,
+              },
               state.components as unknown as CustomComponent<TSchema>[],
               { allowUnknownFields: vOpts.allowUnknownFields }
             );
@@ -591,7 +601,8 @@ function createBuilderImpl<
       const baseDir = options?.baseDir ?? state.baseDir;
       const deterministic = options?.deterministic ?? state.deterministic;
       const generatedAt = options?.generatedAt ?? state.generatedAt;
-      const renderer = options?.renderer ?? state.renderer;
+      const renderer =
+        options?.renderer ?? state.renderer ?? modedRoot.renderer;
 
       const { buffer } = await generateBufferViaIr(modedDoc, {
         // The prologue already ran: the theme had to be resolved before custom

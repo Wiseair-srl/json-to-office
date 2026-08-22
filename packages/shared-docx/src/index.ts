@@ -352,12 +352,21 @@ export type {
   GenerateDocumentSchemaOptions,
 } from './schemas/generator';
 
+// Renderer-discriminated schema profiles
+export {
+  DOCX_RENDERER_IDS,
+  DEFAULT_DOCX_RENDERER_ID,
+  collectDocxRendererErrors,
+} from './schemas/renderer';
+export type { DocxRendererId } from './schemas/renderer';
+
 // ============================================================================
 // Docx-specific: Plugin System Type Support
 // ============================================================================
 
 export {
   type ReportComponent,
+  type ReportComponentFor,
   type SectionComponent,
   type ColumnsComponent,
   type HeadingComponent,

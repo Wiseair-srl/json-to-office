@@ -38,6 +38,14 @@ export function fixSchemaReferences(
   schema: Record<string, unknown>,
   rootDefinitionName = 'ComponentDefinition'
 ): void {
+  const definitionNames = new Set(
+    Object.keys(
+      (schema.definitions as Record<string, unknown> | undefined) ?? {}
+    )
+  );
+  const definitionRef = (name: string): string =>
+    `#/definitions/${definitionNames.has(name) ? name : rootDefinitionName}`;
+
   function traverse(obj: Record<string, unknown>, path = ''): void {
     if (typeof obj !== 'object' || obj === null) return;
 
@@ -68,8 +76,10 @@ export function fixSchemaReferences(
             (schemaValue.items as Record<string, unknown>).$ref as string
           )
         ) {
+          const name = (schemaValue.items as Record<string, unknown>)
+            .$ref as string;
           schemaValue.items = {
-            $ref: `#/definitions/${rootDefinitionName}`,
+            $ref: definitionRef(name),
           };
         }
 
@@ -78,7 +88,7 @@ export function fixSchemaReferences(
           (/^T\d+$/.test(schemaValue.$ref as string) ||
             schemaValue.$ref === rootDefinitionName)
         ) {
-          schemaValue.$ref = `#/definitions/${rootDefinitionName}`;
+          schemaValue.$ref = definitionRef(schemaValue.$ref as string);
         }
 
         if (
