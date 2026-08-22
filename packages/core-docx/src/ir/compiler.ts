@@ -650,9 +650,12 @@ function compilePart(
   });
 
   // An empty part is deliberate — it is what breaks Word's link to the
-  // previous section — but content that compiles to nothing is not: the
-  // section keeps whatever it inherited rather than gaining a blank part.
-  if (children.length === 0 && part.length > 0) return undefined;
+  // previous section — and disabling every component in one is the same
+  // statement said differently: the author supplied chrome for this section and
+  // asked for none of it. Only *active* content that compiles to nothing falls
+  // back to inheritance, because that is a lowering gap rather than an
+  // instruction, and inheriting is the older behaviour.
+  if (children.length === 0 && active.length > 0) return undefined;
 
   return { id, children };
 }
