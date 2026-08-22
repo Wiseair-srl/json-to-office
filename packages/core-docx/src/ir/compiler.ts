@@ -36,6 +36,11 @@ import {
   dedupeBookmarkId,
   slugifyBookmarkText,
 } from '../utils/bookmarkRegistry';
+import { resolveListLevels, type ListLevelSource } from '../utils/listLevels';
+import type {
+  ListLevelConfig,
+  ListMarkerFontConfig,
+} from '../utils/numberingConfig';
 import { containsUnsupportedSyntax, parseInline } from './inline';
 import type { DocxFeature } from './features';
 import {
@@ -45,6 +50,8 @@ import {
   type DocxIrBlock,
   type DocxIrHeaderFooter,
   type DocxIrInline,
+  type DocxIrNumbering,
+  type DocxIrNumberingLevel,
   type DocxIrParagraph,
   type DocxIrParagraphFormatting,
   type DocxIrResource,
@@ -60,6 +67,7 @@ import {
 import {
   blockId,
   headerFooterBlockId,
+  inchesToTwips,
   irColor,
   pointsToHalfPoints,
   pointsToTwips,
@@ -119,6 +127,11 @@ interface CompileContext {
    */
   bookmarkNames: Set<string>;
   styleIds: Set<string>;
+  /** Numbering definitions, in the order the lists that need them appear. */
+  numbering: DocxIrNumbering[];
+  numberingByReference: Map<string, DocxIrNumbering>;
+  /** Counter behind the generated `list-1`, `list-2`, … references. */
+  listCounter: number;
 }
 
 export function compileDocument(
@@ -141,6 +154,9 @@ export function compileDocument(
       ...styles.paragraph.map((s) => s.id),
       ...styles.character.map((s) => s.id),
     ]),
+    numbering: [],
+    numberingByReference: new Map(),
+    listCounter: 0,
   };
 
   ctx.features.require('paragraphs', 'sections');
@@ -167,7 +183,7 @@ export function compileDocument(
         : {}),
     },
     styles,
-    numbering: [],
+    numbering: ctx.numbering,
     resources: ctx.resources,
     sections,
     comments: [],
@@ -557,6 +573,8 @@ function compileComponent(
       return compileParagraph(component, scope);
     case 'heading':
       return compileHeading(component, scope);
+    case 'list':
+      return compileList(component, scope);
     case 'image':
       return compileImage(component, scope);
     case 'table':
@@ -657,6 +675,223 @@ function compileHeading(
   ];
 }
 
+/* ------------------------------------------------------------------ *
+ * Lists
+ * ------------------------------------------------------------------ */
+
+/** List props this slice does not lower. */
+const UNLOWERED_LIST_PROPS = ['comment', 'footnotes', 'endnotes'] as const;
+
+/**
+ * A list: one numbering definition plus one paragraph per item.
+ *
+ * The levels come from `resolveListLevels`, shared with the outline pre-pass so
+ * a cross-reference cannot predict a different marker from the one drawn. List
+ * items deliberately carry no run formatting of their own — they inherit the
+ * Normal style, which is what makes a list look like the body text around it.
+ */
+function compileList(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+
+  for (const prop of UNLOWERED_LIST_PROPS) {
+    if (props[prop] !== undefined) {
+      ctx.unsupported.push({ name: 'list', path, detail: prop });
+      return [];
+    }
+  }
+
+  const items = (props.items ?? []) as ListItem[];
+  if (items.length === 0) return [];
+
+  const reference = declareNumbering(props, ctx);
+  const blocks: DocxIrBlock[] = [];
+
+  items.forEach((item, index) => {
+    const text = typeof item === 'string' ? item : String(item.text ?? '');
+    const level = typeof item === 'object' ? item.level ?? 0 : 0;
+    const revision = typeof item === 'object' ? item.revision : undefined;
+    const itemPath = `${path}.items[${index}]`;
+
+    if (revision !== undefined) {
+      ctx.unsupported.push({
+        name: 'list',
+        path: itemPath,
+        detail: 'revision',
+      });
+      return;
+    }
+    // An item with nothing in it is not a bullet with no text; it is not an
+    // item at all.
+    if (!text.trim()) return;
+
+    const syntax = containsUnsupportedSyntax(text);
+    if (syntax) {
+      ctx.unsupported.push({ name: 'list', path: itemPath, detail: syntax });
+      return;
+    }
+
+    blocks.push(
+      paragraphNode(
+        { ctx, path: itemPath, id: `${scope.id}:i${index}` },
+        parseInline(text, { base: {} }),
+        {
+          styleId: 'Normal',
+          formatting: {
+            alignment: compileAlignment(props.alignment) ?? 'left',
+            spacing: itemSpacing(props.spacing, index, items.length),
+          },
+          ...(typeof item === 'object' && typeof item.id === 'string'
+            ? { bookmarkName: item.id }
+            : {}),
+          numbering: { reference, level },
+        }
+      )
+    );
+  });
+
+  if (blocks.length > 0) ctx.features.require('numbering', path);
+  return blocks;
+}
+
+type ListItem =
+  | string
+  | { text?: string; level?: number; id?: string; revision?: unknown };
+
+/**
+ * Spacing for one list item.
+ *
+ * `before` sits on the first item and `after` on the last, so the list as a
+ * whole is spaced from its surroundings; `item` spaces every other item from
+ * the next one.
+ */
+function itemSpacing(
+  spacing: { before?: number; after?: number; item?: number } | undefined,
+  index: number,
+  count: number
+): DocxIrSpacing {
+  const out: DocxIrSpacing = {};
+  if (index === 0 && spacing?.before) {
+    out.beforeTwips = pointsToTwips(spacing.before);
+  }
+  if (index === count - 1 && spacing?.after) {
+    out.afterTwips = pointsToTwips(spacing.after);
+  } else if (spacing?.item) {
+    out.afterTwips = pointsToTwips(spacing.item);
+  }
+  return out;
+}
+
+/**
+ * Register this list's numbering definition and return its reference.
+ *
+ * A stated `reference` lets several lists share one definition — and continue
+ * one numbering sequence — so the first list to claim it wins and the rest just
+ * point at it.
+ */
+function declareNumbering(
+  props: Record<string, any>,
+  ctx: CompileContext
+): string {
+  const reference =
+    typeof props.reference === 'string' && props.reference
+      ? props.reference
+      : `list-${++ctx.listCounter}`;
+
+  if (ctx.numberingByReference.has(reference)) return reference;
+
+  const numbering: DocxIrNumbering = {
+    reference,
+    levels: resolveListLevels(props as ListLevelSource).map((level) =>
+      compileNumberingLevel(level, ctx)
+    ),
+  };
+  ctx.numbering.push(numbering);
+  ctx.numberingByReference.set(reference, numbering);
+  return reference;
+}
+
+/**
+ * One numbering level, with every default resolved.
+ *
+ * Indents are stated in points by authors and in inches by the defaults; both
+ * become twips here so no renderer has to know either.
+ */
+function compileNumberingLevel(
+  level: ListLevelConfig,
+  ctx: CompileContext
+): DocxIrNumberingLevel {
+  const format = level.format || 'bullet';
+  const text =
+    level.text || (format === 'bullet' ? '•' : `%${level.level + 1}.`);
+  const leftInches =
+    level.indent?.left !== undefined
+      ? level.indent.left / 72
+      : 0.5 * (level.level + 1);
+  const hangingInches =
+    level.indent?.hanging !== undefined ? level.indent.hanging / 72 : 0.25;
+
+  return {
+    level: level.level,
+    format,
+    text,
+    alignment: markerAlignment(level.alignment),
+    indent: {
+      leftTwips: inchesToTwips(leftInches),
+      hangingTwips: inchesToTwips(hangingInches),
+    },
+    ...(level.start !== undefined ? { start: level.start } : {}),
+    ...(markerRunFormatting(level.font, ctx)
+      ? { run: markerRunFormatting(level.font, ctx)! }
+      : {}),
+  };
+}
+
+/**
+ * How a marker sits in its own space (`w:lvlJc`).
+ *
+ * Wider than paragraph alignment: a marker may be `start`/`end`-aligned, which
+ * follows the reading direction, and there is nothing to justify. Anything
+ * unrecognised is left-aligned.
+ */
+function markerAlignment(value: unknown): DocxIrAlignment {
+  switch (value) {
+    case 'start':
+    case 'end':
+    case 'right':
+    case 'center':
+      return value;
+    default:
+      return 'left';
+  }
+}
+
+/** The marker glyph's own formatting, resolved against the theme. */
+function markerRunFormatting(
+  font: ListMarkerFontConfig | undefined,
+  ctx: CompileContext
+): DocxIrRunFormatting | undefined {
+  if (!font) return undefined;
+  const run: DocxIrRunFormatting = {
+    ...(font.family ? { fontFamily: font.family } : {}),
+    ...(font.size !== undefined
+      ? { sizeHalfPoints: pointsToHalfPoints(font.size) }
+      : {}),
+    ...(font.color
+      ? { color: irColor(resolveColor(font.color, ctx.theme)) }
+      : {}),
+    ...(font.bold !== undefined ? { bold: font.bold } : {}),
+    ...(font.italic !== undefined ? { italic: font.italic } : {}),
+    ...(font.underline !== undefined
+      ? { underline: font.underline ? { type: 'single' } : undefined }
+      : {}),
+  };
+  return Object.keys(run).length > 0 ? run : undefined;
+}
+
 /**
  * Wrap runs into a paragraph, adding the bookmark pair when there is one.
  *
@@ -671,6 +906,7 @@ function paragraphNode(
     formatting?: DocxIrParagraphFormatting;
     bookmarkName?: string;
     numberingNone?: boolean;
+    numbering?: { reference: string; level: number };
   }
 ): DocxIrParagraph {
   const { ctx } = scope;
@@ -702,7 +938,9 @@ function paragraphNode(
     ...(options.formatting ? { formatting: options.formatting } : {}),
     ...(options.numberingNone
       ? { numbering: { reference: '', level: 0, none: true } }
-      : {}),
+      : options.numbering
+        ? { numbering: options.numbering }
+        : {}),
   };
 }
 

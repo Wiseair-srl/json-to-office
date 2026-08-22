@@ -21,11 +21,17 @@ import {
   Header,
   Packer,
   Paragraph,
+  type ILevelsOptions,
   type ISectionOptions,
 } from 'docx';
 import type { ThemeConfig } from '../../styles';
 import { createWordStyles } from '../../styles/themeToDocxAdapter';
-import type { DocxIR, DocxIrHeaderFooter, DocxIrSection } from '../../ir/types';
+import type {
+  DocxIR,
+  DocxIrHeaderFooter,
+  DocxIrNumbering,
+  DocxIrSection,
+} from '../../ir/types';
 import { ALL_DOCX_FEATURES, type DocxFeature } from '../../ir/features';
 import {
   canonicalizeDocxBuffer,
@@ -33,7 +39,7 @@ import {
 } from '../../utils/packageDocument';
 import { fixFloatingImageIdsInBuffer } from '../../utils/fixFloatingImageIds';
 import type { DocxRenderOptions, DocxRenderer, DocxRendererId } from '../types';
-import { emitBlock } from './emit';
+import { ALIGNMENT, emitBlock, runOptions } from './emit';
 
 export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
 
@@ -44,7 +50,6 @@ export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
  * of them, and each moves into this set as the compiler learns to lower it.
  */
 const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
-  'numbering',
   'tables',
   'table-merged-cells',
   'floating-tables',
@@ -126,7 +131,46 @@ export function buildDocument(ir: DocxIR, theme: ThemeConfig): Document {
       updateFields: ir.settings.updateFields,
       ...(ir.settings.trackRevisions ? { trackRevisions: true } : {}),
     },
+    ...(ir.numbering.length > 0
+      ? { numbering: { config: ir.numbering.map(numberingConfig) } }
+      : {}),
   });
+}
+
+/** One IR numbering definition as a docx.js abstract numbering config. */
+function numberingConfig(numbering: DocxIrNumbering): {
+  reference: string;
+  levels: ILevelsOptions[];
+} {
+  return {
+    reference: numbering.reference,
+    levels: numbering.levels.map((level) => ({
+      level: level.level,
+      format: level.format as ILevelsOptions['format'],
+      text: level.text,
+      alignment: level.alignment ? ALIGNMENT[level.alignment] : undefined,
+      ...(level.suffix ? { suffix: level.suffix } : {}),
+      style: {
+        ...(level.indent
+          ? {
+              paragraph: {
+                indent: {
+                  ...(level.indent.leftTwips !== undefined
+                    ? { left: level.indent.leftTwips }
+                    : {}),
+                  ...(level.indent.hangingTwips !== undefined
+                    ? { hanging: level.indent.hangingTwips }
+                    : {}),
+                },
+              },
+            }
+          : {}),
+        ...(level.run ? { run: runOptions(level.run) } : {}),
+        ...(level.paragraphStyleId ? { style: level.paragraphStyleId } : {}),
+      },
+      ...(level.start !== undefined ? { start: level.start } : {}),
+    })),
+  };
 }
 
 function sectionOptions(section: DocxIrSection): ISectionOptions {
