@@ -1,0 +1,90 @@
+<!-- Source of truth for docs/document-model.png. After editing, regenerate the raster with:
+     rsvg-convert -w 2160 docs/document-model.svg -o docs/document-model.png -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="560" viewBox="0 0 1440 560" role="img" aria-labelledby="title desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title id="title">The json-to-office document model</title>
+<desc id="desc">An authored JSON document is a tree of components, each with a name, props and children. Base components are the built-in vocabulary; custom components come from your plugin. The processor validates each custom component's props, resolves its semver version, calls render() and splices the result back, recursing up to twenty levels. What comes out is the standard definition: the same tree with base components only, which is what the rest of the pipeline compiles.</desc>
+<style>
+  .bg{fill:#FFFFFF}
+  .card{fill:#FAFAF8;stroke:#E0DFD8}
+  .chip{fill:#FFFFFF;stroke:#D3D1C7}
+  .chip-c{fill:#EEEDFE;stroke:#7F77DD}
+  .chip-d{fill:#FFFFFF;stroke:#7F77DD;stroke-dasharray:4 3}
+  .spine{fill:none;stroke:#C4C2B8}
+  .h{fill:#2C2C2A;font-size:16px;font-weight:500}
+  .k{fill:#5F5E5A;font-size:12px;letter-spacing:.06em}
+  .m{fill:#2C2C2A;font-size:13.5px;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+  .m-c{fill:#3C3489;font-size:13.5px;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+  .s{fill:#5F5E5A;font-size:12px}
+  .s-c{fill:#534AB7;font-size:12px}
+  .li{fill:#2C2C2A;font-size:13px}
+  .note{fill:#5F5E5A;font-size:12.5px}
+  .arr{fill:none;stroke:#888780;stroke-width:1.4}
+  .head{fill:#888780}
+  rect{stroke-width:1}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#1A1A18}
+    .card{fill:#222220;stroke:#3B3B37}
+    .chip{fill:#2B2B29;stroke:#4A4A45}
+    .chip-c{fill:#26215C;stroke:#7F77DD}
+    .chip-d{fill:#222220;stroke:#7F77DD}
+    .spine{stroke:#5F5E5A}
+    .h{fill:#F1EFE8}
+    .k,.s,.note{fill:#B4B2A9}
+    .m{fill:#F1EFE8}
+    .m-c{fill:#CECBF6}
+    .s-c{fill:#AFA9EC}
+    .li{fill:#D3D1C7}
+  }
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="head" d="M0 1L9 5L0 9z"/></marker></defs>
+<rect class="bg" x="0" y="0" width="1440" height="560"/>
+
+<text class="k" x="40" y="74">AUTHORED JSON</text>
+<rect class="card" x="40" y="90" width="440" height="378" rx="10"/>
+<rect class="chip" x="64" y="112" width="392" height="56" rx="6"/>
+<text class="m" x="82" y="137">"name": "docx"</text>
+<text class="s" x="82" y="156">"props": { "theme": "minimal" }</text>
+<text class="k" x="82" y="192">CHILDREN</text>
+<path class="spine" d="M82 200 L82 400"/>
+<rect class="chip" x="98" y="206" width="358" height="52" rx="6"/>
+<text class="m" x="116" y="238">heading</text>
+<text class="s" x="438" y="238" text-anchor="end">base</text>
+<rect class="chip-c" x="98" y="272" width="358" height="66" rx="6"/>
+<text class="m-c" x="116" y="300">kpi-card</text>
+<text class="s-c" x="438" y="300" text-anchor="end">custom</text>
+<text class="s-c" x="116" y="322">defined in your plugin, versioned with semver</text>
+<rect class="chip" x="98" y="352" width="358" height="52" rx="6"/>
+<text class="m" x="116" y="384">paragraph</text>
+<text class="s" x="438" y="384" text-anchor="end">base</text>
+<text class="s" x="116" y="432">…</text>
+
+<path class="arr" marker-end="url(#a)" d="M480 260 L516 260"/>
+<rect class="card" x="524" y="150" width="332" height="220" rx="10"/>
+<text class="h" x="548" y="186">processor</text>
+<text class="li" x="548" y="222">· validate props against its schema</text>
+<text class="li" x="548" y="250">· resolve the requested semver version</text>
+<text class="li" x="548" y="278">· call render(), splice the result back</text>
+<text class="li" x="548" y="306">· re-expand, up to 20 levels deep</text>
+<text class="note" x="548" y="342">custom components only — base ones pass through</text>
+<path class="arr" marker-end="url(#a)" d="M856 260 L892 260"/>
+
+<text class="k" x="900" y="74">STANDARD DEFINITION</text>
+<rect class="card" x="900" y="90" width="440" height="378" rx="10"/>
+<text class="s" x="924" y="126">base components only — no custom names left</text>
+<rect class="chip" x="924" y="144" width="392" height="48" rx="6"/>
+<text class="m" x="942" y="174">heading</text>
+<text class="s" x="1298" y="174" text-anchor="end">base</text>
+<rect class="chip-d" x="924" y="204" width="392" height="48" rx="6"/>
+<text class="m" x="942" y="234">heading</text>
+<text class="s-c" x="1298" y="234" text-anchor="end">from kpi-card</text>
+<rect class="chip-d" x="924" y="264" width="392" height="48" rx="6"/>
+<text class="m" x="942" y="294">statistic</text>
+<text class="s-c" x="1298" y="294" text-anchor="end">from kpi-card</text>
+<rect class="chip" x="924" y="324" width="392" height="48" rx="6"/>
+<text class="m" x="942" y="354">paragraph</text>
+<text class="s" x="1298" y="354" text-anchor="end">base</text>
+<text class="s" x="942" y="392">…</text>
+<text class="note" x="924" y="432">this is the tree the rest of the pipeline resolves and compiles</text>
+
+<text class="note" x="40" y="500">Every node has the same shape — name, props, children — and both trees validate against the same JSON Schema.</text>
+</svg>

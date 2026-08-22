@@ -37,6 +37,16 @@ IR knows a renderer exists.
 
 ## Layers
 
+Two diagrams are published, each with an SVG source and a PNG rasterized from
+it for the README — `docs/architecture.{svg,png}` for this pipeline and
+`docs/document-model.{svg,png}` for the component tree the processor expands.
+Edit the SVG, never the PNG, and regenerate with:
+
+```bash
+rsvg-convert -w 2160 docs/architecture.svg -o docs/architecture.png
+rsvg-convert -w 2160 docs/document-model.svg -o docs/document-model.png
+```
+
 ```text
 author JSON
   → validation                     (schema + structural conflicts)
