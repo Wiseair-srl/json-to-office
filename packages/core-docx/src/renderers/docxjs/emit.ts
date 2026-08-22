@@ -18,6 +18,8 @@ import {
   BookmarkStart,
   BorderStyle,
   ColumnBreak,
+  ExternalHyperlink,
+  InternalHyperlink,
   Paragraph,
   Tab,
   Table,
@@ -181,6 +183,25 @@ export function inlineChildren(
       }
 
       case 'hyperlink':
+        out.push(
+          child.target.kind === 'bookmark'
+            ? new InternalHyperlink({
+                children: inlineChildren(
+                  child.children,
+                  resources
+                ) as TextRun[],
+                anchor: child.target.anchor,
+              })
+            : new ExternalHyperlink({
+                children: inlineChildren(
+                  child.children,
+                  resources
+                ) as TextRun[],
+                link: child.target.url,
+              })
+        );
+        break;
+
       case 'field':
       case 'noteReference':
       case 'commentRangeStart':
