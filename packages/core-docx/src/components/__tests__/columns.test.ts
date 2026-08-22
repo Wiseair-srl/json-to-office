@@ -1,452 +1,188 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Paragraph, Table, TableRow } from 'docx';
-import { createMockTheme, TEST_THEME_NAME } from './helpers';
-import type { ComponentDefinition, RenderContext } from '../../types';
+/**
+ * What a `columns` component does, which depends entirely on where it sits.
+ *
+ * At the top level it is a page layout: the layout stage turns it into its own
+ * OOXML section with a column setting, and its children flow through the
+ * columns as one stream. Inside a text box there is no section to give, so the
+ * columns become table cells and the children are dealt across them.
+ *
+ * Both readings are covered here, because the difference between them is the
+ * one thing about this component that is easy to get wrong.
+ */
 
-// Mock renderComponent function for child components
-vi.mock('../../core/render', async () => {
-  const { Paragraph } = await vi.importActual<typeof import('docx')>('docx');
-  return {
-    renderComponent: vi.fn().mockResolvedValue([new Paragraph({})]),
-  };
-});
+import { describe, it, expect } from 'vitest';
+import { compileDocumentToIr } from '../../core/generateFromIr';
+import type { DocxIR, DocxIrTable } from '../../ir/types';
+import type { ReportComponentDefinition } from '../../types';
 
-import { renderColumnsComponent } from '../columns';
-import { renderComponent } from '../../core/render';
-const mockRenderComponent = renderComponent as any;
+async function compile(children: unknown[]): Promise<DocxIR> {
+  const compiled = await compileDocumentToIr({
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children,
+  } as unknown as ReportComponentDefinition);
+  return compiled.ir;
+}
 
-describe('components/columns', () => {
-  const mockContext: RenderContext = {
-    theme: {
-      name: 'test',
-      colors: {},
-      fonts: {},
-      spacing: {},
+const p = (text: string) => ({ name: 'paragraph', props: { text } });
+
+const textOf = (ir: DocxIR, section: number): string[] =>
+  ir.sections[section].children.flatMap((block) =>
+    block.kind === 'paragraph'
+      ? [
+          block.children
+            .map((child) => (child.kind === 'text' ? child.text : ''))
+            .join(''),
+        ]
+      : []
+  );
+
+/** The columns of a text box's nested table, as the text in each cell. */
+function cellTexts(table: DocxIrTable): string[][] {
+  return table.rows[0].cells.map((cell) =>
+    cell.children.flatMap((block) =>
+      block.kind === 'paragraph'
+        ? [
+            block.children
+              .map((child) => (child.kind === 'text' ? child.text : ''))
+              .join(''),
+          ]
+        : []
+    )
+  );
+}
+
+async function textBoxColumns(
+  props: Record<string, unknown>,
+  children: unknown[]
+): Promise<DocxIrTable> {
+  const ir = await compile([
+    {
+      name: 'text-box',
+      props: {},
+      children: [{ name: 'columns', props, children }],
     },
-    fullTheme: createMockTheme(),
-    document: {
-      title: 'Test Document',
-      date: new Date(),
-      author: 'Test Author',
-    },
-    section: {
-      currentLayout: 'single',
-      columnCount: 1,
-      pageNumber: 1,
-    },
-  } as RenderContext;
+  ]);
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Default mock returns paragraphs
-    mockRenderComponent.mockResolvedValue([new Paragraph({})]);
+  const [outer] = ir.sections[0].children;
+  expect(outer.kind).toBe('table');
+  const inner = (outer as DocxIrTable).rows[0].cells[0].children[0];
+  expect(inner.kind).toBe('table');
+  return inner as DocxIrTable;
+}
+
+describe('components/columns at the top level', () => {
+  it('becomes its own section with the column count it asked for', async () => {
+    const ir = await compile([
+      p('Before'),
+      { name: 'columns', props: { columns: 2 }, children: [p('A'), p('B')] },
+      p('After'),
+    ]);
+
+    // Before, the columns themselves, after: three sections, because a column
+    // setting can only change at a section boundary.
+    expect(ir.sections).toHaveLength(3);
+    expect(ir.sections[1].properties.columns?.count).toBe(2);
+    expect(textOf(ir, 1)).toEqual(['A', 'B']);
   });
 
-  describe('renderColumnsComponent', () => {
-    it('should render empty columns component', async () => {
-      const component: ComponentDefinition = {
+  it('flows its children as one stream, not one per column', async () => {
+    const ir = await compile([
+      {
         name: 'columns',
-        props: { count: 2 },
-      };
+        props: { columns: 2 },
+        children: [p('One'), p('Two'), p('Three')],
+      },
+    ]);
 
-      const result = await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    expect(textOf(ir, 0)).toEqual(['One', 'Two', 'Three']);
+  });
 
-      expect(result).toHaveLength(0);
-      expect(mockRenderComponent).not.toHaveBeenCalled();
-    });
-
-    it('should render columns with single child component', async () => {
-      const component: ComponentDefinition = {
+  it('carries mixed component types through', async () => {
+    const ir = await compile([
+      {
         name: 'columns',
-        props: { count: 1 },
+        props: { columns: 2 },
         children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Column 1 content' },
-          },
+          { name: 'heading', props: { level: 2, text: 'Title' } },
+          p('Body'),
+          { name: 'list', props: { items: ['One'] } },
         ],
-      };
+      },
+    ]);
 
-      const result = await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    expect(textOf(ir, 0)).toEqual(['Title', 'Body', 'One']);
+  });
 
-      expect(mockRenderComponent).toHaveBeenCalledTimes(1);
-      expect(mockRenderComponent).toHaveBeenCalledWith(
-        component.children![0],
-        expect.any(Object),
-        TEST_THEME_NAME,
-        mockContext
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
+  it('still opens a section for a columns component with no children', async () => {
+    // The column setting is a property of the page, not of the content: an
+    // empty two-column block is a two-column page with nothing on it.
+    const ir = await compile([
+      { name: 'columns', props: { columns: 2 }, children: [] },
+    ]);
 
-    it('should render columns with multiple child components', async () => {
-      const component: ComponentDefinition = {
+    expect(ir.sections).toHaveLength(1);
+    expect(ir.sections[0].children).toEqual([]);
+  });
+
+  it('takes explicit widths and gaps', async () => {
+    const ir = await compile([
+      {
         name: 'columns',
-        props: { count: 3 },
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Column 1' },
-          },
-          {
-            name: 'paragraph',
-            props: { content: 'Column 2' },
-          },
-          {
-            name: 'paragraph',
-            props: { content: 'Column 3' },
-          },
-        ],
-      };
+        props: { columns: [{ width: 144 }, { width: 144 }], gap: 36 },
+        children: [p('A'), p('B')],
+      },
+    ]);
 
-      const result = await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    const { columns } = ir.sections[0].properties;
+    expect(columns?.count).toBe(2);
+    // Points to twips; explicit widths turn equal distribution off.
+    expect(columns?.widths?.[0].widthTwips).toBe(2880);
+    expect(columns?.equalWidth).toBe(false);
+  });
+});
 
-      expect(mockRenderComponent).toHaveBeenCalledTimes(3);
-      expect(result).toHaveLength(3);
-    });
+describe('components/columns inside a text box', () => {
+  it('becomes a cell per column, dealing children round-robin', async () => {
+    const table = await textBoxColumns({ columns: 2 }, [
+      p('One'),
+      p('Two'),
+      p('Three'),
+    ]);
 
-    it('should handle mixed component types in columns', async () => {
-      mockRenderComponent
-        .mockResolvedValueOnce([new Paragraph({})])
-        .mockResolvedValueOnce([
-          new Table({ rows: [new TableRow({ children: [] })] }),
-        ])
-        .mockResolvedValueOnce([new Paragraph({})]);
+    expect(cellTexts(table)).toEqual([['One', 'Three'], ['Two']]);
+  });
 
-      const component: ComponentDefinition = {
-        name: 'columns',
-        props: { count: 3 },
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Text module' },
-          },
-          {
-            name: 'table',
-            props: {
-              headers: ['Col1', 'Col2'],
-              rows: [['A', 'B']],
-            },
-          },
-          {
-            name: 'heading',
-            props: { text: 'Heading', level: 2 },
-          },
-        ],
-      };
+  it('gives a column with nothing dealt to it an empty paragraph', async () => {
+    const table = await textBoxColumns({ columns: 3 }, [p('Only one')]);
 
-      const result = await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    expect(table.rows[0].cells).toHaveLength(3);
+    expect(cellTexts(table)).toEqual([['Only one'], [''], ['']]);
+  });
 
-      expect(mockRenderComponent).toHaveBeenCalledTimes(3);
-      expect(result).toHaveLength(3);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-      // Table constructor was called, but we return the mock
-      expect(result[1]).toBeDefined();
-      expect(result[2]).toBeInstanceOf(Paragraph);
-    });
+  it('splits the gap between the two cells either side of it', async () => {
+    // Points, like every other authored length here: 36pt is half an inch.
+    const table = await textBoxColumns({ columns: 2, gap: 36 }, [
+      p('A'),
+      p('B'),
+    ]);
 
-    it('should handle nested columns components', async () => {
-      const component: ComponentDefinition = {
-        name: 'columns',
-        props: { count: 1 },
-        children: [
-          {
-            name: 'columns',
-            props: { count: 1 },
-            children: [
-              {
-                name: 'paragraph',
-                props: { content: 'Nested content' },
-              },
-            ],
-          },
-        ],
-      };
+    const [first, second] = table.rows[0].cells;
+    expect(first.margins?.rightTwips).toBe(360);
+    expect(second.margins?.leftTwips).toBe(360);
+    // Nothing sits to the left of the first column, or right of the last.
+    expect(first.margins?.leftTwips).toBe(0);
+    expect(second.margins?.rightTwips).toBe(0);
+  });
 
-      const result = await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+  it('shares what the stated columns leave over between the rest', async () => {
+    const table = await textBoxColumns(
+      { columns: [{ width: 144 }, {}, {}], gap: 0 },
+      [p('A'), p('B'), p('C')]
+    );
 
-      expect(mockRenderComponent).toHaveBeenCalledTimes(1);
-      expect(mockRenderComponent).toHaveBeenCalledWith(
-        component.children![0],
-        expect.any(Object),
-        TEST_THEME_NAME,
-        mockContext
-      );
-      expect(result).toHaveLength(1);
-    });
-
-    it('should pass theme configuration to child components', async () => {
-      const customTheme = createMockTheme({
-        colors: {
-          primary: 'FF0000',
-          secondary: '00FF00',
-          accent: '0000FF',
-          text: '000000',
-          background: 'FFFFFF',
-        },
-      });
-
-      const component: ComponentDefinition = {
-        name: 'columns',
-        props: { count: 1 },
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Themed content' },
-          },
-        ],
-      };
-
-      await renderColumnsComponent(
-        component,
-        customTheme,
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      expect(mockRenderComponent).toHaveBeenCalledWith(
-        component.children![0],
-        customTheme,
-        TEST_THEME_NAME,
-        mockContext
-      );
-    });
-
-    it('should pass context to child components', async () => {
-      const customContext: RenderContext = {
-        theme: {
-          name: 'test',
-          colors: {},
-          fonts: {},
-          spacing: {},
-        },
-        fullTheme: createMockTheme(),
-        document: {
-          title: 'Custom Title',
-          date: new Date('2024-01-01T00:00:00Z'),
-          author: 'Custom Author',
-          company: 'Engineering',
-        },
-        section: {
-          currentLayout: 'single',
-          columnCount: 1,
-          pageNumber: 1,
-        },
-      } as RenderContext;
-
-      const component: ComponentDefinition = {
-        name: 'columns',
-        props: { count: 1 },
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Context test' },
-          },
-        ],
-      };
-
-      await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        customContext
-      );
-
-      expect(mockRenderComponent).toHaveBeenCalledWith(
-        component.children![0],
-        expect.any(Object),
-        TEST_THEME_NAME,
-        customContext
-      );
-    });
-
-    it('should handle non-columns component type', async () => {
-      const component: ComponentDefinition = {
-        name: 'paragraph',
-        props: { content: 'Not columns' },
-      };
-
-      const result = await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      expect(result).toHaveLength(0);
-      expect(result).toEqual([]);
-      expect(mockRenderComponent).not.toHaveBeenCalled();
-    });
-
-    it('should handle columns with configuration options', async () => {
-      const component: ComponentDefinition = {
-        name: 'columns',
-        props: {
-          count: 3,
-          space: 20,
-          equalWidth: true,
-          widths: [30, 40, 30],
-        },
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Col 1' },
-          },
-          {
-            name: 'paragraph',
-            props: { content: 'Col 2' },
-          },
-          {
-            name: 'paragraph',
-            props: { content: 'Col 3' },
-          },
-        ],
-      };
-
-      const result = await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      expect(mockRenderComponent).toHaveBeenCalledTimes(3);
-      expect(result).toHaveLength(3);
-    });
-
-    it('should handle empty children array', async () => {
-      const component: ComponentDefinition = {
-        name: 'columns',
-        props: { count: 2 },
-        children: [],
-      };
-
-      const result = await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      expect(result).toHaveLength(0);
-      expect(mockRenderComponent).not.toHaveBeenCalled();
-    });
-
-    it('should aggregate multiple elements from child components', async () => {
-      mockRenderComponent.mockResolvedValue([
-        new Paragraph({}),
-        new Paragraph({}),
-        new Paragraph({}),
-      ]);
-
-      const component: ComponentDefinition = {
-        name: 'columns',
-        props: { count: 1 },
-        children: [
-          {
-            name: 'list',
-            props: { items: ['Item 1', 'Item 2', 'Item 3'] },
-          },
-        ],
-      };
-
-      const result = await renderColumnsComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      expect(mockRenderComponent).toHaveBeenCalledTimes(1);
-      expect(result).toHaveLength(3);
-      result.forEach((element) => {
-        expect(element).toBeInstanceOf(Paragraph);
-      });
-    });
-
-    it('should handle child component rendering errors gracefully', async () => {
-      mockRenderComponent.mockRejectedValueOnce(new Error('Render error'));
-
-      const component: ComponentDefinition = {
-        name: 'columns',
-        props: { count: 1 },
-        children: [
-          {
-            name: 'paragraph' as any,
-            props: { content: 'test' },
-          },
-        ],
-      };
-
-      await expect(
-        renderColumnsComponent(
-          component,
-          createMockTheme(),
-          TEST_THEME_NAME,
-          mockContext
-        )
-      ).rejects.toThrow('Render error');
-    });
-
-    it('should handle different theme names', async () => {
-      const component: ComponentDefinition = {
-        name: 'columns',
-        props: { count: 1 },
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Theme test' },
-          },
-        ],
-      };
-
-      const themeNames = ['minimal', 'classic', 'professional', 'custom'];
-
-      for (const themeName of themeNames) {
-        mockRenderComponent.mockClear();
-        mockRenderComponent.mockResolvedValue([new Paragraph({})]);
-
-        const result = await renderColumnsComponent(
-          component,
-          createMockTheme(),
-          themeName,
-          mockContext
-        );
-
-        expect(mockRenderComponent).toHaveBeenCalledWith(
-          component.children![0],
-          expect.any(Object),
-          themeName,
-          mockContext
-        );
-        expect(result).toHaveLength(1);
-      }
-    });
+    const widths = table.rows[0].cells.map((cell) => cell.widthTwips!);
+    expect(widths[0]).toBe(2880);
+    expect(widths[1]).toBe(widths[2]);
   });
 });

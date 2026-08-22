@@ -1,479 +1,175 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Paragraph, Table, TableRow } from 'docx';
-import { createMockTheme, TEST_THEME_NAME } from './helpers';
-import type { ComponentDefinition, RenderContext } from '../../types';
+/**
+ * What a `section` does to the document around it.
+ *
+ * A section is not a block: the layout stage turns it into a real OOXML
+ * section, so what is worth checking is what comes out the other side — that
+ * its children arrive in order, that a page override reaches the section
+ * properties rather than being dropped, and that a section nested in another
+ * one flattens away instead of nesting.
+ */
 
-// Mock renderComponent function for child components
-vi.mock('../../core/render', async () => {
-  const { Paragraph } = await vi.importActual<typeof import('docx')>('docx');
-  return {
-    renderComponent: vi.fn().mockResolvedValue([new Paragraph({})]),
-  };
-});
+import { describe, it, expect } from 'vitest';
+import { compileDocumentToIr } from '../../core/generateFromIr';
+import type { DocxIR } from '../../ir/types';
+import type { ReportComponentDefinition } from '../../types';
 
-import { renderSectionComponent } from '../section';
-import { renderComponent } from '../../core/render';
-const mockRenderComponent = renderComponent as any;
+async function compile(children: unknown[]): Promise<DocxIR> {
+  const compiled = await compileDocumentToIr({
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children,
+  } as unknown as ReportComponentDefinition);
+  return compiled.ir;
+}
+
+const p = (text: string) => ({ name: 'paragraph', props: { text } });
+
+/** The text of every paragraph in a section, in order. */
+function textOf(ir: DocxIR, section = 0): string[] {
+  return ir.sections[section].children.flatMap((block) =>
+    block.kind === 'paragraph'
+      ? [
+          block.children
+            .map((child) => (child.kind === 'text' ? child.text : ''))
+            .join(''),
+        ]
+      : []
+  );
+}
 
 describe('components/section', () => {
-  const mockContext: RenderContext = {
-    theme: {
-      name: 'test',
-      colors: {},
-      fonts: {},
-      spacing: {},
-    },
-    fullTheme: createMockTheme(),
-    document: {
-      title: 'Test Document',
-      date: new Date(),
-    },
-    section: {
-      currentLayout: 'single',
-      columnCount: 1,
-      pageNumber: 1,
-    },
-    utils: {
-      formatDate: () => '2024-01-01',
-      parseText: () => [{ text: 'test' }],
-      getStyle: () => ({ name: 'test' }),
-    },
-    depth: 0,
-  };
+  it('compiles a section with no children to nothing at all', async () => {
+    // A section is a container for content; with none it has nothing to
+    // delimit, and an empty OOXML section would still take a page.
+    const ir = await compile([{ name: 'section', props: {}, children: [] }]);
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Default mocks
-    mockRenderComponent.mockResolvedValue([new Paragraph({})]);
+    expect(ir.sections).toEqual([]);
   });
 
-  describe('renderSectionComponent', () => {
-    it('should render empty section component', async () => {
-      const component: ComponentDefinition = {
-        name: 'section',
-        props: {},
-      };
+  it('carries its children through, in order', async () => {
+    const ir = await compile([
+      { name: 'section', props: {}, children: [p('First'), p('Second')] },
+    ]);
 
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    expect(textOf(ir)).toEqual(['First', 'Second']);
+  });
 
-      // Empty sections now include 2 bookmark paragraphs (start and end)
-      expect(result).toHaveLength(2);
-      expect(mockRenderComponent).not.toHaveBeenCalled();
-    });
-
-    it('should render section with child components', async () => {
-      const component: ComponentDefinition = {
+  it('keeps mixed component types in one section', async () => {
+    const ir = await compile([
+      {
         name: 'section',
         props: {},
         children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Section content 1' },
-          },
-          {
-            name: 'paragraph',
-            props: { content: 'Section content 2' },
-          },
+          { name: 'heading', props: { level: 1, text: 'Title' } },
+          p('Body'),
+          { name: 'list', props: { items: ['One', 'Two'] } },
         ],
-      };
+      },
+    ]);
 
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    expect(textOf(ir)).toEqual(['Title', 'Body', 'One', 'Two']);
+  });
 
-      expect(mockRenderComponent).toHaveBeenCalledTimes(2);
-      expect(result).toHaveLength(4); // +2 for bookmarks
-    });
-
-    it('should render section with child components', async () => {
-      const component: ComponentDefinition = {
+  it('flattens a section nested inside another', async () => {
+    const ir = await compile([
+      {
         name: 'section',
         props: {},
         children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Content under section' },
-          },
+          p('Outer before'),
+          { name: 'section', props: {}, children: [p('Inner')] },
+          p('Outer after'),
         ],
-      };
+      },
+    ]);
 
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    // One section, not two: the inner one is content, not a page break.
+    expect(ir.sections).toHaveLength(1);
+    expect(textOf(ir)).toEqual(['Outer before', 'Inner', 'Outer after']);
+  });
 
-      expect(mockRenderComponent).toHaveBeenCalledTimes(1);
-      expect(result).toHaveLength(3); // bookmark start + content + bookmark end
-      expect(result[0]).toBeInstanceOf(Paragraph); // Bookmark start
-      expect(result[1]).toBeInstanceOf(Paragraph); // Content
-      expect(result[2]).toBeInstanceOf(Paragraph); // Bookmark end
-    });
+  it('gives each top-level section its own OOXML section', async () => {
+    const ir = await compile([
+      { name: 'section', props: {}, children: [p('One')] },
+      { name: 'section', props: {}, children: [p('Two')] },
+    ]);
 
-    it('should handle nested sections', async () => {
-      const component: ComponentDefinition = {
-        name: 'section',
-        props: {},
-        children: [
-          {
-            name: 'section',
-            props: {},
-            children: [
-              {
-                name: 'paragraph',
-                props: { content: 'Nested content' },
-              },
-            ],
-          },
-        ],
-      };
+    expect(ir.sections).toHaveLength(2);
+    expect(textOf(ir, 0)).toEqual(['One']);
+    expect(textOf(ir, 1)).toEqual(['Two']);
+  });
 
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      expect(mockRenderComponent).toHaveBeenCalledTimes(1); // Child section
-      expect(result).toHaveLength(3); // bookmark start + child section + bookmark end
-    });
-
-    it('should handle mixed component types in section', async () => {
-      mockRenderComponent
-        .mockResolvedValueOnce([new Paragraph({})])
-        .mockResolvedValueOnce([
-          new Table({ rows: [new TableRow({ children: [] })] }),
-        ])
-        .mockResolvedValueOnce([new Paragraph({}), new Paragraph({})]);
-
-      const component: ComponentDefinition = {
-        name: 'section',
-        props: {},
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Text content' },
-          },
-          {
-            name: 'table',
-            props: {
-              headers: ['Col1', 'Col2'],
-              rows: [['A', 'B']],
-            },
-          },
-          {
-            name: 'list',
-            props: { items: ['Item 1', 'Item 2'] },
-          },
-        ],
-      };
-
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      expect(mockRenderComponent).toHaveBeenCalledTimes(3);
-      expect(result).toHaveLength(6); // 1 bookmark-start + 1 paragraph + 1 table + 2 paragraphs + 1 bookmark-end
-      expect(result[0]).toBeInstanceOf(Paragraph); // Bookmark start
-      expect(result[1]).toBeInstanceOf(Paragraph); // Text
-      // Table constructor was called, but we return the mock
-      expect(result[2]).toBeDefined(); // Table
-      expect(result[3]).toBeInstanceOf(Paragraph); // List item 1
-      expect(result[4]).toBeInstanceOf(Paragraph); // List item 2
-      expect(result[5]).toBeInstanceOf(Paragraph); // Bookmark end
-    });
-
-    it('should pass theme to child components', async () => {
-      const customTheme = createMockTheme({
-        colors: {
-          primary: 'FF0000',
-          secondary: '00FF00',
-          accent: '0000FF',
-          text: '000000',
-          background: 'FFFFFF',
-        },
-      });
-
-      const component: ComponentDefinition = {
-        name: 'section',
-        props: {},
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Themed content' },
-          },
-        ],
-      };
-
-      await renderSectionComponent(
-        component,
-        customTheme,
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      expect(mockRenderComponent).toHaveBeenCalledWith(
-        component.children![0],
-        customTheme,
-        TEST_THEME_NAME,
-        expect.objectContaining({
-          ...mockContext,
-          section: expect.objectContaining({
-            ...mockContext.section,
-            sectionBookmarkId: expect.any(String),
-          }),
-        })
-      );
-    });
-
-    it('should pass context to child components', async () => {
-      const customContext: RenderContext = {
-        theme: {
-          name: 'custom',
-          colors: {},
-          fonts: {},
-          spacing: {},
-        },
-        fullTheme: createMockTheme(),
-        document: {
-          title: 'Custom Title',
-          date: new Date(),
-        },
-        section: {
-          currentLayout: 'single',
-          columnCount: 1,
-          pageNumber: 1,
-        },
-        utils: {
-          formatDate: () => '2024-01-01',
-          parseText: () => [{ text: 'test' }],
-          getStyle: () => ({ name: 'test' }),
-        },
-        depth: 0,
-        custom: {
-          version: '1.0.0',
-        },
-      };
-
-      const component: ComponentDefinition = {
-        name: 'section',
-        props: {},
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Context test' },
-          },
-        ],
-      };
-
-      await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        customContext
-      );
-
-      // Context should be updated with sectionBookmarkId
-      expect(mockRenderComponent).toHaveBeenCalledWith(
-        component.children![0],
-        expect.any(Object),
-        TEST_THEME_NAME,
-        expect.objectContaining({
-          ...customContext,
-          section: expect.objectContaining({
-            ...customContext.section,
-            sectionBookmarkId: expect.any(String),
-          }),
-        })
-      );
-    });
-
-    it('should handle non-section component type', async () => {
-      const component: ComponentDefinition = {
-        name: 'paragraph',
-        props: { content: 'Not a section' },
-      };
-
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      // Non-section components return empty array (early return in renderSectionComponent)
-      expect(result).toHaveLength(0);
-      expect(mockRenderComponent).not.toHaveBeenCalled();
-    });
-
-    it('should handle missing config', async () => {
-      const component: ComponentDefinition = {
-        name: 'section',
-      } as ComponentDefinition;
-
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      // Sections now include 2 bookmark paragraphs (start and end) even when empty
-      expect(result).toHaveLength(2);
-    });
-
-    it('should handle empty children array', async () => {
-      const component: ComponentDefinition = {
-        name: 'section',
-        props: {},
-        children: [],
-      };
-
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      expect(mockRenderComponent).not.toHaveBeenCalled();
-      // bookmark start (1) + bookmark end (1) = 2 paragraphs
-      expect(result).toHaveLength(2);
-    });
-
-    it('should handle child component rendering errors gracefully', async () => {
-      mockRenderComponent.mockRejectedValueOnce(
-        new Error('Child render error')
-      );
-
-      const component: ComponentDefinition = {
-        name: 'section',
-        props: {},
-        children: [
-          {
-            name: 'paragraph',
-            props: { content: 'Test content' },
-          },
-        ],
-      };
-
-      await expect(
-        renderSectionComponent(
-          component,
-          createMockTheme(),
-          TEST_THEME_NAME,
-          mockContext
-        )
-      ).rejects.toThrow('Child render error');
-    });
-
-    it('should accept page configuration override', async () => {
-      const component: ComponentDefinition = {
+  it('applies a named page size and its margins', async () => {
+    const ir = await compile([
+      {
         name: 'section',
         props: {
           page: {
             size: 'LEGAL',
-            margins: {
-              top: 720,
-              bottom: 720,
-              left: 1440,
-              right: 1440,
-            },
+            margins: { top: 720, bottom: 720, left: 1440, right: 1440 },
           },
         },
-      };
+        children: [p('Legal')],
+      },
+    ]);
 
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    const { page } = ir.sections[0].properties;
+    expect(page.widthTwips).toBe(12240);
+    expect(page.heightTwips).toBe(20160);
+    expect(page.margins).toEqual(
+      expect.objectContaining({
+        topTwips: 720,
+        bottomTwips: 720,
+        leftTwips: 1440,
+        rightTwips: 1440,
+      })
+    );
+  });
 
-      // Should render successfully with page config
-      expect(result).toHaveLength(2); // bookmark start + bookmark end
-    });
-
-    it('should accept partial page configuration (margins only)', async () => {
-      const component: ComponentDefinition = {
+  it('applies margins on their own, keeping the theme page size', async () => {
+    const ir = await compile([
+      {
         name: 'section',
-        props: {
-          page: {
-            margins: {
-              left: 2880, // 2 inches
-              right: 2880,
-            },
-          },
-        },
-      };
+        props: { page: { margins: { left: 2880, right: 2880 } } },
+        children: [p('Margins only')],
+      },
+    ]);
 
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    const { page } = ir.sections[0].properties;
+    expect(page.margins.leftTwips).toBe(2880);
+    expect(page.margins.rightTwips).toBe(2880);
+    // A4, from the theme: a margins-only override leaves the paper alone.
+    expect(page.widthTwips).toBe(11906);
+  });
 
-      // Should render successfully with partial page config
-      expect(result).toHaveLength(2);
-    });
-
-    it('should accept partial page configuration (size only)', async () => {
-      const component: ComponentDefinition = {
+  it('applies a size on its own, keeping the theme margins', async () => {
+    const ir = await compile([
+      {
         name: 'section',
-        props: {
-          page: {
-            size: 'A3',
-          },
-        },
-      };
+        props: { page: { size: 'A3' } },
+        children: [p('A3')],
+      },
+    ]);
 
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
+    const { page } = ir.sections[0].properties;
+    expect(page.widthTwips).toBe(16838);
+    expect(page.heightTwips).toBe(23811);
+    expect(page.margins.topTwips).toBe(1440);
+  });
 
-      // Should render successfully with size-only page config
-      expect(result).toHaveLength(2);
-    });
-
-    it('should accept custom page dimensions', async () => {
-      const component: ComponentDefinition = {
+  it('takes custom dimensions, and gives them no paper code', async () => {
+    const ir = await compile([
+      {
         name: 'section',
-        props: {
-          page: {
-            size: {
-              width: 15000,
-              height: 20000,
-            },
-          },
-        },
-      };
+        props: { page: { size: { width: 15000, height: 20000 } } },
+        children: [p('Custom')],
+      },
+    ]);
 
-      const result = await renderSectionComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME,
-        mockContext
-      );
-
-      // Should render successfully with custom dimensions
-      expect(result).toHaveLength(2);
-    });
+    const { page } = ir.sections[0].properties;
+    expect(page.widthTwips).toBe(15000);
+    expect(page.heightTwips).toBe(20000);
+    // A custom page is not a standard paper, so no printer code goes with it.
+    expect(page.code).toBeUndefined();
   });
 });
