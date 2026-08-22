@@ -34,6 +34,7 @@ import type {
   DocxIR,
   DocxIrFloating,
   DocxIrHeaderFooter,
+  DocxIrNote,
   DocxIrNumbering,
   DocxIrSection,
 } from '../../ir/types';
@@ -71,8 +72,6 @@ const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'cached-toc',
   'cached-fields',
   'cross-references',
-  'footnotes',
-  'endnotes',
   'shading',
   'borders',
   'rtl',
@@ -143,6 +142,14 @@ export function buildDocument(
     ...(ir.numbering.length > 0
       ? { numbering: { config: ir.numbering.map(numberingConfig) } }
       : {}),
+    // word/footnotes.xml and word/endnotes.xml, keyed by the id their
+    // references carry.
+    ...(ir.footnotes.length > 0
+      ? { footnotes: noteBodies(ir.footnotes, resources) }
+      : {}),
+    ...(ir.endnotes.length > 0
+      ? { endnotes: noteBodies(ir.endnotes, resources) }
+      : {}),
     // word/comments.xml, written only when something was actually commented.
     ...(ir.comments.length > 0
       ? {
@@ -166,6 +173,22 @@ export function buildDocument(
         }
       : {}),
   });
+}
+
+/** Note bodies keyed by id, which is how docx.js takes them. */
+function noteBodies(
+  notes: readonly DocxIrNote[],
+  resources: EmitResources
+): Record<string, { children: Paragraph[] }> {
+  const bodies: Record<string, { children: Paragraph[] }> = {};
+  for (const note of notes) {
+    bodies[String(note.id)] = {
+      children: note.children.map(
+        (block) => emitBlock(block, resources) as Paragraph
+      ),
+    };
+  }
+  return bodies;
 }
 
 /** One IR numbering definition as a docx.js abstract numbering config. */
