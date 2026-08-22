@@ -1,13 +1,9 @@
 /**
  * DOCX renderer contracts.
  *
- * Format-specific bindings of the shared `OfficeRenderer` contract. Nothing
- * here imports a backend, and nothing may: when the adapters land under
- * `docxjs/` and `office-open/`, they will be the only places allowed to.
- *
- * The adapters and the registry that selects between them are not written yet —
- * DOCX still generates through the pre-IR pipeline. This file is the contract
- * they will satisfy, and the type the compiler is being built against.
+ * Format-specific bindings of the shared `OfficeRenderer` contract. Nothing in
+ * this file imports a backend; the adapters under `docxjs/` and `office-open/`
+ * do, and they are the only places allowed to.
  */
 
 import type {
