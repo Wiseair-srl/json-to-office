@@ -1,357 +1,140 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Paragraph } from 'docx';
-import { createMockTheme, TEST_THEME_NAME } from './helpers';
-import type { ComponentDefinition } from '../../types';
+/**
+ * The shapes a `list` has to accept.
+ *
+ * The corpus pins the bytes; what is left to say here is that every shape
+ * compiles to one paragraph per item bound to one numbering definition, and
+ * that the degenerate shapes — no items, no props at all — produce nothing
+ * rather than throwing.
+ */
 
-// Mock createList function
-vi.mock('../../core/content', async () => {
-  const { Paragraph } = await vi.importActual<typeof import('docx')>('docx');
-  return {
-    createList: vi.fn().mockReturnValue([new Paragraph({})]),
-  };
-});
+import { describe, it, expect } from 'vitest';
+import { compileDocumentToIr } from '../../core/generateFromIr';
+import type { DocxIR } from '../../ir/types';
+import type { ReportComponentDefinition } from '../../types';
 
-import { renderListComponent } from '../list';
+async function compileList(props: Record<string, unknown>): Promise<DocxIR> {
+  const compiled = await compileDocumentToIr({
+    name: 'docx',
+    props: {},
+    children: [{ name: 'list', props }],
+  } as unknown as ReportComponentDefinition);
+  return compiled.ir;
+}
+
+const CASES: Array<[string, Record<string, unknown>, number]> = [
+  ['bullets', { items: ['Item 1', 'Item 2', 'Item 3'] }, 3],
+  ['numbers', { items: ['First', 'Second', 'Third'], format: 'numbered' }, 3],
+  [
+    'a custom bullet glyph',
+    { items: ['Apple', 'Banana', 'Cherry'], bullet: '→' },
+    3,
+  ],
+  [
+    'its own spacing',
+    {
+      items: ['Spaced item 1', 'Spaced item 2'],
+      spacing: { before: 240, after: 240 },
+    },
+    2,
+  ],
+  ['an indent as a number', { items: ['Indented item'], indent: 720 }, 1],
+  [
+    'an indent as an object',
+    { items: ['Custom indented item'], indent: { left: 720, hanging: 360 } },
+    1,
+  ],
+  [
+    'an explicit start',
+    { items: ['One', 'Two', 'Three'], format: 'numbered', start: 4 },
+    3,
+  ],
+  ['a single item', { items: ['Only one'] }, 1],
+  [
+    'a long item',
+    {
+      items: [
+        'A list item long enough to wrap several times over in any sensible measure, which is exactly the case that used to be worth checking.',
+      ],
+    },
+    1,
+  ],
+  [
+    'nested levels',
+    {
+      items: [
+        'Parent item 1',
+        { text: 'Nested item 1.1', level: 1 },
+        { text: 'Nested item 1.2', level: 1 },
+        'Parent item 2',
+        { text: 'Nested item 2.1', level: 1 },
+      ],
+    },
+    5,
+  ],
+];
 
 describe('components/list', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it.each(CASES)(
+    'compiles a list with %s',
+    async (_name, props, expectedItems) => {
+      const ir = await compileList(props);
+
+      expect(ir.sections[0].children).toHaveLength(expectedItems);
+      for (const block of ir.sections[0].children) {
+        expect(block.kind).toBe('paragraph');
+      }
+    }
+  );
+
+  it.each(['left', 'center', 'right', 'justify'] as const)(
+    'compiles a list aligned %s',
+    async (alignment) => {
+      const ir = await compileList({ items: ['Aligned item'], alignment });
+      const [block] = ir.sections[0].children;
+
+      expect(block.kind === 'paragraph' && block.formatting?.alignment).toBe(
+        alignment === 'justify' ? 'justified' : alignment
+      );
+    }
+  );
+
+  it('binds every item to one numbering definition', async () => {
+    const ir = await compileList({
+      items: ['A', { text: 'A.1', level: 1 }, 'B'],
+    });
+
+    expect(ir.numbering).toHaveLength(1);
+    const reference = ir.numbering[0].reference;
+    const levels = ir.sections[0].children.map((block) =>
+      block.kind === 'paragraph' && block.numbering && !block.numbering.none
+        ? [block.numbering.reference, block.numbering.level]
+        : undefined
+    );
+
+    expect(levels).toEqual([
+      [reference, 0],
+      [reference, 1],
+      [reference, 0],
+    ]);
   });
 
-  describe('renderListComponent', () => {
-    it('should render simple bullet list', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['Item 1', 'Item 2', 'Item 3'],
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
+  it('defines a level for every depth the items reach', async () => {
+    const ir = await compileList({
+      items: ['A', { text: 'A.1', level: 1 }, { text: 'A.1.1', level: 2 }],
     });
 
-    it('should render numbered list', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['First', 'Second', 'Third'],
-          type: 'numbered',
-        },
-      };
+    expect(ir.numbering[0].levels.map((level) => level.level)).toEqual([
+      0, 1, 2,
+    ]);
+  });
 
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
+  it('compiles nothing for a list with no items', async () => {
+    const ir = await compileList({ items: [] });
+    expect(ir.sections[0].children).toEqual([]);
+  });
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should render bullet list with custom bullet character', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['Apple', 'Banana', 'Cherry'],
-          type: 'bullet',
-          bullet: '→',
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle list with alignment', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['Left aligned item'],
-          alignment: 'left',
-        },
-      };
-
-      const alignments: Array<'left' | 'center' | 'right' | 'justify'> = [
-        'left',
-        'center',
-        'right',
-        'justify',
-      ];
-
-      alignments.forEach((alignment) => {
-        const alignedComponent = {
-          ...component,
-          props: { ...component.props, alignment },
-        };
-        const result = renderListComponent(
-          alignedComponent,
-          createMockTheme(),
-          TEST_THEME_NAME
-        );
-        expect(result).toHaveLength(1);
-        expect(result[0]).toBeInstanceOf(Paragraph);
-      });
-    });
-
-    it('should handle list with custom spacing', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['Spaced item 1', 'Spaced item 2'],
-          spacing: {
-            before: 240,
-            after: 240,
-          },
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle list with indentation as number', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['Indented item'],
-          indent: 720, // 0.5 inch
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle list with indentation as object', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['Custom indented item'],
-          indent: {
-            left: 720,
-            hanging: 360,
-          },
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle list with numbering configuration', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['One', 'Two', 'Three'],
-          type: 'numbered',
-          numbering: {
-            start: 1,
-            style: 'decimal',
-          },
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle empty list', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: [],
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle list with single item', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['Single item'],
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle list with long items', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: [
-            'This is a very long list item that contains a lot of text and should wrap properly when rendered in the document',
-            'Another long item with multiple sentences. This item also has significant content. It should be handled correctly.',
-          ],
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should apply theme styles', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['Themed item 1', 'Themed item 2'],
-        },
-      };
-
-      const theme = createMockTheme({
-        componentDefaults: {
-          list: {
-            spacing: {
-              before: 120,
-              after: 120,
-            },
-          },
-        },
-      });
-
-      const result = renderListComponent(component, theme, TEST_THEME_NAME);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
-
-    it('should handle non-list component type', () => {
-      const component: ComponentDefinition = {
-        name: 'paragraph',
-        props: {
-          content: 'Not a list',
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(0);
-      expect(result).toEqual([]);
-    });
-
-    it('should handle missing config', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {},
-      } as ComponentDefinition;
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      // Should handle gracefully, likely returning empty or default
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it('should handle different theme names', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: ['Item 1', 'Item 2'],
-        },
-      };
-
-      const themeNames = ['minimal', 'classic', 'professional', 'custom'];
-
-      themeNames.forEach((themeName) => {
-        const result = renderListComponent(
-          component,
-          createMockTheme(),
-          themeName
-        );
-        expect(result).toHaveLength(1);
-        expect(result[0]).toBeInstanceOf(Paragraph);
-      });
-    });
-
-    it('should handle nested list items', () => {
-      const component: ComponentDefinition = {
-        name: 'list',
-        props: {
-          items: [
-            'Parent item 1',
-            { text: 'Nested item 1.1', level: 1 },
-            { text: 'Nested item 1.2', level: 1 },
-            'Parent item 2',
-            { text: 'Nested item 2.1', level: 1 },
-          ],
-        },
-      };
-
-      const result = renderListComponent(
-        component,
-        createMockTheme(),
-        TEST_THEME_NAME
-      );
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(Paragraph);
-    });
+  it('compiles nothing for a list with no props at all', async () => {
+    const ir = await compileList({});
+    expect(ir.sections[0].children).toEqual([]);
   });
 });

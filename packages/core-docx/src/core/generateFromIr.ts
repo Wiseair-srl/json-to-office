@@ -29,7 +29,10 @@ import type { DocxRendererId } from '../renderers/types';
 import type { ThemeConfig } from '../styles';
 import type { ReportComponentDefinition } from '../types';
 import { resolveGenerationDate } from '../utils/packageDocument';
-import { resolveThemeContext } from './generationContext';
+import {
+  resolveThemeContext,
+  type GenerationThemeContext,
+} from './generationContext';
 import { runWithBaseDir, runWithWarnings } from '../utils/generationContext';
 import { applyLayout } from './layout';
 import { processDocument } from './structure';
@@ -44,6 +47,16 @@ export interface IrDocxGenerationOptions {
   generatedAt?: string | Date;
   /** Backend to render with. Defaults to `docxjs`. */
   renderer?: DocxRendererId;
+  /**
+   * A prologue already run by the caller.
+   *
+   * The plugin path has to resolve the theme before it expands custom
+   * components — a component's `render` is handed the resolved theme — and
+   * normalises the tree that expansion produced. Passing that result in means
+   * the prologue runs once rather than twice, which matters because the
+   * export-mode pre-pass inside it rewrites the document.
+   */
+  context?: GenerationThemeContext;
 }
 
 export interface IrDocxGenerationResult {
@@ -115,15 +128,16 @@ async function compileDocumentScoped(
   warnings: GenerationWarning[]
 ): Promise<CompiledDocx> {
   // Authoring shorthand — string children, bare props, nested containers — is
-  // expanded before anything reads the tree, exactly as the JSON entry point
-  // and the plugin pipeline both do. Skipping it would make the IR path see a
-  // different document from the one every other caller sees.
-  const [normalized] = normalizeDocument(document);
-  const context = resolveThemeContext(normalized, {
-    customThemes: options.customThemes,
-    fonts: options.fonts,
-    warnings,
-  });
+  // expanded before anything reads the tree, exactly as every other caller
+  // does. Skipping it would make the IR path see a different document from the
+  // one the rest of the pipeline sees.
+  const context =
+    options.context ??
+    resolveThemeContext(normalizeDocument(document)[0], {
+      customThemes: options.customThemes,
+      fonts: options.fonts,
+      warnings,
+    });
 
   // Fonts resolve for the LibreOffice preview stager's side-channel:
   // `resolveDocumentFonts` fires `fonts.onResolved` when a listener is

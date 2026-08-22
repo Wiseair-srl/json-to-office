@@ -7,15 +7,11 @@ import { hasTheme } from '../templates/themes';
 import { resolveThemeContext } from '../core/generationContext';
 import type { GenerationWarning } from '@json-to-office/shared-docx';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
-import { resolveDocumentFonts } from '../core/fontResolution';
-import { collectVisualProps } from '../core/prerasterizeVisuals';
-import { toRasterizeFontFaces } from '@json-to-office/shared/fonts/node';
 import type {
   ExtendedReportComponent,
   DocumentGeneratorBuilder,
   GenerateOptions,
   GenerateFileOptions,
-  GenerationResult,
   BufferGenerationResult,
   FileGenerationResult,
   StandardDefinitionResult,
@@ -31,14 +27,8 @@ import {
 import { UnknownPreservedComponentError } from '@json-to-office/shared/plugin';
 import { resolveComponentVersion } from './version-resolver';
 import { generatePluginDocumentSchema, exportPluginSchema } from './schema';
-import { processDocument } from '../core/structure';
-import { applyLayout } from '../core/layout';
-import { renderDocument } from '../core/render';
+import { generateBufferViaIr } from '../core/generateFromIr';
 import { normalizeDocument } from '../json/normalizer';
-import {
-  packageDocument,
-  resolveGenerationDate,
-} from '../utils/packageDocument';
 
 /**
  * Options for creating a document generator
@@ -569,12 +559,17 @@ function createBuilderImpl<
   }
 
   /**
-   * Generate a document
+   * Generate a document as a `.docx` buffer.
+   *
+   * The custom components are expanded first, then the standard tree it
+   * produced goes through the same DocxIR pipeline every other entry point
+   * uses — a plugin document and a plain one are the same document by the time
+   * anything renders.
    */
-  async function generate(
+  async function generateBuffer(
     document: ExtendedReportComponent<TComponents>,
     options?: GenerateOptions
-  ): Promise<GenerationResult<TComponents>> {
+  ): Promise<BufferGenerationResult<TComponents>> {
     try {
       const {
         modedRoot,
@@ -586,47 +581,20 @@ function createBuilderImpl<
         preserveSet,
       } = await expandDocument(document, options);
 
-      // Resolve fonts (reads document + resolved theme). The helper fires
-      // `fonts.onResolved` internally when a listener is registered
-      // (LibreOffice preview stager). DOCX output itself never embeds
-      // bytes; recipients rely on system-installed fonts.
-      //
-      // A `visual` rasterizes out-of-process via LibreOffice, which needs
-      // real font files, so a visual-bearing document forces materialization
-      // even with no listener registered — mirrors core/generator.ts.
-      const hasVisual = collectVisualProps(modedDoc).length > 0;
-      const resolvedFonts = await resolveDocumentFonts(
-        modedDoc,
-        modedTheme,
-        state.fonts,
-        warnings,
-        hasVisual
-      );
-      // Gate on the ENCODED faces: safe-only fonts resolve to entries with
-      // no sources and encode to nothing, and such a document must send no
-      // `fonts` key at all (see core/generator.ts).
-      const visualFonts = hasVisual
-        ? toRasterizeFontFaces(resolvedFonts, warnings)
-        : [];
+      const baseDir = options?.baseDir ?? state.baseDir;
+      const deterministic = options?.deterministic ?? state.deterministic;
+      const generatedAt = options?.generatedAt ?? state.generatedAt;
 
-      // Use the document generation pipeline directly
-      const packageOptions = {
-        deterministic: options?.deterministic ?? state.deterministic,
-        generatedAt: options?.generatedAt ?? state.generatedAt,
-      };
-      const structure = await processDocument(
-        modedDoc,
-        modedTheme,
-        themeName,
-        resolveGenerationDate(packageOptions)
-      );
-      const layout = applyLayout(structure.sections, modedTheme, themeName);
-      const generatedDocument = await renderDocument(structure, layout, {
-        services: state.services,
-        bypassCache: !state.enableCache,
-        baseDir: options?.baseDir ?? state.baseDir,
+      const { buffer } = await generateBufferViaIr(modedDoc, {
+        // The prologue already ran: the theme had to be resolved before custom
+        // components expanded, because each one's `render` is handed it.
+        context: { document: modedDoc, theme: modedTheme, themeName },
+        ...(state.services ? { services: state.services } : {}),
+        ...(state.fonts ? { fonts: state.fonts } : {}),
+        ...(baseDir !== undefined ? { baseDir } : {}),
+        ...(deterministic !== undefined ? { deterministic } : {}),
+        ...(generatedAt !== undefined ? { generatedAt } : {}),
         warnings,
-        ...(visualFonts.length > 0 && { visualFonts }),
       });
 
       // Build preservedDefinition iff the caller opted in. Reuses the same
@@ -640,7 +608,7 @@ function createBuilderImpl<
         : undefined;
 
       return {
-        document: generatedDocument,
+        buffer,
         warnings: warnings.length > 0 ? warnings : null,
         standardDefinition: modedDoc,
         preservedDefinition,
@@ -651,26 +619,6 @@ function createBuilderImpl<
       }
       throw error;
     }
-  }
-
-  /**
-   * Generate a document and return as buffer
-   */
-  async function generateBuffer(
-    document: ExtendedReportComponent<TComponents>,
-    options?: GenerateOptions
-  ): Promise<BufferGenerationResult<TComponents>> {
-    const {
-      document: doc,
-      warnings,
-      standardDefinition,
-      preservedDefinition,
-    } = await generate(document, options);
-    const buffer = await packageDocument(doc, {
-      deterministic: options?.deterministic ?? state.deterministic,
-      generatedAt: options?.generatedAt ?? state.generatedAt,
-    });
-    return { buffer, warnings, standardDefinition, preservedDefinition };
   }
 
   /**
@@ -755,16 +703,16 @@ function createBuilderImpl<
   }
 
   /**
-   * @deprecated Read `standardDefinition` off `generate(...)` instead. This wrapper
-   * runs the full generation pipeline (including `render()` for every custom)
-   * just to surface the JSON tree, so calling it alongside `generate*` doubles
-   * the work. Kept for backwards compatibility; will be removed in a future major.
+   * @deprecated Read `standardDefinition` off `generateBuffer(...)` instead.
+   * This wrapper expands every custom component just to surface the JSON tree,
+   * so calling it alongside a generate doubles that work. Kept for backwards
+   * compatibility; will be removed in a future major.
    */
   async function getStandardComponentsDefinition(
     document: ExtendedReportComponent<TComponents>
   ): Promise<ReportComponentDefinition> {
-    const { standardDefinition } = await generate(document);
-    return standardDefinition;
+    const { modedDoc } = await expandDocument(document);
+    return modedDoc;
   }
 
   /**
@@ -797,7 +745,6 @@ function createBuilderImpl<
   // Return frozen builder object
   return Object.freeze({
     addComponent,
-    generate,
     generateBuffer,
     generateFile,
     expandStandardDefinition,

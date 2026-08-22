@@ -85,7 +85,7 @@ const summaryComponent = createComponent({
   },
 });
 
-describe('generate().standardDefinition', () => {
+describe('generateBuffer().standardDefinition', () => {
   it('should convert custom components to standard components', async () => {
     const generator = createDocumentGenerator({
       theme: testTheme,
@@ -125,7 +125,7 @@ describe('generate().standardDefinition', () => {
       ],
     };
 
-    const { standardDefinition } = await generator.generate(
+    const { standardDefinition } = await generator.generateBuffer(
       documentWithCustomComponents
     );
 
@@ -157,7 +157,7 @@ describe('generate().standardDefinition', () => {
       theme: testTheme,
     }).addComponent(greetingComponent);
 
-    const { standardDefinition } = await generator.generate({
+    const { standardDefinition } = await generator.generateBuffer({
       name: 'docx',
       props: {
         metadata: { title: 'Standard Components Only' },
@@ -178,7 +178,7 @@ describe('generate().standardDefinition', () => {
       .addComponent(greetingComponent)
       .addComponent(summaryComponent);
 
-    const { standardDefinition } = await generator.generate({
+    const { standardDefinition } = await generator.generateBuffer({
       name: 'docx',
       props: { metadata: { title: 'Nested Custom Components' } },
       children: [
@@ -231,7 +231,7 @@ describe('generate().standardDefinition', () => {
       ],
     };
 
-    await expect(generator.generate(invalidDocument)).rejects.toThrow();
+    await expect(generator.generateBuffer(invalidDocument)).rejects.toThrow();
   });
 
   it('should normalize the document structure', async () => {
@@ -254,7 +254,7 @@ describe('generate().standardDefinition', () => {
       ],
     };
 
-    const { standardDefinition } = await generator.generate(document);
+    const { standardDefinition } = await generator.generateBuffer(document);
 
     expect(standardDefinition).toHaveProperty('name', 'docx');
     expect(standardDefinition).toHaveProperty('props');
@@ -286,16 +286,16 @@ describe('generate().standardDefinition', () => {
       ],
     };
 
-    const result = await generator.generate(document);
+    const result = await generator.generateBuffer(document);
 
-    expect(result.document).toBeDefined();
+    expect(result.buffer.byteLength).toBeGreaterThan(0);
     expect(result.standardDefinition).toBeDefined();
     expect(result.standardDefinition.children).toBeDefined();
     // greeting (formal, with date) -> heading + paragraph
     expect(result.standardDefinition.children!.length).toBe(2);
   });
 
-  it('expandStandardDefinition returns the same tree as generate() without rendering', async () => {
+  it('expandStandardDefinition returns the same tree as generateBuffer() without rendering', async () => {
     const generator = createDocumentGenerator({
       theme: testTheme,
     })
@@ -315,7 +315,7 @@ describe('generate().standardDefinition', () => {
     };
 
     const expanded = await generator.expandStandardDefinition(document);
-    const generated = await generator.generate(document);
+    const generated = await generator.generateBuffer(document);
 
     expect(expanded.standardDefinition).toEqual(generated.standardDefinition);
     // Not a GenerationResult: nothing rendered, no document produced.

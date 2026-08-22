@@ -10,7 +10,6 @@ import type {
   GenerationWarning,
 } from '@json-to-office/shared-docx';
 import type { ReportComponentDefinition } from '../types';
-import type { Document } from 'docx';
 
 /**
  * Helper to infer the versions map type from a CustomComponent
@@ -165,30 +164,6 @@ export interface GenerateFileOptions extends GenerateOptions {
 }
 
 /**
- * Result of document generation
- */
-export interface GenerationResult<
-  TCustomComponents extends readonly CustomComponent<
-    any,
-    any,
-    any
-  >[] = readonly [],
-> {
-  /** The generated document */
-  document: Document;
-  /** Warnings collected during generation, null if no warnings */
-  warnings: GenerationWarning[] | null;
-  /** Post-expansion, post-normalization standard JSON tree (custom plugins resolved). */
-  standardDefinition: ReportComponentDefinition;
-  /**
-   * Partially-expanded tree honoring `preserveCustomComponents`.
-   * Present iff the option was passed. Custom-component subtrees listed in
-   * the option are kept verbatim (children not recursed); others are expanded.
-   */
-  preservedDefinition?: ExtendedReportComponent<TCustomComponents>;
-}
-
-/**
  * Result of buffer generation
  */
 export interface BufferGenerationResult<
@@ -266,11 +241,6 @@ export interface DocumentGenerator<
     any
   >[] = readonly [],
 > {
-  generate: (
-    document: ExtendedReportComponent<TCustomComponents>,
-    options?: GenerateOptions
-  ) => Promise<GenerationResult<TCustomComponents>>;
-
   generateBuffer: (
     document: ExtendedReportComponent<TCustomComponents>,
     options?: GenerateOptions

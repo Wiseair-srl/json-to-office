@@ -29,12 +29,12 @@ describe('propless docx root', () => {
   it('generates through the plugin generator without a theme option', async () => {
     const generator = createDocumentGenerator({});
 
-    const result = await generator.generate({
+    const result = await generator.generateBuffer({
       name: 'docx',
       children,
     } as ReportComponentDefinition);
 
-    expect(result.document).toBeDefined();
+    expect(result.buffer.byteLength).toBeGreaterThan(0);
     expect(result.standardDefinition.children!.length).toBe(2);
   });
 
