@@ -34,29 +34,9 @@ export {
   calculateColumnDistribution,
 } from './layout';
 
-// Content creation functions
-export {
-  createText,
-  createHeading,
-  createTitleContent,
-  createImage,
-  createStatistic,
-  createTable,
-  createHeaderElement,
-  createFooterElement,
-  createHeaderFooterTable,
-} from './content';
-
-// Rendering functions
-export { renderDocument, renderSection, renderComponent } from './render';
-export {
-  renderComponentWithCache,
-  initializeComponentCache,
-  getComponentCache,
-  clearComponentCache,
-  getComponentCacheStats,
-  warmComponentCache,
-} from './cached-render';
+// Compilation and rendering
+export { compileDocumentToIr, generateBufferViaIr } from './generateFromIr';
+export { desugarExternals } from './desugarExternals';
 
 // Type exports
 export type {
@@ -67,9 +47,4 @@ export type {
 
 export type { LayoutPlan, SectionLayout, LayoutGroup } from './layout';
 
-export type {
-  TextOptions,
-  ImageOptions,
-  TableOptions,
-  StatisticData,
-} from './content';
+export type { ImageOptions } from '../components/visual';

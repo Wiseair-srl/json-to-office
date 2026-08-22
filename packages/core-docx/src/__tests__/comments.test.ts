@@ -5,8 +5,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import JSZip from 'jszip';
 import { generateBufferFromJson } from '../core/generator';
-import { componentBypassReason } from '../core/cached-render';
-import type { ComponentDefinition } from '../types';
 
 async function generate(children: unknown[]): Promise<JSZip> {
   const buf = await generateBufferFromJson({
@@ -408,34 +406,5 @@ describe('comment threads', () => {
       generateBufferFromJson(definition as never),
     ]);
     expect(first.equals(second)).toBe(true);
-  });
-});
-
-describe('comment cache bypass', () => {
-  it('reports comment-ids for a commented component', () => {
-    expect(
-      componentBypassReason({
-        name: 'table',
-        props: {
-          columns: [
-            {
-              header: { content: 'A' },
-              cells: [{ content: 'a', comment: { text: 'x' } }],
-            },
-          ],
-        },
-      } as unknown as ComponentDefinition)
-    ).toBe('comment-ids');
-  });
-
-  it('leaves an uncommented table cacheable', () => {
-    expect(
-      componentBypassReason({
-        name: 'table',
-        props: {
-          columns: [{ header: { content: 'A' }, cells: [{ content: 'a' }] }],
-        },
-      } as unknown as ComponentDefinition)
-    ).toBeNull();
   });
 });

@@ -49,18 +49,6 @@ export {
   type TimeSeriesPoint,
 } from './cache/index';
 
-// Component cache functions from core
-export {
-  initializeComponentCache,
-  getComponentCache,
-  clearComponentCache,
-  getComponentCacheStats,
-  getComponentBypassStats,
-  warmComponentCache,
-  componentBypassReason,
-  type ComponentBypassReason,
-  type ComponentBypassStats,
-} from './core/cached-render';
 export {
   getVisualPrepassStats,
   resetVisualPrepassStats,

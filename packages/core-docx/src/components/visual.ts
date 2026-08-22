@@ -1,33 +1,23 @@
 /**
- * Visual Component
+ * The `visual` component: a free-canvas graphic authored as a single pptx
+ * slide.
  *
- * Renders a free-canvas graphic authored as a single pptx slide and embeds it
- * as a rasterized PNG. The slide is rendered to an image by an injected
- * rasterization service (`services.pptx`) — exactly the way the `highcharts`
- * component offloads chart rendering to an export server — then desugars to a
- * plain `image`.
+ * Nothing here renders a document. A visual has no OOXML form of its own — an
+ * injected rasterization service (`services.pptx`) draws the slide into a PNG
+ * and it becomes a plain `image`, exactly as a `highcharts` becomes one. What
+ * lives here is the presentation that gets sent, the identity that keys the
+ * batch, and the image props the result desugars to.
  */
 
 import { createHash } from 'crypto';
-import { Paragraph, Table } from 'docx';
-import {
-  ComponentDefinition,
-  RenderContext,
-  isVisualComponent,
-} from '../types';
-import { ThemeConfig } from '../styles';
-import { createImage, type ImageOptions } from '../core/content';
 import { isNodeEnvironment } from '../utils/environment';
-import { getBaseDir } from '../utils/generationContext';
 import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 import type { VisualProps } from '@json-to-office/shared-docx';
-import {
-  clampVisualDpi,
-  DEFAULT_VISUAL_DPI,
-  type PptxServiceConfig,
-  type PptxRasterizeResult,
-  type RasterizeFontFace,
+import type {
+  PptxServiceConfig,
+  PptxRasterizeResult,
+  RasterizeFontFace,
 } from '@json-to-office/shared';
 
 export const DEFAULT_RASTERIZE_SERVER_URL = 'http://localhost:7802';
@@ -67,6 +57,59 @@ export function buildVisualPresentation(
 }
 
 /**
+ * Where an image sits on the page, and how big it is.
+ *
+ * The authoring surface of the `image` component a visual desugars into, so
+ * this is the shape a visual's placement props have to land in.
+ */
+export interface ImageOptions {
+  caption?: string;
+  width?: number | string;
+  height?: number | string;
+  widthRelativeTo?: 'content' | 'page';
+  heightRelativeTo?: 'content' | 'page';
+  alignment?: 'left' | 'center' | 'right';
+  spacing?: {
+    before?: number; // in points
+    after?: number; // in points
+  };
+  floating?: {
+    horizontalPosition?: {
+      relative?: 'character' | 'column' | 'margin' | 'page' | 'text';
+      align?: 'left' | 'center' | 'right' | 'inside' | 'outside';
+      offset?: number | string;
+    };
+    verticalPosition?: {
+      relative?: 'margin' | 'page' | 'paragraph' | 'line' | 'text';
+      align?: 'top' | 'center' | 'bottom' | 'inside' | 'outside';
+      offset?: number | string;
+    };
+    wrap?: {
+      // 'tight', 'around', 'through' are VML-style; only 'none', 'square', 'topAndBottom' are supported for images
+      type: 'none' | 'square' | 'topAndBottom' | 'around' | 'tight' | 'through';
+      side?: 'bothSides' | 'left' | 'right' | 'largest';
+      margins?: {
+        top?: number | string;
+        bottom?: number | string;
+        left?: number | string;
+        right?: number | string;
+      };
+    };
+    allowOverlap?: boolean;
+    behindDocument?: boolean;
+    lockAnchor?: boolean;
+    layoutInCell?: boolean;
+    zIndex?: number;
+    rotation?: number;
+    visibility?: 'hidden' | 'inherit';
+  };
+  // Keep paragraph with next paragraph
+  keepNext?: boolean;
+  // Keep all lines of paragraph together
+  keepLines?: boolean;
+}
+
+/**
  * Default rendered width (px) for a visual: its physical canvas inches, so a
  * 6×4 canvas prints 6×4 unless `width` overrides.
  */
@@ -76,9 +119,9 @@ export function defaultVisualWidthPx(props: VisualProps): number {
 
 /**
  * Shared image-placement options derived from a visual's props. Used by BOTH
- * the render-time createImage call and the flatten transform so the two
- * desugaring paths can't drift (width default, alignment default, caption,
- * spacing, floating, keepNext/keepLines all live here once).
+ * desugaring paths — the generation pre-pass and the offline flatten transform
+ * — so the two cannot drift: width default, alignment default, caption,
+ * spacing, floating and the keep flags all live here once.
  */
 export function visualToImageOptions(props: VisualProps): ImageOptions {
   return {
@@ -222,65 +265,4 @@ export async function rasterizeVisualSlide(
     );
   }
   return result;
-}
-
-/**
- * Render visual component
- */
-export async function renderVisualComponent(
-  component: ComponentDefinition,
-  theme: ThemeConfig,
-  themeName?: string,
-  context?: RenderContext
-): Promise<(Paragraph | Table)[]> {
-  if (!isVisualComponent(component)) return [];
-
-  const props = component.props as VisualProps;
-  const serviceConfig = context?.services?.pptx;
-
-  const presentation = buildVisualPresentation(props);
-  const dpi = clampVisualDpi(
-    props.dpi ?? serviceConfig?.dpi ?? DEFAULT_VISUAL_DPI
-  );
-
-  // The per-document pre-pass batch-rasterizes visuals ahead of rendering
-  // (#153). A hit uses those pixels; a recorded per-visual failure surfaces
-  // here, where the error is attributable to this component. Any miss falls
-  // through to per-visual rasterization, so the pre-pass can never make a
-  // render worse than the sequential path.
-  const preRasterized = context?.visualRasterResults?.get(
-    visualRasterKey(
-      presentation,
-      dpi,
-      effectiveVisualServerUrl(props, serviceConfig)
-    )
-  );
-
-  let result: PptxRasterizeResult;
-  if (preRasterized) {
-    if (!preRasterized.ok) throw new Error(preRasterized.error);
-    result = preRasterized;
-  } else {
-    // Relative asset paths inside the visual's nested presentation must
-    // resolve against the same base directory as the docx document itself —
-    // the rasterizer runs in another process/cwd (#142).
-    result = await rasterizeVisualSlide(
-      presentation,
-      dpi,
-      props.serverUrl,
-      serviceConfig,
-      getBaseDir(),
-      context?.visualFonts
-    );
-  }
-
-  // Size and placement options are derived once in visualToImageOptions (shared
-  // with the flatten transform): default width = canvas physical inches; height
-  // left unset so aspect ratio is preserved from the PNG.
-  return await createImage(
-    result.base64DataUri,
-    theme,
-    themeName,
-    visualToImageOptions(props)
-  );
 }

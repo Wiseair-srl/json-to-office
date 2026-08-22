@@ -2,7 +2,6 @@ import AdmZip from 'adm-zip';
 import { describe, expect, it } from 'vitest';
 import type { ReportComponentDefinition } from '../../types';
 import { generateBufferFromJson } from '../generator';
-import { clearComponentCache } from '../cached-render';
 
 const document: ReportComponentDefinition = {
   name: 'docx',
@@ -59,8 +58,7 @@ describe('deterministic DOCX generation', () => {
     expect(documentXml).toContain('2025-06-07 08:09:10Z');
   });
 
-  it('scopes cached nested placeholders to generatedAt', async () => {
-    await clearComponentCache();
+  it('resolves a placeholder nested in a table against generatedAt', async () => {
     const tableDocument: ReportComponentDefinition = {
       name: 'docx',
       props: {},
@@ -137,8 +135,7 @@ describe('deterministic DOCX generation', () => {
     ).rejects.toThrow('generatedAt must be a valid date');
   });
 
-  it('re-registers numbering definitions on repeated cached renders', async () => {
-    await clearComponentCache();
+  it('defines every numbering a repeated build references', async () => {
     const listDocument: ReportComponentDefinition = {
       name: 'docx',
       props: { theme: 'minimal' },
