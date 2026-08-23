@@ -14,6 +14,8 @@ import {
   EyeOff,
   MoreHorizontal,
   Type as TypeIcon,
+  Layers as LayersIcon,
+  Check,
 } from 'lucide-react';
 import { Spinner } from '../ui/spinner';
 import { Button } from '../ui/button';
@@ -30,6 +32,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
@@ -37,7 +40,9 @@ import { Textarea } from '../ui/textarea';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
@@ -57,6 +62,23 @@ import {
   isSafeFont,
 } from '@json-to-office/shared';
 import { ExportModeDialog, type ExportFontMode } from './export-mode-dialog';
+
+/** Status tag on a renderer id — a label, not part of the name. */
+function ExperimentalTag() {
+  return (
+    <span className="rounded-sm bg-warning/15 px-1 py-px text-[10px] font-semibold uppercase leading-none tracking-wide text-warning">
+      experimental
+    </span>
+  );
+}
+
+function DefaultTag() {
+  return (
+    <span className="rounded-sm bg-muted px-1 py-px text-[10px] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
+      default
+    </span>
+  );
+}
 
 function PreviewHeader({
   name,
@@ -294,8 +316,7 @@ function PreviewHeader({
       // Show success toast
       toast({
         title: 'Cache Cleared',
-        description:
-          'All active caches have been successfully cleared.',
+        description: 'All active caches have been successfully cleared.',
         variant: 'default',
       });
     } catch (error) {
@@ -568,24 +589,47 @@ function PreviewHeader({
             >
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <SelectTrigger className="w-[150px] h-7 text-xs hidden lg:flex">
-                    <SelectValue placeholder="Backend" />
+                  {/* Width follows the label; the `[&>span]` rules undo the
+                      base trigger's wrapping so the id and its tag stay on
+                      one row. */}
+                  <SelectTrigger
+                    aria-label="Renderer"
+                    className="hidden h-7 w-auto min-h-0 gap-1.5 px-2 text-xs lg:flex [&>span]:flex [&>span]:items-center [&>span]:gap-1.5 [&>span]:whitespace-nowrap"
+                  >
+                    <LayersIcon className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                    <SelectValue placeholder="Renderer">
+                      <span className="font-medium">{activeBackend}</span>
+                      {activeBackend !== backends.default && (
+                        <ExperimentalTag />
+                      )}
+                    </SelectValue>
                   </SelectTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
-                    Backend that writes the {FORMAT.toUpperCase()} file. A
+                    Renderer that writes the {FORMAT.toUpperCase()} file. A
                     non-default one may refuse a document it cannot express.
                   </p>
                 </TooltipContent>
               </Tooltip>
-              <SelectContent className="text-sidebar-foreground">
-                {backends.ids.map((id) => (
-                  <SelectItem value={id} key={id}>
-                    {id}
-                    {id === backends.default ? '' : ' (experimental)'}
-                  </SelectItem>
-                ))}
+              <SelectContent className="min-w-[var(--radix-select-trigger-width)] text-sidebar-foreground">
+                <SelectGroup>
+                  <SelectLabel className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Renderer
+                  </SelectLabel>
+                  {backends.ids.map((id) => (
+                    <SelectItem value={id} key={id} className="text-xs">
+                      <span className="flex items-center gap-1.5 whitespace-nowrap">
+                        <span className="font-medium">{id}</span>
+                        {id === backends.default ? (
+                          <DefaultTag />
+                        ) : (
+                          <ExperimentalTag />
+                        )}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           )}
@@ -664,21 +708,30 @@ function PreviewHeader({
                 <Trash2Icon className="h-4 w-4 mr-2" />
                 {isClearingCache ? 'Clearing...' : 'Clear all caches'}
               </DropdownMenuItem>
-              {/* Generation backend for small screens */}
+              {/* Renderer for small screens */}
               {backends.ids.length > 1 && (
                 <>
                   <DropdownMenuSeparator className="lg:hidden" />
+                  <DropdownMenuLabel className="lg:hidden px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Renderer
+                  </DropdownMenuLabel>
                   {backends.ids.map((id) => (
                     <DropdownMenuItem
                       key={id}
-                      className="lg:hidden"
+                      className="lg:hidden gap-1.5"
                       onClick={() => setSettings({ generationBackend: id })}
                     >
-                      <span className="mr-2">
-                        {activeBackend === id ? '●' : '○'}
-                      </span>
-                      {id}
-                      {id === backends.default ? '' : ' (experimental)'}
+                      <Check
+                        className={`h-3.5 w-3.5 shrink-0 ${
+                          activeBackend === id ? 'opacity-100' : 'opacity-0'
+                        }`}
+                      />
+                      <span className="font-medium">{id}</span>
+                      {id === backends.default ? (
+                        <DefaultTag />
+                      ) : (
+                        <ExperimentalTag />
+                      )}
                     </DropdownMenuItem>
                   ))}
                 </>
