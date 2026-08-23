@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 /**
@@ -49,28 +50,40 @@ export function HighlightedText({
 }
 
 /**
- * Eyebrow above each rail section: name, count, then actions pushed right.
- * 11px uppercase needs the tracking to stay legible at this weight.
+ * Eyebrow above each rail section: disclosure, name, count, then actions
+ * pushed right. 11px uppercase needs the tracking to stay legible at this
+ * weight.
+ *
+ * Every section in the rail wears this, chevron on the leading edge — the
+ * panel used to carry three different expand affordances (chevron left for the
+ * library, chevron right for the outline, none for the open files), which made
+ * three unrelated grammars out of one idea.
  */
 export function SectionLabel({
   children,
   count,
   actions,
   className,
+  open,
+  onToggle,
 }: {
   children: React.ReactNode;
   count?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
+  open?: boolean;
+  onToggle?: () => void;
 }) {
-  return (
-    <div
-      className={cn(
-        'flex h-6 shrink-0 items-center gap-1.5 px-1 select-none',
-        className
-      )}
-    >
-      <span className="text-[11px] font-medium tracking-[0.08em] text-sidebar-foreground/70 uppercase">
+  const label = (
+    <>
+      <ChevronRight
+        aria-hidden
+        className={cn(
+          'size-3 shrink-0 transition-transform duration-150 ease-out',
+          open && 'rotate-90'
+        )}
+      />
+      <span className="text-[11px] font-medium tracking-[0.08em] uppercase">
         {children}
       </span>
       {count !== undefined && (
@@ -78,8 +91,31 @@ export function SectionLabel({
           {count}
         </span>
       )}
+    </>
+  );
+
+  return (
+    <div
+      className={cn(
+        'flex h-6 shrink-0 items-center gap-1.5 select-none',
+        className
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={cn(
+          'flex h-6 min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-sm px-1',
+          'text-sidebar-foreground/70 transition-colors',
+          'hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
+          'focus-visible:ring-sidebar-ring focus-visible:ring-1 focus-visible:outline-none'
+        )}
+      >
+        {label}
+      </button>
       {actions && (
-        <div className="ml-auto flex items-center gap-0.5">{actions}</div>
+        <div className="flex shrink-0 items-center gap-0.5 pr-1">{actions}</div>
       )}
     </div>
   );

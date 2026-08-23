@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useCallback,
   useState,
   useMemo,
@@ -21,7 +22,12 @@ import { DocumentFormDialogContentMemoized } from './document-form-dialog-conten
 import { DocumentMenuItemMemoized } from './document-menu-item';
 import { OutlinePanel } from './outline-panel';
 import { PluginSelector } from './plugin-selector';
-import { SidebarLibrary } from './sidebar-library';
+import {
+  LibraryRow,
+  LocationDivider,
+  PluginsSection,
+  useLocationGroups,
+} from './sidebar-library';
 import {
   EmptyRow,
   RailIconButton,
@@ -61,10 +67,20 @@ interface DocumentSidebarProps {
 /**
  * Playground rail.
  *
- * Two regions, in the order you use them: the files you have open, then the
- * files the project has on disk. A single filter across the top cuts through
- * both — with a dozen documents, themes and plugins in a 256px column, scanning
- * was the slowest thing about this panel.
+ * One section per kind — Documents, Themes, Plugins — and nothing below the
+ * filter is rendered twice. Open-ness is a property of a row, not a region:
+ * files you have open sort to the top of their kind and carry the state
+ * marker, files still on disk sit under them and reveal a `+`. The rail used
+ * to split those into separate sections, which put `contract-v1` on screen
+ * twice and cost six eyebrows to say three things.
+ *
+ * The outline is not a fourth section: it is the active document's own
+ * structure, so it hangs off that document's row. Plugins are a per-run
+ * setting rather than a file, so they sit last, below the hairline, folded.
+ *
+ * A single filter across the top cuts through everything — with a dozen
+ * documents, themes and plugins in a 256px column, scanning was the slowest
+ * thing about this panel.
  *
  * Colour is rationed. `--primary` marks the row the editor has open,
  * `--data-blue` the one in the preview, `--warning` a theme that preview is
@@ -77,13 +93,14 @@ function DocumentSidebarComponent({
   isCollapsed = false,
   isAnimating = false,
 }: DocumentSidebarProps) {
-  const { documents, documentTypes, createDocument, openDocument } =
+  const { documents, documentTypes, createDocument, openDocument, activeTab } =
     useDocumentsStore(
       useShallow((state) => ({
         documents: state.documents,
         documentTypes: state.documentTypes,
         createDocument: state.createDocument,
         openDocument: state.openDocument,
+        activeTab: state.activeTab,
       }))
     );
   const updateTheme = useThemesStore((state) => state.updateTheme);
@@ -99,8 +116,9 @@ function DocumentSidebarComponent({
   const selectedPlugins = usePluginsStore((state) => state.selectedPlugins);
   const isApplyingPlugins = usePluginsStore((state) => state.isApplyingPlugins);
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
+  // Files open; plugins folded until you go looking for them.
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set(['library-documents'])
+    new Set(['documents', 'themes'])
   );
   const [query, setQuery] = useState('');
   const filterRef = useRef<HTMLInputElement>(null);
@@ -251,20 +269,29 @@ function DocumentSidebarComponent({
     () => themeDocuments.filter((d) => matchesQuery(d.name, q)),
     [themeDocuments, q]
   );
+  // Discovered files that are not already open above them: an open file is
+  // one row in one place, and "jump to the copy you already have" was never
+  // worth a second row to say.
   const libraryDocuments = useMemo(
     () =>
       (discoveryData?.documents ?? []).filter(
-        (d) => matchesQuery(d.name, q) || matchesQuery(d.title ?? '', q)
+        (d) =>
+          !openNames.has(d.name) &&
+          (matchesQuery(d.name, q) || matchesQuery(d.title ?? '', q))
       ),
-    [discoveryData, q]
+    [discoveryData, q, openNames]
   );
   const libraryThemes = useMemo(
     () =>
       (discoveryData?.themes ?? []).filter(
-        (t) => matchesQuery(t.name, q) || matchesQuery(t.description ?? '', q)
+        (t) =>
+          !openNames.has(t.name) &&
+          (matchesQuery(t.name, q) || matchesQuery(t.description ?? '', q))
       ),
-    [discoveryData, q]
+    [discoveryData, q, openNames]
   );
+  const documentLocations = useLocationGroups(libraryDocuments);
+  const themeLocations = useLocationGroups(libraryThemes);
   const libraryPlugins = useMemo(
     () =>
       (discoveryData?.plugins ?? []).filter(
@@ -272,6 +299,14 @@ function DocumentSidebarComponent({
       ),
     [discoveryData, q]
   );
+
+  // A live filter that leaves its matches folded away is a filter that does
+  // nothing, so a query forces every section open.
+  const isSectionOpen = (id: string) => q.length > 0 || expandedGroups.has(id);
+  const documentsOpen = isSectionOpen('documents');
+  const themesOpen = isSectionOpen('themes');
+  const documentCount = visibleDocuments.length + libraryDocuments.length;
+  const themeCount = visibleThemes.length + libraryThemes.length;
 
   const nothingMatches =
     q.length > 0 &&
@@ -475,15 +510,14 @@ function DocumentSidebarComponent({
                 </div>
               ) : (
                 <>
-                  {/* Open documents */}
-                  {(visibleDocuments.length > 0 || !q) && (
+                  {/* Documents: the ones you have open, then the ones the
+                      project has on disk, in one list. */}
+                  {(documentCount > 0 || !q) && (
                     <section>
                       <SectionLabel
-                        count={
-                          (q
-                            ? visibleDocuments.length
-                            : reportDocuments.length) || undefined
-                        }
+                        open={documentsOpen}
+                        onToggle={() => toggleGroup('documents')}
+                        count={documentCount || undefined}
                         actions={
                           <>
                             {FORMAT === 'docx' && (
@@ -522,34 +556,59 @@ function DocumentSidebarComponent({
                       >
                         Documents
                       </SectionLabel>
-                      <SidebarMenu className="gap-0.5">
-                        {visibleDocuments.length > 0 ? (
-                          visibleDocuments.map((doc) => (
-                            <DocumentMenuItemMemoized
-                              key={doc.name}
-                              document={doc}
-                              query={q}
-                            />
-                          ))
-                        ) : (
-                          <EmptyRow
-                            icon={Plus}
-                            label="New document"
-                            onClick={() => setDialogOpen(true)}
-                          />
-                        )}
-                      </SidebarMenu>
+                      {documentsOpen && (
+                        <SidebarMenu className="gap-0.5">
+                          {visibleDocuments.map((doc) => (
+                            <Fragment key={doc.name}>
+                              <DocumentMenuItemMemoized
+                                document={doc}
+                                query={q}
+                              />
+                              {/* The outline belongs to this row. Hidden while
+                                  the filter is live — the filter is about
+                                  files, and the rows go to the matches. */}
+                              {!q && activeTab === doc.name && <OutlinePanel />}
+                            </Fragment>
+                          ))}
+                          {documentLocations.map(([location, docs]) => (
+                            <Fragment key={location}>
+                              {documentLocations.length > 1 && (
+                                <LocationDivider location={location} />
+                              )}
+                              {docs.map((doc) => (
+                                <LibraryRow
+                                  key={doc.path || doc.name}
+                                  name={doc.name}
+                                  subtitle={doc.title}
+                                  query={q}
+                                  onSelect={() =>
+                                    handleQuickAdd(doc.name, false)
+                                  }
+                                />
+                              ))}
+                            </Fragment>
+                          ))}
+                          {documentCount === 0 && (
+                            <li className="list-none">
+                              <EmptyRow
+                                icon={Plus}
+                                label="New document"
+                                onClick={() => setDialogOpen(true)}
+                              />
+                            </li>
+                          )}
+                        </SidebarMenu>
+                      )}
                     </section>
                   )}
 
-                  {/* Open themes */}
-                  {(visibleThemes.length > 0 || !q) && (
+                  {/* Themes, same shape. */}
+                  {(themeCount > 0 || !q) && (
                     <section className="mt-3">
                       <SectionLabel
-                        count={
-                          (q ? visibleThemes.length : themeDocuments.length) ||
-                          undefined
-                        }
+                        open={themesOpen}
+                        onToggle={() => toggleGroup('themes')}
+                        count={themeCount || undefined}
                         actions={
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -568,56 +627,64 @@ function DocumentSidebarComponent({
                       >
                         Themes
                       </SectionLabel>
-                      <SidebarMenu className="gap-0.5">
-                        {visibleThemes.length > 0 ? (
-                          visibleThemes.map((doc) => (
-                            <DocumentMenuItemMemoized
-                              key={doc.name}
-                              document={doc}
-                              query={q}
-                            />
-                          ))
-                        ) : (
-                          <EmptyRow
-                            icon={Plus}
-                            label="New theme"
-                            onClick={() => setThemeDialogOpen(true)}
-                          />
-                        )}
-                      </SidebarMenu>
+                      {themesOpen && (
+                        <SidebarMenu className="gap-0.5">
+                          {visibleThemes.map((doc) => (
+                            <Fragment key={doc.name}>
+                              <DocumentMenuItemMemoized
+                                document={doc}
+                                query={q}
+                              />
+                              {!q && activeTab === doc.name && <OutlinePanel />}
+                            </Fragment>
+                          ))}
+                          {themeLocations.map(([location, items]) => (
+                            <Fragment key={location}>
+                              {themeLocations.length > 1 && (
+                                <LocationDivider location={location} />
+                              )}
+                              {items.map((theme) => (
+                                <LibraryRow
+                                  key={theme.path || theme.name}
+                                  name={theme.name}
+                                  subtitle={theme.description}
+                                  query={q}
+                                  onSelect={() =>
+                                    handleQuickAdd(theme.name, true)
+                                  }
+                                />
+                              ))}
+                            </Fragment>
+                          ))}
+                          {themeCount === 0 && (
+                            <li className="list-none">
+                              <EmptyRow
+                                icon={Plus}
+                                label="New theme"
+                                onClick={() => setThemeDialogOpen(true)}
+                              />
+                            </li>
+                          )}
+                        </SidebarMenu>
+                      )}
                     </section>
                   )}
 
-                  {/* Outline of the active document. Hidden while the rail
-                      filter is active — the filter is about files, and the
-                      freed rows go to the matching results. */}
-                  {!q && <OutlinePanel />}
-
-                  {/* Project library */}
-                  {(libraryDocuments.length > 0 ||
-                    libraryThemes.length > 0 ||
-                    libraryPlugins.length > 0) && (
-                    <div className="border-sidebar-border/70 mt-3 border-t pt-2">
-                      <SidebarLibrary
-                        documents={libraryDocuments}
-                        themes={libraryThemes}
-                        plugins={libraryPlugins}
-                        openNames={openNames}
-                        query={q}
-                        expandedGroups={expandedGroups}
-                        onToggleGroup={toggleGroup}
-                        onQuickAdd={handleQuickAdd}
-                        onShowPluginDetails={(name) => {
-                          setPluginSelectorFocusedPlugin(name);
-                          setPluginSelectorOpen(true);
-                        }}
-                        isPluginSelected={isPluginSelected}
-                        onTogglePlugin={togglePlugin}
-                        isApplyingPlugins={isApplyingPlugins}
-                        selectedPluginCount={selectedPlugins.size}
-                      />
-                    </div>
-                  )}
+                  {/* Not a file list, so it sits below the hairline. */}
+                  <PluginsSection
+                    plugins={libraryPlugins}
+                    query={q}
+                    open={isSectionOpen('plugins')}
+                    onToggleSection={() => toggleGroup('plugins')}
+                    onShowPluginDetails={(name) => {
+                      setPluginSelectorFocusedPlugin(name);
+                      setPluginSelectorOpen(true);
+                    }}
+                    isPluginSelected={isPluginSelected}
+                    onTogglePlugin={togglePlugin}
+                    isApplyingPlugins={isApplyingPlugins}
+                    selectedPluginCount={selectedPlugins.size}
+                  />
                 </>
               )}
             </SidebarContent>
