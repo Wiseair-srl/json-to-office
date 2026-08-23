@@ -68,15 +68,12 @@ describe('generation prologue with an inline theme', () => {
 
     expect(context.document.props.theme).toEqual(inlineTheme);
     expect(context.theme.colors.accent).toBe('#CC785C');
-    // Cache key still scopes by export mode and inline name.
-    expect(context.themeName).toBe('editorial#substitute');
   });
 
   it('leaves an authored theme name untouched', () => {
     const context = resolveThemeContext(doc('minimal'), {});
 
     expect(context.document.props.theme).toBe('minimal');
-    expect(context.themeName).toBe('minimal');
     expect(context.theme.name).toBe('minimal');
   });
 });

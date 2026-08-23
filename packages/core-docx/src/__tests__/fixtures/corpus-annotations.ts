@@ -26,9 +26,6 @@
  *   room for a reference run, so the validator rejects the pair outright.
  * - A comment or a revision on a `heading` carrying notes: `heading` has no
  *   `footnotes` / `endnotes` props at all.
- *
- * And one that the schema allows but the pipeline cannot yet render stably: a
- * note inside a `text-box`. See `annotations/notes-in-nested-components`.
  */
 
 import type { CorpusCase } from './corpus-types';
@@ -530,16 +527,9 @@ export const CASES: CorpusCase[] = [
   },
   {
     // Notes registered from inside nested components: a table header and cell
-    // whose content is a paragraph, a column layout, and a markdown-list
-    // paragraph (which returns early from the paragraph renderer and has to
-    // carry the resolver with it).
-    //
-    // A `text-box` holding a note is deliberately absent. `text-box` is not on
-    // the component cache's bypass list — `componentBypassReason` looks for
-    // `comment` and `revision` in a subtree, not for `footnotes` / `endnotes` —
-    // so the second document rendered in one process replays the cached box and
-    // loses the note body while keeping the reference. That is not byte-stable
-    // and cannot carry a golden hash.
+    // whose content is a paragraph, a column layout, a text box, and a
+    // markdown-list paragraph (which returns early from the paragraph renderer
+    // and has to carry the resolver with it).
     name: 'annotations/notes-in-nested-components',
     document: doc([
       {
@@ -593,6 +583,18 @@ export const CASES: CorpusCase[] = [
             ],
           }),
           p({ text: 'A second column with no notes.' }),
+        ],
+      },
+      {
+        name: 'text-box',
+        props: { width: '60%' },
+        children: [
+          p({
+            text: 'Boxed text with a note[^box].',
+            footnotes: [
+              { id: 'box', text: 'Registered from inside a text box.' },
+            ],
+          }),
         ],
       },
       p({

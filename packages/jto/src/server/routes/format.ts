@@ -745,7 +745,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
       cli.invalidateAllCaches();
       // "Clear all caches" means all of them: the rasterizer's PNG disk cache
       // used to survive this call (#156).
-      await adapter.clearComponentCache?.();
+      await adapter.resetCacheStats?.();
       await cli.clearRasterizerCache?.();
       return c.json({
         success: true,

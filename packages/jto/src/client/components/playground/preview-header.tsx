@@ -295,7 +295,7 @@ function PreviewHeader({
       toast({
         title: 'Cache Cleared',
         description:
-          'All caches (document and component) have been successfully cleared.',
+          'All active caches have been successfully cleared.',
         variant: 'default',
       });
     } catch (error) {

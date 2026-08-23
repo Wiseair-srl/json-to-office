@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyThemeOverrides, themeOverridesDigest } from '../overrides';
+import { applyThemeOverrides } from '../overrides';
 
 const theme = {
   name: 'minimal',
@@ -46,13 +46,5 @@ describe('applyThemeOverrides', () => {
       color: '#111111',
     });
     expect((merged.styles as any).hero).toEqual({ size: 80 });
-  });
-
-  it('digest is stable and shape-sensitive', () => {
-    const a = themeOverridesDigest({ colors: { primary: '#111111' } as any });
-    const b = themeOverridesDigest({ colors: { primary: '#111111' } as any });
-    const c = themeOverridesDigest({ colors: { primary: '#222222' } as any });
-    expect(a).toBe(b);
-    expect(a).not.toBe(c);
   });
 });

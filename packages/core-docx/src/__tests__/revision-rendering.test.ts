@@ -273,7 +273,7 @@ describe('tracked-change rendering', () => {
     expect(xml).toMatch(/<w:bookmarkStart[^>]*w:name="target"/);
   });
 
-  it('bypasses the component cache for revisions nested in containers', async () => {
+  it('allocates unique revision ids inside repeated containers', async () => {
     const textBox = {
       name: 'text-box',
       props: {},
@@ -287,14 +287,14 @@ describe('tracked-change rendering', () => {
         },
       ],
     };
-    // Doc A primes the cache with the container's rendered (id-bearing) runs
+    // Render the same nested subtree in one document first.
     await generateBufferFromJson({
       name: 'docx',
       props: { theme: 'minimal' },
       children: [textBox],
     } as any);
-    // Doc B renders another revision first, then the identical container:
-    // a stale cache hit would replay duplicate ids
+    // A later document assigns ids from its own counter even when an identical
+    // subtree follows another revision.
     const buf = await generateBufferFromJson({
       name: 'docx',
       props: { theme: 'minimal' },

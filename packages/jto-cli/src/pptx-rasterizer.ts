@@ -181,10 +181,7 @@ function resolvePdftoppm(): Promise<string> {
 }
 
 /**
- * Process-wide rasterizer cache counters (#156). The disk cache had zero
- * observability even though `visual` — the component family with the
- * heaviest cache benefit — lives here rather than in the component cache
- * (which bypasses `visual` by design).
+ * Process-wide rasterizer disk-cache counters (#156).
  */
 export interface RasterizerCacheStats {
   /** Slides served from the content-addressed PNG disk cache. */

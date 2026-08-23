@@ -502,8 +502,8 @@ function createBuilderImpl<
 
     // Props defaulting, theme resolution (customThemes → doc-named
     // built-in → constructor theme → built-in fallback, see
-    // resolveDocumentTheme), in-document overrides, export-mode pre-pass and cache-key
-    // scoping — shared with the core pipeline so the two cannot drift (see
+    // resolveDocumentTheme), in-document overrides and export-mode pre-pass —
+    // shared with the core pipeline so the two cannot drift (see
     // core/generationContext.ts). The pre-pass runs BEFORE custom-component
     // expansion so components reading `theme.fonts.*` during render see the
     // substituted names, not the original non-safe ones.

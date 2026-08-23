@@ -3,7 +3,7 @@
  *
  * `generateBufferFromJson` and `createPresentationGenerator` share the
  * generation prologue — theme resolution (including inline theme objects),
- * export-mode pre-pass and cache-key scoping — via
+ * export-mode pre-pass — via
  * `core/generationContext.ts` (#134). In DOCX the duplicated prologue
  * silently dropped a root-level prop from the plugin path (#133); these
  * tests fail the moment the two entry points disagree about a document.

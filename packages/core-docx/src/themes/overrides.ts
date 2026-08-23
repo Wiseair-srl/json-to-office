@@ -3,7 +3,6 @@
  * `themeOverrides` prop, deep-merged over the resolved named theme.
  */
 
-import { createHash } from 'crypto';
 import type { ThemeConfig } from '../styles';
 
 export interface ThemeOverrides {
@@ -44,12 +43,4 @@ export function applyThemeOverrides(
     fonts,
     ...(Object.keys(styles).length > 0 && { styles }),
   };
-}
-
-/** Short stable digest used to scope theme-keyed caches per override set. */
-export function themeOverridesDigest(overrides: ThemeOverrides): string {
-  return createHash('sha256')
-    .update(JSON.stringify(overrides))
-    .digest('hex')
-    .slice(0, 8);
 }

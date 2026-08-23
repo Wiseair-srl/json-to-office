@@ -165,7 +165,6 @@ export {
   buildDefaultSubstitutionMap,
   defaultSubstituteFor,
   applyExportMode,
-  scopedThemeName,
   type FontSubstitution,
   documentFontRegistry,
   themeFontRegistry,

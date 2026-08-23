@@ -317,8 +317,8 @@ function createBuilderImpl<
       const warnings: PipelineWarning[] = [];
 
       // Props defaulting, inline-theme normalization, theme resolution
-      // (customThemes → constructor theme → built-in), export-mode pre-pass
-      // and cache-key scoping — shared with the core pipeline so the two
+      // (customThemes → constructor theme → built-in) and export-mode pre-pass
+      // — shared with the core pipeline so the two
       // cannot drift (see core/generationContext.ts). The pre-pass runs
       // BEFORE custom-component expansion so any component that reads
       // `theme.fonts.*` during render sees the substituted names, not the

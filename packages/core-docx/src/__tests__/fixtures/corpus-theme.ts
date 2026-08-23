@@ -455,8 +455,7 @@ export const CASES: CorpusCase[] = [
     ),
   },
   {
-    // `themeOverrides: {}` still joins the theme cache key via its digest, and
-    // must not change a single byte of the resolved theme.
+    // `themeOverrides: {}` must not change the resolved theme.
     name: 'theme/overrides-empty',
     document: page(SAMPLER, { theme: 'minimal', themeOverrides: {} }),
   },

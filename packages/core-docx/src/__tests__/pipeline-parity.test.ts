@@ -2,7 +2,7 @@
  * Entry-point parity: `generateBufferFromJson` (core pipeline) and
  * `createDocumentGenerator` (plugin pipeline) share the structure→layout→render
  * engine but each own their prologue — props defaulting, theme resolution,
- * export mode, cache-key scoping. That duplication silently dropped
+ * export mode. That duplication silently dropped
  * `props.themeOverrides` from the plugin path (issue #133); these tests assert
  * the two produce the same document so the next divergence fails here instead
  * of in a consumer that happens to register a plugin.
