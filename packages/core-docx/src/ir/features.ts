@@ -40,6 +40,15 @@ export const DOCX_FEATURES = [
   'text-frames',
   /** Native shape text boxes. */
   'text-boxes',
+  /**
+   * A DrawingML group: shapes, text boxes and pictures sharing one child
+   * coordinate space, drawn as a single anchored or inline object.
+   *
+   * Separate from `text-boxes` because a lone `wps:wsp` run is a far smaller
+   * ask than `wpg:wgp` with child transforms, preset geometry and grouped
+   * pictures — a backend can plausibly have the first and not the second.
+   */
+  'drawing-groups',
   /** A table-of-contents field. */
   'toc',
   /** TOC entries baked in so an unrefreshed reader still shows them. */

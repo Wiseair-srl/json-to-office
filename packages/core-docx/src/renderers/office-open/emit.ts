@@ -18,6 +18,11 @@ import type {
   DocxIrBlock,
   DocxIrBorder,
   DocxIrBorders,
+  DocxIrDrawingFrame,
+  DocxIrDrawingGroupChild,
+  DocxIrDrawingGroupRun,
+  DocxIrDrawingPicture,
+  DocxIrDrawingShape,
   DocxIrFloating,
   DocxIrFrame,
   DocxIrHeaderFooter,
@@ -43,16 +48,42 @@ import { emuToPixels, pixelsToEmu } from '../../ir/units';
 type Opts = Record<string, unknown>;
 
 /**
- * One prepared picture per placement.
+ * One prepared image per placement size.
  *
  * A vector image needs a rasterised fallback sized to the placement, and
  * producing it is asynchronous while this layer is not — so the renderer builds
- * the pictures first and this only places them.
+ * the media first and this only places it.
+ *
+ * Media rather than a whole picture because the same bytes are placed two
+ * different ways: a run-level `picture` states its size as a plain
+ * `MediaTransformation`, while a group child states an already-resolved
+ * `MediaDataTransformation` with an offset inside the group. Sharing the
+ * factory is what keeps a resource embedded once however it is drawn.
  */
-export type ImagePictureFactory = (
-  image: DocxIrImageRun,
-  drawingId: number
-) => Opts;
+export interface PreparedImage {
+  /** `png`, `jpg`, `svg`, … — the backend's media type tag. */
+  type: string;
+  data: Buffer;
+  /** The raster Word draws when it cannot draw the vector. */
+  fallback?: { type: string; data: Buffer };
+  /**
+   * The media part name these bytes are stored under.
+   *
+   * A run-level picture lets the backend allocate one. A *group child* cannot:
+   * the backend registers grouped media with a factory that ignores the name
+   * it is offered, so an unnamed child ends up referencing `{undefined}` and
+   * the package ships a part called `media/undefined`. Deriving the name from
+   * the resource and its drawn size keeps it deterministic and keeps two
+   * identical placements sharing one part.
+   */
+  fileName: string;
+  fallbackFileName?: string;
+}
+
+export type ImageMediaFactory = (placement: {
+  widthEmu: number;
+  heightEmu: number;
+}) => PreparedImage;
 
 /**
  * What emitting a document needs beyond the IR itself.
@@ -65,8 +96,8 @@ export type ImagePictureFactory = (
  * is deterministic and cannot leak between documents.
  */
 export interface EmitContext {
-  /** Prepared pictures, keyed by IR resource id. */
-  pictures: ReadonlyMap<string, ImagePictureFactory>;
+  /** Prepared image media, keyed by IR resource id. */
+  pictures: ReadonlyMap<string, ImageMediaFactory>;
   /** Allocate the next `wp:docPr` id for this document. */
   nextDrawingId: () => number;
 }
@@ -217,18 +248,19 @@ export function inlineChildren(
         break;
 
       case 'image': {
-        const build = ctx.pictures.get(child.resourceId);
-        if (!build) {
-          throw new Error(
-            `no image was prepared for resource "${child.resourceId}"`
-          );
-        }
         // A break before a drawing belongs on a run of its own: a run holding
         // both a `<w:br/>` and a `<w:drawing>` puts them in one element, and
         // the break then lands inside the anchor rather than before it.
         const pending = breakOption();
         if (pending.break) out.push(pending);
-        out.push({ picture: build(child, ctx.nextDrawingId()) });
+        out.push({ picture: pictureOptions(child, ctx) });
+        break;
+      }
+
+      case 'drawingGroup': {
+        const pending = breakOption();
+        if (pending.break) out.push(pending);
+        out.push({ wpgGroup: drawingGroupOptions(child, ctx) });
         break;
       }
 
@@ -381,6 +413,243 @@ export function floatingOptions(floating: DocxIrFloating): Opts {
       ? { layoutInCell: floating.layoutInCell }
       : {}),
     zIndex: floating.zIndex,
+  };
+}
+
+/** Media for one resource at one placement size, or a clear failure. */
+function imageMedia(
+  ctx: EmitContext,
+  resourceId: string,
+  placement: { widthEmu: number; heightEmu: number }
+): PreparedImage {
+  const build = ctx.pictures.get(resourceId);
+  if (!build) {
+    throw new Error(`no image was prepared for resource "${resourceId}"`);
+  }
+  return build(placement);
+}
+
+/** An inline or anchored picture: one `pic:pic` inside its own drawing. */
+function pictureOptions(image: DocxIrImageRun, ctx: EmitContext): Opts {
+  const media = imageMedia(ctx, image.resourceId, image);
+  return {
+    type: media.type,
+    data: media.data,
+    // No `fileName`: at run level the backend allocates one, and stating our
+    // own would only fight it.
+    ...(media.fallback ? { fallback: media.fallback } : {}),
+    // Raw numbers are EMUs in @office-open/docx. Passing pixels here makes a
+    // normal image only a few hundred EMUs wide, effectively a dot.
+    transformation: { width: image.widthEmu, height: image.heightEmu },
+    // The id is stated rather than left to the backend's process-global
+    // counter. `name` stays empty, which is what it was before and what the
+    // backend falls back to.
+    altText: { id: String(ctx.nextDrawingId()) },
+    ...(image.floating ? { floating: floatingOptions(image.floating) } : {}),
+    // No `description` or `title`: no DOCX this pipeline has produced carries
+    // `wp:docPr` alt text, and the compiler warns so the gap is visible rather
+    // than silent.
+  };
+}
+
+/**
+ * A drawing group: one `wpg:wgp` holding shapes and pictures.
+ *
+ * `childOffset`/`childExtent` are the group's `a:chOff`/`a:chExt` — the
+ * coordinate space its children are placed in. Setting them to the authored
+ * canvas is what lets the group be *placed* at any size while the children
+ * keep the numbers the author wrote: Word scales the child space onto the
+ * group's extent for us.
+ */
+function drawingGroupOptions(
+  group: DocxIrDrawingGroupRun,
+  ctx: EmitContext
+): Opts {
+  // Allocated before the children so ids run in document order.
+  const id = ctx.nextDrawingId();
+  return {
+    altText: {
+      id: String(id),
+      ...(group.altText ? { description: group.altText } : {}),
+    },
+    transformation: { width: group.widthEmu, height: group.heightEmu },
+    childOffset: { x: 0, y: 0 },
+    childExtent: { cx: group.canvasWidthEmu, cy: group.canvasHeightEmu },
+    children: group.children.map((child) => groupChild(child, ctx)),
+    ...(group.floating ? { floating: floatingOptions(group.floating) } : {}),
+  };
+}
+
+/** One child of a group: a `wps:wsp` shape or a `pic:pic` picture. */
+function groupChild(child: DocxIrDrawingGroupChild, ctx: EmitContext): Opts {
+  return child.kind === 'shape'
+    ? groupShape(child, ctx)
+    : groupPicture(child, ctx);
+}
+
+function groupShape(shape: DocxIrDrawingShape, ctx: EmitContext): Opts {
+  // Every child carries a `cNvPr` id of its own. They only have to be unique
+  // within the drawing, but drawing them from the document-wide counter is
+  // both simpler and strictly stronger — and an id repeated inside a group is
+  // one of the things Word offers to repair.
+  const id = ctx.nextDrawingId();
+  return {
+    type: 'wps',
+    transformation: childTransformation(shape.frame),
+    data: {
+      nonVisualProperties: {
+        id,
+        ...(shape.name ? { name: shape.name } : {}),
+        // `txBox="1"` is how Word tells a text box from a shape that happens
+        // to hold text, and it changes how the object behaves on selection.
+        ...(shape.isTextBox ? { textBox: '1' } : {}),
+      },
+      presetGeometry: { preset: shape.geometry },
+      ...(shape.fill ? { fill: drawingFill(shape.fill) } : {}),
+      ...(shape.outline ? { outline: drawingOutline(shape.outline) } : {}),
+      children: (shape.text?.paragraphs ?? []).map((child) =>
+        paragraph(child, ctx)
+      ),
+      ...(shape.text ? { bodyProperties: bodyProperties(shape.text) } : {}),
+    },
+  };
+}
+
+function groupPicture(picture: DocxIrDrawingPicture, ctx: EmitContext): Opts {
+  const id = ctx.nextDrawingId();
+  const media = imageMedia(ctx, picture.resourceId, {
+    widthEmu: picture.frame.widthEmu,
+    heightEmu: picture.frame.heightEmu,
+  });
+  return {
+    type: media.type,
+    data: media.data,
+    fileName: media.fileName,
+    ...(media.fallback
+      ? {
+          fallback: {
+            ...media.fallback,
+            fileName: media.fallbackFileName,
+          },
+        }
+      : {}),
+    transformation: childTransformation(picture.frame),
+    nonVisualProperties: {
+      id,
+      ...(picture.name ? { name: picture.name } : {}),
+      ...(picture.altText ? { description: picture.altText } : {}),
+    },
+    ...(picture.crop ? { sourceRectangle: sourceRectangle(picture.crop) } : {}),
+  };
+}
+
+/**
+ * A child's `a:xfrm`, in the shape the backend's group children take.
+ *
+ * Group children carry an already-resolved `MediaDataTransformation` rather
+ * than the plain `{width, height}` a run-level drawing takes — the backend
+ * converts the latter and passes the former straight through — so the pixel
+ * mirrors have to be filled in here.
+ */
+function childTransformation(frame: DocxIrDrawingFrame): Opts {
+  const flip = {
+    ...(frame.flipHorizontal ? { horizontal: true } : {}),
+    ...(frame.flipVertical ? { vertical: true } : {}),
+  };
+  return {
+    offset: {
+      emus: { x: frame.xEmu, y: frame.yEmu },
+      pixels: {
+        x: Math.round(emuToPixels(frame.xEmu)),
+        y: Math.round(emuToPixels(frame.yEmu)),
+      },
+    },
+    emus: { x: frame.widthEmu, y: frame.heightEmu },
+    pixels: {
+      x: Math.round(emuToPixels(frame.widthEmu)),
+      y: Math.round(emuToPixels(frame.heightEmu)),
+    },
+    // Degrees: the backend multiplies by 60000 on the way into `@rot`.
+    ...(frame.rotationDegrees !== undefined
+      ? { rotation: frame.rotationDegrees }
+      : {}),
+    ...(Object.keys(flip).length > 0 ? { flip } : {}),
+  };
+}
+
+function drawingFill(fill: NonNullable<DocxIrDrawingShape['fill']>): Opts {
+  if (fill.kind === 'none') return { type: 'none' };
+  return {
+    type: 'solid',
+    color: {
+      type: 'rgb',
+      value: fill.color.hex,
+      // Transparency becomes an alpha transform on the colour. DrawingML
+      // states *opacity*, so the value is the complement of what the author
+      // wrote; the backend scales the percentage into `a:alpha`'s thousandths
+      // itself, so it must be handed a plain percentage here.
+      ...(fill.transparencyPercent !== undefined
+        ? { transforms: { alpha: 100 - fill.transparencyPercent } }
+        : {}),
+    },
+  };
+}
+
+/**
+ * A shape outline.
+ *
+ * `a:ln` carries its colour directly rather than through a nested fill — the
+ * backend's `OutlineOptions` is line properties and fill properties merged
+ * into one bag, and a `fill` key here is silently ignored, which loses the
+ * colour without a word.
+ */
+function drawingOutline(
+  outline: NonNullable<DocxIrDrawingShape['outline']>
+): Opts {
+  return {
+    ...(outline.widthEmu !== undefined ? { width: outline.widthEmu } : {}),
+    ...(outline.dash ? { dash: outline.dash } : {}),
+    ...(outline.color
+      ? { type: 'solidFill', color: { value: outline.color.hex } }
+      : {}),
+  };
+}
+
+/** OOXML's vertical anchors, which the IR names in full. */
+const BODY_ANCHOR: Readonly<Record<string, string>> = {
+  top: 't',
+  middle: 'ctr',
+  bottom: 'b',
+};
+
+function bodyProperties(text: NonNullable<DocxIrDrawingShape['text']>): Opts {
+  const insets = text.insetsEmu;
+  return {
+    ...(text.anchor ? { anchor: BODY_ANCHOR[text.anchor] } : {}),
+    // `lIns`/`tIns`/`rIns`/`bIns` is the vocabulary `a:bodyPr` actually has;
+    // the backend also accepts a `margins` object and folds it into the same
+    // attributes.
+    ...(insets?.left !== undefined ? { lIns: insets.left } : {}),
+    ...(insets?.top !== undefined ? { tIns: insets.top } : {}),
+    ...(insets?.right !== undefined ? { rIns: insets.right } : {}),
+    ...(insets?.bottom !== undefined ? { bIns: insets.bottom } : {}),
+  };
+}
+
+/**
+ * A crop as `a:srcRect` states it: how much to trim off each edge, in
+ * thousandths of a percent.
+ */
+function sourceRectangle(
+  crop: NonNullable<DocxIrDrawingPicture['crop']>
+): Opts {
+  const thousandths = (fraction: number): number =>
+    Math.round(fraction * 100000);
+  return {
+    ...(crop.left !== undefined ? { left: thousandths(crop.left) } : {}),
+    ...(crop.top !== undefined ? { top: thousandths(crop.top) } : {}),
+    ...(crop.right !== undefined ? { right: thousandths(crop.right) } : {}),
+    ...(crop.bottom !== undefined ? { bottom: thousandths(crop.bottom) } : {}),
   };
 }
 

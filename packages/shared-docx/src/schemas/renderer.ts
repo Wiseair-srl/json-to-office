@@ -1,16 +1,40 @@
 import type { TSchema } from '@sinclair/typebox';
 import type { ValidationError } from '@json-to-office/shared';
+import { NATIVE_RENDER_MODE } from './components/visual';
 
 export const DOCX_RENDERER_IDS = ['docxjs', 'office-open'] as const;
 export type DocxRendererId = (typeof DOCX_RENDERER_IDS)[number];
 export const DEFAULT_DOCX_RENDERER_ID: DocxRendererId = 'docxjs';
 
-/** Derive one renderer view from the canonical props schema. */
+/** The element kinds a native `visual` can hold. */
+const NATIVE_VISUAL_ELEMENTS: ReadonlySet<string> = new Set([
+  'text',
+  'shape',
+  'image',
+]);
+
+/**
+ * Derive one renderer view from the canonical props schema.
+ *
+ * The canonical schema is the union of everything any backend can express, so
+ * a profile is a *subtraction*: the branches and fields this renderer cannot
+ * draw are removed, which is what makes a schema-driven editor offer only what
+ * the chosen backend will actually render.
+ */
 export function docxPropsSchemaForRenderer(
+  componentName: string,
   schema: TSchema,
   renderer: DocxRendererId
 ): TSchema {
   const copy = cloneSchema(schema);
+
+  if (componentName === 'visual' && renderer !== 'office-open') {
+    // Only `office-open` draws a native group, so every other backend sees the
+    // raster branch alone — a plain object rather than a union, which is what
+    // gives an editor one unambiguous completion set.
+    return firstUnionBranch(copy) ?? copy;
+  }
+
   if (renderer === 'office-open') pruneThreadFields(copy);
   return copy;
 }
@@ -30,9 +54,10 @@ export function collectDocxRendererErrors(data: unknown): ValidationError[] {
       },
     ];
   }
-  if (renderer !== 'office-open') return [];
 
   const errors: ValidationError[] = [];
+  const isOfficeOpen = renderer === 'office-open';
+
   const visit = (node: unknown, path: string): void => {
     if (Array.isArray(node)) {
       node.forEach((entry, index) => visit(entry, `${path}/${index}`));
@@ -40,19 +65,27 @@ export function collectDocxRendererErrors(data: unknown): ValidationError[] {
     }
     if (!node || typeof node !== 'object') return;
     const object = node as Record<string, unknown>;
-    const comment = object.comment;
-    if (comment && typeof comment === 'object' && !Array.isArray(comment)) {
-      const value = comment as Record<string, unknown>;
-      for (const field of ['replies', 'resolved'] as const) {
-        if (value[field] !== undefined) {
-          errors.push({
-            path: `${path}/comment/${field}`,
-            message: `The "office-open" renderer does not support comment threads.`,
-            code: 'unsupported_renderer_feature',
-          });
+
+    if (isOfficeOpen) {
+      const comment = object.comment;
+      if (comment && typeof comment === 'object' && !Array.isArray(comment)) {
+        const value = comment as Record<string, unknown>;
+        for (const field of ['replies', 'resolved'] as const) {
+          if (value[field] !== undefined) {
+            errors.push({
+              path: `${path}/comment/${field}`,
+              message: `The "office-open" renderer does not support comment threads.`,
+              code: 'unsupported_renderer_feature',
+            });
+          }
         }
       }
     }
+
+    if (object.name === 'visual') {
+      collectVisualErrors(object, `${path}`, isOfficeOpen, errors);
+    }
+
     for (const [key, value] of Object.entries(object)) {
       if (key !== 'renderer') visit(value, `${path}/${key}`);
     }
@@ -60,6 +93,63 @@ export function collectDocxRendererErrors(data: unknown): ValidationError[] {
 
   visit(root, '');
   return errors;
+}
+
+/**
+ * Native-mode rules for one `visual` node.
+ *
+ * Two separate concerns, and both have to name a path an editor can jump to.
+ * A backend that cannot draw a group must reject the mode itself, at
+ * `props/renderMode`. A backend that can must still reject element kinds that
+ * have no native form — otherwise a `chart` inside a native visual would
+ * validate and then vanish, which is exactly the failure mode strictness
+ * exists to prevent.
+ */
+function collectVisualErrors(
+  node: Record<string, unknown>,
+  path: string,
+  isOfficeOpen: boolean,
+  errors: ValidationError[]
+): void {
+  const props = node.props;
+  if (!props || typeof props !== 'object' || Array.isArray(props)) return;
+  const value = props as Record<string, unknown>;
+  if (value.renderMode !== NATIVE_RENDER_MODE) return;
+
+  if (!isOfficeOpen) {
+    errors.push({
+      path: `${path}/props/renderMode`,
+      message:
+        'Only the "office-open" renderer draws a native visual. Set the document\'s "renderer" to "office-open", or drop "renderMode" to rasterize.',
+      code: 'unsupported_renderer_feature',
+    });
+    return;
+  }
+
+  const elements = value.elements;
+  if (!Array.isArray(elements)) return;
+  elements.forEach((element, index) => {
+    if (!element || typeof element !== 'object' || Array.isArray(element)) {
+      return;
+    }
+    const name = (element as Record<string, unknown>).name;
+    if (typeof name !== 'string' || NATIVE_VISUAL_ELEMENTS.has(name)) return;
+    errors.push({
+      path: `${path}/props/elements/${index}/name`,
+      message:
+        `A native visual cannot draw "${name}". Native mode holds "text", ` +
+        '"shape" and "image"; use renderMode "raster" for anything else.',
+      code: 'unsupported_renderer_feature',
+    });
+  });
+}
+
+/** The first branch of a union schema, if this is one. */
+function firstUnionBranch(schema: TSchema): TSchema | undefined {
+  const branches = (schema as { anyOf?: TSchema[] }).anyOf;
+  return Array.isArray(branches) && branches.length > 0
+    ? branches[0]
+    : undefined;
 }
 
 function pruneThreadFields(node: unknown): void {

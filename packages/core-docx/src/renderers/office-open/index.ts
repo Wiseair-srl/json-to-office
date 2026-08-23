@@ -28,11 +28,10 @@ import type { DocxRenderOptions, DocxRenderer, DocxRendererId } from '../types';
 import {
   block,
   emuToPixels,
-  floatingOptions,
   numberingConfig,
   section,
   type EmitContext,
-  type ImagePictureFactory,
+  type ImageMediaFactory,
 } from './emit';
 import { emitStyles } from './styles';
 
@@ -208,7 +207,7 @@ function noteBodies(
 }
 
 /**
- * Build a picture factory per resource.
+ * Build a media factory per resource.
  *
  * Separate from `buildDocumentOptions`'s synchronous work because a vector
  * image has to be rasterised for the fallback Word draws below 2016, and the
@@ -217,7 +216,7 @@ function noteBodies(
  */
 async function prepareImages(
   ir: DocxIR
-): Promise<ReadonlyMap<string, ImagePictureFactory>> {
+): Promise<ReadonlyMap<string, ImageMediaFactory>> {
   const placements = collectImagePlacements(ir);
   const rasters = new Map<string, Buffer | undefined>();
 
@@ -235,7 +234,7 @@ async function prepareImages(
     }
   }
 
-  const resources = new Map<string, ImagePictureFactory>();
+  const resources = new Map<string, ImageMediaFactory>();
   for (const resource of ir.resources) {
     if (resource.kind !== 'image') continue;
     const type = resource.mediaType;
@@ -247,18 +246,9 @@ async function prepareImages(
         index === 0 ? data : distinguishImageBytes(data, type, size)
       );
     });
-    resources.set(resource.id, (image, drawingId) => {
-      const rasterSize = {
-        width: emuToPixels(image.widthEmu),
-        height: emuToPixels(image.heightEmu),
-      };
-      const sizeKey = `${rasterSize.width}x${rasterSize.height}`;
-      const transformation = {
-        // Raw numbers are EMUs in @office-open/docx. Passing pixels here makes
-        // a normal image only a few hundred EMUs wide, effectively a dot.
-        width: image.widthEmu,
-        height: image.heightEmu,
-      };
+    resources.set(resource.id, (placement) => {
+      const sizeKey = placementKey(placement);
+      const stem = `${resource.id}-${sizeKey}`;
       return {
         type,
         // @office-open/docx stores a drawing transformation on its deduplicated
@@ -266,11 +256,10 @@ async function prepareImages(
         // reuse the first size, so each distinct placement size gets equivalent
         // image bytes carrying a harmless format-native marker.
         data: placementData.get(sizeKey) ?? data,
-        transformation,
-        // The id is stated rather than left to the backend's process-global
-        // counter. `name` stays empty, which is what it was before and what
-        // the backend falls back to.
-        altText: { id: String(drawingId) },
+        // Named after the resource and the size it is drawn at, so two
+        // placements of one image at one size share a single part and a third
+        // at another size gets its own.
+        fileName: `${stem}.${type}`,
         ...(type === 'svg'
           ? {
               // Word before 2016 draws the fallback rather than the vector. A
@@ -278,20 +267,30 @@ async function prepareImages(
               // which is what this pipeline has always shipped.
               fallback: {
                 type: 'png',
-                data: rasters.get(`${image.resourceId}:${sizeKey}`) ?? data,
+                data: rasters.get(`${resource.id}:${sizeKey}`) ?? data,
               },
+              fallbackFileName: `${stem}-fallback.png`,
             }
           : {}),
-        ...(image.floating
-          ? { floating: floatingOptions(image.floating) }
-          : {}),
-        // No `description` or `title`: no DOCX this pipeline has produced
-        // carries `wp:docPr` alt text, and the compiler warns so the gap is
-        // visible rather than silent.
       };
     });
   }
   return resources;
+}
+
+/**
+ * The key one placement of a resource is distinguished by: its drawn size in
+ * whole pixels.
+ *
+ * One function so the collecting walk and the factory cannot disagree — a key
+ * computed two ways is a silently-shared media entry and an image drawn at the
+ * wrong size.
+ */
+function placementKey(placement: {
+  widthEmu: number;
+  heightEmu: number;
+}): string {
+  return `${emuToPixels(placement.widthEmu)}x${emuToPixels(placement.heightEmu)}`;
 }
 
 /**
@@ -419,15 +418,39 @@ function crc32(data: Uint8Array): number {
  * Only vector resources need this, but the walk cannot know which is which
  * without the resource list, and walking twice would cost more than it saves.
  */
+interface PlacementSize {
+  widthEmu: number;
+  heightEmu: number;
+}
+
 function collectImagePlacements(ir: DocxIR): Map<string, Set<string>> {
   const placements = new Map<string, Set<string>>();
 
+  const record = (resourceId: string, placement: PlacementSize): void => {
+    const sizes = placements.get(resourceId) ?? new Set<string>();
+    sizes.add(placementKey(placement));
+    placements.set(resourceId, sizes);
+  };
+
   const visitInline = (inline: DocxIrInline): void => {
     if (inline.kind === 'image') {
-      const key = `${emuToPixels(inline.widthEmu)}x${emuToPixels(inline.heightEmu)}`;
-      const sizes = placements.get(inline.resourceId) ?? new Set<string>();
-      sizes.add(key);
-      placements.set(inline.resourceId, sizes);
+      record(inline.resourceId, inline);
+      return;
+    }
+    if (inline.kind === 'drawingGroup') {
+      // A grouped picture is media like any other, and shares the resource
+      // pool with the run-level ones — so it has to take part in the same
+      // per-size bookkeeping or the two would fight over one media entry.
+      for (const child of inline.children) {
+        if (child.kind === 'picture') {
+          record(child.resourceId, {
+            widthEmu: child.frame.widthEmu,
+            heightEmu: child.frame.heightEmu,
+          });
+          continue;
+        }
+        child.text?.paragraphs.forEach(visitBlock);
+      }
       return;
     }
     if (inline.kind === 'hyperlink' || inline.kind === 'revision') {

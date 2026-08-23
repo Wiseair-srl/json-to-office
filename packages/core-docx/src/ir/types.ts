@@ -362,7 +362,8 @@ export type DocxIrInline =
   | DocxIrCommentRangeEnd
   | DocxIrCommentReference
   | DocxIrRevisionRange
-  | DocxIrShapeRun;
+  | DocxIrShapeRun
+  | DocxIrDrawingGroupRun;
 
 /**
  * A native text box: a shape holding paragraphs.
@@ -388,6 +389,118 @@ export interface DocxIrShapeRun {
   };
   /** Absent makes it an inline drawing rather than an anchored one. */
   floating?: DocxIrFloating;
+}
+
+/* ------------------------------------------------------------------ *
+ * Drawing groups
+ * ------------------------------------------------------------------ */
+
+/**
+ * A free canvas of drawn objects, placed as one object on the page.
+ *
+ * The group is the only thing the page sees: it has a size and, optionally, an
+ * anchor, exactly like a picture. Its children live in the group's own
+ * coordinate space — `canvasWidthEmu` × `canvasHeightEmu` with the origin at
+ * the top left — so the canvas can be authored at its natural size and then
+ * placed at any other, and every child moves with it.
+ *
+ * Array order is z-order: later children draw over earlier ones.
+ *
+ * Backend-neutral by construction. It says what is drawn and where, never how
+ * — a backend that cannot draw a group declines the `drawing-groups` feature
+ * and the pipeline refuses the document rather than dropping the graphic.
+ */
+export interface DocxIrDrawingGroupRun {
+  kind: 'drawingGroup';
+  /** Placed size on the page. */
+  widthEmu: number;
+  heightEmu: number;
+  /** The child coordinate space: the canvas as authored. */
+  canvasWidthEmu: number;
+  canvasHeightEmu: number;
+  children: DocxIrDrawingGroupChild[];
+  altText?: string;
+  /** Absent makes it an inline drawing rather than an anchored one. */
+  floating?: DocxIrFloating;
+}
+
+export type DocxIrDrawingGroupChild = DocxIrDrawingShape | DocxIrDrawingPicture;
+
+/** Where one child sits in the group's coordinate space. */
+export interface DocxIrDrawingFrame {
+  xEmu: number;
+  yEmu: number;
+  widthEmu: number;
+  heightEmu: number;
+  /** Clockwise, in degrees. Backends convert to their own angular unit. */
+  rotationDegrees?: number;
+  flipHorizontal?: boolean;
+  flipVertical?: boolean;
+}
+
+/** A solid fill, or an explicit refusal to fill. */
+export type DocxIrDrawingFill =
+  | { kind: 'solid'; color: DocxIrColor; transparencyPercent?: number }
+  | { kind: 'none' };
+
+export interface DocxIrDrawingOutline {
+  color?: DocxIrColor;
+  widthEmu?: number;
+  /** OOXML preset dash name, e.g. `dash`, `sysDot`. */
+  dash?: string;
+}
+
+/** Text drawn inside a shape. */
+export interface DocxIrDrawingText {
+  paragraphs: DocxIrParagraph[];
+  /** Vertical anchoring within the shape. */
+  anchor?: 'top' | 'middle' | 'bottom';
+  /** Text insets, in EMU like every other DrawingML length. */
+  insetsEmu?: {
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  };
+}
+
+/**
+ * One drawn shape: preset geometry, optionally filled, outlined and holding
+ * text.
+ *
+ * `isTextBox` separates a shape that exists to hold text from one that exists
+ * to be a shape. Word marks the two differently and treats them differently on
+ * selection, and an author who wrote `text` meant the first.
+ */
+export interface DocxIrDrawingShape {
+  kind: 'shape';
+  frame: DocxIrDrawingFrame;
+  /** OOXML preset geometry name, e.g. `rect`, `roundRect`, `rightArrow`. */
+  geometry: string;
+  isTextBox?: boolean;
+  fill?: DocxIrDrawingFill;
+  outline?: DocxIrDrawingOutline;
+  text?: DocxIrDrawingText;
+  /** Non-visual name, shown in Word's selection pane. */
+  name?: string;
+}
+
+/** One picture drawn inside a group. */
+export interface DocxIrDrawingPicture {
+  kind: 'picture';
+  frame: DocxIrDrawingFrame;
+  resourceId: string;
+  altText?: string;
+  /**
+   * Source rectangle, as a fraction of the image on each side.
+   *
+   * A crop, expressed the way OOXML's `a:srcRect` does — how much of the image
+   * to trim off each edge — rather than as a window, so a backend can write it
+   * without knowing the intrinsic size.
+   */
+  crop?: { left?: number; top?: number; right?: number; bottom?: number };
+  /** Non-visual name, shown in Word's selection pane. */
+  name?: string;
 }
 
 export interface DocxIrTextRun {

@@ -22,6 +22,32 @@ import {
 } from '../emit';
 import type { DocxIrTable } from '../../../ir/types';
 
+const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+/** A context with one prepared PNG resource, `res1`. */
+function pngContext(): EmitContext {
+  return {
+    ...emptyContext(),
+    pictures: new Map([
+      [
+        'res1',
+        () => ({ type: 'png', data: PNG_BYTES, fileName: 'res1-1x1.png' }),
+      ],
+    ]),
+  };
+}
+
+/** The `wp:docPr` id each emitted drawing states. */
+function drawingIds(emitted: Record<string, unknown>[]): string[] {
+  return emitted
+    .map((entry) => entry.picture ?? entry.wpgGroup)
+    .filter(Boolean)
+    .map(
+      (drawing) =>
+        ((drawing as Record<string, any>).altText as { id: string }).id
+    );
+}
+
 describe('run properties', () => {
   it('states size in points, because the backend doubles it', () => {
     // docx.js takes half-points and writes them through; this backend takes
@@ -87,34 +113,29 @@ describe('inline children', () => {
   });
 
   it('gives a break before a drawing a run of its own', () => {
-    const ctx: EmitContext = {
-      ...emptyContext(),
-      pictures: new Map([
-        [
-          'res1',
-          (_image, id) => ({ type: 'png', altText: { id: String(id) } }),
-        ],
-      ]),
-    };
     const emitted = inlineChildren(
       [
         { kind: 'lineBreak' },
         { kind: 'image', resourceId: 'res1', widthEmu: 100, heightEmu: 100 },
       ],
-      ctx
+      pngContext()
     );
 
     expect(emitted).toEqual([
       { break: 1 },
-      { picture: { type: 'png', altText: { id: '1' } } },
+      {
+        picture: {
+          type: 'png',
+          data: PNG_BYTES,
+          transformation: { width: 100, height: 100 },
+          altText: { id: '1' },
+        },
+      },
     ]);
   });
 
   it('numbers each drawing in document order', () => {
-    const ctx: EmitContext = {
-      ...emptyContext(),
-      pictures: new Map([['res1', (_image, id) => ({ id })]]),
-    };
+    const ctx = pngContext();
     const image = {
       kind: 'image' as const,
       resourceId: 'res1',
@@ -124,13 +145,12 @@ describe('inline children', () => {
 
     // A `wp:docPr` id left to the backend's module-level counter would keep
     // climbing across documents; these restart with the context.
-    expect(inlineChildren([image, image], ctx)).toEqual([
-      { picture: { id: 1 } },
-      { picture: { id: 2 } },
-    ]);
+    expect(drawingIds(inlineChildren([image, image], ctx))).toEqual(['1', '2']);
     expect(
-      inlineChildren([image], { ...emptyContext(), pictures: ctx.pictures })
-    ).toEqual([{ picture: { id: 1 } }]);
+      drawingIds(
+        inlineChildren([image], { ...emptyContext(), pictures: ctx.pictures })
+      )
+    ).toEqual(['1']);
   });
 
   it('wraps a revision once rather than marking every run', () => {

@@ -29,6 +29,15 @@ import type { ProcessedDocument } from '../core/structure';
 import type { ComponentDefinition } from '../types';
 import type { ThemeConfig } from '../styles';
 import { resolveColor } from '../styles/utils/colorUtils';
+import {
+  isNativeVisualProps,
+  type VisualNativeProps,
+  type VisualProps,
+} from '@json-to-office/shared-docx';
+import {
+  compileNativeVisualGroup,
+  type NativeVisualDeps,
+} from './nativeVisual';
 import { createDocumentStyles } from '../styles/themeToStyles';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import { getNormalStyle, getThemeFonts } from '../themes/defaults';
@@ -104,6 +113,7 @@ import {
   type DocxIrBorders,
   type DocxIrColor,
   type DocxIrComment,
+  type DocxIrDrawingGroupRun,
   type DocxIrNote,
   type DocxIrFloating,
   type DocxIrFloatingPosition,
@@ -130,6 +140,7 @@ import {
 } from './types';
 import {
   blockId,
+  emuToPixels,
   headerFooterBlockId,
   inchesToTwips,
   irColor,
@@ -849,6 +860,8 @@ function compileComponent(
       return compileColumns(component, scope);
     case 'image':
       return compileImage(component, scope);
+    case 'visual':
+      return compileVisual(component, scope);
     case 'table':
       return compileTable(component, scope);
     default:
@@ -2957,6 +2970,173 @@ function headingLevel(level: unknown): number {
  * Images
  * ------------------------------------------------------------------ */
 
+/**
+ * A native `visual`, and the caption paragraph that may follow it.
+ *
+ * Only a native one reaches here: a raster visual became an `image` during
+ * desugaring, long before compilation. One that did not is a pipeline bug, and
+ * is refused rather than drawn as an empty box.
+ *
+ * The drawing itself is lowered in `./nativeVisual`; what happens here is the
+ * placement — the page-side size, the anchor, the caption — which is `image`'s
+ * job done again, because a visual is placed exactly like an image.
+ */
+function compileVisual(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+
+  if (!isNativeVisualProps(props as VisualProps)) {
+    ctx.unsupported.push({
+      name: 'visual',
+      path,
+      detail:
+        'a raster visual reached the compiler; it should have been rasterized during desugaring',
+    });
+    return [];
+  }
+
+  const group = compileNativeVisualGroup(
+    props as VisualNativeProps,
+    nativeVisualDeps(ctx, path)
+  );
+  if (!group) return [];
+
+  const size = visualPlacementPixels(props, group.canvas, {
+    widthPx: Math.round(twipsToPixels(getAvailableWidthTwips(ctx.theme))),
+    heightPx: Math.round(twipsToPixels(getAvailableHeightTwips(ctx.theme))),
+  });
+
+  const drawing: DocxIrDrawingGroupRun = {
+    kind: 'drawingGroup',
+    widthEmu: pixelsToEmu(size.width),
+    heightEmu: pixelsToEmu(size.height),
+    canvasWidthEmu: group.canvas.widthEmu,
+    canvasHeightEmu: group.canvas.heightEmu,
+    children: group.children,
+    ...(typeof props.alt === 'string' && props.alt
+      ? { altText: props.alt }
+      : {}),
+    ...(props.floating
+      ? { floating: compileFloating(props.floating, ctx, path) }
+      : {}),
+  };
+
+  ctx.features.require('drawing-groups', path);
+  if (props.floating) ctx.features.require('floating-images', path);
+
+  const spacing: DocxIrSpacing = {};
+  if (props.spacing?.before !== undefined) {
+    spacing.beforeTwips = pointsToTwips(props.spacing.before);
+  }
+  if (props.spacing?.after !== undefined) {
+    spacing.afterTwips = pointsToTwips(props.spacing.after);
+  }
+
+  const blocks: DocxIrBlock[] = [
+    {
+      kind: 'paragraph',
+      id: scope.id,
+      path,
+      children: [drawing],
+      formatting: {
+        // A floating drawing is anchored, so aligning its paragraph would move
+        // the anchor rather than the graphic — the same rule an image follows.
+        ...(props.floating
+          ? {}
+          : { alignment: compileAlignment(props.alignment) ?? 'center' }),
+        ...(Object.keys(spacing).length > 0 ? { spacing } : {}),
+        ...(props.keepNext !== undefined ? { keepNext: props.keepNext } : {}),
+        ...(props.keepLines !== undefined
+          ? { keepLines: props.keepLines }
+          : {}),
+      },
+    },
+  ];
+
+  const caption = captionBlock(props.caption, scope, 'visual');
+  if (caption === undefined) return [];
+  if (caption) blocks.push(caption);
+
+  return blocks;
+}
+
+/**
+ * What lowering a native visual needs from the compiler.
+ *
+ * Built once here rather than at each call site so a visual in a table cell
+ * declares its resources, resolves its colours and reports its refusals
+ * exactly as one in the body does.
+ */
+function nativeVisualDeps(ctx: CompileContext, path: string): NativeVisualDeps {
+  return {
+    color: (value) => {
+      try {
+        return irColor(resolveColor(value, ctx.theme));
+      } catch {
+        // An unresolvable token is the author's, not the pipeline's: report it
+        // against the property that holds it rather than throwing from here.
+        return undefined;
+      }
+    },
+    picture: (source) => {
+      const loaded = ctx.images.get(source);
+      if (!loaded) return undefined;
+      const mediaType = detectImageType(source, loaded.contentType);
+      if (mediaType === 'svg') ctx.features.require('svg-images', path);
+      return {
+        resourceId: declareResource(loaded, mediaType, ctx),
+        mediaType,
+        ...(loaded.intrinsic ? { intrinsic: loaded.intrinsic } : {}),
+      };
+    },
+    reject: (detail) => ctx.unsupported.push({ name: 'visual', path, detail }),
+    warn: (message) => warnOnce(ctx, `visual:${message}`, message),
+  };
+}
+
+/**
+ * The size a visual is drawn at, in pixels.
+ *
+ * Defaults to the canvas's own physical size — a 6×3 inch canvas prints 6×3 —
+ * which is what the raster path does through `defaultVisualWidthPx`. Stating
+ * one axis scales the other with it; stating both allows a deliberate
+ * distortion, exactly as an image does.
+ *
+ * `reference` is what a percentage resolves against: the page's content box in
+ * the body, and a nominal box inside a table cell, whose real width is not
+ * known until Word lays the table out.
+ */
+function visualPlacementPixels(
+  props: Record<string, any>,
+  canvas: { widthEmu: number; heightEmu: number },
+  reference: { widthPx: number; heightPx: number }
+): { width: number; height: number } {
+  const canvasWidthPx = Math.round(emuToPixels(canvas.widthEmu));
+  const canvasHeightPx = Math.round(emuToPixels(canvas.heightEmu));
+
+  const targetWidth =
+    props.width !== undefined
+      ? parseWidthValue(props.width, reference.widthPx)
+      : undefined;
+  const targetHeight =
+    props.height !== undefined
+      ? parseDimensionValue(props.height, reference.heightPx)
+      : undefined;
+
+  if (targetWidth === undefined && targetHeight === undefined) {
+    return { width: canvasWidthPx, height: canvasHeightPx };
+  }
+  return calculateMissingDimension(
+    canvasWidthPx,
+    canvasHeightPx,
+    targetWidth,
+    targetHeight
+  );
+}
+
 /** Image props this slice does not lower. */
 const UNLOWERED_IMAGE_PROPS = ['comment'] as const;
 
@@ -3052,34 +3232,52 @@ function compileImage(
     },
   ];
 
-  if (props.caption) {
-    const caption = String(props.caption);
-    const syntax = containsUnsupportedSyntax(caption);
-    if (syntax) {
-      ctx.unsupported.push({ name: 'image', path, detail: syntax });
-      return [];
-    }
-    blocks.push({
-      kind: 'paragraph',
-      id: `${scope.id}:caption`,
-      path: `${path}.caption`,
-      styleId: 'Normal',
-      // Captions default to left alignment, whatever the figure did.
-      formatting: { alignment: 'left' },
-      // A caption reaches the parser only when it carries a decorator, which
-      // is why a link in an otherwise plain caption stays literal.
-      children: DECORATED.test(caption)
-        ? parseInline(caption, {
-            base: {},
-            hyperlinks: true,
-            resolvePlaceholder: placeholderResolver(ctx),
-            resolveCrossReference: crossReferenceResolver(ctx, path),
-          })
-        : parseLiteral(caption, { base: {} }),
-    });
-  }
+  const caption = captionBlock(props.caption, scope, 'image');
+  if (caption === undefined) return [];
+  if (caption) blocks.push(caption);
 
   return blocks;
+}
+
+/**
+ * The caption paragraph that follows a figure, if it has one.
+ *
+ * Three outcomes rather than two: a paragraph, `null` for no caption, and
+ * `undefined` for a caption the compiler refuses — which the caller turns into
+ * dropping the whole figure, because a figure whose caption was silently
+ * discarded is worse than one that fails.
+ */
+function captionBlock(
+  value: unknown,
+  scope: ComponentScope,
+  componentName: string
+): DocxIrParagraph | null | undefined {
+  if (!value) return null;
+  const { ctx, path } = scope;
+  const caption = String(value);
+  const syntax = containsUnsupportedSyntax(caption);
+  if (syntax) {
+    ctx.unsupported.push({ name: componentName, path, detail: syntax });
+    return undefined;
+  }
+  return {
+    kind: 'paragraph',
+    id: `${scope.id}:caption`,
+    path: `${path}.caption`,
+    styleId: 'Normal',
+    // Captions default to left alignment, whatever the figure did.
+    formatting: { alignment: 'left' },
+    // A caption reaches the parser only when it carries a decorator, which
+    // is why a link in an otherwise plain caption stays literal.
+    children: DECORATED.test(caption)
+      ? parseInline(caption, {
+          base: {},
+          hyperlinks: true,
+          resolvePlaceholder: placeholderResolver(ctx),
+          resolveCrossReference: crossReferenceResolver(ctx, path),
+        })
+      : parseLiteral(caption, { base: {} }),
+  };
 }
 
 /**
@@ -3797,6 +3995,9 @@ function cellChildren(
     if (content.name === 'image') {
       return wrap(cellImage(content, base, ctx));
     }
+    if (content.name === 'visual') {
+      return wrap(cellVisual(content, scope));
+    }
     if (content.name !== 'paragraph') {
       // The cell says what it could not render, in the same grey the missing
       // image placeholder uses.
@@ -3851,6 +4052,64 @@ function cellChildren(
  * has always used. An image that cannot be loaded leaves a placeholder naming
  * its source rather than an empty cell.
  */
+/**
+ * A native visual inside a table cell.
+ *
+ * A cell holds runs, and a drawing group is one — so this is the same lowering
+ * the body path uses, minus the things a cell has nowhere to put: no caption
+ * paragraph, no anchor, no paragraph alignment. A *raster* visual never gets
+ * here, because it became an `image` during desugaring.
+ */
+function cellVisual(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrInline[] {
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+
+  if (!isNativeVisualProps(props as VisualProps)) {
+    ctx.unsupported.push({
+      name: 'visual',
+      path,
+      detail:
+        'a raster visual reached the compiler; it should have been rasterized during desugaring',
+    });
+    return [];
+  }
+
+  const group = compileNativeVisualGroup(
+    props as VisualNativeProps,
+    nativeVisualDeps(ctx, path)
+  );
+  if (!group) return [];
+
+  // A cell's real width is decided by the table layout, so a percentage has no
+  // page box to resolve against; the nominal box matches `cellImage`'s.
+  const size = visualPlacementPixels(props, group.canvas, {
+    widthPx: CELL_DRAWING_REFERENCE.width,
+    heightPx: CELL_DRAWING_REFERENCE.height,
+  });
+
+  ctx.features.require('drawing-groups', path);
+
+  return [
+    {
+      kind: 'drawingGroup',
+      widthEmu: pixelsToEmu(size.width),
+      heightEmu: pixelsToEmu(size.height),
+      canvasWidthEmu: group.canvas.widthEmu,
+      canvasHeightEmu: group.canvas.heightEmu,
+      children: group.children,
+      ...(typeof props.alt === 'string' && props.alt
+        ? { altText: props.alt }
+        : {}),
+    },
+  ];
+}
+
+/** The nominal box a percentage size resolves against inside a cell. */
+const CELL_DRAWING_REFERENCE = { width: 300, height: 200 } as const;
+
 function cellImage(
   component: ComponentDefinition,
   base: DocxIrRunFormatting,

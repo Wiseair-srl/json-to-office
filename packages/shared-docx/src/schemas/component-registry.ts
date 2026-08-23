@@ -226,7 +226,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       hasChildren: false,
       category: 'content',
       description:
-        'Free-canvas graphic authored as a single pptx slide and embedded as a rasterized PNG. Use for infographics, diagrams and layered compositions that the document flow cannot express.',
+        'Free-canvas graphic for infographics, diagrams and layered compositions the document flow cannot express. Rasterized from a pptx slide by default; renderMode "native" draws it as an editable Word drawing group (renderer "office-open").',
     },
   ] as const;
 
@@ -352,7 +352,11 @@ export function createComponentSchemaObject(
       ? component.createPropsSchema(selfRef)
       : component.propsSchema;
   const propsSchema = profile
-    ? docxPropsSchemaForRenderer(basePropsSchema, profile.renderer)
+    ? docxPropsSchemaForRenderer(
+        component.name,
+        basePropsSchema,
+        profile.renderer
+      )
     : basePropsSchema;
 
   // `props` is required only when the props schema itself demands a field.

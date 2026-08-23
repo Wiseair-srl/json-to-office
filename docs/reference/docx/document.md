@@ -17,6 +17,8 @@ Every component in a document is an object with this shape:
 
 The root `docx` node additionally accepts a `$schema` field, so editors can wire up autocompletion against the published [JSON Schemas](/reference/json-schemas). The schema uses `renderer` to select its backend-specific branch. All schemas reject unknown props (`additionalProperties: false`) unless you opt into `allowUnknownFields` at generation time — see [Validation](/guide/validation).
 
+`renderer` is not only a compatibility profile: some props exist on one backend and not the other, and the schema branch decides which are offered. Threaded comments (`comment.replies`, `comment.resolved`) are `docxjs` only; a natively drawn [`visual`](/reference/docx/components#visual-native-mode) (`renderMode: "native"`) is `office-open` only, and using it under any other backend is a validation error at the component's own `props/renderMode`.
+
 ## `docx` (root)
 
 The document root. Its only allowed children are `section` components.

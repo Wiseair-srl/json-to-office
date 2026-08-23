@@ -384,7 +384,7 @@ export const COMPONENT_METADATA: Record<
   visual: {
     title: 'Visual Component',
     description:
-      'Free-canvas graphic authored as a single pptx slide and embedded as a rasterized PNG',
+      'Free-canvas graphic: a rasterized pptx slide, or a native Word drawing group with renderMode "native"',
   },
 };
 

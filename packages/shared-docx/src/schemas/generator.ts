@@ -290,7 +290,11 @@ function generateRendererDocumentSchema(
       // the generator, both of which treat a propless root as `props: {}`.
       // Schema-driven editors would otherwise flag a document that builds.
       props: Type.Optional(
-        docxPropsSchemaForRenderer(reportComponent.propsSchema, renderer)
+        docxPropsSchemaForRenderer(
+          reportComponent.name,
+          reportComponent.propsSchema,
+          renderer
+        )
       ),
       // Required, matching the runtime validator: a root without `children`
       // is rejected (deep-validator.ts), so the exported schema says so too.

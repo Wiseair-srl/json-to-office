@@ -11,6 +11,10 @@
  * and embedded once.
  */
 
+import {
+  isNativeVisualProps,
+  type VisualProps,
+} from '@json-to-office/shared-docx';
 import type { ComponentDefinition } from '../types';
 import {
   getImageBuffer,
@@ -106,6 +110,16 @@ function collectSources(
   for (const child of children ?? []) collectSources(child, out);
 
   const props = (component.props ?? {}) as Record<string, unknown>;
+
+  // A native `visual` survives desugaring, so its pictures are still nested
+  // inside it when this runs — and they embed by value like any other image.
+  // A raster visual is already an `image` by now and has no `elements` left.
+  if (
+    component.name === 'visual' &&
+    isNativeVisualProps(props as VisualProps)
+  ) {
+    collectNativeVisualSources(props, out);
+  }
   for (const key of ['header', 'footer'] as const) {
     const part = props[key];
     if (Array.isArray(part)) {
@@ -126,6 +140,38 @@ function collectSources(
         }
       }
     }
+  }
+}
+
+/**
+ * Every image a native visual draws: its canvas background, and each `image`
+ * element on it.
+ *
+ * The elements are the native content model rather than docx components, so
+ * they are read directly rather than recursed into — nothing else in there
+ * can hold an image.
+ */
+function collectNativeVisualSources(
+  props: Record<string, unknown>,
+  out: Set<string>
+): void {
+  const canvas = props.canvas as
+    | { background?: { image?: { path?: string; base64?: string } } }
+    | undefined;
+  const background = canvas?.background?.image;
+  if (background) {
+    const source = resolveImageSource(background);
+    if (source) out.add(source);
+  }
+
+  const elements = props.elements;
+  if (!Array.isArray(elements)) return;
+  for (const element of elements as Record<string, unknown>[]) {
+    if (!element || element.name !== 'image') continue;
+    const source = resolveImageSource(
+      (element.props ?? {}) as { svg?: string; base64?: string; path?: string }
+    );
+    if (source) out.add(source);
   }
 }
 

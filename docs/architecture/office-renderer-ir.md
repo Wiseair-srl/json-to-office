@@ -382,6 +382,7 @@ docx.js one rather than a translation layer on top of it.
 | inline and floating images          | yes                                                   | yes                                                                                 |
 | SVG with a raster fallback          | yes                                                   | yes — `PictureOptions` has an `svg` type with a `fallback`, unlike its pptx sibling |
 | text boxes (`wps:wsp`), text frames | yes                                                   | yes                                                                                 |
+| drawing groups (`wpg:wgp`)          | **no** — docx.js has no group primitive               | yes — a paragraph-level `wpgGroup` run taking shape, group and picture children     |
 | footnotes, endnotes                 | yes                                                   | yes                                                                                 |
 | comments                            | yes                                                   | yes, but flat — see below                                                           |
 | revisions                           | one `w:ins`/`w:del` per run                           | a real wrapper element, so the id appears once per range                            |
@@ -409,6 +410,64 @@ rather than losing content:
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `comment-threads`                                                  | `CommentOptions` is `{id, author, initials, date, children}` — no parent, no resolved state, so a reply would flatten into an unrelated top-level comment |
 | `table-merged-cells`, `cached-fields`, `shading`, `borders`, `rtl` | the vocabulary no lowering covers yet, so nothing can require them; both adapters leave them out so a declared set means "proven by a test"               |
+
+`docxjs` withholds one capability of its own: `drawing-groups`. That one is a
+real backend gap rather than a slice boundary — docx.js has no `wpg:wgp` — and
+it is what turns a natively drawn `visual` handed to the default backend into a
+named capability error rather than a document with the graphic missing.
+
+### Native visuals
+
+A `visual` is normally rasterized: it becomes a one-slide PPTX, LibreOffice
+draws it, and the PNG is embedded as an `image` — all of it before the compiler
+sees the tree. `renderMode: "native"` takes a different path entirely. The
+component survives desugaring, the compiler lowers it to a
+`DocxIrDrawingGroupRun`, and the office-open adapter emits one `wpg:wgp`. No
+PPTX, no rasterizer request, no pre-pass counter moves.
+
+The IR node is backend-neutral by construction: it says what is drawn and where
+(EMU frames in the group's own child coordinate space, resolved colours,
+registered picture resources), never how. The gate is the ordinary capability
+one, so IR that reaches `docxjs` by some other route is refused rather than
+dropped.
+
+Native mode is strict on purpose. Its element model — `text`, `shape`, `image`
+— is narrower than the PPTX slide-content union, and every native schema is
+`additionalProperties: false`, so a gradient fill or a chart element is a
+validation error instead of a silent omission. `collectDocxRendererErrors`
+carries the two rules a schema cannot: `renderMode: "native"` under any other
+renderer is reported at the component's `props/renderMode`, and an element kind
+with no native form at `props/elements/N/name`.
+
+Native cases stay out of the shared corpus — every corpus case is rendered by
+the default backend, which refuses a group — and live in
+`__tests__/native-visual.test.ts` instead, which asserts the emitted DrawingML,
+the absence of any rasterizer contact, byte determinism across sequential and
+concurrent renders, and the docxjs refusal. `libreoffice-smoke.test.ts` opens
+one for real.
+
+Both `visual.props` shapes carry an `$id` so the JSON-Schema export hoists them
+into definitions rather than inlining them at every position a component can
+appear. That is not tidiness: `visual` is the largest props schema in the
+registry, and two of them inlined pushed the exported `ComponentDefinition`
+deep enough that Ajv overflowed compiling it — for an ordinary _raster_ visual
+in a section header, nothing to do with native mode.
+
+**Known gap: the exported schema leaks across renderer branches.** Both branches
+embed a recursive definition under the same `$id: 'ComponentDefinition'`, and
+`convertToJsonSchema` keeps the last one walked — office-open. Every position
+reached through that shared definition (section `props.header`/`props.footer`,
+table `props.columns[].cells[].content`, `componentDefaults.section.header`)
+therefore gets the office-open view whatever the document's renderer says. It
+already leaked in the strict direction for comments — the exported schema
+rejects a `docxjs` threaded comment in a header — and now leaks in the
+permissive one for visuals: `renderMode: "native"` under `docxjs` validates
+against the exported schema in those positions. The runtime validator is
+correct either way (`collectDocxRendererErrors` walks the real document), so no
+bad document ships; the cost is a schema-driven editor missing a hint the CLI
+would give. Closing it means naming the recursive definition per renderer,
+which also means updating the `$ref` fix-up passes in `schemas/export.ts` and
+`@json-to-office/shared`'s `schema-utils.ts`.
 
 Both backends are exercised over the **whole** corpus in
 `renderers/office-open/__tests__/cross-backend.test.ts`: 265 cases are compared

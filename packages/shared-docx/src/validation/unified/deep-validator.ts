@@ -560,16 +560,23 @@ function validateComponentProps(
     return errors;
   }
 
+  // A props schema may be a union — `visual` is one, discriminated on
+  // `renderMode`. Checking the union itself collapses every nested complaint
+  // into one generic failure at `/props`, which is the opposite of what deep
+  // validation is for, so the branch the author clearly meant is resolved
+  // first and the errors are collected against that.
+  const branch = selectPropsBranch(schema, props);
+
   // When unknown fields are explicitly allowed, strip them before checking so
   // additionalProperties:false no longer rejects — required/typed fields are
   // still enforced.
   const toCheck = opts.allowUnknownFields
-    ? Value.Clean(schema, Value.Clone(props))
+    ? Value.Clean(branch, Value.Clone(props))
     : props;
 
   // Use TypeBox to validate against the specific schema
-  if (!Value.Check(schema, toCheck)) {
-    const valueErrors = [...Value.Errors(schema, toCheck)];
+  if (!Value.Check(branch, toCheck)) {
+    const valueErrors = [...Value.Errors(branch, toCheck)];
     const transformedErrors = transformValueErrors(valueErrors, {
       maxErrors: 100,
     });
@@ -590,6 +597,62 @@ function validateComponentProps(
   }
 
   return errors;
+}
+
+/**
+ * The branch of a union props schema that an author's props were written
+ * against.
+ *
+ * Resolved by literal discriminator first — a branch stating `renderMode:
+ * "native"` claims props that say so, and disclaims props that do not. When no
+ * single branch claims them (an unknown discriminator, or none at all), the
+ * one that complains least is used: a specific list of what is wrong beats a
+ * single "does not match any of the expected formats" every time.
+ *
+ * A non-union schema is returned untouched, so this costs nothing for the
+ * components that are plain objects.
+ */
+function selectPropsBranch(schema: TSchema, props: unknown): TSchema {
+  const branches = (schema as { anyOf?: TSchema[] }).anyOf;
+  if (!Array.isArray(branches) || branches.length === 0) return schema;
+
+  const claimed = branches.filter((branch) => claimsProps(branch, props));
+  if (claimed.length === 1) return claimed[0]!;
+
+  const candidates = claimed.length > 1 ? claimed : branches;
+  let best = candidates[0]!;
+  let fewest = Number.POSITIVE_INFINITY;
+  for (const candidate of candidates) {
+    const count = [...Value.Errors(candidate, props)].length;
+    if (count < fewest) {
+      fewest = count;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
+/** True when every literal-valued property of `branch` agrees with `props`. */
+function claimsProps(branch: TSchema, props: unknown): boolean {
+  const properties = (branch as { properties?: Record<string, TSchema> })
+    .properties;
+  if (!properties) return false;
+  const required = new Set(
+    ((branch as { required?: string[] }).required ?? []) as string[]
+  );
+  const value = (props ?? {}) as Record<string, unknown>;
+
+  for (const [key, propertySchema] of Object.entries(properties)) {
+    const literal = (propertySchema as { const?: unknown }).const;
+    if (literal === undefined) continue;
+    const present = value[key] !== undefined;
+    if (!present) {
+      if (required.has(key)) return false;
+      continue;
+    }
+    if (value[key] !== literal) return false;
+  }
+  return true;
 }
 
 /**
