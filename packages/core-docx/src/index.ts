@@ -30,27 +30,6 @@ export {
   type FlattenVisualsOptions,
 } from './core/flattenVisuals';
 
-// Cache API (general purpose caching, not specific to custom components)
-export {
-  MemoryCache,
-  CacheKeyGenerator,
-  DEFAULT_CACHE_CONFIG,
-  getCacheConfigFromEnv,
-  mergeConfigs,
-  ComponentCacheAnalytics,
-  // Types
-  type CacheConfiguration,
-  type CachedComponent,
-  type CacheStatistics,
-  type CacheKeyOptions,
-  type CacheEvents,
-  type CacheAnalyticsReport,
-  type ComponentPerformanceMetrics,
-  type ComponentCacheTrends,
-  type CacheOptimizationRecommendation,
-  type TimeSeriesPoint,
-} from './cache/index';
-
 export {
   getVisualPrepassStats,
   resetVisualPrepassStats,

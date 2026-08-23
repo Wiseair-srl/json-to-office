@@ -127,6 +127,16 @@ describe('public API surface', () => {
     expect(options).toBeDefined();
   });
 
+  it('does not expose the retired component-cache facade', () => {
+    // Generic cache primitives still live at @json-to-office/shared/cache.
+    // core-docx has no component render cache, so exporting them here implied
+    // a renderer-integrated subsystem that no generation path used.
+    // @ts-expect-error removed with the component render cache
+    expect(coreDocx.MemoryCache).toBeUndefined();
+    // @ts-expect-error removed with the component render cache
+    expect(coreDocx.CacheKeyGenerator).toBeUndefined();
+  });
+
   it('does not export the IR from the package surface', () => {
     // The IR stays internal for this release — see the architecture doc.
     // @ts-expect-error not exported
