@@ -622,7 +622,17 @@ const BODY_ANCHOR: Readonly<Record<string, string>> = {
   bottom: 'b',
 };
 
-function bodyProperties(text: NonNullable<DocxIrDrawingShape['text']>): Opts {
+/**
+ * `wps:bodyPr`, for anything that holds text.
+ *
+ * Takes the anchor and insets rather than a whole drawing-group text object so
+ * the plain text box uses it too — the two used to spell the insets
+ * differently, and only one of the spellings was the one the backend reads.
+ */
+function bodyProperties(text: {
+  anchor?: 'top' | 'middle' | 'bottom';
+  insetsEmu?: { top?: number; bottom?: number; left?: number; right?: number };
+}): Opts {
   const insets = text.insetsEmu;
   return {
     ...(text.anchor ? { anchor: BODY_ANCHOR[text.anchor] } : {}),
@@ -674,36 +684,9 @@ function shapeOptions(shape: DocxIrShapeRun, ctx: EmitContext): Opts {
           },
         }
       : {}),
-    ...(shape.outline
-      ? {
-          outline: {
-            ...(shape.outline.widthEmu !== undefined
-              ? { width: shape.outline.widthEmu }
-              : {}),
-            fill: {
-              type: 'solid',
-              color: { type: 'rgb', value: shape.outline.color.hex },
-            },
-          },
-        }
-      : {}),
+    ...(shape.outline ? { outline: drawingOutline(shape.outline) } : {}),
     ...(shape.insetsEmu
-      ? {
-          bodyProperties: {
-            ...(shape.insetsEmu.top !== undefined
-              ? { topInset: shape.insetsEmu.top }
-              : {}),
-            ...(shape.insetsEmu.bottom !== undefined
-              ? { bottomInset: shape.insetsEmu.bottom }
-              : {}),
-            ...(shape.insetsEmu.left !== undefined
-              ? { leftInset: shape.insetsEmu.left }
-              : {}),
-            ...(shape.insetsEmu.right !== undefined
-              ? { rightInset: shape.insetsEmu.right }
-              : {}),
-          },
-        }
+      ? { bodyProperties: bodyProperties({ insetsEmu: shape.insetsEmu }) }
       : {}),
     ...(shape.floating ? { floating: floatingOptions(shape.floating) } : {}),
   };

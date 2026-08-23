@@ -20,7 +20,7 @@ import {
   runProperties,
   type EmitContext,
 } from '../emit';
-import type { DocxIrTable } from '../../../ir/types';
+import type { DocxIrShapeRun, DocxIrTable } from '../../../ir/types';
 
 const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
@@ -204,6 +204,52 @@ describe('inline children', () => {
         },
       ])
     ).toEqual([{ hyperlink: { anchor: 'intro', children: [{ text: 'go' }] } }]);
+  });
+});
+
+describe('native text boxes', () => {
+  const textBox = (extra: Partial<DocxIrShapeRun> = {}): DocxIrShapeRun => ({
+    kind: 'shape',
+    widthPx: 240,
+    heightPx: 90,
+    children: [{ kind: 'paragraph', id: 'p', path: 'p', children: [] }],
+    ...extra,
+  });
+
+  /** The `wps:wsp` options a lone text box run emits. */
+  const shapeOf = (shape: DocxIrShapeRun): Record<string, any> =>
+    (inlineChildren([shape])[0] as Record<string, any>).wpsShape;
+
+  it('names text insets the way `a:bodyPr` does', () => {
+    // The backend reads `lIns`/`tIns`/`rIns`/`bIns` (or a `margins` object).
+    // It has no `*Inset` key anywhere, so the padding on every shape-mode text
+    // box was accepted here and then dropped on the way out — silently, and
+    // only on this backend.
+    expect(
+      shapeOf(textBox({ insetsEmu: { top: 1, bottom: 2, left: 3, right: 4 } }))
+        .bodyProperties
+    ).toEqual({ lIns: 3, tIns: 1, rIns: 4, bIns: 2 });
+  });
+
+  it('states no body properties when there are no insets', () => {
+    expect(shapeOf(textBox())).not.toHaveProperty('bodyProperties');
+  });
+
+  it('puts the outline colour on the outline, not under a `fill`', () => {
+    // `OutlineOptions` is line properties and fill properties merged into one
+    // bag; a nested `fill` is ignored, which drew every border in the default
+    // colour rather than the authored one.
+    expect(
+      shapeOf(
+        textBox({
+          outline: { color: { hex: 'CC0000' }, widthEmu: 19050 },
+        })
+      ).outline
+    ).toEqual({
+      width: 19050,
+      type: 'solidFill',
+      color: { value: 'CC0000' },
+    });
   });
 });
 
