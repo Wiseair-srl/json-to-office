@@ -453,21 +453,51 @@ registry, and two of them inlined pushed the exported `ComponentDefinition`
 deep enough that Ajv overflowed compiling it — for an ordinary _raster_ visual
 in a section header, nothing to do with native mode.
 
-**Known gap: the exported schema leaks across renderer branches.** Both branches
-embed a recursive definition under the same `$id: 'ComponentDefinition'`, and
-`convertToJsonSchema` keeps the last one walked — office-open. Every position
-reached through that shared definition (section `props.header`/`props.footer`,
-table `props.columns[].cells[].content`, `componentDefaults.section.header`)
-therefore gets the office-open view whatever the document's renderer says. It
-already leaked in the strict direction for comments — the exported schema
-rejects a `docxjs` threaded comment in a header — and now leaks in the
-permissive one for visuals: `renderMode: "native"` under `docxjs` validates
-against the exported schema in those positions. The runtime validator is
-correct either way (`collectDocxRendererErrors` walks the real document), so no
-bad document ships; the cost is a schema-driven editor missing a hint the CLI
-would give. Closing it means naming the recursive definition per renderer,
-which also means updating the `$ref` fix-up passes in `schemas/export.ts` and
-`@json-to-office/shared`'s `schema-utils.ts`.
+The recursive component definition is named **per renderer** —
+`docxComponentDefinitionName` gives `ComponentDefinition_docxjs` and
+`ComponentDefinition_office-open`. Both branches used to embed it under one
+shared `$id`, and the export pass keys `definitions` by `$id` with a plain
+overwrite, so the last branch walked — office-open — answered for both, and the
+docxjs definition never reached the file. Every position reached through the
+definition (section `props.header`/`props.footer`, table
+`props.columns[].cells[].content`, `componentDefaults.section.header`) got the
+office-open view whatever the document's renderer said, in both directions: a
+`docxjs` threaded comment in a header was refused, and a `renderMode: "native"`
+visual under `docxjs` was accepted. Positions reached through a branch's own
+narrowed child union — a direct child of `docx` or of `section` — were always
+right, which is what made it look local: the same `visual` was refused in a
+section body and accepted in that section's header.
+
+Naming the definition per renderer means the `$ref` fix-up passes cannot assume
+one name, so `schemas/export.ts` and `@json-to-office/shared`'s
+`schema-utils.ts` resolve a bare reference against whatever was actually
+hoisted, falling back to their `rootDefinitionName` only for a reference that
+names nothing. `componentDefaults` needs one more step: it is shared with the
+theme schema, so it is built from the _static_ section props and carries an
+untyped placeholder instead of a live recursive ref.
+`docxPropsSchemaForRenderer` names those placeholders while the renderer is
+still known and the schema is still that renderer's private clone.
+
+Naming a placeholder is now the only way one gets a `$ref`. The fix-up passes
+used to rewrite _every_ untyped array item to their root definition name
+whether or not such a definition existed, and the theme schema is the case that
+exposes as a bug: it embeds the same `componentDefaults`, so it inherited a
+`#/definitions/ComponentDefinition` it had no way to carry — a component union
+is per renderer, and a theme names no renderer. Ajv refuses to compile a schema
+containing an unresolvable reference, so the shipped `theme.schema.json` failed
+on itself before it looked at any theme. An item with nothing to point at now
+stays untyped. `jto docx validate --type theme` never went through it — that
+path validates against TypeBox — so this only ever hit `--schema` and external
+consumers of the published file.
+
+The cost is one more full definition: the exported `schemas/document.schema.json`
+goes from 8.7 MB to 12.2 MB pretty-printed, and Ajv's compile of it from ~3.1 s
+to ~4.3 s. Nesting depth — the number that decides whether Ajv overflows V8's
+stack — is unchanged at 39, because the second definition sits beside the first
+rather than inside it. `__tests__/renderer-definition-split.test.ts` pins the
+split itself; `jto-cli`'s `json-validator.test.ts` pins both symptoms
+end-to-end through a compiled Ajv validator, and that the theme schema compiles
+at all.
 
 Both backends are exercised over the **whole** corpus in
 `renderers/office-open/__tests__/cross-backend.test.ts`: 265 cases are compared

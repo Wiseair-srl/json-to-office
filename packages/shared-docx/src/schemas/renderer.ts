@@ -14,6 +14,20 @@ const NATIVE_VISUAL_ELEMENTS: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * The exported JSON-Schema definition name for one renderer's component union.
+ *
+ * One name per renderer, never a shared one. The two views differ wherever a
+ * backend cannot draw something, so a single definition would hand every
+ * position that goes through it — a section header or footer, a table cell's
+ * content, `componentDefaults` — whichever view the exporter happened to walk
+ * last, and give a schema-driven editor the wrong diagnostics for the other
+ * renderer.
+ */
+export function docxComponentDefinitionName(renderer: DocxRendererId): string {
+  return `ComponentDefinition_${renderer}`;
+}
+
+/**
  * Derive one renderer view from the canonical props schema.
  *
  * The canonical schema is the union of everything any backend can express, so
@@ -27,6 +41,7 @@ export function docxPropsSchemaForRenderer(
   renderer: DocxRendererId
 ): TSchema {
   const copy = cloneSchema(schema);
+  nameComponentPlaceholders(copy, docxComponentDefinitionName(renderer));
 
   if (componentName === 'visual' && renderer !== 'office-open') {
     // Only `office-open` draws a native group, so every other backend sees the
@@ -178,6 +193,44 @@ function pruneThreadFields(node: unknown): void {
   }
   for (const key of Reflect.ownKeys(schema)) {
     pruneThreadFields(schema[key]);
+  }
+}
+
+/**
+ * Point a renderer's props at that renderer's component definition.
+ *
+ * A position that holds arbitrary components but is built from a *static*
+ * schema carries an untyped item instead of a live recursive ref —
+ * `componentDefaults.section.header` is the one that matters, because
+ * `ComponentDefaultsSchema` is shared with the theme and so cannot be handed
+ * the recursion. The export pass used to resolve those against one hard-coded
+ * name; naming them here, while the renderer is still known and the schema is
+ * still this renderer's private clone, is what keeps the two views apart.
+ */
+function nameComponentPlaceholders(
+  node: unknown,
+  definitionName: string
+): void {
+  if (Array.isArray(node)) {
+    node.forEach((entry) => nameComponentPlaceholders(entry, definitionName));
+    return;
+  }
+  if (!node || typeof node !== 'object') return;
+  const schema = node as Record<PropertyKey, any>;
+
+  if (
+    schema.type === 'array' &&
+    schema.items &&
+    typeof schema.items === 'object' &&
+    Object.keys(schema.items).length === 0
+  ) {
+    // A bare name, the same shape `Type.Recursive` emits for its own self
+    // reference. `fixSchemaReferences` resolves both to `#/definitions/...`.
+    schema.items = { $ref: definitionName };
+  }
+
+  for (const key of Reflect.ownKeys(schema)) {
+    nameComponentPlaceholders(schema[key], definitionName);
   }
 }
 

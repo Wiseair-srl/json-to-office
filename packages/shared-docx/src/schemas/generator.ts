@@ -34,6 +34,7 @@ import { latestVersion } from '@json-to-office/shared';
 import {
   DEFAULT_DOCX_RENDERER_ID,
   DOCX_RENDERER_IDS,
+  docxComponentDefinitionName,
   docxPropsSchemaForRenderer,
   type DocxRendererId,
 } from './renderer';
@@ -122,6 +123,12 @@ function generateRendererDocumentSchema(
   // Captured from inside the recursive callback for the root's children.
   let capturedRootChildSchemas: TSchema[] = [];
   let capturedPluginSchemas: TSchema[] = [];
+
+  // Named per renderer. Both branches used to share one `$id`, and the export
+  // pass keys `definitions` by it, so the last branch walked overwrote the
+  // first and every position reached through the definition got that
+  // renderer's rules whatever the document said.
+  const definitionName = docxComponentDefinitionName(renderer);
 
   // Create a recursive component definition schema
   const ComponentDefinition = Type.Recursive(
@@ -255,12 +262,12 @@ function generateRendererDocumentSchema(
         });
       }
     },
-    { $id: 'ComponentDefinition' }
+    { $id: definitionName }
   );
 
   // Build root docx schema with narrowed children (section + section's own
-  // permitted content). ComponentDefinition is embedded in `definitions` so
-  // that $refs inside section header/footer and table cell content resolve.
+  // permitted content). The component definition is embedded in `definitions`
+  // so that $refs inside section header/footer and table cell content resolve.
   const reportComponent = getStandardComponent('docx');
   if (!reportComponent) {
     throw new Error('Docx root component not found in registry');
@@ -308,9 +315,9 @@ function generateRendererDocumentSchema(
       additionalProperties: false,
       title,
       description,
-      // Embed ComponentDefinition so convertToJsonSchema extracts it to
-      // definitions and bare $ref: "ComponentDefinition" values resolve.
-      definitions: { ComponentDefinition },
+      // Embed it so convertToJsonSchema extracts it to definitions and this
+      // branch's bare `$ref: "<definitionName>"` values resolve.
+      definitions: { [definitionName]: ComponentDefinition },
     } as Record<string, unknown>
   );
 }

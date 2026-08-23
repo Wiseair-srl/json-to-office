@@ -389,6 +389,7 @@ export {
   DOCX_RENDERER_IDS,
   DEFAULT_DOCX_RENDERER_ID,
   collectDocxRendererErrors,
+  docxComponentDefinitionName,
 } from './schemas/renderer';
 export type { DocxRendererId } from './schemas/renderer';
 

@@ -22,12 +22,31 @@ export interface ComponentSchemaConfig {
 
 /**
  * Fix TypeBox recursive references in a schema
- * Handles both "T0" and "ComponentDefinition" reference patterns
+ *
+ * Resolves the bare `$ref` values TypeBox leaves behind ("T0", or a
+ * `Type.Recursive` `$id`) into JSON Pointers. `rootDefinitionName` is only the
+ * fallback for a reference that names nothing hoisted: a schema may carry
+ * several recursive definitions — the DOCX document schema carries one per
+ * renderer — and a bare reference that matches an actual definition resolves
+ * to *that* one, which is what keeps the two renderer views apart.
  */
 export function fixSchemaReferences(
   schema: Record<string, unknown>,
   rootDefinitionName = 'ComponentDefinition'
 ): void {
+  const definitionNames = new Set(
+    Object.keys(
+      (schema.definitions as Record<string, unknown> | undefined) ?? {}
+    )
+  );
+  const definitionRef = (name: string): string =>
+    `#/definitions/${definitionNames.has(name) ? name : rootDefinitionName}`;
+  const isBareDefinitionRef = (value: unknown): value is string =>
+    typeof value === 'string' &&
+    (/^T\d+$/.test(value) ||
+      value === rootDefinitionName ||
+      definitionNames.has(value));
+
   function traverse(obj: Record<string, unknown>, path = ''): void {
     if (typeof obj !== 'object' || obj === null) return;
 
@@ -38,44 +57,50 @@ export function fixSchemaReferences(
         // Type guard to check if value has expected properties
         const schemaValue = value as Record<string, unknown>;
 
-        // Fix arrays with empty items
+        // Fix arrays with empty items — but only when there is something to
+        // point them at. A schema that holds components without embedding
+        // their definition (the theme schema holds `componentDefaults` but
+        // cannot carry a renderer's component union) keeps its untyped item:
+        // a `$ref` to a definition that was never hoisted is unresolvable, and
+        // Ajv refuses to compile the whole schema over it.
         if (
           schemaValue.type === 'array' &&
           schemaValue.items &&
-          Object.keys(schemaValue.items).length === 0
+          Object.keys(schemaValue.items).length === 0 &&
+          definitionNames.has(rootDefinitionName)
         ) {
           schemaValue.items = {
             $ref: `#/definitions/${rootDefinitionName}`,
           };
         }
 
-        // Fix arrays with items that reference broken "T0"
+        // Fix arrays whose items reference a bare definition name
         if (
           schemaValue.type === 'array' &&
           schemaValue.items &&
           typeof schemaValue.items === 'object' &&
           '$ref' in schemaValue.items &&
-          (schemaValue.items as Record<string, unknown>).$ref === 'T0'
+          isBareDefinitionRef(
+            (schemaValue.items as Record<string, unknown>).$ref
+          )
         ) {
           schemaValue.items = {
-            $ref: `#/definitions/${rootDefinitionName}`,
+            $ref: definitionRef(
+              (schemaValue.items as Record<string, unknown>).$ref as string
+            ),
           };
         }
 
-        // Fix direct $ref properties that point to "T0" or bare definition names
-        if (
-          schemaValue.$ref === 'T0' ||
-          schemaValue.$ref === rootDefinitionName
-        ) {
-          schemaValue.$ref = `#/definitions/${rootDefinitionName}`;
+        // Fix direct $ref properties that point at a bare definition name
+        if (isBareDefinitionRef(schemaValue.$ref)) {
+          schemaValue.$ref = definitionRef(schemaValue.$ref as string);
         }
 
-        // Remove problematic $id properties that reference "T0"
+        // Remove the $id left on an already-hoisted definition
         if (
           key === '$id' &&
-          typeof value === 'string' &&
-          (value === 'T0' || value === rootDefinitionName) &&
-          currentPath !== `definitions.${rootDefinitionName}.$id`
+          isBareDefinitionRef(value) &&
+          currentPath !== `definitions.${value}.$id`
         ) {
           delete obj[key];
           continue;
@@ -194,7 +219,11 @@ export function convertToJsonSchema(
 export function createComponentSchema(
   name: string,
   config: ComponentSchemaConfig,
-  componentDefinitionSchema?: TSchema
+  componentDefinitionSchema?: TSchema,
+  // The definition the recursive children and rich table cells reference.
+  // Callers whose component union is renderer-specific pass that renderer's
+  // name so the embedded definition and the `$ref`s pointing at it agree.
+  rootDefinitionName = 'ComponentDefinition'
 ): Record<string, unknown> {
   const componentStructure: Record<string, unknown> = {
     $schema: 'https://json-schema.org/draft-07/schema#',
@@ -224,14 +253,14 @@ export function createComponentSchema(
       type: 'array',
       description: 'Children within this container',
       items: {
-        $ref: '#/definitions/ComponentDefinition',
+        $ref: `#/definitions/${rootDefinitionName}`,
       },
     };
 
-    // Add the ComponentDefinition for recursive references
+    // Add the component definition for recursive references
     if (componentDefinitionSchema) {
       componentStructure.definitions = {
-        ComponentDefinition: JSON.parse(
+        [rootDefinitionName]: JSON.parse(
           JSON.stringify(componentDefinitionSchema)
         ),
       };
@@ -240,7 +269,7 @@ export function createComponentSchema(
 
   // Enhance table component to support rich content in cells
   if (config.enhanceForRichContent && name === 'table') {
-    // Add ComponentDefinition to support rich content in table cells
+    // Add the component definition to support rich content in table cells
     const componentStructureWithDefs = componentStructure as Record<
       string,
       unknown
@@ -251,7 +280,7 @@ export function createComponentSchema(
       componentStructureWithDefs.definitions = {};
     }
     if (componentDefinitionSchema) {
-      componentStructureWithDefs.definitions.ComponentDefinition = JSON.parse(
+      componentStructureWithDefs.definitions[rootDefinitionName] = JSON.parse(
         JSON.stringify(componentDefinitionSchema)
       );
     }
@@ -279,15 +308,16 @@ export function createComponentSchema(
         // If it has anyOf, add component reference as an option
         if (cellSchema?.anyOf && Array.isArray(cellSchema.anyOf)) {
           // Check if component reference isn't already there
+          const componentRef = `#/definitions/${rootDefinitionName}`;
           const hasComponentRef = cellSchema.anyOf.some((item: unknown) => {
             const itemObj = item as Record<string, unknown>;
-            return itemObj.$ref === '#/definitions/ComponentDefinition';
+            return itemObj.$ref === componentRef;
           });
           if (!hasComponentRef) {
             cellSchema.anyOf.push({
               description:
                 'Rich content cell with component (e.g., image, paragraph)',
-              $ref: '#/definitions/ComponentDefinition',
+              $ref: componentRef,
             });
           }
         }
@@ -296,7 +326,7 @@ export function createComponentSchema(
   }
 
   // Fix empty items in arrays and broken references
-  fixSchemaReferences(componentStructure);
+  fixSchemaReferences(componentStructure, rootDefinitionName);
 
   componentStructure.additionalProperties = false;
 
