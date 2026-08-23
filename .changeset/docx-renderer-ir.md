@@ -53,6 +53,10 @@ implementation (`src/__tests__/corpus-ir-parity.test.ts`).
   went with the writer layer — compiling to an IR holds no cross-document state,
   so there is nothing left to cache between documents — and keeping the option
   would have left a documented performance switch that did nothing.
+- The `MemoryCache`, `CacheKeyGenerator` and related cache-analytics facade is
+  no longer re-exported from `@json-to-office/core-docx`: no DOCX generation
+  path consumes it. Generic cache primitives remain available from
+  `@json-to-office/shared/cache` for applications that own their cache keys.
 - The component renderer exports and the text engine behind them
   (`parseTextWithDecorators` and the per-component render functions) are
   removed — they were the docx.js writer layer.

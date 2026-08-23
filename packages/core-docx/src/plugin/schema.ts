@@ -12,9 +12,6 @@ import {
 } from '@json-to-office/shared-docx';
 import { generateUnifiedDocumentSchema } from '@json-to-office/shared-docx/schemas/generator';
 
-// Schema cache to avoid regenerating identical schemas
-const schemaCache = new Map<string, TSchema>();
-
 /**
  * Generate a JSON schema for plugin-enhanced documents at RUNTIME.
  *
@@ -116,55 +113,39 @@ export function generateComponentSchemas(
 
     for (const v of versionKeys) {
       const entry = component.versions[v];
-      const cacheKey = `component_${component.name}@${v}`;
-
-      if (schemaCache.has(cacheKey)) {
-        schemas[`${component.name}@${v}`] = schemaCache.get(cacheKey)!;
-      } else {
-        const schemaObj = entry.propsSchema as TObject;
-        const properties = schemaObj.properties || {};
-
-        const componentSchemaProps: Record<string, TSchema> = {
-          name: Type.Literal(component.name),
-          version: Type.Optional(Type.Literal(v)),
-          id: Type.Optional(Type.String()),
-          ...properties,
-        };
-
-        if (entry.hasChildren) {
-          componentSchemaProps.children = Type.Optional(Type.Array(Type.Any()));
-        }
-
-        const componentSchema = Type.Object(componentSchemaProps);
-        schemaCache.set(cacheKey, componentSchema);
-        schemas[`${component.name}@${v}`] = componentSchema;
-      }
-    }
-
-    // Also add a "default" entry keyed by name (uses latest)
-    const latestEntry = component.versions[latest];
-    const defaultCacheKey = `component_${component.name}_default`;
-
-    if (schemaCache.has(defaultCacheKey)) {
-      schemas[component.name] = schemaCache.get(defaultCacheKey)!;
-    } else {
-      const schemaObj = latestEntry.propsSchema as TObject;
+      const schemaObj = entry.propsSchema as TObject;
       const properties = schemaObj.properties || {};
 
       const componentSchemaProps: Record<string, TSchema> = {
         name: Type.Literal(component.name),
+        version: Type.Optional(Type.Literal(v)),
         id: Type.Optional(Type.String()),
         ...properties,
       };
 
-      if (latestEntry.hasChildren) {
+      if (entry.hasChildren) {
         componentSchemaProps.children = Type.Optional(Type.Array(Type.Any()));
       }
 
-      const componentSchema = Type.Object(componentSchemaProps);
-      schemaCache.set(defaultCacheKey, componentSchema);
-      schemas[component.name] = componentSchema;
+      schemas[`${component.name}@${v}`] = Type.Object(componentSchemaProps);
     }
+
+    // Also add a "default" entry keyed by name (uses latest)
+    const latestEntry = component.versions[latest];
+    const schemaObj = latestEntry.propsSchema as TObject;
+    const properties = schemaObj.properties || {};
+
+    const componentSchemaProps: Record<string, TSchema> = {
+      name: Type.Literal(component.name),
+      id: Type.Optional(Type.String()),
+      ...properties,
+    };
+
+    if (latestEntry.hasChildren) {
+      componentSchemaProps.children = Type.Optional(Type.Array(Type.Any()));
+    }
+
+    schemas[component.name] = Type.Object(componentSchemaProps);
   }
 
   return schemas;

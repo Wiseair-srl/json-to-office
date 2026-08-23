@@ -15,3 +15,7 @@ for PPTX. Generated schemas, runtime validation, autocomplete and exported
 renderer-profile types derive backend-specific branches from the canonical
 component schemas; compiler capability checks remain authoritative after custom
 component expansion and asset resolution.
+
+Runtime custom-component schemas are rebuilt from the current plugin
+definitions, so reloading the same component name and version cannot reuse stale
+props or child metadata.
