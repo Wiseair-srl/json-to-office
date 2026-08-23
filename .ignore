@@ -1,0 +1,5 @@
+# Honoured by ripgrep and fd (not by git). Keeps the generated license dump out
+# of ordinary code searches: it carries ~500 verbatim license texts, so a grep
+# for a word like "document" or "license" otherwise returns hundreds of hits
+# from it. Pass `rg --no-ignore` (or `-u`) to search it deliberately.
+THIRD-PARTY-NOTICES.md

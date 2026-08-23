@@ -469,6 +469,23 @@ pnpm dev    # Start dev server with hot reload
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development guide.
 
+## Credits
+
+json-to-office does not write OOXML by hand. It compiles JSON into an
+intermediate representation and hands that to open-source rendering engines:
+
+| Engine                                                                                                | Used for                                            | License |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ------- |
+| [docx](https://github.com/dolanmiu/docx) by [@dolanmiu](https://github.com/dolanmiu)                  | default `.docx` renderer                            | MIT     |
+| [office-open](https://github.com/DemoMacro/office-open) by [@DemoMacro](https://github.com/DemoMacro) | alternative `.docx` / `.pptx` renderer              | MIT     |
+| [PptxGenJS](https://github.com/gitbrent/PptxGenJS) by [@gitbrent](https://github.com/gitbrent)        | default `.pptx` renderer                            | MIT     |
+| [LibreOffice](https://www.libreoffice.org/)                                                           | preview rendering and PDF export (separate process) | MPL-2.0 |
+
+Thanks to their maintainers — these projects do the hardest part of the job.
+
+The full dependency tree and its license texts are in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), regenerated with `pnpm notices`.
+
 ## License
 
 [MIT](LICENSE), Wiseair srl
