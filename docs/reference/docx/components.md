@@ -609,7 +609,7 @@ Positions and sizes are **inches**, or a percentage string resolved against the 
 | `shape` | `type` (the same preset list as a PPTX shape), `x`, `y`, `w`, `h`, `fill` (`{ color?, transparency? }`), `line` (`{ color?, width?, dashType? }`), `text` (string or segments), `fontFace`, `fontSize`, `fontColor`, `bold`, `italic`, `align`, `valign`, `margin`, `rotate`, `flipH`, `flipV` |
 | `image` | `path` / `base64` / `svg`, `x`, `y`, `w`, `h`, `sizing` (`{ type: 'contain' \| 'cover' \| 'crop', w?, h? }` — `sizing.w`/`sizing.h` state the box and outrank the element's own `w`/`h`, as they do in raster mode), `rotate`, `alt`                                                           |
 
-An unstated `w` covers three quarters of the canvas; an unstated `h` is derived from the font size for `text` and from the image's own proportions for `image`. Omitting `width`/`height` on the component places the drawing at the canvas's physical size, so a 6.5 × 3 inch canvas prints 6.5 × 3. An SVG stays vector, with a raster fallback beside it for Word before 2016. An element with `enabled: false` draws nothing.
+An unstated `w` covers three quarters of the canvas for `text` and `shape`; an unstated `h` is derived from the font size for `text`. An `image` sizes itself instead: one unstated axis comes from the image's own proportions, and an image that states neither is drawn at its stored size (falling back to three quarters of the canvas width only when that size cannot be read). Omitting `width`/`height` on the component places the drawing at the canvas's physical size, so a 6.5 × 3 inch canvas prints 6.5 × 3. An SVG stays vector, with a raster fallback beside it for Word before 2016. An element with `enabled: false` draws nothing.
 
 ```json
 {

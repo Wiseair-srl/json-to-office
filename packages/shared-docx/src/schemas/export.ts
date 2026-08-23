@@ -39,8 +39,14 @@ export function fixSchemaReferences(
       (schema.definitions as Record<string, unknown> | undefined) ?? {}
     )
   );
-  const definitionRef = (name: string): string =>
-    `#/definitions/${definitionNames.has(name) ? name : rootDefinitionName}`;
+  // Undefined when nothing by either name was hoisted. Substituting the root
+  // name regardless is how a reference to a definition that does not exist got
+  // written, and Ajv refuses to compile a schema containing one — so an
+  // unresolved reference is dropped rather than invented.
+  const definitionRef = (name: string): string | undefined => {
+    const target = definitionNames.has(name) ? name : rootDefinitionName;
+    return definitionNames.has(target) ? `#/definitions/${target}` : undefined;
+  };
   const isBareDefinitionRef = (value: unknown): value is string =>
     typeof value === 'string' &&
     (/^T\d+$/.test(value) ||
@@ -84,16 +90,18 @@ export function fixSchemaReferences(
             (schemaValue.items as Record<string, unknown>).$ref
           )
         ) {
-          schemaValue.items = {
-            $ref: definitionRef(
-              (schemaValue.items as Record<string, unknown>).$ref as string
-            ),
-          };
+          const ref = definitionRef(
+            (schemaValue.items as Record<string, unknown>).$ref as string
+          );
+          // Untyped rather than dangling when the target was never hoisted.
+          schemaValue.items = ref ? { $ref: ref } : {};
         }
 
         // Fix direct $ref properties that point at a bare definition name
         if (isBareDefinitionRef(schemaValue.$ref)) {
-          schemaValue.$ref = definitionRef(schemaValue.$ref as string);
+          const ref = definitionRef(schemaValue.$ref as string);
+          if (ref) schemaValue.$ref = ref;
+          else delete schemaValue.$ref;
         }
 
         // Remove the $id left on an already-hoisted definition

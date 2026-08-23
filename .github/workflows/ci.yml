@@ -13,6 +13,12 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# Read-only by default, so a compromised dependency pulled in by `quality`,
+# `test` or `conformance` cannot use GITHUB_TOKEN to write. `release` declares
+# the scopes it needs itself, and a job-level block overrides this one.
+permissions:
+  contents: read
+
 jobs:
   quality:
     if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'

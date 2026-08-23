@@ -480,8 +480,8 @@ still known and the schema is still that renderer's private clone.
 
 Naming a placeholder is now the only way one gets a `$ref`. The fix-up passes
 used to rewrite _every_ untyped array item to their root definition name
-whether or not such a definition existed, and the theme schema is the case that
-exposes as a bug: it embeds the same `componentDefaults`, so it inherited a
+whether or not such a definition existed, and the theme schema is what exposed
+that as a bug: it embeds the same `componentDefaults`, so it inherited a
 `#/definitions/ComponentDefinition` it had no way to carry — a component union
 is per renderer, and a theme names no renderer. Ajv refuses to compile a schema
 containing an unresolvable reference, so the shipped `theme.schema.json` failed
