@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/shared",
-  "version": "0.35.0",
+  "version": "1.0.0",
   "description": "Format-agnostic shared types, schemas and validation utilities",
   "type": "module",
   "main": "dist/index.js",

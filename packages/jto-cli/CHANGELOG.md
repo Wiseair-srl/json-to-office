@@ -1,5 +1,42 @@
 # @json-to-office/jto-cli
 
+## 1.0.0
+
+### Major Changes
+
+- d145c9c: Remove the retired generic component-cache subpath and its unused public
+  helpers. Renderer generation remains stateless; only document-output, asset,
+  font and rasterizer caches remain.
+
+  Rename the format-adapter reset hook from `clearComponentCache` to
+  `resetCacheStats`, matching its remaining responsibility, and update the
+  playground cache-clear message.
+
+### Patch Changes
+
+- a05a152: Document JSON can now select its renderer with an optional top-level
+  `renderer` discriminator. Omission selects `docxjs` for DOCX and `pptxgenjs`
+  for PPTX. Generated schemas, runtime validation, autocomplete and exported
+  renderer-profile types derive backend-specific branches from the canonical
+  component schemas; compiler capability checks remain authoritative after custom
+  component expansion and asset resolution.
+
+  Runtime custom-component schemas are rebuilt from the current plugin
+  definitions, so reloading the same component name and version cannot reuse stale
+  props or child metadata.
+
+- Updated dependencies [cea7b6b]
+- Updated dependencies [767552d]
+- Updated dependencies [7319f5f]
+- Updated dependencies [39b2ced]
+- Updated dependencies [a05a152]
+- Updated dependencies [d145c9c]
+  - @json-to-office/core-docx@1.0.0
+  - @json-to-office/shared@1.0.0
+  - @json-to-office/core-pptx@1.0.0
+  - @json-to-office/shared-docx@1.0.0
+  - @json-to-office/shared-pptx@1.0.0
+
 ## 0.38.0
 
 ### Patch Changes
