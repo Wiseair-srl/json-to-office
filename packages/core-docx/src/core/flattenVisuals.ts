@@ -21,7 +21,11 @@ import {
   type PptxBatchRasterizer,
   type RasterizeFontFace,
 } from '@json-to-office/shared';
-import type { VisualProps } from '@json-to-office/shared-docx';
+import {
+  isNativeVisualProps,
+  type VisualProps,
+  type VisualRasterProps,
+} from '@json-to-office/shared-docx';
 import {
   buildVisualPresentation,
   visualRasterKey,
@@ -128,8 +132,12 @@ export async function flattenVisuals<T = unknown>(
   };
   return transformComponents(doc, async (node) =>
     // A disabled visual is left as-is: it is filtered out at render anyway, so
-    // rasterizing it would be wasted work.
-    node.name === 'visual' && node.enabled !== false
+    // rasterizing it would be wasted work. A native one is left as-is for a
+    // stronger reason — it is already service-free, and flattening exists to
+    // remove the service dependency, not to trade editable objects for pixels.
+    node.name === 'visual' &&
+    node.enabled !== false &&
+    !isNativeVisualProps(node.props as VisualProps)
       ? rasterizeVisual(node, ctx)
       : undefined
   );
@@ -139,7 +147,7 @@ async function rasterizeVisual(
   obj: Record<string, unknown>,
   ctx: FlattenCtx
 ): Promise<Record<string, unknown>> {
-  const props = obj.props as VisualProps;
+  const props = obj.props as VisualRasterProps;
   const dpi = clampVisualDpi(props.dpi ?? ctx.dpi ?? DEFAULT_VISUAL_DPI);
   const result = await ctx.limit(() =>
     ctx.rasterize({

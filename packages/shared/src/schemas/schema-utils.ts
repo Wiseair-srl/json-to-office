@@ -34,6 +34,15 @@ function replaceRefs(
   }
 }
 
+/**
+ * Resolve the bare `$ref` values TypeBox leaves behind into JSON Pointers.
+ *
+ * `rootDefinitionName` is only the fallback for a reference that names nothing
+ * hoisted. A schema may carry several recursive definitions — the DOCX
+ * document schema carries one per renderer — so a bare reference that matches
+ * an actual definition resolves to *that* one, which is what keeps the two
+ * renderer views from collapsing into whichever was walked last.
+ */
 export function fixSchemaReferences(
   schema: Record<string, unknown>,
   rootDefinitionName = 'ComponentDefinition'
@@ -43,8 +52,19 @@ export function fixSchemaReferences(
       (schema.definitions as Record<string, unknown> | undefined) ?? {}
     )
   );
-  const definitionRef = (name: string): string =>
-    `#/definitions/${definitionNames.has(name) ? name : rootDefinitionName}`;
+  // Undefined when nothing by either name was hoisted. Substituting the root
+  // name regardless is how a reference to a definition that does not exist got
+  // written, and Ajv refuses to compile a schema containing one — so an
+  // unresolved reference is dropped rather than invented.
+  const definitionRef = (name: string): string | undefined => {
+    const target = definitionNames.has(name) ? name : rootDefinitionName;
+    return definitionNames.has(target) ? `#/definitions/${target}` : undefined;
+  };
+  const isBareDefinitionRef = (value: unknown): value is string =>
+    typeof value === 'string' &&
+    (/^T\d+$/.test(value) ||
+      value === rootDefinitionName ||
+      definitionNames.has(value));
 
   function traverse(obj: Record<string, unknown>, path = ''): void {
     if (typeof obj !== 'object' || obj === null) return;
@@ -55,10 +75,17 @@ export function fixSchemaReferences(
       if (value && typeof value === 'object') {
         const schemaValue = value as Record<string, unknown>;
 
+        // Only when there is something to point at. A schema that holds
+        // components without embedding their definition (the theme schema
+        // holds `componentDefaults` but cannot carry a renderer's component
+        // union) keeps its untyped item: a `$ref` to a definition that was
+        // never hoisted is unresolvable, and Ajv refuses to compile the whole
+        // schema over it.
         if (
           schemaValue.type === 'array' &&
           schemaValue.items &&
-          Object.keys(schemaValue.items).length === 0
+          Object.keys(schemaValue.items).length === 0 &&
+          definitionNames.has(rootDefinitionName)
         ) {
           schemaValue.items = {
             $ref: `#/definitions/${rootDefinitionName}`,
@@ -70,32 +97,27 @@ export function fixSchemaReferences(
           schemaValue.items &&
           typeof schemaValue.items === 'object' &&
           '$ref' in schemaValue.items &&
-          typeof (schemaValue.items as Record<string, unknown>).$ref ===
-            'string' &&
-          /^T\d+$/.test(
-            (schemaValue.items as Record<string, unknown>).$ref as string
+          isBareDefinitionRef(
+            (schemaValue.items as Record<string, unknown>).$ref
           )
         ) {
           const name = (schemaValue.items as Record<string, unknown>)
             .$ref as string;
-          schemaValue.items = {
-            $ref: definitionRef(name),
-          };
+          const ref = definitionRef(name);
+          // Untyped rather than dangling when the target was never hoisted.
+          schemaValue.items = ref ? { $ref: ref } : {};
         }
 
-        if (
-          typeof schemaValue.$ref === 'string' &&
-          (/^T\d+$/.test(schemaValue.$ref as string) ||
-            schemaValue.$ref === rootDefinitionName)
-        ) {
-          schemaValue.$ref = definitionRef(schemaValue.$ref as string);
+        if (isBareDefinitionRef(schemaValue.$ref)) {
+          const ref = definitionRef(schemaValue.$ref as string);
+          if (ref) schemaValue.$ref = ref;
+          else delete schemaValue.$ref;
         }
 
         if (
           key === '$id' &&
-          typeof value === 'string' &&
-          (/^T\d+$/.test(value) || value === rootDefinitionName) &&
-          currentPath !== `definitions.${rootDefinitionName}.$id`
+          isBareDefinitionRef(value) &&
+          currentPath !== `definitions.${value}.$id`
         ) {
           delete obj[key];
           continue;
@@ -201,7 +223,11 @@ export function createComponentSchema(
   name: string,
   config: ComponentSchemaConfig,
   containerNames: string[],
-  componentDefinitionSchema?: TSchema
+  componentDefinitionSchema?: TSchema,
+  // The definition the recursive children reference. Callers whose component
+  // union is renderer-specific pass that renderer's name so the embedded
+  // definition and the `$ref` pointing at it agree.
+  rootDefinitionName = 'ComponentDefinition'
 ): Record<string, unknown> {
   const componentStructure: Record<string, unknown> = {
     $schema: 'https://json-schema.org/draft-07/schema#',
@@ -229,20 +255,20 @@ export function createComponentSchema(
       type: 'array',
       description: 'Children within this container',
       items: {
-        $ref: '#/definitions/ComponentDefinition',
+        $ref: `#/definitions/${rootDefinitionName}`,
       },
     };
 
     if (componentDefinitionSchema) {
       componentStructure.definitions = {
-        ComponentDefinition: JSON.parse(
+        [rootDefinitionName]: JSON.parse(
           JSON.stringify(componentDefinitionSchema)
         ),
       };
     }
   }
 
-  fixSchemaReferences(componentStructure);
+  fixSchemaReferences(componentStructure, rootDefinitionName);
   componentStructure.additionalProperties = false;
 
   return componentStructure;

@@ -305,13 +305,45 @@ export {
 export { HighchartsPropsSchema } from './schemas/components/highcharts';
 export type { HighchartsProps } from './schemas/components/highcharts';
 
-// Visual component schema (standard component — pptx-rendered graphic)
+// Visual component schema (standard component — a rasterized pptx slide, or a
+// native Word drawing group under the `office-open` renderer)
 export {
   VisualPropsSchema,
+  VisualRasterPropsSchema,
+  VisualNativePropsSchema,
   VisualCanvasSchema,
   VisualCanvasBackgroundSchema,
+  NATIVE_RENDER_MODE,
+  isNativeVisualProps,
 } from './schemas/components/visual';
-export type { VisualProps, VisualCanvas } from './schemas/components/visual';
+export type {
+  VisualProps,
+  VisualRasterProps,
+  VisualNativeProps,
+  VisualCanvas,
+} from './schemas/components/visual';
+
+// Native visual content (the DrawingML element model)
+export {
+  NativeVisualElementSchema,
+  NativeVisualCanvasSchema,
+  NativeVisualTextPropsSchema,
+  NativeVisualShapePropsSchema,
+  NativeVisualImagePropsSchema,
+  NATIVE_VISUAL_ELEMENT_NAMES,
+} from './schemas/components/visual-native';
+export type {
+  NativeVisualElement,
+  NativeVisualElementName,
+  NativeVisualCanvas,
+  NativeVisualTextProps,
+  NativeVisualShapeProps,
+  NativeVisualImageProps,
+  NativeVisualTextRun,
+  NativeVisualTextSegment,
+  NativeVisualFill,
+  NativeVisualLine,
+} from './schemas/components/visual-native';
 
 // Custom component schemas
 export {
@@ -357,6 +389,7 @@ export {
   DOCX_RENDERER_IDS,
   DEFAULT_DOCX_RENDERER_ID,
   collectDocxRendererErrors,
+  docxComponentDefinitionName,
 } from './schemas/renderer';
 export type { DocxRendererId } from './schemas/renderer';
 

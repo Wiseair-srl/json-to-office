@@ -13,7 +13,7 @@ import { createHash } from 'crypto';
 import { isNodeEnvironment } from '../utils/environment';
 import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
-import type { VisualProps } from '@json-to-office/shared-docx';
+import type { VisualRasterProps } from '@json-to-office/shared-docx';
 import type {
   PptxServiceConfig,
   PptxRasterizeResult,
@@ -30,7 +30,7 @@ const PIXELS_PER_INCH = 96;
  * it unchanged. Exported for reuse by the `flattenVisuals` transform.
  */
 export function buildVisualPresentation(
-  props: VisualProps
+  props: VisualRasterProps
 ): Record<string, unknown> {
   const { canvas, elements } = props;
 
@@ -113,7 +113,7 @@ export interface ImageOptions {
  * Default rendered width (px) for a visual: its physical canvas inches, so a
  * 6×4 canvas prints 6×4 unless `width` overrides.
  */
-export function defaultVisualWidthPx(props: VisualProps): number {
+export function defaultVisualWidthPx(props: VisualRasterProps): number {
   return Math.round(props.canvas.width * PIXELS_PER_INCH);
 }
 
@@ -123,7 +123,7 @@ export function defaultVisualWidthPx(props: VisualProps): number {
  * — so the two cannot drift: width default, alignment default, caption,
  * spacing, floating and the keep flags all live here once.
  */
-export function visualToImageOptions(props: VisualProps): ImageOptions {
+export function visualToImageOptions(props: VisualRasterProps): ImageOptions {
   return {
     width: props.width ?? defaultVisualWidthPx(props),
     ...(props.height !== undefined && { height: props.height }),
@@ -141,7 +141,7 @@ export function visualToImageOptions(props: VisualProps): ImageOptions {
  * `flattenVisuals` transform to produce a portable, service-free document).
  */
 export function visualToImageProps(
-  props: VisualProps,
+  props: VisualRasterProps,
   base64DataUri: string
 ): Record<string, unknown> {
   return {
@@ -185,7 +185,7 @@ export function visualRasterKey(
  * services depending on cache luck.
  */
 export function effectiveVisualServerUrl(
-  props: VisualProps,
+  props: VisualRasterProps,
   serviceConfig: PptxServiceConfig | undefined
 ): string | undefined {
   if (serviceConfig?.render) return undefined;

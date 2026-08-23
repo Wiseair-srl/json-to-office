@@ -101,34 +101,105 @@ const document = {
   ],
 };
 
+/**
+ * A native drawing group, which only the second backend can draw.
+ *
+ * Separate from the document above because `docxjs` refuses it by design, and
+ * because it is the one construct whose whole point is that it is *not* a
+ * picture: if a group were malformed, nothing short of opening the file would
+ * say so.
+ */
+const nativeVisualDocument = {
+  name: 'docx',
+  renderer: 'office-open',
+  props: { theme: 'minimal' },
+  children: [
+    { name: 'paragraph', props: { text: 'Before the drawing.' } },
+    {
+      name: 'visual',
+      props: {
+        renderMode: 'native',
+        caption: 'Figure 1. A native drawing group.',
+        alt: 'A rounded rectangle beside a label',
+        canvas: { width: 5, height: 2.5, background: { color: '#F5F7FA' } },
+        elements: [
+          {
+            name: 'shape',
+            props: {
+              type: 'roundRect',
+              x: 0.25,
+              y: 0.25,
+              w: 2,
+              h: 1,
+              fill: { color: '#0F172A' },
+              line: { color: '#334155', width: 1.5, dashType: 'dash' },
+              text: 'In a shape',
+              fontColor: '#FFFFFF',
+            },
+          },
+          {
+            name: 'text',
+            props: {
+              text: 'Editable Word content',
+              x: 2.5,
+              y: 0.4,
+              w: 2.25,
+              h: 0.5,
+              fontSize: 16,
+              bold: true,
+            },
+          },
+          {
+            name: 'image',
+            props: { base64: PNG_4X2, x: 0.25, y: 1.5, w: 1, h: 0.5 },
+          },
+        ],
+      },
+    },
+    { name: 'paragraph', props: { text: 'After the drawing.' } },
+  ],
+};
+
+async function convertsToPdf(
+  documentToRender: unknown,
+  renderer: DocxRendererId,
+  label: string
+): Promise<void> {
+  const { buffer } = await generateBufferViaIr(
+    structuredClone(documentToRender) as never,
+    { renderer }
+  );
+
+  const dir = await mkdtemp(join(tmpdir(), 'jto-docx-smoke-'));
+  try {
+    const input = join(dir, `${label}.docx`);
+    await writeFile(input, buffer);
+
+    await run(
+      soffice as string,
+      ['--headless', '--convert-to', 'pdf', '--outdir', dir, input],
+      { timeout: 180_000 }
+    );
+
+    const produced = (await readdir(dir)).filter((name) =>
+      name.endsWith('.pdf')
+    );
+    expect(produced).toEqual([`${label}.pdf`]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
 describe.skipIf(!soffice)('LibreOffice can open the output', () => {
   it.each<[DocxRendererId]>([['docxjs'], ['office-open']])(
     'converts a %s document to PDF',
     async (renderer) => {
-      const { buffer } = await generateBufferViaIr(
-        structuredClone(document) as never,
-        { renderer }
-      );
-
-      const dir = await mkdtemp(join(tmpdir(), 'jto-docx-smoke-'));
-      try {
-        const input = join(dir, `${renderer}.docx`);
-        await writeFile(input, buffer);
-
-        await run(
-          soffice as string,
-          ['--headless', '--convert-to', 'pdf', '--outdir', dir, input],
-          { timeout: 180_000 }
-        );
-
-        const produced = (await readdir(dir)).filter((name) =>
-          name.endsWith('.pdf')
-        );
-        expect(produced).toEqual([`${renderer}.pdf`]);
-      } finally {
-        await rm(dir, { recursive: true, force: true });
-      }
+      await convertsToPdf(document, renderer, renderer);
     },
     240_000
   );
+
+  it('converts a native drawing group to PDF', async () => {
+    await convertsToPdf(nativeVisualDocument, 'office-open', 'native-visual');
+  }, 240_000);
 });

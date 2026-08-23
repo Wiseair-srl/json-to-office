@@ -1,0 +1,202 @@
+{
+  "name": "docx",
+  "renderer": "office-open",
+  "props": {
+    "metadata": {
+      "title": "Q2 Operating Review",
+      "author": "Meridian Industries",
+      "description": "Report with a natively drawn Word drawing group"
+    },
+    "theme": "minimal"
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "meta": {
+          "title": "Native infographic"
+        }
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": {
+            "level": 1,
+            "text": "How a brief becomes a document"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The same free-canvas composition as `visual-infographic.docx.json`, drawn natively. With `renderMode: \"native\"` and the `office-open` renderer, the canvas becomes one Word drawing group: the chevrons are real shapes and the labels are real text, so the words below are selectable, searchable and editable in Word — and nothing is rasterized, so this example renders with no LibreOffice, no poppler and no rasterization service."
+          }
+        },
+        {
+          "name": "visual",
+          "props": {
+            "renderMode": "native",
+            "alignment": "center",
+            "caption": "**Figure 1.** Drawn as a Word drawing group — still editable.",
+            "alt": "Four chevrons labelled Brief, JSON, Render and Document",
+            "canvas": {
+              "width": 7.2,
+              "height": 2.6,
+              "background": {
+                "color": "#F4F8FF"
+              }
+            },
+            "elements": [
+              {
+                "name": "text",
+                "props": {
+                  "text": "From brief to document",
+                  "x": 0.3,
+                  "y": 0.2,
+                  "w": 6.6,
+                  "h": 0.4,
+                  "fontSize": 15,
+                  "bold": true,
+                  "color": "#0B2E63"
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "chevron",
+                  "x": 0.3,
+                  "y": 0.85,
+                  "w": 2.0,
+                  "h": 1.2,
+                  "fill": {
+                    "color": "#BBD3FF"
+                  }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "chevron",
+                  "x": 1.9,
+                  "y": 0.85,
+                  "w": 2.0,
+                  "h": 1.2,
+                  "fill": {
+                    "color": "#6FA1F2"
+                  }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "chevron",
+                  "x": 3.5,
+                  "y": 0.85,
+                  "w": 2.0,
+                  "h": 1.2,
+                  "fill": {
+                    "color": "#2E6BD6"
+                  }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "chevron",
+                  "x": 5.1,
+                  "y": 0.85,
+                  "w": 2.0,
+                  "h": 1.2,
+                  "fill": {
+                    "color": "#13367F"
+                  }
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "Brief",
+                  "x": 0.75,
+                  "y": 1.2,
+                  "w": 1.4,
+                  "h": 0.5,
+                  "fontSize": 14,
+                  "bold": true,
+                  "color": "#0B2E63",
+                  "align": "center"
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "JSON",
+                  "x": 2.35,
+                  "y": 1.2,
+                  "w": 1.4,
+                  "h": 0.5,
+                  "fontSize": 14,
+                  "bold": true,
+                  "color": "#0B2E63",
+                  "align": "center"
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "Render",
+                  "x": 3.95,
+                  "y": 1.2,
+                  "w": 1.4,
+                  "h": 0.5,
+                  "fontSize": 14,
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "align": "center"
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "Document",
+                  "x": 5.55,
+                  "y": 1.2,
+                  "w": 1.4,
+                  "h": 0.5,
+                  "fontSize": 14,
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "align": "center"
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "runs": [
+                    {
+                      "text": "Authored once. ",
+                      "bold": true
+                    },
+                    {
+                      "text": "Rendered anywhere — no rasterizer in sight."
+                    }
+                  ],
+                  "x": 0.3,
+                  "y": 2.15,
+                  "w": 6.6,
+                  "h": 0.3,
+                  "fontSize": 10,
+                  "color": "#33507F"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Native mode draws `text`, `shape` and `image` elements. Tables and charts have no native form inside a Word drawing group, so a canvas that needs one keeps the default `renderMode: \"raster\"` — see `visual-infographic.docx.json`."
+          }
+        }
+      ]
+    }
+  ]
+}

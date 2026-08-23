@@ -59,6 +59,18 @@ const OFFENDERS: [string, Record<string, unknown>, string][] = [
     },
     'no autofit',
   ],
+  [
+    'a native visual under the default renderer',
+    {
+      name: 'visual',
+      props: {
+        renderMode: 'native',
+        canvas: { width: 3, height: 2 },
+        elements: [{ name: 'shape', props: { type: 'rect' } }],
+      },
+    },
+    'Only the "office-open" renderer draws a native visual',
+  ],
 ];
 
 describe.each(OFFENDERS)('%s', (_label, child, phrase) => {

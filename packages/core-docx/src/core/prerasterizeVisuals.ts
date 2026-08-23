@@ -25,7 +25,11 @@ import {
   type PptxRasterizeBatchSlideResult,
   type RasterizeFontFace,
 } from '@json-to-office/shared';
-import type { VisualProps } from '@json-to-office/shared-docx';
+import {
+  isNativeVisualProps,
+  type VisualProps,
+  type VisualRasterProps,
+} from '@json-to-office/shared-docx';
 import {
   buildVisualPresentation,
   effectiveVisualServerUrl,
@@ -104,17 +108,23 @@ type BatchOutcome =
   | { applied: false; schemaRejected: boolean };
 
 /**
- * Collect the props of every enabled `visual` component reachable from
- * `root`. The walk is generic — every array element and object value is
+ * Collect the props of every enabled *raster* `visual` component reachable
+ * from `root`. The walk is generic — every array element and object value is
  * visited — so visuals nested anywhere (columns, table cells, section
  * headers/footers, plugin containers) are found without enumerating
  * container shapes. Disabled component subtrees are pruned: they never
  * render, so rasterizing them is wasted work. Over-collection is harmless
  * (an unused map entry); under-collection is harmless (render-time
  * fallback) — which is what makes the generic walk safe.
+ *
+ * `renderMode: "native"` visuals are excluded, not merely skipped later: they
+ * are drawn as a Word drawing group by the backend, so a native-only document
+ * must reach no rasterizer, stage no fonts and move no pre-pass counter. This
+ * function is also the `hasVisual` predicate the font stager consults, which
+ * is why the exclusion belongs here rather than at each call site.
  */
-export function collectVisualProps(root: unknown): VisualProps[] {
-  const found: VisualProps[] = [];
+export function collectVisualProps(root: unknown): VisualRasterProps[] {
+  const found: VisualRasterProps[] = [];
   // Guards against cyclic inputs (the walk accepts arbitrary objects, not
   // just parsed JSON); registered before the array branch so
   // self-referential arrays are covered too.
@@ -132,7 +142,12 @@ export function collectVisualProps(root: unknown): VisualProps[] {
     // renders (mirrors the render-time filters).
     if (typeof obj.name === 'string' && obj.enabled === false) return;
     if (obj.name === 'visual' && obj.props && typeof obj.props === 'object') {
-      found.push(obj.props as VisualProps);
+      // A native visual is drawn by the docx backend itself: it has no pptx
+      // slide, no dpi and no service, so collecting it here would batch a
+      // rasterization that must never happen.
+      if (!isNativeVisualProps(obj.props as VisualProps)) {
+        found.push(obj.props as VisualRasterProps);
+      }
       // A visual's elements are a pptx subtree; nothing docx-renderable
       // (and no further docx visuals) can nest inside it.
       return;

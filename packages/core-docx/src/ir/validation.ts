@@ -15,6 +15,7 @@ import {
   type DocxIR,
   type DocxIrBlock,
   type DocxIrColor,
+  type DocxIrDrawingGroupRun,
   type DocxIrInline,
   type DocxIrParagraphFormatting,
   type DocxIrRunFormatting,
@@ -350,6 +351,10 @@ function checkInline(inline: DocxIrInline, path: string, scope: Scope): void {
       );
       return;
 
+    case 'drawingGroup':
+      checkDrawingGroup(inline, path, scope);
+      return;
+
     case 'lineBreak':
     case 'pageBreak':
     case 'columnBreak':
@@ -359,6 +364,75 @@ function checkInline(inline: DocxIrInline, path: string, scope: Scope): void {
     default:
       assertNever(inline, 'DocxIrInline');
   }
+}
+
+/**
+ * A drawing group: a placed size, a child coordinate space, and children that
+ * sit inside it.
+ *
+ * The child space is checked as strictly as the placed size because a zero
+ * `chExt` makes Word divide by zero when it maps children onto the group, and
+ * the symptom is a repair prompt rather than a misplaced shape.
+ */
+function checkDrawingGroup(
+  group: DocxIrDrawingGroupRun,
+  path: string,
+  scope: Scope
+): void {
+  for (const key of [
+    'widthEmu',
+    'heightEmu',
+    'canvasWidthEmu',
+    'canvasHeightEmu',
+  ] as const) {
+    if (!Number.isInteger(group[key]) || group[key] <= 0) {
+      scope.add(`${path}.${key}`, 'expected a positive integer EMU length');
+    }
+  }
+
+  group.children.forEach((child, i) => {
+    const childPath = `${path}.children[${i}]`;
+    const { frame } = child;
+    for (const key of ['xEmu', 'yEmu'] as const) {
+      if (!Number.isInteger(frame[key])) {
+        scope.add(
+          `${childPath}.frame.${key}`,
+          'expected an integer EMU offset'
+        );
+      }
+    }
+    for (const key of ['widthEmu', 'heightEmu'] as const) {
+      if (!Number.isInteger(frame[key]) || frame[key] < 0) {
+        scope.add(
+          `${childPath}.frame.${key}`,
+          'expected a non-negative integer EMU length'
+        );
+      }
+    }
+
+    if (child.kind === 'picture') {
+      if (!scope.resourceIds.has(child.resourceId)) {
+        scope.add(
+          `${childPath}.resourceId`,
+          `references unknown resource "${child.resourceId}"`
+        );
+      }
+      return;
+    }
+
+    if (!child.geometry.trim()) {
+      scope.add(`${childPath}.geometry`, 'expected a preset geometry name');
+    }
+    if (child.fill?.kind === 'solid') {
+      checkColor(child.fill.color, `${childPath}.fill.color`, scope.add);
+    }
+    if (child.outline?.color) {
+      checkColor(child.outline.color, `${childPath}.outline.color`, scope.add);
+    }
+    child.text?.paragraphs.forEach((paragraph, p) =>
+      checkBlock(paragraph, `${childPath}.text.paragraphs[${p}]`, scope)
+    );
+  });
 }
 
 function checkRunFormatting(

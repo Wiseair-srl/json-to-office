@@ -15,12 +15,20 @@ import { discoveryRouter } from '../discovery';
 import { Container } from '../../container';
 import { DocxFormatAdapter, PluginRegistry } from '@json-to-office/jto-cli';
 import { unionBranches } from '@json-to-office/shared';
+import {
+  DEFAULT_DOCX_RENDERER_ID,
+  docxComponentDefinitionName,
+} from '@json-to-office/shared-docx';
 
 // Discovery resolves the workspace root from cwd, so the example plugins
 // under packages/core-docx are reachable from this package's test run.
 
 function componentNames(schema: any): string[] {
-  return unionBranches(schema.definitions.ComponentDefinition)
+  // One component definition per renderer; a plugin is offered by both, so
+  // read the default renderer's.
+  return unionBranches(
+    schema.definitions[docxComponentDefinitionName(DEFAULT_DOCX_RENDERER_ID)]
+  )
     .map((b: any) => b?.properties?.name?.const)
     .filter(Boolean);
 }

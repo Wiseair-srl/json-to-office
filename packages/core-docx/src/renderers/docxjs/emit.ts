@@ -287,6 +287,14 @@ export function inlineChildren(
         out.push(emitShape(child, resources));
         break;
 
+      case 'drawingGroup':
+        // Unreachable: docx.js declines `drawing-groups`, so the capability
+        // gate refuses the document before any adapter is asked to emit one.
+        throw new Error(
+          'the docxjs renderer has no emitter for a drawing group; ' +
+            'this document should have been refused by the capability check'
+        );
+
       case 'noteReference':
         out.push(
           child.noteKind === 'endnote'

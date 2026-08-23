@@ -20,7 +20,33 @@ import {
   runProperties,
   type EmitContext,
 } from '../emit';
-import type { DocxIrTable } from '../../../ir/types';
+import type { DocxIrShapeRun, DocxIrTable } from '../../../ir/types';
+
+const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+/** A context with one prepared PNG resource, `res1`. */
+function pngContext(): EmitContext {
+  return {
+    ...emptyContext(),
+    pictures: new Map([
+      [
+        'res1',
+        () => ({ type: 'png', data: PNG_BYTES, fileName: 'res1-1x1.png' }),
+      ],
+    ]),
+  };
+}
+
+/** The `wp:docPr` id each emitted drawing states. */
+function drawingIds(emitted: Record<string, unknown>[]): string[] {
+  return emitted
+    .map((entry) => entry.picture ?? entry.wpgGroup)
+    .filter(Boolean)
+    .map(
+      (drawing) =>
+        ((drawing as Record<string, any>).altText as { id: string }).id
+    );
+}
 
 describe('run properties', () => {
   it('states size in points, because the backend doubles it', () => {
@@ -87,34 +113,29 @@ describe('inline children', () => {
   });
 
   it('gives a break before a drawing a run of its own', () => {
-    const ctx: EmitContext = {
-      ...emptyContext(),
-      pictures: new Map([
-        [
-          'res1',
-          (_image, id) => ({ type: 'png', altText: { id: String(id) } }),
-        ],
-      ]),
-    };
     const emitted = inlineChildren(
       [
         { kind: 'lineBreak' },
         { kind: 'image', resourceId: 'res1', widthEmu: 100, heightEmu: 100 },
       ],
-      ctx
+      pngContext()
     );
 
     expect(emitted).toEqual([
       { break: 1 },
-      { picture: { type: 'png', altText: { id: '1' } } },
+      {
+        picture: {
+          type: 'png',
+          data: PNG_BYTES,
+          transformation: { width: 100, height: 100 },
+          altText: { id: '1' },
+        },
+      },
     ]);
   });
 
   it('numbers each drawing in document order', () => {
-    const ctx: EmitContext = {
-      ...emptyContext(),
-      pictures: new Map([['res1', (_image, id) => ({ id })]]),
-    };
+    const ctx = pngContext();
     const image = {
       kind: 'image' as const,
       resourceId: 'res1',
@@ -124,13 +145,12 @@ describe('inline children', () => {
 
     // A `wp:docPr` id left to the backend's module-level counter would keep
     // climbing across documents; these restart with the context.
-    expect(inlineChildren([image, image], ctx)).toEqual([
-      { picture: { id: 1 } },
-      { picture: { id: 2 } },
-    ]);
+    expect(drawingIds(inlineChildren([image, image], ctx))).toEqual(['1', '2']);
     expect(
-      inlineChildren([image], { ...emptyContext(), pictures: ctx.pictures })
-    ).toEqual([{ picture: { id: 1 } }]);
+      drawingIds(
+        inlineChildren([image], { ...emptyContext(), pictures: ctx.pictures })
+      )
+    ).toEqual(['1']);
   });
 
   it('wraps a revision once rather than marking every run', () => {
@@ -184,6 +204,52 @@ describe('inline children', () => {
         },
       ])
     ).toEqual([{ hyperlink: { anchor: 'intro', children: [{ text: 'go' }] } }]);
+  });
+});
+
+describe('native text boxes', () => {
+  const textBox = (extra: Partial<DocxIrShapeRun> = {}): DocxIrShapeRun => ({
+    kind: 'shape',
+    widthPx: 240,
+    heightPx: 90,
+    children: [{ kind: 'paragraph', id: 'p', path: 'p', children: [] }],
+    ...extra,
+  });
+
+  /** The `wps:wsp` options a lone text box run emits. */
+  const shapeOf = (shape: DocxIrShapeRun): Record<string, any> =>
+    (inlineChildren([shape])[0] as Record<string, any>).wpsShape;
+
+  it('names text insets the way `a:bodyPr` does', () => {
+    // The backend reads `lIns`/`tIns`/`rIns`/`bIns` (or a `margins` object).
+    // It has no `*Inset` key anywhere, so the padding on every shape-mode text
+    // box was accepted here and then dropped on the way out — silently, and
+    // only on this backend.
+    expect(
+      shapeOf(textBox({ insetsEmu: { top: 1, bottom: 2, left: 3, right: 4 } }))
+        .bodyProperties
+    ).toEqual({ lIns: 3, tIns: 1, rIns: 4, bIns: 2 });
+  });
+
+  it('states no body properties when there are no insets', () => {
+    expect(shapeOf(textBox())).not.toHaveProperty('bodyProperties');
+  });
+
+  it('puts the outline colour on the outline, not under a `fill`', () => {
+    // `OutlineOptions` is line properties and fill properties merged into one
+    // bag; a nested `fill` is ignored, which drew every border in the default
+    // colour rather than the authored one.
+    expect(
+      shapeOf(
+        textBox({
+          outline: { color: { hex: 'CC0000' }, widthEmu: 19050 },
+        })
+      ).outline
+    ).toEqual({
+      width: 19050,
+      type: 'solidFill',
+      color: { value: 'CC0000' },
+    });
   });
 });
 

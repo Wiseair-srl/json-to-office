@@ -8,7 +8,12 @@
  */
 
 import { createHash } from 'node:crypto';
-import { EMU_PER_TWIP, TWIPS_PER_INCH, TWIPS_PER_POINT } from './types';
+import {
+  EMU_PER_INCH,
+  EMU_PER_TWIP,
+  TWIPS_PER_INCH,
+  TWIPS_PER_POINT,
+} from './types';
 
 /** Points → twips. Spacing, padding and row heights are authored in points. */
 export function pointsToTwips(points: number): number {
@@ -28,6 +33,27 @@ export function pointsToEighthPoints(points: number): number {
 /** Inches → twips. */
 export function inchesToTwips(inches: number): number {
   return Math.round(inches * TWIPS_PER_INCH);
+}
+
+/**
+ * Inches → EMU, directly.
+ *
+ * Not `twipsToEmu(inchesToTwips(x))`: that rounds twice, and a drawing canvas
+ * authored in inches deserves the exact figure — 914400 is a whole number of
+ * EMU per inch, so nothing is lost going straight there.
+ */
+export function inchesToEmu(inches: number): number {
+  return Math.round(inches * EMU_PER_INCH);
+}
+
+/** EMU → inches, the inverse of {@link inchesToEmu}. */
+export function emuToInches(emu: number): number {
+  return emu / EMU_PER_INCH;
+}
+
+/** Points → EMU, the OOXML unit for a drawing outline width. */
+export function pointsToEmu(points: number): number {
+  return Math.round((points * EMU_PER_INCH) / 72);
 }
 
 /** Twips → EMU. */

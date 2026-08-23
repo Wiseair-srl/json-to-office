@@ -475,7 +475,11 @@ Two components embed rendered graphics. `highcharts` sends a full Highcharts con
 }
 ```
 
-Rendering a `visual` requires a PPTX rasterization service (an HTTP endpoint or an in-process callback via `services.pptx`). The `flattenVisuals` helper can pre-render every visual into a plain base64 `image`, producing a portable `.docx.json` that needs no services at all. Full details — canvas props, DPI, service wiring, element types — are in the [visual reference](/reference/docx/components#visual) and the [PPTX component reference](/reference/pptx/components).
+Rendering a `visual` this way requires a PPTX rasterization service (an HTTP endpoint or an in-process callback via `services.pptx`). The `flattenVisuals` helper can pre-render every visual into a plain base64 `image`, producing a portable `.docx.json` that needs no services at all.
+
+Or skip the rasterizer entirely. With `"renderer": "office-open"` on the document and `"renderMode": "native"` on the visual, the same canvas is drawn as a Word **drawing group** — real text boxes, real shapes, real pictures. No PPTX, no service, no PNG: the text stays searchable and every object stays editable in Word, and the file is usually smaller and quicker to produce. The trade is a narrower content model — `text`, `shape` and `image` only, with strictly validated props — so tables and charts still need the raster path.
+
+Full details — canvas props, DPI, service wiring, element types, and the native element model — are in the [visual reference](/reference/docx/components#visual) and the [PPTX component reference](/reference/pptx/components).
 
 ## Tracked changes: diffing two documents
 

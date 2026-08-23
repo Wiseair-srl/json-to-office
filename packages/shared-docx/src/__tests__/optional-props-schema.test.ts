@@ -19,6 +19,10 @@ import { generateUnifiedDocumentSchema } from '../schemas/generator';
 import { convertToJsonSchema } from '../schemas/export';
 import { validateStrict } from '../validation/unified';
 import { unionBranches } from '@json-to-office/shared';
+import {
+  DEFAULT_DOCX_RENDERER_ID,
+  docxComponentDefinitionName,
+} from '../schemas/renderer';
 
 const exported = generateUnifiedDocumentSchema({ customComponents: [] });
 
@@ -29,9 +33,12 @@ function inSection(child: Record<string, unknown>) {
 
 function variantRequired(name: string): string[] {
   const json = convertToJsonSchema(exported) as Record<string, any>;
+  // Optionality is the same in either renderer view; read the default one.
   // Exported unions are restructured into if/then dispatch — iterate the
   // branch objects shape-agnostically.
-  const variants = unionBranches(json.definitions.ComponentDefinition);
+  const variants = unionBranches(
+    json.definitions[docxComponentDefinitionName(DEFAULT_DOCX_RENDERER_ID)]
+  );
   const variant = variants.find(
     (v: any) => v?.properties?.name?.const === name
   );

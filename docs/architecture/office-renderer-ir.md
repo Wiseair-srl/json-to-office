@@ -382,6 +382,7 @@ docx.js one rather than a translation layer on top of it.
 | inline and floating images          | yes                                                   | yes                                                                                 |
 | SVG with a raster fallback          | yes                                                   | yes — `PictureOptions` has an `svg` type with a `fallback`, unlike its pptx sibling |
 | text boxes (`wps:wsp`), text frames | yes                                                   | yes                                                                                 |
+| drawing groups (`wpg:wgp`)          | **no** — docx.js has no group primitive               | yes — a paragraph-level `wpgGroup` run taking shape, group and picture children     |
 | footnotes, endnotes                 | yes                                                   | yes                                                                                 |
 | comments                            | yes                                                   | yes, but flat — see below                                                           |
 | revisions                           | one `w:ins`/`w:del` per run                           | a real wrapper element, so the id appears once per range                            |
@@ -409,6 +410,94 @@ rather than losing content:
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `comment-threads`                                                  | `CommentOptions` is `{id, author, initials, date, children}` — no parent, no resolved state, so a reply would flatten into an unrelated top-level comment |
 | `table-merged-cells`, `cached-fields`, `shading`, `borders`, `rtl` | the vocabulary no lowering covers yet, so nothing can require them; both adapters leave them out so a declared set means "proven by a test"               |
+
+`docxjs` withholds one capability of its own: `drawing-groups`. That one is a
+real backend gap rather than a slice boundary — docx.js has no `wpg:wgp` — and
+it is what turns a natively drawn `visual` handed to the default backend into a
+named capability error rather than a document with the graphic missing.
+
+### Native visuals
+
+A `visual` is normally rasterized: it becomes a one-slide PPTX, LibreOffice
+draws it, and the PNG is embedded as an `image` — all of it before the compiler
+sees the tree. `renderMode: "native"` takes a different path entirely. The
+component survives desugaring, the compiler lowers it to a
+`DocxIrDrawingGroupRun`, and the office-open adapter emits one `wpg:wgp`. No
+PPTX, no rasterizer request, no pre-pass counter moves.
+
+The IR node is backend-neutral by construction: it says what is drawn and where
+(EMU frames in the group's own child coordinate space, resolved colours,
+registered picture resources), never how. The gate is the ordinary capability
+one, so IR that reaches `docxjs` by some other route is refused rather than
+dropped.
+
+Native mode is strict on purpose. Its element model — `text`, `shape`, `image`
+— is narrower than the PPTX slide-content union, and every native schema is
+`additionalProperties: false`, so a gradient fill or a chart element is a
+validation error instead of a silent omission. `collectDocxRendererErrors`
+carries the two rules a schema cannot: `renderMode: "native"` under any other
+renderer is reported at the component's `props/renderMode`, and an element kind
+with no native form at `props/elements/N/name`.
+
+Native cases stay out of the shared corpus — every corpus case is rendered by
+the default backend, which refuses a group — and live in
+`__tests__/native-visual.test.ts` instead, which asserts the emitted DrawingML,
+the absence of any rasterizer contact, byte determinism across sequential and
+concurrent renders, and the docxjs refusal. `libreoffice-smoke.test.ts` opens
+one for real.
+
+Both `visual.props` shapes carry an `$id` so the JSON-Schema export hoists them
+into definitions rather than inlining them at every position a component can
+appear. That is not tidiness: `visual` is the largest props schema in the
+registry, and two of them inlined pushed the exported `ComponentDefinition`
+deep enough that Ajv overflowed compiling it — for an ordinary _raster_ visual
+in a section header, nothing to do with native mode.
+
+The recursive component definition is named **per renderer** —
+`docxComponentDefinitionName` gives `ComponentDefinition_docxjs` and
+`ComponentDefinition_office-open`. Both branches used to embed it under one
+shared `$id`, and the export pass keys `definitions` by `$id` with a plain
+overwrite, so the last branch walked — office-open — answered for both, and the
+docxjs definition never reached the file. Every position reached through the
+definition (section `props.header`/`props.footer`, table
+`props.columns[].cells[].content`, `componentDefaults.section.header`) got the
+office-open view whatever the document's renderer said, in both directions: a
+`docxjs` threaded comment in a header was refused, and a `renderMode: "native"`
+visual under `docxjs` was accepted. Positions reached through a branch's own
+narrowed child union — a direct child of `docx` or of `section` — were always
+right, which is what made it look local: the same `visual` was refused in a
+section body and accepted in that section's header.
+
+Naming the definition per renderer means the `$ref` fix-up passes cannot assume
+one name, so `schemas/export.ts` and `@json-to-office/shared`'s
+`schema-utils.ts` resolve a bare reference against whatever was actually
+hoisted, falling back to their `rootDefinitionName` only for a reference that
+names nothing. `componentDefaults` needs one more step: it is shared with the
+theme schema, so it is built from the _static_ section props and carries an
+untyped placeholder instead of a live recursive ref.
+`docxPropsSchemaForRenderer` names those placeholders while the renderer is
+still known and the schema is still that renderer's private clone.
+
+Naming a placeholder is now the only way one gets a `$ref`. The fix-up passes
+used to rewrite _every_ untyped array item to their root definition name
+whether or not such a definition existed, and the theme schema is what exposed
+that as a bug: it embeds the same `componentDefaults`, so it inherited a
+`#/definitions/ComponentDefinition` it had no way to carry — a component union
+is per renderer, and a theme names no renderer. Ajv refuses to compile a schema
+containing an unresolvable reference, so the shipped `theme.schema.json` failed
+on itself before it looked at any theme. An item with nothing to point at now
+stays untyped. `jto docx validate --type theme` never went through it — that
+path validates against TypeBox — so this only ever hit `--schema` and external
+consumers of the published file.
+
+The cost is one more full definition: the exported `schemas/document.schema.json`
+goes from 8.7 MB to 12.2 MB pretty-printed, and Ajv's compile of it from ~3.1 s
+to ~4.3 s. Nesting depth — the number that decides whether Ajv overflows V8's
+stack — is unchanged at 39, because the second definition sits beside the first
+rather than inside it. `__tests__/renderer-definition-split.test.ts` pins the
+split itself; `jto-cli`'s `json-validator.test.ts` pins both symptoms
+end-to-end through a compiled Ajv validator, and that the theme schema compiles
+at all.
 
 Both backends are exercised over the **whole** corpus in
 `renderers/office-open/__tests__/cross-backend.test.ts`: 265 cases are compared
@@ -491,10 +580,16 @@ previous implementation finds what a feature checklist does not.
 
 ### DOCX
 
-| Change                                                                                | Why                                                                                                                                                                                                                                                                                              |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A header or footer whose components are all `enabled: false` breaks link-to-previous. | It used to compile to no part at all, which is how Word spells "inherit", so a section that explicitly disabled its chrome showed the previous section's — stale or confidential content included. Disabling everything is a statement about this section, exactly like an explicit empty array. |
-| An SVG in a first-page or even-page part ships a real raster fallback.                | The adapter's image walk read only the `default` chrome slot, so such an SVG got its own bytes labelled `image/png` as the fallback, and the section options dropped the part outright.                                                                                                          |
+| Change                                                                                | Why                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A header or footer whose components are all `enabled: false` breaks link-to-previous. | It used to compile to no part at all, which is how Word spells "inherit", so a section that explicitly disabled its chrome showed the previous section's — stale or confidential content included. Disabling everything is a statement about this section, exactly like an explicit empty array.                                                                                                                                                                                                                                              |
+| An SVG in a first-page or even-page part ships a real raster fallback.                | The adapter's image walk read only the `default` chrome slot, so such an SVG got its own bytes labelled `image/png` as the fallback, and the section options dropped the part outright.                                                                                                                                                                                                                                                                                                                                                       |
+| A shape-mode `text-box` keeps its padding and its border colour on `office-open`.     | The adapter spelled the insets `topInset`/`bottomInset`/`leftInset`/`rightInset` and nested the outline colour under `outline.fill`. `a:bodyPr` takes `lIns`/`tIns`/`rIns`/`bIns` (or a `margins` object), and `OutlineOptions` carries its colour at the top level — no `*Inset` key exists anywhere in the package, and a nested `fill` is ignored. Both values were accepted and then dropped, so every shape text box drew with default insets and a default-coloured border. `docxjs` always had them right; the two backends now agree. |
+
+No corpus golden moved for the text-box fix: the goldens record the _default_
+backend's bytes, and `docxjs` was already correct. The two spellings are pinned
+directly in `renderers/office-open/__tests__/emit.test.ts` instead, which is
+where a difference between the backends' option vocabularies belongs.
 
 The `annotations/notes-in-nested-components` golden also changed because the
 fixture now includes a footnote inside a text box. That combination was omitted

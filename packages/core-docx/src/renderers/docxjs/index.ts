@@ -64,6 +64,11 @@ const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   'shading',
   'borders',
   'rtl',
+  // `drawing-groups` is the one exclusion that is a real backend gap rather
+  // than a slice boundary: docx.js has no `wpg:wgp`. Leaving it out is what
+  // turns a native `visual` sent to this backend into a named capability
+  // error instead of a document with the graphic missing.
+  'drawing-groups',
 ]);
 
 const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set(

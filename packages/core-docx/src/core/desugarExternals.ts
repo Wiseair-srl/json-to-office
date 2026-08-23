@@ -19,7 +19,12 @@ import {
   type RasterizeFontFace,
   type ServicesConfig,
 } from '@json-to-office/shared';
-import type { VisualProps, HighchartsProps } from '@json-to-office/shared-docx';
+import {
+  isNativeVisualProps,
+  type VisualProps,
+  type VisualRasterProps,
+  type HighchartsProps,
+} from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
 import {
   buildVisualPresentation,
@@ -69,10 +74,15 @@ export async function desugarExternals<T>(
     if (node.enabled === false) return undefined;
 
     if (node.name === 'visual') {
+      // A native visual has no external form to desugar into: the compiler
+      // lowers it to a drawing group and the backend draws it. Leaving the
+      // node in place is what keeps a native-only document from ever touching
+      // `services.pptx`.
+      if (isNativeVisualProps(node.props as VisualProps)) return undefined;
       return withNodeIdentity(node, {
         name: 'image',
         props: await visualImageProps(
-          node.props as VisualProps,
+          node.props as VisualRasterProps,
           prerastered,
           options
         ),
@@ -95,7 +105,7 @@ export async function desugarExternals<T>(
 }
 
 async function visualImageProps(
-  props: VisualProps,
+  props: VisualRasterProps,
   prerastered: ReadonlyMap<string, { ok: boolean }>,
   options: DesugarExternalsOptions
 ): Promise<Record<string, unknown>> {

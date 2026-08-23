@@ -538,10 +538,15 @@ Renders a chart through a Highcharts export server and embeds the result as an i
 
 ## `visual`
 
-A free-canvas graphic authored as a **single PPTX slide** — text, shapes, images, tables, and charts positioned in inches — rasterized to a PNG by a PPTX rendering service and placed like an [`image`](#image). This gives Word documents the full expressiveness of the slide engine; see the [PPTX component reference](/reference/pptx/components) for the element types.
+A free-canvas graphic — absolute positioning, overlapping shapes and layered art that the document flow cannot express. There are two ways to draw one, chosen with `renderMode`.
+
+**`raster`** (the default, and what an omitted `renderMode` means) authors the canvas as a **single PPTX slide** — text, shapes, images, tables and charts positioned in inches — rasterized to a PNG by a PPTX rendering service and placed like an [`image`](#image). This gives Word documents the full expressiveness of the slide engine; see the [PPTX component reference](/reference/pptx/components) for the element types.
+
+**`native`** draws the same canvas as one Word **DrawingML group**: real text boxes, real shapes, real pictures, with no PPTX, no rasterization service and no PNG. Text stays searchable and every object stays editable in Word. It requires `"renderer": "office-open"` on the document, and its content model is narrower — see [Native mode](#visual-native-mode) below.
 
 | Prop                                              | Type                                | Required | Default                          | Description                                                                                                                                        |
 | ------------------------------------------------- | ----------------------------------- | -------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `renderMode`                                      | `'raster'` \| `'native'`            | no       | `'raster'`                       | `'native'` draws a Word drawing group instead of a rasterized slide, and requires `"renderer": "office-open"`                                      |
 | `canvas`                                          | object                              | **yes**  | —                                | `{ width, height }` in **inches** (each ≥ 0.1), optional `theme` (a PPTX theme name) and `background` (`{ color?, image?: { path? \| base64? } }`) |
 | `elements`                                        | PPTX slide-content array            | no       | —                                | The real PPTX slide-content union: `text`, `image`, `shape`, `table`, `highcharts`, `chart` nodes with `x`/`y`/`w`/`h` in inches                   |
 | `dpi`                                             | `number` (36–600)                   | no       | `200`                            | Raster resolution; out-of-range values fail validation (the render-time clamp applies only to unvalidated inputs like `services.pptx.dpi`)         |
@@ -583,8 +588,69 @@ At render time the visual becomes a one-slide presentation `{ name: 'pptx', ... 
 ```
 
 ::: tip Offline documents
-`flattenVisuals(doc, { rasterize, dpi?, concurrency? })` pre-renders every enabled `visual` into a plain base64 `image` node — including visuals inside section headers/footers and table cells — producing a portable `.docx.json` that renders with no services configured. Disabled visuals (`enabled: false`) are left untouched. See the [API reference](/reference/api).
+`flattenVisuals(doc, { rasterize, dpi?, concurrency? })` pre-renders every enabled **raster** `visual` into a plain base64 `image` node — including visuals inside section headers/footers and table cells — producing a portable `.docx.json` that renders with no services configured. Disabled visuals (`enabled: false`) are left untouched, and so are native ones: they already need no service, and flattening would trade their editable objects for pixels. See the [API reference](/reference/api).
 :::
+
+### Native mode {#visual-native-mode}
+
+Set `"renderMode": "native"` and the document's `"renderer": "office-open"`, and the canvas becomes a `wpg:wgp` drawing group placed exactly the way a raster visual is — same `width`/`height`, `alignment`, `caption`, `alt`, `spacing`, `floating`, `keepNext` and `keepLines`.
+
+`dpi` and `serverUrl` are **not valid** in native mode: nothing is rasterized, so a resolution or a service URL would describe work that never happens. Setting either is a validation error, as is `renderMode: "native"` under any other renderer.
+
+**Canvas.** `{ width, height }` in inches, plus an optional `background` of a `color` and/or an `image`. A background colour becomes the bottom-most rectangle and a background image the bottom-most picture. There is no `theme`: a native visual resolves colours against the document's own docx theme, not a PPTX one.
+
+**Elements.** Three kinds — `text`, `shape` and `image` — drawn in array order, so later elements sit above earlier ones. `table`, `chart` and `highcharts` have no native form and are rejected by name; use `renderMode: "raster"` for those. Every native props schema is strict: a property native mode cannot draw is a validation error rather than a silent no-op.
+
+Positions and sizes are **inches**, or a percentage string resolved against the canvas on that axis (`"50%"`). Colours are `#RRGGBB`, bare `RRGGBB`, or a docx theme colour name.
+
+| Element | Props                                                                                                                                                                                                                                                                                          |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`  | `text` or `runs` (`{ text, fontFace?, fontSize?, color?, bold?, italic?, underline?, strike?, breakLine? }`), `x`, `y`, `w`, `h`, `fontFace`, `fontSize`, `color`, `bold`, `italic`, `underline`, `strike`, `align`, `valign`, `margin`, `fill`, `rotate`                                      |
+| `shape` | `type` (the same preset list as a PPTX shape), `x`, `y`, `w`, `h`, `fill` (`{ color?, transparency? }`), `line` (`{ color?, width?, dashType? }`), `text` (string or segments), `fontFace`, `fontSize`, `fontColor`, `bold`, `italic`, `align`, `valign`, `margin`, `rotate`, `flipH`, `flipV` |
+| `image` | `path` / `base64` / `svg`, `x`, `y`, `w`, `h`, `sizing` (`{ type: 'contain' \| 'cover' \| 'crop', w?, h? }` — `sizing.w`/`sizing.h` state the box and outrank the element's own `w`/`h`, as they do in raster mode), `rotate`, `alt`                                                           |
+
+An unstated `w` covers three quarters of the canvas for `text` and `shape`; an unstated `h` is derived from the font size for `text`. An `image` sizes itself instead: one unstated axis comes from the image's own proportions, and an image that states neither is drawn at its stored size (falling back to three quarters of the canvas width only when that size cannot be read). Omitting `width`/`height` on the component places the drawing at the canvas's physical size, so a 6.5 × 3 inch canvas prints 6.5 × 3. An SVG stays vector, with a raster fallback beside it for Word before 2016. An element with `enabled: false` draws nothing.
+
+```json
+{
+  "name": "visual",
+  "props": {
+    "renderMode": "native",
+    "caption": "**Figure 2.** Drawn natively — the text is still text.",
+    "canvas": {
+      "width": 6.5,
+      "height": 3,
+      "background": { "color": "#F5F7FA" }
+    },
+    "elements": [
+      {
+        "name": "shape",
+        "props": {
+          "type": "roundRect",
+          "x": 0.25,
+          "y": 0.25,
+          "w": 2,
+          "h": 1,
+          "fill": { "color": "#0F172A" },
+          "line": { "color": "#334155", "width": 1.5, "dashType": "dash" }
+        }
+      },
+      {
+        "name": "text",
+        "props": {
+          "text": "Editable Word content",
+          "x": 2.5,
+          "y": 0.4,
+          "w": 3.5,
+          "h": 0.5,
+          "fontSize": 22,
+          "bold": true
+        }
+      }
+    ]
+  }
+}
+```
 
 ## `text-space-after`
 
