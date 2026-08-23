@@ -30,11 +30,11 @@ import { FORMAT } from '../../lib/env';
 import { cn } from '../../lib/utils';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useEditorRefsStore } from '../../store/editor-refs-store';
-import { RailIconButton, SectionLabel } from './sidebar-shared';
 
 /**
- * Sidebar "Outline" section: a semantic table of contents for the document in
- * the active editor tab. Slides/headings/components (or theme keys) map to
+ * The active document's own structure, rendered directly beneath its row in
+ * the rail: a semantic table of contents for the document in the active editor
+ * tab. Slides/headings/components (or theme keys) map to
  * exact ranges in the Monaco model, giving click-to-reveal, cursor-follow
  * highlighting, validation-error badges, and drag-to-reorder of siblings.
  */
@@ -106,20 +106,6 @@ function OutlinePanelComponent() {
     activeTab && documentTypes[activeTab] === 'application/json+theme'
       ? 'theme'
       : 'document';
-
-  const [open, setOpen] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem('dev-env.outline-open');
-      return stored ? stored === 'true' : true;
-    } catch {
-      return true;
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem('dev-env.outline-open', String(open));
-    } catch {}
-  }, [open]);
 
   const [outline, setOutline] = useState<OutlineNode[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -465,43 +451,22 @@ function OutlinePanelComponent() {
 
   if (!activeTab) return null;
 
+  if (outline.length === 0) return null;
+
+  // max-h + overflow: a 200-node document must not push the rest of the rail
+  // off-screen. The guide line carries the one level of depth this section has
+  // now that it hangs off a file row rather than standing beside one.
   return (
-    // shrink-0: as a flex child of the scrollable SidebarContent this section
-    // must keep its content height — with min-h-0 it would absorb all the
-    // shrinkage once the rail overflows and clip every row to nothing.
-    <section className="mt-3 shrink-0">
-      <SectionLabel
-        count={outline.length || undefined}
-        actions={
-          <RailIconButton
-            aria-label={open ? 'Collapse outline' : 'Expand outline'}
-            aria-expanded={open}
-            onClick={() => setOpen((v) => !v)}
-          >
-            <ChevronRight
-              className={cn('transition-transform', open && 'rotate-90')}
-            />
-          </RailIconButton>
-        }
+    <li className="list-none">
+      <div
+        ref={listRef}
+        role="tree"
+        aria-label={`Outline of ${activeTab}`}
+        className="border-sidebar-border/70 my-0.5 ml-[15px] max-h-[38vh] overflow-y-auto border-l pl-1"
       >
-        Outline
-      </SectionLabel>
-      {open &&
-        (outline.length > 0 ? (
-          <div
-            ref={listRef}
-            role="tree"
-            aria-label="Document outline"
-            className="max-h-[45vh] overflow-y-auto"
-          >
-            {rows}
-          </div>
-        ) : (
-          <p className="px-2 py-1 text-[12px] leading-tight text-sidebar-foreground/60">
-            No structure to show yet.
-          </p>
-        ))}
-    </section>
+        {rows}
+      </div>
+    </li>
   );
 }
 
