@@ -1,5 +1,30 @@
 # @json-to-office/jto
 
+## 1.0.0
+
+### Patch Changes
+
+- d145c9c: Remove the retired generic component-cache subpath and its unused public
+  helpers. Renderer generation remains stateless; only document-output, asset,
+  font and rasterizer caches remain.
+
+  Rename the format-adapter reset hook from `clearComponentCache` to
+  `resetCacheStats`, matching its remaining responsibility, and update the
+  playground cache-clear message.
+
+- Updated dependencies [cea7b6b]
+- Updated dependencies [767552d]
+- Updated dependencies [7319f5f]
+- Updated dependencies [39b2ced]
+- Updated dependencies [a05a152]
+- Updated dependencies [d145c9c]
+  - @json-to-office/core-docx@1.0.0
+  - @json-to-office/shared@1.0.0
+  - @json-to-office/core-pptx@1.0.0
+  - @json-to-office/shared-docx@1.0.0
+  - @json-to-office/shared-pptx@1.0.0
+  - @json-to-office/jto-cli@1.0.0
+
 ## 0.38.1
 
 ### Patch Changes

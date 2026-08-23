@@ -1,5 +1,27 @@
 # @json-to-office/shared-pptx
 
+## 1.0.0
+
+### Minor Changes
+
+- a05a152: Document JSON can now select its renderer with an optional top-level
+  `renderer` discriminator. Omission selects `docxjs` for DOCX and `pptxgenjs`
+  for PPTX. Generated schemas, runtime validation, autocomplete and exported
+  renderer-profile types derive backend-specific branches from the canonical
+  component schemas; compiler capability checks remain authoritative after custom
+  component expansion and asset resolution.
+
+  Runtime custom-component schemas are rebuilt from the current plugin
+  definitions, so reloading the same component name and version cannot reuse stale
+  props or child metadata.
+
+### Patch Changes
+
+- Updated dependencies [39b2ced]
+- Updated dependencies [a05a152]
+- Updated dependencies [d145c9c]
+  - @json-to-office/shared@1.0.0
+
 ## 0.35.0
 
 ### Minor Changes
