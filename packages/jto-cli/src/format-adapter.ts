@@ -295,14 +295,8 @@ export interface FormatAdapter {
 
   /** Cumulative visual pre-pass dedupe counters (DOCX only) (#156). */
   getVisualPrepassStats?(): Promise<any>;
-  /**
-   * Reset the per-format caches this adapter owns.
-   *
-   * DOCX keeps only the visual pre-pass counters now: compiling a document to
-   * an IR is cheap and holds no cross-document state, so there is no component
-   * render cache left to clear.
-   */
-  clearComponentCache?(): Promise<void>;
+  /** Reset per-format cache observability counters (DOCX only). */
+  resetCacheStats?(): Promise<void>;
 }
 
 export class DocxFormatAdapter implements FormatAdapter {
@@ -607,12 +601,12 @@ export class DocxFormatAdapter implements FormatAdapter {
     }
   }
 
-  async clearComponentCache(): Promise<void> {
+  async resetCacheStats(): Promise<void> {
     try {
       const core = await import('@json-to-office/core-docx');
       core.resetVisualPrepassStats?.();
     } catch {
-      // Clearing is best-effort.
+      // Resetting observability is best-effort.
     }
   }
 }

@@ -8,7 +8,6 @@ export default defineConfig({
     'src/validation/unified/index.ts',
     'src/utils/semver.ts',
     'src/types/warnings.ts',
-    'src/cache/index.ts',
     'src/plugin/index.ts',
     'src/fonts/node.ts',
     'src/rendering/index.ts',

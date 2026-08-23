@@ -3,8 +3,8 @@
  *
  * Both entry points — `generateBufferWithWarnings` (core) and
  * `createPresentationGenerator` (plugin) — must resolve the same theme, run
- * the same export-mode pre-pass, and derive the same cache key before slide
- * processing runs. Keeping two copies of that is how DOCX silently dropped a
+ * the same export-mode pre-pass before slide processing runs. Keeping two
+ * copies of that is how DOCX silently dropped a
  * root-level prop from one path (#133); this module is the single definition
  * so the next root-level prop cannot diverge (#134). Mirrors
  * core-docx/src/core/generationContext.ts.
@@ -23,7 +23,7 @@ import type {
   PipelineWarning,
 } from '../types';
 import type { FontRuntimeOpts } from '@json-to-office/shared';
-import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
+import { applyExportMode } from '@json-to-office/shared';
 import { getPptxTheme } from '../themes/defaults';
 
 export interface ThemeContextOptions {
@@ -56,14 +56,6 @@ export interface GenerationThemeContext {
    */
   document: PresentationComponentDefinition;
   theme: PptxThemeConfig;
-  /**
-   * Cache key: base theme name + export-mode scope. Nothing in PPTX consumes
-   * a theme by name after the prologue today; this is the key a future
-   * theme-keyed cache must use (a substitute-mode run rewrites the theme in
-   * place, so it must never share a slot with a custom-mode run of the same
-   * base name — the DOCX layout cache is keyed exactly this way).
-   */
-  themeName: string;
 }
 
 export function resolveThemeContext(
@@ -128,6 +120,5 @@ export function resolveThemeContext(
   return {
     document,
     theme,
-    themeName: scopedThemeName(baseThemeName, fonts?.mode),
   };
 }

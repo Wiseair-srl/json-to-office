@@ -481,7 +481,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/endnote-with-footnote':
     '803004e3d86b9ab7a90e6f4dbe1da56c330ba2d97eaf7f14a286886e43a12eca',
   'annotations/notes-in-nested-components':
-    '3a50c8d1470d323f3b5ccc1e414c7ad976f38044b460d61d01f80d186cd494ea',
+    '404ae5151ea7f2442ae2449e567cfa157fdebda7009876c2fd957f98f19c23b6',
   'annotations/revision-defaults':
     'dea19d1b0932cb5de355fa28346a77822987c10a8f0d01dece814f5ede1dfc81',
   'annotations/revision-author-and-date':

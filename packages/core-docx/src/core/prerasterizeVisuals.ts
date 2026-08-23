@@ -57,7 +57,7 @@ export interface PrerasterizeOptions {
   fonts?: readonly RasterizeFontFace[];
 }
 
-/** Cumulative pre-pass counters for cache observability (#156). */
+/** Cumulative pre-pass counters for visual-work observability (#156). */
 export interface VisualPrepassStats {
   /** Documents that entered the pre-pass with at least one visual. */
   documents: number;
@@ -75,8 +75,7 @@ const prepassStats: VisualPrepassStats = {
 
 /**
  * Get cumulative per-document pre-pass counters. `collected - unique` is the
- * work the dedupe saved — the `visual` cache benefit the component cache
- * stats can never show, since `visual` bypasses that cache by design.
+ * work saved by batch-internal deduplication.
  */
 export function getVisualPrepassStats(): VisualPrepassStats {
   return { ...prepassStats };

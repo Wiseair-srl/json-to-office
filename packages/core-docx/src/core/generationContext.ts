@@ -3,7 +3,7 @@
  *
  * Both entry points — `generateBufferFromJson` (core) and
  * `createDocumentGenerator` (plugin) — must resolve the same theme, apply the
- * same in-document overrides, and derive the same cache key before the
+ * same in-document overrides, and apply the same export mode before the
  * structure → layout → render engine runs. Keeping two copies of that meant
  * `props.themeOverrides` reached only one of them (#133); this module is the
  * single definition so the next root-level prop cannot diverge (#132).
@@ -19,9 +19,9 @@ import type {
   FontRuntimeOpts,
   GenerationWarning,
 } from '@json-to-office/shared';
-import { applyExportMode, scopedThemeName } from '@json-to-office/shared';
+import { applyExportMode } from '@json-to-office/shared';
 import { resolveBuiltInTheme } from '../styles/theme-resolver';
-import { applyThemeOverrides, themeOverridesDigest } from '../themes/overrides';
+import { applyThemeOverrides } from '../themes/overrides';
 
 export interface ThemeContextOptions {
   customThemes?: { [key: string]: ThemeConfig };
@@ -46,7 +46,7 @@ export interface GenerationThemeContext {
   /** The document after the export-mode pre-pass rewrote font references. */
   document: ReportComponentDefinition;
   theme: ThemeConfig;
-  /** Cache key: base theme name + override digest + export-mode scope. */
+  /** Base theme name, retained for built-in fallback lookups. */
   themeName: string;
 }
 
@@ -104,13 +104,10 @@ export function resolveThemeContext(
     : defaultNamedThemeLookup(baseThemeName, customThemes, warnings);
 
   // In-document partial theme, merged before the export-mode pre-pass so a
-  // font-family override is visible to it. The digest joins the cache key so
-  // two documents sharing a theme name but not overrides never share slots.
+  // font-family override is visible to it.
   const themeOverrides = document.props.themeOverrides;
-  let themeName = baseThemeName;
   if (themeOverrides) {
     theme = applyThemeOverrides(theme, themeOverrides);
-    themeName = `${themeName}+ov:${themeOverridesDigest(themeOverrides)}`;
   }
 
   // Export-mode pre-pass: substitute (default) rewrites non-safe families to
@@ -133,8 +130,6 @@ export function resolveThemeContext(
   return {
     document: mode.doc,
     theme: mode.theme,
-    // Scope by mode too: substitute rewrites the theme in place, so caches
-    // must not share slots with custom-mode runs keyed on the same name.
-    themeName: scopedThemeName(themeName, fonts?.mode),
+    themeName: baseThemeName,
   };
 }

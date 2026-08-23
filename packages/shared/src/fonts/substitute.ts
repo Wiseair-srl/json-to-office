@@ -248,23 +248,6 @@ export function buildDefaultSubstitutionMap(
 /** Re-export SAFE_FONTS for dialog/CLI consumers that need the allowlist. */
 export { SAFE_FONTS };
 
-/**
- * Cache-key suffix used to scope generator outputs by export mode. When
- * `fonts.mode === 'substitute'` the doc tree is rewritten pre-render, so
- * a substitute-mode buffer and a custom-mode buffer for the same base
- * theme must not collide in the byte cache. Keep this as a single
- * helper so a typo in one caller can't silently alias one mode onto the
- * other's cache slot.
- */
-export function scopedThemeName(
-  baseThemeName: string,
-  fontMode: string | undefined
-): string {
-  return fontMode === 'substitute'
-    ? `${baseThemeName}#substitute`
-    : baseThemeName;
-}
-
 // ---------------------------------------------------------------------------
 // Export-mode pre-pass
 // ---------------------------------------------------------------------------

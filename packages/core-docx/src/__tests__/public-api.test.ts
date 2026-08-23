@@ -128,9 +128,8 @@ describe('public API surface', () => {
   });
 
   it('does not expose the retired component-cache facade', () => {
-    // Generic cache primitives still live at @json-to-office/shared/cache.
-    // core-docx has no component render cache, so exporting them here implied
-    // a renderer-integrated subsystem that no generation path used.
+    // core-docx has no component render cache, so exporting generic cache
+    // primitives here implied a renderer-integrated subsystem that did not exist.
     // @ts-expect-error removed with the component render cache
     expect(coreDocx.MemoryCache).toBeUndefined();
     // @ts-expect-error removed with the component render cache

@@ -496,6 +496,11 @@ previous implementation finds what a feature checklist does not.
 | A header or footer whose components are all `enabled: false` breaks link-to-previous. | It used to compile to no part at all, which is how Word spells "inherit", so a section that explicitly disabled its chrome showed the previous section's — stale or confidential content included. Disabling everything is a statement about this section, exactly like an explicit empty array. |
 | An SVG in a first-page or even-page part ships a real raster fallback.                | The adapter's image walk read only the `default` chrome slot, so such an SVG got its own bytes labelled `image/png` as the fallback, and the section options dropped the part outright.                                                                                                          |
 
+The `annotations/notes-in-nested-components` golden also changed because the
+fixture now includes a footnote inside a text box. That combination was omitted
+while the old component render cache could replay the reference without its
+document-scoped note body; stateless compilation makes it stable and testable.
+
 ## Source map
 
 | Concern         | Path                                |

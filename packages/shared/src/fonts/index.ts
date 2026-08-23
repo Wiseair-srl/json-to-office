@@ -62,7 +62,6 @@ export {
   buildDefaultSubstitutionMap,
   defaultSubstituteFor,
   applyExportMode,
-  scopedThemeName,
   type FontSubstitution,
   type ApplyFontSubstitutionResult,
   type ApplyExportModeInput,

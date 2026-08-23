@@ -25,11 +25,9 @@ const fixture = {
   ],
 };
 
-// Regression guard for the MemoryCache cleanup setInterval leak that kept
-// `jto-cli docx generate` alive for ~5 minutes after the buffer was written
-// (packages/shared/src/cache/memory-cache.ts startCleanupTimer).
-//
-// This guards against a *leaked handle* — a process that never exits — not
+// Regression guard for leaked handles that keep `jto-cli docx generate` alive
+// after the buffer is written. This guards against a process that never exits,
+// not
 // against slow I/O. Startup is dominated by cosmiconfig's config search, which
 // probes ~90 paths; on Windows CI those probes are slow and highly variable, so
 // a 30s budget there measures runner load rather than a hang. Windows gets a
