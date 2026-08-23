@@ -1,5 +1,110 @@
 # @json-to-office/shared-docx
 
+## 1.1.0
+
+### Minor Changes
+
+- 9dbf86b: A DOCX `visual` can now be drawn natively, as a Word drawing group
+
+  **New**
+
+  `visual.props.renderMode: "native"`, on a document with
+  `"renderer": "office-open"`, draws the canvas as one DrawingML group
+  (`wpg:wgp`) instead of rasterizing it: shapes become `wps:wsp` preset
+  geometry, text becomes real text boxes, and images become native pictures with
+  SVGs kept vector. The text stays searchable and every object stays editable in
+  Word, output for text- and shape-heavy graphics is smaller, and no PPTX, PNG or
+  rasterization service is involved anywhere in the path — a document whose
+  visuals are all native generates with `services` omitted entirely.
+
+  Placement is unchanged from the raster form: `width`, `height`, `alignment`,
+  `caption`, `alt`, `spacing`, `floating`, `keepNext` and `keepLines` all behave
+  as they do for an image, and captions remain ordinary paragraphs outside the
+  drawing. Geometry is inches or a percentage of the canvas; array order is
+  z-order; a canvas background colour or image becomes the bottom-most object.
+
+  Native mode is deliberately strict. Its element model is `text`, `shape` and
+  `image`, and every native props schema rejects unknown properties, so a
+  gradient fill, a `chart` element or a `dpi` that could not take effect is a
+  validation error naming the exact path rather than a silently missing object.
+  `renderMode: "native"` under any other renderer is reported at the component's
+  own `props/renderMode`, and the compiler's new `drawing-groups` capability
+  means IR that reaches `docxjs` by another route is refused before any bytes
+  exist instead of losing the graphic.
+
+  `docxPropsSchemaForRenderer` now takes the component name, so exported schemas
+  and editor autocomplete offer the raster shape alone under `docxjs` and both
+  shapes under `office-open`.
+
+  **Fixed**
+
+  Deep validation now resolves a union props schema to the branch the author
+  wrote against, so a bad property inside `visual.props.elements[2]` is reported
+  there rather than collapsing into one generic failure at `props`.
+
+  Both `visual.props` shapes are hoisted into their own JSON-Schema definitions
+  instead of being inlined at every position a component can appear. `visual` is
+  the largest props schema in the registry, and inlining a second one pushed the
+  exported `ComponentDefinition` deep enough that Ajv overflowed compiling it —
+  so `jto docx validate --schema` failed on any document with a `visual` in a
+  section header, footer or table cell, raster ones included. The exported schema
+  is now smaller than before this change.
+
+  **Unchanged**
+
+  An omitted `renderMode` still means `raster`, and every existing document
+  renders byte-for-byte as before.
+
+### Patch Changes
+
+- fdf9c51: Fix the exported DOCX schema applying one renderer's rules to the other
+
+  The exported schema's recursive component definition was named
+  `ComponentDefinition` in **both** renderer branches, and the export pass keys
+  `definitions` by that name with a plain overwrite — so the last branch walked,
+  `office-open`, answered for both. Every position that reaches components
+  through that definition (section `props.header`/`props.footer`, table
+  `props.columns[].cells[].content`, `componentDefaults.section.header`) got the
+  `office-open` view whatever the document's `renderer` said, in both directions:
+  a `docxjs` threaded comment in a section header was rejected, and a
+  `renderMode: "native"` visual under `docxjs` was accepted. Positions reached
+  through a branch's own narrowed child union — a direct child of `docx` or of
+  `section` — were always right, which is what made it look local: the same
+  `visual` was refused in a section body and accepted in that section's header.
+
+  The runtime validator was correct throughout (`collectDocxRendererErrors` walks
+  the real document), so no bad document ever shipped; the cost was
+  schema-driven editors and `jto docx validate --schema` showing the other
+  renderer's diagnostics.
+
+  The definition is now named per renderer — `ComponentDefinition_docxjs` and
+  `ComponentDefinition_office-open` — and the `$ref` fix-up passes resolve a bare
+  reference against whatever was actually hoisted rather than one hard-coded
+  name. Anything reading `definitions.ComponentDefinition` out of the exported
+  DOCX schema should use `docxComponentDefinitionName(renderer)`, newly exported
+  from `@json-to-office/shared-docx`.
+
+  The second definition roughly doubles that part of the file: pretty-printed
+  `schemas/document.schema.json` goes from 8.7 MB to 12.2 MB, and Ajv's compile
+  from ~3.1 s to ~4.3 s. Nesting depth — what decides whether Ajv overflows V8's
+  stack — is unchanged, because the second definition sits beside the first
+  rather than inside it.
+
+  Also fixes the exported **theme** schema, which did not compile at all. The
+  same fix-up pass rewrote every untyped array item into a `$ref` at the root
+  definition name whether or not such a definition existed. `componentDefaults`
+  is shared between the document and theme schemas, and its `section.header` and
+  `section.footer` hold components — but only the document schema carries a
+  component definition to point them at, so `theme.schema.json` shipped with an
+  unresolvable `#/definitions/ComponentDefinition`, and Ajv refuses to compile a
+  schema over one. Every theme validated against the shipped schema failed on the
+  schema itself, whatever the theme said. With nothing to point at, the item now
+  stays untyped. The CLI's own `--type theme` was never affected: it validates
+  against TypeBox, not the exported schema.
+
+- Updated dependencies [fdf9c51]
+  - @json-to-office/shared@1.1.0
+
 ## 1.0.0
 
 ### Minor Changes
