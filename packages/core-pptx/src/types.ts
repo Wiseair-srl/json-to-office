@@ -55,7 +55,8 @@ export type PresentationComponentDefinitionFor<R extends PptxRendererId> = Omit<
 export interface SlideComponentDefinition {
   name: 'slide';
   id?: string;
-  props: {
+  /** Optional: every slide prop is optional, so validation accepts a slide with none. */
+  props?: {
     background?: {
       color?: string;
       gradient?: GradientFill;

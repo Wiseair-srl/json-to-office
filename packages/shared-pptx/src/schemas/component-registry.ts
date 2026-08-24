@@ -6,7 +6,10 @@
  */
 
 import { Type, TSchema } from '@sinclair/typebox';
-import { PPTX_SLIDE_CONTENT_COMPONENTS } from '@json-to-office/shared/schemas/slide-content';
+import {
+  PPTX_SLIDE_CONTENT_COMPONENTS,
+  pptxComponentRequiresProps,
+} from '@json-to-office/shared/schemas/slide-content';
 import {
   PPTX_RENDERER_IDS,
   isPptxComponentSupported,
@@ -31,6 +34,11 @@ export interface PptxStandardComponentDefinition {
   hasPlaceholders?: boolean;
   category: 'container' | 'content' | 'layout';
   description: string;
+  /**
+   * Force `props` to stay required even though the props schema accepts `{}`.
+   * See `pptxComponentRequiresProps` for when that is legitimate.
+   */
+  propsRequired?: boolean;
   special?: {
     hasSchemaField?: boolean;
   };
@@ -52,6 +60,11 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
       hasChildren: true,
       allowedChildren: ['slide'],
       category: 'container',
+      // Every presentation prop is optional, but the root is where a deck
+      // states its title, size and theme, and both the published schema and
+      // the deep validator have always demanded the key. Keeping it required
+      // is a decision, not the schema's own answer, so it is declared.
+      propsRequired: true,
       description:
         'Main presentation container - defines the overall presentation structure. Required as the root component.',
       special: {
@@ -65,6 +78,9 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
       allowedChildren: PPTX_SLIDE_CONTENT_COMPONENTS.map(({ name }) => name),
       hasPlaceholders: true,
       category: 'container',
+      // No `propsRequired`: every slide prop is optional and nothing outside
+      // the schema asks for one, so `{ "name": "slide", "children": [...] }`
+      // is a whole slide and the published schema says so.
       description:
         'Slide container - groups content elements on a single slide.',
     },
@@ -107,6 +123,16 @@ export function getPptxContentComponents(): readonly PptxStandardComponentDefini
 export function isPptxStandardComponent(name: string): boolean {
   return PPTX_STANDARD_COMPONENTS_REGISTRY.some((c) => c.name === name);
 }
+
+/**
+ * Whether this component must carry a `props` key — the one answer both the
+ * published schema and the deep validator read.
+ *
+ * Re-exported from `@json-to-office/shared` so the registry is the single
+ * place a consumer has to look: the rule is the props schema's own (a schema
+ * that accepts `{}` demands nothing) unless the definition overrides it.
+ */
+export { pptxComponentRequiresProps };
 
 // ============================================================================
 // Schema Generation Helpers
@@ -186,6 +212,14 @@ export function createPptxComponentSchemaObject(
         description: (component.propsSchema as any).description,
       }
     );
+  }
+
+  // Optionality is decided from the canonical definition, never from the
+  // pruned/placeholder-augmented copy above: the deep validator checks the
+  // canonical schema, so reading anything else here is how the published
+  // schema and the runtime would start disagreeing about the same document.
+  if (!pptxComponentRequiresProps(component)) {
+    schema.props = Type.Optional(schema.props);
   }
 
   return Type.Object(schema, {
@@ -271,9 +305,19 @@ export function createAllPptxComponentSchemasNarrowed(
           ? allChildSchemas[0]
           : Type.Union(allChildSchemas);
 
+      // Placeholders hold what `children` holds: a named slot is a position
+      // for a content component, not a second way into the tree. Passing the
+      // narrowed union rather than `selfRef` is what stops the published
+      // schema from accepting a `slide` — or the `pptx` root — as a
+      // placeholder value, which the deep walk also refuses.
       resolved.set(
         comp.name,
-        createPptxComponentSchemaObject(comp, childrenType, selfRef, profile)
+        createPptxComponentSchemaObject(
+          comp,
+          childrenType,
+          childrenType,
+          profile
+        )
       );
       pending.splice(i, 1);
     }

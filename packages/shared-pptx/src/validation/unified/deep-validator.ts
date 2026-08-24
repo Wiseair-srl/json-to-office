@@ -15,6 +15,7 @@ import { transformValueErrors } from '@json-to-office/shared';
 import {
   PPTX_STANDARD_COMPONENTS_REGISTRY,
   getPptxStandardComponent,
+  pptxComponentRequiresProps,
 } from '../../schemas/component-registry';
 
 // Map of component names to their props schemas, sourced from the registry.
@@ -52,8 +53,10 @@ ROOT_OBJECT_KEYS.add('renderer');
  * Options that tune deep validation.
  *
  * `knownCustomNames` — names of registered plugin components. The deep
- * validator neither flags these as "unknown component" nor validates their
- * props here; the plugin layer validates custom props separately.
+ * validator neither flags these as "unknown component" nor checks what their
+ * props hold; the plugin layer validates custom props against the resolved
+ * version. It does require the `props` key itself, which the published plugin
+ * branch requires too and which needs no plugin knowledge to see.
  *
  * `allowUnknownFields` — when true, unknown properties are stripped before the
  * per-component check instead of being rejected. The escape hatch for callers
@@ -109,13 +112,17 @@ export function deepValidatePresentation(
 
   // Validate props when the key is present so explicit `null` (or any falsy
   // non-object) is checked against the component's schema instead of silently
-  // passing.
+  // passing. Whether the key may be absent is the registry's answer, the same
+  // one the published schema is generated from.
+  const rootDef = getPptxStandardComponent(data.name);
   if (!('props' in data)) {
-    allErrors.push({
-      path: '/props',
-      message: 'Missing required field "props"',
-      code: 'required_property',
-    });
+    if (!rootDef || pptxComponentRequiresProps(rootDef)) {
+      allErrors.push({
+        path: '/props',
+        message: 'Missing required field "props"',
+        code: 'required_property',
+      });
+    }
   } else if (ROOT_COMPONENT_NAMES.has(data.name)) {
     allErrors.push(
       ...validateComponentProps(data.name, data.props, '/props', opts)
@@ -204,23 +211,60 @@ function walkComponentTree(
     }
 
     if (isCustomComponent) {
+      // What the props *hold* is the plugin layer's call — it alone knows the
+      // resolved version's schema. That the key is there at all is not: the
+      // published plugin branch requires it unconditionally, so checking
+      // presence here is what keeps the one absolute this walk claims true for
+      // plugin components too, and turns the plugin layer's "expected object at
+      // root" into a diagnostic pointing at the node that omitted it.
+      if (!('props' in child)) {
+        errors.push({
+          path: `${childPath}/props`,
+          message: `Component "${child.name}" is missing required field "props"`,
+          code: 'required_property',
+          suggestion: `Add a "props" object holding the content "${child.name}" renders.`,
+        });
+      }
       walkComponentTree(child, childPath, opts, errors);
       return;
     }
 
-    // Validate props against the component's schema. When props is omitted,
-    // validate an empty object so the schema decides whether props are
-    // required (e.g. `slide` needs none; `text` requires text).
+    // Validate props against the component's schema. An omitted `props` is
+    // only legal where the registry says so — `pptxComponentRequiresProps` is
+    // the same answer the published schema is generated from, so a document
+    // this accepts is a document that schema accepts. Where it is legal, an
+    // empty object is still checked: that catches a definition that claims
+    // props are omissible while its schema demands a field.
+    //
+    // Presence is `'props' in child`, matching the root check: an explicit
+    // `null` is a value the schema rejects (props must be an object), so it
+    // has to reach the schema rather than be read as "the author left it out".
+    const def = getPptxStandardComponent(child.name);
     const propsPath = `${childPath}/props`;
-    if (child.props != null) {
+    if ('props' in child) {
       errors.push(
         ...validateComponentProps(child.name, child.props, propsPath, opts)
       );
+    } else if (def && pptxComponentRequiresProps(def)) {
+      // The error points at `/props`, not at the fields inside it: with the
+      // key absent those paths address nothing, and a caller repairing the
+      // document by JSON Patch has to create `props` first either way. The
+      // fields it must then hold travel in the suggestion.
+      const declared =
+        (def.propsSchema as { required?: readonly string[] }).required ?? [];
+      errors.push({
+        path: propsPath,
+        message: `Component "${child.name}" is missing required field "props"`,
+        code: 'required_property',
+        suggestion:
+          declared.length > 0
+            ? `Add "props" carrying ${declared.map((f) => `"${f}"`).join(', ')}.`
+            : `Add a "props" object holding the content "${child.name}" renders.`,
+      });
     } else {
       errors.push(...validateComponentProps(child.name, {}, propsPath, opts));
     }
 
-    const def = getPptxStandardComponent(child.name);
     if (def && !def.hasChildren && child.children != null) {
       errors.push({
         path: `${childPath}/children`,
@@ -236,11 +280,42 @@ function walkComponentTree(
 
   const parentDef = getPptxStandardComponent(node.name);
 
+  /**
+   * Enforce the registry's container narrowing (`pptx` → `slide`, `slide` →
+   * the content components) on one entry. Unknown names are already reported
+   * by validateComponentProps inside validateEntry, so only standard
+   * components in the wrong container are flagged here.
+   */
+  const checkAllowedChild = (child: any, childPath: string): void => {
+    if (
+      parentDef?.allowedChildren &&
+      child &&
+      typeof child === 'object' &&
+      typeof child.name === 'string' &&
+      getPptxStandardComponent(child.name) &&
+      !parentDef.allowedChildren.includes(child.name)
+    ) {
+      const expected = parentDef.allowedChildren
+        .map((n) => `"${n}"`)
+        .join(', ');
+      errors.push({
+        path: `${childPath}/name`,
+        message: `Component "${child.name}" is not allowed inside "${node.name}". Expected ${expected}`,
+        code: 'invalid_value',
+      });
+    }
+  };
+
   // A slide's `placeholders` record maps placeholder names to full components
   // ({ "title": { "name": "text", ... } }). The static SlidePropsSchema does
   // not include the field (it is injected with the recursive ref at schema
   // generation time), so validateComponentProps strips it before checking the
   // slide's own props — each value is validated here instead.
+  //
+  // A placeholder holds what the slide itself holds: filling one with a
+  // `slide` or the `pptx` root is not a component with no position, it is a
+  // container nested where no container can go. The published schema narrows
+  // the record to the same union it narrows `children` to, so both refuse it.
   if (node.name === 'slide' && node.props && typeof node.props === 'object') {
     const placeholders = node.props.placeholders;
     if (
@@ -249,7 +324,9 @@ function walkComponentTree(
       !Array.isArray(placeholders)
     ) {
       for (const [key, child] of Object.entries(placeholders)) {
-        validateEntry(child, `${path}/props/placeholders/${key}`);
+        const childPath = `${path}/props/placeholders/${key}`;
+        checkAllowedChild(child, childPath);
+        validateEntry(child, childPath);
       }
     } else if (placeholders != null) {
       errors.push({
@@ -264,26 +341,7 @@ function walkComponentTree(
   if (Array.isArray(node.children)) {
     node.children.forEach((child: any, i: number) => {
       const childPath = `${path}/children/${i}`;
-      // Enforce the registry's container narrowing (pptx → slide,
-      // slide → content) for known components; unknown names are already
-      // reported by validateComponentProps inside validateEntry.
-      if (
-        parentDef?.allowedChildren &&
-        child &&
-        typeof child === 'object' &&
-        typeof child.name === 'string' &&
-        getPptxStandardComponent(child.name) &&
-        !parentDef.allowedChildren.includes(child.name)
-      ) {
-        const expected = parentDef.allowedChildren
-          .map((n) => `"${n}"`)
-          .join(', ');
-        errors.push({
-          path: `${childPath}/name`,
-          message: `Component "${child.name}" is not allowed inside "${node.name}". Expected ${expected}`,
-          code: 'invalid_value',
-        });
-      }
+      checkAllowedChild(child, childPath);
       validateEntry(child, childPath);
     });
   } else if (node.children != null && path !== '') {

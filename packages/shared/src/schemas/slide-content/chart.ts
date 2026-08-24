@@ -5,10 +5,21 @@
 import { Type, Static } from '@sinclair/typebox';
 import { GridPositionSchema } from './common';
 
-const PositionValue = Type.Union([
-  Type.Number(),
-  Type.String({ pattern: '^\\d+(\\.\\d+)?%$' }),
-]);
+/**
+ * A position or size, in inches or as a percentage of the slide.
+ *
+ * Described per axis, exactly as `text`, `image`, `shape` and `table` describe
+ * theirs: a bare number with no unit leaves an agent guessing between inches,
+ * points and EMU on the one component it reaches for to chart a quarter.
+ */
+const positionValue = (inches: string, percent: string) =>
+  Type.Union([
+    Type.Number({ description: inches }),
+    Type.String({
+      pattern: '^\\d+(\\.\\d+)?%$',
+      description: percent,
+    }),
+  ]);
 
 const ChartTypeSchema = Type.Union(
   [
@@ -25,14 +36,29 @@ const ChartTypeSchema = Type.Union(
   { description: 'Chart type' }
 );
 
+/**
+ * One series.
+ *
+ * `labels` and `values` are needed on EVERY series, not just the first: the
+ * compiler drops the whole chart the moment one series is missing either. They
+ * stay schema-optional only because the compiler still owns that refusal and
+ * warns about it by name; the descriptions say so, because "optional" alone
+ * left an agent to discover it from a rendered file with no chart in it.
+ */
 const ChartDataSeriesSchema = Type.Object(
   {
     name: Type.Optional(Type.String({ description: 'Series name' })),
     labels: Type.Optional(
-      Type.Array(Type.String(), { description: 'Category labels' })
+      Type.Array(Type.String(), {
+        description:
+          'Category labels. Needed on every series, not just the first, and the same length as `values`; a series without both `labels` and `values` drops the whole chart.',
+      })
     ),
     values: Type.Optional(
-      Type.Array(Type.Number(), { description: 'Data values' })
+      Type.Array(Type.Number(), {
+        description:
+          'Data values, one per label. Needed on every series — see `labels`.',
+      })
     ),
     sizes: Type.Optional(
       Type.Array(Type.Number(), {
@@ -371,10 +397,10 @@ export const PptxChartPropsSchema = Type.Object(
     ),
 
     // Positioning
-    x: Type.Optional(PositionValue),
-    y: Type.Optional(PositionValue),
-    w: Type.Optional(PositionValue),
-    h: Type.Optional(PositionValue),
+    x: Type.Optional(positionValue('X position in inches', 'X as percentage')),
+    y: Type.Optional(positionValue('Y position in inches', 'Y as percentage')),
+    w: Type.Optional(positionValue('Width in inches', 'Width as percentage')),
+    h: Type.Optional(positionValue('Height in inches', 'Height as percentage')),
     grid: Type.Optional(GridPositionSchema),
   },
   {

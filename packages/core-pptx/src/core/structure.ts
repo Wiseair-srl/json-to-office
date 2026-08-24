@@ -9,6 +9,7 @@ import type {
   PresentationComponentDefinition,
   ProcessedPresentation,
   ProcessedSlide,
+  SlideComponentDefinition,
   TemplateSlideDefinition,
 } from '../types';
 import { isSlideComponent } from '../types';
@@ -166,18 +167,24 @@ export function processPresentation(
         theme
       ).map((component) => remapHyperlinkSlideRefs(component, slideIndexMap));
 
-      const placeholders = child.props.placeholders as
+      // Every slide prop is optional, so validation accepts a slide with no
+      // `props` at all (the deep validator checks an empty object in that
+      // case). Generation has to accept the same documents validation does.
+      const slideProps: NonNullable<SlideComponentDefinition['props']> =
+        child.props ?? {};
+
+      const placeholders = slideProps.placeholders as
         | Record<string, PptxComponentInput>
         | undefined;
 
       slides.push({
         components: resolvedComponents,
-        background: child.props.background,
-        transition: child.props.transition,
-        notes: child.props.notes,
-        layout: child.props.layout,
-        hidden: child.props.hidden,
-        template: child.props.template,
+        background: slideProps.background,
+        transition: slideProps.transition,
+        notes: slideProps.notes,
+        layout: slideProps.layout,
+        hidden: slideProps.hidden,
+        template: slideProps.template,
         placeholders: placeholders
           ? Object.fromEntries(
               Object.entries(placeholders).map(([name, component]) => [
