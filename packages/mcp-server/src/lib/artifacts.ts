@@ -27,7 +27,8 @@ export const MAX_INLINE_ARTIFACT_BYTES = 4 * 1024 * 1024;
  * `resolveOutputPath` already resolved every symlink on the way to this path,
  * but it returned before the write started; `O_NOFOLLOW` makes the kernel — not
  * a prior check — refuse a link planted in that window. It does not exist on
- * Windows, where the resolve-time check stands alone.
+ * Windows, so an `lstat` immediately before the open backs it everywhere,
+ * leaving only the lstat→open sliver uncovered — and only there.
  */
 const ARTIFACT_WRITE_FLAGS =
   fs.constants.O_WRONLY |
@@ -125,12 +126,8 @@ export async function deliverArtifact(
   const resolved = await outputRoot.resolveOutputPath(filename);
   if (!resolved.ok) return resolved;
 
-  let handle: fs.FileHandle;
-  try {
-    handle = await fs.open(resolved.path, ARTIFACT_WRITE_FLAGS);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException)?.code !== 'ELOOP') throw err;
-    return failure(
+  const plantedLink = () =>
+    failure(
       ERROR_CODES.OUTPUT_ROOT_ESCAPE,
       `Output path became a symlink while writing: "${filename}".`,
       {
@@ -138,6 +135,19 @@ export async function deliverArtifact(
         context: { outputRoot: outputRoot.path, filename },
       }
     );
+
+  // The pre-open half of the race guard, and on Windows all of it: O_NOFOLLOW
+  // is 0 there, so without this check the open would follow a planted link and
+  // truncate whatever it points at.
+  const staged = await fs.lstat(resolved.path).catch(() => undefined);
+  if (staged?.isSymbolicLink()) return plantedLink();
+
+  let handle: fs.FileHandle;
+  try {
+    handle = await fs.open(resolved.path, ARTIFACT_WRITE_FLAGS);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException)?.code !== 'ELOOP') throw err;
+    return plantedLink();
   }
   try {
     await handle.writeFile(buffer);
