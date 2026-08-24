@@ -66,6 +66,7 @@ export default defineConfig({
           items: [
             { text: 'The visual playground', link: '/guide/playground' },
             { text: 'CLI workflows', link: '/guide/cli' },
+            { text: 'The MCP server', link: '/guide/mcp-server' },
             { text: 'Validation', link: '/guide/validation' },
           ],
         },

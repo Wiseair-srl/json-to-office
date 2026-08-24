@@ -128,16 +128,16 @@ Supported keys: `text`, `image`, `shape`, `table`, `highcharts`, `chart`. Themes
 
 ## Slide props
 
-| Prop           | Type                        | Default | Description                                                                                                                                                                                  |
-| -------------- | --------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meta`         | `{ title? }`                | —       | Authoring metadata; never rendered. `meta.title` labels the slide in editors and outlines (e.g. the playground sidebar), overriding the label otherwise derived from the slide's title text. |
-| `background`   | `{ color?, image? }`        | —       | Slide background. `color` is a hex value or semantic theme name; `image` is `{ path? }` or `{ base64? }`.                                                                                    |
-| `transition`   | `{ type?, speed? }`         | —       | Slide transition. `type`: `fade` \| `push` \| `wipe` \| `zoom` \| `none`; `speed`: `slow` \| `medium` \| `fast`. Supported by `office-open` only.                                            |
-| `notes`        | string                      | —       | Speaker notes, shown in presenter view.                                                                                                                                                      |
-| `layout`       | string                      | —       | Slide layout name. Accepted by the schema and carried through processing, but not currently consumed by the renderer.                                                                        |
-| `hidden`       | boolean                     | —       | `true` marks the slide as hidden: it stays in the file but is skipped during the slideshow.                                                                                                  |
-| `template`     | string                      | —       | Name of a template from the root `templates` array; the template is applied as this slide's master. An unknown name emits a `MISSING_TEMPLATE` warning and the slide renders without it.     |
-| `placeholders` | `Record<string, Component>` | —       | Maps placeholder names (defined by the template) to full components that fill them.                                                                                                          |
+| Prop           | Type                           | Default | Description                                                                                                                                                                                  |
+| -------------- | ------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `meta`         | `{ title? }`                   | —       | Authoring metadata; never rendered. `meta.title` labels the slide in editors and outlines (e.g. the playground sidebar), overriding the label otherwise derived from the slide's title text. |
+| `background`   | `{ color?, image? }`           | —       | Slide background. `color` is a hex value or semantic theme name; `image` is `{ path? }` or `{ base64? }`.                                                                                    |
+| `transition`   | `{ type?, speed? }`            | —       | Slide transition. `type`: `fade` \| `push` \| `wipe` \| `zoom` \| `none`; `speed`: `slow` \| `medium` \| `fast`. Supported by `office-open` only.                                            |
+| `notes`        | string                         | —       | Speaker notes, shown in presenter view.                                                                                                                                                      |
+| `layout`       | string                         | —       | Slide layout name. Accepted by the schema and carried through processing, but not currently consumed by the renderer.                                                                        |
+| `hidden`       | boolean                        | —       | `true` marks the slide as hidden: it stays in the file but is skipped during the slideshow.                                                                                                  |
+| `template`     | string                         | —       | Name of a template from the root `templates` array; the template is applied as this slide's master. An unknown name emits a `MISSING_TEMPLATE` warning and the slide renders without it.     |
+| `placeholders` | `Record<string, SlideContent>` | —       | Maps placeholder names (defined by the template) to the components that fill them — the same set a slide accepts as `children`, so a container in a slot is rejected.                        |
 
 All props are optional; unknown keys and props outside the selected renderer profile are rejected. Templates, slide `template`/`placeholders`, and charts are currently `pptxgenjs`-only; transitions are `office-open`-only.
 
@@ -196,7 +196,7 @@ Background colors go through the same resolution as all colors: semantic names (
 }
 ```
 
-Each value in `placeholders` is a complete component (`{ name, props }`) validated like any slide child; its position and styling defaults come from the template's placeholder definition. Referencing a placeholder name the template does not define emits an `UNKNOWN_PLACEHOLDER` warning; a placeholder used without any resolvable position emits `PLACEHOLDER_NO_POSITION` and is skipped. The full template model — placeholder definitions, defaults precedence, grid overrides — is documented in [Slides & the grid](/reference/pptx/slides-and-grid).
+Each value in `placeholders` is a complete component (`{ name, props }`) validated like any slide child — literally so: a slot holds what `children` holds, which is one of the six content components or a plugin component, never a `slide` or the `pptx` root; its position and styling defaults come from the template's placeholder definition. Referencing a placeholder name the template does not define emits an `UNKNOWN_PLACEHOLDER` warning; a placeholder used without any resolvable position emits `PLACEHOLDER_NO_POSITION` and is skipped. The full template model — placeholder definitions, defaults precedence, grid overrides — is documented in [Slides & the grid](/reference/pptx/slides-and-grid).
 
 ## Minimal complete document
 

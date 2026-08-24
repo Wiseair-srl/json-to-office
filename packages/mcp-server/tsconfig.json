@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "lib": ["ES2022"],
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts",
+    "src/**/__tests__/**",
+  ],
+  "references": [
+    { "path": "../shared" },
+    { "path": "../shared-docx" },
+    { "path": "../shared-pptx" },
+    { "path": "../jto-ops" },
+  ],
+}

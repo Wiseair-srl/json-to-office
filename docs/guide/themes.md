@@ -219,10 +219,10 @@ Both theme files and documents can set default props per component type, so you 
 3. **Document** `props.componentDefaults` (deep-merged on top of the theme's)
 4. Props set **on the component itself**
 
-Merging is a deep merge: nested objects merge key-by-key with the stronger layer winning, arrays are replaced wholesale. A content component with no `props` key at all behaves exactly like one with `"props": {}` — it picks up the same defaults; there is no carve-out for propless nodes.
+Merging is a deep merge: nested objects merge key-by-key with the stronger layer winning, arrays are replaced wholesale. A component with no `props` key at all behaves exactly like one with `"props": {}` — it picks up the same defaults; there is no carve-out for propless nodes.
 
-::: warning The root node is the exception
-Both published JSON Schemas mark the root's `props` as **required**, so an editor wired to `$schema` flags a propless root in either format. Write `"props": {}` even when you have nothing to put in it. The runtime validators are not equally strict: `jto pptx validate` enforces the rule (`Missing required field "props"` at `/props`), while `jto docx validate` accepts a propless `docx` root and generation normalizes it to `{}`, producing bytes identical to the same document written with `"props": {}`. Do not lean on that gap — it is the DOCX validator being looser than its own schema, not a supported shape.
+::: warning Whether the key may be omitted is a separate question
+Defaults treat a missing `props` as `{}`; validation does not accept it everywhere. Each registry entry decides, and the published JSON Schema is generated from that same decision, so an editor wired to `$schema` and the validator agree. In DOCX the key is omissible on `section`, `toc`, `image`, `text-box` and the `docx` root; in PPTX only on `slide` — the `pptx` root requires it (write `"props": {}`), and so does every content component. See [Validation](/guide/validation) for the full rule.
 :::
 
 Only real component props are valid `componentDefaults`. For `table` that means `borderColor`, `borderSize`, `hideBorders`, `cellDefaults`, `headerCellDefaults`, `columns`, `width`, `keepInOnePage`, `keepNext`, and `repeatHeaderOnPageBreak` — the schema is a strict partial of the component's props, so an invented key such as `striped`, `borders`, `borderWidth`, `headerBackground` or `headerColor` fails theme validation. Header styling goes through `headerCellDefaults` (`backgroundColor`, `color`), border width through `borderSize`, and borders on or off through `hideBorders`.

@@ -109,6 +109,12 @@ pnpm add --global @json-to-office/jto-cli
 jto-cli docx generate doc.json
 ```
 
+For coding agents, [`@json-to-office/mcp-server`](packages/mcp-server) exposes the same loop — discover, author, validate, preview rendered pages, generate — over the Model Context Protocol. Point any MCP client at it; nothing to install first.
+
+```bash
+claude mcp add json-to-office -- npx -y @json-to-office/mcp-server
+```
+
 ## The problem
 
 A backend that has to emit a `.docx` or a `.pptx` has four options, and each answers a different question than the one you asked.
@@ -446,6 +452,7 @@ See the `[examples/](examples/)` directory for complete, runnable JSON definitio
 | `[@json-to-office/json-to-pptx](packages/json-to-pptx)` | PPTX generation from JSON            |
 | `[@json-to-office/jto](packages/jto)`                   | CLI + dev server + visual playground |
 | `[@json-to-office/jto-cli](packages/jto-cli)`           | Lean CLI (no playground deps)        |
+| `[@json-to-office/mcp-server](packages/mcp-server)`     | MCP server for agents (stdio)        |
 
 Internal packages
 
@@ -456,6 +463,7 @@ Internal packages
 | `[@json-to-office/shared](packages/shared)`           | Format-agnostic schemas and validation |
 | `[@json-to-office/shared-docx](packages/shared-docx)` | DOCX-specific schemas                  |
 | `[@json-to-office/shared-pptx](packages/shared-pptx)` | PPTX-specific schemas                  |
+| `[@json-to-office/jto-ops](packages/jto-ops)`         | Host ops: adapters, rasterizer, fonts  |
 
 ## Development
 

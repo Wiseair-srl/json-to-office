@@ -108,16 +108,24 @@ PPTX validation is a single deep walk over the tree — the same engine that pow
 
 - the root is named `pptx` and carries both a `props` object and a `children` array;
 - each object carries only the allowed top-level keys (`name`, `id`, `enabled`, `props`, `children`; the root may also carry `$schema`, and plugin components may also carry `version`);
-- each component's `props` match its registry schema (on nested components a missing `props` is validated as `{}`, so the schema decides whether props are required);
+- each component carries a `props` key wherever the registry requires one, and its contents match that component's schema;
 - container narrowing holds (`pptx` → `slide` only, `slide` → the six content components);
 - leaf components don't carry `children`;
-- every value in a slide's `placeholders` record is itself a valid component.
+- every value in a slide's `placeholders` record is a valid component of the kind a slide accepts — a named slot is a position for content, so a `slide` or the `pptx` root in one is rejected there just as it would be under `children`.
 
-::: warning The root `props` key is required
-`{ "name": "pptx", "children": [] }` is rejected with `Missing required field "props"` at `/props`. This matches the published JSON Schema, which has always marked `props` as required. Every field _inside_ presentation props is optional, so `"props": {}` is enough.
+::: warning `slide` is the only component that may omit `props`
+Every slide prop is optional and nothing outside the schema asks for one, so `{ "name": "slide", "children": [...] }` is a whole slide. Everywhere else the key is required and its absence is reported as `required_property` at that node's `/props` pointer:
+
+- `pptx` — the root, where a deck states its title, size and theme; `"props": {}` is enough, since every field inside is optional;
+- `text` and `image` — every field is optional individually, but one of `text`/`runs` (and one of `path`/`base64`/`svg`) has to be there for the component to draw anything, so the key stays required rather than letting `{ "name": "text" }` render an empty slide. For `text` the emptiness itself is also caught: `"props": {}` is rejected by the `text`/`runs` content rule. `image` has no equivalent rule yet, so `{ "name": "image", "props": {} }` validates and generation reports an `IMAGE_NO_SOURCE` warning instead;
+- `shape`, `table`, `highcharts`, `chart` — their schemas demand a field outright (`type`, `rows`, `options`, `type`+`data`).
+
+Registered plugin components require `props` too, in both the published schema and the walk — what the key holds is the plugin layer's call, that it is there is not. Those, plus the standard components above, are the whole list: the published JSON Schema is generated from the same registry entries the walk reads, so the two ask for the key in the same places.
+
+`props` may be omitted where this says so; it may never be `null`. An explicit `null` is a written value and the schema types the key as an object everywhere, so both the schema and the walk reject it — as a type error at the key, not as a missing one.
 :::
 
-Plugin components are validated in two passes: the deep walker skips their `props` (the plugin layer checks those against the resolved component version), but it still walks their `children`. Standard components authored inside a plugin container therefore obey the same prop and tree contract they do anywhere else. `allowUnknownFields` strips unknown props instead of rejecting, mirroring the DOCX options. Noise from TypeBox's generic union catch-alls is filtered out and errors are deduplicated, so what remains is actionable.
+Plugin components are validated in two passes: the deep walker requires the `props` key but not its contents (the plugin layer checks those against the resolved component version), and it still walks their `children`. Standard components authored inside a plugin container therefore obey the same prop and tree contract they do anywhere else. `allowUnknownFields` strips unknown props instead of rejecting, mirroring the DOCX options. Noise from TypeBox's generic union catch-alls is filtered out and errors are deduplicated, so what remains is actionable.
 
 ```ts
 import { validate } from '@json-to-office/json-to-pptx';

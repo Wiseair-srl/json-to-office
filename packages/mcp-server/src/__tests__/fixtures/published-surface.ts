@@ -1,0 +1,134 @@
+/**
+ * The authoring surface this server promises agents, recorded by hand.
+ *
+ * The registries in `shared-docx` / `shared-pptx` and the JSON Schema this
+ * server generates are not two sources: the schema is generated *from* the
+ * registry, so a component dropped from one disappears from the other in the
+ * same edit and a registry-against-schema comparison can never fail. This file
+ * is the independent party. It is maintained by hand, so any change to the
+ * component names, the per-renderer profiles or the container rules has to be
+ * written down here before `discovery-drift.test.ts` will go green — which is
+ * the acknowledgement the derived comparison could not ask for.
+ *
+ * Changing an entry is legitimate; changing one without meaning to is the bug.
+ * Agents write documents against these names, so a removal or a rename is a
+ * breaking change to this package's public surface whatever the registry edit
+ * that caused it looked like.
+ */
+
+import type { FormatName } from '../../lib/adapters.js';
+
+export interface PublishedComponentSurface {
+  /** The component that roots a document and carries `props.renderer`. */
+  rootComponent: string;
+  /**
+   * Component names each renderer profile accepts, keyed by renderer id in
+   * schema declaration order — the first key is the format's default renderer.
+   * A renderer that cannot draw a component simply omits it.
+   */
+  renderers: Record<string, readonly string[]>;
+  /**
+   * Containers and the children they accept, unioned across renderers. Every
+   * component with children appears; leaves do not.
+   */
+  allowedChildren: Record<string, readonly string[]>;
+}
+
+export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
+  {
+    docx: {
+      rootComponent: 'docx',
+      renderers: {
+        docxjs: [
+          'columns',
+          'docx',
+          'heading',
+          'highcharts',
+          'image',
+          'list',
+          'paragraph',
+          'section',
+          'statistic',
+          'table',
+          'text-box',
+          'toc',
+          'visual',
+        ],
+        'office-open': [
+          'columns',
+          'docx',
+          'heading',
+          'highcharts',
+          'image',
+          'list',
+          'paragraph',
+          'section',
+          'statistic',
+          'table',
+          'text-box',
+          'toc',
+          'visual',
+        ],
+      },
+      allowedChildren: {
+        columns: [
+          'heading',
+          'highcharts',
+          'image',
+          'list',
+          'paragraph',
+          'statistic',
+          'table',
+          'text-box',
+          'toc',
+          'visual',
+        ],
+        docx: ['section'],
+        section: [
+          'columns',
+          'heading',
+          'highcharts',
+          'image',
+          'list',
+          'paragraph',
+          'statistic',
+          'table',
+          'text-box',
+          'toc',
+          'visual',
+        ],
+        'text-box': ['heading', 'image', 'paragraph'],
+      },
+    },
+
+    pptx: {
+      rootComponent: 'pptx',
+      renderers: {
+        // `chart` is pptxgenjs-only: the second backend draws no charts yet,
+        // so it narrows its own profile rather than accepting and dropping one.
+        pptxgenjs: [
+          'chart',
+          'highcharts',
+          'image',
+          'pptx',
+          'shape',
+          'slide',
+          'table',
+          'text',
+        ],
+        'office-open': [
+          'highcharts',
+          'image',
+          'pptx',
+          'shape',
+          'slide',
+          'table',
+          'text',
+        ],
+      },
+      allowedChildren: {
+        pptx: ['slide'],
+        slide: ['chart', 'highcharts', 'image', 'shape', 'table', 'text'],
+      },
+    },
+  };

@@ -29,7 +29,7 @@ Every document starts with a root component named `pptx`. Its `props` carry meta
 }
 ```
 
-Every component in the tree has the same shape: `{ "name": ..., "props": ..., "children": ... }` plus optional `id` and `enabled` fields. Setting `enabled: false` removes a component from the output without deleting it from your JSON — handy for toggling elements on and off while iterating. It works the same way on **slides**: a slide marked `enabled: false` is not emitted at all, and the slides after it move up. Omitting `enabled` means enabled; only the explicit value `false` drops a component.
+Every component in the tree has the same shape: `{ "name": ..., "props": ..., "children": ... }` plus optional `id` and `enabled` fields. The slide above carries no `props` at all, which is legal: `slide` is the one component whose props are entirely optional, so the key can go. Everywhere else — the root included — `props` is where the component's content lives and validation asks for it. Setting `enabled: false` removes a component from the output without deleting it from your JSON — handy for toggling elements on and off while iterating. It works the same way on **slides**: a slide marked `enabled: false` is not emitted at all, and the slides after it move up. Omitting `enabled` means enabled; only the explicit value `false` drops a component.
 
 The root may only contain `slide` children, and slides may only contain the six content components: `text`, `image`, `shape`, `table`, `chart`, and `highcharts`. Content components are leaves — they never have children of their own.
 

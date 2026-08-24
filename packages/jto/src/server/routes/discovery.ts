@@ -119,7 +119,7 @@ async function generateDocumentSchema(
       });
     const unified = shared.generateUnifiedDocumentSchema({ customComponents });
     return shared.convertToJsonSchema(unified, {
-      $schema: 'https://json-schema.org/draft-07/schema#',
+      $schema: 'http://json-schema.org/draft-07/schema#',
       $id: 'https://json-to-office.dev/schema/document/v1.0.0',
       title: 'JSON to DOCX Document Definition',
       description: 'Schema for JSON to DOCX JSON document definitions',
@@ -137,7 +137,7 @@ async function generateDocumentSchema(
     }));
     const unified = shared.generateUnifiedDocumentSchema({ customComponents });
     return shared.convertToJsonSchema(unified, {
-      $schema: 'https://json-schema.org/draft-07/schema#',
+      $schema: 'http://json-schema.org/draft-07/schema#',
       $id: 'https://json-to-office.dev/schema/presentation/v1.0.0',
       title: 'JSON to PPTX Presentation Definition',
       description: 'Schema for JSON to PPTX JSON presentation definitions',
@@ -161,7 +161,7 @@ async function generateThemeSchema(format: string): Promise<any> {
   cleanupTypeBoxIds(schema);
   return {
     ...schema,
-    $schema: 'https://json-schema.org/draft-07/schema#',
+    $schema: 'http://json-schema.org/draft-07/schema#',
     $id: 'https://json-to-office.dev/schemas/theme/v1.0.0',
     title: `JSON to ${label} Theme`,
     description: `Theme definition for JSON to ${label} ${format === 'docx' ? 'documents' : 'presentations'}`,
