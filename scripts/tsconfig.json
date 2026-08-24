@@ -1,11 +1,20 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": "..",
     "composite": false,
     "declaration": false,
     "declarationMap": false,
     "incremental": false,
     "noEmit": true,
+    "paths": {
+      "@json-to-office/shared": ["packages/shared/src/index.ts"],
+      "@json-to-office/shared/*": ["packages/shared/src/*"],
+      "@json-to-office/shared-docx": ["packages/shared-docx/src/index.ts"],
+      "@json-to-office/shared-docx/*": ["packages/shared-docx/src/*"],
+      "@json-to-office/shared-pptx": ["packages/shared-pptx/src/index.ts"],
+      "@json-to-office/shared-pptx/*": ["packages/shared-pptx/src/*"],
+    },
     "sourceMap": false,
   },
   "include": [
