@@ -45,7 +45,7 @@ export interface MonacoSchemaConfig {
 function generateDocxDocumentSchema(): any {
   const unified = generateDocxSchema({ customComponents: [] });
   const schema = convertDocxToJsonSchema(unified, {
-    $schema: 'https://json-schema.org/draft-07/schema#',
+    $schema: 'http://json-schema.org/draft-07/schema#',
     $id: 'https://json-to-office.dev/schema/document/v1.0.0',
     title: 'JSON to DOCX Document Definition',
     description: 'Schema for JSON to DOCX JSON document definitions',
@@ -80,7 +80,7 @@ function generateDocxDocumentSchema(): any {
 function generatePptxDocumentSchema(): any {
   const unified = generatePptxSchema({ customComponents: [] });
   const schema = convertPptxToJsonSchema(unified, {
-    $schema: 'https://json-schema.org/draft-07/schema#',
+    $schema: 'http://json-schema.org/draft-07/schema#',
     $id: 'https://json-to-office.dev/schema/presentation/v1.0.0',
     title: 'JSON to PPTX Presentation Definition',
     description: 'Schema for JSON to PPTX JSON presentation definitions',
@@ -137,7 +137,7 @@ export function generateThemeConfigSchema(): any {
   const label = FORMAT === 'docx' ? 'DOCX' : 'PPTX';
   return {
     ...schema,
-    $schema: 'https://json-schema.org/draft-07/schema#',
+    $schema: 'http://json-schema.org/draft-07/schema#',
     $id: 'https://json-to-office.dev/schemas/theme/v1.0.0',
     title: `JSON to ${label} Theme`,
     description: `Theme definition for JSON to ${label} ${FORMAT === 'docx' ? 'documents' : 'presentations'}`,
@@ -162,7 +162,7 @@ export function generateComponentDefinitionSchema(): any {
   const label = FORMAT === 'docx' ? 'DOCX' : 'PPTX';
   return {
     ...schema,
-    $schema: 'https://json-schema.org/draft-07/schema#',
+    $schema: 'http://json-schema.org/draft-07/schema#',
     title: 'Component Definition',
     description: `Individual component configuration for JSON to ${label}`,
   };

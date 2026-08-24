@@ -1,0 +1,80 @@
+{
+  "name": "@json-to-office/mcp-server",
+  "version": "1.0.0",
+  "description": "JSON to Office MCP server - author, validate, preview, diff and generate .docx and .pptx over stdio",
+  "type": "module",
+  "bin": {
+    "jto-mcp": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./dist/cli.js": "./dist/cli.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "prepublishOnly": "node ../../scripts/copy-license.cjs"
+  },
+  "dependencies": {
+    "@json-to-office/jto-ops": "workspace:^",
+    "@json-to-office/shared": "workspace:^",
+    "@json-to-office/shared-docx": "workspace:^",
+    "@json-to-office/shared-pptx": "workspace:^",
+    "@modelcontextprotocol/server": "2.0.0",
+    "@sinclair/typebox": "0.34.38",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "@types/node": "20.11.0",
+    "tsup": "8.5.0",
+    "typescript": "5.3.3",
+    "vitest": "1.6.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "Paolo Barbato",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wiseair-srl/json-to-office.git",
+    "directory": "packages/mcp-server"
+  },
+  "homepage": "https://github.com/Wiseair-srl/json-to-office/tree/main/packages/mcp-server",
+  "bugs": {
+    "url": "https://github.com/Wiseair-srl/json-to-office/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "json-to-office",
+    "mcp",
+    "model-context-protocol",
+    "typescript",
+    "docx",
+    "pptx",
+    "document",
+    "presentation"
+  ]
+}

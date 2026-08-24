@@ -71,6 +71,53 @@ jobs:
 
       - run: pnpm test
 
+  # The suites that need a real LibreOffice and poppler skip themselves when
+  # the binaries are absent, so a cold checkout stays green — which also meant
+  # they never ran anywhere, `test` above included. That silently retired the
+  # MCP preview pipeline's whole end-to-end proof (#205), the cache reuse
+  # assertions among it, plus both cores' libreoffice-smoke suites. One leg,
+  # one OS: `JTO_REQUIRE_LIBREOFFICE=1` turns the skip into a failure, so a
+  # missing install fails loudly here instead of quietly passing everywhere.
+  preview:
+    if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # Writer and Impress rather than the `libreoffice` metapackage: they pull
+      # the same soffice binary and both export filters the pipeline asks for,
+      # without Base, Draw, Math and their dependency trees.
+      - name: Install LibreOffice and poppler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libreoffice-writer libreoffice-impress poppler-utils
+          soffice --version
+          # Some poppler builds print the version to stderr and exit non-zero
+          # for `-v`, so presence on PATH is the check and the banner is only
+          # for the log. What actually gates the job is the step below.
+          command -v pdftoppm
+          pdftoppm -v || true
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Run the converter-dependent suites
+        env:
+          JTO_REQUIRE_LIBREOFFICE: '1'
+        run: >-
+          pnpm --filter @json-to-office/mcp-server
+          --filter @json-to-office/core-docx
+          --filter @json-to-office/core-pptx test
+
   conformance:
     if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
     runs-on: ubuntu-latest
@@ -156,7 +203,7 @@ jobs:
           test -s "$RUNNER_TEMP/native-visual.docx"
 
   release:
-    needs: [quality, test, conformance]
+    needs: [quality, test, preview, conformance]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:

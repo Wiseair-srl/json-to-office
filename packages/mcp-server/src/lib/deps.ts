@@ -1,0 +1,58 @@
+/**
+ * What every tool module is handed at registration.
+ *
+ * Tools reach for nothing else process-wide: the output root, the adapters and
+ * the workspace store all arrive here, so a test can stand a whole server up
+ * on a temp directory and a fake store without mutating global state.
+ */
+
+import { getAdapter, type FormatAdapter, type FormatName } from './adapters.js';
+import { MAX_INLINE_ARTIFACT_BYTES } from './artifacts.js';
+import { createOutputRoot, type OutputRoot } from './output-root.js';
+import { SERVER_VERSION } from './version.js';
+import { getWorkspaceStore, type WorkspaceStore } from './workspace-store.js';
+
+export interface ToolDeps {
+  /** `@json-to-office/mcp-server`'s own version, as reported by `jto_info`. */
+  serverVersion: string;
+  /** The only directory the server writes to. */
+  outputRoot: OutputRoot;
+  /** Memoized format adapters from `@json-to-office/jto-ops`. */
+  getAdapter(format: FormatName): FormatAdapter;
+  /**
+   * The connection's workspace store.
+   *
+   * A function, not a value: #271 installs the real store after the tools are
+   * registered, and a snapshot taken at registration would pin the stand-in.
+   */
+  workspaces(): WorkspaceStore;
+  /** Ceiling for `outputMode: 'base64'`, in bytes. */
+  maxInlineArtifactBytes: number;
+}
+
+export interface CreateToolDepsOptions {
+  /** `--output-dir`, or an already-built root (tests hand one in). */
+  outputDir?: string;
+  outputRoot?: OutputRoot;
+  env?: NodeJS.ProcessEnv;
+  serverVersion?: string;
+  workspaces?: () => WorkspaceStore;
+  getAdapter?: (format: FormatName) => FormatAdapter;
+  maxInlineArtifactBytes?: number;
+}
+
+export function createToolDeps(options: CreateToolDepsOptions = {}): ToolDeps {
+  return {
+    serverVersion: options.serverVersion ?? SERVER_VERSION,
+    outputRoot:
+      options.outputRoot ??
+      createOutputRoot({
+        ...(options.outputDir !== undefined && { flagDir: options.outputDir }),
+        ...(options.env !== undefined && { env: options.env }),
+      }),
+    getAdapter: options.getAdapter ?? getAdapter,
+    workspaces: options.workspaces ?? getWorkspaceStore,
+    maxInlineArtifactBytes:
+      options.maxInlineArtifactBytes ?? MAX_INLINE_ARTIFACT_BYTES,
+  };
+}

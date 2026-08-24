@@ -1,0 +1,195 @@
+/**
+ * `jto_discover` over a real client, because the contract that matters is what
+ * a client sees: the schema the SDK enforces, and a payload small enough to be
+ * worth reading first.
+ */
+
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
+import { InMemoryTransport } from '@modelcontextprotocol/server';
+import { Client } from '@modelcontextprotocol/client';
+
+import { createServer } from '../server.js';
+import { createToolDeps, type ToolDeps } from '../lib/deps.js';
+
+let client: Client;
+let deps: ToolDeps;
+
+interface DiscoverResult {
+  ok: boolean;
+  diagnostics: Array<{ severity: string; code: string; message: string }>;
+  formats: Array<{
+    name: string;
+    extension: string;
+    label: string;
+    rootComponent: string;
+    defaultRenderer: string;
+    renderers: Array<{
+      id: string;
+      default: boolean;
+      components: string[];
+      unsupported: string[];
+    }>;
+    components: Array<{
+      name: string;
+      category: string;
+      description: string;
+      hasChildren: boolean;
+      root: boolean;
+      renderers: string[];
+      allowedChildren?: string[];
+      allowedParents: string[];
+    }>;
+    themes: string[];
+    starters: Array<{ id: string; title: string; document?: unknown }>;
+  }>;
+}
+
+async function discover(args: Record<string, unknown> = {}) {
+  const result = await client.callTool({
+    name: 'jto_discover',
+    arguments: args,
+  });
+  return result.structuredContent as unknown as DiscoverResult;
+}
+
+beforeAll(async () => {
+  deps = createToolDeps({ serverVersion: '9.9.9-test' });
+  const server = createServer(deps);
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+  client = new Client({ name: 'test-client', version: '1.0.0' });
+  await Promise.all([
+    server.connect(serverTransport),
+    client.connect(clientTransport),
+  ]);
+});
+
+afterAll(async () => {
+  await client.close();
+});
+
+describe('jto_discover', () => {
+  it('is advertised with an enforced input and output schema', async () => {
+    const { tools } = await client.listTools();
+    const tool = tools.find((entry) => entry.name === 'jto_discover');
+    expect(tool).toBeDefined();
+    expect(tool?.annotations?.readOnlyHint).toBe(true);
+    expect(
+      (tool?.outputSchema as { required?: string[] } | undefined)?.required
+    ).toEqual(['ok', 'diagnostics']);
+  });
+
+  it('describes both formats, their roots and their renderer profiles', async () => {
+    const result = await discover();
+    expect(result.ok).toBe(true);
+    expect(result.formats.map((format) => format.name)).toEqual([
+      'docx',
+      'pptx',
+    ]);
+
+    const docx = result.formats[0]!;
+    expect(docx).toMatchObject({
+      extension: '.docx',
+      rootComponent: 'docx',
+      defaultRenderer: 'docxjs',
+    });
+    expect(docx.renderers.map((renderer) => renderer.id)).toEqual([
+      'docxjs',
+      'office-open',
+    ]);
+    expect(docx.renderers[0]?.default).toBe(true);
+
+    const pptx = result.formats[1]!;
+    expect(pptx).toMatchObject({
+      extension: '.pptx',
+      rootComponent: 'pptx',
+      defaultRenderer: 'pptxgenjs',
+    });
+  });
+
+  it('reports the components a renderer cannot draw', async () => {
+    const { formats } = await discover({ format: 'pptx' });
+    const officeOpen = formats[0]!.renderers.find(
+      (renderer) => renderer.id === 'office-open'
+    );
+    // `chart` is pptxgenjs-only; a profile that silently dropped it would let
+    // an agent author a slide that validates and then renders empty.
+    expect(officeOpen?.unsupported).toContain('chart');
+    expect(officeOpen?.components).not.toContain('chart');
+
+    const chart = formats[0]!.components.find(
+      (component) => component.name === 'chart'
+    );
+    expect(chart?.renderers).toEqual(['pptxgenjs']);
+  });
+
+  it('carries the containment rules in both directions', async () => {
+    const { formats } = await discover({ format: 'docx' });
+    const components = formats[0]!.components;
+
+    const section = components.find((entry) => entry.name === 'section')!;
+    expect(section.hasChildren).toBe(true);
+    expect(section.allowedChildren).toEqual(
+      expect.arrayContaining(['heading', 'paragraph', 'table'])
+    );
+
+    const paragraph = components.find((entry) => entry.name === 'paragraph')!;
+    expect(paragraph.hasChildren).toBe(false);
+    expect(paragraph.allowedChildren).toBeUndefined();
+    expect(paragraph.allowedParents).toEqual(
+      expect.arrayContaining(['section', 'columns'])
+    );
+
+    const root = components.find((entry) => entry.root)!;
+    expect(root.name).toBe('docx');
+    expect(root.allowedParents).toEqual([]);
+  });
+
+  it('lists built-in themes and starters that actually build', async () => {
+    const { formats } = await discover();
+    for (const format of formats) {
+      expect(format.themes.length).toBeGreaterThan(0);
+      expect(format.starters.length).toBeGreaterThan(0);
+      for (const starter of format.starters) {
+        const outcome = deps
+          .getAdapter(format.name as 'docx' | 'pptx')
+          .validateDocument(starter.document);
+        expect(
+          outcome.valid,
+          `starter ${starter.id}: ${JSON.stringify(outcome.errors)}`
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('stays small enough to be the first call', async () => {
+    const result = await discover();
+    // The DOCX document schema is over 3 MB. Whatever else changes here, this
+    // tool must never start shipping schemas.
+    expect(JSON.stringify(result).length).toBeLessThan(32 * 1024);
+    expect(JSON.stringify(result)).not.toContain('"$schema"');
+  });
+
+  it('filters by format and can drop the starter bodies', async () => {
+    const filtered = await discover({ format: 'pptx' });
+    expect(filtered.formats.map((format) => format.name)).toEqual(['pptx']);
+
+    const lean = await discover({ includeStarters: false });
+    for (const format of lean.formats) {
+      expect(format.starters.length).toBeGreaterThan(0);
+      for (const starter of format.starters) {
+        expect(starter.document).toBeUndefined();
+        expect(starter.id).toBeTruthy();
+      }
+    }
+  });
+
+  it('rejects an unknown format through the SDK rather than the handler', async () => {
+    const result = await client.callTool({
+      name: 'jto_discover',
+      arguments: { format: 'pdf' },
+    });
+    expect(result.isError).toBe(true);
+  });
+});

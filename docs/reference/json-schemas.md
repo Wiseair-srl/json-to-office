@@ -6,11 +6,11 @@ Every json-to-office document format is described by a generated JSON Schema (dr
 
 Running the schema generator creates three local build artifacts in `schemas/`:
 
-| File                       | Describes                                            | Notes                                                                                                                                                                                                         |
-| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `document.schema.json`     | DOCX document definitions (`name: "docx"` trees)     | Root object requires `name` (const `"docx"`) and `props`; `props` covers `theme`, `componentDefaults`, `language`, `metadata`, `noProofWords`, `trackRevisions`; `children` are the section-level components. |
-| `presentation.schema.json` | PPTX presentation definitions (`name: "pptx"` trees) | Top level is an `anyOf` of the 8 component schemas (`pptx`, `slide`, `text`, `image`, `shape`, `table`, `highcharts`, `chart`), each discriminated by a `name` const.                                         |
-| `theme.schema.json`        | DOCX theme files (`*.docx.theme.json`)               | **DOCX only** — there is no generated PPTX theme schema file. PPTX themes are much smaller and are validated from the TypeBox schema directly; see [Theme schema](/reference/theme-schema).                   |
+| File                       | Describes                                            | Notes                                                                                                                                                                                                              |
+| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `document.schema.json`     | DOCX document definitions (`name: "docx"` trees)     | Root object requires `name` (const `"docx"`) and `children` — the section-level components; `props` is optional and covers `theme`, `componentDefaults`, `language`, `metadata`, `noProofWords`, `trackRevisions`. |
+| `presentation.schema.json` | PPTX presentation definitions (`name: "pptx"` trees) | Top level is an `anyOf` of the 8 component schemas (`pptx`, `slide`, `text`, `image`, `shape`, `table`, `highcharts`, `chart`), each discriminated by a `name` const.                                              |
+| `theme.schema.json`        | DOCX theme files (`*.docx.theme.json`)               | **DOCX only** — there is no generated PPTX theme schema file. PPTX themes are much smaller and are validated from the TypeBox schema directly; see [Theme schema](/reference/theme-schema).                        |
 
 Because they follow the standard `name` / `props` / `children` shape with `name` as a discriminator, the schemas drive precise per-component autocomplete: once an editor sees `"name": "table"`, it only offers `table` props.
 
@@ -43,7 +43,7 @@ pnpm generate:schemas   # runs tsx scripts/generate-schemas.ts
 
 `pnpm build` runs the same step through turbo, so the files in `schemas/` are regenerated on every full build. The conversion:
 
-- emits `$schema: "https://json-schema.org/draft-07/schema#"`,
+- emits `$schema: "http://json-schema.org/draft-07/schema#"` — draft-07's own `$id`, so a stock validator resolves the dialect without being told,
 - hoists recursive subschemas into `definitions`,
 - rewrites TypeBox's internal self-references to `#/definitions/ComponentDefinition`, so the recursive component tree is expressed as a normal JSON Schema `$ref`.
 

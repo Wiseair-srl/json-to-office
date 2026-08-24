@@ -1,0 +1,143 @@
+/**
+ * The `jto://` resources. What matters here is that the URIs are the ones a
+ * client can pin, that every body is JSON it can parse, and that the schema
+ * resources really are the generated artifacts rather than a summary of them.
+ */
+
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
+import { InMemoryTransport } from '@modelcontextprotocol/server';
+import { Client } from '@modelcontextprotocol/client';
+
+import { createServer } from '../server.js';
+import { createToolDeps, type ToolDeps } from '../lib/deps.js';
+import { RESOURCE_URIS } from '../resources/index.js';
+
+let client: Client;
+let deps: ToolDeps;
+
+async function readJson(uri: string): Promise<any> {
+  const result = await client.readResource({ uri });
+  expect(result.contents).toHaveLength(1);
+  const [content] = result.contents as Array<{
+    uri: string;
+    mimeType?: string;
+    text?: string;
+  }>;
+  expect(content?.uri).toBe(uri);
+  expect(content?.mimeType).toBe('application/json');
+  return JSON.parse(content?.text ?? 'null');
+}
+
+beforeAll(async () => {
+  deps = createToolDeps({ serverVersion: '9.9.9-test' });
+  const server = createServer(deps);
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+  client = new Client({ name: 'test-client', version: '1.0.0' });
+  await Promise.all([
+    server.connect(serverTransport),
+    client.connect(clientTransport),
+  ]);
+});
+
+afterAll(async () => {
+  await client.close();
+});
+
+describe('discovery resources', () => {
+  it('publishes the documented URIs, all as JSON', async () => {
+    const { resources } = await client.listResources();
+    const byUri = new Map(resources.map((entry) => [entry.uri, entry]));
+
+    for (const uri of [
+      RESOURCE_URIS.catalog,
+      RESOURCE_URIS.renderers,
+      RESOURCE_URIS.themes,
+      RESOURCE_URIS.templates,
+      RESOURCE_URIS.documentSchema('docx'),
+      RESOURCE_URIS.documentSchema('pptx'),
+      RESOURCE_URIS.themeSchema('docx'),
+      RESOURCE_URIS.themeSchema('pptx'),
+    ]) {
+      const entry = byUri.get(uri);
+      expect(entry, `missing resource ${uri}`).toBeDefined();
+      expect(entry?.mimeType).toBe('application/json');
+      expect(entry?.description ?? '').not.toBe('');
+    }
+  });
+
+  it('serves the catalogue', async () => {
+    const catalog = await readJson(RESOURCE_URIS.catalog);
+    expect(catalog.formats.map((format: any) => format.name)).toEqual([
+      'docx',
+      'pptx',
+    ]);
+    const docx = catalog.formats[0];
+    expect(docx.components.map((entry: any) => entry.name)).toContain(
+      'paragraph'
+    );
+    expect(docx.renderers.map((entry: any) => entry.id)).toContain('docxjs');
+  });
+
+  it('serves the generated document schemas, not a digest of them', async () => {
+    const schema = await readJson(RESOURCE_URIS.documentSchema('docx'));
+    // Draft-07's own `$id` is the http:// spelling, and it is what validators
+    // key their bundled meta-schema under — an https:// dialect name reads as
+    // an unknown dialect a stock Ajv then refuses to resolve.
+    expect(schema.$schema).toBe('http://json-schema.org/draft-07/schema#');
+    expect(schema.$id).toBe('document.schema.json');
+    expect(Object.keys(schema.definitions)).toContain(
+      'ComponentDefinition_docxjs'
+    );
+
+    const presentation = await readJson(RESOURCE_URIS.documentSchema('pptx'));
+    expect(presentation.$id).toBe('presentation.schema.json');
+    expect(Array.isArray(presentation.anyOf)).toBe(true);
+  });
+
+  it('serves the theme schemas', async () => {
+    for (const format of ['docx', 'pptx'] as const) {
+      const theme = await readJson(RESOURCE_URIS.themeSchema(format));
+      expect(theme.$id).toBe('theme.schema.json');
+      expect(theme.type).toBe('object');
+    }
+  });
+
+  it('serves renderer profiles and theme names', async () => {
+    const renderers = await readJson(RESOURCE_URIS.renderers);
+    const docx = renderers.formats.find(
+      (entry: any) => entry.format === 'docx'
+    );
+    expect(docx.defaultRenderer).toBe('docxjs');
+    expect(docx.renderers.map((entry: any) => entry.id)).toEqual([
+      'docxjs',
+      'office-open',
+    ]);
+
+    const themes = await readJson(RESOURCE_URIS.themes);
+    for (const entry of themes.formats) {
+      expect(entry.themes.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('serves starter documents that validate', async () => {
+    const { starters } = await readJson(RESOURCE_URIS.templates);
+    expect(starters.length).toBeGreaterThanOrEqual(4);
+    for (const starter of starters) {
+      const outcome = deps
+        .getAdapter(starter.format)
+        .validateDocument(starter.document);
+      expect(
+        outcome.valid,
+        `starter ${starter.id}: ${JSON.stringify(outcome.errors)}`
+      ).toBe(true);
+    }
+  });
+
+  it('refuses a URI it does not publish', async () => {
+    await expect(
+      client.readResource({ uri: 'jto://schema/xlsx/document' })
+    ).rejects.toThrow();
+  });
+});
