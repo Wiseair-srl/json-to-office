@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/jto-cli",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "JSON to Office lightweight CLI - generate .docx and .pptx from JSON without the dev playground",
   "type": "module",
   "bin": {
