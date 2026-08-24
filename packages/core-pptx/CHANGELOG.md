@@ -1,5 +1,17 @@
 # @json-to-office/core-pptx
 
+## 1.2.0
+
+### Minor Changes
+
+- ad35065: Generate presentations whose slides omit `props`. Validation has always accepted a slide with no `props` — every slide prop is optional, so the deep validator checks an empty object — but generation dereferenced `props.placeholders` unguarded and died on those documents with `TypeError: Cannot read properties of undefined`. `SlideComponentDefinition['props']` is now optional too, matching what validation accepts.
+
+### Patch Changes
+
+- Updated dependencies [ad35065]
+  - @json-to-office/shared-pptx@1.2.0
+  - @json-to-office/shared@1.2.0
+
 ## 1.0.0
 
 ### Major Changes
