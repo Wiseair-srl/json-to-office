@@ -115,6 +115,16 @@ describe('chart lowering', () => {
     ).rejects.toThrow(/Second[\s\S]*category axis|category axis/);
   });
 
+  it('refuses a bubble chart, which no docx renderer draws', async () => {
+    // `@office-open` spells a bubble series as xValues/yValues/bubbleSize
+    // rather than categories and values; handing it the latter throws a
+    // TypeError from inside its own bundle. The schema drops the type too —
+    // this is the guard for a caller that skipped validation.
+    await expect(chartFrom({ type: 'bubble', data: series })).rejects.toThrow(
+      /bubble/
+    );
+  });
+
   it('carries the title, legend and alt text through', async () => {
     const { chart } = await chartFrom({
       type: 'line',

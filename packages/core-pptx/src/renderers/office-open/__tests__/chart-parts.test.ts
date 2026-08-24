@@ -664,6 +664,63 @@ describe('native charts on office-open pptx', () => {
     }
   });
 
+  it('places c:overlap where CT_BarChart allows it, and only on a bar', async () => {
+    // Three ways this was invalid, all of which LibreOffice drew without
+    // complaint. CT_BarChart orders barDir, grouping, varyColors, ser, dLbls,
+    // gapWidth, overlap, serLines, axId — an overlap written beside the
+    // grouping lands before `c:ser`. `c:grouping` is also a child of
+    // `c:lineChart` and `c:areaChart`, neither of which allows an overlap. And
+    // an author who set `barOverlapPct` already has one from the backend.
+    const stacked = await read(
+      await render(deck([chart({ barGrouping: 'stacked' })])),
+      'ppt/charts/chart1.xml'
+    );
+    const plot = stacked.slice(
+      stacked.indexOf('<c:barChart>'),
+      stacked.indexOf('</c:barChart>')
+    );
+    const order = [
+      ...plot.matchAll(/<c:(grouping|ser|overlap|axId)[ >/]/g),
+    ].map((m) => m[1]);
+    expect(order.indexOf('overlap')).toBeGreaterThan(order.indexOf('ser'));
+    expect(order.indexOf('overlap')).toBeLessThan(order.indexOf('axId'));
+
+    // A line chart takes the grouping and no overlap at all.
+    const line = await read(
+      await render(deck([chart({ type: 'line', barGrouping: 'stacked' })])),
+      'ppt/charts/chart1.xml'
+    );
+    expect(line).toContain('<c:grouping val="stacked"/>');
+    expect(line).not.toContain('<c:overlap');
+
+    // And an authored overlap is neither duplicated nor overwritten.
+    const authored = await read(
+      await render(
+        deck([chart({ barGrouping: 'stacked', barOverlapPct: -10 })])
+      ),
+      'ppt/charts/chart1.xml'
+    );
+    expect(authored.match(/<c:overlap/g)).toHaveLength(1);
+    expect(authored).toContain('<c:overlap val="-10"/>');
+  });
+
+  it('keeps axis children it does not itself write', async () => {
+    // The middle of an axis is replaced wholesale, so a child the rebuild does
+    // not capture is a child it deletes. Authoring one unrelated edit must not
+    // drop the backend's own numFmt.
+    const xml = await read(
+      await render(deck([chart({ catAxisTitle: 'Kept' })])),
+      'ppt/charts/chart1.xml'
+    );
+    const valAx = xml.slice(
+      xml.indexOf('<c:valAx>'),
+      xml.indexOf('</c:valAx>')
+    );
+    expect(valAx).toContain(
+      '<c:numFmt formatCode="General" sourceLinked="1"/>'
+    );
+  });
+
   it('renders byte-identically twice', async () => {
     const first = await generateBufferViaIr(deck(), {
       renderer: 'office-open',
