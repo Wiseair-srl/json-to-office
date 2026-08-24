@@ -20,7 +20,7 @@ import {
   resolveGeneratedAt,
 } from '../../core/finalizePackage';
 import { spliceChartParts } from './chartParts';
-import { ALL_PPTX_FEATURES, type PptxFeature } from '../../ir/features';
+import type { PptxFeature } from '../../ir/features';
 import type {
   PptxIR,
   PptxIrChartElement,
@@ -38,8 +38,10 @@ export const OFFICE_OPEN_PPTX_RENDERER_ID: PptxRendererId = 'office-open';
 const OFFICE_OPEN_PPTX = '@office-open/pptx';
 
 /**
- * What this adapter does *not* declare, and why. Each is a verified gap, not
- * an unfinished mapping:
+ * This adapter uses an explicit allowlist: a new `PptxFeature` stays
+ * unsupported until the adapter deliberately adds and tests it. What it does
+ * not declare, and why — each is a verified gap or an explicit mapping
+ * boundary:
  *
  * - `svg` — `PictureOptions.type` excludes SVG and no code path creates an SVG
  *   media entry, so an SVG would ship as a broken image.
@@ -89,24 +91,43 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  * asked for. Rather than refuse, the adapter now writes the missing half
  * itself — see `chartParts.ts`.
  */
-const UNSUPPORTED: ReadonlySet<PptxFeature> = new Set<PptxFeature>([
-  'svg',
-  'image-transform',
-  'image-crop',
-  'image-rounding',
-  'flip-vertical',
-  'element-hyperlinks',
-  'masters',
-  'placeholders',
-  'table-merged-cells',
-  'table-rounded-corners',
-  'table-auto-page',
-  'table-insets',
+const OFFICE_OPEN_CAPABILITIES: ReadonlySet<PptxFeature> = new Set([
+  'rich-text',
+  'complex-bullet-glyphs',
+  'text',
+  'shapes',
+  'images',
+  'tables',
+  'charts',
+  'chart-bar-style',
+  'chart-pie-style',
+  'chart-line-style',
+  'chart-radar-style',
+  'chart-data-labels',
+  'chart-data-border',
+  'chart-axis-scale',
+  'chart-axis-visibility',
+  'chart-axis-style',
+  'chart-text-style',
+  'solid-fills',
+  'gradient-fills',
+  'pattern-fills',
+  'image-fills',
+  'lines',
+  'shadows',
+  'backgrounds',
+  'speaker-notes',
+  'hidden-slides',
+  'transitions',
+  'external-links',
+  'internal-links',
+  'text-hyperlinks',
+  'rotation',
+  'flip-horizontal',
+  'groups',
+  'proofing-language',
+  'rtl',
 ]);
-
-const OFFICE_OPEN_CAPABILITIES: ReadonlySet<PptxFeature> = new Set(
-  [...ALL_PPTX_FEATURES].filter((feature) => !UNSUPPORTED.has(feature))
-);
 
 interface OfficeOpenBackend {
   generatePresentation: (

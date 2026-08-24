@@ -7,13 +7,11 @@
  * it is asserted on the IR. Only the two things that were genuinely about *how*
  * PptxGenJS is called (a lone run goes in as a string, several runs go in as a
  * `[{ text, options }]` array, and the block-level bag carries the body
- * defaults) are asserted against the adapter.
+ * defaults) are asserted under `renderers/pptxgenjs/__tests__/text.test.ts`.
  */
 
 import { describe, expect, it } from 'vitest';
-import type PptxGenJS from 'pptxgenjs';
 import { compileDocumentToIr } from '../../core/generateFromIr';
-import { emitTextBox } from '../../renderers/pptxgenjs/emit';
 import type {
   PptxThemeConfig,
   PresentationComponentDefinition,
@@ -77,33 +75,6 @@ async function compileTextBox(
   props: Record<string, unknown>
 ): Promise<PptxIrTextBoxElement> {
   return textBox((await compile(deck([slide([text(props)])]))).ir);
-}
-
-type Segment = { text: string; options: Record<string, unknown> };
-type AddTextCall = [
-  content: string | Segment[],
-  options: Record<string, unknown>,
-];
-
-/** Run the adapter over one text box and capture the `addText` call it makes. */
-function emitCall(element: PptxIrTextBoxElement): AddTextCall {
-  const calls: AddTextCall[] = [];
-  const slideStub = {
-    addText: (content: unknown, options: unknown) => {
-      calls.push([
-        content as string | Segment[],
-        options as Record<string, unknown>,
-      ]);
-    },
-  } as unknown as PptxGenJS.Slide;
-
-  emitTextBox(slideStub, element, {
-    pptx: {} as PptxGenJS,
-    resources: new Map(),
-  });
-
-  expect(calls).toHaveLength(1);
-  return calls[0];
 }
 
 describe('text runs compile to IR runs', () => {
@@ -345,136 +316,5 @@ describe('text line spacing compiles to IR body style', () => {
 
     expect(element.style.lineSpacingPoints).toBe(24);
     expect(element.style.lineSpacingMultiple).toBeUndefined();
-  });
-});
-
-describe('text IR emits PptxGenJS calls', () => {
-  it('maps runs to pptxgenjs [{ text, options }] arrays', async () => {
-    const element = await compileTextBox({
-      x: 1,
-      y: 1,
-      w: 4,
-      h: 1,
-      runs: [
-        { text: '27', fontSize: 27, bold: true, color: 'primary' },
-        {
-          text: ' pts',
-          fontSize: 18,
-          italic: true,
-          underline: true,
-          breakLine: true,
-        },
-        {
-          text: 'x2',
-          superscript: true,
-          subscript: false,
-          strike: true,
-          charSpacing: 1.5,
-          fontFace: 'Georgia',
-        },
-      ],
-    });
-
-    const [content, opts] = emitCall(element);
-
-    // Colours arrive uppercased — that is the IR's normalisation, and the
-    // bytes are unchanged because PptxGenJS uppercases hex itself.
-    expect(content).toEqual([
-      {
-        text: '27',
-        options: {
-          fontFace: 'Arial',
-          fontSize: 27,
-          color: '0066CC',
-          bold: true,
-          italic: false,
-        },
-      },
-      {
-        text: ' pts',
-        options: {
-          fontFace: 'Arial',
-          fontSize: 18,
-          color: '000000',
-          italic: true,
-          underline: { style: 'sng' },
-          breakLine: true,
-        },
-      },
-      {
-        text: 'x2',
-        options: {
-          fontFace: 'Georgia',
-          fontSize: 18,
-          color: '000000',
-          strike: true,
-          superscript: true,
-          subscript: false,
-          charSpacing: 1.5,
-        },
-      },
-    ]);
-    // Component-level defaults stay at the block level — and they come from the
-    // body defaults, never from whichever run happens to be first, so the first
-    // run's bold must not leak here.
-    expect(opts).toEqual({
-      x: 1,
-      y: 1,
-      w: 4,
-      h: 1,
-      fontFace: 'Arial',
-      fontSize: 18,
-      color: '000000',
-      valign: 'top',
-      margin: 0,
-    });
-  });
-
-  it('still passes plain text as a string', async () => {
-    const [content, opts] = emitCall(
-      await compileTextBox({ text: 'Hello', h: 1 })
-    );
-
-    expect(content).toBe('Hello');
-    expect(opts).toMatchObject({ fontSize: 18 });
-  });
-
-  it('marks a box with a derived height as a text box', async () => {
-    const [, opts] = emitCall(
-      await compileTextBox({
-        runs: [
-          { text: 'line 1', breakLine: true },
-          { text: 'line 2', breakLine: true },
-          { text: 'line 3' },
-        ],
-        fontSize: 18,
-      })
-    );
-
-    expect(opts.h).toBeCloseTo((18 / 72) * 1.6 * 3);
-    expect(opts.isTextBox).toBe(true);
-  });
-
-  it('passes lineSpacingMultiple through and drops point lineSpacing', async () => {
-    const [, opts] = emitCall(
-      await compileTextBox({
-        text: 'Hero',
-        fontSize: 80,
-        lineSpacing: 72,
-        lineSpacingMultiple: 0.9,
-      })
-    );
-
-    expect(opts.lineSpacingMultiple).toBe(0.9);
-    expect(opts.lineSpacing).toBeUndefined();
-  });
-
-  it('keeps point lineSpacing when no multiple is given', async () => {
-    const [, opts] = emitCall(
-      await compileTextBox({ text: 'Hero', fontSize: 20, lineSpacing: 24 })
-    );
-
-    expect(opts.lineSpacing).toBe(24);
-    expect(opts.lineSpacingMultiple).toBeUndefined();
   });
 });

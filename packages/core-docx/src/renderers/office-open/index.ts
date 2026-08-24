@@ -13,7 +13,7 @@
  */
 
 import AdmZip from 'adm-zip';
-import { ALL_DOCX_FEATURES, type DocxFeature } from '../../ir/features';
+import type { DocxFeature } from '../../ir/features';
 import type {
   DocxIR,
   DocxIrBlock,
@@ -47,6 +47,9 @@ export const OFFICE_OPEN_DOCX_RENDERER_ID: DocxRendererId = 'office-open';
 const OFFICE_OPEN_DOCX = '@office-open/docx';
 
 /**
+ * This adapter uses an explicit allowlist: a new `DocxFeature` stays
+ * unsupported until the adapter deliberately adds and tests it.
+ *
  * What this adapter does *not* declare, and why.
  *
  * - `cached-fields` — vocabulary no backend here emits; also undeclared by
@@ -58,18 +61,37 @@ const OFFICE_OPEN_DOCX = '@office-open/docx';
  *   does not require of any backend yet. Both adapters leave them out so the
  *   declared sets keep meaning "proven by a test".
  */
-const UNSUPPORTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
-  'cached-fields',
-  'comment-threads',
-  'table-merged-cells',
-  'shading',
-  'borders',
-  'rtl',
+const OFFICE_OPEN_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
+  'paragraphs',
+  'styles',
+  'numbering',
+  'sections',
+  'columns',
+  'headers-footers',
+  'tables',
+  'floating-tables',
+  'images',
+  'floating-images',
+  'svg-images',
+  'text-frames',
+  'text-boxes',
+  'drawing-groups',
+  'charts',
+  'toc',
+  'cached-toc',
+  'fields',
+  'hyperlinks',
+  'bookmarks',
+  'cross-references',
+  'comments',
+  'footnotes',
+  'endnotes',
+  'revisions',
+  'breaks',
+  'tab-stops',
+  'proofing-language',
+  'custom-properties',
 ]);
-
-const OFFICE_OPEN_CAPABILITIES: ReadonlySet<DocxFeature> = new Set(
-  [...ALL_DOCX_FEATURES].filter((feature) => !UNSUPPORTED.has(feature))
-);
 
 interface OfficeOpenBackend {
   generateDocument: (
