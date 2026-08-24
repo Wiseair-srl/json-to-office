@@ -33,6 +33,14 @@ export const PPTXGENJS_RENDERER_ID: PptxRendererId = 'pptxgenjs';
  * - `groups` — no grouping API; groups are flattened upstream or rejected
  * - `complex-bullet-glyphs` — the API accepts only a four-digit BMP code
  */
+/**
+ * Everything except four verified gaps.
+ *
+ * Every `chart-*` styling capability is declared: `emitChart` forwards all of
+ * them to pptxgenjs — the data labels, the data border, the axis bounds,
+ * visibility, grid lines and rotation, the bar, line, pie and radar options and
+ * every label font — so declaring them costs no existing deck a render.
+ */
 const PPTXGENJS_CAPABILITIES: ReadonlySet<PptxFeature> = new Set(
   [...ALL_PPTX_FEATURES].filter(
     (feature) =>

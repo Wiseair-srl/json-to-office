@@ -1696,6 +1696,100 @@ interface AuthoredChartSeries {
   sizes?: number[];
 }
 
+/**
+ * Which capability each styling prop demands of a backend.
+ *
+ * Keyed by the *authored* prop name rather than by anything on the compiled
+ * IR, and that is the whole point. `compileChartLabelFont` falls back to
+ * `ctx.theme.fonts?.body` when a weight is authored without a face, so a
+ * compiled font object can hold a family the author never wrote; asking the IR
+ * "was a font set here?" would demand `chart-text-style` of a chart that only
+ * styled its weight. The authored props are the only place the question has a
+ * straight answer.
+ *
+ * Props absent from this table are ones every backend already honours — `type`,
+ * `data`, `title`, `showLegend`, `legendPos`, `chartColors`, the axis titles,
+ * `barDir`, `barGrouping` and the geometry.
+ */
+const CHART_STYLE_FEATURES: Readonly<Record<string, PptxFeature>> = {
+  showValue: 'chart-data-labels',
+  showPercent: 'chart-data-labels',
+  showLabel: 'chart-data-labels',
+  showSerName: 'chart-data-labels',
+  dataLabelPosition: 'chart-data-labels',
+
+  dataBorder: 'chart-data-border',
+
+  catAxisHidden: 'chart-axis-visibility',
+  valAxisHidden: 'chart-axis-visibility',
+  catAxisLineShow: 'chart-axis-visibility',
+  valAxisLineShow: 'chart-axis-visibility',
+
+  catAxisLabelRotate: 'chart-axis-style',
+  catGridLine: 'chart-axis-style',
+  valGridLine: 'chart-axis-style',
+
+  valAxisMinVal: 'chart-axis-scale',
+  valAxisMaxVal: 'chart-axis-scale',
+  valAxisMajorUnit: 'chart-axis-scale',
+  valAxisLabelFormatCode: 'chart-axis-scale',
+
+  barGapWidthPct: 'chart-bar-style',
+  barOverlapPct: 'chart-bar-style',
+
+  firstSliceAng: 'chart-pie-style',
+  holeSize: 'chart-pie-style',
+
+  lineSmooth: 'chart-line-style',
+  lineDataSymbol: 'chart-line-style',
+  lineSize: 'chart-line-style',
+  lineDataSymbolSize: 'chart-line-style',
+
+  radarStyle: 'chart-radar-style',
+
+  titleFontSize: 'chart-text-style',
+  titleColor: 'chart-text-style',
+  titleFontFace: 'chart-text-style',
+  titleFontWeight: 'chart-text-style',
+  legendFontSize: 'chart-text-style',
+  legendFontFace: 'chart-text-style',
+  legendFontWeight: 'chart-text-style',
+  legendColor: 'chart-text-style',
+  catAxisLabelFontSize: 'chart-text-style',
+  catAxisLabelColor: 'chart-text-style',
+  catAxisLabelFontFace: 'chart-text-style',
+  catAxisLabelFontWeight: 'chart-text-style',
+  valAxisLabelFontSize: 'chart-text-style',
+  valAxisLabelColor: 'chart-text-style',
+  valAxisLabelFontFace: 'chart-text-style',
+  valAxisLabelFontWeight: 'chart-text-style',
+  dataLabelColor: 'chart-text-style',
+  dataLabelFontSize: 'chart-text-style',
+  dataLabelFontFace: 'chart-text-style',
+  dataLabelFontWeight: 'chart-text-style',
+  dataLabelFontBold: 'chart-text-style',
+};
+
+/**
+ * Record what this chart's styling demands of a backend.
+ *
+ * One requirement per authored prop, at that prop's own path, so a renderer
+ * that cannot express it refuses naming the line rather than the chart. A prop
+ * set to `undefined` is not authored; a prop set to `false` is — an author who
+ * turns a data label off means it, and a backend that ignores the instruction
+ * draws a label they asked not to see.
+ */
+function requireChartStyleFeatures(
+  props: Record<string, unknown>,
+  ctx: CompileContext,
+  path: string
+): void {
+  for (const [prop, feature] of Object.entries(CHART_STYLE_FEATURES)) {
+    if (props[prop] === undefined) continue;
+    ctx.features.require(feature, `${path}.${prop}`);
+  }
+}
+
 function compileChart(
   component: PptxComponentInput,
   scope: ComponentScope
@@ -1749,6 +1843,7 @@ function compileChart(
   }
 
   ctx.features.require('charts', path);
+  requireChartStyleFeatures(props, ctx, path);
 
   return {
     kind: 'chart',
