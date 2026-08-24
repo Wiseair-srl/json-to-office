@@ -718,6 +718,31 @@ function editAxis(
 }
 
 /**
+ * Say explicitly that colours do not vary by data point.
+ *
+ * `c:varyColors` is a `CT_Boolean`, so an *absent* one means **true** — the
+ * same default that made `<c:showVal/>` alone switch on every other data label.
+ * `@office-open` writes it for `ofPie` and for nothing else, so every other
+ * chart inherited "vary by point". On a chart with one series that is plainly
+ * visible: PowerPoint colours each point separately and gives the legend one
+ * entry per *category*, so a line chart of four quarters had a legend reading
+ * `Q1 Q2 Q3 Q4` instead of its series name. A chart with two or more series
+ * hides the problem, because the setting only applies to single-series charts —
+ * which is why the bar chart beside it looked right.
+ *
+ * A pie is the exception the default was written for: its slices *should* vary,
+ * and the per-point colours written into `c:dPt` agree with that.
+ *
+ * `varyColors` is the last child before `c:ser` in every plot type that has it,
+ * so the first `c:ser` is the anchor.
+ */
+function setVaryColors(chartXml: string, chartType: string): string {
+  if (POINT_COLORED.has(chartType)) return chartXml;
+  if (chartXml.includes('<c:varyColors')) return chartXml;
+  return chartXml.replace('<c:ser>', '<c:varyColors val="0"/><c:ser>');
+}
+
+/**
  * Set the grouping, and the overlap that has to go with it.
  *
  * `c:grouping` is written `clustered` unconditionally by the backend, and
@@ -928,6 +953,8 @@ export function spliceChartXml(
   if (chart.barGrouping && chart.barGrouping !== 'clustered') {
     result = setBarGrouping(result, chart.barGrouping);
   }
+
+  result = setVaryColors(result, chart.chartType);
 
   // `c:externalData` is the last child of `c:chartSpace`: after `c:chart`,
   // `c:spPr` and `c:txPr`, before nothing. Only written when the backend did

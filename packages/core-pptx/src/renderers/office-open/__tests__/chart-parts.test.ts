@@ -721,6 +721,32 @@ describe('native charts on office-open pptx', () => {
     );
   });
 
+  it('says colours do not vary by point, except on a pie', async () => {
+    // `c:varyColors` is a CT_Boolean, so an absent one means TRUE — the same
+    // default that made `<c:showVal/>` alone switch on every other label. The
+    // backend writes it only for pie-family charts, so everything else
+    // inherited "vary by point": a single-series line chart came out with one
+    // legend entry per *category*, reading `Q1 Q2 Q3 Q4` instead of its series
+    // name. Two or more series hides it, which is why the bar beside it looked
+    // right.
+    for (const type of ['bar', 'line', 'area', 'scatter', 'radar']) {
+      const xml = await read(
+        await render(deck([chart({ type })])),
+        'ppt/charts/chart1.xml'
+      );
+      expect(xml, type).toContain('<c:varyColors val="0"/>');
+    }
+
+    // A pie's slices should vary, and its `c:dPt` colours agree with that.
+    for (const type of ['pie', 'doughnut']) {
+      const xml = await read(
+        await render(deck([chart({ type })])),
+        'ppt/charts/chart1.xml'
+      );
+      expect(xml, type).toContain('<c:varyColors val="1"/>');
+    }
+  });
+
   it('renders byte-identically twice', async () => {
     const first = await generateBufferViaIr(deck(), {
       renderer: 'office-open',
