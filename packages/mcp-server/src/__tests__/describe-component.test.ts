@@ -188,14 +188,16 @@ describe('jto_describe_component', () => {
   });
 
   it('says which renderer supports a component the asked-for one does not', async () => {
+    // Asked of docx rather than pptx: the pptx pair no longer disagrees about
+    // any component, while docx.js still has no chart primitive.
     const result = await describeComponent({
-      format: 'pptx',
+      format: 'docx',
       name: 'chart',
-      renderer: 'office-open',
+      renderer: 'docxjs',
     });
     expect(result.ok).toBe(false);
     expect(result.diagnostics[0]?.code).toBe('E_UNKNOWN_COMPONENT');
-    expect(result.diagnostics[0]?.suggestion).toContain('pptxgenjs');
+    expect(result.diagnostics[0]?.suggestion).toContain('office-open');
   });
 
   it('names the alternatives when a component does not exist', async () => {

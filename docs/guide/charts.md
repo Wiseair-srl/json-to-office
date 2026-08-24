@@ -1,12 +1,12 @@
 # Charts
 
-json-to-office gives you two ways to put charts in a document: **native charts** (the `chart` component) and **Highcharts-rendered images** (the `highcharts` component). Both formats have both, with one caveat: the docx `chart` needs `renderer: "office-open"`, because docx.js has no chart primitive. This page helps you choose between them and get each one running.
+json-to-office gives you two ways to put charts in a document: **native charts** (the `chart` component) and **Highcharts-rendered images** (the `highcharts` component). Both formats have both, on every pptx renderer; the one caveat is that the docx `chart` needs `renderer: "office-open"`, because docx.js has no chart primitive. This page helps you choose between them and get each one running.
 
 ## Native charts vs Highcharts
 
 |                        | `chart` (native)                                                                                                        | `highcharts`                                                                             |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Formats                | pptx; docx with `renderer: "office-open"`                                                                               | pptx + docx, every renderer                                                              |
+| Formats                | pptx (both renderers); docx with `renderer: "office-open"`                                                              | pptx + docx, every renderer                                                              |
 | Output                 | Real PowerPoint / Word chart object                                                                                     | PNG image                                                                                |
 | Editable by recipients | Yes — data and styling editable in the Office app                                                                       | No — it's a picture                                                                      |
 | Scaling                | Vector, crisp at any zoom                                                                                               | Raster (use `scale` for sharper exports)                                                 |
@@ -19,6 +19,10 @@ json-to-office gives you two ways to put charts in a document: **native charts**
 
 ::: info Why the docx chart is renderer-scoped
 docx.js has no chart primitive at all, so the component is absent from that renderer's schema rather than accepted and dropped. `@office-open/docx` does have one, though it writes only the cached values: json-to-office splices in the embedded workbook, the series colors and the axis titles afterwards, which is what makes **Edit Data** work and the theme palette apply. See the [component reference](/reference/docx/components#chart).
+
+The pptx `office-open` renderer needed the same repair and used to decline charts over it. It no longer does: the same pass writes the workbook there too, so both pptx backends now draw an editable native chart. `@office-open/pptx` forwards more of the chart options than its docx sibling, so only the cell references and the series colors have to be spliced in.
+
+One exception: `bubble` is `pptxgenjs`-only. `@office-open` spells a bubble series as x/y/size triples rather than categories and values, and there is no unambiguous reading of a category label as a numeric x — so it is refused by name rather than guessed at.
 :::
 
 ## Theme palette

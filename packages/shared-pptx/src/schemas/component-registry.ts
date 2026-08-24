@@ -12,7 +12,6 @@ import {
 } from '@json-to-office/shared/schemas/slide-content';
 import {
   PPTX_RENDERER_IDS,
-  isPptxComponentSupported,
   pptxPropsSchemaForRenderer,
   type PptxRendererId,
 } from './renderer';
@@ -255,10 +254,7 @@ export function createAllPptxComponentSchemasNarrowed(
   // Phase 1: Build leaf (non-container) component schemas — no children
   const leafSchemas = new Map<string, TSchema>();
   for (const comp of PPTX_STANDARD_COMPONENTS_REGISTRY) {
-    if (
-      !comp.hasChildren &&
-      (!profile || isPptxComponentSupported(comp.name, profile.renderer))
-    ) {
+    if (!comp.hasChildren) {
       leafSchemas.set(
         comp.name,
         createPptxComponentSchemaObject(comp, undefined, selfRef, profile)

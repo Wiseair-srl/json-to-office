@@ -109,19 +109,32 @@ describe('jto_discover', () => {
   });
 
   it('reports the components a renderer cannot draw', async () => {
-    const { formats } = await discover({ format: 'pptx' });
-    const officeOpen = formats[0]!.renderers.find(
-      (renderer) => renderer.id === 'office-open'
+    // The docx `chart`, not the pptx one: pptx office-open used to decline
+    // charts and does not any more, so docx.js — which has no chart primitive
+    // at all — is where a renderer-scoped component still lives. A profile
+    // that silently dropped one would let an agent author a document that
+    // validates and then renders without the figure.
+    const { formats } = await discover({ format: 'docx' });
+    const docxjs = formats[0]!.renderers.find(
+      (renderer) => renderer.id === 'docxjs'
     );
-    // `chart` is pptxgenjs-only; a profile that silently dropped it would let
-    // an agent author a slide that validates and then renders empty.
-    expect(officeOpen?.unsupported).toContain('chart');
-    expect(officeOpen?.components).not.toContain('chart');
+    expect(docxjs?.unsupported).toContain('chart');
+    expect(docxjs?.components).not.toContain('chart');
 
     const chart = formats[0]!.components.find(
       (component) => component.name === 'chart'
     );
-    expect(chart?.renderers).toEqual(['pptxgenjs']);
+    expect(chart?.renderers).toEqual(['office-open']);
+  });
+
+  it('reports both pptx renderers drawing the same components', async () => {
+    const { formats } = await discover({ format: 'pptx' });
+    const [pptxgenjs, officeOpen] = ['pptxgenjs', 'office-open'].map((id) =>
+      formats[0]!.renderers.find((renderer) => renderer.id === id)
+    );
+    // They diverged on `chart` until office-open learned to ship the workbook.
+    expect(officeOpen?.components).toEqual(pptxgenjs?.components);
+    expect(officeOpen?.unsupported).toEqual([]);
   });
 
   it('carries the containment rules in both directions', async () => {

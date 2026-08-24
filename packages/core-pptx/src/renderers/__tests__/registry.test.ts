@@ -60,10 +60,13 @@ describe('PPTX renderer registry', () => {
     expect(officeOpen.capabilities.has('complex-bullet-glyphs')).toBe(true);
     expect(pptxgenjs.capabilities.has('transitions')).toBe(false);
 
+    // `charts` was a declared gap and is one no longer: the adapter writes the
+    // workbook the backend omits, so the chart it draws is editable.
+    expect(officeOpen.capabilities.has('charts')).toBe(true);
+
     // Verified gaps in office-open, declared as gaps rather than mapped badly.
     for (const feature of [
       'svg',
-      'charts',
       'image-transform',
       'flip-vertical',
       'element-hyperlinks',

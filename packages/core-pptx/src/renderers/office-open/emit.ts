@@ -28,6 +28,7 @@ import type {
   PptxIrShapeElement,
   PptxIrTableBorder,
   PptxIrTableElement,
+  PptxIrChartElement,
   PptxIrTextBodyStyle,
   PptxIrTextBoxElement,
   PptxIrTextRun,
@@ -51,6 +52,15 @@ export interface OfficeOpenEmitContext {
    * on its input.
    */
   nextId: () => number;
+  /**
+   * Charts, in the order they were emitted.
+   *
+   * The post-generation splice reads this to give each chart part the cell
+   * references and series colours the backend leaves out. Matched to parts by
+   * content rather than by this order — see `chart-parts` in
+   * `@json-to-office/shared/rendering`.
+   */
+  charts?: PptxIrChartElement[];
 }
 
 /* ------------------------------------------------------------------ *
@@ -618,6 +628,91 @@ function groupChild(
   return { group };
 }
 
+/**
+ * A chart, in the vocabulary `@office-open/pptx` actually reads.
+ *
+ * Unlike its docx sibling this backend hands the whole options object to
+ * `chartSpaceDesc`, so the title and the legend position survive. Passing them
+ * here rather than splicing them is the cheaper half of the same job.
+ *
+ * `axes` is the exception, and is deliberately *not* passed. Supplying it
+ * replaces the backend's default axis pair wholesale rather than adding to it,
+ * and `AxisOptions` requires an `id` and a `crossAxisId` this adapter has no
+ * way to allocate that the plot area would agree with. Passing a partial one
+ * emitted literal `<undefined>` elements and six `val="undefined"` attributes,
+ * dropping `c:catAx`, `c:axPos`, `c:scaling` and `c:crosses` with them —
+ * tolerated by LibreOffice, a repair prompt in PowerPoint. Axis titles are
+ * spliced into the backend's own valid axes instead, which is the path the
+ * docx side already takes.
+ */
+function chartChild(
+  element: PptxIrChartElement,
+  ctx: OfficeOpenEmitContext
+): Opts {
+  const { options, transform } = element;
+  const series = element.series;
+
+  // Unreachable through validation, which refuses bubble charts on this
+  // renderer by name. Stated here too because a caller can bypass validation,
+  // and the backend's own failure is a TypeError raised from inside its
+  // bundle — see `collectPptxRendererErrors`.
+  if (element.chartType === 'bubble') {
+    throw new Error(
+      `the office-open renderer does not draw bubble charts (${element.path}); ` +
+        'use the pptxgenjs renderer for this chart'
+    );
+  }
+
+  return {
+    // Stated, never left to the backend: `_nextChartId` in
+    // `@office-open/pptx` is module-level and never resets, so an unnamed
+    // chart is numbered differently on every render in the same process.
+    id: ctx.nextId(),
+    ...chartTypeOptions(element),
+    categories: series[0]?.labels ?? [],
+    series: series.map((entry, index) => ({
+      name: entry.name ?? `Series ${index + 1}`,
+      values: entry.values ?? [],
+    })),
+    ...(options.title && options.showTitle !== false
+      ? { title: options.title }
+      : {}),
+    ...(options.showLegend !== undefined
+      ? { showLegend: options.showLegend }
+      : {}),
+    ...(options.legendPosition
+      ? { legendPosition: options.legendPosition }
+      : {}),
+    x: transform.xEmu,
+    y: transform.yEmu,
+    width: transform.widthEmu,
+    height: transform.heightEmu,
+    ...(element.altText ? { description: element.altText } : {}),
+  };
+}
+
+/**
+ * The backend's chart type, and the 3-D flag that goes with it.
+ *
+ * The two vocabularies disagree in one place each way. PowerPoint spells a
+ * vertical bar chart as `bar` with `barDir: "col"` — which is the *default* —
+ * while `@office-open` gives it its own type name, `column`. And the IR's
+ * `bar3D` has no counterpart at all: it is a bar chart with the depth flag set.
+ * Reading `barDirection` here is what keeps a deck's columns from coming out on
+ * their side.
+ */
+function chartTypeOptions(element: PptxIrChartElement): Opts {
+  const horizontal = element.options.barDirection === 'bar';
+  switch (element.chartType) {
+    case 'bar':
+      return { type: horizontal ? 'bar' : 'column' };
+    case 'bar3D':
+      return { type: horizontal ? 'bar' : 'column', threeD: true };
+    default:
+      return { type: element.chartType };
+  }
+}
+
 export function slideChild(
   element: PptxIrElement,
   ctx: OfficeOpenEmitContext
@@ -634,10 +729,8 @@ export function slideChild(
     case 'group':
       return groupChild(element, ctx);
     case 'chart':
-      // `charts` is not in this adapter's capability set — see index.ts.
-      throw new Error(
-        `the office-open renderer does not emit charts (${element.path})`
-      );
+      ctx.charts?.push(element);
+      return { chart: chartChild(element, ctx) };
     default:
       return assertNever(element, 'PptxIrElement');
   }
