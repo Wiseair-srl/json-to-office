@@ -7,7 +7,7 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
-import { ALL_PPTX_FEATURES, type PptxFeature } from '../../ir/features';
+import type { PptxFeature } from '../../ir/features';
 import type {
   PptxIR,
   PptxIrBackground,
@@ -34,22 +34,59 @@ export const PPTXGENJS_RENDERER_ID: PptxRendererId = 'pptxgenjs';
  * - `complex-bullet-glyphs` — the API accepts only a four-digit BMP code
  */
 /**
- * Everything except four verified gaps.
+ * Explicit allowlist with four verified gaps. A new `PptxFeature` stays
+ * unsupported until this adapter deliberately adds and tests it.
  *
  * Every `chart-*` styling capability is declared: `emitChart` forwards all of
  * them to pptxgenjs — the data labels, the data border, the axis bounds,
  * visibility, grid lines and rotation, the bar, line, pie and radar options and
  * every label font — so declaring them costs no existing deck a render.
  */
-const PPTXGENJS_CAPABILITIES: ReadonlySet<PptxFeature> = new Set(
-  [...ALL_PPTX_FEATURES].filter(
-    (feature) =>
-      feature !== 'image-fills' &&
-      feature !== 'transitions' &&
-      feature !== 'groups' &&
-      feature !== 'complex-bullet-glyphs'
-  )
-);
+const PPTXGENJS_CAPABILITIES: ReadonlySet<PptxFeature> = new Set([
+  'masters',
+  'placeholders',
+  'rich-text',
+  'text',
+  'shapes',
+  'images',
+  'svg',
+  'image-crop',
+  'image-rounding',
+  'tables',
+  'table-merged-cells',
+  'table-insets',
+  'table-rounded-corners',
+  'table-auto-page',
+  'charts',
+  'chart-bar-style',
+  'chart-pie-style',
+  'chart-line-style',
+  'chart-radar-style',
+  'chart-data-labels',
+  'chart-data-border',
+  'chart-axis-scale',
+  'chart-axis-visibility',
+  'chart-axis-style',
+  'chart-text-style',
+  'solid-fills',
+  'gradient-fills',
+  'pattern-fills',
+  'lines',
+  'shadows',
+  'backgrounds',
+  'speaker-notes',
+  'hidden-slides',
+  'external-links',
+  'internal-links',
+  'text-hyperlinks',
+  'element-hyperlinks',
+  'rotation',
+  'image-transform',
+  'flip-horizontal',
+  'flip-vertical',
+  'proofing-language',
+  'rtl',
+]);
 
 export function createPptxGenJsRenderer(): PptxRenderer {
   return {

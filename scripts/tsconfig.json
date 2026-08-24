@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "incremental": false,
+    "noEmit": true,
+    "sourceMap": false,
+  },
+  "include": [
+    "check-renderer-import-boundaries.ts",
+    "generate-renderer-docs.ts",
+    "renderer-feature-notes.ts",
+  ],
+}

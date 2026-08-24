@@ -8,24 +8,18 @@
  * - intrinsic-size work (aspect fill, contain/cover fitting, probe failures) —
  *   `resolveImageLayout`, the async pre-pass, because probing means I/O and the
  *   compiler is synchronous
- * - `data` vs `path` routing — the PptxGenJS adapter
+ * - `data` vs `path` routing — the PptxGenJS adapter test beside that renderer
  */
 
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import JSZip from 'jszip';
-import PptxGenJS from 'pptxgenjs';
-import {
-  compileDocumentToIr,
-  generateBufferViaIr,
-} from '../../core/generateFromIr';
+import { compileDocumentToIr } from '../../core/generateFromIr';
 import { resolveImageLayout } from '../../core/resolveImageLayout';
 import { processPresentation } from '../../core/structure';
 import type {
   PipelineWarning,
   PresentationComponentDefinition,
 } from '../../types';
-import { emitImage } from '../../renderers/pptxgenjs/emit';
 import { compilePresentation } from '../compiler';
 import { EMU_PER_INCH } from '../types';
 import type { PptxIrImageElement, PptxIrResource } from '../types';
@@ -33,11 +27,6 @@ import { assertValidPptxIr } from '../validation';
 
 const SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" width="200" height="100"><rect width="200" height="100" fill="red"/></svg>';
-
-const SVG_DATA_URI = `data:image/svg+xml;base64,${Buffer.from(
-  SVG,
-  'utf-8'
-).toString('base64')}`;
 
 /** A 4x2 px PNG — an aspect ratio of 2, so fitted sizes are exact. */
 const PNG_4X2 =
@@ -92,33 +81,6 @@ function inlineBytes(resource: PptxIrResource): Uint8Array {
 }
 
 /**
- * The option bag the adapter hands PptxGenJS for one image.
- *
- * The old test mocked `slide.addImage`; this does the same thing one layer
- * down, where the call is now made.
- */
-async function imageOpts(
-  props: Record<string, unknown>
-): Promise<Record<string, unknown>> {
-  const { ir } = await compileDocumentToIr(deck([slide([image(props)])]));
-  const element = ir.slides[0].elements[0] as PptxIrImageElement;
-  const calls: Record<string, unknown>[] = [];
-  const slideStub = {
-    addImage: (opts: Record<string, unknown>) => {
-      calls.push(opts);
-    },
-  } as unknown as PptxGenJS.Slide;
-
-  emitImage(slideStub, element, {
-    pptx: new PptxGenJS(),
-    resources: new Map(ir.resources.map((resource) => [resource.id, resource])),
-  });
-
-  expect(calls).toHaveLength(1);
-  return calls[0];
-}
-
-/**
  * Run the pre-pass over one image component and return its resolved props.
  *
  * `processPresentation` (rather than `compileDocumentToIr`) so the component
@@ -135,16 +97,6 @@ async function resolveLayout(props: Record<string, unknown>): Promise<{
     warnings
   );
   return { props: resolved.slides[0].components[0].props, warnings };
-}
-
-async function slideXml(
-  document: PresentationComponentDefinition
-): Promise<string> {
-  const { buffer } = await generateBufferViaIr(document);
-  const zip = await JSZip.loadAsync(buffer);
-  const entry = zip.file('ppt/slides/slide1.xml');
-  if (!entry) throw new Error('generated package has no ppt/slides/slide1.xml');
-  return entry.async('string');
 }
 
 describe('PptxIR image sources', () => {
@@ -295,44 +247,6 @@ describe('PptxIR image path policy', () => {
   });
 });
 
-describe('PptxGenJS image option bag', () => {
-  it('passes raw svg markup as an image/svg+xml data URI via data', async () => {
-    const opts = await imageOpts({ svg: SVG, w: 4, h: 2 });
-
-    expect(opts.data).toBe(SVG_DATA_URI);
-    expect(opts.path).toBeUndefined();
-  });
-
-  it('routes a base64 data URI through data', async () => {
-    const opts = await imageOpts({
-      base64: 'data:image/png;base64,AAAA',
-      w: 4,
-      h: 2,
-    });
-
-    expect(opts.data).toBe('data:image/png;base64,AAAA');
-    expect(opts.path).toBeUndefined();
-  });
-
-  it('routes a URL through path', async () => {
-    const opts = await imageOpts({
-      path: 'https://example.com/x.png',
-      w: 4,
-      h: 2,
-    });
-
-    expect(opts.path).toBe('https://example.com/x.png');
-    expect(opts.data).toBeUndefined();
-  });
-
-  it('routes a local file through path, already resolved', async () => {
-    const opts = await imageOpts({ path: 'assets/logo.png', w: 4, h: 2 });
-
-    expect(opts.path).toBe(path.resolve(process.cwd(), 'assets/logo.png'));
-    expect(opts.data).toBeUndefined();
-  });
-});
-
 describe('image layout resolution', () => {
   it('auto-calculates missing height from the svg viewBox aspect ratio', async () => {
     // viewBox 200x100 → aspect 2; width 4in → height 2in
@@ -348,14 +262,6 @@ describe('image layout resolution', () => {
 
     expect(props.h).toBeCloseTo(2);
     expect(props.w).toBeCloseTo(4);
-  });
-
-  it('carries the auto-calculated height into the package', async () => {
-    const xml = await slideXml(deck([slide([image({ svg: SVG, w: 4 })])]));
-
-    expect(xml).toContain(
-      `<a:ext cx="${4 * EMU_PER_INCH}" cy="${2 * EMU_PER_INCH}"/>`
-    );
   });
 
   it('leaves both dimensions alone when both are authored', async () => {
@@ -398,28 +304,6 @@ describe('image layout resolution', () => {
     expect(props.w).toBe(4);
     expect(props.h).toBe(2);
     expect(props.sizing).toEqual({ type: 'cover', w: 4, h: 4 });
-  });
-
-  it('crops a covered image symmetrically in the package', async () => {
-    const xml = await slideXml(
-      deck([
-        slide([
-          image({
-            base64: PNG_4X2,
-            x: 1,
-            y: 1,
-            w: 4,
-            h: 4,
-            sizing: { type: 'cover', w: 4, h: 4 },
-          }),
-        ]),
-      ])
-    );
-
-    expect(xml).toContain('<a:srcRect l="25000" r="25000" t="0" b="0"/>');
-    expect(xml).toContain(
-      `<a:ext cx="${4 * EMU_PER_INCH}" cy="${4 * EMU_PER_INCH}"/>`
-    );
   });
 
   it('warns when the sizing box resolves to zero', async () => {

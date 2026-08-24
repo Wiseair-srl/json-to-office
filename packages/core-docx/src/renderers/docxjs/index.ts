@@ -33,7 +33,7 @@ import type {
   DocxIrNumbering,
   DocxIrSection,
 } from '../../ir/types';
-import { ALL_DOCX_FEATURES, type DocxFeature } from '../../ir/features';
+import type { DocxFeature } from '../../ir/features';
 import {
   canonicalizeDocxBuffer,
   resolveGenerationDate,
@@ -53,31 +53,42 @@ import { emuToPixels } from '../../ir/units';
 export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
 
 /**
- * What this adapter can express today.
+ * Explicit allowlist of what this adapter can express today.
  *
- * The exclusions are the slice boundary, not backend gaps: docx.js supports all
- * of them, and each moves into this set as the compiler learns to lower it.
+ * A new `DocxFeature` stays unsupported until this adapter deliberately adds
+ * and tests it. Most omissions are slice boundaries; `drawing-groups` and
+ * `charts` are backend gaps in docx.js itself.
  */
-const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
-  'table-merged-cells',
-  'cached-fields',
-  'shading',
-  'borders',
-  'rtl',
-  // `drawing-groups` is the one exclusion that is a real backend gap rather
-  // than a slice boundary: docx.js has no `wpg:wgp`. Leaving it out is what
-  // turns a native `visual` sent to this backend into a named capability
-  // error instead of a document with the graphic missing.
-  'drawing-groups',
-  // `charts` is the second real backend gap: docx.js has no chart primitive at
-  // all, so a `chart` component sent here becomes a named capability error
-  // rather than a document missing a figure.
-  'charts',
+const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
+  'paragraphs',
+  'styles',
+  'numbering',
+  'sections',
+  'columns',
+  'headers-footers',
+  'tables',
+  'floating-tables',
+  'images',
+  'floating-images',
+  'svg-images',
+  'text-frames',
+  'text-boxes',
+  'toc',
+  'cached-toc',
+  'fields',
+  'hyperlinks',
+  'bookmarks',
+  'cross-references',
+  'comments',
+  'comment-threads',
+  'footnotes',
+  'endnotes',
+  'revisions',
+  'breaks',
+  'tab-stops',
+  'proofing-language',
+  'custom-properties',
 ]);
-
-const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set(
-  [...ALL_DOCX_FEATURES].filter((feature) => !NOT_YET_EMITTED.has(feature))
-);
 
 export function createDocxJsRenderer(): DocxRenderer {
   return {

@@ -300,9 +300,69 @@ not exported from `@json-to-office/json-to-docx` or
 
 ### PPTX
 
+The exact capability matrix below is generated from the registered adapters.
+Run `pnpm generate:renderer-docs` after changing a feature or capability set.
+
+<!-- BEGIN GENERATED PPTX RENDERER CAPABILITIES -->
+
+| Feature                 | Note                                       | `pptxgenjs` | `office-open` |
+| ----------------------- | ------------------------------------------ | ----------- | ------------- |
+| `masters`               | Authored slide masters.                    | yes         | —             |
+| `placeholders`          | Named master placeholder regions.          | yes         | —             |
+| `rich-text`             | Multiple formatted runs in one text body.  | yes         | yes           |
+| `complex-bullet-glyphs` | Astral or multi-code-point bullet glyphs.  | —           | yes           |
+| `text`                  | Text bodies and uniform runs.              | yes         | yes           |
+| `shapes`                | Preset-geometry shapes.                    | yes         | yes           |
+| `images`                | Raster and vector pictures.                | yes         | yes           |
+| `svg`                   | SVG pictures.                              | yes         | —             |
+| `image-crop`            | Picture crop and cover.                    | yes         | —             |
+| `image-rounding`        | Rounded or circular picture masks.         | yes         | —             |
+| `tables`                | Tables, rows and cells.                    | yes         | yes           |
+| `table-merged-cells`    | Column and row spans.                      | yes         | —             |
+| `table-insets`          | Cell padding written on table cells.       | yes         | —             |
+| `table-rounded-corners` | Rounded table corners.                     | yes         | —             |
+| `table-auto-page`       | Flow long tables onto more slides.         | yes         | —             |
+| `charts`                | Native charts with embedded workbooks.     | yes         | yes           |
+| `chart-bar-style`       | Bar gap and overlap.                       | yes         | yes           |
+| `chart-pie-style`       | First-slice angle and doughnut hole.       | yes         | yes           |
+| `chart-line-style`      | Line smoothing, width and symbols.         | yes         | yes           |
+| `chart-radar-style`     | Radar chart style.                         | yes         | yes           |
+| `chart-data-labels`     | Chart data-label content and position.     | yes         | yes           |
+| `chart-data-border`     | Series and data-point outlines.            | yes         | yes           |
+| `chart-axis-scale`      | Axis bounds, units and number format.      | yes         | yes           |
+| `chart-axis-visibility` | Axis and axis-line visibility.             | yes         | yes           |
+| `chart-axis-style`      | Axis label rotation and grid lines.        | yes         | yes           |
+| `chart-text-style`      | Chart title, legend, axis and label fonts. | yes         | yes           |
+| `solid-fills`           | Solid shape fills.                         | yes         | yes           |
+| `gradient-fills`        | Gradient shape fills.                      | yes         | yes           |
+| `pattern-fills`         | Pattern shape fills.                       | yes         | yes           |
+| `image-fills`           | Images used as shape fills.                | —           | yes           |
+| `lines`                 | Shape outlines and line elements.          | yes         | yes           |
+| `shadows`               | Shape and text shadows.                    | yes         | yes           |
+| `backgrounds`           | Solid or image slide backgrounds.          | yes         | yes           |
+| `speaker-notes`         | Slide speaker notes.                       | yes         | yes           |
+| `hidden-slides`         | Hidden-slide state.                        | yes         | yes           |
+| `transitions`           | Slide transitions.                         | —           | yes           |
+| `external-links`        | External URL hyperlinks.                   | yes         | yes           |
+| `internal-links`        | Links to another slide.                    | yes         | yes           |
+| `text-hyperlinks`       | Hyperlinks attached to text.               | yes         | yes           |
+| `element-hyperlinks`    | Hyperlinks covering shapes or images.      | yes         | —             |
+| `rotation`              | Shape, text-box and table rotation.        | yes         | yes           |
+| `image-transform`       | Picture rotation and flips.                | yes         | —             |
+| `flip-horizontal`       | Horizontal element flips.                  | yes         | yes           |
+| `flip-vertical`         | Vertical element flips.                    | yes         | —             |
+| `groups`                | Grouped elements sharing a transform.      | —           | yes           |
+| `proofing-language`     | Per-run proofing language.                 | yes         | yes           |
+| `rtl`                   | Right-to-left reading order.               | yes         | yes           |
+
+<!-- END GENERATED PPTX RENDERER CAPABILITIES -->
+
+The generated matrix is the adapters' declared surface. The table below keeps
+backend-specific evidence and caveats, including APIs an adapter has not mapped.
+
 | Feature                                      | `pptxgenjs`                                            | `office-open` (0.11.0, verified against the package)                                                       |
 | -------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| masters, layouts, placeholders               | yes                                                    | yes                                                                                                        |
+| masters, layouts, placeholders               | yes                                                    | backend yes; adapter mapping not declared                                                                  |
 | slides, slide size, theme                    | yes                                                    | yes                                                                                                        |
 | text bodies, rich runs, paragraph properties | yes                                                    | yes (no `txBox="1"` is ever emitted — a text box renders as a shape)                                       |
 | custom bullet glyphs                         | one BMP code point; complex glyphs are refused         | yes, including astral and multi-code-point glyphs                                                          |
@@ -366,6 +426,54 @@ Anything not proven by a test stays out of the adapter's capability set, so it
 fails loudly instead of producing a deck with content missing.
 
 ### DOCX
+
+The exact capability matrix below is generated from the registered adapters.
+Run `pnpm generate:renderer-docs` after changing a feature or capability set.
+
+<!-- BEGIN GENERATED DOCX RENDERER CAPABILITIES -->
+
+| Feature              | Note                                           | `docxjs` | `office-open` |
+| -------------------- | ---------------------------------------------- | -------- | ------------- |
+| `paragraphs`         | Paragraphs and text runs.                      | yes      | yes           |
+| `styles`             | Named paragraph and character styles.          | yes      | yes           |
+| `numbering`          | Numbering definitions and numbered paragraphs. | yes      | yes           |
+| `sections`           | Multiple sections and page setup.              | yes      | yes           |
+| `columns`            | Multi-column sections.                         | yes      | yes           |
+| `headers-footers`    | Default, first and even headers and footers.   | yes      | yes           |
+| `tables`             | Tables, rows and cells.                        | yes      | yes           |
+| `table-merged-cells` | Column spans and vertical merges.              | —        | —             |
+| `floating-tables`    | Tables positioned outside text flow.           | yes      | yes           |
+| `images`             | Inline pictures.                               | yes      | yes           |
+| `floating-images`    | Anchored pictures with text wrapping.          | yes      | yes           |
+| `svg-images`         | SVG pictures with raster fallbacks.            | yes      | yes           |
+| `text-frames`        | Floating paragraph frames.                     | yes      | yes           |
+| `text-boxes`         | Native shape text boxes.                       | yes      | yes           |
+| `drawing-groups`     | Grouped DrawingML shapes and pictures.         | —        | yes           |
+| `charts`             | Native charts with embedded workbooks.         | —        | yes           |
+| `toc`                | Table-of-contents fields.                      | yes      | yes           |
+| `cached-toc`         | Pre-rendered table-of-contents entries.        | yes      | yes           |
+| `fields`             | Arbitrary Word fields.                         | yes      | yes           |
+| `cached-fields`      | Cached field results.                          | —        | —             |
+| `hyperlinks`         | Document hyperlinks.                           | yes      | yes           |
+| `bookmarks`          | Named document bookmarks.                      | yes      | yes           |
+| `cross-references`   | Links and fields targeting bookmarks.          | yes      | yes           |
+| `comments`           | Document comments.                             | yes      | yes           |
+| `comment-threads`    | Threaded and resolvable comments.              | yes      | —             |
+| `footnotes`          | Footnotes.                                     | yes      | yes           |
+| `endnotes`           | Endnotes.                                      | yes      | yes           |
+| `revisions`          | Inserted and deleted content.                  | yes      | yes           |
+| `breaks`             | Page, column and line breaks.                  | yes      | yes           |
+| `shading`            | Paragraph and table shading.                   | —        | —             |
+| `borders`            | Paragraph, table and page borders.             | —        | —             |
+| `tab-stops`          | Paragraph tab stops.                           | yes      | yes           |
+| `proofing-language`  | Per-run proofing language and no-proof.        | yes      | yes           |
+| `custom-properties`  | Custom document properties.                    | yes      | yes           |
+| `rtl`                | Right-to-left paragraph direction.             | —        | —             |
+
+<!-- END GENERATED DOCX RENDERER CAPABILITIES -->
+
+The generated matrix is the adapters' declared surface. The table below keeps
+backend-specific evidence and caveats, including APIs an adapter has not mapped.
 
 `@office-open/docx` 0.11.0 is not a thin wrapper — it is a second full
 implementation with the same option vocabulary as docx.js, taken as plain JSON
@@ -703,15 +811,41 @@ fixture now includes a footnote inside a text box. That combination was omitted
 while the old component render cache could replay the reference without its
 document-scoped note body; stateless compilation makes it stable and testable.
 
+## Post-emit rewrite inventory
+
+These are the production sites that edit an emitted OOXML package. Backend
+repairs run before generic finalization; changing that order can invalidate a
+relationship or make deterministic renumbering miss a newly-added part.
+
+| File                                                              | Ownership / cause                                                                             | Parts rewritten                                                                            | Ordering constraint                                                                              |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `packages/shared/src/rendering/chart-parts.ts`                    | Format-neutral repair for chart XML and workbook data omitted by both `@office-open` backends | Chart XML strings, workbook XML and relationship XML consumed by the format adapters       | Called by the format adapter before package canonicalization; it never opens a package itself    |
+| `packages/core-docx/src/renderers/office-open/chartParts.ts`      | Word packaging for native `office-open` charts                                                | `[Content_Types].xml`, `word/charts/chart*.xml`, chart `.rels`, `word/embeddings/*.xlsx`   | Runs before `canonicalizeDocxBuffer` so new parts and relationships are included in finalization |
+| `packages/core-pptx/src/renderers/office-open/chartParts.ts`      | PowerPoint packaging for native `office-open` charts                                          | `[Content_Types].xml`, `ppt/charts/chart*.xml`, chart `.rels`, `ppt/embeddings/*.xlsx`     | Runs before `canonicalizeChartIds`; workbook names and chart references are renumbered together  |
+| `packages/core-pptx/src/renderers/pptxgenjs/packaging.ts`         | PptxGenJS-only sentinel fills and hard-coded table-style repair                               | `ppt/slides/slide*.xml`                                                                    | Runs before generic `finalizePackage`, on the same open ZIP                                      |
+| `packages/core-pptx/src/renderers/pptxgenjs/svgRasterFallback.ts` | Replaces PptxGenJS's Node broken-image SVG preview                                            | PNG media parts paired to SVG picture relationships                                        | Called from PptxGenJS packaging before generic finalization and timestamp normalization          |
+| `packages/core-docx/src/utils/fixFloatingImageIds.ts`             | docx.js-specific duplicate `wp:docPr` id repair                                               | `word/document.xml`                                                                        | Runs after docx.js emits and before `canonicalizeDocxBuffer`                                     |
+| `packages/core-docx/src/utils/packageDocument.ts`                 | Generic DOCX relationship-id, core-metadata and ZIP timestamp canonicalization                | Relationship parts and owners, `docProps/core.xml`, ZIP entry headers                      | Final DOCX pass, after every backend-specific repair                                             |
+| `packages/core-pptx/src/core/finalizePackage.ts`                  | Generic PPTX chart-id, nested-package, core-metadata and ZIP timestamp canonicalization       | Chart names and references, embedded Office packages, `docProps/core.xml`, ZIP entry dates | Final PPTX pass, after chart and PptxGenJS-specific repairs                                      |
+
 ## Source map
 
-| Concern         | Path                                |
-| --------------- | ----------------------------------- |
-| Shared contract | `packages/shared/src/rendering/`    |
-| PptxIR          | `packages/core-pptx/src/ir/`        |
-| PPTX renderers  | `packages/core-pptx/src/renderers/` |
-| DocxIR          | `packages/core-docx/src/ir/`        |
-| DOCX renderers  | `packages/core-docx/src/renderers/` |
+| Concern                                             | Path                                                                                           |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Shared renderer contract and capability diagnostics | `packages/shared/src/rendering/`                                                               |
+| Format-neutral chart post-processing                | `packages/shared/src/rendering/chart-parts.ts`                                                 |
+| PPTX feature vocabulary                             | `packages/core-pptx/src/ir/features.ts`                                                        |
+| PptxIR and compiler                                 | `packages/core-pptx/src/ir/`                                                                   |
+| PPTX renderer registry and contract                 | `packages/core-pptx/src/renderers/registry.ts`, `packages/core-pptx/src/renderers/types.ts`    |
+| PPTX adapters                                       | `packages/core-pptx/src/renderers/pptxgenjs/`, `packages/core-pptx/src/renderers/office-open/` |
+| PPTX generic package finalization                   | `packages/core-pptx/src/core/finalizePackage.ts`                                               |
+| PPTX renderer ids and schema pruning                | `packages/shared-pptx/src/schemas/renderer.ts`                                                 |
+| DOCX feature vocabulary                             | `packages/core-docx/src/ir/features.ts`                                                        |
+| DocxIR and compiler                                 | `packages/core-docx/src/ir/`                                                                   |
+| DOCX renderer registry and contract                 | `packages/core-docx/src/renderers/registry.ts`, `packages/core-docx/src/renderers/types.ts`    |
+| DOCX adapters                                       | `packages/core-docx/src/renderers/docxjs/`, `packages/core-docx/src/renderers/office-open/`    |
+| DOCX generic package finalization                   | `packages/core-docx/src/utils/packageDocument.ts`                                              |
+| DOCX renderer ids and schema pruning                | `packages/shared-docx/src/schemas/renderer.ts`                                                 |
 
 Import discipline: only `renderers/pptxgenjs/` may import `pptxgenjs`; only
 `renderers/docxjs/` may import `docx`; only `renderers/office-open/` may import
