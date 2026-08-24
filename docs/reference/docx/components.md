@@ -4,22 +4,23 @@ The complete catalog of DOCX components: what each one does, every prop it accep
 
 ## Overview
 
-| Component                                     | Category                | Children allowed                                                                              |
-| --------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
-| [`docx`](/reference/docx/document#docx-root)  | container               | `section` only                                                                                |
-| [`section`](/reference/docx/document#section) | container               | heading, paragraph, image, statistic, table, list, toc, highcharts, visual, columns, text-box |
-| [`columns`](#columns)                         | layout                  | same as section, minus `columns` (no nesting)                                                 |
-| [`text-box`](#text-box)                       | layout                  | heading, paragraph, image                                                                     |
-| [`heading`](#heading)                         | content                 | —                                                                                             |
-| [`paragraph`](#paragraph)                     | content                 | —                                                                                             |
-| [`image`](#image)                             | content                 | —                                                                                             |
-| [`statistic`](#statistic)                     | content                 | —                                                                                             |
-| [`table`](#table)                             | content                 | — (cells nest components via `content`)                                                       |
-| [`list`](#list)                               | content                 | —                                                                                             |
-| [`toc`](#toc)                                 | content                 | —                                                                                             |
-| [`highcharts`](#highcharts)                   | content                 | —                                                                                             |
-| [`visual`](#visual)                           | content                 | —                                                                                             |
-| [`text-space-after`](#text-space-after)       | plugin example (opt-in) | —                                                                                             |
+| Component                                     | Category                | Children allowed                                                                                     |
+| --------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| [`docx`](/reference/docx/document#docx-root)  | container               | `section` only                                                                                       |
+| [`section`](/reference/docx/document#section) | container               | heading, paragraph, image, statistic, table, list, toc, highcharts, chart, visual, columns, text-box |
+| [`columns`](#columns)                         | layout                  | same as section, minus `columns` (no nesting)                                                        |
+| [`text-box`](#text-box)                       | layout                  | heading, paragraph, image                                                                            |
+| [`heading`](#heading)                         | content                 | —                                                                                                    |
+| [`paragraph`](#paragraph)                     | content                 | —                                                                                                    |
+| [`image`](#image)                             | content                 | —                                                                                                    |
+| [`statistic`](#statistic)                     | content                 | —                                                                                                    |
+| [`table`](#table)                             | content                 | — (cells nest components via `content`)                                                              |
+| [`list`](#list)                               | content                 | —                                                                                                    |
+| [`toc`](#toc)                                 | content                 | —                                                                                                    |
+| [`highcharts`](#highcharts)                   | content                 | —                                                                                                    |
+| [`chart`](#chart)                             | content (`office-open`) | —                                                                                                    |
+| [`visual`](#visual)                           | content                 | —                                                                                                    |
+| [`text-space-after`](#text-space-after)       | plugin example (opt-in) | —                                                                                                    |
 
 Every node is `{ name, props, children? }` plus optional `id` and `enabled` fields; `enabled: false` removes the node from the render. Custom plugin components (see [API reference](/reference/api)) are allowed as children of any container.
 
@@ -532,6 +533,58 @@ Renders a chart through a Highcharts export server and embeds the result as an i
       "xAxis": { "categories": ["Q1", "Q2", "Q3", "Q4"] },
       "series": [{ "name": "2026", "data": [120, 132, 145, 160] }]
     }
+  }
+}
+```
+
+## `chart`
+
+A native Word chart: a real chart part with its own embedded workbook, not a picture. Recipients can restyle it with Word's chart tools and open its numbers with **Edit Data**, and it stays crisp at any zoom. No export server and no network access — unlike [`highcharts`](#highcharts), it also works in the browser.
+
+::: warning Requires `renderer: "office-open"`
+docx.js has no chart primitive at all, so the component exists only in the `office-open` branch of the schema. Under the default renderer it is not a valid component name, and a document that uses it is refused with `unsupported_renderer_feature` rather than rendered without the figure. See [Charts](/guide/charts).
+:::
+
+| Prop                                           | Type                                                                                             | Required | Default                    | Description                                                                                                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`                                         | `area` \| `bar` \| `bubble` \| `column` \| `doughnut` \| `line` \| `pie` \| `radar` \| `scatter` | **yes**  | —                          | Chart type                                                                                                                                              |
+| `data`                                         | array of `{ name?, labels, values, sizes? }`                                                     | **yes**  | —                          | Series. `labels` and `values` are needed on **every** series, must be the same length, and every series must name the same categories in the same order |
+| `title`                                        | `string`                                                                                         | no       | —                          | Chart title                                                                                                                                             |
+| `showTitle`                                    | `boolean`                                                                                        | no       | `true` when `title` is set | Set `false` to keep a title in the JSON without drawing it                                                                                              |
+| `showLegend`                                   | `boolean`                                                                                        | no       | —                          | Show the legend                                                                                                                                         |
+| `legendPos`                                    | `b` \| `l` \| `r` \| `t` \| `tr`                                                                 | no       | `b`                        | Legend position                                                                                                                                         |
+| `chartColors`                                  | `string[]`                                                                                       | no       | theme palette              | Series colors, hex or semantic theme names. Unset pulls the [theme palette](/guide/charts#theme-palette); a palette shorter than the series list wraps  |
+| `catAxisTitle`                                 | `string`                                                                                         | no       | —                          | Category axis title                                                                                                                                     |
+| `valAxisTitle`                                 | `string`                                                                                         | no       | —                          | Value axis title                                                                                                                                        |
+| `width` / `height`                             | `number` (inches)                                                                                | no       | content width / `3`        | Placed size. Inches, not pixels — a chart is vector, so there is no intrinsic pixel size to scale from                                                  |
+| `alignment`                                    | alignment                                                                                        | no       | `center`                   | Paragraph alignment                                                                                                                                     |
+| `caption`                                      | `string`                                                                                         | no       | —                          | Caption paragraph after the chart; supports `**bold**` and `*italic*`                                                                                   |
+| `alt`                                          | `string`                                                                                         | no       | —                          | Alternative text for accessibility                                                                                                                      |
+| `spacing`, `floating`, `keepNext`, `keepLines` | as [`image`](#image)                                                                             | no       | —                          | Same flow placement vocabulary as every other figure                                                                                                    |
+
+Slide coordinates (`x`, `y`, `w`, `h`) are **rejected**, not ignored: a Word chart flows with the document, so there is nowhere for them to mean anything.
+
+```json
+{
+  "name": "chart",
+  "props": {
+    "type": "bar",
+    "data": [
+      {
+        "name": "Revenue",
+        "labels": ["Q1", "Q2", "Q3"],
+        "values": [120, 132, 145]
+      },
+      { "name": "Cost", "labels": ["Q1", "Q2", "Q3"], "values": [80, 84, 91] }
+    ],
+    "title": "Revenue by quarter",
+    "showLegend": true,
+    "catAxisTitle": "Quarter",
+    "valAxisTitle": "EUR (thousands)",
+    "width": 6,
+    "height": 3.2,
+    "caption": "Revenue and cost, first three quarters.",
+    "alt": "Bar chart comparing quarterly revenue and cost"
   }
 }
 ```

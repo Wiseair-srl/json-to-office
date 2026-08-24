@@ -16,6 +16,7 @@ import {
   type DocxIrBlock,
   type DocxIrColor,
   type DocxIrDrawingGroupRun,
+  type DocxIrChartRun,
   type DocxIrInline,
   type DocxIrParagraphFormatting,
   type DocxIrRunFormatting,
@@ -355,6 +356,10 @@ function checkInline(inline: DocxIrInline, path: string, scope: Scope): void {
       checkDrawingGroup(inline, path, scope);
       return;
 
+    case 'chart':
+      checkChart(inline, path, scope);
+      return;
+
     case 'lineBreak':
     case 'pageBreak':
     case 'columnBreak':
@@ -364,6 +369,45 @@ function checkInline(inline: DocxIrInline, path: string, scope: Scope): void {
     default:
       assertNever(inline, 'DocxIrInline');
   }
+}
+
+/**
+ * A chart: a placed size and series whose labels and values line up.
+ *
+ * The compiler already refuses a ragged series by name, so reaching here with
+ * one means an IR was hand-built or came from elsewhere. Checking it again is
+ * the point of IR validation: a series with more values than labels writes
+ * cells the chart XML then references past the end of its own workbook, and
+ * Word answers that with a repair prompt rather than a missing series.
+ */
+function checkChart(chart: DocxIrChartRun, path: string, scope: Scope): void {
+  for (const key of ['widthEmu', 'heightEmu'] as const) {
+    if (!Number.isFinite(chart[key]) || chart[key] <= 0) {
+      scope.add(`${path}.${key}`, 'expected a positive EMU size');
+    }
+  }
+  if (chart.series.length === 0) {
+    scope.add(`${path}.series`, 'expected at least one series');
+  }
+  chart.series.forEach((series, i) => {
+    if (series.labels.length !== series.values.length) {
+      scope.add(
+        `${path}.series[${i}]`,
+        `expected labels and values of equal length, got ${series.labels.length} and ${series.values.length}`
+      );
+    }
+    if (series.values.some((value) => !Number.isFinite(value))) {
+      scope.add(`${path}.series[${i}].values`, 'expected finite numbers');
+    }
+  });
+  chart.colors.forEach((color, i) => {
+    if (!/^[0-9A-Fa-f]{6}$/.test(color)) {
+      scope.add(
+        `${path}.colors[${i}]`,
+        'expected a 6-digit hex colour without "#"'
+      );
+    }
+  });
 }
 
 /**

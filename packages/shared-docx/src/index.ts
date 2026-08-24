@@ -304,6 +304,8 @@ export {
 // Highcharts component schema (standard component)
 export { HighchartsPropsSchema } from './schemas/components/highcharts';
 export type { HighchartsProps } from './schemas/components/highcharts';
+export { ChartPropsSchema } from './schemas/components/chart';
+export type { ChartProps } from './schemas/components/chart';
 
 // Visual component schema (standard component — a rasterized pptx slide, or a
 // native Word drawing group under the `office-open` renderer)

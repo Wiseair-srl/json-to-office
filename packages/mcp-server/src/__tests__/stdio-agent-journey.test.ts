@@ -321,9 +321,15 @@ describe('generating', () => {
         )!.extension;
         const requiredKeys = new Map<string, string[]>();
         for (const component of format.components) {
+          // The catalogue lists every component any renderer draws, so a
+          // renderer-scoped one (the docx `chart`) has no schema under the
+          // default backend. Describe each under a renderer that has it.
           const described = await callTool(session, 'jto_describe_component', {
             format: format.name,
             name: component.name,
+            ...(component.renderers?.length
+              ? { renderer: component.renderers[0] }
+              : {}),
           });
           requiredKeys.set(
             component.name,

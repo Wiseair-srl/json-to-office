@@ -21,6 +21,7 @@ import type {
   DocxIrDrawingFrame,
   DocxIrDrawingGroupChild,
   DocxIrDrawingGroupRun,
+  DocxIrChartRun,
   DocxIrDrawingPicture,
   DocxIrDrawingShape,
   DocxIrFloating,
@@ -100,12 +101,21 @@ export interface EmitContext {
   pictures: ReadonlyMap<string, ImageMediaFactory>;
   /** Allocate the next `wp:docPr` id for this document. */
   nextDrawingId: () => number;
+  /**
+   * Charts, in the order they were emitted.
+   *
+   * The backend numbers `word/charts/chartN.xml` by the order it stringifies
+   * chart runs, which is document order — the same order this array fills. The
+   * post-generation splice reads it to match each part with the data the
+   * backend dropped.
+   */
+  charts?: DocxIrChartRun[];
 }
 
 /** A context for content that holds no drawings, and for tests. */
 export function emptyContext(): EmitContext {
   let next = 1;
-  return { pictures: new Map(), nextDrawingId: () => next++ };
+  return { pictures: new Map(), nextDrawingId: () => next++, charts: [] };
 }
 
 /**
@@ -299,6 +309,11 @@ export function inlineChildren(
         out.push({ wpsShape: shapeOptions(child, ctx) });
         break;
 
+      case 'chart':
+        ctx.charts?.push(child);
+        out.push({ chart: chartOptions(child, ctx) });
+        break;
+
       case 'noteReference':
         out.push(
           child.noteKind === 'endnote'
@@ -477,6 +492,42 @@ function drawingGroupOptions(
     childExtent: { cx: group.canvasWidthEmu, cy: group.canvasHeightEmu },
     children: group.children.map((child) => groupChild(child, ctx)),
     ...(group.floating ? { floating: floatingOptions(group.floating) } : {}),
+  };
+}
+
+/**
+ * A chart run, in the vocabulary the backend actually reads.
+ *
+ * Only the fields `@office-open/docx` forwards are set. Everything else the IR
+ * node carries — series colours, axis titles, the workbook behind "Edit Data" —
+ * is spliced into the emitted part afterwards, because the backend's chart run
+ * drops those options rather than emitting them. See `chartParts.ts`.
+ *
+ * A shared category axis means the categories are the first series' labels; the
+ * compiler has already refused a document whose series disagree about them.
+ */
+function chartOptions(chart: DocxIrChartRun, ctx: EmitContext): Opts {
+  // Stated, never left to the backend. `@office-open/docx` numbers an unnamed
+  // `wp:docPr` from `_docPropsIdGen`, a module-level generator that never
+  // resets, so the same document rendered twice in one process came out with
+  // different ids — the identical hazard the adapter already handles for every
+  // other drawing, and the reason this one is allocated per render.
+  const id = ctx.nextDrawingId();
+  return {
+    type: chart.chartType,
+    categories: chart.series[0]?.labels ?? [],
+    series: chart.series.map((entry, index) => ({
+      name: entry.name ?? `Series ${index + 1}`,
+      values: entry.values,
+    })),
+    ...(chart.title && chart.showTitle !== false ? { title: chart.title } : {}),
+    ...(chart.showLegend !== undefined ? { showLegend: chart.showLegend } : {}),
+    transformation: { width: chart.widthEmu, height: chart.heightEmu },
+    altText: {
+      id: String(id),
+      ...(chart.altText ? { description: chart.altText } : {}),
+    },
+    ...(chart.floating ? { floating: floatingOptions(chart.floating) } : {}),
   };
 }
 

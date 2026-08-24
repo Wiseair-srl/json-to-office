@@ -30,7 +30,7 @@ export function resolveGenerationDate(options?: DocumentPackageOptions): Date {
 }
 
 /** Encode a UTC instant into the packed MS-DOS date/time field ZIP headers use. */
-function toDosTime(date: Date): number {
+export function toDosTime(date: Date): number {
   const dosDate =
     (((date.getUTCFullYear() - 1980) & 0x7f) << 9) |
     ((date.getUTCMonth() + 1) << 5) |

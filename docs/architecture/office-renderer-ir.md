@@ -384,6 +384,7 @@ docx.js one rather than a translation layer on top of it.
 | text boxes (`wps:wsp`), text frames | yes                                                   | yes                                                                                 |
 | drawing groups (`wpg:wgp`)          | **no** — docx.js has no group primitive               | yes — a paragraph-level `wpgGroup` run taking shape, group and picture children     |
 | footnotes, endnotes                 | yes                                                   | yes                                                                                 |
+| native charts                       | **no** — docx.js has no chart primitive               | yes, with an embedded workbook spliced in — see below                               |
 | comments                            | yes                                                   | yes, but flat — see below                                                           |
 | revisions                           | one `w:ins`/`w:del` per run                           | a real wrapper element, so the id appears once per range                            |
 | fields                              | a run child per known instruction, plus `w:fldSimple` | `simpleField` takes any instruction with its cached result                          |
@@ -411,10 +412,46 @@ rather than losing content:
 | `comment-threads`                                                  | `CommentOptions` is `{id, author, initials, date, children}` — no parent, no resolved state, so a reply would flatten into an unrelated top-level comment |
 | `table-merged-cells`, `cached-fields`, `shading`, `borders`, `rtl` | the vocabulary no lowering covers yet, so nothing can require them; both adapters leave them out so a declared set means "proven by a test"               |
 
-`docxjs` withholds one capability of its own: `drawing-groups`. That one is a
-real backend gap rather than a slice boundary — docx.js has no `wpg:wgp` — and
-it is what turns a natively drawn `visual` handed to the default backend into a
-named capability error rather than a document with the graphic missing.
+`docxjs` withholds two capabilities of its own: `drawing-groups` and `charts`.
+Both are real backend gaps rather than slice boundaries — docx.js has no
+`wpg:wgp` and no chart primitive at all — and they are what turn a natively
+drawn `visual` or a `chart` handed to the default backend into a named
+capability error rather than a document with the figure missing.
+
+### Native charts
+
+`@office-open/docx` has a chart run, and it writes less than its types promise.
+`ChartOptions extends ChartSpaceOptions`, but the run forwards only eight of
+those fields to `chartSpaceDesc` — `type`, `title`, `series`, `categories`,
+`showLegend`, `style`, `threeD`, `view3D` — and drops the rest. Verified against
+the package, which is the only way this was ever going to be found: the types
+say otherwise. Three of the dropped options are visible to whoever opens the
+document.
+
+| Dropped        | Symptom in Word                                                                                     |
+| -------------- | --------------------------------------------------------------------------------------------------- |
+| `externalData` | Every `<c:f>` is emitted empty, so the chart caches values with no source and **Edit Data** fails   |
+| series fill    | Nothing on `ChartSeriesCommon` or `DataPointOptions` carries one, so every series ignores the theme |
+| `axes`         | Default `c:catAx`/`c:valAx` are written, but an authored axis title never reaches them              |
+
+`renderers/office-open/chartParts.ts` splices all three into the emitted package
+after generation: the workbook part and its relationship, `c:externalData`, the
+real cell references in place of the empty `<c:f/>`, a `c:spPr` solid fill per
+series, and a `c:title` in each axis. Editing another library's serialisation is
+not free and is chosen deliberately — the alternative is a chart that draws and
+then fails on the first double-click, which is exactly why the _pptx_ office-open
+adapter refuses native charts today. The pptxgenjs adapter reaches for the same
+technique for gradient and pattern fills.
+
+`utils/chartWorkbook.ts` builds the xlsx itself, because nothing in
+`@office-open/core` does: `ExternalDataOptions` is `{relationshipId,
+autoUpdate}`, a pointer, and `XLSX_PARTS` is an OPC validation manifest rather
+than a writer.
+
+The chart run also has the `wp:docPr` problem described above, and the same
+cure: the adapter states an id on every chart drawing, because an unnamed one is
+numbered from the process-global `_docPropsIdGen` and made two renders of one
+document differ.
 
 ### Native visuals
 

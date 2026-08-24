@@ -15,6 +15,7 @@ import type {
   ColumnsPropsSchema,
   ImagePropsSchema,
   HighchartsPropsSchema,
+  ChartPropsSchema,
   VisualPropsSchema,
   StatisticPropsSchema,
   TablePropsSchema,
@@ -131,6 +132,20 @@ export interface TableComponent {
 }
 
 /**
+ * Native chart component with literal name discriminator.
+ *
+ * Only `office-open` draws it; the schema for every other renderer omits the
+ * component entirely.
+ */
+export interface ChartComponent {
+  name: 'chart';
+  id?: string;
+  /** When false, this component is filtered out and not rendered. Defaults to true */
+  enabled?: boolean;
+  props: Static<typeof ChartPropsSchema>;
+}
+
+/**
  * Highcharts component with literal name discriminator
  */
 export interface HighchartsComponent {
@@ -219,6 +234,7 @@ export type StandardComponentDefinition =
   | TextBoxComponent
   | ImageComponent
   | HighchartsComponent
+  | ChartComponent
   | VisualComponent
   | StatisticComponent
   | TableComponent
@@ -230,6 +246,7 @@ export type StandardComponentDefinition =
  * Useful for iterating, validation, or displaying available components to users.
  */
 export const STANDARD_COMPONENTS = [
+  'chart',
   'columns',
   'heading',
   'highcharts',

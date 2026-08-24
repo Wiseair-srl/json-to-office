@@ -12,13 +12,16 @@
  * a file with content quietly missing.
  */
 
+import AdmZip from 'adm-zip';
 import { ALL_DOCX_FEATURES, type DocxFeature } from '../../ir/features';
 import type {
   DocxIR,
   DocxIrBlock,
+  DocxIrChartRun,
   DocxIrInline,
   DocxIrNote,
 } from '../../ir/types';
+import { spliceChartParts } from './chartParts';
 import { rasterizeSvgFallback } from '../../utils/imageUtils';
 import {
   canonicalizeDocxBuffer,
@@ -93,13 +96,24 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
     format: 'docx',
     capabilities: OFFICE_OPEN_CAPABILITIES,
     async render(ir: DocxIR, options?: DocxRenderOptions): Promise<Uint8Array> {
-      const document = await buildDocumentOptions(ir);
+      const charts: DocxIrChartRun[] = [];
+      const document = await buildDocumentOptions(ir, charts);
       const bytes = await backend.generateDocument(document, {
         type: 'uint8array',
       });
-      const raw = Buffer.from(
+      let raw = Buffer.from(
         bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
       );
+
+      // The backend writes a chart's cached values and nothing that sources
+      // them: no workbook, no series colours, no axis titles. Splicing those
+      // in is what separates a chart that draws from one a recipient can
+      // actually edit — see `chartParts.ts`.
+      if (charts.length > 0) {
+        const zip = new AdmZip(raw);
+        spliceChartParts(zip, charts);
+        raw = zip.toBuffer();
+      }
 
       if (options?.deterministic === false) return new Uint8Array(raw);
       // The backend stamps ZIP entries with the wall clock, so the same
@@ -126,7 +140,8 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
  * legible, than unzipping a package.
  */
 export async function buildDocumentOptions(
-  ir: DocxIR
+  ir: DocxIR,
+  charts: DocxIrChartRun[] = []
 ): Promise<Record<string, unknown>> {
   // One counter for the whole document. `wp:docPr` ids only have to be unique
   // within their part, and numbering across every part is both simpler and
@@ -135,6 +150,7 @@ export async function buildDocumentOptions(
   const ctx: EmitContext = {
     pictures: await prepareImages(ir),
     nextDrawingId: () => nextDrawingId++,
+    charts,
   };
 
   return {

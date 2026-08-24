@@ -363,7 +363,8 @@ export type DocxIrInline =
   | DocxIrCommentReference
   | DocxIrRevisionRange
   | DocxIrShapeRun
-  | DocxIrDrawingGroupRun;
+  | DocxIrDrawingGroupRun
+  | DocxIrChartRun;
 
 /**
  * A native text box: a shape holding paragraphs.
@@ -551,6 +552,66 @@ export interface DocxIrImageRun {
   altText?: string;
   /** Present when the drawing is anchored rather than inline. */
   floating?: DocxIrFloating;
+}
+
+/**
+ * A native chart, drawn from data rather than from pixels.
+ *
+ * Backend-neutral like every other IR node: series are resolved arrays, colours
+ * are resolved hex, and the frame is EMU. What is deliberately *not* here is
+ * the workbook — the bytes a reader opens behind "Edit Data" are a packaging
+ * concern, derived from `series` at emit time, so the IR stays a description of
+ * the chart rather than of one backend's file layout.
+ *
+ * A backend that cannot write a chart part declines the `charts` feature and
+ * the pipeline refuses the document rather than dropping the figure.
+ */
+export interface DocxIrChartRun {
+  kind: 'chart';
+  chartType: DocxIrChartType;
+  series: DocxIrChartSeries[];
+  /** Resolved series colours, uppercase 6-digit hex without `#`. */
+  colors: string[];
+  /** Placed size on the page. */
+  widthEmu: number;
+  heightEmu: number;
+  title?: string;
+  showTitle?: boolean;
+  showLegend?: boolean;
+  legendPosition?: DocxIrChartLegendPosition;
+  categoryAxisTitle?: string;
+  valueAxisTitle?: string;
+  altText?: string;
+  /** Absent makes it an inline drawing rather than an anchored one. */
+  floating?: DocxIrFloating;
+}
+
+export type DocxIrChartType =
+  | 'area'
+  | 'bar'
+  | 'bubble'
+  | 'column'
+  | 'doughnut'
+  | 'line'
+  | 'pie'
+  | 'radar'
+  | 'scatter';
+
+export type DocxIrChartLegendPosition = 'b' | 'l' | 'r' | 't' | 'tr';
+
+/**
+ * One resolved series.
+ *
+ * `labels` and `values` are the same length by the time a series reaches here —
+ * the compiler refuses a ragged or incomplete one by name, so no backend has to
+ * decide what a value without a label means.
+ */
+export interface DocxIrChartSeries {
+  name?: string;
+  labels: string[];
+  values: number[];
+  /** Bubble sizes, present only for a bubble chart. */
+  sizes?: number[];
 }
 
 export interface DocxIrHyperlink {

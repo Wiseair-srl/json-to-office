@@ -69,6 +69,10 @@ const NOT_YET_EMITTED: ReadonlySet<DocxFeature> = new Set<DocxFeature>([
   // turns a native `visual` sent to this backend into a named capability
   // error instead of a document with the graphic missing.
   'drawing-groups',
+  // `charts` is the second real backend gap: docx.js has no chart primitive at
+  // all, so a `chart` component sent here becomes a named capability error
+  // rather than a document missing a figure.
+  'charts',
 ]);
 
 const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set(
