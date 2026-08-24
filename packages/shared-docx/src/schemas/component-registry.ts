@@ -31,6 +31,7 @@ import { TablePropsSchema, createTablePropsSchema } from './components/table';
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
 import { HighchartsPropsSchema } from './components/highcharts';
+import { ChartPropsSchema } from './components/chart';
 import { VisualPropsSchema } from './components/visual';
 import {
   DOCX_RENDERER_IDS,
@@ -61,6 +62,15 @@ export interface StandardComponentDefinition {
    * available, used instead of the static `propsSchema`.
    */
   createPropsSchema?: (recursiveRef: TSchema) => TSchema;
+  /**
+   * The renderers that can draw this component. Omitted means all of them.
+   *
+   * Only for a component whose backend gap is real, not a slice boundary: a
+   * component listed here disappears from the other renderers' schema branch
+   * entirely, so a schema-driven editor stops offering it rather than
+   * offering it and failing at render time.
+   */
+  renderers?: readonly DocxRendererId[];
   /** Component category for organization */
   category: 'container' | 'content' | 'layout';
   /** Human-readable description */
@@ -114,6 +124,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'list',
         'toc',
         'highcharts',
+        'chart',
         'visual',
         'columns',
         'text-box',
@@ -135,6 +146,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'list',
         'toc',
         'highcharts',
+        'chart',
         'visual',
         'text-box',
       ],
@@ -219,6 +231,18 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       category: 'content',
       description:
         'Chart component powered by Highcharts - render line, bar, pie, heatmap, and more with rich options.',
+    },
+    {
+      name: 'chart',
+      propsSchema: ChartPropsSchema,
+      hasChildren: false,
+      // docx.js has no chart primitive at all, so this is a backend gap rather
+      // than a slice boundary — the same reasoning that keeps `drawing-groups`
+      // off the docxjs capability set.
+      renderers: ['office-open'],
+      category: 'content',
+      description:
+        'Native Word chart - editable, scalable, no export server needed. Requires renderer "office-open".',
     },
     {
       name: 'visual',
@@ -420,10 +444,18 @@ export function createAllComponentSchemasNarrowed(
   pluginSchemas: TSchema[] = [],
   profile?: { renderer: DocxRendererId; requireDiscriminator: boolean }
 ): { schemas: TSchema[]; byName: Map<string, TSchema> } {
+  // A component whose `renderers` excludes this profile is not built at all,
+  // so it is absent from the union *and* from every container's narrowed
+  // children — `allowedChildren` maps through these maps and drops what it
+  // cannot find, which keeps the two lists from disagreeing.
+  const drawnHere = (comp: StandardComponentDefinition): boolean =>
+    !profile || !comp.renderers || comp.renderers.includes(profile.renderer);
+
   // Phase 1: Build leaf (non-container) component schemas — no children
   // selfRef is passed so factories (e.g. table) can wire up recursive refs.
   const leafSchemas = new Map<string, TSchema>();
   for (const comp of STANDARD_COMPONENTS_REGISTRY) {
+    if (!drawnHere(comp)) continue;
     if (!comp.hasChildren) {
       leafSchemas.set(
         comp.name,
@@ -433,7 +465,9 @@ export function createAllComponentSchemasNarrowed(
   }
 
   // Phase 2: Resolve containers in dependency order
-  const containers = STANDARD_COMPONENTS_REGISTRY.filter((c) => c.hasChildren);
+  const containers = STANDARD_COMPONENTS_REGISTRY.filter(
+    (c) => c.hasChildren && drawnHere(c)
+  );
   const resolved = new Map<string, TSchema>();
   const pending = [...containers];
 

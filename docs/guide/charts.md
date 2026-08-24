@@ -1,24 +1,29 @@
 # Charts
 
-json-to-office gives you two ways to put charts in a document: **native PowerPoint charts** (the pptx `chart` component) and **Highcharts-rendered images** (the `highcharts` component, available in both pptx and docx). This page helps you choose between them and get each one running.
+json-to-office gives you two ways to put charts in a document: **native charts** (the `chart` component) and **Highcharts-rendered images** (the `highcharts` component). Both formats have both, with one caveat: the docx `chart` needs `renderer: "office-open"`, because docx.js has no chart primitive. This page helps you choose between them and get each one running.
 
 ## Native charts vs Highcharts
 
-|                        | `chart` (native, pptx only)                                            | `highcharts` (pptx + docx)                                                               |
-| ---------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Output                 | Real PowerPoint chart object                                           | PNG image                                                                                |
-| Editable by recipients | Yes — data and styling editable in PowerPoint                          | No — it's a picture                                                                      |
-| Scaling                | Vector, crisp at any zoom                                              | Raster (use `scale` for sharper exports)                                                 |
-| External dependencies  | None                                                                   | Requires a running Highcharts Export Server                                              |
-| Works in the browser   | Yes                                                                    | No — Node-only (needs server-side fetch)                                                 |
-| Chart catalog          | 9 types: area, bar, bar3D, bubble, doughnut, line, pie, radar, scatter | The full Highcharts catalog: heatmaps, treemaps, gauges, combined series, annotations, … |
-| Theme integration      | Palette + text colors follow the theme automatically                   | Theme palette injected when `options.colors` unset                                       |
+|                        | `chart` (native)                                                                                                        | `highcharts`                                                                             |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Formats                | pptx; docx with `renderer: "office-open"`                                                                               | pptx + docx, every renderer                                                              |
+| Output                 | Real PowerPoint / Word chart object                                                                                     | PNG image                                                                                |
+| Editable by recipients | Yes — data and styling editable in the Office app                                                                       | No — it's a picture                                                                      |
+| Scaling                | Vector, crisp at any zoom                                                                                               | Raster (use `scale` for sharper exports)                                                 |
+| External dependencies  | None                                                                                                                    | Requires a running Highcharts Export Server                                              |
+| Works in the browser   | Yes                                                                                                                     | No — Node-only (needs server-side fetch)                                                 |
+| Chart catalog          | pptx 9 types: area, bar, bar3D, bubble, doughnut, line, pie, radar, scatter; docx the same minus `bar3D`, plus `column` | The full Highcharts catalog: heatmaps, treemaps, gauges, combined series, annotations, … |
+| Theme integration      | Palette + text colors follow the theme automatically                                                                    | Theme palette injected when `options.colors` unset                                       |
 
-**Rule of thumb**: reach for native `chart` first. It needs no infrastructure, recipients can tweak it, and it covers the common business-chart types. Reach for `highcharts` when you need chart types or styling that PowerPoint charts can't express — or when you're generating a Word document, where `highcharts` is the chart component.
+**Rule of thumb**: reach for native `chart` first. It needs no infrastructure, recipients can tweak it, and it covers the common business-chart types. Reach for `highcharts` when you need chart types or styling an Office chart can't express — or when you're generating a Word document on the default `docxjs` renderer, where `highcharts` is the only chart component.
+
+::: info Why the docx chart is renderer-scoped
+docx.js has no chart primitive at all, so the component is absent from that renderer's schema rather than accepted and dropped. `@office-open/docx` does have one, though it writes only the cached values: json-to-office splices in the embedded workbook, the series colors and the axis titles afterwards, which is what makes **Edit Data** work and the theme palette apply. See the [component reference](/reference/docx/components#chart).
+:::
 
 ## Theme palette
 
-Both paths default their series colors to the theme palette, so charts recolor themselves when you switch [themes](/guide/themes). The **same token list, in the same order** — `primary`, `secondary`, `accent`, `accent4`, `accent5`, `accent6` — backs the native pptx `chart` and `highcharts` in both formats, and both theme schemas declare all six names (`accent4`–`accent6` optional in each). A theme that fills all six with hex values therefore paints the same series colors in a deck and in a document, letter case included.
+Both paths default their series colors to the theme palette, so charts recolor themselves when you switch [themes](/guide/themes). The **same token list, in the same order** — `primary`, `secondary`, `accent`, `accent4`, `accent5`, `accent6` — backs the native `chart` in both formats and `highcharts` in both formats, and both theme schemas declare all six names (`accent4`–`accent6` optional in each). A theme that fills all six with hex values therefore paints the same series colors in a deck and in a document, letter case included.
 
 Everywhere, an explicit `options.colors` (or `chartColors` on the native `chart`) always wins: when you set it, nothing is injected and no fallback warning is emitted.
 

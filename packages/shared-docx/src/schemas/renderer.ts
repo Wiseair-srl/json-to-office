@@ -101,6 +101,20 @@ export function collectDocxRendererErrors(data: unknown): ValidationError[] {
       collectVisualErrors(object, `${path}`, isOfficeOpen, errors);
     }
 
+    // A schema-driven editor already refuses `chart` outside office-open —
+    // the component is absent from that branch entirely. This is the same
+    // rule stated where a caller reaches validation without the schema, and
+    // it names the path of the node rather than the document, so the error
+    // lands on the component the author has to move or drop.
+    if (object.name === 'chart' && !isOfficeOpen) {
+      errors.push({
+        path: `${path}/name`,
+        message:
+          'Only the "office-open" renderer draws a native chart. Set the document\'s "renderer" to "office-open", or use "highcharts" to render one as an image.',
+        code: 'unsupported_renderer_feature',
+      });
+    }
+
     for (const [key, value] of Object.entries(object)) {
       if (key !== 'renderer') visit(value, `${path}/${key}`);
     }

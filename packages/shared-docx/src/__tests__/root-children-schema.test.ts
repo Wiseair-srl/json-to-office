@@ -14,14 +14,20 @@ import { convertToJsonSchema } from '../schemas/export';
 import { getStandardComponent } from '../schemas/component-registry';
 import { unionBranches } from '@json-to-office/shared';
 
-function rootChildNames(): string[] {
+function rootChildNames(renderer?: 'office-open'): string[] {
   const json = convertToJsonSchema(
     generateUnifiedDocumentSchema({ customComponents: [] })
   ) as Record<string, any>;
-  const defaultProfile = unionBranches(json).find(
-    (branch: any) => !branch.required?.includes('renderer')
-  );
-  const items = defaultProfile.properties.children.items;
+  const profile = renderer
+    ? unionBranches(json).find(
+        (branch: any) =>
+          branch.properties?.renderer?.const === renderer ||
+          branch.properties?.renderer?.enum?.includes(renderer)
+      )
+    : unionBranches(json).find(
+        (branch: any) => !branch.required?.includes('renderer')
+      );
+  const items = profile.properties.children.items;
   const variants = unionBranches(items);
   const branches = variants.length > 0 ? variants : [items];
   return branches
@@ -30,14 +36,40 @@ function rootChildNames(): string[] {
 }
 
 describe('root children schema', () => {
+  /**
+   * What a section accepts *on this renderer*.
+   *
+   * A component the backend cannot draw is absent from that renderer's branch
+   * entirely, so the root must not offer it either. Reading the raw registry
+   * list here would demand `chart` of `docxjs`, which has no chart primitive.
+   */
+  function sectionAllowsOn(renderer: 'docxjs' | 'office-open'): string[] {
+    return [...(getStandardComponent('section')?.allowedChildren ?? [])].filter(
+      (child) => {
+        const component = getStandardComponent(child);
+        return !component?.renderers || component.renderers.includes(renderer);
+      }
+    );
+  }
+
   it('accepts section plus everything a section accepts', () => {
     const names = rootChildNames();
-    const sectionAllows =
-      getStandardComponent('section')?.allowedChildren ?? [];
     expect(names).toContain('section');
-    for (const child of sectionAllows) {
+    for (const child of sectionAllowsOn('docxjs')) {
       expect(names, `${child} missing from root children`).toContain(child);
     }
+  });
+
+  it('offers office-open its own components at the root', () => {
+    const names = rootChildNames('office-open');
+    expect(names).toContain('section');
+    for (const child of sectionAllowsOn('office-open')) {
+      expect(names, `${child} missing from root children`).toContain(child);
+    }
+    // The point of the renderer dimension: one branch has it, the other does
+    // not, and both are checked against their own expectation.
+    expect(names).toContain('chart');
+    expect(rootChildNames()).not.toContain('chart');
   });
 
   it('does not allow a nested docx root', () => {

@@ -250,12 +250,27 @@ describe('jto_describe_component', () => {
     });
 
     it('points at the other format instead of dead-ending', async () => {
-      const result = await describeComponent({ format: 'docx', name: 'chart' });
+      // `shape` rather than `chart`: docx has a native `chart` of its own now,
+      // so it is no longer a name only the other format knows.
+      const result = await describeComponent({ format: 'docx', name: 'shape' });
       expect(result.ok).toBe(false);
       expect(result.diagnostics[0]?.code).toBe('E_UNKNOWN_COMPONENT');
       expect(result.diagnostics[0]?.suggestion).toContain(
         'pass format: "pptx"'
       );
+    });
+
+    it("describes the docx chart as office-open's own component", async () => {
+      const result = await describeComponent({
+        format: 'docx',
+        name: 'chart',
+        renderer: 'office-open',
+      });
+      expect(result.ok).toBe(true);
+      expect(result.renderers).toEqual([
+        { id: 'docxjs', default: true, supported: false },
+        { id: 'office-open', default: false, supported: true },
+      ]);
     });
 
     it('still just lists the known names for a plain typo', async () => {

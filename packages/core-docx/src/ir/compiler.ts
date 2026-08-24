@@ -23,7 +23,10 @@ import {
   type FeatureRequirement,
 } from '@json-to-office/shared/rendering';
 import type { GenerationWarning } from '@json-to-office/shared';
-import { synthesizeFamilyName } from '@json-to-office/shared';
+import {
+  synthesizeFamilyName,
+  DEFAULT_CHART_THEME_COLORS,
+} from '@json-to-office/shared';
 import type { LayoutPlan, SectionLayout } from '../core/layout';
 import type { ProcessedDocument } from '../core/structure';
 import type { ComponentDefinition } from '../types';
@@ -120,6 +123,10 @@ import {
   type DocxIrFrame,
   type DocxIrHeaderFooter,
   type DocxIrImageRun,
+  type DocxIrChartRun,
+  type DocxIrChartSeries,
+  type DocxIrChartType,
+  type DocxIrChartLegendPosition,
   type DocxIrInline,
   type DocxIrNumbering,
   type DocxIrNumberingLevel,
@@ -142,6 +149,7 @@ import {
   blockId,
   emuToPixels,
   headerFooterBlockId,
+  inchesToEmu,
   inchesToTwips,
   irColor,
   pixelsToEmu,
@@ -862,6 +870,8 @@ function compileComponent(
       return compileImage(component, scope);
     case 'visual':
       return compileVisual(component, scope);
+    case 'chart':
+      return compileChart(component, scope);
     case 'table':
       return compileTable(component, scope);
     default:
@@ -3233,6 +3243,179 @@ function compileImage(
   ];
 
   const caption = captionBlock(props.caption, scope, 'image');
+  if (caption === undefined) return [];
+  if (caption) blocks.push(caption);
+
+  return blocks;
+}
+
+/** A chart with no explicit height is this tall, in inches. */
+const DEFAULT_CHART_HEIGHT_INCHES = 3;
+
+/**
+ * Lower a `chart` component to a chart run.
+ *
+ * Strict about data, because a chart is the one figure whose content cannot be
+ * eyeballed in the JSON: a series missing `values`, or carrying fewer than it
+ * has labels, stops the document naming that series. The alternative — drawing
+ * the series that happened to be complete — ships a chart that looks finished
+ * and states something the author never wrote.
+ */
+function compileChart(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+
+  const rawSeries = Array.isArray(props.data) ? props.data : [];
+  if (rawSeries.length === 0) {
+    throw new Error(`Chart at ${path} has no data series.`);
+  }
+
+  const series: DocxIrChartSeries[] = rawSeries.map((entry, index) => {
+    const raw = (entry ?? {}) as Record<string, unknown>;
+    const label = typeof raw.name === 'string' ? raw.name : `series ${index}`;
+    const labels = raw.labels;
+    const values = raw.values;
+    if (!Array.isArray(labels) || !Array.isArray(values)) {
+      throw new Error(
+        `Chart series "${label}" at ${path} needs both "labels" and "values"; ` +
+          'every series carries its own, not just the first.'
+      );
+    }
+    if (labels.length !== values.length) {
+      throw new Error(
+        `Chart series "${label}" at ${path} has ${labels.length} labels and ` +
+          `${values.length} values; they must be the same length.`
+      );
+    }
+    return {
+      ...(typeof raw.name === 'string' ? { name: raw.name } : {}),
+      labels: labels.map((value) => String(value)),
+      values: values.map((value) => Number(value)),
+      ...(Array.isArray(raw.sizes)
+        ? { sizes: raw.sizes.map((value) => Number(value)) }
+        : {}),
+    };
+  });
+
+  // A chart has one category axis, and it is drawn from the first series'
+  // labels. A later series labelled differently would be plotted against
+  // categories it never named — every point shifted onto the wrong label, with
+  // nothing in the file to show for it. Refuse instead.
+  const categories = series[0].labels;
+  for (const [index, entry] of series.entries()) {
+    if (index === 0) continue;
+    // Length first: `some` walks only the shorter array, so a series whose
+    // labels are a strict prefix of the first's used to pass here and then be
+    // padded with a value the author never wrote.
+    if (
+      entry.labels.length !== categories.length ||
+      entry.labels.some((label, i) => label !== categories[i])
+    ) {
+      throw new Error(
+        `Chart series "${entry.name ?? `series ${index}`}" at ${path} has ` +
+          'different labels from the first series. A chart has one category ' +
+          'axis, so every series must name the same categories in the same order.'
+      );
+    }
+  }
+
+  // An explicit palette is the author's and is resolved verbatim, semantic
+  // names included — naming a token that resolves to nothing throws, which is
+  // the docx rule everywhere else. The implicit palette instead *skips* what
+  // the theme leaves unset, so it shrinks to fit rather than repeating
+  // `primary`; see DEFAULT_CHART_THEME_COLORS.
+  const colors: string[] = Array.isArray(props.chartColors)
+    ? props.chartColors.map((color: unknown) =>
+        resolveColor(String(color), ctx.theme)
+      )
+    : DEFAULT_CHART_THEME_COLORS.map((token) => {
+        const value = (
+          ctx.theme?.colors as Record<string, string | undefined>
+        )?.[token];
+        if (typeof value !== 'string' || value.length === 0) return undefined;
+        try {
+          return resolveColor(token, ctx.theme);
+        } catch {
+          // A slot reaching no colour is dropped, never handed on: Word
+          // answers an unparseable colour by drawing the series black.
+          return undefined;
+        }
+      }).filter((color): color is string => color !== undefined);
+
+  const page = getPageSetup(ctx.theme);
+  const contentWidthInches =
+    (page.size.width - page.margin.left - page.margin.right) / 1440;
+  const widthInches =
+    typeof props.width === 'number' ? props.width : contentWidthInches;
+  const heightInches =
+    typeof props.height === 'number'
+      ? props.height
+      : DEFAULT_CHART_HEIGHT_INCHES;
+
+  const chart: DocxIrChartRun = {
+    kind: 'chart',
+    chartType: props.type as DocxIrChartType,
+    series,
+    colors,
+    widthEmu: inchesToEmu(widthInches),
+    heightEmu: inchesToEmu(heightInches),
+    ...(typeof props.title === 'string' ? { title: props.title } : {}),
+    ...(props.showTitle !== undefined ? { showTitle: props.showTitle } : {}),
+    ...(props.showLegend !== undefined ? { showLegend: props.showLegend } : {}),
+    ...(props.legendPos
+      ? { legendPosition: props.legendPos as DocxIrChartLegendPosition }
+      : {}),
+    ...(typeof props.catAxisTitle === 'string'
+      ? { categoryAxisTitle: props.catAxisTitle }
+      : {}),
+    ...(typeof props.valAxisTitle === 'string'
+      ? { valueAxisTitle: props.valAxisTitle }
+      : {}),
+    ...(typeof props.alt === 'string' && props.alt
+      ? { altText: props.alt }
+      : {}),
+    ...(props.floating
+      ? { floating: compileFloating(props.floating, ctx, path) }
+      : {}),
+  };
+
+  ctx.features.require('charts', path);
+  if (props.floating) ctx.features.require('floating-images', path);
+
+  const spacing: DocxIrSpacing = {};
+  if (props.spacing?.before !== undefined) {
+    spacing.beforeTwips = pointsToTwips(props.spacing.before);
+  }
+  if (props.spacing?.after !== undefined) {
+    spacing.afterTwips = pointsToTwips(props.spacing.after);
+  }
+
+  const blocks: DocxIrBlock[] = [
+    {
+      kind: 'paragraph',
+      id: scope.id,
+      path,
+      children: [chart],
+      formatting: {
+        // An anchored chart moves with its anchor, so aligning the paragraph
+        // would move the anchor rather than the chart — the same reasoning as
+        // a floating image.
+        ...(props.floating
+          ? {}
+          : { alignment: compileAlignment(props.alignment) ?? 'center' }),
+        ...(Object.keys(spacing).length > 0 ? { spacing } : {}),
+        ...(props.keepNext !== undefined ? { keepNext: props.keepNext } : {}),
+        ...(props.keepLines !== undefined
+          ? { keepLines: props.keepLines }
+          : {}),
+      },
+    },
+  ];
+
+  const caption = captionBlock(props.caption, scope, 'chart');
   if (caption === undefined) return [];
   if (caption) blocks.push(caption);
 

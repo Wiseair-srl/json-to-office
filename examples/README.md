@@ -2,14 +2,15 @@
 
 Real-world JSON document definitions you can render with json-to-office.
 
-| File                                                         | Format | Description                                                                                                                         |
-| ------------------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| [invoice.docx.json](invoice.docx.json)                       | DOCX   | Northvane Studio invoice with line items, payment instructions, and retainer terms                                                  |
-| [contract-v1.docx.json](contract-v1.docx.json)               | DOCX   | Service agreement (base version) — diff it against v2 for a tracked-change redline                                                  |
-| [contract-v2.docx.json](contract-v2.docx.json)               | DOCX   | Service agreement (revised version) for `jto docx diff`                                                                             |
-| [visual-infographic.docx.json](visual-infographic.docx.json) | DOCX   | `visual` component — a free-canvas chevron infographic authored as a pptx slide and embedded as a PNG (needs LibreOffice + poppler) |
-| [native-visual.docx.json](native-visual.docx.json)           | DOCX   | The same infographic drawn natively (`renderMode: "native"` + the `office-open` renderer) — editable shapes and text, no rasterizer |
-| [quarterly-review.pptx.json](quarterly-review.pptx.json)     | PPTX   | Two-slide quarterly review with grid layout, semantic theme colors, a native chart, a table, and speaker notes                      |
+| File                                                         | Format | Description                                                                                                                                  |
+| ------------------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [invoice.docx.json](invoice.docx.json)                       | DOCX   | Northvane Studio invoice with line items, payment instructions, and retainer terms                                                           |
+| [contract-v1.docx.json](contract-v1.docx.json)               | DOCX   | Service agreement (base version) — diff it against v2 for a tracked-change redline                                                           |
+| [contract-v2.docx.json](contract-v2.docx.json)               | DOCX   | Service agreement (revised version) for `jto docx diff`                                                                                      |
+| [visual-infographic.docx.json](visual-infographic.docx.json) | DOCX   | `visual` component — a free-canvas chevron infographic authored as a pptx slide and embedded as a PNG (needs LibreOffice + poppler)          |
+| [native-visual.docx.json](native-visual.docx.json)           | DOCX   | The same infographic drawn natively (`renderMode: "native"` + the `office-open` renderer) — editable shapes and text, no rasterizer          |
+| [native-chart.docx.json](native-chart.docx.json)             | DOCX   | Native Word charts (`chart` + the `office-open` renderer) — real chart objects with an embedded workbook, editable in Word, no export server |
+| [quarterly-review.pptx.json](quarterly-review.pptx.json)     | PPTX   | Two-slide quarterly review with grid layout, semantic theme colors, a native chart, a table, and speaker notes                               |
 
 More templates are available in the visual playground — run `jto pptx dev` or `jto docx dev` to browse the full gallery.
 

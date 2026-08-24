@@ -1,0 +1,90 @@
+{
+  "name": "docx",
+  "renderer": "office-open",
+  "props": {
+    "metadata": {
+      "title": "Q3 Revenue Review",
+      "author": "Meridian Industries",
+      "description": "Report with native Word charts — editable, no export server"
+    },
+    "theme": "minimal"
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "meta": {
+          "title": "Revenue"
+        }
+      },
+      "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Revenue and cost",
+            "level": 1
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Both charts below are real Word chart objects. Right-click one and choose **Edit Data** to open the numbers behind it; restyle it with Word's own chart tools. Nothing here needs an export server, and the series colours come from the document theme."
+          }
+        },
+        {
+          "name": "chart",
+          "props": {
+            "type": "bar",
+            "data": [
+              {
+                "name": "Revenue",
+                "labels": ["Q1", "Q2", "Q3"],
+                "values": [120, 132, 145]
+              },
+              {
+                "name": "Cost",
+                "labels": ["Q1", "Q2", "Q3"],
+                "values": [80, 84, 91]
+              }
+            ],
+            "title": "Revenue by quarter",
+            "showLegend": true,
+            "legendPos": "b",
+            "catAxisTitle": "Quarter",
+            "valAxisTitle": "EUR (thousands)",
+            "width": 6,
+            "height": 3.2,
+            "caption": "Revenue and cost, first three quarters.",
+            "alt": "Bar chart comparing quarterly revenue and cost"
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Margin trend",
+            "level": 2
+          }
+        },
+        {
+          "name": "chart",
+          "props": {
+            "type": "line",
+            "data": [
+              {
+                "name": "Gross margin %",
+                "labels": ["Q1", "Q2", "Q3"],
+                "values": [33.3, 36.4, 37.2]
+              }
+            ],
+            "title": "Gross margin",
+            "chartColors": ["accent"],
+            "valAxisTitle": "Percent",
+            "width": 6,
+            "height": 2.6,
+            "alt": "Line chart of gross margin percentage by quarter"
+          }
+        }
+      ]
+    }
+  ]
+}
