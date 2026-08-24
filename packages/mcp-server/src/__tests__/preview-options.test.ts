@@ -69,4 +69,31 @@ describe('jto_preview options', () => {
 
     expect(capped).toEqual(['jto_generate', 'jto_preview', 'jto_validate']);
   });
+
+  it('refuses an unknown renderer before probing host dependencies', async () => {
+    const result = await client.callTool({
+      name: 'jto_preview',
+      arguments: { format: 'docx', document: DOCX, renderer: 'nope' },
+    });
+    const structured = result.structuredContent as any;
+
+    expect(result.isError).toBeFalsy();
+    expect(structured.ok).toBe(false);
+    expect(structured.diagnostics[0]).toMatchObject({
+      code: 'E_UNKNOWN_RENDERER',
+      context: { rendererIds: expect.any(Array) },
+    });
+  });
+
+  it('rejects executable theme modules before rendering', async () => {
+    const result = await client.callTool({
+      name: 'jto_preview',
+      arguments: { format: 'docx', document: DOCX, themePath: 'theme.mjs' },
+    });
+    const structured = result.structuredContent as any;
+
+    expect(result.isError).toBeFalsy();
+    expect(structured.ok).toBe(false);
+    expect(structured.diagnostics[0].code).toBe('E_INVALID_THEME_PATH');
+  });
 });

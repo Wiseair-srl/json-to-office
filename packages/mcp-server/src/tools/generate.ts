@@ -38,7 +38,11 @@ import {
   toolResult,
   type Diagnostic,
 } from '../lib/errors.js';
-import { checkGeneratedAt, themeDiagnostics } from '../lib/render-options.js';
+import {
+  checkGeneratedAt,
+  resolveThemePathOption,
+  themeDiagnostics,
+} from '../lib/render-options.js';
 import {
   S,
   artifactOutputProperties,
@@ -119,7 +123,6 @@ interface FontOptionsInput {
   baseDir?: string;
   googleFonts?: {
     enabled?: boolean;
-    cacheDir?: string;
     fetchTimeoutMs?: number;
   };
 }
@@ -180,7 +183,6 @@ const fontsSchema = {
           type: 'boolean' as const,
           description: 'Set false to forbid network font fetches.',
         },
-        cacheDir: { type: 'string' as const },
         fetchTimeoutMs: { type: 'integer' as const, minimum: 1 },
       },
       additionalProperties: false,
@@ -199,7 +201,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
-        openWorldHint: false,
+        openWorldHint: true,
       },
       inputSchema: S<GenerateArgs>({
         type: 'object',
@@ -236,7 +238,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
           theme: {
             type: 'string',
             description:
-              "Theme forced on the document, when one was requested. Absent when each document's own `props.theme` decided — and also when the name matched nothing, which comes back as a warning-severity E_UNKNOWN_THEME diagnostic.",
+              "Theme forced on the document, when one was requested. Absent when each document's own `props.theme` decided — and also when the name matched nothing, which comes back as a W_UNKNOWN_THEME diagnostic.",
           },
           artifact: artifactSchema,
           source: sourceSummarySchema,
@@ -265,6 +267,12 @@ export function register(server: McpServer, deps: ToolDeps): void {
             const dateError = checkGeneratedAt(args.generatedAt);
             if (dateError) return { ...dateError, ...base };
 
+            const themePath = resolveThemePathOption(
+              args.themePath,
+              args.baseDir
+            );
+            if (!themePath.ok) return { ...themePath, ...base };
+
             await reportProgress(ctx, 0, 'Resolving document');
             const resolved = await resolveDocumentSource(
               args,
@@ -280,8 +288,8 @@ export function register(server: McpServer, deps: ToolDeps): void {
             const options: GeneratorOptions = {
               ...(args.renderer !== undefined && { renderer: args.renderer }),
               ...(args.theme !== undefined && { theme: args.theme }),
-              ...(args.themePath !== undefined && {
-                themePath: args.themePath,
+              ...(themePath.path !== undefined && {
+                themePath: themePath.path,
               }),
               ...(args.deterministic !== undefined && {
                 deterministic: args.deterministic,

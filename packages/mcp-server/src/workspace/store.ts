@@ -42,11 +42,9 @@ import {
  * Workspace-lifecycle codes.
  *
  * Kept here rather than in `lib/errors.ts` (owned by #203, edited
- * concurrently); they read as ordinary diagnostic codes to a client. Eviction
- * gets its own code rather than reusing `E_UNKNOWN_HANDLE` because the issue
- * requires an evicted handle to say *why* it went: an agent that hit the idle
- * TTL should reopen and carry on, one that hit the capacity ceiling should
- * close what it is no longer using first.
+ * concurrently); they read as ordinary diagnostic codes to a client. TTL
+ * eviction gets its own code rather than reusing `E_UNKNOWN_HANDLE` because
+ * an agent can reopen and carry on after an idle handle expires.
  */
 export const WORKSPACE_ERROR_CODES = {
   EVICTED: 'E_WORKSPACE_EVICTED',
@@ -55,7 +53,7 @@ export const WORKSPACE_ERROR_CODES = {
   INVALID_ROOT: 'E_INVALID_DOCUMENT_ROOT',
 } as const;
 
-export type EvictionReason = 'ttl' | 'capacity' | 'closed';
+export type EvictionReason = 'ttl' | 'closed';
 
 export interface WorkspaceLimits {
   /** Open documents at once. */
@@ -66,7 +64,7 @@ export interface WorkspaceLimits {
   maxTotalBytes: number;
   /** Idle time after which a handle is dropped. Any read or write resets it. */
   idleTtlMs: number;
-  /** Snapshots kept retrievable per workspace; the oldest pin is released first. */
+  /** Snapshots kept retrievable per workspace; new pins are refused at the cap. */
   maxPinnedRevisions: number;
 }
 
@@ -122,8 +120,6 @@ interface Entry {
   touchedAt: number;
   title?: string;
   pins: Map<number, Pin>;
-  /** Pin insertion order, so the oldest is released first at the cap. */
-  pinOrder: number[];
 }
 
 interface Tombstone {
@@ -216,17 +212,6 @@ export function createMemoryWorkspaceStore(
         }
       );
     }
-    if (grave?.reason === 'capacity') {
-      return failure(
-        WORKSPACE_ERROR_CODES.EVICTED,
-        `Workspace ${handle} was released to make room: this connection allows ${limits.maxWorkspaces} open documents and ${limits.maxTotalBytes} bytes.`,
-        {
-          suggestion:
-            'Close workspaces you have finished with, then re-create this one from your last snapshot.',
-          context: { handle, reason: 'capacity', revision: grave.revision },
-        }
-      );
-    }
     return failure(
       ERROR_CODES.UNKNOWN_HANDLE,
       grave
@@ -240,33 +225,12 @@ export function createMemoryWorkspaceStore(
     );
   }
 
-  /**
-   * Free `needed` bytes and, when `forNewWorkspace`, one slot.
-   *
-   * Least-recently-touched first: the workspace an agent has not looked at
-   * since three turns ago is the one it is least likely to still be holding a
-   * handle for. Refusing to open anything at all would be the alternative, and
-   * it strands an agent that simply forgot to close.
-   */
-  function makeRoom(
-    needed: number,
-    forNewWorkspace: boolean,
-    keep?: string
-  ): boolean {
-    const fits = (): boolean =>
+  /** Capacity failures never destroy an unrelated workspace or snapshot. */
+  function hasRoom(needed: number, forNewWorkspace: boolean): boolean {
+    return (
       totalBytes() + needed <= limits.maxTotalBytes &&
-      (!forNewWorkspace || entries.size < limits.maxWorkspaces);
-    if (fits()) return true;
-
-    const candidates = [...entries.values()]
-      .filter((entry) => entry.handle !== keep)
-      .sort((left, right) => left.touchedAt - right.touchedAt);
-
-    for (const candidate of candidates) {
-      evict(candidate, 'capacity');
-      if (fits()) return true;
-    }
-    return fits();
+      (!forNewWorkspace || entries.size < limits.maxWorkspaces)
+    );
   }
 
   function toRecord(
@@ -307,7 +271,7 @@ export function createMemoryWorkspaceStore(
       if (serialized.bytes > limits.maxDocumentBytes) {
         return tooLarge(serialized.bytes, limits.maxDocumentBytes);
       }
-      if (!makeRoom(serialized.bytes, true)) {
+      if (!hasRoom(serialized.bytes, true)) {
         return failure(
           WORKSPACE_ERROR_CODES.LIMIT,
           `A ${serialized.bytes}-byte document does not fit in the ${limits.maxTotalBytes}-byte workspace budget.`,
@@ -335,7 +299,6 @@ export function createMemoryWorkspaceStore(
         touchedAt: at,
         ...(input.title !== undefined && { title: input.title }),
         pins: new Map(),
-        pinOrder: [],
       };
       entries.set(entry.handle, entry);
       return { ok: true, record: toRecord(entry) };
@@ -450,7 +413,7 @@ export function createMemoryWorkspaceStore(
         return tooLarge(serialized.bytes, limits.maxDocumentBytes);
       }
       const growth = serialized.bytes - entry.bytes;
-      if (growth > 0 && !makeRoom(growth, false, entry.handle)) {
+      if (growth > 0 && !hasRoom(growth, false)) {
         return failure(
           WORKSPACE_ERROR_CODES.LIMIT,
           `Applying this patch would take the connection past its ${limits.maxTotalBytes}-byte workspace budget.`,
@@ -489,14 +452,12 @@ export function createMemoryWorkspaceStore(
       // it returns the JSON even when there is no room to keep a copy. What
       // the agent gets back always tells the truth — `pinnedRevisions` only
       // lists pins that actually took.
-      if (!entry.pins.has(revision)) {
-        while (entry.pinOrder.length >= limits.maxPinnedRevisions) {
-          const oldest = entry.pinOrder.shift();
-          if (oldest !== undefined) entry.pins.delete(oldest);
-        }
-        if (makeRoom(entry.bytes, false, entry.handle)) {
+      if (
+        !entry.pins.has(revision) &&
+        entry.pins.size < limits.maxPinnedRevisions
+      ) {
+        if (hasRoom(entry.bytes, false)) {
           entry.pins.set(revision, { text: entry.text, bytes: entry.bytes });
-          entry.pinOrder.push(revision);
         }
       }
 

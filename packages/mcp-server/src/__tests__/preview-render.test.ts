@@ -165,6 +165,9 @@ describe('a document that will not build', () => {
 });
 
 describe('preview cache hygiene', () => {
+  const cacheName = (character: string, suffix = '.png') =>
+    `${character.repeat(64)}${suffix}`;
+
   /** Write `name` into `dir` with an mtime `ageMs` in the past. */
   async function seed(
     dir: string,
@@ -185,21 +188,26 @@ describe('preview cache hygiene', () => {
       () => false
     );
 
-  it('namespaces the shared tmp directory per user', () => {
-    // `os.tmpdir()` is shared by every account on Linux, so a fixed name would
-    // let two users' pages land in one directory owned by whoever got there
-    // first.
+  it('uses an unpredictable stable process namespace in shared tmp', () => {
     const dir = defaultPreviewCacheDir();
     expect(path.dirname(dir)).toBe(os.tmpdir());
-    expect(path.basename(dir)).toMatch(/^jto-mcp-preview-cache-.+/);
+    expect(path.basename(dir)).toMatch(
+      /^jto-mcp-preview-cache-\d+-[a-f0-9]{24}$/
+    );
     expect(defaultPreviewCacheDir()).toBe(dir);
   });
 
   it('drops entries past the age limit and keeps the rest', async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-mcp-sweep-'));
     try {
-      const stale = await seed(dir, 'stale.png', 128, 10 * 24 * 3600_000);
-      const fresh = await seed(dir, 'fresh.png', 128, 60_000);
+      const stale = await seed(dir, cacheName('a'), 128, 10 * 24 * 3600_000);
+      const fresh = await seed(dir, cacheName('b'), 128, 60_000);
+      const unrelated = await seed(
+        dir,
+        'unrelated.png',
+        128,
+        10 * 24 * 3600_000
+      );
 
       const swept = await sweepPreviewCache(dir, {
         maxAgeMs: 7 * 24 * 3600_000,
@@ -209,6 +217,7 @@ describe('preview cache hygiene', () => {
       expect(swept.bytes).toBe(128);
       expect(await exists(stale)).toBe(false);
       expect(await exists(fresh)).toBe(true);
+      expect(await exists(unrelated)).toBe(true);
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }
@@ -217,9 +226,9 @@ describe('preview cache hygiene', () => {
   it('evicts oldest-first until the survivors fit the byte ceiling', async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-mcp-sweep-'));
     try {
-      const oldest = await seed(dir, 'a.png', 400, 3 * 3600_000);
-      const middle = await seed(dir, 'b.png', 400, 2 * 3600_000);
-      const newest = await seed(dir, 'c.png', 400, 1 * 3600_000);
+      const oldest = await seed(dir, cacheName('a'), 400, 3 * 3600_000);
+      const middle = await seed(dir, cacheName('b'), 400, 2 * 3600_000);
+      const newest = await seed(dir, cacheName('c'), 400, 1 * 3600_000);
 
       await sweepPreviewCache(dir, { maxBytes: 900 });
 
@@ -240,13 +249,56 @@ describe('preview cache hygiene', () => {
     expect(await exists(dir)).toBe(false);
   });
 
+  it.skipIf(process.platform === 'win32')(
+    'tightens an owned cache directory to owner-only',
+    async () => {
+      const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-mcp-sweep-'));
+      try {
+        await fs.chmod(dir, 0o755);
+        await sweepPreviewCache(dir);
+        expect((await fs.stat(dir)).mode & 0o777).toBe(0o700);
+      } finally {
+        await fs.rm(dir, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it.skipIf(process.platform === 'win32')(
+    'never follows a cache-directory symlink while sweeping',
+    async () => {
+      const parent = await fs.mkdtemp(
+        path.join(os.tmpdir(), 'jto-mcp-sweep-link-')
+      );
+      const victimDir = path.join(parent, 'victim');
+      const cacheLink = path.join(parent, 'cache');
+      await fs.mkdir(victimDir);
+      const victim = await seed(
+        victimDir,
+        cacheName('a'),
+        64,
+        400 * 24 * 3600_000
+      );
+      await fs.symlink(victimDir, cacheLink, 'dir');
+
+      try {
+        await expect(sweepPreviewCache(cacheLink)).resolves.toEqual({
+          removed: 0,
+          bytes: 0,
+        });
+        expect(await exists(victim)).toBe(true);
+      } finally {
+        await fs.rm(parent, { recursive: true, force: true });
+      }
+    }
+  );
+
   it('sweeps the directory before a render consults it', async () => {
     // The wiring, not the rule: this document never builds, so nothing is
     // converted — but the sweep runs ahead of generation, which is the only
     // point at which an unbounded directory can be brought back under control.
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-mcp-sweep-'));
     try {
-      const stale = await seed(dir, 'stale.png', 64, 400 * 24 * 3600_000);
+      const stale = await seed(dir, cacheName('a'), 64, 400 * 24 * 3600_000);
 
       await renderPreview({
         format: 'docx',

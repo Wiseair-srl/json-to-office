@@ -10,6 +10,7 @@
  */
 
 import { createRequire } from 'module';
+import path from 'path';
 import { pathToFileURL } from 'url';
 
 import type { FormatAdapter, FormatName } from './adapters.js';
@@ -26,7 +27,7 @@ import {
  * beside `E_UNKNOWN_RENDERER`, whose shape it deliberately mirrors; it is
  * declared here only because that file is another issue's to edit.
  */
-export const UNKNOWN_THEME = 'E_UNKNOWN_THEME';
+export const UNKNOWN_THEME = 'W_UNKNOWN_THEME';
 
 /** Earliest instant a ZIP local-file header can express. */
 const ZIP_EPOCH_YEAR = 1980;
@@ -84,6 +85,36 @@ export function checkGeneratedAt(
       context: { option: 'generatedAt', value },
     }
   );
+}
+
+export type ResolvedThemePath = { ok: true; path?: string } | Failure;
+
+/**
+ * Keep the MCP surface data-only and make its relative-path rule explicit.
+ *
+ * `jto-ops` also serves the CLI, where executable JS theme modules remain a
+ * deliberate power-user feature. An MCP caller is different: repository files
+ * are untrusted input, so forwarding a module path into dynamic `import()`
+ * would execute it with the server's privileges.
+ */
+export function resolveThemePathOption(
+  themePath: string | undefined,
+  baseDir: string | undefined
+): ResolvedThemePath {
+  if (themePath === undefined) return { ok: true };
+  if (path.extname(themePath) !== '.json') {
+    return failure(
+      OPTION_ERROR_CODES.INVALID_THEME_PATH,
+      `themePath must name a data-only .json theme, not "${themePath}".`,
+      {
+        suggestion:
+          'Use a .json theme file. Executable JavaScript theme modules are not accepted over MCP.',
+        context: { option: 'themePath', value: themePath },
+      }
+    );
+  }
+  const root = baseDir === undefined ? process.cwd() : path.resolve(baseDir);
+  return { ok: true, path: path.resolve(root, themePath) };
 }
 
 const CORE_THEMES: Record<FormatName, { specifier: string; exported: string }> =

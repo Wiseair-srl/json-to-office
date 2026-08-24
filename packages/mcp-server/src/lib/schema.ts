@@ -101,7 +101,8 @@ export const renderOptionProperties: Record<string, JsonSchemaType> = {
   },
   themePath: {
     type: 'string',
-    description: 'Path to a theme file, resolved against `baseDir`.',
+    description:
+      'Path to a data-only JSON theme file, resolved against `baseDir` (or the server working directory when `baseDir` is omitted). Executable theme modules are not accepted over MCP.',
   },
   deterministic: {
     type: 'boolean',

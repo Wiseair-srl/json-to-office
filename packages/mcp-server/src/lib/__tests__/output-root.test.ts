@@ -44,11 +44,20 @@ describe('root resolution precedence', () => {
     expect(root.ephemeral).toBe(true);
   });
 
+  it('uses a distinct unpredictable root per connection', () => {
+    const first = createOutputRoot({ env: {}, tmpDir: scratch });
+    const second = createOutputRoot({ env: {}, tmpDir: scratch });
+    expect(first.path).not.toBe(second.path);
+  });
+
   it('does not create the root until first use', async () => {
     const root = createOutputRoot({ env: {}, tmpDir: scratch });
     await expect(fs.access(root.path)).rejects.toThrow();
     await root.ensure();
     await expect(fs.access(root.path)).resolves.toBeUndefined();
+    if (process.platform !== 'win32') {
+      expect((await fs.stat(root.path)).mode & 0o777).toBe(0o700);
+    }
   });
 });
 

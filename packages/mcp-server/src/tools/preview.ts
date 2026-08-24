@@ -28,6 +28,7 @@ import {
   truncatedProperty,
 } from '../lib/diagnostic-budget.js';
 import { resolveDocumentSource, sourceSummary } from '../lib/doc-source.js';
+import { checkOutputName } from '../lib/output-root.js';
 import {
   diagnostic,
   failureFrom,
@@ -38,7 +39,10 @@ import {
   type Failure,
   type ToolEnvelope,
 } from '../lib/errors.js';
-import { checkGeneratedAt } from '../lib/render-options.js';
+import {
+  checkGeneratedAt,
+  resolveThemePathOption,
+} from '../lib/render-options.js';
 import {
   S,
   artifactSchema,
@@ -51,7 +55,7 @@ import {
   type RenderOptionsInput,
   type SourceSummary,
 } from '../lib/schema.js';
-import type { FormatName } from '../lib/adapters.js';
+import { checkRenderer, type FormatName } from '../lib/adapters.js';
 import { PREVIEW_ERROR_CODES } from '../preview/codes.js';
 import {
   ALL_PAGES,
@@ -196,7 +200,11 @@ Delivery: outputMode "auto" (default) inlines the pages as images when they fit 
 FIDELITY: ${PREVIEW_FIDELITY_NOTE}
 
 Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); when either is absent the call returns a structured error naming what to install, never a crash.`,
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: true,
+      },
       inputSchema: S<PreviewToolInput>({
         type: 'object',
         properties: {
@@ -313,6 +321,20 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
         const dateError = checkGeneratedAt(args.generatedAt);
         if (dateError) return dateError;
 
+        const adapter = deps.getAdapter(args.format);
+        const rendererError = await checkRenderer(adapter, args.renderer);
+        if (rendererError) return rendererError;
+
+        const themePath = resolveThemePathOption(args.themePath, args.baseDir);
+        if (!themePath.ok) return themePath;
+
+        if (args.filenamePrefix !== undefined) {
+          const outputNameError = checkOutputName(
+            pageFilename(args.filenamePrefix, 1)
+          );
+          if (outputNameError) return outputNameError;
+        }
+
         const source = await resolveDocumentSource(args, deps.workspaces());
         if (!source.ok) return source;
 
@@ -322,7 +344,7 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
           document: source.document,
           ...(args.pages !== undefined && { pages: args.pages }),
           ...(args.dpi !== undefined && { dpi: args.dpi }),
-          render: pickRenderOptions(args),
+          render: pickRenderOptions(args, themePath.path),
           outputMode: args.outputMode ?? 'auto',
           getAdapter: deps.getAdapter,
           signal: ctx.mcpReq.signal,
@@ -376,11 +398,14 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
   );
 }
 
-function pickRenderOptions(args: PreviewToolInput): RenderOptionsInput {
+function pickRenderOptions(
+  args: PreviewToolInput,
+  resolvedThemePath?: string
+): RenderOptionsInput {
   return {
     ...(args.renderer !== undefined && { renderer: args.renderer }),
     ...(args.theme !== undefined && { theme: args.theme }),
-    ...(args.themePath !== undefined && { themePath: args.themePath }),
+    ...(resolvedThemePath !== undefined && { themePath: resolvedThemePath }),
     ...(args.deterministic !== undefined && {
       deterministic: args.deterministic,
     }),

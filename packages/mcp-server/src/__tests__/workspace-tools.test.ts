@@ -603,7 +603,26 @@ describe('jto_workspace_snapshot to a file', () => {
 });
 
 describe('bounded, with a reason', () => {
-  it('tells an evicted handle why it went', async () => {
+  it('warns when a snapshot exports without a pin', async () => {
+    await client.close();
+    client = await connect(
+      createMemoryWorkspaceStore({ maxPinnedRevisions: 0 })
+    );
+
+    const handle = (await ok('jto_workspace_create', { format: 'docx' }))
+      .workspace.handle;
+    const snapshot = await ok('jto_workspace_snapshot', { handle });
+
+    expect(snapshot.workspace.pinnedRevisions).toEqual([]);
+    expect(snapshot.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        code: 'W_SNAPSHOT_NOT_PINNED',
+      }),
+    ]);
+  });
+
+  it('refuses capacity overflow and reports TTL eviction', async () => {
     await client.close();
     let clock = 1_700_000_000_000;
     const store = createMemoryWorkspaceStore({
@@ -616,18 +635,15 @@ describe('bounded, with a reason', () => {
     const first = (await ok('jto_workspace_create', { format: 'docx' }))
       .workspace.handle;
     clock += 1_000;
-    await ok('jto_workspace_create', { format: 'docx' });
-
-    const evicted = (await call('jto_workspace_inspect', { handle: first }))
+    const refused = (await call('jto_workspace_create', { format: 'docx' }))
       .out;
-    expect(evicted.diagnostics[0]).toMatchObject({
-      code: 'E_WORKSPACE_EVICTED',
-      context: { reason: 'capacity' },
-    });
+    expect(refused.diagnostics[0].code).toBe('E_WORKSPACE_LIMIT');
 
-    const second = (await ok('jto_workspace_list')).workspaces[0].handle;
+    const preserved = await ok('jto_workspace_inspect', { handle: first });
+    expect(preserved.workspace.handle).toBe(first);
+
     clock += 60_001;
-    const expired = (await call('jto_workspace_inspect', { handle: second }))
+    const expired = (await call('jto_workspace_inspect', { handle: first }))
       .out;
     expect(expired.diagnostics[0]).toMatchObject({
       code: 'E_WORKSPACE_EVICTED',
