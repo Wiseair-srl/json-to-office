@@ -35,10 +35,12 @@ import {
   spliceChartXml,
   type ChartAxisEdits,
   type ChartPartInput,
+  type ChartTextStyle,
 } from '@json-to-office/shared/rendering';
 import type {
   PptxIrChartAxis,
   PptxIrChartElement,
+  PptxIrChartLabelFont,
   PptxIrChartValueAxis,
 } from '../../ir/types';
 
@@ -92,7 +94,32 @@ function spliceInput(element: PptxIrChartElement): ChartPartInput {
     ...(element.options.radarStyle
       ? { radarStyle: element.options.radarStyle }
       : {}),
+    // Fonts: `c:txPr` and `a:defRPr` on four different elements, none of which
+    // the backend exposes an option for.
+    ...(textStyle(element.options.titleFont)
+      ? { titleFont: textStyle(element.options.titleFont) }
+      : {}),
+    ...(textStyle(element.options.legendFont)
+      ? { legendFont: textStyle(element.options.legendFont) }
+      : {}),
+    ...(textStyle(element.options.dataLabelFont)
+      ? { dataLabelFont: textStyle(element.options.dataLabelFont) }
+      : {}),
   };
+}
+
+/** One resolved label font, or nothing if it carries no styling. */
+function textStyle(
+  font: PptxIrChartLabelFont | undefined
+): ChartTextStyle | undefined {
+  if (!font) return undefined;
+  const style: ChartTextStyle = {
+    ...(font.fontFamily !== undefined ? { fontFamily: font.fontFamily } : {}),
+    ...(font.fontSize !== undefined ? { fontSize: font.fontSize } : {}),
+    ...(font.bold !== undefined ? { bold: font.bold } : {}),
+    ...(font.color ? { color: font.color.hex } : {}),
+  };
+  return Object.keys(style).length > 0 ? style : undefined;
 }
 
 /** One authored axis, in the shared splice's vocabulary. */
@@ -107,14 +134,26 @@ function axisEdits(
     ...(axis.labelRotate !== undefined
       ? { labelRotation: axis.labelRotate }
       : {}),
+    ...(textStyle(axis.labelFont)
+      ? { labelFont: textStyle(axis.labelFont) }
+      : {}),
     ...(axis.gridLine
       ? {
           gridLine: {
+            ...(textStyle(axis.labelFont)
+              ? { labelFont: textStyle(axis.labelFont) }
+              : {}),
             ...(axis.gridLine.style !== undefined
               ? { style: axis.gridLine.style }
               : {}),
+            ...(textStyle(axis.labelFont)
+              ? { labelFont: textStyle(axis.labelFont) }
+              : {}),
             ...(axis.gridLine.size !== undefined
               ? { size: axis.gridLine.size }
+              : {}),
+            ...(textStyle(axis.labelFont)
+              ? { labelFont: textStyle(axis.labelFont) }
               : {}),
             ...(axis.gridLine.color ? { color: axis.gridLine.color.hex } : {}),
           },

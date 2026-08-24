@@ -59,8 +59,15 @@ one is the width of a series that _is_ a line, the other an outline on a series
 that is a filled shape. Checked against pptxgenjs rather than assumed — given
 both, it writes the border on a bar chart and `lineSize` on a line chart.
 
+Last, `chart-text-style`: `a:defRPr` spliced into the chart title's runs, the
+legend's existing `c:txPr`, every series' `c:dLbls`, and each axis. An axis
+rotation and an axis font land in _one_ `c:txPr` — they are two properties of
+the same text, and a second one is a repair prompt rather than a
+differently-styled label.
+
+With that the gap is closed: office-open declares all ten, and nothing a chart
+can be styled with is accepted-and-dropped any more.
+
 `pptxgenjs` declares all ten; it already forwards every one of those props, so
-no deck that renders today stops rendering. `office-open` declares none of them
-yet and each moves into its set as the XML mapping lands. Until then a deck that
-styled an office-open chart is refused before any bytes exist, instead of
-shipping a chart that says something the author did not write.
+no deck that renders today stops rendering. `office-open` now declares all ten too. The capability split remains the
+contract: a prop is honoured or refused by name, never accepted and dropped.

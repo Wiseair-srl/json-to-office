@@ -37,6 +37,7 @@ export type {
   ChartAxisEdits,
   ChartPartInput,
   ChartPartSeries,
+  ChartTextStyle,
 } from './chart-parts';
 export {
   CHART_PACKAGE_RELATIONSHIP,
