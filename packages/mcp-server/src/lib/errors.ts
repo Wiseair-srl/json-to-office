@@ -444,6 +444,8 @@ export const OPTION_ERROR_CODES = {
   UNKNOWN_RENDERER: 'E_UNKNOWN_RENDERER',
   /** `date` is not parseable as a date. */
   INVALID_DATE: 'E_INVALID_DATE',
+  /** `themePath` is not a data-only JSON theme path. */
+  INVALID_THEME_PATH: 'E_INVALID_THEME_PATH',
   /** The tool does not support the requested format. */
   UNSUPPORTED_FORMAT: 'E_UNSUPPORTED_FORMAT',
 } as const;

@@ -12,6 +12,7 @@
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
+import { randomBytes } from 'crypto';
 
 import { ERROR_CODES, failure, type Failure } from './errors.js';
 
@@ -190,17 +191,35 @@ export function createOutputRoot(options: OutputRootOptions = {}): OutputRoot {
     ? path.resolve(configured)
     : path.join(
         options.tmpDir ?? os.tmpdir(),
-        `${TEMP_PREFIX}${process.pid}-${Date.now().toString(36)}`
+        `${TEMP_PREFIX}${process.pid}-${randomBytes(12).toString('hex')}`
       );
 
   let realRoot: string | undefined;
+  let ensurePromise: Promise<string> | undefined;
 
   async function ensure(): Promise<string> {
-    if (realRoot === undefined) {
-      await fs.mkdir(rootPath, { recursive: true });
-      realRoot = await fs.realpath(rootPath);
+    if (realRoot !== undefined) return realRoot;
+    if (ensurePromise === undefined) {
+      ensurePromise = (async () => {
+        if (ephemeral) {
+          // Exclusive creation means a planted path is a refusal, never a
+          // directory (or symlink) this connection silently adopts. The
+          // random name makes collision negligible; 0o700 keeps generated
+          // documents private on shared system temp directories.
+          await fs.mkdir(rootPath, { mode: 0o700 });
+        } else {
+          await fs.mkdir(rootPath, { recursive: true });
+        }
+        realRoot = await fs.realpath(rootPath);
+        return realRoot;
+      })();
     }
-    return realRoot;
+    try {
+      return await ensurePromise;
+    } catch (error) {
+      ensurePromise = undefined;
+      throw error;
+    }
   }
 
   return {
@@ -251,6 +270,7 @@ export function createOutputRoot(options: OutputRootOptions = {}): OutputRoot {
       if (!ephemeral || realRoot === undefined) return;
       await fs.rm(realRoot, { recursive: true, force: true });
       realRoot = undefined;
+      ensurePromise = undefined;
     },
   };
 }

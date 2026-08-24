@@ -40,6 +40,11 @@ interface ToolInfo {
   description?: string;
   inputSchema: JsonSchema;
   outputSchema?: JsonSchema;
+  annotations?: {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    openWorldHint?: boolean;
+  };
 }
 
 let scratch: string;
@@ -176,6 +181,23 @@ describe('shared options', () => {
           `${tool.name} advertises "${alias}"`
         ).not.toContain(alias);
       }
+    }
+  });
+
+  it('does not expose a caller-controlled font cache directory', () => {
+    const generate = tools.find((tool) => tool.name === 'jto_generate');
+    const googleFonts =
+      generate?.inputSchema.properties?.fonts?.properties?.googleFonts;
+    expect(googleFonts?.properties?.cacheDir).toBeUndefined();
+  });
+});
+
+describe('annotations', () => {
+  it('describes render-side filesystem and network effects', () => {
+    for (const name of ['jto_generate', 'jto_docx_diff', 'jto_preview']) {
+      const tool = tools.find((candidate) => candidate.name === name);
+      expect(tool?.annotations?.readOnlyHint, name).toBe(false);
+      expect(tool?.annotations?.openWorldHint, name).toBe(true);
     }
   });
 });

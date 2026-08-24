@@ -43,6 +43,27 @@ describe('deliverArtifact', () => {
     expect(result.artifact.bytes).toBe(buffer.byteLength);
     expect(result.artifact.mimeType).toBe(docxMime);
     await expect(fs.readFile(result.artifact.path)).resolves.toEqual(buffer);
+    if (process.platform !== 'win32') {
+      expect((await fs.stat(result.artifact.path)).mode & 0o777).toBe(0o600);
+    }
+  });
+
+  it('tightens an existing artifact to owner-only', async () => {
+    const outputRoot = root();
+    const resolved = await outputRoot.resolveOutputPath('report.docx');
+    if (!resolved.ok) throw new Error('expected output path');
+    await fs.writeFile(resolved.path, 'old', { mode: 0o644 });
+
+    const result = await deliverArtifact(Buffer.from('new'), {
+      filename: 'report.docx',
+      mimeType: docxMime,
+      outputRoot,
+    });
+
+    expect(result.ok).toBe(true);
+    if (process.platform !== 'win32') {
+      expect((await fs.stat(resolved.path)).mode & 0o777).toBe(0o600);
+    }
   });
 
   it('inlines base64 under the limit', async () => {

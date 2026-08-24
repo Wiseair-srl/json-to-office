@@ -396,7 +396,7 @@ describe('snapshots', () => {
     expect(again.record.pinnedRevisions).toEqual([1]);
   });
 
-  it('releases the oldest pin at the cap', async () => {
+  it('exports without releasing an older pin at the cap', async () => {
     store = build({ maxPinnedRevisions: 2 });
     const { handle } = await open();
     for (let index = 0; index < 3; index += 1) {
@@ -411,48 +411,49 @@ describe('snapshots', () => {
       );
     }
     const listed = unwrap(await store.list());
-    expect(listed.records[0].pinnedRevisions).toEqual([2, 3]);
-    expect(failed(await store.get(handle, { revision: 1 })).code).toBe(
+    expect(listed.records[0].pinnedRevisions).toEqual([1, 2]);
+    expect(
+      unwrap(await store.get(handle, { revision: 1 })).record.revision
+    ).toBe(1);
+    expect(failed(await store.get(handle, { revision: 3 })).code).toBe(
       ERROR_CODES.STALE_REVISION
     );
   });
 });
 
 describe('bounds', () => {
-  it('evicts the least recently used workspace when the count is full', async () => {
+  it('refuses a new workspace without evicting existing workspaces', async () => {
     store = build({ maxWorkspaces: 2 });
     const first = await open();
-    clock += 1000;
     const second = await open();
-    clock += 1000;
-    const third = await open();
-
-    const problem = failed(await store.get(first.handle));
-    expect(problem.code).toBe(WORKSPACE_ERROR_CODES.EVICTED);
-    expect(problem.context).toMatchObject({ reason: 'capacity' });
-    expect(problem.message).toMatch(/allows 2 open documents/);
+    const problem = failed(
+      await store.create({ format: 'docx', document: document() })
+    );
+    expect(problem.code).toBe(WORKSPACE_ERROR_CODES.LIMIT);
 
     const listed = unwrap(await store.list());
     expect(listed.records.map((record) => record.handle)).toEqual([
+      first.handle,
       second.handle,
-      third.handle,
     ]);
   });
 
-  it('keeps the workspace that was used most recently, not the newest', async () => {
-    store = build({ maxWorkspaces: 2 });
-    const first = await open();
-    clock += 1000;
-    const second = await open();
-    clock += 1000;
-    unwrap(await store.get(first.handle));
-    clock += 1000;
-    await open();
+  it('refuses document growth without evicting another workspace', async () => {
+    const small = { name: 'docx' };
+    const bytes = Buffer.byteLength(JSON.stringify(small));
+    store = build({ maxTotalBytes: bytes * 2 + 5 });
+    const first = await open(store, small);
+    const second = await open(store, small);
 
-    expect(unwrap(await store.get(first.handle)).record.revision).toBe(1);
-    expect(failed(await store.get(second.handle)).context).toMatchObject({
-      reason: 'capacity',
-    });
+    const problem = failed(
+      await store.patch({
+        handle: second.handle,
+        operations: [{ op: 'add', path: '/value', value: 'too large' }],
+      })
+    );
+    expect(problem.code).toBe(WORKSPACE_ERROR_CODES.LIMIT);
+    expect(unwrap(await store.get(first.handle)).document).toEqual(small);
+    expect(unwrap(await store.get(second.handle)).document).toEqual(small);
   });
 
   it('refuses a document over the per-document ceiling', async () => {

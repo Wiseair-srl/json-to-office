@@ -90,35 +90,56 @@ const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 /** Ceiling on what survives the age sweep. A 300-DPI page is 1-3 MB. */
 const CACHE_MAX_BYTES = 512 * 1024 * 1024;
 
-/**
- * A per-user suffix for the cache directory.
- *
- * `os.tmpdir()` is already per-user on macOS but shared by every account on
- * Linux, so one fixed name there would mix one user's rendered pages with
- * another's — and hand whoever created the directory first control of its
- * permissions. The uid is the natural discriminator; Windows reports -1 for
- * everyone, so the account name is hashed rather than used raw, which keeps
- * the directory name a fixed-width token whatever the name contains.
- */
-function cacheOwnerToken(): string {
-  try {
-    const info = os.userInfo();
-    if (typeof info.uid === 'number' && info.uid >= 0) return String(info.uid);
-    return crypto
-      .createHash('sha256')
-      .update(info.username)
-      .digest('hex')
-      .slice(0, 12);
-  } catch {
-    // No passwd entry for this process. A shared directory is still a better
-    // cache than no cache.
-    return 'shared';
-  }
-}
+/** Unpredictable per-process namespace inside the shared system temp dir. */
+const DEFAULT_PREVIEW_CACHE_DIR = path.join(
+  os.tmpdir(),
+  `jto-mcp-preview-cache-${process.pid}-${crypto
+    .randomBytes(12)
+    .toString('hex')}`
+);
 
 /** Where PNGs are filed when the caller does not choose. */
 export function defaultPreviewCacheDir(): string {
-  return path.join(os.tmpdir(), `jto-mcp-preview-cache-${cacheOwnerToken()}`);
+  return DEFAULT_PREVIEW_CACHE_DIR;
+}
+
+/** Cache files are content-addressed; unrelated names never belong to us. */
+const CACHE_ENTRY_NAME = /^[a-f0-9]{64}\.(?:png|meta\.json)(?:\.tmp-\d+-\d+)?$/;
+
+/**
+ * Verify an existing cache directory without following a planted symlink.
+ *
+ * The default name is random, but callers inside the package can supply a
+ * cache directory. Treat every existing path as hostile: lstat, ownership and
+ * permissions remain the security boundary.
+ */
+async function inspectPrivateCacheDir(cacheDir: string): Promise<boolean> {
+  const stat = await fs.lstat(cacheDir).catch(() => undefined);
+  if (!stat || stat.isSymbolicLink() || !stat.isDirectory()) return false;
+
+  if (typeof process.getuid === 'function' && stat.uid !== process.getuid()) {
+    return false;
+  }
+  if (process.platform !== 'win32' && (stat.mode & 0o077) !== 0) {
+    try {
+      await fs.chmod(cacheDir, 0o700);
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Create the dedicated cache directory, or disable caching if it is unsafe. */
+async function ensurePrivateCacheDir(cacheDir: string): Promise<boolean> {
+  try {
+    // Non-recursive on purpose: the system temp parent already exists, and a
+    // recursive mkdir would follow attacker-controlled intermediate links.
+    await fs.mkdir(cacheDir, { mode: 0o700 });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') return false;
+  }
+  return inspectPrivateCacheDir(cacheDir);
 }
 
 export interface PreviewCacheSweepOptions {
@@ -156,13 +177,18 @@ export async function sweepPreviewCache(
   const maxBytes = options.maxBytes ?? CACHE_MAX_BYTES;
   const now = options.now ?? Date.now();
 
+  if (!(await inspectPrivateCacheDir(cacheDir))) {
+    return { removed: 0, bytes: 0 };
+  }
+
   const names = await fs.readdir(cacheDir).catch(() => undefined);
   if (!names) return { removed: 0, bytes: 0 };
 
   const entries: Array<{ file: string; mtimeMs: number; size: number }> = [];
   for (const name of names) {
+    if (!CACHE_ENTRY_NAME.test(name)) continue;
     const file = path.join(cacheDir, name);
-    const stat = await fs.stat(file).catch(() => undefined);
+    const stat = await fs.lstat(file).catch(() => undefined);
     if (!stat?.isFile()) continue;
     entries.push({ file, mtimeMs: stat.mtimeMs, size: stat.size });
   }
@@ -473,10 +499,10 @@ async function writeAtomic(
 ): Promise<void> {
   const temp = `${target}.tmp-${process.pid}-${tempCounter++}`;
   try {
-    // 0o700 on creation: the per-user directory name keeps accounts apart,
-    // but only the mode keeps another account out of one it did not create.
-    await fs.mkdir(dir, { recursive: true, mode: 0o700 });
-    await fs.writeFile(temp, data);
+    // Re-check immediately before writing: the cache is shared across
+    // processes and may have been replaced after renderPreview's first check.
+    if (!(await inspectPrivateCacheDir(dir))) return;
+    await fs.writeFile(temp, data, { flag: 'wx', mode: 0o600 });
     await fs.rename(temp, target);
   } catch {
     // The cache is an optimization; a failure to populate it is not a failure
@@ -566,8 +592,12 @@ export async function renderPreview(
     options.cacheDir === undefined
       ? defaultPreviewCacheDir()
       : options.cacheDir;
-  const cache = createCacheIO(cacheDir);
-  if (cacheDir !== null) await ensureSwept(cacheDir);
+  const safeCacheDir =
+    cacheDir !== null && (await ensurePrivateCacheDir(cacheDir))
+      ? cacheDir
+      : null;
+  const cache = createCacheIO(safeCacheDir);
+  if (safeCacheDir !== null) await ensureSwept(safeCacheDir);
 
   // Total progress: generate, convert, then one step per page. The page count
   // is unknown until the PDF exists, so the total is revised upward once —

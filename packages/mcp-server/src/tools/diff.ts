@@ -36,7 +36,11 @@ import {
   validationDiagnostics,
   type Diagnostic,
 } from '../lib/errors.js';
-import { checkDateOption, checkGeneratedAt } from '../lib/render-options.js';
+import {
+  checkDateOption,
+  checkGeneratedAt,
+  resolveThemePathOption,
+} from '../lib/render-options.js';
 import {
   S,
   artifactOutputProperties,
@@ -163,7 +167,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
-        openWorldHint: false,
+        openWorldHint: true,
       },
       inputSchema: S<DiffArgs>({
         type: 'object',
@@ -238,6 +242,12 @@ export function register(server: McpServer, deps: ToolDeps): void {
 
           const generatedAtError = checkGeneratedAt(args.generatedAt);
           if (generatedAtError) return generatedAtError;
+
+          const themePath = resolveThemePathOption(
+            args.themePath,
+            args.baseDir
+          );
+          if (!themePath.ok) return themePath;
 
           const store = deps.workspaces();
           const before = await resolveDocumentSource(
@@ -315,7 +325,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
           const options: GeneratorOptions = {
             ...(args.renderer !== undefined && { renderer: args.renderer }),
             ...(args.theme !== undefined && { theme: args.theme }),
-            ...(args.themePath !== undefined && { themePath: args.themePath }),
+            ...(themePath.path !== undefined && { themePath: themePath.path }),
             ...(args.deterministic !== undefined && {
               deterministic: args.deterministic,
             }),

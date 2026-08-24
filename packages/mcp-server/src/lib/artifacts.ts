@@ -144,12 +144,15 @@ export async function deliverArtifact(
 
   let handle: fs.FileHandle;
   try {
-    handle = await fs.open(resolved.path, ARTIFACT_WRITE_FLAGS);
+    // A configured root may itself be shared. New artifacts still default to
+    // owner-only; callers that intentionally publish them can chmod afterwards.
+    handle = await fs.open(resolved.path, ARTIFACT_WRITE_FLAGS, 0o600);
   } catch (err) {
     if ((err as NodeJS.ErrnoException)?.code !== 'ELOOP') throw err;
     return plantedLink();
   }
   try {
+    await handle.chmod(0o600);
     await handle.writeFile(buffer);
   } finally {
     await handle.close();

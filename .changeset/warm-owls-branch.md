@@ -11,4 +11,5 @@ block, was false for the one class of diagnostic that never does. The codeless
 fallback was worse: it read `E_GENERATION_WARNING`, an `E_` prefix on something
 that had not stopped the render, and a code the README never listed. Warnings
 now arrive as `W_FONT_UNRESOLVED` and friends, or `W_GENERATION` when the core
-named nothing, with the core's own spelling kept on `context.code`.
+named nothing, with the core's own spelling kept on `context.code`. Unknown
+named theme fallbacks likewise use `W_UNKNOWN_THEME` rather than an `E_` code.

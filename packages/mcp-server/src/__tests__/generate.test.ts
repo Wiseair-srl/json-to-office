@@ -352,7 +352,7 @@ describe('jto_generate', () => {
 
       expect(result.ok).toBe(true);
       const unknown = result.diagnostics.find(
-        (entry: any) => entry.code === 'E_UNKNOWN_THEME'
+        (entry: any) => entry.code === 'W_UNKNOWN_THEME'
       );
       expect(unknown).toBeDefined();
       expect(unknown.severity).toBe('warning');
@@ -375,7 +375,7 @@ describe('jto_generate', () => {
       });
       expect(result.theme).toBe('modern');
       expect(
-        result.diagnostics.some((d: any) => d.code === 'E_UNKNOWN_THEME')
+        result.diagnostics.some((d: any) => d.code === 'W_UNKNOWN_THEME')
       ).toBe(false);
     },
     GENERATION_TIMEOUT_MS
@@ -391,7 +391,7 @@ describe('jto_generate', () => {
       });
       expect(pptx.ok).toBe(true);
       const warned = pptx.diagnostics.filter(
-        (entry: any) => entry.code === 'E_UNKNOWN_THEME'
+        (entry: any) => entry.code === 'W_UNKNOWN_THEME'
       );
       expect(warned).toHaveLength(1);
       expect(warned[0].context.source).toBe('props.theme');
@@ -452,6 +452,27 @@ describe('jto_generate', () => {
     expect(result.diagnostics[0].context.rendererIds).toEqual(
       expect.arrayContaining(['pptxgenjs', 'office-open'])
     );
+  });
+
+  it('rejects an executable theme module without importing it', async () => {
+    const marker = path.join(scratch, 'executed');
+    const themeModule = path.join(scratch, 'theme.mjs');
+    await fs.writeFile(
+      themeModule,
+      `import fs from 'node:fs'; fs.writeFileSync(${JSON.stringify(
+        marker
+      )}, 'executed'); export default {};`
+    );
+
+    const result = await generate({
+      format: 'docx',
+      document: DOCX,
+      themePath: themeModule,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics[0].code).toBe('E_INVALID_THEME_PATH');
+    await expect(fs.access(marker)).rejects.toThrow();
   });
 
   it('bails out cleanly when the client has already cancelled', async () => {
