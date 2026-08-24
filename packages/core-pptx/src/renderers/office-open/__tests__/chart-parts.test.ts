@@ -383,6 +383,77 @@ describe('native charts on office-open pptx', () => {
     expect(xml).not.toMatch(/\$[A-Z]\$2:\$[A-Z]\$1/);
   });
 
+  it('forwards the per-family tuning the backend carries directly', async () => {
+    const bars = await read(
+      await render(deck([chart({ barGapWidthPct: 20, barOverlapPct: -10 })])),
+      'ppt/charts/chart1.xml'
+    );
+    expect(bars).toContain('<c:gapWidth val="20"/>');
+    expect(bars).toContain('<c:overlap val="-10"/>');
+
+    const ring = await read(
+      await render(
+        deck([chart({ type: 'doughnut', holeSize: 70, firstSliceAng: 90 })])
+      ),
+      'ppt/charts/chart1.xml'
+    );
+    expect(ring).toContain('<c:holeSize val="70"/>');
+    expect(ring).toContain('<c:firstSliceAng val="90"/>');
+  });
+
+  it('labels every series, not just the first', async () => {
+    // The fixture has two series. A chart that labelled only one of them would
+    // be a different chart from the authored one.
+    const xml = await read(
+      await render(
+        deck([chart({ showValue: true, dataLabelPosition: 'outEnd' })])
+      ),
+      'ppt/charts/chart1.xml'
+    );
+    // `<c:showVal/>` rather than `val="1"`: CT_Boolean's `val` is optional and
+    // defaults to true, so this is the backend's spelling of the same thing.
+    expect(xml.match(/<c:showVal\/>/g)).toHaveLength(2);
+    expect(xml.match(/<c:dLblPos val="outEnd"\/>/g)).toHaveLength(2);
+  });
+
+  it('turns off the label flags the author did not ask for', async () => {
+    // The same CT_Boolean default cuts the other way, and this is the bug it
+    // caused. Every flag left *out* of `c:dLbls` also defaults to true, so
+    // writing only `<c:showVal/>` asks for the value, the category name, the
+    // series name, the percentage and the legend key — a chart authored with
+    // `showValue: true` came out labelled `Q1; Revenue; 120`. Asserting the
+    // value label alone did not catch it; a LibreOffice render did.
+    const xml = await read(
+      await render(deck([chart({ showValue: true })])),
+      'ppt/charts/chart1.xml'
+    );
+    for (const flag of [
+      'showCatName',
+      'showSerName',
+      'showPercent',
+      'showBubbleSize',
+      'showLegendKey',
+    ]) {
+      expect(xml, flag).toContain(`<c:${flag} val="0"/>`);
+    }
+  });
+
+  it('keeps an explicit false, and stays silent when nothing was authored', async () => {
+    // Off is a value, not an absence: an author who turns the label off means
+    // it, and a backend left on its default would draw one they asked not to
+    // see.
+    const off = await read(
+      await render(deck([chart({ showValue: false })])),
+      'ppt/charts/chart1.xml'
+    );
+    expect(off).toContain('<c:showVal val="0"/>');
+
+    // ...but a chart that said nothing about labels must not get an opinion
+    // written into it either.
+    const quiet = await read(await render(deck()), 'ppt/charts/chart1.xml');
+    expect(quiet).not.toContain('<c:dLbls>');
+  });
+
   it('renders byte-identically twice', async () => {
     const first = await generateBufferViaIr(deck(), {
       renderer: 'office-open',

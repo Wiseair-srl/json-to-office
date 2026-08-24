@@ -29,6 +29,7 @@ import type {
   PptxIrTableBorder,
   PptxIrTableElement,
   PptxIrChartElement,
+  PptxIrChartOptions,
   PptxIrTextBodyStyle,
   PptxIrTextBoxElement,
   PptxIrTextRun,
@@ -651,6 +652,7 @@ function chartChild(
 ): Opts {
   const { options, transform } = element;
   const series = element.series;
+  const dataLabels = dataLabelOptions(options);
 
   // Unreachable through validation, which refuses bubble charts on this
   // renderer by name. Stated here too because a caller can bypass validation,
@@ -673,6 +675,9 @@ function chartChild(
     series: series.map((entry, index) => ({
       name: entry.name ?? `Series ${index + 1}`,
       values: entry.values ?? [],
+      // Every series, not just the first: PowerPoint labels each one, and a
+      // chart that labelled only its first series would be a different chart.
+      ...(dataLabels ? { dataLabels } : {}),
     })),
     ...(options.title && options.showTitle !== false
       ? { title: options.title }
@@ -680,6 +685,7 @@ function chartChild(
     ...(options.showLegend !== undefined
       ? { showLegend: options.showLegend }
       : {}),
+    ...chartFamilyOptions(options),
     ...(options.legendPosition
       ? { legendPosition: options.legendPosition }
       : {}),
@@ -688,6 +694,65 @@ function chartChild(
     width: transform.widthEmu,
     height: transform.heightEmu,
     ...(element.altText ? { description: element.altText } : {}),
+  };
+}
+
+/**
+ * Per-family tuning that `ChartSpaceOptions` carries directly.
+ *
+ * Bar gap and overlap, and the pie/doughnut geometry. Each is only forwarded
+ * when authored — the backend has its own defaults and writing a value it did
+ * not ask for is how a chart drifts from the one that was designed.
+ */
+function chartFamilyOptions(options: PptxIrChartOptions): Opts {
+  return {
+    ...(options.barGapWidthPercent !== undefined
+      ? { gapWidth: options.barGapWidthPercent }
+      : {}),
+    ...(options.barOverlapPercent !== undefined
+      ? { overlap: options.barOverlapPercent }
+      : {}),
+    ...(options.holeSize !== undefined ? { holeSize: options.holeSize } : {}),
+    ...(options.firstSliceAngle !== undefined
+      ? { firstSliceAngle: options.firstSliceAngle }
+      : {}),
+  };
+}
+
+/**
+ * The data labels a series carries, or nothing if none were authored.
+ *
+ * Every flag is written once any of them is, and that is not tidiness. A
+ * `CT_Boolean` in DrawingML has an *optional* `val` that defaults to **true**,
+ * so `<c:dLbls><c:showVal/></c:dLbls>` does not mean "show the value": it means
+ * show the value, the category name, the series name, the percentage and the
+ * legend key, because every flag left out defaults to on. A chart authored with
+ * `showValue: true` came out labelled `Q1; Revenue; 120`. pptxgenjs writes all
+ * six for the same reason.
+ *
+ * So an unauthored flag is written `false` rather than omitted — but only once
+ * the author has asked for labels at all. A chart that said nothing about them
+ * gets no `c:dLbls`, and keeps the backend's own defaults.
+ */
+function dataLabelOptions(options: PptxIrChartOptions): Opts | undefined {
+  const authored =
+    options.showValue !== undefined ||
+    options.showPercent !== undefined ||
+    options.showLabel !== undefined ||
+    options.showSeriesName !== undefined ||
+    options.dataLabelPosition !== undefined;
+  if (!authored) return undefined;
+
+  return {
+    showVal: options.showValue ?? false,
+    showPercent: options.showPercent ?? false,
+    showCatName: options.showLabel ?? false,
+    showSerName: options.showSeriesName ?? false,
+    showBubbleSize: false,
+    showLegendKey: false,
+    ...(options.dataLabelPosition
+      ? { position: options.dataLabelPosition }
+      : {}),
   };
 }
 
