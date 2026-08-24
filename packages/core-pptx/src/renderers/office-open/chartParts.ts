@@ -33,9 +33,14 @@ import {
   chartWorkbookRelsXml,
   matchChartParts,
   spliceChartXml,
+  type ChartAxisEdits,
   type ChartPartInput,
 } from '@json-to-office/shared/rendering';
-import type { PptxIrChartElement } from '../../ir/types';
+import type {
+  PptxIrChartAxis,
+  PptxIrChartElement,
+  PptxIrChartValueAxis,
+} from '../../ir/types';
 
 /** The workbook name pptxgenjs uses, and therefore the one this must use too. */
 const workbookName = (ordinal: number): string =>
@@ -68,11 +73,41 @@ function spliceInput(element: PptxIrChartElement): ChartPartInput {
       : {}),
     // Spliced rather than emitted: see `chartChild`, which cannot pass `axes`
     // without also inventing the axis ids the plot area references.
-    ...(element.options.categoryAxis.title
-      ? { categoryAxisTitle: element.options.categoryAxis.title }
+    categoryAxis: axisEdits(element.options.categoryAxis),
+    valueAxis: axisEdits(element.options.valueAxis),
+  };
+}
+
+/** One authored axis, in the shared splice's vocabulary. */
+function axisEdits(
+  axis: PptxIrChartAxis | PptxIrChartValueAxis
+): ChartAxisEdits {
+  const value = axis as PptxIrChartValueAxis;
+  return {
+    ...(axis.title !== undefined ? { title: axis.title } : {}),
+    ...(axis.hidden !== undefined ? { hidden: axis.hidden } : {}),
+    ...(axis.showLine !== undefined ? { lineVisible: axis.showLine } : {}),
+    ...(axis.labelRotate !== undefined
+      ? { labelRotation: axis.labelRotate }
       : {}),
-    ...(element.options.valueAxis.title
-      ? { valueAxisTitle: element.options.valueAxis.title }
+    ...(axis.gridLine
+      ? {
+          gridLine: {
+            ...(axis.gridLine.style !== undefined
+              ? { style: axis.gridLine.style }
+              : {}),
+            ...(axis.gridLine.size !== undefined
+              ? { size: axis.gridLine.size }
+              : {}),
+            ...(axis.gridLine.color ? { color: axis.gridLine.color.hex } : {}),
+          },
+        }
+      : {}),
+    ...(value.minValue !== undefined ? { min: value.minValue } : {}),
+    ...(value.maxValue !== undefined ? { max: value.maxValue } : {}),
+    ...(value.majorUnit !== undefined ? { majorUnit: value.majorUnit } : {}),
+    ...(value.labelFormatCode !== undefined
+      ? { numberFormat: value.labelFormatCode }
       : {}),
   };
 }

@@ -20,8 +20,31 @@ import {
   matchChartParts,
   spliceChartXml,
 } from '@json-to-office/shared/rendering';
+import type { ChartPartInput } from '@json-to-office/shared/rendering';
 import type { DocxIrChartRun } from '../../ir/types';
 import { buildChartWorkbook } from '../../utils/chartWorkbook';
+
+/**
+ * One chart run, in the shared splice's vocabulary.
+ *
+ * The docx component exposes a smaller styling surface than the pptx one, so
+ * only the axis titles have anywhere to go — the rest of `ChartAxisEdits` has
+ * no authored prop behind it in this format yet.
+ */
+function spliceInput(chart: DocxIrChartRun): ChartPartInput {
+  return {
+    chartType: chart.chartType,
+    series: chart.series,
+    colors: chart.colors,
+    ...(chart.legendPosition ? { legendPosition: chart.legendPosition } : {}),
+    ...(chart.categoryAxisTitle
+      ? { categoryAxis: { title: chart.categoryAxisTitle } }
+      : {}),
+    ...(chart.valueAxisTitle
+      ? { valueAxis: { title: chart.valueAxisTitle } }
+      : {}),
+  };
+}
 
 /** Register the xlsx content type once, if the package does not have it. */
 function declareWorkbookContentType(zip: AdmZip): void {
@@ -75,7 +98,7 @@ export function spliceChartParts(
 
     zip.updateFile(
       zip.getEntry(`word/charts/chart${ordinal}.xml`)!,
-      Buffer.from(spliceChartXml(xml, chart), 'utf8')
+      Buffer.from(spliceChartXml(xml, spliceInput(chart)), 'utf8')
     );
     zip.addFile(
       `word/embeddings/${workbookName}`,

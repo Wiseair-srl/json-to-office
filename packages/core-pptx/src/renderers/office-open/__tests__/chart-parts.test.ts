@@ -454,6 +454,78 @@ describe('native charts on office-open pptx', () => {
     expect(quiet).not.toContain('<c:dLbls>');
   });
 
+  it('applies every authored axis edit, in schema order', async () => {
+    const xml = await read(
+      await render(
+        deck([
+          chart({
+            valAxisMinVal: -5,
+            valAxisMaxVal: 99,
+            valAxisMajorUnit: 10,
+            valAxisLabelFormatCode: '#,##0',
+            catAxisHidden: true,
+            valAxisLineShow: false,
+            catAxisLabelRotate: -45,
+            valGridLine: { style: 'dash', size: 1, color: 'CCCCCC' },
+          }),
+        ])
+      ),
+      'ppt/charts/chart1.xml'
+    );
+
+    // CT_Scaling orders logBase, orientation, max, min.
+    expect(xml).toContain(
+      '<c:scaling><c:orientation val="minMax"/><c:max val="99"/><c:min val="-5"/></c:scaling>'
+    );
+    expect(xml).toContain('<c:majorUnit val="10"/>');
+    expect(xml).toContain('<c:numFmt formatCode="#,##0" sourceLinked="0"/>');
+    // `rot` is 60000ths of a degree.
+    expect(xml).toContain('<a:bodyPr rot="-2700000"');
+    expect(xml).toContain('<a:prstDash val="dash"/>');
+    expect(xml).not.toContain('undefined');
+
+    const catAx = xml.slice(
+      xml.indexOf('<c:catAx>'),
+      xml.indexOf('</c:catAx>')
+    );
+    expect(catAx).toContain('<c:delete val="1"/>');
+
+    const valAx = xml.slice(
+      xml.indexOf('<c:valAx>'),
+      xml.indexOf('</c:valAx>')
+    );
+    // CT_ValAx fixes this order, and a reader enforces it: majorGridlines,
+    // title, numFmt, spPr, then crossAx. Inserting each edit at its own anchor
+    // put whichever landed last in front of the rest.
+    const order = [
+      '<c:axPos',
+      '<c:majorGridlines>',
+      '<c:title>',
+      '<c:numFmt',
+      '<c:crossAx',
+      '<c:majorUnit',
+    ].map((tag) => valAx.indexOf(tag));
+    expect(order.every((at) => at >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+
+    // The axis-level `c:spPr` sits between numFmt and crossAx. Searched from
+    // the numFmt onwards because `c:majorGridlines` carries a nested `c:spPr`
+    // of its own, and a plain indexOf finds that one first.
+    const axisSpPr = valAx.indexOf('<c:spPr>', valAx.indexOf('<c:numFmt'));
+    expect(axisSpPr).toBeGreaterThan(valAx.indexOf('<c:numFmt'));
+    expect(axisSpPr).toBeLessThan(valAx.indexOf('<c:crossAx'));
+  });
+
+  it('leaves an axis the author said nothing about alone', async () => {
+    const plain = await read(await render(deck()), 'ppt/charts/chart1.xml');
+    expect(plain).toContain('<c:delete val="0"/>');
+    expect(plain).not.toContain('<c:majorGridlines');
+    expect(plain).not.toContain('<c:majorUnit');
+    expect(plain).toContain(
+      '<c:numFmt formatCode="General" sourceLinked="1"/>'
+    );
+  });
+
   it('renders byte-identically twice', async () => {
     const first = await generateBufferViaIr(deck(), {
       renderer: 'office-open',

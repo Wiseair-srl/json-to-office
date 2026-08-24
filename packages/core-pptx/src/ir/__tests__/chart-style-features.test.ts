@@ -199,16 +199,18 @@ describe('chart styling across the two renderers', () => {
   );
 
   it('names the prop, not just the chart, when it refuses', async () => {
+    // `titleFontSize` rather than an axis prop: the axis capabilities are
+    // implemented now, so a refusal has to be asked of one that is not.
     let caught: unknown;
     try {
-      await generateBufferViaIr(deck({ valAxisMaxVal: 99 }), {
+      await generateBufferViaIr(deck({ titleFontSize: 20 }), {
         renderer: 'office-open',
       });
     } catch (error) {
       caught = error;
     }
     const error = caught as Error & { paths?: string[] };
-    expect(error.paths).toContain('slides[0].elements[0].valAxisMaxVal');
+    expect(error.paths).toContain('slides[0].elements[0].titleFontSize');
   });
 
   it('still renders an unstyled chart on office-open', async () => {

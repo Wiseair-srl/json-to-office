@@ -64,14 +64,39 @@ export interface ChartPartSeries {
  * about `DocxIrChartRun` and `PptxIrChartElement`, which would make a shared
  * module depend on both cores it exists to serve.
  */
+/**
+ * What an authored axis asks for, in neither format's vocabulary.
+ *
+ * Every field here is one a backend drops: `AxisOptions` cannot be passed to
+ * `@office-open` at all — supplying `axes` replaces the default pair and needs
+ * `id`/`crossAxisId` values an adapter cannot safely allocate — so an authored
+ * axis is applied by rewriting the axis the backend built.
+ */
+export interface ChartAxisEdits {
+  title?: string;
+  /** `c:delete`: an axis hidden entirely. */
+  hidden?: boolean;
+  /** `false` draws no axis line, leaving its labels. */
+  lineVisible?: boolean;
+  /** Label rotation, in degrees. */
+  labelRotation?: number;
+  gridLine?: { style?: string; size?: number; color?: string };
+  /** Value-axis bounds; ignored on a category axis, which has no scale. */
+  min?: number;
+  max?: number;
+  majorUnit?: number;
+  /** A number format code, e.g. `#,##0`. */
+  numberFormat?: string;
+}
+
 export interface ChartPartInput {
   /** The chart type, in `@office-open`'s spelling. Decides fill vs stroke. */
   chartType: string;
   series: readonly ChartPartSeries[];
   /** Resolved series colours, uppercase 6-digit hex without `#`. May be empty. */
   colors: readonly string[];
-  categoryAxisTitle?: string;
-  valueAxisTitle?: string;
+  categoryAxis?: ChartAxisEdits;
+  valueAxis?: ChartAxisEdits;
   legendPosition?: string;
   /**
    * `clustered` | `stacked` | `percentStacked`.
@@ -406,26 +431,139 @@ function axisTitle(text: string): string {
   );
 }
 
+/** Points to EMU, the unit a line width is written in. */
+const POINTS_TO_EMU = 12700;
+
+/** How the authored dash names spell out in DrawingML. */
+const DASH_STYLES: Readonly<Record<string, string>> = {
+  solid: 'solid',
+  dash: 'dash',
+  dot: 'sysDot',
+};
+
+/** `c:majorGridlines`, styled if the author said how. */
+function gridLinesElement(
+  gridLine: NonNullable<ChartAxisEdits['gridLine']>
+): string {
+  if (gridLine.style === 'none') return '';
+  const parts: string[] = [];
+  if (gridLine.color) {
+    parts.push(
+      `<a:solidFill><a:srgbClr val="${gridLine.color.toUpperCase()}"/></a:solidFill>`
+    );
+  }
+  const dash = gridLine.style ? DASH_STYLES[gridLine.style] : undefined;
+  if (dash) parts.push(`<a:prstDash val="${dash}"/>`);
+  if (parts.length === 0 && gridLine.size === undefined) {
+    return '<c:majorGridlines/>';
+  }
+  const width =
+    gridLine.size !== undefined
+      ? ` w="${Math.round(gridLine.size * POINTS_TO_EMU)}"`
+      : '';
+  return `<c:majorGridlines><c:spPr><a:ln${width}>${parts.join('')}</a:ln></c:spPr></c:majorGridlines>`;
+}
+
+/** `c:txPr` carrying nothing but a rotation. */
+function rotationTextProperties(degrees: number): string {
+  // `rot` is in 60000ths of a degree, and negative turns clockwise — the same
+  // direction the authored value means.
+  const rot = Math.round(degrees * 60000);
+  return (
+    `<c:txPr><a:bodyPr rot="${rot}" spcFirstLastPara="1" vertOverflow="ellipsis" vert="horz" wrap="square" anchorCtr="1"/>` +
+    `<a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>`
+  );
+}
+
 /**
- * Insert an axis title into one axis element.
+ * Apply an authored axis to the axis the backend built.
  *
- * CT_CatAx and CT_ValAx both order `title` after `axPos` and before `numFmt`,
- * and readers enforce that order — a title written anywhere else is a repair
- * prompt, not a mis-drawn label. Anchoring on the close of `c:axPos` puts it
- * exactly there.
+ * Rebuilt rather than patched in place, because CT_CatAx and CT_ValAx fix the
+ * order of their children and a reader enforces it: `majorGridlines` before
+ * `title` before `numFmt` before `spPr` before `txPr`, all of them between
+ * `axPos` and `crossAx`. Inserting each edit at its own anchor put whichever
+ * landed last in front of the others, which is a repair prompt rather than a
+ * mis-drawn axis. Splitting the element at the two fixed points and writing the
+ * middle out in order is the only way this stays correct as edits are added.
  *
- * A no-op when the axis already carries a title: the pptx backend forwards
- * `axes` and the docx one does not, so the same repair has to be safe to
- * attempt on output that already has it. Writing a second `c:title` into one
- * axis is a repair prompt, not a duplicated label.
+ * Anything already present that this does not replace is preserved — the two
+ * backends emit different amounts, so the same rewrite has to be safe on both.
  */
-function titleAxis(
+function rewriteAxis(axisXml: string, edits: ChartAxisEdits): string {
+  const axPos = axisXml.match(/<c:axPos[^>]*\/>/);
+  const crossAxAt = axisXml.indexOf('<c:crossAx');
+  if (!axPos || crossAxAt < 0) return axisXml;
+
+  const headEnd = axisXml.indexOf(axPos[0]) + axPos[0].length;
+  let head = axisXml.slice(0, headEnd);
+  const middle = axisXml.slice(headEnd, crossAxAt);
+  let tail = axisXml.slice(crossAxAt);
+
+  // `c:delete` and `c:scaling` both live in the head, in that fixed order.
+  if (edits.hidden !== undefined) {
+    head = head.replace(
+      /<c:delete val="[^"]*"\/>/,
+      `<c:delete val="${edits.hidden ? 1 : 0}"/>`
+    );
+  }
+  if (edits.max !== undefined || edits.min !== undefined) {
+    // CT_Scaling orders logBase, orientation, max, min.
+    const bounds =
+      (edits.max !== undefined ? `<c:max val="${edits.max}"/>` : '') +
+      (edits.min !== undefined ? `<c:min val="${edits.min}"/>` : '');
+    head = head.replace('</c:scaling>', `${bounds}</c:scaling>`);
+  }
+
+  // Rebuild the middle in schema order, keeping what was already there.
+  const existingTitle = middle.match(/<c:title>[\s\S]*?<\/c:title>/)?.[0];
+  const existingNumFmt = middle.match(/<c:numFmt[^>]*\/>/)?.[0];
+  const existingSpPr = middle.match(/<c:spPr>[\s\S]*?<\/c:spPr>/)?.[0];
+  const existingTxPr = middle.match(/<c:txPr>[\s\S]*?<\/c:txPr>/)?.[0];
+
+  const rebuilt = [
+    edits.gridLine ? gridLinesElement(edits.gridLine) : '',
+    // An axis that already carries a title keeps it: writing a second one is a
+    // repair prompt, not a duplicated label.
+    existingTitle ?? (edits.title ? axisTitle(edits.title) : ''),
+    edits.numberFormat !== undefined
+      ? `<c:numFmt formatCode="${escapeXml(edits.numberFormat)}" sourceLinked="0"/>`
+      : existingNumFmt ?? '',
+    edits.lineVisible === false
+      ? '<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>'
+      : existingSpPr ?? '',
+    edits.labelRotation !== undefined
+      ? rotationTextProperties(edits.labelRotation)
+      : existingTxPr ?? '',
+  ].join('');
+
+  // `majorUnit` follows crossAx/crosses/crossBetween in CT_ValAx.
+  if (edits.majorUnit !== undefined && !tail.includes('<c:majorUnit')) {
+    const crosses = tail.match(/<c:cross(?:es|esAt|Between)[^>]*\/>/g);
+    const anchor = crosses?.[crosses.length - 1];
+    if (anchor) {
+      const at = tail.lastIndexOf(anchor) + anchor.length;
+      tail =
+        tail.slice(0, at) +
+        `<c:majorUnit val="${edits.majorUnit}"/>` +
+        tail.slice(at);
+    }
+  }
+
+  return head + rebuilt + tail;
+}
+
+/**
+ * Apply an authored axis to the Nth element with this tag.
+ *
+ * `occurrence` exists for scatter, whose axes are both `c:valAx`.
+ */
+function editAxis(
   chartXml: string,
   tag: string,
-  text: string | undefined,
+  edits: ChartAxisEdits | undefined,
   occurrence = 0
 ): string {
-  if (!text) return chartXml;
+  if (!edits || Object.keys(edits).length === 0) return chartXml;
   const open = `<c:${tag}>`;
   let start = -1;
   for (let seen = 0; seen <= occurrence; seen++) {
@@ -435,15 +573,11 @@ function titleAxis(
   const end = chartXml.indexOf(`</c:${tag}>`, start);
   if (end < 0) return chartXml;
 
-  const axis = chartXml.slice(start, end);
-  if (axis.includes('<c:title>')) return chartXml;
-  const axPos = axis.match(/<c:axPos[^>]*\/>/);
-  if (!axPos) return chartXml;
-
-  const insertAt = axis.indexOf(axPos[0]) + axPos[0].length;
-  const titled =
-    axis.slice(0, insertAt) + axisTitle(text) + axis.slice(insertAt);
-  return chartXml.slice(0, start) + titled + chartXml.slice(end);
+  return (
+    chartXml.slice(0, start) +
+    rewriteAxis(chartXml.slice(start, end), edits) +
+    chartXml.slice(end)
+  );
 }
 
 /**
@@ -502,11 +636,11 @@ export function spliceChartXml(
   // title on X — a mislabelled chart rather than an invalid one, so nothing
   // complained.
   if (chart.chartType === 'scatter') {
-    result = titleAxis(result, 'valAx', chart.categoryAxisTitle, 0);
-    result = titleAxis(result, 'valAx', chart.valueAxisTitle, 1);
+    result = editAxis(result, 'valAx', chart.categoryAxis, 0);
+    result = editAxis(result, 'valAx', chart.valueAxis, 1);
   } else {
-    result = titleAxis(result, 'catAx', chart.categoryAxisTitle);
-    result = titleAxis(result, 'valAx', chart.valueAxisTitle);
+    result = editAxis(result, 'catAx', chart.categoryAxis);
+    result = editAxis(result, 'valAx', chart.valueAxis);
   }
 
   // `legendPosition` is not among the fields either backend forwards, so every

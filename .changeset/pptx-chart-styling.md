@@ -35,6 +35,17 @@ the value, the category name, the series name, the percentage and the legend
 key, because every flag left out defaults to on. A chart authored with
 `showValue: true` came out labelled `Q1; Revenue; 120`.
 
+The three axis capabilities — `chart-axis-scale`, `chart-axis-visibility` and
+`chart-axis-style` — follow, and these are the ones that could misrepresent
+data: an ignored `valAxisMaxVal` rescales a chart without saying so.
+
+They are spliced rather than passed, because `AxisOptions` cannot be handed to
+`@office-open` at all. The axis is rebuilt rather than patched: CT_CatAx and
+CT_ValAx fix the order of their children — `majorGridlines` before `title`
+before `numFmt` before `spPr` before `txPr`, all between `axPos` and `crossAx` —
+and inserting each edit at its own anchor put whichever landed last in front of
+the others, which a reader offers to repair rather than draws wrong.
+
 `pptxgenjs` declares all ten; it already forwards every one of those props, so
 no deck that renders today stops rendering. `office-open` declares none of them
 yet and each moves into its set as the XML mapping lands. Until then a deck that
