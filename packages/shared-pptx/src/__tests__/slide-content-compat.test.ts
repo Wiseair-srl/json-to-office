@@ -6,12 +6,14 @@ import {
   PptxSlideContentSchema as CanonicalPptxSlideContentSchema,
   StyleNameSchema as CanonicalStyleNameSchema,
   TextPropsSchema as CanonicalTextPropsSchema,
+  pptxComponentRequiresProps as canonicalRequiresProps,
 } from '@json-to-office/shared/schemas/slide-content';
 import {
   ColorValueSchema,
   PptxSlideContentSchema,
   StyleNameSchema,
   TextPropsSchema,
+  pptxComponentRequiresProps as requiresPropsFromEntry,
 } from '../index';
 import { getPptxContentComponents } from '../schemas/component-registry';
 import { getPptxStandardComponent } from '../schemas/component-registry';
@@ -26,6 +28,20 @@ describe('shared-pptx slide content compatibility', () => {
     expect(GridPositionSchema).toBe(CanonicalGridPositionSchema);
     expect(ColorValueSchema).toBe(CanonicalColorValueSchema);
     expect(StyleNameSchema).toBe(CanonicalStyleNameSchema);
+  });
+
+  it('reaches the props-requiredness rule from the package entry', () => {
+    // The registry calls itself "the single place a consumer has to look", and
+    // a consumer looks at the package entry — `pptxComponentRequiresProps` was
+    // re-exported from the registry module but never from `index`, so anyone
+    // wanting the same answer the generator uses had to deep-import.
+    expect(requiresPropsFromEntry).toBe(canonicalRequiresProps);
+    expect(requiresPropsFromEntry(getPptxStandardComponent('slide')!)).toBe(
+      false
+    );
+    expect(requiresPropsFromEntry(getPptxStandardComponent('text')!)).toBe(
+      true
+    );
   });
 
   it('uses the canonical descriptor tuple in the registry', () => {

@@ -136,7 +136,7 @@ export function convertToJsonSchema(
   } = {}
 ): Record<string, unknown> {
   const {
-    $schema = 'https://json-schema.org/draft-07/schema#',
+    $schema = 'http://json-schema.org/draft-07/schema#',
     $id,
     title,
     description,
@@ -234,7 +234,7 @@ export function createComponentSchema(
   rootDefinitionName = 'ComponentDefinition'
 ): Record<string, unknown> {
   const componentStructure: Record<string, unknown> = {
-    $schema: 'https://json-schema.org/draft-07/schema#',
+    $schema: 'http://json-schema.org/draft-07/schema#',
     $id: `${name}.schema.json`,
     title: config.title,
     description: config.description,

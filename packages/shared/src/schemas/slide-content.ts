@@ -31,6 +31,43 @@ export interface PptxSlideContentComponentDescriptor<
   readonly hasChildren: false;
   readonly category: 'content';
   readonly description: string;
+  /**
+   * Force `props` to stay required even though the props schema accepts `{}`.
+   *
+   * Only for components whose content requirement is real but inexpressible in
+   * a single TypeBox object — see `pptxComponentRequiresProps`.
+   */
+  readonly propsRequired?: boolean;
+}
+
+/**
+ * Whether a PPTX component must carry a `props` key.
+ *
+ * The default answer is the props schema's own: a schema that accepts `{}`
+ * demands nothing, so the key adds nothing and may be omitted (this mirrors
+ * `demandsProps` in shared-docx). Two components override it, because their
+ * content requirement is a rule a single TypeBox object cannot state: `text`
+ * needs exactly one of `text`/`runs` and `image` exactly one of
+ * `path`/`base64`/`svg`, so both leave every field optional and are still
+ * unrenderable empty. Declaring it here rather than in each consumer is what
+ * keeps the published schema and the runtime validator asking for the same
+ * key — they both call this.
+ *
+ * The override is what the published schema has always said for both, so it is
+ * the runtime that moved to meet it. Reading the schema's own answer instead
+ * would have loosened the published contract on `image` — a change to what
+ * agents are told, made to fix a disagreement about what they are told.
+ */
+export function pptxComponentRequiresProps(component: {
+  readonly propsSchema: TSchema;
+  readonly propsRequired?: boolean;
+}): boolean {
+  if (component.propsRequired !== undefined) return component.propsRequired;
+  const schema = component.propsSchema as {
+    type?: string;
+    required?: readonly string[];
+  };
+  return schema.type !== 'object' || (schema.required?.length ?? 0) > 0;
 }
 
 /**
@@ -42,6 +79,9 @@ export const PPTX_SLIDE_CONTENT_COMPONENTS = [
     propsSchema: TextPropsSchema,
     hasChildren: false,
     category: 'content',
+    // `text` XOR `runs`: both optional in the schema, one of them mandatory in
+    // fact (validation/text-content-conflicts.ts rejects neither and both).
+    propsRequired: true,
     description:
       'Text element - displays text with formatting, positioning and styling options.',
   },
@@ -50,6 +90,15 @@ export const PPTX_SLIDE_CONTENT_COMPONENTS = [
     propsSchema: PptxImagePropsSchema,
     hasChildren: false,
     category: 'content',
+    // One of `path`/`base64`/`svg`, so same shape as `text`: a source is
+    // mandatory in fact and optional in the schema. Unlike `text` this is only
+    // half enforced — the missing key is caught, an empty props object is not,
+    // because `image` has no analogue of validation/text-content-conflicts.ts
+    // and a sourceless image is an IMAGE_NO_SOURCE warning at generation, not
+    // an error. The flag is still not the guess: `image` has required `props`
+    // in the published schema since it was first generated, so dropping it
+    // here would loosen that contract rather than tighten the runtime.
+    propsRequired: true,
     description:
       'Image element - displays images from file path, URL, or base64 data.',
   },
@@ -104,7 +153,9 @@ function createSlideContentComponentSchema<
             'When false, this component is filtered out and not rendered. Defaults to true.',
         })
       ),
-      props: component.propsSchema,
+      props: pptxComponentRequiresProps(component)
+        ? component.propsSchema
+        : Type.Optional(component.propsSchema),
     },
     { additionalProperties: false, description: component.description }
   );

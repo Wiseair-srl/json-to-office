@@ -84,6 +84,20 @@ describe('props optionality', () => {
     expect(Value.Check(exported, doc)).toBe(false);
   });
 
+  it.each([...PROPLESS_OK, ...PROPS_REQUIRED])(
+    'both validators reject an explicit null props on %s',
+    (name) => {
+      // Omissible is not nullable. `props: null` is a key the author wrote and
+      // the exported schema types it `object` everywhere, so a walk that reads
+      // a written `null` as an omission accepts documents that schema rejects.
+      // The root has always been checked with `'props' in data`; the nested
+      // walk now is too.
+      const doc = inSection({ name, props: null });
+      expect(Value.Check(exported, doc)).toBe(false);
+      expect(validateStrict.document(doc).valid).toBe(false);
+    }
+  );
+
   it('accepts the shipped tech-report shape: sections with no props', () => {
     const doc = {
       name: 'docx',

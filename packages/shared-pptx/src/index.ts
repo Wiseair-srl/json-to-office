@@ -63,6 +63,10 @@ export {
   isPptxStandardComponent,
   createPptxComponentSchemaObject,
   createAllPptxComponentSchemas,
+  // The requiredness rule the schema generator and the deep walk both read.
+  // A consumer that wants the same answer has to be able to reach it from the
+  // package entry, not only through a deep subpath import.
+  pptxComponentRequiresProps,
 } from './schemas/component-registry';
 
 export type { PptxStandardComponentDefinition } from './schemas/component-registry';

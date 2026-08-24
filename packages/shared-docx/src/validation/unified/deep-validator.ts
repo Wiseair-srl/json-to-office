@@ -455,7 +455,11 @@ function walkComponentTree(
     // Validate props against the component's schema. When props is omitted,
     // validate an empty object so the schema decides whether props are
     // required (e.g. `section` needs none; `heading` requires text+level).
-    if (child.props != null) {
+    //
+    // Presence is `'props' in child`, matching the root check above: an
+    // explicit `null` is a value the schema rejects (props must be an object),
+    // so it has to reach the schema rather than be read as an omission.
+    if ('props' in child) {
       errors.push(
         ...validateComponentProps(
           child.name,

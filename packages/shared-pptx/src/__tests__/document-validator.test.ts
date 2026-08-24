@@ -105,6 +105,43 @@ describe('plugin-aware tree validation', () => {
       false
     );
   });
+
+  it('asks a custom component for the props key the schema asks for', () => {
+    // Contents are the plugin layer's business; the key is not. The published
+    // plugin branch requires `props` unconditionally, so a walk that let the
+    // key go missing accepted a document that schema rejects — and the plugin
+    // layer then reported it as "expected object" at the plugin's own root,
+    // with no pointer to the node that omitted it.
+    const result = validatePresentationDocument(
+      deck([slide([{ name: 'custom-container', version: '1.0.0' }])]),
+      { knownCustomNames: new Set(['custom-container']) }
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        path: '/children/0/children/0/props',
+        code: 'required_property',
+      })
+    );
+  });
+
+  it('leaves a custom component that carries props alone', () => {
+    const result = validatePresentationDocument(
+      deck([
+        slide([
+          {
+            name: 'custom-container',
+            version: '1.0.0',
+            props: { anything: 'the plugin layer checks this' },
+          },
+        ]),
+      ]),
+      { knownCustomNames: new Set(['custom-container']) }
+    );
+
+    expect(result.errors).toEqual([]);
+  });
 });
 
 describe('deep prop validation in nested slide content', () => {
