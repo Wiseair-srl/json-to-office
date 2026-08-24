@@ -653,6 +653,7 @@ function chartChild(
   const { options, transform } = element;
   const series = element.series;
   const dataLabels = dataLabelOptions(options);
+  const marker = markerOptions(options);
 
   // Unreachable through validation, which refuses bubble charts on this
   // renderer by name. Stated here too because a caller can bypass validation,
@@ -678,6 +679,10 @@ function chartChild(
       // Every series, not just the first: PowerPoint labels each one, and a
       // chart that labelled only its first series would be a different chart.
       ...(dataLabels ? { dataLabels } : {}),
+      ...(options.lineSmooth !== undefined
+        ? { smooth: options.lineSmooth }
+        : {}),
+      ...(marker ? { marker } : {}),
     })),
     ...(options.title && options.showTitle !== false
       ? { title: options.title }
@@ -754,6 +759,23 @@ function dataLabelOptions(options: PptxIrChartOptions): Opts | undefined {
       ? { position: options.dataLabelPosition }
       : {}),
   };
+}
+
+/**
+ * The marker a line series draws at each point, or nothing if unstyled.
+ *
+ * `lineSize` is deliberately absent: `ChartSeriesCommon` has no line-width
+ * field at all, so the series line's width is spliced into `c:ser/c:spPr/a:ln`
+ * afterwards.
+ */
+function markerOptions(options: PptxIrChartOptions): Opts | undefined {
+  const marker: Opts = {
+    ...(options.lineDataSymbol ? { symbol: options.lineDataSymbol } : {}),
+    ...(options.lineDataSymbolSize !== undefined
+      ? { size: options.lineDataSymbolSize }
+      : {}),
+  };
+  return Object.keys(marker).length > 0 ? marker : undefined;
 }
 
 /**

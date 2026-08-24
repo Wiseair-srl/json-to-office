@@ -526,6 +526,68 @@ describe('native charts on office-open pptx', () => {
     );
   });
 
+  it('styles a line series without losing its colour', async () => {
+    const xml = await read(
+      await render(
+        deck([
+          chart({
+            type: 'line',
+            lineSize: 4,
+            lineSmooth: true,
+            lineDataSymbol: 'diamond',
+            lineDataSymbolSize: 9,
+          }),
+        ])
+      ),
+      'ppt/charts/chart1.xml'
+    );
+    const series = xml.slice(xml.indexOf('<c:ser>'), xml.indexOf('</c:ser>'));
+    // 4pt in EMU, and the series colour still on the line.
+    expect(series).toContain('<a:ln w="50800">');
+    expect(series).toMatch(
+      /<a:ln w="50800"><a:solidFill><a:srgbClr val="1F4E79"/
+    );
+    expect(series).toContain('<c:smooth');
+    expect(series).toContain('<c:symbol val="diamond"/>');
+    expect(series).toContain('<c:size val="9"/>');
+  });
+
+  it('outlines a filled series without overwriting its fill', async () => {
+    const xml = await read(
+      await render(deck([chart({ dataBorder: { pt: 2, color: 'FF0000' } })])),
+      'ppt/charts/chart1.xml'
+    );
+    const series = xml.slice(xml.indexOf('<c:ser>'), xml.indexOf('</c:ser>'));
+    // Fill first, then the outline — both present in one `c:spPr`.
+    expect(series).toMatch(
+      /<c:spPr><a:solidFill><a:srgbClr val="1F4E79"\/><\/a:solidFill><a:ln w="25400"><a:solidFill><a:srgbClr val="FF0000"\/>/
+    );
+  });
+
+  it('outlines each slice of a pie, which is coloured per point', async () => {
+    const xml = await read(
+      await render(
+        deck([chart({ type: 'pie', dataBorder: { pt: 1, color: '00FF00' } })])
+      ),
+      'ppt/charts/chart1.xml'
+    );
+    expect(xml).toMatch(
+      /<c:dPt>[\s\S]*?<a:ln w="12700"><a:solidFill><a:srgbClr val="00FF00"/
+    );
+  });
+
+  it('honours a radar style the backend writes from a literal', async () => {
+    // `chartSpaceDesc` emits `<c:radarStyle val="standard"/>` with no option
+    // behind it, so `marker` and `filled` became `standard` without a word.
+    for (const style of ['marker', 'filled']) {
+      const xml = await read(
+        await render(deck([chart({ type: 'radar', radarStyle: style })])),
+        'ppt/charts/chart1.xml'
+      );
+      expect(xml, style).toContain(`<c:radarStyle val="${style}"/>`);
+    }
+  });
+
   it('renders byte-identically twice', async () => {
     const first = await generateBufferViaIr(deck(), {
       renderer: 'office-open',
