@@ -57,13 +57,6 @@ export function pptxPropsSchemaForRenderer(
   return copy;
 }
 
-export function isPptxComponentSupported(
-  componentName: string,
-  renderer: PptxRendererId
-): boolean {
-  return renderer !== 'office-open' || componentName !== 'chart';
-}
-
 /** Static renderer-profile diagnostics used by CLI/library validation. */
 export function collectPptxRendererErrors(data: unknown): ValidationError[] {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return [];
@@ -113,8 +106,14 @@ export function collectPptxRendererErrors(data: unknown): ValidationError[] {
           unsupported(`${path}/props/placeholders`, 'placeholders');
         }
       }
-      if (node.name === 'chart') {
-        unsupported(path || '/', 'native editable charts');
+      // Every chart type but one. `@office-open` spells a bubble series as
+      // `xValues`/`yValues`/`bubbleSize` rather than categories and values,
+      // and there is no unambiguous reading of a category label as a numeric
+      // x — so it is refused rather than guessed at. Reaching the backend with
+      // the wrong shape throws a TypeError from inside it, which is the worst
+      // of the three outcomes.
+      if (node.name === 'chart' && props?.type === 'bubble') {
+        unsupported(`${path}/props/type`, 'bubble charts');
       }
       if (node.name === 'image') {
         const fields: Record<string, string> = {

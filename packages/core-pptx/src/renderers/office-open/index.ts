@@ -13,9 +13,19 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import { finalizePackageBuffer } from '../../core/finalizePackage';
+import {
+  finalizePackage,
+  readPackage,
+  writePackage,
+  resolveGeneratedAt,
+} from '../../core/finalizePackage';
+import { spliceChartParts } from './chartParts';
 import { ALL_PPTX_FEATURES, type PptxFeature } from '../../ir/features';
-import type { PptxIR, PptxIrResource } from '../../ir/types';
+import type {
+  PptxIR,
+  PptxIrChartElement,
+  PptxIrResource,
+} from '../../ir/types';
 import type { PptxRenderOptions, PptxRenderer, PptxRendererId } from '../types';
 import { background, slideChild, type OfficeOpenEmitContext } from './emit';
 
@@ -33,9 +43,6 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  *
  * - `svg` — `PictureOptions.type` excludes SVG and no code path creates an SVG
  *   media entry, so an SVG would ship as a broken image.
- * - `charts` — chart XML is written without the embedded workbook, so the
- *   chart renders but "Edit Data" fails. A chart you cannot edit is not the
- *   chart that was asked for.
  * - `image-transform` — `PictureOptions` carries neither `rotation` nor a flip,
  *   so any transform on a picture would be silently discarded.
  * - `image-crop`, `image-rounding` — `PictureOptions` is `{data, type}` plus a
@@ -68,10 +75,15 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  * Table border and fill *are* declared: the backend has no table-level form of
  * either, but both are cell properties there and the adapter pushes them onto
  * every cell — see `tableChild` in `emit.ts`.
+ *
+ * `charts` *is* declared, and used to not be. The backend writes chart XML
+ * whose `<c:f>` references are empty and which has no workbook behind them, so
+ * "Edit Data" failed and a chart you cannot edit is not the chart that was
+ * asked for. Rather than refuse, the adapter now writes the missing half
+ * itself — see `chartParts.ts`.
  */
 const UNSUPPORTED: ReadonlySet<PptxFeature> = new Set<PptxFeature>([
   'svg',
-  'charts',
   'image-transform',
   'image-crop',
   'image-rounding',
@@ -114,23 +126,39 @@ export async function createOfficeOpenPptxRenderer(): Promise<PptxRenderer> {
     format: 'pptx',
     capabilities: OFFICE_OPEN_CAPABILITIES,
     async render(ir: PptxIR, options?: PptxRenderOptions): Promise<Uint8Array> {
-      const presentation = await buildPresentationOptions(ir);
+      const charts: PptxIrChartElement[] = [];
+      const presentation = await buildPresentationOptions(ir, charts);
       const bytes = await backend.generatePresentation(presentation, {
         type: 'uint8array',
       });
       const raw = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
 
-      if (options?.deterministic === false) return raw;
+      // One zip, opened once: the chart repairs and the generic finalization
+      // both need it, and a round-trip between them would cost a full
+      // re-compress for nothing. This mirrors the pptxgenjs path, which also
+      // applies its backend repairs and then calls `finalizePackage` on the
+      // same open zip.
+      //
+      // The splice has to happen even when finalization is skipped — a chart
+      // without its workbook is a broken chart, not an undeterministic one —
+      // and it has to happen *before* finalization, because
+      // `canonicalizeChartIds` renumbers chart parts and rewrites the
+      // `Microsoft_Excel_Worksheet{N}.xlsx` references through the same map.
+      if (charts.length === 0 && options?.deterministic === false) return raw;
+
+      const zip = await readPackage(Buffer.from(raw));
+      await spliceChartParts(zip, charts);
+
+      if (options?.deterministic === false) {
+        return new Uint8Array(await writePackage(zip));
+      }
       // Generic package finalization. The backend stamps core metadata and ZIP
       // entries with the wall clock, so the same deck rendered twice differs.
       // Pinning those is a property of an OOXML package rather than of this
       // backend, which is why the same pass runs over the default backend's
       // output too.
-      return new Uint8Array(
-        await finalizePackageBuffer(Buffer.from(raw), {
-          generatedAt: options?.generatedAt,
-        })
-      );
+      await finalizePackage(zip, resolveGeneratedAt(options?.generatedAt));
+      return new Uint8Array(await writePackage(zip));
     },
   };
 }
@@ -142,7 +170,8 @@ export async function createOfficeOpenPptxRenderer(): Promise<PptxRenderer> {
  * legible, than unzipping a package.
  */
 export async function buildPresentationOptions(
-  ir: PptxIR
+  ir: PptxIR,
+  charts: PptxIrChartElement[] = []
 ): Promise<Record<string, unknown>> {
   // Drawing ids restart at 2 on each slide — 1 is the slide's own group — so
   // they depend on position in the deck and nothing else.
@@ -151,6 +180,7 @@ export async function buildPresentationOptions(
     resources: new Map(ir.resources.map((r) => [r.id, r])),
     resourceBytes: await loadResourceBytes(ir.resources),
     nextId: () => nextDrawingId++,
+    charts,
   };
 
   const presentation: Record<string, unknown> = {

@@ -32,3 +32,20 @@ export {
   assertRendererSupports,
   diagnoseUnsupportedFeatures,
 } from './capabilities';
+
+export type { ChartPartInput, ChartPartSeries } from './chart-parts';
+export {
+  CHART_PACKAGE_RELATIONSHIP,
+  CHART_WORKBOOK_CONTENT_TYPE,
+  CHART_WORKBOOK_SHEET_NAME,
+  categoryReference,
+  chartInputSignature,
+  chartPartSignature,
+  chartWorkbookParts,
+  chartWorkbookRelsXml,
+  columnLetter,
+  matchChartParts,
+  seriesNameReference,
+  seriesValueReference,
+  spliceChartXml,
+} from './chart-parts';

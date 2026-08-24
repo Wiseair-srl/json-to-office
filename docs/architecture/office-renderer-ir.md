@@ -321,7 +321,7 @@ not exported from `@json-to-office/json-to-docx` or
 | tables — cell insets                         | `a:tcPr/@marL`                                         | **no** — `margins` writes `a:bodyPr` insets, which a reader ignores in a cell                              |
 | tables — rounded corners, auto-pagination    | yes (corners via shapes drawn behind the table)        | **no** — no corner radius in OOXML, and nothing here flows a table onto a second slide                     |
 | image crop / cover, rounding                 | yes                                                    | **no** — `PictureOptions` has no source rectangle and no geometry                                          |
-| native charts                                | yes, with an embedded workbook                         | chart XML only — **no embedded workbook**, so "Edit Data" fails                                            |
+| native charts                                | yes, with an embedded workbook                         | yes, except `bubble` — the adapter writes the workbook and cell references the backend omits (see below)   |
 | hyperlinks (external + slide)                | yes                                                    | yes                                                                                                        |
 | speaker notes, hidden slides                 | yes                                                    | yes                                                                                                        |
 | transitions                                  | **no** API                                             | yes                                                                                                        |
@@ -343,7 +343,6 @@ rather than losing content:
 | Feature                   | Why                                                                                                                                                                                                               |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `svg`                     | `PictureOptions.type` excludes SVG and nothing creates an SVG media entry                                                                                                                                         |
-| `charts`                  | chart XML ships without its embedded workbook, so "Edit Data" fails                                                                                                                                               |
 | `image-transform`         | `PictureOptions` has no `rotation` and no flip; either would be discarded                                                                                                                                         |
 | `image-crop`              | no source rectangle, so a cropped picture would be drawn whole into its frame                                                                                                                                     |
 | `image-rounding`          | no geometry on a picture, so a circular image would come out rectangular                                                                                                                                          |
@@ -434,19 +433,50 @@ document.
 | series fill    | Nothing on `ChartSeriesCommon` or `DataPointOptions` carries one, so every series ignores the theme |
 | `axes`         | Default `c:catAx`/`c:valAx` are written, but an authored axis title never reaches them              |
 
-`renderers/office-open/chartParts.ts` splices all three into the emitted package
-after generation: the workbook part and its relationship, `c:externalData`, the
-real cell references in place of the empty `<c:f/>`, a `c:spPr` solid fill per
-series, and a `c:title` in each axis. Editing another library's serialisation is
-not free and is chosen deliberately — the alternative is a chart that draws and
-then fails on the first double-click, which is exactly why the _pptx_ office-open
-adapter refuses native charts today. The pptxgenjs adapter reaches for the same
-technique for gradient and pattern fills.
+`chart-parts` in `@json-to-office/shared/rendering` splices all three into the
+emitted package after generation: the workbook part and its relationship,
+`c:externalData`, the real cell references in place of the empty `<c:f/>`, a
+`c:spPr` solid fill per series, and a `c:title` in each axis. Editing another
+library's serialisation is not free and is chosen deliberately — the alternative
+is a chart that draws and then fails on the first double-click. The pptxgenjs
+adapter reaches for the same technique for gradient and pattern fills.
 
-`utils/chartWorkbook.ts` builds the xlsx itself, because nothing in
-`@office-open/core` does: `ExternalDataOptions` is `{relationshipId,
-autoUpdate}`, a pointer, and `XLSX_PARTS` is an OPC validation manifest rather
-than a writer.
+That module also builds the xlsx, because nothing in `@office-open/core` does:
+`ExternalDataOptions` is `{relationshipId, autoUpdate}`, a pointer, and
+`XLSX_PARTS` is an OPC validation manifest rather than a writer.
+
+It is shared because a `c:chartSpace` is DrawingML and reads the same in either
+format. The two backends omit **different amounts** of it, so every repair is
+guarded on what the XML actually lacks rather than applied blind:
+
+| Omitted          | `@office-open/docx`             | `@office-open/pptx`             |
+| ---------------- | ------------------------------- | ------------------------------- |
+| legend position  | yes                             | no — forwarded                  |
+| `c:externalData` | yes                             | yes                             |
+| axis titles      | yes                             | yes                             |
+| bar grouping     | yes — always `clustered`        | yes — always `clustered`        |
+| cell references  | yes — every `<c:f>` is empty    | yes — every `<c:f>` is empty    |
+| series fill      | yes — every `<c:spPr>` is empty | yes — every `<c:spPr>` is empty |
+
+The difference is one line in each backend: the docx chart run forwards eight
+named fields of `ChartSpaceOptions` to `chartSpaceDesc`, while the pptx chart
+descriptor hands it the whole options object — which buys less than it sounds
+like, because most of what is missing has no `ChartSpaceOptions` field to be
+forwarded _from_. `axes` is the exception and is deliberately not passed: it
+replaces the backend's default axis pair wholesale and requires ids the adapter
+cannot allocate, so a partial one emitted literal `<undefined>` elements.
+
+Two repairs are shape-dependent rather than uniform. A pie or doughnut is
+coloured per data point, so the splice writes one `c:dPt` per slice instead of a
+series fill — a series fill paints every slice the same colour. And a scatter
+chart has no `c:catAx` at all: both its axes are `c:valAx`, X first, so its axis
+titles are placed by position rather than by tag.
+
+Each core keeps its own packaging: `word/charts` and `word/embeddings` with
+adm-zip on one side, `ppt/charts` and `ppt/embeddings` with jszip on the other.
+The pptx workbook is named `Microsoft_Excel_Worksheet{N}.xlsx` because that is
+what pptxgenjs writes and what `canonicalizeChartIds` renumbers — which is also
+why the splice has to run _before_ finalization rather than after.
 
 The chart run also has the `wp:docPr` problem described above, and the same
 cure: the adapter states an id on every chart drawing, because an unnamed one is

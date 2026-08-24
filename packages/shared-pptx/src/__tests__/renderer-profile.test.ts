@@ -36,15 +36,22 @@ describe('renderer-discriminated PPTX schema', () => {
       { name: 'image', props: { svg: '<svg />' } },
     ] as never;
     expect(Value.Check(schema, svg)).toBe(false);
+  });
 
-    const chart = deck('office-open');
-    chart.children[0].children = [
-      {
-        name: 'chart',
-        props: { type: 'bar', data: [{ labels: ['A'], values: [1] }] },
-      },
-    ] as never;
-    expect(Value.Check(schema, chart)).toBe(false);
+  it('offers office-open the native chart it can now draw', () => {
+    // The component used to be pruned from this branch outright, on the
+    // grounds that the backend could not ship an editable chart. It can now,
+    // so the branch carries it and both renderers accept the same deck.
+    for (const renderer of ['pptxgenjs', 'office-open'] as const) {
+      const chart = deck(renderer);
+      chart.children[0].children = [
+        {
+          name: 'chart',
+          props: { type: 'bar', data: [{ labels: ['A'], values: [1] }] },
+        },
+      ] as never;
+      expect(Value.Check(schema, chart), renderer).toBe(true);
+    }
   });
 
   it('exports resolvable recursive refs for both profiles', () => {

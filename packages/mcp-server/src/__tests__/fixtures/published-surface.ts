@@ -110,8 +110,6 @@ export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
     pptx: {
       rootComponent: 'pptx',
       renderers: {
-        // `chart` is pptxgenjs-only: the second backend draws no charts yet,
-        // so it narrows its own profile rather than accepting and dropping one.
         pptxgenjs: [
           'chart',
           'highcharts',
@@ -123,6 +121,7 @@ export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
           'text',
         ],
         'office-open': [
+          'chart',
           'highcharts',
           'image',
           'pptx',

@@ -139,7 +139,7 @@ Supported keys: `text`, `image`, `shape`, `table`, `highcharts`, `chart`. Themes
 | `template`     | string                         | —       | Name of a template from the root `templates` array; the template is applied as this slide's master. An unknown name emits a `MISSING_TEMPLATE` warning and the slide renders without it.     |
 | `placeholders` | `Record<string, SlideContent>` | —       | Maps placeholder names (defined by the template) to the components that fill them — the same set a slide accepts as `children`, so a container in a slot is rejected.                        |
 
-All props are optional; unknown keys and props outside the selected renderer profile are rejected. Templates, slide `template`/`placeholders`, and charts are currently `pptxgenjs`-only; transitions are `office-open`-only.
+All props are optional; unknown keys and props outside the selected renderer profile are rejected. Templates and slide `template`/`placeholders` are currently `pptxgenjs`-only; transitions are `office-open`-only. Charts are drawn by both renderers, except `bubble`, which is `pptxgenjs`-only.
 
 ### `background`
 

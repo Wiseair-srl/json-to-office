@@ -404,25 +404,40 @@ describe('office-open capability failures', () => {
     );
   });
 
-  it('rejects native charts, which would ship without their workbook', async () => {
-    await expectRejected(
-      deck([
-        slide([
-          {
-            name: 'chart',
-            props: {
-              type: 'bar',
-              data: [{ name: 'S', labels: ['a'], values: [1] }],
-              x: 1,
-              y: 1,
-              w: 4,
-              h: 3,
+  it('draws a native chart, with the workbook it used to lack', async () => {
+    // This adapter refused charts for one specific reason: the backend writes
+    // chart XML whose `<c:f>` references are empty and ships no workbook
+    // behind them, so "Edit Data" failed. It now writes that half itself, so
+    // the refusal is gone and what replaces it is the proof — the assertion
+    // that would have caught the original defect.
+    const { buffer } = await generateBufferViaIr(
+      structuredClone(
+        deck([
+          slide([
+            {
+              name: 'chart',
+              props: {
+                type: 'bar',
+                data: [{ name: 'S', labels: ['a'], values: [1] }],
+                x: 1,
+                y: 1,
+                w: 4,
+                h: 3,
+              },
             },
-          },
-        ]),
-      ]),
-      'charts'
+          ]),
+        ])
+      ) as never,
+      { renderer: 'office-open' }
     );
+
+    const zip = await JSZip.loadAsync(buffer);
+    const chartXml = await zip.file('ppt/charts/chart1.xml')!.async('string');
+    expect(chartXml).not.toContain('<c:f/>');
+    expect(chartXml).toContain('<c:externalData');
+    expect(
+      zip.file('ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx')
+    ).toBeTruthy();
   });
 
   it('rejects a transformed image, which the backend would silently flatten', async () => {
@@ -490,6 +505,9 @@ describe('office-open capability failures', () => {
   });
 
   it('reports every unsupported feature in one error', async () => {
+    // `charts` used to be the second feature here. It is supported now, so the
+    // pair is an SVG image and a rotated one — still two distinct gaps
+    // gathered into one error, which is what this test is about.
     let caught: unknown;
     try {
       await generateBufferViaIr(
@@ -497,21 +515,21 @@ describe('office-open capability failures', () => {
           deck([
             slide([
               {
-                name: 'chart',
+                name: 'image',
                 props: {
-                  type: 'bar',
-                  data: [{ name: 'S', labels: ['a'], values: [1] }],
+                  svg: '<svg xmlns="http://www.w3.org/2000/svg"/>',
                   x: 1,
-                  y: 1,
-                  w: 4,
-                  h: 3,
+                  y: 5,
+                  w: 1,
+                  h: 1,
                 },
               },
               {
                 name: 'image',
                 props: {
-                  svg: '<svg xmlns="http://www.w3.org/2000/svg"/>',
-                  x: 1,
+                  path: 'https://example.com/a.png',
+                  rotate: 45,
+                  x: 3,
                   y: 5,
                   w: 1,
                   h: 1,
@@ -527,7 +545,9 @@ describe('office-open capability failures', () => {
     }
 
     const err = caught as Error & { features?: string[] };
-    expect(err.features).toEqual(expect.arrayContaining(['charts', 'svg']));
+    expect(err.features).toEqual(
+      expect.arrayContaining(['svg', 'image-transform'])
+    );
   });
 
   it('renders the same document happily on the default backend', async () => {
