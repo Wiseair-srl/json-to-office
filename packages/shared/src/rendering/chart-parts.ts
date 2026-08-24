@@ -430,14 +430,20 @@ function paintSeries(
   const stroke = STROKE_COLORED.has(chartType);
   const border = stroke ? undefined : chart.dataBorder;
 
-  // A pie's colours belong to its slices. Written before `c:cat`, which is
-  // where CT_PieSer orders `dPt`.
+  // A pie's colours belong to its slices. CT_PieSer orders `dPt` before
+  // `dLbls`, and `dLbls` before `cat` — so anchoring on `c:cat` alone put the
+  // slices after the data labels as soon as any were authored.
   if (POINT_COLORED.has(chartType)) {
     if (palette.length === 0 || pointCount === 0) return seriesXml;
     const points = Array.from({ length: pointCount }, (_, index) =>
       dataPoint(index, palette[index % palette.length].toUpperCase(), border)
     ).join('');
-    return seriesXml.replace('<c:cat>', `${points}<c:cat>`);
+    for (const anchor of ['<c:dLbls>', '<c:cat>', '<c:val>']) {
+      if (seriesXml.includes(anchor)) {
+        return seriesXml.replace(anchor, `${points}${anchor}`);
+      }
+    }
+    return seriesXml;
   }
 
   const parts: string[] = [];
@@ -450,15 +456,32 @@ function paintSeries(
 
   if (!color && chart.lineWidthPoints === undefined) return seriesXml;
 
-  // `c:marker` follows `c:spPr` in CT_LineSer, so it is written alongside
-  // rather than inside: the line takes the stroke, the marker takes both so a
-  // filled square does not sit in the default colour on a coloured line.
+  // `c:marker` follows `c:spPr` in CT_LineSer, and there may be only one of
+  // it. The backend writes its own as soon as `lineDataSymbol` or
+  // `lineDataSymbolSize` is authored, so adding a second here put two sibling
+  // markers in one series — which PowerPoint answers with a repair prompt and
+  // LibreOffice drew without a word. Colour the existing one when there is
+  // one, and write a whole marker only when there is not.
   const fill = color ? fillFor(color) : '';
   const line = outline(chart.lineWidthPoints, color);
-  const marker = color
-    ? `<c:marker><c:spPr>${fill}<a:ln>${fill}</a:ln></c:spPr></c:marker>`
-    : '';
-  return seriesXml.replace('<c:spPr/>', `<c:spPr>${line}</c:spPr>${marker}`);
+  const painted = seriesXml.replace('<c:spPr/>', `<c:spPr>${line}</c:spPr>`);
+  if (!color) return painted;
+
+  const markerSpPr = `<c:spPr>${fill}<a:ln>${fill}</a:ln></c:spPr>`;
+  const existing = painted.match(/<c:marker>[\s\S]*?<\/c:marker>/);
+  if (!existing) {
+    return painted.replace(
+      `<c:spPr>${line}</c:spPr>`,
+      `<c:spPr>${line}</c:spPr><c:marker>${markerSpPr}</c:marker>`
+    );
+  }
+  // CT_Marker orders symbol, size, spPr — so the fill goes last, and only if
+  // the backend did not already give the marker one.
+  if (existing[0].includes('<c:spPr>')) return painted;
+  return painted.replace(
+    existing[0],
+    existing[0].replace('</c:marker>', `${markerSpPr}</c:marker>`)
+  );
 }
 
 /** A `c:title` block holding one line of text, as an axis wants it. */
