@@ -75,6 +75,23 @@ function spliceInput(element: PptxIrChartElement): ChartPartInput {
     // without also inventing the axis ids the plot area references.
     categoryAxis: axisEdits(element.options.categoryAxis),
     valueAxis: axisEdits(element.options.valueAxis),
+    // Three the backend has nowhere to put: `ChartSeriesCommon` has no line
+    // width, no data-element outline, and `c:radarStyle` is written from a
+    // literal rather than an option.
+    ...(element.options.lineSize !== undefined
+      ? { lineWidthPoints: element.options.lineSize }
+      : {}),
+    ...(element.options.dataBorder
+      ? {
+          dataBorder: {
+            widthPoints: element.options.dataBorder.widthPoints,
+            color: element.options.dataBorder.color.hex,
+          },
+        }
+      : {}),
+    ...(element.options.radarStyle
+      ? { radarStyle: element.options.radarStyle }
+      : {}),
   };
 }
 

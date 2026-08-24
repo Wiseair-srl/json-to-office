@@ -46,6 +46,19 @@ before `numFmt` before `spPr` before `txPr`, all between `axPos` and `crossAx` �
 and inserting each edit at its own anchor put whichever landed last in front of
 the others, which a reader offers to repair rather than draws wrong.
 
+Then `chart-line-style`, `chart-data-border` and `chart-radar-style`. The
+series marker and `smooth` pass through; the other three have nowhere in the
+backend to go. `ChartSeriesCommon` carries no line width, so `lineSize` is
+spliced into `c:ser/c:spPr/a:ln`; `dataBorder` becomes an outline in the same
+place — or on each `c:dPt` of a pie, which is coloured per slice — without
+displacing the fill. `c:radarStyle` is written from a literal `standard`, so
+`marker` and `filled` had nowhere to go and became `standard` without a word.
+
+`lineSize` and `dataBorder` reach the same `a:ln` and never at the same time:
+one is the width of a series that _is_ a line, the other an outline on a series
+that is a filled shape. Checked against pptxgenjs rather than assumed — given
+both, it writes the border on a bar chart and `lineSize` on a line chart.
+
 `pptxgenjs` declares all ten; it already forwards every one of those props, so
 no deck that renders today stops rendering. `office-open` declares none of them
 yet and each moves into its set as the XML mapping lands. Until then a deck that

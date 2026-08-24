@@ -97,6 +97,12 @@ export interface ChartPartInput {
   colors: readonly string[];
   categoryAxis?: ChartAxisEdits;
   valueAxis?: ChartAxisEdits;
+  /** Series line width in points. Only meaningful where the series is a line. */
+  lineWidthPoints?: number;
+  /** An outline on filled data elements: bars, areas and slices. */
+  dataBorder?: { widthPoints: number; color: string };
+  /** `standard`, `marker` or `filled`; a backend may hardcode the first. */
+  radarStyle?: string;
   legendPosition?: string;
   /**
    * `clustered` | `stacked` | `percentStacked`.
@@ -376,11 +382,16 @@ const STROKE_COLORED: ReadonlySet<string> = new Set([
 const POINT_COLORED: ReadonlySet<string> = new Set(['pie', 'doughnut']);
 
 /** One `c:dPt`, giving slice `index` its own fill. */
-function dataPoint(index: number, hex: string): string {
+function dataPoint(
+  index: number,
+  hex: string,
+  border?: ChartPartInput['dataBorder']
+): string {
   return (
     `<c:dPt><c:idx val="${index}"/><c:bubble3D val="0"/>` +
-    `<c:spPr><a:solidFill><a:srgbClr val="${hex}"/></a:solidFill></c:spPr>` +
-    `</c:dPt>`
+    `<c:spPr><a:solidFill><a:srgbClr val="${hex}"/></a:solidFill>` +
+    (border ? outline(border.widthPoints, border.color) : '') +
+    `</c:spPr></c:dPt>`
   );
 }
 
@@ -390,36 +401,49 @@ function paintSeries(
   color: string | undefined,
   chartType: string,
   palette: readonly string[],
-  pointCount: number
+  pointCount: number,
+  chart: ChartPartInput
 ): string {
   const fillFor = (hex: string) =>
     `<a:solidFill><a:srgbClr val="${hex.toUpperCase()}"/></a:solidFill>`;
+
+  // `lineSize` and `dataBorder` reach the same `a:ln`, and never at the same
+  // time: one is the width of a series that *is* a line, the other an outline
+  // on a series that is a filled shape. Verified against pptxgenjs, which on a
+  // bar chart writes the border's width and colour and on a line chart writes
+  // `lineSize` with the series colour.
+  const stroke = STROKE_COLORED.has(chartType);
+  const border = stroke ? undefined : chart.dataBorder;
 
   // A pie's colours belong to its slices. Written before `c:cat`, which is
   // where CT_PieSer orders `dPt`.
   if (POINT_COLORED.has(chartType)) {
     if (palette.length === 0 || pointCount === 0) return seriesXml;
     const points = Array.from({ length: pointCount }, (_, index) =>
-      dataPoint(index, palette[index % palette.length].toUpperCase())
+      dataPoint(index, palette[index % palette.length].toUpperCase(), border)
     ).join('');
     return seriesXml.replace('<c:cat>', `${points}<c:cat>`);
   }
 
-  if (!color) return seriesXml;
-  const fill = fillFor(color);
-
-  if (!STROKE_COLORED.has(chartType)) {
-    return seriesXml.replace('<c:spPr/>', `<c:spPr>${fill}</c:spPr>`);
+  const parts: string[] = [];
+  if (!stroke) {
+    if (color) parts.push(fillFor(color));
+    if (border) parts.push(outline(border.widthPoints, border.color));
+    if (parts.length === 0) return seriesXml;
+    return seriesXml.replace('<c:spPr/>', `<c:spPr>${parts.join('')}</c:spPr>`);
   }
+
+  if (!color && chart.lineWidthPoints === undefined) return seriesXml;
 
   // `c:marker` follows `c:spPr` in CT_LineSer, so it is written alongside
   // rather than inside: the line takes the stroke, the marker takes both so a
   // filled square does not sit in the default colour on a coloured line.
-  return seriesXml.replace(
-    '<c:spPr/>',
-    `<c:spPr><a:ln>${fill}</a:ln></c:spPr>` +
-      `<c:marker><c:spPr>${fill}<a:ln>${fill}</a:ln></c:spPr></c:marker>`
-  );
+  const fill = color ? fillFor(color) : '';
+  const line = outline(chart.lineWidthPoints, color);
+  const marker = color
+    ? `<c:marker><c:spPr>${fill}<a:ln>${fill}</a:ln></c:spPr></c:marker>`
+    : '';
+  return seriesXml.replace('<c:spPr/>', `<c:spPr>${line}</c:spPr>${marker}`);
 }
 
 /** A `c:title` block holding one line of text, as an axis wants it. */
@@ -440,6 +464,18 @@ const DASH_STYLES: Readonly<Record<string, string>> = {
   dash: 'dash',
   dot: 'sysDot',
 };
+
+/** An `a:ln` of a given width, optionally coloured. */
+function outline(widthPoints: number | undefined, hex?: string): string {
+  const width =
+    widthPoints !== undefined
+      ? ` w="${Math.round(widthPoints * POINTS_TO_EMU)}"`
+      : '';
+  const fill = hex
+    ? `<a:solidFill><a:srgbClr val="${hex.toUpperCase()}"/></a:solidFill>`
+    : '';
+  return `<a:ln${width}>${fill}</a:ln>`;
+}
 
 /** `c:majorGridlines`, styled if the author said how. */
 function gridLinesElement(
@@ -627,7 +663,8 @@ export function spliceChartXml(
       color,
       chart.chartType,
       chart.colors,
-      pointCount
+      pointCount,
+      chart
     );
   });
 
@@ -641,6 +678,16 @@ export function spliceChartXml(
   } else {
     result = editAxis(result, 'catAx', chart.categoryAxis);
     result = editAxis(result, 'valAx', chart.valueAxis);
+  }
+
+  // `chartSpaceDesc` writes `<c:radarStyle val="standard"/>` from a literal —
+  // there is no option behind it at all, so `marker` and `filled` had nowhere
+  // to go and became `standard` without a word.
+  if (chart.radarStyle) {
+    result = result.replace(
+      /<c:radarStyle val="[^"]*"\/>/,
+      `<c:radarStyle val="${escapeXml(chart.radarStyle)}"/>`
+    );
   }
 
   // `legendPosition` is not among the fields either backend forwards, so every
