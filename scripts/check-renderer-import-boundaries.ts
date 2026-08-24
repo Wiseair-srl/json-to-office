@@ -23,6 +23,11 @@ const cases = [
     filePath: 'packages/core-pptx/src/ir/forbidden-export.ts',
     ruleId: 'no-restricted-imports',
   },
+  {
+    fixture: 'forbidden-renderer-root-export.ts',
+    filePath: 'packages/core-pptx/src/ir/forbidden-renderer-root-export.ts',
+    ruleId: 'no-restricted-imports',
+  },
 ] as const;
 
 for (const testCase of cases) {
