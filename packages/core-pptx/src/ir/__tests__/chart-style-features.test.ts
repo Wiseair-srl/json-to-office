@@ -198,19 +198,18 @@ describe('chart styling across the two renderers', () => {
     }
   );
 
-  it('names the prop, not just the chart, when it refuses', async () => {
-    // `titleFontSize` rather than an axis prop: the axis capabilities are
-    // implemented now, so a refusal has to be asked of one that is not.
-    let caught: unknown;
-    try {
-      await generateBufferViaIr(deck({ titleFontSize: 20 }), {
-        renderer: 'office-open',
-      });
-    } catch (error) {
-      caught = error;
-    }
-    const error = caught as Error & { paths?: string[] };
-    expect(error.paths).toContain('slides[0].elements[0].titleFontSize');
+  it('renders every styling prop on office-open, refusing none', async () => {
+    // The end state of #281: each capability landed and the last one closed the
+    // gap, so nothing a chart can be styled with is accepted-and-dropped any
+    // more. The requirement paths themselves are pinned above; this is that a
+    // fully-styled chart reaches bytes.
+    const styled = Object.fromEntries(
+      PROP_FEATURES.map(([prop, value]) => [prop, value])
+    );
+    const { buffer } = await generateBufferViaIr(deck(styled), {
+      renderer: 'office-open',
+    });
+    expect(buffer.length).toBeGreaterThan(0);
   });
 
   it('still renders an unstyled chart on office-open', async () => {

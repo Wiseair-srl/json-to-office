@@ -21,6 +21,7 @@
 import JSZip from 'jszip';
 import { describe, expect, it } from 'vitest';
 import { generateBufferViaIr } from '../../../core/generateFromIr';
+import { createOfficeOpenPptxRenderer } from '..';
 import type { PresentationComponentDefinition } from '../../../types';
 
 const chart = (extra: Record<string, unknown> = {}) => ({
@@ -585,6 +586,81 @@ describe('native charts on office-open pptx', () => {
         'ppt/charts/chart1.xml'
       );
       expect(xml, style).toContain(`<c:radarStyle val="${style}"/>`);
+    }
+  });
+
+  it('styles the chart title, legend, data labels and axis labels', async () => {
+    const xml = await read(
+      await render(
+        deck([
+          chart({
+            showValue: true,
+            titleFontSize: 20,
+            titleColor: 'FF0000',
+            titleFontFace: 'Inter',
+            legendFontSize: 10,
+            legendColor: '333333',
+            dataLabelFontSize: 8,
+            dataLabelColor: '0000FF',
+            catAxisLabelFontSize: 9,
+            catAxisLabelColor: '666666',
+          }),
+        ])
+      ),
+      'ppt/charts/chart1.xml'
+    );
+
+    // `sz` is hundredths of a point, and CT_TextCharacterProperties puts the
+    // fill before `a:latin`.
+    const head = xml.slice(0, xml.indexOf('<c:plotArea>'));
+    expect(head).toContain(
+      '<a:defRPr sz="2000"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:latin typeface="Inter"/></a:defRPr>'
+    );
+
+    const legend = xml.slice(
+      xml.indexOf('<c:legend>'),
+      xml.indexOf('</c:legend>')
+    );
+    expect(legend).toMatch(/<a:defRPr sz="1000">[\s\S]*?val="333333"/);
+    // Filled into the `c:txPr` the backend already wrote, not added beside it.
+    expect(legend.match(/<c:txPr>/g)).toHaveLength(1);
+
+    expect(xml).toMatch(/<c:dLbls><c:txPr>[\s\S]*?sz="800"/);
+  });
+
+  it('merges an axis rotation and font into one c:txPr', async () => {
+    // Two properties of the same text. A second `c:txPr` on one axis is a
+    // repair prompt, not a differently-styled label.
+    const xml = await read(
+      await render(
+        deck([chart({ catAxisLabelRotate: -45, catAxisLabelFontSize: 9 })])
+      ),
+      'ppt/charts/chart1.xml'
+    );
+    const catAx = xml.slice(
+      xml.indexOf('<c:catAx>'),
+      xml.indexOf('</c:catAx>')
+    );
+    expect(catAx.match(/<c:txPr>/g)).toHaveLength(1);
+    expect(catAx).toMatch(/<a:bodyPr rot="-2700000"[\s\S]*?sz="900"/);
+  });
+
+  it('declares every chart capability now that the last one landed', async () => {
+    const renderer = await createOfficeOpenPptxRenderer();
+    const missing = [...renderer.capabilities];
+    for (const feature of [
+      'chart-axis-scale',
+      'chart-axis-style',
+      'chart-axis-visibility',
+      'chart-bar-style',
+      'chart-data-border',
+      'chart-data-labels',
+      'chart-line-style',
+      'chart-pie-style',
+      'chart-radar-style',
+      'chart-text-style',
+    ] as const) {
+      expect(missing, feature).toContain(feature);
     }
   });
 

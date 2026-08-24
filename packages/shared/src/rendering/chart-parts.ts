@@ -72,8 +72,20 @@ export interface ChartPartSeries {
  * `id`/`crossAxisId` values an adapter cannot safely allocate — so an authored
  * axis is applied by rewriting the axis the backend built.
  */
+/** Font family, size, weight and colour on one piece of chart text. */
+export interface ChartTextStyle {
+  fontFamily?: string;
+  /** Points. */
+  fontSize?: number;
+  bold?: boolean;
+  /** 6-digit hex, no `#`. */
+  color?: string;
+}
+
 export interface ChartAxisEdits {
   title?: string;
+  /** The font of this axis' tick labels. */
+  labelFont?: ChartTextStyle;
   /** `c:delete`: an axis hidden entirely. */
   hidden?: boolean;
   /** `false` draws no axis line, leaving its labels. */
@@ -103,6 +115,9 @@ export interface ChartPartInput {
   dataBorder?: { widthPoints: number; color: string };
   /** `standard`, `marker` or `filled`; a backend may hardcode the first. */
   radarStyle?: string;
+  titleFont?: ChartTextStyle;
+  legendFont?: ChartTextStyle;
+  dataLabelFont?: ChartTextStyle;
   legendPosition?: string;
   /**
    * `clustered` | `stacked` | `percentStacked`.
@@ -500,14 +515,56 @@ function gridLinesElement(
   return `<c:majorGridlines><c:spPr><a:ln${width}>${parts.join('')}</a:ln></c:spPr></c:majorGridlines>`;
 }
 
-/** `c:txPr` carrying nothing but a rotation. */
-function rotationTextProperties(degrees: number): string {
+/**
+ * `a:defRPr`, the run properties a piece of chart text defaults to.
+ *
+ * CT_TextCharacterProperties fixes the child order — fill before `a:latin` —
+ * and `sz` is in hundredths of a point, not points.
+ */
+function defaultRunProperties(font: ChartTextStyle | undefined): string {
+  if (!font) return '<a:defRPr/>';
+  const attrs =
+    (font.fontSize !== undefined
+      ? ` sz="${Math.round(font.fontSize * 100)}"`
+      : '') + (font.bold !== undefined ? ` b="${font.bold ? 1 : 0}"` : '');
+  const children =
+    (font.color
+      ? `<a:solidFill><a:srgbClr val="${font.color.toUpperCase()}"/></a:solidFill>`
+      : '') +
+    (font.fontFamily
+      ? `<a:latin typeface="${escapeXml(font.fontFamily)}"/>`
+      : '');
+  return children
+    ? `<a:defRPr${attrs}>${children}</a:defRPr>`
+    : `<a:defRPr${attrs}/>`;
+}
+
+/** Whether a text style asks for anything at all. */
+function hasTextStyle(font: ChartTextStyle | undefined): boolean {
+  return !!font && Object.keys(font).length > 0;
+}
+
+/**
+ * `c:txPr`, carrying a rotation, a font, or both.
+ *
+ * Both go in one element: they are two properties of the same text, and an
+ * axis that wrote a second `c:txPr` for the font would be a repair prompt
+ * rather than a differently-styled label.
+ */
+function textProperties(
+  rotation: number | undefined,
+  font: ChartTextStyle | undefined
+): string {
   // `rot` is in 60000ths of a degree, and negative turns clockwise — the same
   // direction the authored value means.
-  const rot = Math.round(degrees * 60000);
+  const bodyPr =
+    rotation !== undefined
+      ? `<a:bodyPr rot="${Math.round(rotation * 60000)}" spcFirstLastPara="1" vertOverflow="ellipsis" vert="horz" wrap="square" anchorCtr="1"/>`
+      : '<a:bodyPr/>';
   return (
-    `<c:txPr><a:bodyPr rot="${rot}" spcFirstLastPara="1" vertOverflow="ellipsis" vert="horz" wrap="square" anchorCtr="1"/>` +
-    `<a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>`
+    `<c:txPr>${bodyPr}<a:lstStyle/><a:p><a:pPr>` +
+    defaultRunProperties(font) +
+    `</a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>`
   );
 }
 
@@ -567,8 +624,8 @@ function rewriteAxis(axisXml: string, edits: ChartAxisEdits): string {
     edits.lineVisible === false
       ? '<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>'
       : existingSpPr ?? '',
-    edits.labelRotation !== undefined
-      ? rotationTextProperties(edits.labelRotation)
+    edits.labelRotation !== undefined || hasTextStyle(edits.labelFont)
+      ? textProperties(edits.labelRotation, edits.labelFont)
       : existingTxPr ?? '',
   ].join('');
 
@@ -613,6 +670,71 @@ function editAxis(
     chartXml.slice(0, start) +
     rewriteAxis(chartXml.slice(start, end), edits) +
     chartXml.slice(end)
+  );
+}
+
+/**
+ * Style the chart's own title.
+ *
+ * Scoped to the region before `c:plotArea`, because an axis title is a
+ * `c:title` too and styling the first one found would put the chart title's
+ * font on an axis whenever the chart had no title of its own.
+ */
+function styleChartTitle(
+  chartXml: string,
+  font: ChartTextStyle | undefined
+): string {
+  if (!hasTextStyle(font)) return chartXml;
+  const plotAreaAt = chartXml.indexOf('<c:plotArea>');
+  if (plotAreaAt < 0) return chartXml;
+  const head = chartXml.slice(0, plotAreaAt);
+  if (!head.includes('<c:title>')) return chartXml;
+
+  // `a:pPr` precedes the runs it sets defaults for.
+  const styled = head.replace(
+    '<a:p><a:r>',
+    `<a:p><a:pPr>${defaultRunProperties(font)}</a:pPr><a:r>`
+  );
+  return styled + chartXml.slice(plotAreaAt);
+}
+
+/**
+ * Style the legend, whose `c:txPr` the backend already writes.
+ *
+ * Filling in the empty `a:defRPr` it leaves rather than adding a second
+ * `c:txPr`, which a reader offers to repair.
+ */
+function styleLegend(
+  chartXml: string,
+  font: ChartTextStyle | undefined
+): string {
+  if (!hasTextStyle(font)) return chartXml;
+  const start = chartXml.indexOf('<c:legend>');
+  if (start < 0) return chartXml;
+  const end = chartXml.indexOf('</c:legend>', start);
+  if (end < 0) return chartXml;
+
+  const legend = chartXml
+    .slice(start, end)
+    .replace('<a:defRPr/>', defaultRunProperties(font));
+  return chartXml.slice(0, start) + legend + chartXml.slice(end);
+}
+
+/**
+ * Style every series' data labels.
+ *
+ * CT_DLbls orders `numFmt`, `spPr`, `txPr`, `dLblPos` and only then the `show*`
+ * flags, so the text properties go immediately after the opening tag — which is
+ * also before the `c:dLblPos` the backend writes first.
+ */
+function styleDataLabels(
+  chartXml: string,
+  font: ChartTextStyle | undefined
+): string {
+  if (!hasTextStyle(font)) return chartXml;
+  return chartXml.replace(
+    /<c:dLbls>(?!<c:txPr>)/g,
+    `<c:dLbls>${textProperties(undefined, font)}`
   );
 }
 
@@ -679,6 +801,10 @@ export function spliceChartXml(
     result = editAxis(result, 'catAx', chart.categoryAxis);
     result = editAxis(result, 'valAx', chart.valueAxis);
   }
+
+  result = styleChartTitle(result, chart.titleFont);
+  result = styleLegend(result, chart.legendFont);
+  result = styleDataLabels(result, chart.dataLabelFont);
 
   // `chartSpaceDesc` writes `<c:radarStyle val="standard"/>` from a literal —
   // there is no option behind it at all, so `marker` and `filled` had nowhere

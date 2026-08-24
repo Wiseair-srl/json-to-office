@@ -472,6 +472,46 @@ series fill — a series fill paints every slice the same colour. And a scatter
 chart has no `c:catAx` at all: both its axes are `c:valAx`, X first, so its axis
 titles are placed by position rather than by tag.
 
+### Chart styling
+
+`charts` says a backend can draw a chart from data. It says nothing about the
+options the chart was _styled_ with, and one coarse feature let office-open
+accept a chart, draw it, and drop half of them — an ignored `valAxisMaxVal`
+rescales a chart with nothing in the file to say so. Ten finer capabilities sit
+beside it, each required by the compiler **only when the matching prop was
+authored**, at that prop's own path.
+
+Keyed off the authored props rather than the compiled IR on purpose:
+`compileChartLabelFont` falls back to the theme body font when a weight is
+authored without a face, so a compiled font object can hold a family the author
+never wrote.
+
+| Capability              | Reaches the file by                                                      |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `chart-bar-style`       | forwarded — `gapWidth`, `overlap`                                        |
+| `chart-pie-style`       | forwarded — `holeSize`, `firstSliceAngle`                                |
+| `chart-data-labels`     | forwarded — per-series `dataLabels`, all six flags written explicitly    |
+| `chart-line-style`      | forwarded `smooth`/`marker`; `lineSize` spliced into `c:ser/c:spPr/a:ln` |
+| `chart-data-border`     | spliced — an `a:ln` beside the fill, or on each `c:dPt` of a pie         |
+| `chart-radar-style`     | spliced — `c:radarStyle`, which the backend writes from a literal        |
+| `chart-axis-scale`      | spliced — `c:scaling` bounds, `c:majorUnit`, `c:numFmt`                  |
+| `chart-axis-visibility` | spliced — `c:delete`, and an `a:noFill` line                             |
+| `chart-axis-style`      | spliced — `c:majorGridlines`, label rotation                             |
+| `chart-text-style`      | spliced — `a:defRPr` in the title, legend, data labels and axis `c:txPr` |
+
+Everything spliced is spliced because `AxisOptions` cannot be passed at all —
+supplying `axes` replaces the backend's default pair and needs `id`/`crossAxisId`
+values an adapter cannot safely allocate, and a partial one emits literal
+`<undefined>` elements. The axis is therefore rebuilt rather than patched:
+CT_CatAx and CT_ValAx fix the order of their children — `majorGridlines`,
+`title`, `numFmt`, `spPr`, `txPr`, all between `axPos` and `crossAx` — and
+inserting each edit at its own anchor put whichever landed last in front of the
+rest.
+
+`pptxgenjs` declares all ten and already forwarded every one of these props, so
+the split cost no deck that rendered before. Only `bubble` on office-open stays
+refused, for the reason above.
+
 Each core keeps its own packaging: `word/charts` and `word/embeddings` with
 adm-zip on one side, `ppt/charts` and `ppt/embeddings` with jszip on the other.
 The pptx workbook is named `Microsoft_Excel_Worksheet{N}.xlsx` because that is
