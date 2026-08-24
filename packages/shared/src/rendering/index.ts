@@ -33,7 +33,11 @@ export {
   diagnoseUnsupportedFeatures,
 } from './capabilities';
 
-export type { ChartPartInput, ChartPartSeries } from './chart-parts';
+export type {
+  ChartAxisEdits,
+  ChartPartInput,
+  ChartPartSeries,
+} from './chart-parts';
 export {
   CHART_PACKAGE_RELATIONSHIP,
   CHART_WORKBOOK_CONTENT_TYPE,
