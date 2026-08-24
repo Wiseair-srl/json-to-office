@@ -70,6 +70,39 @@ export const PPTX_FEATURES = [
   'table-auto-page',
   /** Native OOXML charts with an embedded workbook. */
   'charts',
+  /*
+   * Chart styling, split finer than `charts` itself.
+   *
+   * `charts` says a backend can draw a chart from data. It says nothing about
+   * whether that backend honours the options the author styled it with, and one
+   * coarse feature let a renderer accept a chart, draw it, and quietly ignore
+   * half of what was asked for — an ignored axis maximum draws a different
+   * chart from the authored one and the file says nothing about it.
+   *
+   * Each name below is required by the compiler *only when the matching prop
+   * was authored*, at that prop's own path, so a default never demands a
+   * capability and a refusal always names the line that caused it.
+   */
+  /** `barGapWidthPct`, `barOverlapPct`. */
+  'chart-bar-style',
+  /** `firstSliceAng`, `holeSize`. */
+  'chart-pie-style',
+  /** `lineSmooth`, `lineDataSymbol`, `lineSize`, `lineDataSymbolSize`. */
+  'chart-line-style',
+  /** `radarStyle` — anything but the `standard` a backend may hardcode. */
+  'chart-radar-style',
+  /** `showValue`, `showPercent`, `showLabel`, `showSerName`, `dataLabelPosition`. */
+  'chart-data-labels',
+  /** `dataBorder`: an outline on bars, slices and areas. */
+  'chart-data-border',
+  /** Value-axis bounds and number format: min, max, major unit, format code. */
+  'chart-axis-scale',
+  /** Hiding an axis or its line. */
+  'chart-axis-visibility',
+  /** Axis label rotation and grid lines. */
+  'chart-axis-style',
+  /** Font family, size, weight and colour on any chart text. */
+  'chart-text-style',
   'solid-fills',
   'gradient-fills',
   'pattern-fills',

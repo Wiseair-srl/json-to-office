@@ -76,6 +76,14 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  * either, but both are cell properties there and the adapter pushes them onto
  * every cell — see `tableChild` in `emit.ts`.
  *
+ * The ten `chart-*` capabilities are the styling half of `charts`, and none is
+ * declared yet: this adapter draws a chart from its data and honours its
+ * title, legend, palette, axis titles and bar direction, but reads none of the
+ * options that style it. Each moves into the declared set as its XML mapping
+ * lands. Until then a deck that authored one is refused naming the prop, which
+ * is the point — an ignored `valAxisMaxVal` used to draw a different chart
+ * from the authored one with nothing in the file to say so.
+ *
  * `charts` *is* declared, and used to not be. The backend writes chart XML
  * whose `<c:f>` references are empty and which has no workbook behind them, so
  * "Edit Data" failed and a chart you cannot edit is not the chart that was
@@ -84,6 +92,16 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  */
 const UNSUPPORTED: ReadonlySet<PptxFeature> = new Set<PptxFeature>([
   'svg',
+  'chart-bar-style',
+  'chart-pie-style',
+  'chart-line-style',
+  'chart-radar-style',
+  'chart-data-labels',
+  'chart-data-border',
+  'chart-axis-scale',
+  'chart-axis-visibility',
+  'chart-axis-style',
+  'chart-text-style',
   'image-transform',
   'image-crop',
   'image-rounding',
