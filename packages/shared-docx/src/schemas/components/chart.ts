@@ -30,12 +30,19 @@ import {
  * PowerPoint spells as a bar with a vertical direction and Word spells as its
  * own type. `stock`, `surface`, `ofPie` and the 3-D variants are left out until
  * there is a counterpart to be consistent with.
+ *
+ * `bubble` is left out for a harder reason: `@office-open` spells a bubble
+ * series as `xValues`/`yValues`/`bubbleSize` rather than categories and values,
+ * and handing it the latter throws a TypeError from inside its own bundle.
+ * There is also no unambiguous reading of a category label as a numeric x. The
+ * pptx component refuses it by name for the same reason; here the type simply
+ * does not exist, because `office-open` is the only renderer that draws a docx
+ * chart at all.
  */
 const ChartTypeSchema = Type.Union(
   [
     Type.Literal('area'),
     Type.Literal('bar'),
-    Type.Literal('bubble'),
     Type.Literal('column'),
     Type.Literal('doughnut'),
     Type.Literal('line'),
@@ -67,11 +74,6 @@ const ChartDataSeriesSchema = Type.Object(
       Type.Array(Type.Number(), {
         description:
           'Data values, one per label. Needed on every series — see `labels`.',
-      })
-    ),
-    sizes: Type.Optional(
-      Type.Array(Type.Number(), {
-        description: 'Bubble sizes (bubble charts only)',
       })
     ),
   },

@@ -610,8 +610,6 @@ export interface DocxIrChartSeries {
   name?: string;
   labels: string[];
   values: number[];
-  /** Bubble sizes, present only for a bubble chart. */
-  sizes?: number[];
 }
 
 export interface DocxIrHyperlink {

@@ -68,6 +68,15 @@ differently-styled label.
 With that the gap is closed: office-open declares all ten, and nothing a chart
 can be styled with is accepted-and-dropped any more.
 
+`c:overlap` goes with a stacked grouping — stacked bars that do not overlap are
+drawn side by side and look clustered — but the two cannot be written together.
+CT_BarChart orders `barDir`, `grouping`, `varyColors`, `ser`, `dLbls`,
+`gapWidth`, `overlap`, `serLines`, `axId`, so an overlap written beside the
+grouping lands before `c:ser`; `c:grouping` is also a child of `c:lineChart` and
+`c:areaChart`, neither of which allows an overlap; and an author who set
+`barOverlapPct` already has one. It now goes in at its own anchor, inside
+`c:barChart` only, and never twice.
+
 `pptxgenjs` declares all ten; it already forwards every one of those props, so
 no deck that renders today stops rendering. `office-open` now declares all ten too. The capability split remains the
 contract: a prop is honoured or refused by name, never accepted and dropped.

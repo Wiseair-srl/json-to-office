@@ -76,13 +76,12 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  * either, but both are cell properties there and the adapter pushes them onto
  * every cell — see `tableChild` in `emit.ts`.
  *
- * The ten `chart-*` capabilities are the styling half of `charts`, and none is
- * declared yet: this adapter draws a chart from its data and honours its
- * title, legend, palette, axis titles and bar direction, but reads none of the
- * options that style it. Each moves into the declared set as its XML mapping
- * lands. Until then a deck that authored one is refused naming the prop, which
- * is the point — an ignored `valAxisMaxVal` used to draw a different chart
- * from the authored one with nothing in the file to say so.
+ * The ten `chart-*` capabilities are the styling half of `charts`, and all ten
+ * are declared: the emitter forwards what `ChartSpaceOptions` and
+ * `ChartSeriesCommon` carry, and `chartParts.ts` splices in the rest. Each was
+ * declared only once its mapping landed and was tested, never before — an
+ * ignored `valAxisMaxVal` draws a different chart from the authored one with
+ * nothing in the file to say so, which is what the split exists to prevent.
  *
  * `charts` *is* declared, and used to not be. The backend writes chart XML
  * whose `<c:f>` references are empty and which has no workbook behind them, so

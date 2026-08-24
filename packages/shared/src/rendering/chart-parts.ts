@@ -579,8 +579,11 @@ function textProperties(
  * mis-drawn axis. Splitting the element at the two fixed points and writing the
  * middle out in order is the only way this stays correct as edits are added.
  *
- * Anything already present that this does not replace is preserved — the two
- * backends emit different amounts, so the same rewrite has to be safe on both.
+ * Anything already present that this does not replace is preserved, and that
+ * has to be exhaustive rather than best-effort: the region is replaced
+ * wholesale, so a child this function does not capture is a child it deletes.
+ * The two backends emit different amounts, so the same rewrite has to be safe
+ * on both.
  */
 function rewriteAxis(axisXml: string, edits: ChartAxisEdits): string {
   const axPos = axisXml.match(/<c:axPos[^>]*\/>/);
@@ -608,19 +611,37 @@ function rewriteAxis(axisXml: string, edits: ChartAxisEdits): string {
   }
 
   // Rebuild the middle in schema order, keeping what was already there.
+  //
+  // Every child CT_CatAx and CT_ValAx allow in this region is captured, not
+  // just the ones this function writes: the region is *replaced*, so a child
+  // left out is a child deleted. Authoring a title alone used to drop the
+  // backend's gridlines, tick marks and tick-label position on the floor.
+  const existingMajorGrid = middle.match(
+    /<c:majorGridlines(?:\/>|>[\s\S]*?<\/c:majorGridlines>)/
+  )?.[0];
+  const existingMinorGrid = middle.match(
+    /<c:minorGridlines(?:\/>|>[\s\S]*?<\/c:minorGridlines>)/
+  )?.[0];
   const existingTitle = middle.match(/<c:title>[\s\S]*?<\/c:title>/)?.[0];
   const existingNumFmt = middle.match(/<c:numFmt[^>]*\/>/)?.[0];
+  const existingMajorTick = middle.match(/<c:majorTickMark[^>]*\/>/)?.[0];
+  const existingMinorTick = middle.match(/<c:minorTickMark[^>]*\/>/)?.[0];
+  const existingTickLblPos = middle.match(/<c:tickLblPos[^>]*\/>/)?.[0];
   const existingSpPr = middle.match(/<c:spPr>[\s\S]*?<\/c:spPr>/)?.[0];
   const existingTxPr = middle.match(/<c:txPr>[\s\S]*?<\/c:txPr>/)?.[0];
 
   const rebuilt = [
-    edits.gridLine ? gridLinesElement(edits.gridLine) : '',
+    edits.gridLine ? gridLinesElement(edits.gridLine) : existingMajorGrid ?? '',
+    existingMinorGrid ?? '',
     // An axis that already carries a title keeps it: writing a second one is a
     // repair prompt, not a duplicated label.
     existingTitle ?? (edits.title ? axisTitle(edits.title) : ''),
     edits.numberFormat !== undefined
       ? `<c:numFmt formatCode="${escapeXml(edits.numberFormat)}" sourceLinked="0"/>`
       : existingNumFmt ?? '',
+    existingMajorTick ?? '',
+    existingMinorTick ?? '',
+    existingTickLblPos ?? '',
     edits.lineVisible === false
       ? '<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>'
       : existingSpPr ?? '',
@@ -671,6 +692,62 @@ function editAxis(
     rewriteAxis(chartXml.slice(start, end), edits) +
     chartXml.slice(end)
   );
+}
+
+/**
+ * Set the grouping, and the overlap that has to go with it.
+ *
+ * `c:grouping` is written `clustered` unconditionally by the backend, and
+ * stacked bars that do not overlap are drawn side by side — they look clustered
+ * whatever the grouping says. So `c:overlap val="100"` goes with it.
+ *
+ * The two cannot be written together, though, and doing so produced invalid
+ * XML three ways. CT_BarChart fixes the order as `barDir`, `grouping`,
+ * `varyColors`, `ser`, `dLbls`, `gapWidth`, `overlap`, `serLines`, `axId`, so an
+ * overlap written beside the grouping lands before `c:ser`. `c:grouping` is
+ * also a child of `c:lineChart` and `c:areaChart`, neither of which allows
+ * `c:overlap` at all. And an author who set `barOverlapPct` already has one
+ * from the backend, in the right place — a second is a duplicate. Word and
+ * PowerPoint answer all three with a repair prompt; LibreOffice drew them
+ * without complaint, which is why the tests did not notice.
+ */
+function setBarGrouping(chartXml: string, grouping: string): string {
+  const start = chartXml.indexOf('<c:barChart>');
+  // Only a bar chart has an overlap. A line or area chart takes the grouping
+  // and nothing else.
+  if (start < 0) {
+    return chartXml.replace(
+      /<c:grouping val="[^"]*"\/>/,
+      `<c:grouping val="${escapeXml(grouping)}"/>`
+    );
+  }
+  const end = chartXml.indexOf('</c:barChart>', start);
+  if (end < 0) return chartXml;
+
+  let plot = chartXml
+    .slice(start, end)
+    .replace(
+      /<c:grouping val="[^"]*"\/>/,
+      `<c:grouping val="${escapeXml(grouping)}"/>`
+    );
+
+  if (!plot.includes('<c:overlap')) {
+    // After `c:gapWidth` when the author set one, otherwise immediately before
+    // the axis ids that close the plot — both are the same legal slot.
+    const gapWidth = plot.match(/<c:gapWidth val="[^"]*"\/>/)?.[0];
+    if (gapWidth) {
+      const at = plot.indexOf(gapWidth) + gapWidth.length;
+      plot = plot.slice(0, at) + '<c:overlap val="100"/>' + plot.slice(at);
+    } else {
+      const axId = plot.indexOf('<c:axId');
+      if (axId >= 0) {
+        plot =
+          plot.slice(0, axId) + '<c:overlap val="100"/>' + plot.slice(axId);
+      }
+    }
+  }
+
+  return chartXml.slice(0, start) + plot + chartXml.slice(end);
 }
 
 /**
@@ -825,14 +902,8 @@ export function spliceChartXml(
     );
   }
 
-  // `c:grouping` is written `clustered` unconditionally by the backend, and
-  // `c:overlap` goes with it: stacked bars that do not overlap are drawn side
-  // by side and look clustered whatever the grouping says.
   if (chart.barGrouping && chart.barGrouping !== 'clustered') {
-    result = result.replace(
-      /<c:grouping val="[^"]*"\/>/,
-      `<c:grouping val="${escapeXml(chart.barGrouping)}"/><c:overlap val="100"/>`
-    );
+    result = setBarGrouping(result, chart.barGrouping);
   }
 
   // `c:externalData` is the last child of `c:chartSpace`: after `c:chart`,

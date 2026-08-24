@@ -3268,6 +3268,18 @@ function compileChart(
   const { ctx, path } = scope;
   const props = (component.props ?? {}) as Record<string, any>;
 
+  // Refused by the schema too, which is where an authoring mistake should
+  // land. Stated again here because a caller can skip validation, and the
+  // failure without this is a TypeError raised from inside `@office-open`'s
+  // own bundle: it spells a bubble series as `xValues`/`yValues`/`bubbleSize`
+  // rather than categories and values.
+  if (props.type === 'bubble') {
+    throw new Error(
+      `Chart at ${path} is a bubble chart, which no docx renderer draws; ` +
+        'use the pptx `chart` component on the pptxgenjs renderer for one.'
+    );
+  }
+
   const rawSeries = Array.isArray(props.data) ? props.data : [];
   if (rawSeries.length === 0) {
     throw new Error(`Chart at ${path} has no data series.`);
@@ -3294,9 +3306,6 @@ function compileChart(
       ...(typeof raw.name === 'string' ? { name: raw.name } : {}),
       labels: labels.map((value) => String(value)),
       values: values.map((value) => Number(value)),
-      ...(Array.isArray(raw.sizes)
-        ? { sizes: raw.sizes.map((value) => Number(value)) }
-        : {}),
     };
   });
 

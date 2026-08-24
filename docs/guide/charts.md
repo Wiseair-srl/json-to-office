@@ -1,19 +1,19 @@
 # Charts
 
-json-to-office gives you two ways to put charts in a document: **native charts** (the `chart` component) and **Highcharts-rendered images** (the `highcharts` component). Both formats have both, on every pptx renderer; the one caveat is that the docx `chart` needs `renderer: "office-open"`, because docx.js has no chart primitive. This page helps you choose between them and get each one running.
+json-to-office gives you two ways to put charts in a document: **native charts** (the `chart` component) and **Highcharts-rendered images** (the `highcharts` component). Both formats have both. Two caveats on the native one: the docx `chart` needs `renderer: "office-open"`, because docx.js has no chart primitive, and `bubble` is drawn only by the pptx `pptxgenjs` renderer. This page helps you choose between them and get each one running.
 
 ## Native charts vs Highcharts
 
-|                        | `chart` (native)                                                                                                        | `highcharts`                                                                             |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Formats                | pptx (both renderers); docx with `renderer: "office-open"`                                                              | pptx + docx, every renderer                                                              |
-| Output                 | Real PowerPoint / Word chart object                                                                                     | PNG image                                                                                |
-| Editable by recipients | Yes — data and styling editable in the Office app                                                                       | No — it's a picture                                                                      |
-| Scaling                | Vector, crisp at any zoom                                                                                               | Raster (use `scale` for sharper exports)                                                 |
-| External dependencies  | None                                                                                                                    | Requires a running Highcharts Export Server                                              |
-| Works in the browser   | Yes                                                                                                                     | No — Node-only (needs server-side fetch)                                                 |
-| Chart catalog          | pptx 9 types: area, bar, bar3D, bubble, doughnut, line, pie, radar, scatter; docx the same minus `bar3D`, plus `column` | The full Highcharts catalog: heatmaps, treemaps, gauges, combined series, annotations, … |
-| Theme integration      | Palette + text colors follow the theme automatically                                                                    | Theme palette injected when `options.colors` unset                                       |
+|                        | `chart` (native)                                                                                                                                                       | `highcharts`                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Formats                | pptx (both renderers, `bubble` on `pptxgenjs` only); docx with `renderer: "office-open"`                                                                               | pptx + docx, every renderer                                                              |
+| Output                 | Real PowerPoint / Word chart object                                                                                                                                    | PNG image                                                                                |
+| Editable by recipients | Yes — data and styling editable in the Office app                                                                                                                      | No — it's a picture                                                                      |
+| Scaling                | Vector, crisp at any zoom                                                                                                                                              | Raster (use `scale` for sharper exports)                                                 |
+| External dependencies  | None                                                                                                                                                                   | Requires a running Highcharts Export Server                                              |
+| Works in the browser   | Yes                                                                                                                                                                    | No — Node-only (needs server-side fetch)                                                 |
+| Chart catalog          | pptx 9 types: area, bar, bar3D, bubble, doughnut, line, pie, radar, scatter — `bubble` on `pptxgenjs` only; docx 8: the same minus `bar3D` and `bubble`, plus `column` | The full Highcharts catalog: heatmaps, treemaps, gauges, combined series, annotations, … |
+| Theme integration      | Palette + text colors follow the theme automatically                                                                                                                   | Theme palette injected when `options.colors` unset                                       |
 
 **Rule of thumb**: reach for native `chart` first. It needs no infrastructure, recipients can tweak it, and it covers the common business-chart types. Reach for `highcharts` when you need chart types or styling an Office chart can't express — or when you're generating a Word document on the default `docxjs` renderer, where `highcharts` is the only chart component.
 
@@ -22,7 +22,7 @@ docx.js has no chart primitive at all, so the component is absent from that rend
 
 The pptx `office-open` renderer needed the same repair and used to decline charts over it. It no longer does: the same pass writes the workbook there too, so both pptx backends now draw an editable native chart. `@office-open/pptx` forwards more of the chart options than its docx sibling, so only the cell references and the series colors have to be spliced in.
 
-One exception: `bubble` is `pptxgenjs`-only. `@office-open` spells a bubble series as x/y/size triples rather than categories and values, and there is no unambiguous reading of a category label as a numeric x — so it is refused by name rather than guessed at.
+One exception: the native `bubble` chart is `pptxgenjs`-only, and is absent from the docx component altogether. `@office-open` spells a bubble series as x/y/size triples rather than categories and values, and there is no unambiguous reading of a category label as a numeric x — so it is refused by name rather than guessed at. A Highcharts bubble chart is unaffected: `highcharts` keeps its full catalog on every renderer.
 :::
 
 ## Theme palette
