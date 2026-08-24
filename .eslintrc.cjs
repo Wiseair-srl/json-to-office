@@ -48,7 +48,7 @@ const officeOpenDynamic = [
   ),
 ];
 const rendererImport = restrictedPattern(
-  ['**/renderers/**'],
+  ['**/renderers', '**/renderers/**'],
   'Compiler and production IR modules may not import renderers.'
 );
 const rendererDynamic = [
