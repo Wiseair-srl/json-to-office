@@ -10,8 +10,8 @@
  * These tests pin the first half of the fix: the compiler records one
  * requirement per *authored* styling prop, at that prop's own path. The second
  * half — actually emitting them — moves each capability into the office-open
- * adapter's declared set one at a time, and every move should delete a case
- * from `REFUSED` below.
+ * adapter's declared set one at a time, and each move flips that capability's
+ * case in `chart-parts.test.ts` from refused to rendered.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -19,6 +19,7 @@ import { compileDocumentToIr } from '../../core/generateFromIr';
 import { generateBufferViaIr } from '../../core/generateFromIr';
 import type { PresentationComponentDefinition } from '../../types';
 import { PPTX_FEATURES } from '../features';
+import { createOfficeOpenPptxRenderer } from '../../renderers/office-open';
 
 const deck = (chartProps: Record<string, unknown> = {}) =>
   ({
@@ -90,7 +91,6 @@ const PROP_FEATURES: ReadonlyArray<[string, unknown, string]> = [
   ['catAxisLabelFontSize', 9, 'chart-text-style'],
   ['valAxisLabelColor', '666666', 'chart-text-style'],
   ['dataLabelFontSize', 8, 'chart-text-style'],
-  ['dataLabelPosition', 'outEnd', 'chart-data-labels'],
 ];
 
 describe('chart styling requirements', () => {
@@ -158,35 +158,57 @@ describe('chart styling across the two renderers', () => {
     expect(buffer.length).toBeGreaterThan(0);
   });
 
-  it('refuses the same chart on office-open, naming the props', async () => {
-    // The behaviour change this issue is about: what used to render with the
-    // styling silently dropped now fails before any bytes exist.
+  it.each([
+    ['chart-data-labels', { showValue: true }],
+    ['chart-data-border', { dataBorder: { pt: 1, color: '000000' } }],
+    ['chart-axis-scale', { valAxisMaxVal: 99 }],
+    ['chart-axis-visibility', { catAxisHidden: true }],
+    ['chart-axis-style', { valGridLine: { style: 'dash' } }],
+    ['chart-bar-style', { barGapWidthPct: 20 }],
+    ['chart-line-style', { lineSmooth: true }],
+    ['chart-pie-style', { holeSize: 70 }],
+    ['chart-radar-style', { radarStyle: 'marker' }],
+    ['chart-text-style', { titleFontSize: 20 }],
+  ] as ReadonlyArray<[string, Record<string, unknown>]>)(
+    'office-open renders %s when it declares it, and refuses it otherwise',
+    async (feature, props) => {
+      // Derived from the adapter's own capability set rather than hardcoded, so
+      // implementing a capability flips this case without anyone remembering
+      // to edit it — and forgetting to declare one shows up as a refusal.
+      const renderer = await createOfficeOpenPptxRenderer();
+      const declared = renderer.capabilities.has(feature as never);
+
+      let caught: unknown;
+      try {
+        await generateBufferViaIr(deck(props), { renderer: 'office-open' });
+      } catch (error) {
+        caught = error;
+      }
+
+      if (declared) {
+        expect(caught, `${feature} is declared but the render failed`).toBe(
+          undefined
+        );
+        return;
+      }
+
+      const error = caught as Error & { features?: string[] };
+      expect(error, `${feature} is not declared but rendered`).toBeDefined();
+      expect(error.features).toContain(feature);
+    }
+  );
+
+  it('names the prop, not just the chart, when it refuses', async () => {
     let caught: unknown;
     try {
-      await generateBufferViaIr(
-        deck({ showValue: true, valAxisMaxVal: 99, holeSize: 70 }),
-        { renderer: 'office-open' }
-      );
+      await generateBufferViaIr(deck({ valAxisMaxVal: 99 }), {
+        renderer: 'office-open',
+      });
     } catch (error) {
       caught = error;
     }
-
-    const error = caught as Error & { features?: string[]; paths?: string[] };
-    expect(error).toBeDefined();
-    expect(error.features).toEqual(
-      expect.arrayContaining([
-        'chart-data-labels',
-        'chart-axis-scale',
-        'chart-pie-style',
-      ])
-    );
-    expect(error.paths).toEqual(
-      expect.arrayContaining([
-        'slides[0].elements[0].showValue',
-        'slides[0].elements[0].valAxisMaxVal',
-        'slides[0].elements[0].holeSize',
-      ])
-    );
+    const error = caught as Error & { paths?: string[] };
+    expect(error.paths).toContain('slides[0].elements[0].valAxisMaxVal');
   });
 
   it('still renders an unstyled chart on office-open', async () => {

@@ -92,11 +92,8 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  */
 const UNSUPPORTED: ReadonlySet<PptxFeature> = new Set<PptxFeature>([
   'svg',
-  'chart-bar-style',
-  'chart-pie-style',
   'chart-line-style',
   'chart-radar-style',
-  'chart-data-labels',
   'chart-data-border',
   'chart-axis-scale',
   'chart-axis-visibility',
