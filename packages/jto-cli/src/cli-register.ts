@@ -3,7 +3,7 @@ import {
   DocxFormatAdapter,
   PptxFormatAdapter,
   type FormatAdapter,
-} from './format-adapter.js';
+} from '@json-to-office/jto-ops';
 import { createGenerateCommand } from './commands/generate.js';
 import { createDiffCommand } from './commands/diff.js';
 import { createValidateCommand } from './commands/validate.js';

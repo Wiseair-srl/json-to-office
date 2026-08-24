@@ -3,7 +3,7 @@ import { createElement, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Box, Static, Text, render, useApp, useInput } from 'ink';
 import chalk from 'chalk';
-import { runWithDiagnosticSink } from '../services/diagnostics.js';
+import { runWithDiagnosticSink } from '@json-to-office/jto-ops';
 
 export const EXIT_CODES = { OK: 0, FAIL: 1 } as const;
 

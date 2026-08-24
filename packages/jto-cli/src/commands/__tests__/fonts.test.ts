@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
  * for the heavier paths (network-backed install).
  */
 import { createFontsCommand } from '../fonts';
-import { DocxFormatAdapter } from '../../format-adapter';
+import { DocxFormatAdapter } from '@json-to-office/jto-ops';
 
 describe('createFontsCommand', () => {
   const cmd = createFontsCommand(new DocxFormatAdapter());

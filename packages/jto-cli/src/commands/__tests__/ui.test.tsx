@@ -9,7 +9,7 @@ import {
   runTask,
   type UiLine,
 } from '../ui.js';
-import { emitDiagnostic } from '../../services/diagnostics.js';
+import { emitDiagnostic } from '@json-to-office/jto-ops';
 
 describe('Ink CLI UI', () => {
   it('renders permanent output with Ink', () => {

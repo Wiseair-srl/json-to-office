@@ -7,7 +7,7 @@ import {
   type PluginMetadata,
 } from './plugin-metadata.js';
 import { getProjectRoot, resolveScopePath } from '../utils/project-root.js';
-import { emitDiagnostic } from './diagnostics.js';
+import { emitDiagnostic } from '@json-to-office/jto-ops';
 
 export interface DiscoverOptions {
   scope?: string;

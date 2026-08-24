@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { cosmiconfig } from 'cosmiconfig';
-import { emitDiagnostic } from '../services/diagnostics.js';
+import { emitDiagnostic } from '@json-to-office/jto-ops';
 
 export interface PluginConfig {
   plugins?: string[];

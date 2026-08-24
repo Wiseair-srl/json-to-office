@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import chalk from 'chalk';
-import type { FormatAdapter, GeneratorResult } from '../format-adapter.js';
+import type { FormatAdapter, GeneratorResult } from '@json-to-office/jto-ops';
 import { PluginRegistry } from '../services/plugin-registry.js';
 import { GeneratorFactory } from '../services/generator-factory.js';
 import { PluginConfigService } from '../config/plugin-config.js';

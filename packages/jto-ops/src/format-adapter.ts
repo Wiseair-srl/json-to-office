@@ -14,9 +14,9 @@ import {
   createLibreOfficePptxRasterizer,
   createLibreOfficePptxBatchRasterizer,
 } from './pptx-rasterizer.js';
-import { emitDiagnostic } from './services/diagnostics.js';
+import { emitDiagnostic } from './diagnostics.js';
 
-/** Forward structured warnings collected during generation to the terminal. */
+/** Forward structured warnings collected during generation to the host's sink. */
 function emitGenerationWarnings(warnings: GenerationWarning[]): void {
   for (const warning of warnings) {
     emitDiagnostic(

@@ -7,7 +7,7 @@ import {
 } from '@json-to-office/core-pptx';
 import type { GenerationWarning } from '@json-to-office/shared';
 import { DocxFormatAdapter, PptxFormatAdapter } from './format-adapter';
-import { runWithDiagnosticSink } from './services/diagnostics.js';
+import { runWithDiagnosticSink } from './diagnostics.js';
 
 function deck(textProps: Record<string, unknown>) {
   return {

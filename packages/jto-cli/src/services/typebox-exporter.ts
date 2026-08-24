@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import type { TSchema } from '@sinclair/typebox';
-import type { FormatName } from '../format-adapter.js';
+import type { FormatName } from '@json-to-office/jto-ops';
 
 interface VersionedPropsSchema {
   version: string;

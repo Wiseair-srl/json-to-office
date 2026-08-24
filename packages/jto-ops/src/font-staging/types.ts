@@ -11,9 +11,7 @@
  *
  * Two consumers today: the playground's LibreOffice PDF-preview converter
  * (`@json-to-office/jto`) and the pptx rasterizer that backs docx `visual`
- * components (`./pptx-rasterizer.ts`). This module lives in `jto-cli`
- * because `@json-to-office/jto` depends on `@json-to-office/jto-cli` and
- * never the reverse — the rasterizer could not otherwise reach it.
+ * components (`../pptx-rasterizer.ts`).
  */
 
 import type { ResolvedFont } from '@json-to-office/shared';

@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { pathToFileURL } from 'url';
-import { emitDiagnostic } from './diagnostics.js';
+import { emitDiagnostic } from '@json-to-office/jto-ops';
 
 export interface CustomComponent {
   name: string;

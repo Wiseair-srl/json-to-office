@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { existsSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
-import type { FormatAdapter } from '../format-adapter.js';
+import type { FormatAdapter } from '@json-to-office/jto-ops';
 import { JsonValidator } from '../services/json-validator.js';
 import {
   createTable,

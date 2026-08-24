@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { PluginDiscoveryService } from './plugin-discovery.js';
 import type { PluginMetadata } from './plugin-metadata.js';
-import { emitDiagnostic } from './diagnostics.js';
+import { emitDiagnostic } from '@json-to-office/jto-ops';
 
 export class PluginResolver {
   private discoveryService: PluginDiscoveryService;

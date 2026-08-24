@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { type TSchema } from '@sinclair/typebox';
 import { latestVersion } from '@json-to-office/shared';
 import type { CustomComponent } from './plugin-loader.js';
-import { emitDiagnostic } from './diagnostics.js';
+import { emitDiagnostic } from '@json-to-office/jto-ops';
 
 export interface PluginExample {
   title?: string;

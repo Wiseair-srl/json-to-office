@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Command } from 'commander';
 import { createDiffCommand } from '../diff';
 import { registerCoreCommands } from '../../cli-register';
-import { DocxFormatAdapter } from '../../format-adapter';
+import { DocxFormatAdapter } from '@json-to-office/jto-ops';
 
 describe('createDiffCommand', () => {
   const cmd = createDiffCommand(new DocxFormatAdapter());

@@ -4,14 +4,12 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "lib": ["ES2022"],
-    "jsx": "react-jsx",
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts"],
   "exclude": [
     "node_modules",
     "dist",
     "src/**/*.test.ts",
-    "src/**/*.test.tsx",
     "src/**/__tests__/**",
   ],
   "references": [
@@ -20,6 +18,5 @@
     { "path": "../shared-pptx" },
     { "path": "../core-docx" },
     { "path": "../core-pptx" },
-    { "path": "../jto-ops" },
   ],
 }

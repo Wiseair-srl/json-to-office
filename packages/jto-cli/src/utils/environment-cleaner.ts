@@ -207,4 +207,4 @@ export function createCleanEnv(): NodeJS.ProcessEnv {
 
   return cleanEnv;
 }
-import { emitDiagnostic } from '../services/diagnostics.js';
+import { emitDiagnostic } from '@json-to-office/jto-ops';

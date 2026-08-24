@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import type { FormatAdapter } from '../format-adapter.js';
+import type { FormatAdapter } from '@json-to-office/jto-ops';
 import {
   formatError,
   promptText,

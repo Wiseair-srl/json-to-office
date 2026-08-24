@@ -4,7 +4,7 @@ import { PluginRegistry } from './plugin-registry.js';
 import { TypeBoxExporter } from './typebox-exporter.js';
 import type { CustomComponent } from './plugin-loader.js';
 import type { TSchema } from '@sinclair/typebox';
-import type { FormatName } from '../format-adapter.js';
+import type { FormatName } from '@json-to-office/jto-ops';
 
 export interface SchemaGenerateOptions {
   includeDocument?: boolean;

@@ -1,7 +1,7 @@
 import { readFileSync, statSync, readdirSync } from 'fs';
 import { resolve, join, extname } from 'path';
 import { glob } from 'glob';
-import type { FormatName } from '../format-adapter.js';
+import type { FormatName } from '@json-to-office/jto-ops';
 
 export interface ValidationError {
   path: string;
