@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import * as path from 'path';
-import type { FormatAdapter } from '../format-adapter.js';
+import type { FormatAdapter } from '@json-to-office/jto-ops';
 import { PluginRegistry } from '../services/plugin-registry.js';
 import { PluginConfigService } from '../config/plugin-config.js';
 import { SchemaGenerator } from '../services/schema-generator.js';

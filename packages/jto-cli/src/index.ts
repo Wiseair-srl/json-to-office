@@ -1,4 +1,7 @@
-// Format adapters
+// Host operations live in `@json-to-office/jto-ops` so hosts without a
+// terminal (the MCP server) can use them without pulling in ink/react/
+// commander/chalk. Re-exported here at the same names: `@json-to-office/jto`
+// and other consumers import them from this package.
 export {
   type FormatName,
   type FormatAdapter,
@@ -7,21 +10,11 @@ export {
   DocxFormatAdapter,
   PptxFormatAdapter,
   createAdapter,
-} from './format-adapter.js';
-
-// PPTX rasterizer (backs docx `visual` components)
-export {
   createLibreOfficePptxRasterizer,
   createLibreOfficePptxBatchRasterizer,
   getRasterizerCacheStats,
   clearRasterizerCache,
   type RasterizerCacheStats,
-} from './pptx-rasterizer.js';
-
-// LibreOffice font staging — used by the pptx rasterizer above and by the
-// playground's PDF-preview converter in `@json-to-office/jto`. It lives here
-// because jto depends on jto-cli and never the reverse.
-export {
   getFontStager,
   NoopFontStager,
   FontconfigStager,
@@ -30,7 +23,7 @@ export {
   type FontStager,
   type FontStageHandle,
   type FontStageOptions,
-} from './font-staging/index.js';
+} from '@json-to-office/jto-ops';
 
 // Generator factory
 export { GeneratorFactory } from './services/generator-factory.js';

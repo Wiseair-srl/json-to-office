@@ -18,7 +18,7 @@ import {
   isSafeFont,
   POPULAR_GOOGLE_FONTS,
 } from '@json-to-office/shared';
-import type { FormatAdapter } from '../format-adapter.js';
+import type { FormatAdapter } from '@json-to-office/jto-ops';
 import { parseFontFilename, parseFontsDir } from './font-flags.js';
 import {
   EXIT_CODES,

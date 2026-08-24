@@ -12,6 +12,7 @@ const commonExternal = [
   '@json-to-office/shared-pptx',
   '@json-to-office/core-docx',
   '@json-to-office/core-pptx',
+  '@json-to-office/jto-ops',
   '@sinclair/typebox',
   'tsx',
   'tsx/esm/api',
@@ -19,9 +20,6 @@ const commonExternal = [
   'ajv-formats',
   'cosmiconfig',
   'glob',
-  // Native (.node) FFI module, loaded lazily by the Windows font stager.
-  // esbuild must never try to bundle it.
-  'koffi',
 ];
 
 export default defineConfig([

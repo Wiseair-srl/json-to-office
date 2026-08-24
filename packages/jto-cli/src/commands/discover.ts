@@ -7,7 +7,7 @@ import {
 } from '../services/plugin-discovery.js';
 import { PluginDisplay } from '../services/plugin-display.js';
 import { PluginRegistry } from '../services/plugin-registry.js';
-import type { FormatAdapter } from '../format-adapter.js';
+import type { FormatAdapter } from '@json-to-office/jto-ops';
 import {
   createTable,
   dimPath,

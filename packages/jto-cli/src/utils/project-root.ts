@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { emitDiagnostic } from '../services/diagnostics.js';
+import { emitDiagnostic } from '@json-to-office/jto-ops';
 
 const PROJECT_ROOT_MARKERS = [
   'pnpm-workspace.yaml',

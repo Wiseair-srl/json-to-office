@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { themes } from '@json-to-office/core-docx';
-import { DocxFormatAdapter } from '../../format-adapter.js';
+import { DocxFormatAdapter } from '@json-to-office/jto-ops';
 import { createGenerateCommand, defaultOutputName } from '../generate.js';
 import { createValidateCommand } from '../validate.js';
 

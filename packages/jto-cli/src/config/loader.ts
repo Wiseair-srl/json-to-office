@@ -5,7 +5,7 @@ import { pathToFileURL } from 'url';
 import { Config, ConfigSchema } from './schema.js';
 import { Value } from '@sinclair/typebox/value';
 import { defaultConfig } from './defaults.js';
-import { emitDiagnostic } from '../services/diagnostics.js';
+import { emitDiagnostic } from '@json-to-office/jto-ops';
 
 const CONFIG_FILES = [
   'json-to-office.config.ts',

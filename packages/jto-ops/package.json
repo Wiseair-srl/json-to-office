@@ -1,11 +1,8 @@
 {
-  "name": "@json-to-office/jto-cli",
+  "name": "@json-to-office/jto-ops",
   "version": "1.0.0",
-  "description": "JSON to Office lightweight CLI - generate .docx and .pptx from JSON without the dev playground",
+  "description": "JSON to Office host operations - format adapters, LibreOffice rasterizer and font staging, free of terminal dependencies",
   "type": "module",
-  "bin": {
-    "jto-cli": "./dist/cli.js"
-  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -13,7 +10,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./dist/cli.js": "./dist/cli.js",
     "./package.json": "./package.json"
   },
   "files": [
@@ -24,38 +20,25 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
-    "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
-    "cli": "tsx src/cli.ts",
     "prepublishOnly": "node ../../scripts/copy-license.cjs"
   },
   "dependencies": {
     "@json-to-office/core-docx": "workspace:^",
     "@json-to-office/core-pptx": "workspace:^",
-    "@json-to-office/jto-ops": "workspace:^",
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-docx": "workspace:^",
     "@json-to-office/shared-pptx": "workspace:^",
-    "@sinclair/typebox": "0.34.38",
-    "ajv": "8.12.0",
-    "ajv-formats": "2.1.1",
-    "chalk": "5.3.0",
-    "commander": "11.1.0",
-    "cosmiconfig": "9.0.0",
-    "glob": "^13.0.0",
-    "ink": "6.8.0",
-    "react": "19.2.4",
-    "react-devtools-core": "6.1.2",
-    "tsx": "4.20.3"
+    "koffi": "^2.16.1"
   },
   "devDependencies": {
     "@types/node": "20.11.0",
-    "@types/react": "19.2.14",
     "tsup": "8.5.0",
     "typescript": "5.3.3",
     "vitest": "1.6.1"
@@ -68,9 +51,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Wiseair-srl/json-to-office.git",
-    "directory": "packages/jto-cli"
+    "directory": "packages/jto-ops"
   },
-  "homepage": "https://github.com/Wiseair-srl/json-to-office/tree/main/packages/jto-cli",
+  "homepage": "https://github.com/Wiseair-srl/json-to-office/tree/main/packages/jto-ops",
   "bugs": {
     "url": "https://github.com/Wiseair-srl/json-to-office/issues"
   },
@@ -80,10 +63,9 @@
   "keywords": [
     "json-to-office",
     "typescript",
-    "cli",
     "docx",
     "pptx",
-    "document",
-    "presentation"
+    "libreoffice",
+    "fonts"
   ]
 }

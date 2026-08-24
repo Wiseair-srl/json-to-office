@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import chalk from 'chalk';
-import type { FormatAdapter } from '../format-adapter.js';
+import type { FormatAdapter } from '@json-to-office/jto-ops';
 import {
   shortPath,
   formatTiming,

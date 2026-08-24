@@ -77,6 +77,7 @@ import {
 } from '@json-to-office/shared';
 import type { FontStager, FontStageHandle, FontStageOptions } from './types';
 import { nextStagingId, safeFilenamePart } from './types';
+import { emitDiagnostic } from '../diagnostics.js';
 
 /**
  * Python macro source. Written verbatim into
@@ -235,8 +236,10 @@ export class MacOSCoreTextStager implements FontStager {
     }
 
     if (process.env.JTO_DEBUG_FONTS === '1') {
-      // eslint-disable-next-line no-console
-      console.log(
+      // Through the sink, never a stream: a host may own stdout as a
+      // protocol channel (the MCP server does), so this package writes
+      // nowhere on its own. Install a sink to see it.
+      emitDiagnostic(
         '[jto macos-stager] staged ' +
           staged.length +
           ' font(s) for CT Process-scope registration; JTO_FONT_PATHS has ' +

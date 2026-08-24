@@ -3,7 +3,7 @@ import type {
   FormatAdapter,
   GeneratorOptions,
   GeneratorResult,
-} from '../format-adapter.js';
+} from '@json-to-office/jto-ops';
 
 type ComponentDefinition = any;
 
