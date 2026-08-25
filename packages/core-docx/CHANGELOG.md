@@ -1,5 +1,109 @@
 # @json-to-office/core-docx
 
+## 1.4.0
+
+### Minor Changes
+
+- 5dc65ef: The `office-open` renderer is installed rather than advertised, and every surface
+  that offers a renderer now says whether it can run.
+
+  `@office-open/docx` and `@office-open/pptx` were optional peer dependencies, so on
+  any install that did not opt in — `npx` above all, where there is no project to
+  `pnpm add` into — the renderer was listed by `jto_info`, listed per component by
+  `jto_discover`, validated against by `jto_validate`, and then failed every render.
+  The `visual` component's `renderMode: "native"` went with it, since that mode is
+  documented as requiring the backend. They are ordinary dependencies now: ESM-only,
+  no native code, no install scripts, 7.4 MB.
+
+  Availability is reported as well as fixed, because an `--omit=optional` install or
+  a broken tree can still produce the same gap:
+
+  - `RendererRegistry.statuses()` loads each registered renderer once, memoized, and
+    reports `{ id, default, available, reason, installHint }`. Exposed as
+    `docxRendererStatuses()` / `pptxRendererStatuses()` and as `rendererStatuses()`
+    on the format adapters.
+  - `jto_info` returns `formats[].renderers[]` beside the existing `rendererIds`,
+    and warns with the install line for any renderer that cannot load.
+  - `jto_discover` marks each renderer profile `available`.
+  - `jto_validate` warns when the profile a document will actually build with has no
+    backend, instead of returning a clean result that the next call contradicts.
+
+  Two error-reporting fixes alongside it:
+
+  - `jto_preview` classified a missing backend as a generic build failure and
+    suggested "a build failure is a defect in the JSON, not in the renderer" —
+    sending the caller to validate a document that was never at fault. It now
+    returns `E_DEPENDENCY_MISSING`, as `jto_generate` already did, and skips the
+    validation pass that only added noise.
+  - An internal failure no longer puts `error.stack` — absolute filesystem paths and
+    module layout — into the tool result, where it reached whatever transcript the
+    client keeps. Set `JTO_MCP_DEBUG_STACKS=1` to restore it.
+
+- 47bd0af: The DOCX `statistic` renders the props it has always accepted, and defines the
+  styles it has always named.
+
+  `unit`, `size`, `trend` and `trendValue` were declared, accepted by the schema,
+  reported clean by validation and generation, and read by nothing:
+  `{ "number": "99", "unit": "%" }` produced `99`. The shipped `docx-report` starter
+  used `unit: "%"`, so an agent copying it — which is what starters are for — lost
+  the percent sign with no diagnostic anywhere in the pipeline.
+
+  - `unit` renders as a suffix run at half the figure's size, with no separator, so
+    `"99"` + `"%"` reads as one value. Write the space into the prop if you want one.
+  - `size` sets the figure to 20/28/40pt for small/medium/large. `medium` states
+    nothing on the run and takes it from the style.
+  - `trend` renders `▲`/`▼`/`–` — a glyph, not a colour, because the palette has no
+    semantic success/danger slot and down is not bad for churn — with `trendValue`
+    beside it in the muted text colour.
+  - `format` remains unimplemented; "number format pattern" names no dialect. It now
+    warns (`W_STATISTIC_FORMAT_IGNORED`) instead of vanishing.
+
+  The two paragraphs also carried `StatisticNumber` and `StatisticDescription`,
+  style ids that nothing in the codebase defined. An undefined `w:pStyle` is not an
+  error in OOXML — it resolves to Normal — so the component built for KPIs rendered
+  at body size and weight, and a heading plus a paragraph gave a better result than
+  the purpose-built component. Both styles are now generated from the theme: the
+  figure at 28pt in the heading font on the primary colour, `keepNext` so it never
+  splits from its caption; the caption at 10pt in the muted text colour. A theme
+  that names either id under `styles` still wins.
+
+  Only documents that contain a statistic get the styles, so no other output moved.
+
+### Patch Changes
+
+- 47bd0af: Fix two DOCX layout defects that only show up in a rendered page.
+
+  **A list marker sat outside the page margin.** Every bundled theme set
+  `componentDefaults.list.indent: 3`. That field is points, so level 0 compiled to
+  `w:ind w:left="60" w:hanging="360"` — a marker 300 twips to the _left_ of the text
+  margin, outdented past the body text it labels. The themes no longer state it, so
+  the per-level default applies: 720/360, which is Word's own. `IndentSchema` now
+  documents its unit, since the neighbouring `ParagraphIndentSchema` is twips and
+  neither said so — which is how the value came to be written in the first place.
+
+  **Whatever followed a table drew on its bottom border.** OOXML gives a table no
+  space-after; the property does not exist. A heading was fine because its style
+  carries space above, but a body paragraph and a list item both landed on the rule.
+  A body block directly under a table now gets 120 twips above it. Styles that
+  already contribute their own space are left alone — topping up a `Heading2` would
+  make it less separated, not more — and so is an author who stated a value.
+
+  For that last part to hold, list spacing had to start treating zero as a value.
+  `itemSpacing` tested `before`, `after` and `item` for truthiness, so
+  `spacing: { before: 0 }` produced no `beforeTwips` at all and was
+  indistinguishable from silence — the new rule would have handed such a list the
+  120 twips it explicitly asked not to have. All three are read against `undefined`
+  now, which also makes `spacing: { after: 0 }` mean what it says instead of
+  falling through to `item`; the corpus case named `component-defaults-instance-wins`
+  had that exact shape and the instance was not winning.
+
+- Updated dependencies [47bd0af]
+- Updated dependencies [5dc65ef]
+- Updated dependencies [f6476d3]
+- Updated dependencies [47bd0af]
+  - @json-to-office/shared-docx@1.4.0
+  - @json-to-office/shared@1.4.0
+
 ## 1.3.0
 
 ### Minor Changes

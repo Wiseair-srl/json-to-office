@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/mcp-server",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "JSON to Office MCP server - author, validate, preview, diff and generate .docx and .pptx over stdio",
   "type": "module",
   "bin": {
