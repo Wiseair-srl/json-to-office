@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import type { GenerationWarning } from '@json-to-office/shared';
 import { compileDocumentToIr } from '../../core/generateFromIr';
 import type { DocxIrBlock } from '../../ir/types';
 import type { ReportComponentDefinition } from '../../types';
@@ -147,5 +148,205 @@ describe('components/statistic', () => {
     for (const block of blocks) {
       expect(block.kind === 'paragraph' && block.children).toEqual([]);
     }
+  });
+});
+
+/**
+ * The props that used to validate and then vanish.
+ *
+ * `unit`, `size`, `trend` and `trendValue` were all declared, all accepted by
+ * the schema and all read by nothing — a `%` that passed validation and never
+ * reached the page. What is worth pinning is that each one now reaches a run,
+ * and that the two styles the paragraphs name actually exist in the document
+ * they are emitted into.
+ */
+describe('components/statistic — the figure line', () => {
+  async function numberRuns(
+    props: Record<string, unknown>
+  ): Promise<Array<{ text: string; sizeHalfPoints?: number }>> {
+    const [figure] = await statisticBlocks(props);
+    if (figure.kind !== 'paragraph') throw new Error('not a paragraph');
+    return figure.children.flatMap((run) =>
+      run.kind === 'text'
+        ? [
+            {
+              text: run.text,
+              ...(run.formatting?.sizeHalfPoints !== undefined && {
+                sizeHalfPoints: run.formatting.sizeHalfPoints,
+              }),
+            },
+          ]
+        : []
+    );
+  }
+
+  it('renders `unit` as a suffix run on the figure', async () => {
+    const runs = await numberRuns({
+      number: '99',
+      unit: '%',
+      description: 'Uptime',
+    });
+
+    expect(runs.map((run) => run.text)).toEqual(['99', '%']);
+  });
+
+  it('sets the unit smaller than the figure it follows', async () => {
+    const [figure, unit] = await numberRuns({
+      number: '99',
+      unit: '%',
+      description: 'Uptime',
+    });
+
+    // The figure takes its size from the style at `medium`, so it states none.
+    expect(figure.sizeHalfPoints).toBeUndefined();
+    expect(unit.sizeHalfPoints).toBe(28);
+  });
+
+  it('leaves the figure run bare at the size the style already carries', async () => {
+    const [figure] = await numberRuns({
+      number: '42',
+      size: 'medium',
+      description: 'Medium',
+    });
+
+    expect(figure.sizeHalfPoints).toBeUndefined();
+  });
+
+  it.each([
+    ['small', 40],
+    ['large', 80],
+  ] as const)('resizes the figure for size %s', async (size, halfPoints) => {
+    const [figure] = await numberRuns({
+      number: '42',
+      size,
+      description: 'Sized',
+    });
+
+    expect(figure.sizeHalfPoints).toBe(halfPoints);
+  });
+
+  it.each([
+    ['up', '▲'],
+    ['down', '▼'],
+    ['neutral', '–'],
+  ] as const)('marks trend %s with its own glyph', async (trend, glyph) => {
+    const runs = await numberRuns({
+      number: '42',
+      trend,
+      description: 'Trending',
+    });
+
+    expect(runs.map((run) => run.text)).toEqual(['42', ` ${glyph}`]);
+  });
+
+  it('sets the trend value beside its glyph', async () => {
+    const runs = await numberRuns({
+      number: '42',
+      trend: 'up',
+      trendValue: '+3.1pp',
+      description: 'Trending',
+    });
+
+    expect(runs.map((run) => run.text)).toEqual(['42', ' ▲ +3.1pp']);
+  });
+
+  it('renders a trend value with no direction stated', async () => {
+    const runs = await numberRuns({
+      number: '42',
+      trendValue: '+3.1pp',
+      description: 'Trending',
+    });
+
+    expect(runs.map((run) => run.text)).toEqual(['42', ' +3.1pp']);
+  });
+
+  it('orders unit before trend on one line', async () => {
+    const runs = await numberRuns({
+      number: '99',
+      unit: '%',
+      trend: 'up',
+      trendValue: '2',
+      description: 'Everything',
+    });
+
+    expect(runs.map((run) => run.text)).toEqual(['99', '%', ' ▲ 2']);
+  });
+
+  it('says so rather than dropping `format` in silence', async () => {
+    const warnings: GenerationWarning[] = [];
+    await compileDocumentToIr(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          {
+            name: 'statistic',
+            props: {
+              number: '42',
+              format: '#,##0.00',
+              description: 'Formatted',
+            },
+          },
+        ],
+      } as unknown as ReportComponentDefinition,
+      {},
+      warnings
+    );
+
+    expect(warnings.map((warning) => warning.context?.code)).toContain(
+      'W_STATISTIC_FORMAT_IGNORED'
+    );
+  });
+});
+
+describe('components/statistic — the styles it names', () => {
+  async function styleIds(children: unknown[]): Promise<string[]> {
+    const compiled = await compileDocumentToIr({
+      name: 'docx',
+      props: {},
+      children,
+    } as unknown as ReportComponentDefinition);
+    return compiled.ir.styles.paragraph.map((style) => style.id);
+  }
+
+  it('defines both styles the paragraphs reference', async () => {
+    const ids = await styleIds([
+      { name: 'statistic', props: { number: '1', description: 'One' } },
+    ]);
+
+    // Without these two the `w:pStyle` on each paragraph resolves to Normal in
+    // silence, which is how the component came to look like body text.
+    expect(ids).toContain('StatisticNumber');
+    expect(ids).toContain('StatisticDescription');
+  });
+
+  it('defines neither in a document with no statistic', async () => {
+    const ids = await styleIds([
+      { name: 'paragraph', props: { text: 'No statistics here.' } },
+    ]);
+
+    expect(ids).not.toContain('StatisticNumber');
+    expect(ids).not.toContain('StatisticDescription');
+  });
+
+  it('sets the figure larger and bolder than its caption', async () => {
+    const compiled = await compileDocumentToIr({
+      name: 'docx',
+      props: {},
+      children: [
+        { name: 'statistic', props: { number: '1', description: 'One' } },
+      ],
+    } as unknown as ReportComponentDefinition);
+    const byId = new Map(
+      compiled.ir.styles.paragraph.map((style) => [style.id, style])
+    );
+
+    const figure = byId.get('StatisticNumber');
+    const caption = byId.get('StatisticDescription');
+    expect(figure?.run?.bold).toBe(true);
+    expect(figure?.run?.sizeHalfPoints).toBe(56);
+    expect(caption?.run?.sizeHalfPoints).toBe(20);
+    // A page break between a number and its label leaves a number with no label.
+    expect(figure?.paragraph?.keepNext).toBe(true);
   });
 });

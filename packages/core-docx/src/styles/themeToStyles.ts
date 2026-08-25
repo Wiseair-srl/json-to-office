@@ -16,6 +16,32 @@ import { getTheme } from '../templates/themes';
  * because it is what every recorded document was produced with.
  */
 const RIGHT_MARGIN_TAB_TWIPS = 9026 * 2;
+
+/**
+ * Style ids a `statistic` lowers to.
+ *
+ * Exported because the compiler names them on every statistic paragraph it
+ * emits and the two must not drift: a `w:pStyle` pointing at a style the
+ * document does not define is not an error anywhere in OOXML, it just resolves
+ * to Normal — which is how the component came to render as two ordinary body
+ * paragraphs with nothing to tell the number from its caption.
+ */
+export const STATISTIC_NUMBER_STYLE_ID = 'StatisticNumber';
+export const STATISTIC_DESCRIPTION_STYLE_ID = 'StatisticDescription';
+
+/**
+ * The number's size, in points, per the component's `size` prop.
+ *
+ * `medium` is what the style itself carries; the compiler overrides the run
+ * for the other two, so a document that never states `size` needs no run
+ * properties at all and restyling every statistic stays a one-style edit.
+ */
+export const STATISTIC_SIZE_POINTS: Readonly<Record<string, number>> = {
+  small: 20,
+  medium: 28,
+  large: 40,
+};
+
 import type {
   DocxIrAlignment,
   DocxIrBorder,
@@ -962,4 +988,89 @@ export function createDocumentStyles(
       endnoteReference: { run: { ...noteRun, superScript: true } },
     },
   };
+}
+
+/**
+ * The two paragraph styles a `statistic` lowers to.
+ *
+ * Separate from `createDocumentStyles`, and appended by the compiler only when
+ * the document actually contains a statistic. Defining them unconditionally
+ * would rewrite `word/styles.xml` in every document ever produced — including
+ * the ones with no statistic in them — to fix a component most documents never
+ * use, and every recorded golden with it.
+ *
+ * A theme that names either id under `styles` has already had it emitted as a
+ * custom style, so that one is skipped rather than defined twice: two entries
+ * with the same id leave the later one winning, and the later one here is the
+ * default, not the theme's.
+ */
+export function createStatisticStyles(
+  theme: ThemeConfig
+): DocxIrParagraphStyle[] {
+  const definitions = [
+    {
+      id: STATISTIC_NUMBER_STYLE_ID,
+      name: 'Statistic Number',
+      font: 'heading' as const,
+      sizePoints: STATISTIC_SIZE_POINTS.medium,
+      color: theme.colors.primary,
+      bold: true,
+      // Space above separates the figure from whatever preceded it; none below,
+      // because the description is the other half of the same block.
+      spacing: { before: 12, after: 0 },
+      next: STATISTIC_DESCRIPTION_STYLE_ID,
+      // The figure and its caption are one unit; a page break between them
+      // reads as a number with no label.
+      keepNext: true,
+    },
+    {
+      id: STATISTIC_DESCRIPTION_STYLE_ID,
+      name: 'Statistic Description',
+      font: 'body' as const,
+      sizePoints: 10,
+      color: theme.colors.textMuted,
+      bold: false,
+      spacing: { before: 0, after: 12 },
+      next: 'Normal',
+      keepNext: false,
+    },
+  ];
+
+  return definitions
+    .filter(
+      (definition) =>
+        !(
+          theme.styles &&
+          Object.prototype.hasOwnProperty.call(theme.styles, definition.id)
+        )
+    )
+    .map((definition) => {
+      const fontProps = resolveFontProperties(theme, definition.font);
+      return {
+        id: definition.id,
+        name: definition.name,
+        basedOn: 'Normal',
+        next: definition.next,
+        quickFormat: true,
+        run: {
+          fontFamily: fontProps.family || 'Arial',
+          // Pinned, not inherited: the whole point of the style is that the
+          // figure is not body text, so a theme's body size must not decide it.
+          sizeHalfPoints: definition.sizePoints * 2,
+          color: { hex: resolveColor(definition.color, theme) },
+          bold: definition.bold,
+        },
+        paragraph: {
+          spacing: {
+            ...resolveSpacing(definition.spacing),
+            ...irLineSpacing(fontProps.lineSpacing),
+          },
+          // Centred, matching the compiler's own alignment default — a KPI
+          // reads as a block, and an author who wants otherwise says so on the
+          // component, which overrides this on the paragraph.
+          alignment: convertAlignment('center'),
+          keepNext: definition.keepNext,
+        },
+      };
+    });
 }
