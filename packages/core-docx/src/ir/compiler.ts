@@ -2131,13 +2131,18 @@ function itemSpacing(
   index: number,
   count: number
 ): DocxIrSpacing {
+  // `!== undefined`, not truthiness: zero is a value an author can mean, and
+  // reading it as "unstated" loses the one instruction that is hardest to give
+  // any other way. It also matters downstream — `separateFromTables` reads an
+  // absent `beforeTwips` as permission to add its own, so a list asking for no
+  // space above would have been given 120 twips of it.
   const out: DocxIrSpacing = {};
-  if (index === 0 && spacing?.before) {
+  if (index === 0 && spacing?.before !== undefined) {
     out.beforeTwips = pointsToTwips(spacing.before);
   }
-  if (index === count - 1 && spacing?.after) {
+  if (index === count - 1 && spacing?.after !== undefined) {
     out.afterTwips = pointsToTwips(spacing.after);
-  } else if (spacing?.item) {
+  } else if (spacing?.item !== undefined) {
     out.afterTwips = pointsToTwips(spacing.item);
   }
   return out;

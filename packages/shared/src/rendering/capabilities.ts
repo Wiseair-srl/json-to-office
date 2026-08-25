@@ -171,14 +171,21 @@ export class RendererRegistry<
   /**
    * Register a lazily-constructed renderer.
    *
-   * The factory is async and only invoked on selection, so an adapter whose
-   * backend is an optional dependency is never imported unless it is chosen.
+   * The factory is async and only invoked on selection, so choosing one
+   * renderer never imports another one's backend.
    */
   register(
     id: TId,
     factory: () => Promise<OfficeRenderer<TIR, TFeature, TId>>
   ): void {
     this.renderers.set(id, factory);
+    // The probe below is memoized over the registered set, so registering into
+    // an already-probed registry has to drop it — otherwise `statuses()` keeps
+    // answering with a list this renderer is missing from, forever. The
+    // bundled registries register everything at module load and never reach
+    // this, but the class is exported and a caller registering late should not
+    // have to know that.
+    this.statusCache = undefined;
   }
 
   /** Renderer ids registered for this format, in registration order. */
@@ -200,7 +207,7 @@ export class RendererRegistry<
    *
    * An unknown id is `UnknownRendererError`, which carries the id asked for and
    * the ones that exist, so a caller boundary can answer "bad request" rather
-   * than "the server broke". A missing optional dependency is re-thrown with an
+   * than "the server broke". A backend that will not load is re-thrown with an
    * actionable install hint.
    */
   async resolve(id?: TId): Promise<OfficeRenderer<TIR, TFeature, TId>> {

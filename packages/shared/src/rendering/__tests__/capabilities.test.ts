@@ -254,4 +254,70 @@ describe('RendererRegistry', () => {
 
     await expect(reg.resolve('primary')).rejects.toThrow('boom');
   });
+
+  describe('statuses', () => {
+    it('reports each renderer, the default among them', async () => {
+      expect(await registry().statuses()).toEqual([
+        { id: 'primary', default: true, available: true },
+        { id: 'secondary', default: false, available: true },
+      ]);
+    });
+
+    it('carries the install line for a backend that will not load', async () => {
+      const reg = new RendererRegistry<Ir, TestFeature, Id>('pptx', 'primary');
+      reg.register('primary', async () => renderer('primary'));
+      reg.register('secondary', async () => {
+        throw new Error("Cannot find package '@office-open/pptx' from x");
+      });
+
+      const [, secondary] = await reg.statuses();
+      expect(secondary).toMatchObject({
+        id: 'secondary',
+        available: false,
+        installHint: 'pnpm add @office-open/pptx',
+      });
+      expect(secondary.reason).toContain('not installed');
+    });
+
+    it('probes once and answers from the cache after', async () => {
+      let loads = 0;
+      const reg = new RendererRegistry<Ir, TestFeature, Id>('pptx', 'primary');
+      reg.register('primary', async () => {
+        loads += 1;
+        return renderer('primary');
+      });
+
+      // `jto_validate` runs after every edit; the probe must not cost a
+      // package import each time.
+      await reg.statuses();
+      await reg.statuses();
+      expect(loads).toBe(1);
+    });
+
+    it('shares one probe between concurrent callers', async () => {
+      let loads = 0;
+      const reg = new RendererRegistry<Ir, TestFeature, Id>('pptx', 'primary');
+      reg.register('primary', async () => {
+        loads += 1;
+        return renderer('primary');
+      });
+
+      await Promise.all([reg.statuses(), reg.statuses(), reg.statuses()]);
+      expect(loads).toBe(1);
+    });
+
+    it('sees a renderer registered after the first probe', async () => {
+      const reg = new RendererRegistry<Ir, TestFeature, Id>('pptx', 'primary');
+      reg.register('primary', async () => renderer('primary'));
+      expect((await reg.statuses()).map((s) => s.id)).toEqual(['primary']);
+
+      // Without dropping the cache on register, this answer would omit
+      // 'secondary' for the life of the process.
+      reg.register('secondary', async () => renderer('secondary'));
+      expect((await reg.statuses()).map((s) => s.id)).toEqual([
+        'primary',
+        'secondary',
+      ]);
+    });
+  });
 });

@@ -86,6 +86,17 @@ describe('a block directly under a table', () => {
     expect(paragraphAt(all, 1).formatting?.spacing?.beforeTwips).toBe(400);
   });
 
+  it('leaves a list that asked for no space above it alone', async () => {
+    const all = await blocks([
+      TABLE,
+      { name: 'list', props: { items: ['First'], spacing: { before: 0 } } },
+    ]);
+
+    // Zero is a value, not silence. Reading it as unstated would have handed
+    // this list the 120 twips it explicitly asked not to have.
+    expect(paragraphAt(all, 1).formatting?.spacing?.beforeTwips).toBe(0);
+  });
+
   it('says nothing about a paragraph that follows a paragraph', async () => {
     const all = await blocks([
       { name: 'paragraph', props: { text: 'First.' } },

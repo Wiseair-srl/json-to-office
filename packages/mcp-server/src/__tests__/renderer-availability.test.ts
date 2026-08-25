@@ -165,6 +165,49 @@ describe('jto_discover marks a renderer it cannot run', () => {
   });
 });
 
+describe('a probe that fails outright', () => {
+  /** An adapter whose status probe throws, as a broken core would. */
+  function unprobeable(format: FormatName): FormatAdapter {
+    const real = getAdapter(format);
+    return {
+      ...real,
+      name: real.name,
+      extension: real.extension,
+      label: real.label,
+      generateSchema: real.generateSchema.bind(real),
+      getBuiltinThemes: real.getBuiltinThemes.bind(real),
+      resolveTheme: real.resolveTheme.bind(real),
+      validateDocument: real.validateDocument.bind(real),
+      rendererIds: real.rendererIds.bind(real),
+      async rendererStatuses(): Promise<never> {
+        throw new Error('core failed to load');
+      },
+    } as FormatAdapter;
+  }
+
+  it('reports no profile as usable', async () => {
+    const client = await connect(unprobeable);
+    try {
+      const result = await call(client, 'jto_discover', {
+        format: 'docx',
+        includeStarters: false,
+      });
+
+      // The profiles still come from the generated schema, but nothing here
+      // knows whether any of them can run — saying "available" would
+      // contradict the diagnostic pushed beside them.
+      const profiles = result.formats[0].renderers;
+      expect(profiles.length).toBeGreaterThan(0);
+      expect(profiles.map((r: any) => r.available)).not.toContain(true);
+      expect(
+        result.diagnostics.some((d: any) => d.code === 'E_DEPENDENCY_MISSING')
+      ).toBe(true);
+    } finally {
+      await client.close();
+    }
+  });
+});
+
 describe('jto_validate no longer green-lights a renderer that cannot run', () => {
   const document = {
     name: 'docx',

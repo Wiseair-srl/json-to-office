@@ -615,6 +615,10 @@ async function catalogFormat(
   let rendererIds: string[] = [];
   const availability = new Map<string, boolean>();
   const installHints = new Map<string, string>();
+  // Whether the probe ran at all, which is a different question from what it
+  // found. Without it, a probe that threw and a profile the cores never
+  // registered are indistinguishable below, and both would be called usable.
+  let probed = false;
   try {
     // Statuses, not ids: this catalogue is what an agent picks a renderer from,
     // so a renderer that cannot load here has to say so at the point of choice
@@ -624,6 +628,7 @@ async function catalogFormat(
       availability.set(status.id, status.available);
       if (status.installHint) installHints.set(status.id, status.installHint);
     }
+    probed = true;
   } catch (error) {
     diagnostics.push(
       diagnostic(
@@ -756,10 +761,13 @@ async function catalogFormat(
     renderers: orderedIds.map((id, index) => ({
       id,
       default: index === 0,
-      // A profile the cores never registered has no status of its own; it is
-      // already reported as drift above, and calling it unavailable here would
-      // be a second, worse description of the same problem.
-      available: availability.get(id) ?? true,
+      // Three cases, and they are not the same. A probed renderer answers for
+      // itself. A profile the cores never registered has no status but is
+      // already reported as drift above, so calling it unavailable would be a
+      // second, worse description of that. And a probe that threw knows
+      // nothing about any of them — reporting those as usable would contradict
+      // the diagnostic pushed beside them.
+      available: availability.get(id) ?? probed,
       ...(installHints.has(id) && { installHint: installHints.get(id)! }),
       components: [...(byRenderer.get(id)?.components.keys() ?? [])].sort(),
       unsupported: allNames

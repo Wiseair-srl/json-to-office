@@ -19,3 +19,12 @@ carries space above, but a body paragraph and a list item both landed on the rul
 A body block directly under a table now gets 120 twips above it. Styles that
 already contribute their own space are left alone — topping up a `Heading2` would
 make it less separated, not more — and so is an author who stated a value.
+
+For that last part to hold, list spacing had to start treating zero as a value.
+`itemSpacing` tested `before`, `after` and `item` for truthiness, so
+`spacing: { before: 0 }` produced no `beforeTwips` at all and was
+indistinguishable from silence — the new rule would have handed such a list the
+120 twips it explicitly asked not to have. All three are read against `undefined`
+now, which also makes `spacing: { after: 0 }` mean what it says instead of
+falling through to `item`; the corpus case named `component-defaults-instance-wins`
+had that exact shape and the instance was not winning.
