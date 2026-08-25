@@ -115,7 +115,8 @@ export const PPTX_SLIDE_CONTENT_COMPONENTS = [
     propsSchema: PptxTablePropsSchema,
     hasChildren: false,
     category: 'content',
-    description: 'Table element - displays tabular data with rows and columns.',
+    description:
+      'Table element, declared ROW-MAJOR: `props.rows[][]`, an array of rows, each an array of cells, with no structural header — `headerRow: true` styles the first row as one. Note the DOCX `table` is the other way round — columns each carrying their own header and cells — so a table cannot be moved between the formats unchanged.',
   },
   {
     name: 'highcharts',

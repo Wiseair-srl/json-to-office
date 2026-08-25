@@ -127,6 +127,15 @@ interface CompileContext {
   slideHeightInches: number;
   /** Slide extent in EMU — what percentage dimensions resolve against. */
   extent: SlideExtentEmu;
+  /**
+   * Text boxes on the slide being compiled that stated no coordinates at all.
+   *
+   * Reset per slide by `compileSlide`. A named style now lands each role in a
+   * band of its own, but two boxes sharing a style still share a band, and the
+   * IR alone cannot tell a deliberate overlay from two elements nobody
+   * positioned — so authored-ness is recorded here while it is still known.
+   */
+  positionlessText: Array<{ path: string; transform: PptxIrTransform }>;
 }
 
 export function compilePresentation(
@@ -145,6 +154,7 @@ export function compilePresentation(
       widthEmu: inchesToEmu(processed.slideWidth),
       heightEmu: inchesToEmu(processed.slideHeight),
     },
+    positionlessText: [],
   };
 
   const masters = (processed.templates ?? []).map((template, index) =>
@@ -311,6 +321,9 @@ function compileSlide(
     nextIndex += 1;
   };
 
+  // Per slide: two boxes only collide with each other if they share one.
+  ctx.positionlessText = [];
+
   // A gradient background renders as a full-bleed rectangle added first, so it
   // sits behind everything else. The slide's own background wins over the
   // template's, matching the pre-IR pipeline.
@@ -398,6 +411,8 @@ function compileSlide(
     );
   }
 
+  warnOverlappingText(slideIndex, ctx);
+
   if (slide.notes) ctx.features.require('speaker-notes', `${path}.notes`);
   if (slide.hidden) ctx.features.require('hidden-slides', `${path}.hidden`);
   if (background) ctx.features.require('backgrounds', `${path}.background`);
@@ -415,6 +430,43 @@ function compileSlide(
     hidden: slide.hidden === true,
     ...(transition ? { transition } : {}),
   };
+}
+
+/**
+ * Report text boxes nobody positioned that landed on top of each other.
+ *
+ * Only boxes that stated neither `x` nor `y` are compared: an overlap between
+ * two authored positions is a composition, and one between an authored box and
+ * a default is at least half deliberate. Two defaults on the same slide are
+ * nobody's decision — before the style bands that was every pair, and it is
+ * still every pair that shares a style.
+ *
+ * A warning rather than a repair. Moving one of the two would be a layout
+ * engine's job (#220), and guessing which one should move is exactly the
+ * guess that produces a deck the author did not write.
+ */
+function warnOverlappingText(slideIndex: number, ctx: CompileContext): void {
+  const boxes = ctx.positionlessText;
+  for (let i = 0; i < boxes.length; i += 1) {
+    for (let j = i + 1; j < boxes.length; j += 1) {
+      const a = boxes[i];
+      const b = boxes[j];
+      const overlaps =
+        a.transform.xEmu < b.transform.xEmu + b.transform.widthEmu &&
+        b.transform.xEmu < a.transform.xEmu + a.transform.widthEmu &&
+        a.transform.yEmu < b.transform.yEmu + b.transform.heightEmu &&
+        b.transform.yEmu < a.transform.yEmu + a.transform.heightEmu;
+      if (!overlaps) continue;
+      warn(
+        ctx.warnings,
+        W.TEXT_OVERLAP_UNPOSITIONED,
+        `Text at ${a.path} and ${b.path} give no x/y and overlap on this slide. ` +
+          'Give at least one of them explicit coordinates, or a named style ' +
+          'whose default band differs.',
+        { slide: slideIndex, component: 'text' }
+      );
+    }
+  }
 }
 
 /**
@@ -649,6 +701,12 @@ function compileText(
     (props.fontSize as number | undefined) ?? ctx.theme.defaults.fontSize ?? 18;
   const transform = textTransform(props, heightFontSize, lineCount, ctx);
   const autoFit = props.h === undefined;
+
+  // Recorded before the transform leaves this function: downstream, a band
+  // default and an authored coordinate are the same two numbers.
+  if (props.x === undefined && props.y === undefined) {
+    ctx.positionlessText.push({ path, transform });
+  }
 
   const hyperlink = compileHyperlink(props.hyperlink, 'text', ctx, path);
   // The link belongs to the text box, not to each run: attaching it per run
@@ -1013,11 +1071,45 @@ function requireBulletFeatures(
 }
 
 /**
+ * Where each named style sits when the author gives no coordinates.
+ *
+ * Fractions of the slide extent, so a band means the same thing on 16:9, 4:3
+ * and any custom size. Without these every positionless text box resolved to
+ * (0, 0): a title and a subtitle on one slide stacked on top of each other in
+ * the top-left corner, which is the shape the starters had — so the documents
+ * meant to be copied were the ones that demonstrated the defect.
+ *
+ * A style names a role, and a role has a place on the slide. `body` and
+ * `caption` still collide with a second box of the same style, which no fixed
+ * band can solve; `warnOverlappingText` reports that case rather than letting
+ * it render silently.
+ */
+const STYLE_BANDS: Readonly<
+  Record<string, { x: number; y: number; w: number }>
+> = {
+  // A title slide's title and its subtitle, as two bands in the middle third.
+  title: { x: 0.08, y: 0.34, w: 0.84 },
+  subtitle: { x: 0.08, y: 0.56, w: 0.84 },
+  // Content-slide headings sit in the top margin, all three at the same place:
+  // the level changes the type, not where the slide starts.
+  heading1: { x: 0.06, y: 0.06, w: 0.88 },
+  heading2: { x: 0.06, y: 0.06, w: 0.88 },
+  heading3: { x: 0.06, y: 0.06, w: 0.88 },
+  // Below a heading, in the content-safe area.
+  body: { x: 0.06, y: 0.26, w: 0.88 },
+  caption: { x: 0.06, y: 0.88, w: 0.88 },
+};
+
+/**
  * Position a text box, reproducing the pre-IR default height.
  *
  * When no height is authored, the renderer used to derive one from the font
  * size and line count so LibreOffice — which draws `cy="0"` as blank — still
  * showed the text. That derivation is layout, so it belongs here.
+ *
+ * Each axis is decided on its own: an author who states `x` and not `y` has
+ * taken control of one of them, and the band is still the better answer for
+ * the other than the origin.
  */
 function textTransform(
   props: Record<string, any>,
@@ -1033,15 +1125,27 @@ function textTransform(
       ? resolveDimensionEmu(props.h, 'Y', ctx.extent)
       : inchesToEmu(Math.max(0.5, (fontSize / 72) * 1.6 * lineCount));
 
+  // Only a named style carries a band. An unstyled text box keeps the origin
+  // it has always had: nothing here knows what role it plays, and inventing
+  // one would move every such box in every existing deck.
+  const band =
+    typeof props.style === 'string' ? STYLE_BANDS[props.style] : undefined;
+
   return {
     xEmu:
-      props.x !== undefined ? resolveDimensionEmu(props.x, 'X', ctx.extent) : 0,
+      props.x !== undefined
+        ? resolveDimensionEmu(props.x, 'X', ctx.extent)
+        : Math.round((band?.x ?? 0) * ctx.extent.widthEmu),
     yEmu:
-      props.y !== undefined ? resolveDimensionEmu(props.y, 'Y', ctx.extent) : 0,
+      props.y !== undefined
+        ? resolveDimensionEmu(props.y, 'Y', ctx.extent)
+        : Math.round((band?.y ?? 0) * ctx.extent.heightEmu),
     widthEmu:
       props.w !== undefined
         ? resolveDimensionEmu(props.w, 'X', ctx.extent)
-        : defaultWidthEmu(ctx.extent),
+        : band
+          ? Math.round(band.w * ctx.extent.widthEmu)
+          : defaultWidthEmu(ctx.extent),
     heightEmu,
     ...rotationProperty(props.rotate),
   };
@@ -1460,6 +1564,15 @@ function compileTable(
     cells: row.map((cell) => compileTableCell(cell, props, ctx)),
   }));
 
+  // A header row is a compile-time treatment of row 0, not a new thing for a
+  // backend to understand: both renderers already draw per-cell fill and
+  // weight, so nothing about this reaches the IR that was not there before.
+  if (props.headerRow && rows.length > 0) {
+    rows[0] = {
+      cells: rows[0].cells.map((cell) => headerCell(cell, props, ctx)),
+    };
+  }
+
   const border = compileTableBorder(props.border, ctx);
   const cornerRadius =
     typeof props.borderRadius === 'number' && props.borderRadius > 0
@@ -1554,6 +1667,40 @@ function toEmuList(
   if (value === undefined) return [];
   const values = Array.isArray(value) ? value : [value];
   return values.map((v) => resolveDimensionEmu(v, axis, ctx.extent));
+}
+
+/**
+ * One cell of the header row, as the theme would have it.
+ *
+ * Every part of this yields to something the author said. A cell that states
+ * its own weight, fill or colour keeps it; so does a table that states a fill
+ * or a colour for all of its cells, because "this table is green" is a
+ * statement about the header too. What is left is the case nobody spoke for,
+ * where the header takes `background2` behind `text` — the pair every bundled
+ * palette carries for a band that reads as chrome.
+ */
+function headerCell(
+  cell: PptxIrTableCell,
+  tableProps: Record<string, any>,
+  ctx: CompileContext
+): PptxIrTableCell {
+  const formatting: PptxIrTableCellFormatting = {
+    bold: true,
+    ...(tableProps.color
+      ? {}
+      : { color: irColor(resolveColor('text', ctx.theme, ctx.warnings)) }),
+    ...cell.formatting,
+  };
+  const fill =
+    cell.fill ??
+    (tableProps.fill
+      ? undefined
+      : irColor(resolveColor('background2', ctx.theme, ctx.warnings)));
+  return {
+    ...cell,
+    formatting,
+    ...(fill ? { fill } : {}),
+  };
 }
 
 function compileTableDefaults(

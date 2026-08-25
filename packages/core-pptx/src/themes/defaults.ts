@@ -2,7 +2,30 @@
  * PPTX Theme Defaults
  */
 
+import type { PptxComponentDefaults } from '@json-to-office/shared-pptx';
 import type { PptxThemeConfig, TextStyle, StyleName } from '../types';
+
+/**
+ * What a table looks like before anyone styles one.
+ *
+ * With no defaults at all a PPTX table drew as bare text in columns — no rule
+ * between cells, nothing marking the first row — so every deck had to restate
+ * the same properties to get something presentable. Theme tokens rather than
+ * hex, so each palette answers for its own lines.
+ *
+ * No `margin`: cell insets are a capability the `office-open` renderer does not
+ * have, and a theme default that every table inherits would turn a backend that
+ * works into one that refuses every table on it. It stays opt-in per table,
+ * where the refusal is the author's own choice to make.
+ *
+ * A document overrides any of this per table, or wholesale through
+ * `componentDefaults.table`; `headerRow: false` turns the first-row treatment
+ * off for a table that is not a table of anything.
+ */
+const DEFAULT_TABLE: PptxComponentDefaults['table'] = {
+  border: { type: 'solid', pt: 1, color: 'background2' },
+  headerRow: true,
+};
 
 const DEFAULT_STYLES: Partial<Record<StyleName, TextStyle>> = {
   title: { fontSize: 36, bold: true, fontColor: 'text', align: 'center' },
@@ -37,6 +60,7 @@ export const DEFAULT_PPTX_THEME: PptxThemeConfig = {
     fontColor: '#333333',
   },
   styles: DEFAULT_STYLES,
+  componentDefaults: { table: DEFAULT_TABLE },
 };
 
 const PPTX_THEMES: Record<string, PptxThemeConfig> = {
@@ -64,6 +88,7 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
       fontColor: '#FFFFFF',
     },
     styles: DEFAULT_STYLES,
+    componentDefaults: { table: DEFAULT_TABLE },
   },
   minimal: {
     name: 'minimal',
@@ -88,6 +113,7 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
       fontColor: '#000000',
     },
     styles: DEFAULT_STYLES,
+    componentDefaults: { table: DEFAULT_TABLE },
   },
 };
 

@@ -206,7 +206,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       hasChildren: false,
       category: 'content',
       description:
-        'Data table - displays tabular data with headers. Supports formatting and alignment.',
+        'Data table, declared COLUMN-MAJOR: `props.columns[]`, each with its own `header` and its own `cells[]` running down the column. Note the PPTX `table` is the other way round — rows of cells — so a table cannot be moved between the formats unchanged.',
     },
     {
       name: 'list',
