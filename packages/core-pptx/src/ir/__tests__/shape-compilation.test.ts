@@ -136,6 +136,56 @@ describe('shape fills compile to IR', () => {
       'UNKNOWN_PATTERN_PRESET'
     );
   });
+
+  it('prefers the gradient over a pattern and warns once', async () => {
+    const { shapes, warnings } = await compileShapes([
+      {
+        type: 'rect',
+        fill: {
+          gradient: {
+            type: 'linear',
+            stops: [
+              { color: '112233', pos: 0 },
+              { color: '445566', pos: 100 },
+            ],
+          },
+          pattern: {
+            preset: 'ltUpDiag',
+            foreground: 'primary',
+            background: 'FFFFFF',
+          },
+        },
+      },
+    ]);
+    expect(shapes[0].fill).toMatchObject({ kind: 'gradient' });
+    expect(warnings.map((warning) => warning.code)).toEqual([
+      'ADVANCED_FILL_FALLBACK',
+    ]);
+    expect(warnings[0].component).toBe('shape');
+  });
+
+  it('prefers an explicit fill.color over a pattern foreground', async () => {
+    const { shapes } = await compileShapes(
+      [
+        {
+          type: 'rect',
+          fill: {
+            color: 'accent',
+            pattern: {
+              preset: 'polkaDots',
+              foreground: 'primary',
+              background: 'FFFFFF',
+            },
+          },
+        },
+      ],
+      { validation: { enabled: false } }
+    );
+    expect(shapes[0].fill).toEqual({
+      kind: 'solid',
+      color: { hex: '17A2B8' },
+    });
+  });
 });
 
 describe('shape geometry and styling compile to IR', () => {
@@ -213,6 +263,21 @@ describe('shape geometry and styling compile to IR', () => {
         color: { hex: '17A2B8' },
         bold: true,
       }),
+    ]);
+  });
+
+  it('invents no fill or line when none is stated', async () => {
+    const { shapes } = await compileShapes([{ type: 'rect' }]);
+    expect(shapes[0].fill).toBeUndefined();
+    expect(shapes[0].line).toBeUndefined();
+  });
+
+  it('keeps a plain-string shape text as a single run', async () => {
+    const { shapes } = await compileShapes([
+      { type: 'rect', text: 'Label', fontSize: 14 },
+    ]);
+    expect(shapes[0].runs).toEqual([
+      expect.objectContaining({ text: 'Label', fontSize: 14 }),
     ]);
   });
 });

@@ -231,4 +231,13 @@ describe('PptxGenJS shape adapter', () => {
     ]);
     expect(emit(plain).addText.mock.calls[0][0]).toBe('Label');
   });
+  it('leaves the passthrough opts unset when nothing is stated', async () => {
+    const [shape] = await compile([{ type: 'rect' }]);
+    const { opts } = emit(shape);
+    expect(opts.fill).toBeUndefined();
+    expect(opts.line).toBeUndefined();
+    expect(opts.angleRange).toBeUndefined();
+    expect(opts.flipH).toBeUndefined();
+    expect(opts.flipV).toBeUndefined();
+  });
 });
