@@ -158,6 +158,12 @@ export const PptxTablePropsSchema = Type.Object(
     ),
     align: Type.Optional(PptxAlignmentSchema),
     valign: Type.Optional(VerticalAlignmentSchema),
+    headerRow: Type.Optional(
+      Type.Boolean({
+        description:
+          "Style the first row as a header — bold, on the theme's secondary background. Cells that state their own `bold`, `fill` or `color` keep it. Unlike the DOCX table, which declares its headers structurally, a PPTX table is rows of cells and the first one is a header only because you say so.",
+      })
+    ),
     autoPage: Type.Optional(
       Type.Boolean({
         description:

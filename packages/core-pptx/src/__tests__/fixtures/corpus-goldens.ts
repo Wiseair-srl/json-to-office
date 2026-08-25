@@ -27,7 +27,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'text/rich-runs':
     '77e6f38baf2e1a6dfdc7f43b9957bf56a5c93353c1018d6760be72d21b925831',
   'text/named-styles':
-    '0ca2c33e195dcd85783c06c730cac0596b7b070cceb07a0922ca2c270c907019',
+    '838bb96f837b3450f59cf985e62f65f4fa2af6884aee57dbb2c9f55c97c7e47d',
   'text/page-numbers':
     '6480fc818be29f07886cea7d8b1e296bbb85876e31ba26bfc6b34cd1c3f72b1d',
   'text/font-weight-alias':
@@ -79,15 +79,15 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'template/placeholders':
     '5b0402b552e02ea0e6a982694ae074a7d80bb28e8f586136b18881c1f3df45dc',
   'table/plain':
-    '4893bc652071b1c42ca73a21dcaab0fa1393908c99d2cb7aea95e11e36937ded',
+    '4c05995aa71dd873f13b45ec39834e2b19da4b2891e66de6deb85af69cc0ade5',
   'table/formatting':
-    '4542428eb5011262f1a8cfa0c142ed583d0fa4af7af0d912906bbc25826586c8',
+    '26b239e1f349fe5f217538e1054a6dfc120a04fbaac15ee50b6eb3fc0fb57825',
   'table/merged-cells':
-    'c3e24aa64fc53a47f58319ec7e85b27a8af26c09d3ab33edf701ffda9369c0e1',
+    'f69f9c7228ba8bcb0ed20b76c46ffc225079e7bda7d95ec94bd2d6781d693dfb',
   'table/rounded':
-    '38af3df3d800115361b063a10035b630f6ad18d1084a7122a9f984c3b28372de',
+    'a2ef51c34aa2c0d519a2c67df78a4614e8ac7cafd9a39e8ac0be283c9f5a6fd5',
   'table/emoji-text-presentation':
-    '97549905779766b2f1535987f83bb4ff5ee2aeb508a4002b5011c46c47f0fec1',
+    '90a827a4b71a1390a01d4ea19730d6b24b5718a4e7b7a5b8b8e61da6164f88be',
   'chart/bar':
     'd9401548df8e8006c8ea49345087273c734ca95be7038dd22bf4304e43938605',
   'chart/configured':
@@ -101,9 +101,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'shape/no-text':
     '3ee1b87e9564fd0c037d1c69de71261f3381e3f65b9838e50c42df6731c7ba75',
   'table/auto-page':
-    '6aeff45745d3a535224670b39c145816ac8de0a5f1ff01523bd65d05f24836a3',
+    '3eac814b5d22bf4d67bc3c04115276d79b65334cba7138158209245b70fa8ef3',
   'table/no-size':
-    '14e79704efba2d0d3fa6f5d7417b5b65f6229b21ba2c3aef3e7b233739ac4159',
+    'd57f347fb2fcf25536068385003cc5554f58273202e85492a5abc3da576d1611',
   'chart/line':
     '99d97b95d755bdfd1cee78ad175760f7607a79d3e2cd5c7859aa41d9549b6021',
   'chart/doughnut':
@@ -117,7 +117,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'template/object-language':
     '154130fdb6be35d89c9e6b180e7249ff6ccc65c5c0cb6a0fe0b4ef0e89deac9d',
   'template/margin':
-    '8e755e6de3d2658e0ca07acfd951c4fa77e4aa3fb4bf8742924f3923b3cda8d8',
+    'f91fd6c8e7af6b840c0b68cfbfece552944e2a66c0afa7dd979a1c5d131b8c70',
   'text/runs-inherit-underline':
     '508cce02c1cddbd4f550cdcbb953313d1802275339ac4d232a0542bac760a868',
   'text/runs-inherit-strike':
@@ -135,9 +135,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'image/contain-without-box':
     'c275d4516875b317da911b9657c8c180022e21400bd76028c6beedae7d41520d',
   'table/rounded-single-column-width':
-    '51ec41c00a90b3ec96b3a6b6b3765e7289f5dda45c91cc11d960ea8cd0ff5790',
+    '6e2353b24f3842772bea5f20c34010baa176e6ad01a15a0c1e551a27977b3328',
   'table/rounded-percent-position':
-    'de7e82453f5da55b0cb4a4bbcd613c2445448c69a5f618769be92226184a0d88',
+    '05d990244d0fa4ccf09d8553382ddb07368cc46d520474067c37ab66061883e6',
   'link/on-image':
     '97be9df07e1d92acb37adcc6016d346eb8acc3d91cf56df939b2794e637980ae',
   'image/rotated':
