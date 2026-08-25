@@ -198,7 +198,36 @@ describe('guarded', () => {
     if (result.ok) return;
     expect(result.diagnostics[0].code).toBe(ERROR_CODES.INTERNAL);
     expect(result.diagnostics[0].message).toBe('adapter exploded');
-    expect(result.diagnostics[0].context?.stack).toContain('adapter exploded');
+  });
+
+  it('keeps the stack out of the transcript', async () => {
+    // A stack is absolute paths and our own module layout. It goes wherever
+    // the client keeps its transcript, the agent can do nothing with it, and
+    // nobody asked for their home directory to be published.
+    const result = await guarded(async () => {
+      throw new Error('adapter exploded');
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.diagnostics[0].context?.stack).toBeUndefined();
+  });
+
+  it('puts it back for whoever is debugging this server', async () => {
+    const previous = process.env.JTO_MCP_DEBUG_STACKS;
+    process.env.JTO_MCP_DEBUG_STACKS = '1';
+    try {
+      const result = await guarded(async () => {
+        throw new Error('adapter exploded');
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.diagnostics[0].context?.stack).toContain(
+        'adapter exploded'
+      );
+    } finally {
+      if (previous === undefined) delete process.env.JTO_MCP_DEBUG_STACKS;
+      else process.env.JTO_MCP_DEBUG_STACKS = previous;
+    }
   });
 
   it('handles a thrown non-Error', async () => {

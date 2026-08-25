@@ -89,6 +89,9 @@ importers:
       '@json-to-office/shared-docx':
         specifier: workspace:^
         version: link:../shared-docx
+      '@office-open/docx':
+        specifier: 0.11.0
+        version: 0.11.0
       '@resvg/resvg-js':
         specifier: 2.6.2
         version: 2.6.2
@@ -109,9 +112,6 @@ importers:
         version: 7.2.3
     devDependencies:
       '@office-open/core':
-        specifier: 0.11.0
-        version: 0.11.0
-      '@office-open/docx':
         specifier: 0.11.0
         version: 0.11.0
       '@types/adm-zip':
@@ -141,6 +141,9 @@ importers:
       '@json-to-office/shared-pptx':
         specifier: workspace:^
         version: link:../shared-pptx
+      '@office-open/pptx':
+        specifier: 0.11.0
+        version: 0.11.0
       '@resvg/resvg-js':
         specifier: 2.6.2
         version: 2.6.2
@@ -158,9 +161,6 @@ importers:
         version: 7.2.3
     devDependencies:
       '@office-open/core':
-        specifier: 0.11.0
-        version: 0.11.0
-      '@office-open/pptx':
         specifier: 0.11.0
         version: 0.11.0
       '@types/node':

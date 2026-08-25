@@ -23,7 +23,11 @@ export type {
 // Renderer selection. The IR itself stays internal to this package for now.
 export type { PptxRendererId } from './renderers/types';
 export { DEFAULT_PPTX_RENDERER_ID } from './renderers/types';
-export { isPptxRendererId, pptxRendererIds } from './renderers/registry';
+export {
+  isPptxRendererId,
+  pptxRendererIds,
+  pptxRendererStatuses,
+} from './renderers/registry';
 export { UncompiledComponentError } from './core/generateFromIr';
 export { DEFAULT_GENERATED_AT } from './core/finalizePackage';
 export type { PresentationPackagingOptions } from './core/finalizePackage';

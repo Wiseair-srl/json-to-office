@@ -25,9 +25,10 @@ export {
   rendererWarning,
 } from './diagnostics';
 
-export type { FeatureRequirement } from './capabilities';
+export type { FeatureRequirement, RendererStatus } from './capabilities';
 export {
   FeatureRequirementCollector,
+  RENDERER_DEPENDENCY_MISSING,
   RendererRegistry,
   assertRendererSupports,
   diagnoseUnsupportedFeatures,

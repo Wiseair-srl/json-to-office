@@ -32,7 +32,11 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import type { GenerationWarning, ResolvedFont } from '@json-to-office/shared';
+import {
+  RENDERER_DEPENDENCY_MISSING,
+  type GenerationWarning,
+  type ResolvedFont,
+} from '@json-to-office/shared';
 import { getFontStager, type FontStageHandle } from '@json-to-office/jto-ops';
 
 import type { FormatAdapter, FormatName } from '../lib/adapters.js';
@@ -325,6 +329,27 @@ function renderFailure(
     `Preview failed at the ${stage} stage: ${detail}`,
     { suggestion, context: { stage, ...context } }
   );
+}
+
+/**
+ * A build failure that is not the document's fault.
+ *
+ * The generic build failure tells the agent to go and validate its JSON, which
+ * is right for almost everything that throws here and exactly wrong for a
+ * renderer whose backend will not load: there is nothing in the document to
+ * repair, and following that suggestion costs a call and finds nothing. The
+ * classification `jto_generate` already makes is the correct one, so preview
+ * makes the same one rather than folding it into the generic case.
+ */
+function buildFailure(error: unknown): Failure {
+  if (error instanceof Error && error.name === RENDERER_DEPENDENCY_MISSING) {
+    return failure(ERROR_CODES.DEPENDENCY_MISSING, message(error), {
+      suggestion:
+        "Install the renderer's backend, or re-run with a renderer jto_info reports as available. The document is not at fault.",
+      context: { stage: 'build' satisfies PreviewStage },
+    });
+  }
+  return renderFailure('build', message(error));
 }
 
 const PNG_SIGNATURE = Buffer.from([
@@ -639,9 +664,14 @@ export async function renderPreview(
     // "Document validation failed" on its own is not something an agent can
     // repair. The adapter can say exactly which pointers are wrong, so ask it
     // and lead with that — the same diagnostics jto_validate would have given.
+    // A missing backend says nothing about the document, so the validation
+    // pass that leads the generic case would only add noise to it.
+    const build = buildFailure(error);
     return failureFrom([
-      ...validationDiagnostics(options.getAdapter(format), document),
-      ...renderFailure('build', message(error)).diagnostics,
+      ...(build.diagnostics[0]?.code === ERROR_CODES.DEPENDENCY_MISSING
+        ? []
+        : validationDiagnostics(options.getAdapter(format), document)),
+      ...build.diagnostics,
     ]);
   }
   const generateMs = elapsed(generateStarted);

@@ -21,7 +21,11 @@ export {
 // Renderer selection. The IR itself stays internal to this package for now.
 export type { DocxRendererId } from './renderers/types';
 export { DEFAULT_DOCX_RENDERER_ID } from './renderers/types';
-export { docxRendererIds, isDocxRendererId } from './renderers/registry';
+export {
+  docxRendererIds,
+  docxRendererStatuses,
+  isDocxRendererId,
+} from './renderers/registry';
 export { UncompiledComponentError } from './core/generateFromIr';
 
 // Visual flattening (desugar `visual` → `image` for portable, service-free docs)

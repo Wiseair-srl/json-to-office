@@ -39,6 +39,7 @@ export type {
   RendererDiagnosticSeverity,
   UnsupportedRendererFeatureErrorInit,
   FeatureRequirement,
+  RendererStatus,
 } from './rendering/index';
 export {
   assertNever,
@@ -47,6 +48,7 @@ export {
   rendererError,
   rendererWarning,
   FeatureRequirementCollector,
+  RENDERER_DEPENDENCY_MISSING,
   RendererRegistry,
   assertRendererSupports,
   diagnoseUnsupportedFeatures,

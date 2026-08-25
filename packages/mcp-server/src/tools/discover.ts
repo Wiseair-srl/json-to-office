@@ -563,6 +563,15 @@ export interface CatalogRenderer {
   id: string;
   /** The renderer used when a document omits `renderer`. */
   default: boolean;
+  /**
+   * Whether this renderer's backend loads on this host.
+   *
+   * Registration is not availability. A profile with `available: false`
+   * accepts the components listed below and then fails every render.
+   */
+  available: boolean;
+  /** The command that would make an unavailable renderer available. */
+  installHint?: string;
   /** Components this profile accepts. */
   components: string[];
   /** Components other profiles of this format accept and this one does not. */
@@ -604,8 +613,17 @@ async function catalogFormat(
   const adapter = deps.getAdapter(format);
 
   let rendererIds: string[] = [];
+  const availability = new Map<string, boolean>();
+  const installHints = new Map<string, string>();
   try {
-    rendererIds = [...(await adapter.rendererIds())];
+    // Statuses, not ids: this catalogue is what an agent picks a renderer from,
+    // so a renderer that cannot load here has to say so at the point of choice
+    // rather than at the first render.
+    for (const status of await adapter.rendererStatuses()) {
+      rendererIds.push(status.id);
+      availability.set(status.id, status.available);
+      if (status.installHint) installHints.set(status.id, status.installHint);
+    }
   } catch (error) {
     diagnostics.push(
       diagnostic(
@@ -738,6 +756,11 @@ async function catalogFormat(
     renderers: orderedIds.map((id, index) => ({
       id,
       default: index === 0,
+      // A profile the cores never registered has no status of its own; it is
+      // already reported as drift above, and calling it unavailable here would
+      // be a second, worse description of the same problem.
+      available: availability.get(id) ?? true,
+      ...(installHints.has(id) && { installHint: installHints.get(id)! }),
       components: [...(byRenderer.get(id)?.components.keys() ?? [])].sort(),
       unsupported: allNames
         .filter((name) => !byRenderer.get(id)?.components.has(name))
@@ -822,6 +845,16 @@ export function register(server: McpServer, deps: ToolDeps): void {
                       properties: {
                         id: { type: 'string' },
                         default: { type: 'boolean' },
+                        available: {
+                          type: 'boolean',
+                          description:
+                            "Whether this renderer's backend loads on this host. A renderer that is registered but unavailable accepts the components below and then fails every render.",
+                        },
+                        installHint: {
+                          type: 'string',
+                          description:
+                            'The command that would make an unavailable renderer available.',
+                        },
                         components: {
                           type: 'array',
                           items: { type: 'string' },
@@ -833,7 +866,13 @@ export function register(server: McpServer, deps: ToolDeps): void {
                             'Components another renderer of this format accepts and this one does not.',
                         },
                       },
-                      required: ['id', 'default', 'components', 'unsupported'],
+                      required: [
+                        'id',
+                        'default',
+                        'available',
+                        'components',
+                        'unsupported',
+                      ],
                       additionalProperties: false,
                     },
                   },
