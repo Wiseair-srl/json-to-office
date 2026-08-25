@@ -1,5 +1,148 @@
 # @json-to-office/core-pptx
 
+## 1.3.0
+
+### Minor Changes
+
+- 2bfa7ae: Chart styling is now a capability a pptx renderer either has or refuses.
+
+  `charts` said a backend could draw a chart from data. It said nothing about
+  whether that backend honoured the options the chart was _styled_ with, and the
+  office-open renderer read almost none of them: it accepted a chart, drew it, and
+  quietly dropped the data labels, the axis bounds, the grid lines, the fonts and
+  the bar, line, pie and radar tuning. An ignored `valAxisMaxVal` draws a
+  different chart from the authored one and nothing in the file says so.
+
+  Ten finer capabilities now sit beside `charts` — `chart-data-labels`,
+  `chart-data-border`, `chart-axis-scale`, `chart-axis-visibility`,
+  `chart-axis-style`, `chart-bar-style`, `chart-line-style`, `chart-pie-style`,
+  `chart-radar-style` and `chart-text-style`. The compiler requires one **only
+  when the matching prop was authored**, at that prop's own path, so a refusal
+  names the line to change rather than the chart.
+
+  Keyed off the authored props rather than the compiled IR deliberately:
+  `compileChartLabelFont` falls back to the theme body font when a weight is
+  authored without a face, so a compiled font object can hold a family the author
+  never wrote — asking the IR "was a font set here?" would demand
+  `chart-text-style` of a chart that only styled its weight.
+
+  Three are implemented so far — `chart-bar-style`, `chart-pie-style` and
+  `chart-data-labels` — by forwarding `gapWidth`, `overlap`, `holeSize`,
+  `firstSliceAngle` and per-series `dataLabels` to the backend.
+
+  Data labels write every flag explicitly, and that is not tidiness. A DrawingML
+  `CT_Boolean` has an optional `val` that defaults to **true**, so
+  `<c:dLbls><c:showVal/></c:dLbls>` does not mean "show the value" — it means show
+  the value, the category name, the series name, the percentage and the legend
+  key, because every flag left out defaults to on. A chart authored with
+  `showValue: true` came out labelled `Q1; Revenue; 120`.
+
+  The three axis capabilities — `chart-axis-scale`, `chart-axis-visibility` and
+  `chart-axis-style` — follow, and these are the ones that could misrepresent
+  data: an ignored `valAxisMaxVal` rescales a chart without saying so.
+
+  They are spliced rather than passed, because `AxisOptions` cannot be handed to
+  `@office-open` at all. The axis is rebuilt rather than patched: CT_CatAx and
+  CT_ValAx fix the order of their children — `majorGridlines` before `title`
+  before `numFmt` before `spPr` before `txPr`, all between `axPos` and `crossAx` —
+  and inserting each edit at its own anchor put whichever landed last in front of
+  the others, which a reader offers to repair rather than draws wrong.
+
+  Then `chart-line-style`, `chart-data-border` and `chart-radar-style`. The
+  series marker and `smooth` pass through; the other three have nowhere in the
+  backend to go. `ChartSeriesCommon` carries no line width, so `lineSize` is
+  spliced into `c:ser/c:spPr/a:ln`; `dataBorder` becomes an outline in the same
+  place — or on each `c:dPt` of a pie, which is coloured per slice — without
+  displacing the fill. `c:radarStyle` is written from a literal `standard`, so
+  `marker` and `filled` had nowhere to go and became `standard` without a word.
+
+  `lineSize` and `dataBorder` reach the same `a:ln` and never at the same time:
+  one is the width of a series that _is_ a line, the other an outline on a series
+  that is a filled shape. Checked against pptxgenjs rather than assumed — given
+  both, it writes the border on a bar chart and `lineSize` on a line chart.
+
+  Last, `chart-text-style`: `a:defRPr` spliced into the chart title's runs, the
+  legend's existing `c:txPr`, every series' `c:dLbls`, and each axis. An axis
+  rotation and an axis font land in _one_ `c:txPr` — they are two properties of
+  the same text, and a second one is a repair prompt rather than a
+  differently-styled label.
+
+  With that the gap is closed: office-open declares all ten, and nothing a chart
+  can be styled with is accepted-and-dropped any more.
+
+  `c:overlap` goes with a stacked grouping — stacked bars that do not overlap are
+  drawn side by side and look clustered — but the two cannot be written together.
+  CT_BarChart orders `barDir`, `grouping`, `varyColors`, `ser`, `dLbls`,
+  `gapWidth`, `overlap`, `serLines`, `axId`, so an overlap written beside the
+  grouping lands before `c:ser`; `c:grouping` is also a child of `c:lineChart` and
+  `c:areaChart`, neither of which allows an overlap; and an author who set
+  `barOverlapPct` already has one. It now goes in at its own anchor, inside
+  `c:barChart` only, and never twice.
+
+  `pptxgenjs` declares all ten; it already forwards every one of those props, so
+  no deck that renders today stops rendering. `office-open` now declares all ten too. The capability split remains the
+  contract: a prop is honoured or refused by name, never accepted and dropped.
+
+- efd9982: The pptx `office-open` renderer draws native charts.
+
+  It used to refuse them, for a specific reason: `@office-open` writes chart XML
+  whose `<c:f>` references are empty and ships no workbook behind them, so the
+  chart drew and **Edit Data** failed. A chart you cannot edit is not the chart
+  that was asked for. The adapter now writes that missing half itself, the same
+  way the docx side does, so both pptx backends produce an editable native chart
+  and the `chart` component is no longer pruned from the `office-open` schema
+  branch.
+
+  The repairs are now shared between the two formats — a `c:chartSpace` is
+  DrawingML and reads the same in a .docx and a .pptx — and live in
+  `@json-to-office/shared/rendering`. Each core keeps its own packaging, because
+  `core-docx` zips with adm-zip and `core-pptx` with jszip; the shared module
+  deals only in strings and adds no dependency.
+
+  The two backends omit **different amounts** of a chart, so every repair is
+  guarded on what the XML actually lacks: `@office-open/pptx` keeps the legend
+  position where `@office-open/docx` loses it. Everything else — the cell
+  references, the series colours, the axis titles, the bar grouping and
+  `c:externalData` — is missing from both and written by the same pass.
+
+  Three of those repairs are shape-dependent. A pie or doughnut is coloured per
+  data point, so one `c:dPt` is written per slice; a series fill would paint every
+  slice the same colour. A scatter chart has no category axis — both of its axes
+  are `c:valAx` — so its axis titles are placed by position rather than by tag.
+  And bar grouping has no `ChartSpaceOptions` field at all, so a `stacked` or
+  `percentStacked` chart used to come out as side-by-side bars that sum to
+  nothing.
+
+  Two details are load-bearing rather than cosmetic:
+
+  - The embedded workbook is named `Microsoft_Excel_Worksheet{N}.xlsx`, matching
+    pptxgenjs, because `canonicalizeChartIds` renumbers that exact token — and the
+    splice therefore has to run before finalization, not after.
+  - Axis titles are spliced into the backend's own axes rather than passed as
+    `axes`. Supplying that option replaces the default axis pair wholesale and
+    requires ids the adapter cannot allocate; doing so emitted literal
+    `<undefined>` elements, which LibreOffice tolerates and PowerPoint offers to
+    repair.
+
+  A ragged chart — series of differing lengths, which the pptx compiler accepts
+  and the docx one refuses — now writes only the cells it actually has. Padding
+  the rectangle put a data point in the workbook the author never wrote and
+  claimed a cell range longer than the cached values behind it.
+
+  One chart type stays `pptxgenjs`-only: `bubble`. `@office-open` spells a bubble
+  series as x/y/size triples rather than categories and values, and no reading of
+  a category label as a numeric x is unambiguous, so it is refused by name at
+  validation rather than guessed at or crashed into.
+
+  `isPptxComponentSupported` is removed from `@json-to-office/shared-pptx`; it was
+  internal, and with charts supported it returned true unconditionally.
+
+### Patch Changes
+
+- Updated dependencies [efd9982]
+  - @json-to-office/shared@1.3.0
+  - @json-to-office/shared-pptx@1.3.0
+
 ## 1.2.0
 
 ### Minor Changes
