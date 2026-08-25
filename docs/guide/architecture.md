@@ -52,7 +52,7 @@ Pick a backend with the root `renderer` field, which also selects the matching b
 { "name": "docx", "renderer": "office-open", "children": [] }
 ```
 
-Generation options and the CLI's `--renderer` flag override the document field for a single run. Defaults are `docxjs` and `pptxgenjs`; `office-open` is experimental and opt-in. See the [API reference](/reference/api) and [CLI reference](/reference/cli#choosing-a-backend).
+Generation options and the CLI's `--renderer` flag override the document field for a single run. Defaults are `docxjs` and `pptxgenjs`; `office-open` is experimental but installed, so selecting it needs nothing else. `jto_info` reports each renderer with whether its backend actually loads on the host. See the [API reference](/reference/api) and [CLI reference](/reference/cli#choosing-a-backend).
 
 ## Custom components and versioning
 
