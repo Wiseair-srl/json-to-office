@@ -26,7 +26,11 @@ between cells, nothing marking the first row. The themes now state a border, and
 `headerRow` — a new optional prop on the PPTX table — defaults on through them. It
 is a compile-time treatment of row 0, so nothing new reaches either renderer, and
 every part of it yields to something the author said: a cell's own `fill`, `bold`
-or `color`, or a table-wide `fill`/`color`.
+or `color`, or a table-wide `fill`, `color` or `fontWeight`. A stated
+`fontWeight` aliases the family to a real sub-family rather than setting `bold`,
+so the header leaves the weight alone there — otherwise an explicit `400` would
+be overruled, and a Light table would get a header synthesised bolder than the
+body under it.
 
 No `margin` default: cell insets are a capability the `office-open` renderer
 refuses, and a theme default every table inherited would have turned a working

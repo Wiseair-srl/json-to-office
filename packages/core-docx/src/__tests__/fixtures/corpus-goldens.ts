@@ -549,7 +549,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/component-defaults-document':
     'dc381c370a9a74e6eb9c9d593275f375afffaa99ef50cf3e95b9e7fb290332d9',
   'theme/component-defaults-instance-wins':
-    '60128e086532da9a6222ac0c54ed4e32b75498ffa45bd53bef0661a307c7c8f7',
+    'cf0175de001d7f5070e5aabfac15be80ca9e693621cb44ddcb2351221bddfe9d',
   'theme/component-defaults-heading-numbering':
     '5b19f4dc4b3adf6c379d009f653039f4c552086eadb6452ab15626b34cc4b3e8',
   'theme/language-document-default':

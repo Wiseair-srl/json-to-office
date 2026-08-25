@@ -117,6 +117,23 @@ describe('the header row yields to what the author said', () => {
     expect(element.rows[0].cells[1].formatting?.bold).toBe(true);
   });
 
+  it('leaves the weight alone when the table states a fontWeight', async () => {
+    const element = await table({ fontWeight: 400 });
+
+    // `fontWeight` aliases the family to a real sub-family rather than setting
+    // `bold`, so forcing bold on top would both overrule an explicit 400 and
+    // ask the renderer to synthesise bold over an already-picked face.
+    expect(element.rows[0].cells[0].formatting?.bold).toBeUndefined();
+    // The band is still drawn: only the weight was spoken for.
+    expect(element.rows[0].cells[0].fill).toBeDefined();
+  });
+
+  it('does not draw a light header heavier than the body under it', async () => {
+    const element = await table({ fontWeight: 300 });
+
+    expect(element.rows[0].cells[0].formatting?.bold).toBeUndefined();
+  });
+
   it('lets a document turn the whole thing off through the theme', async () => {
     const element = await table(
       {},

@@ -1678,6 +1678,12 @@ function toEmuList(
  * statement about the header too. What is left is the case nobody spoke for,
  * where the header takes `background2` behind `text` — the pair every bundled
  * palette carries for a band that reads as chrome.
+ *
+ * `fontWeight` counts as speaking for the weight. It aliases the family to a
+ * real sub-family rather than setting `bold`, so forcing bold on top of it
+ * would both overrule an explicit `400` and ask the renderer to synthesise
+ * bold over an already-picked face — a Light header drawn heavier than the
+ * body under it, which is not what "header" was supposed to mean.
  */
 function headerCell(
   cell: PptxIrTableCell,
@@ -1685,7 +1691,7 @@ function headerCell(
   ctx: CompileContext
 ): PptxIrTableCell {
   const formatting: PptxIrTableCellFormatting = {
-    bold: true,
+    ...(tableProps.fontWeight == null ? { bold: true } : {}),
     ...(tableProps.color
       ? {}
       : { color: irColor(resolveColor('text', ctx.theme, ctx.warnings)) }),
