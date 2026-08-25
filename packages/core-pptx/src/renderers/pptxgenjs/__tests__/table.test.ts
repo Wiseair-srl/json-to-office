@@ -143,4 +143,29 @@ describe('PptxGenJS table adapter', () => {
     });
     expect(options.border).toEqual({ type: 'dash', pt: 2, color: '0066CC' });
   });
+  it('never stacks a second weight suffix on a synthesized family', async () => {
+    const { rows, options } = await emitted({
+      fontFace: 'Inter',
+      fontWeight: 300,
+      rows: [[{ text: 'a', fontWeight: 600 }, { text: 'b', bold: true }, 'c']],
+    });
+    expect(options.fontFace).toBe('Inter Light');
+    expect(rows[0][0].options?.fontFace).toBe('Inter SemiBold');
+    expect(rows[0][1].options).toMatchObject({ fontFace: 'Inter', bold: true });
+    // A cell with nothing to say is emitted without an options bag at all.
+    expect(rows[0][2].options).toBeUndefined();
+  });
+
+  it('writes bold:false through so the table-level bold does not cascade', async () => {
+    // pptxgenjs cascades table-level `bold` into any cell that sets none, so a
+    // cell that says `bold: false` has to emit the false explicitly or it
+    // silently renders bold anyway.
+    const { rows } = await emitted({
+      fontFace: 'Inter',
+      fontWeight: 700,
+      rows: [[{ text: 'plain', bold: false }]],
+    });
+    expect(rows[0][0].options?.bold).toBe(false);
+    expect(rows[0][0].options?.fontFace).not.toBe('Inter Bold');
+  });
 });

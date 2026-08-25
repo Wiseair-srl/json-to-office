@@ -1,66 +1,59 @@
+/**
+ * Renderer seams, enforced.
+ *
+ * Each backend library belongs to exactly one directory, and production
+ * compiler/IR modules may not reach into `renderers/` at all. Static specifiers
+ * are restricted with `no-restricted-imports`; dynamic `import()` is invisible
+ * to that rule on ESLint 8, so every restriction is mirrored as a
+ * `no-restricted-syntax` pair covering both the `ImportExpression` node modern
+ * parsers emit and the older `CallExpression` + `Import` callee shape.
+ *
+ * Specifier regexes are anchored to whole path segments so `docx` does not also
+ * catch `docx-templates`, matching what the static patterns already do.
+ */
 const restrictedPattern = (group, message) => ({ group, message });
-const restrictedSyntax = (selector, message) => ({ selector, message });
+const restrictedDynamic = (specifier, message) => [
+  { selector: `ImportExpression[source.value=${specifier}]`, message },
+  {
+    selector: `CallExpression[callee.type='Import'][arguments.0.value=${specifier}]`,
+    message,
+  },
+];
 const restrictedRules = (patterns, syntax) => ({
   'no-restricted-imports': ['error', { patterns }],
   'no-restricted-syntax': ['error', ...syntax],
 });
 
+const PPTXGENJS_ONLY =
+  'Only core-pptx/src/renderers/pptxgenjs may import pptxgenjs.';
+const DOCXJS_ONLY = 'Only core-docx/src/renderers/docxjs may import docx.';
+const OFFICE_OPEN_ONLY =
+  'Only a core renderer/office-open directory may import @office-open packages.';
+const NO_RENDERERS = 'Compiler and production IR modules may not import renderers.';
+
 const pptxgenjsImport = restrictedPattern(
   ['pptxgenjs', 'pptxgenjs/*'],
-  'Only core-pptx/src/renderers/pptxgenjs may import pptxgenjs.'
+  PPTXGENJS_ONLY
 );
-const pptxgenjsDynamic = [
-  restrictedSyntax(
-    'ImportExpression[source.value=/^pptxgenjs/]',
-    'Only core-pptx/src/renderers/pptxgenjs may dynamically import pptxgenjs.'
-  ),
-  restrictedSyntax(
-    "CallExpression[callee.type='Import'][arguments.0.value=/^pptxgenjs/]",
-    'Only core-pptx/src/renderers/pptxgenjs may dynamically import pptxgenjs.'
-  ),
-];
-const docxImport = restrictedPattern(
-  ['docx', 'docx/*'],
-  'Only core-docx/src/renderers/docxjs may import docx.'
+const pptxgenjsDynamic = restrictedDynamic(
+  String.raw`/^pptxgenjs(\/|$)/`,
+  PPTXGENJS_ONLY
 );
-const docxDynamic = [
-  restrictedSyntax(
-    'ImportExpression[source.value=/^docx/]',
-    'Only core-docx/src/renderers/docxjs may dynamically import docx.'
-  ),
-  restrictedSyntax(
-    "CallExpression[callee.type='Import'][arguments.0.value=/^docx/]",
-    'Only core-docx/src/renderers/docxjs may dynamically import docx.'
-  ),
-];
-const officeOpenImport = restrictedPattern(
-  ['@office-open/*'],
-  'Only a core renderer/office-open directory may import @office-open packages.'
+const docxImport = restrictedPattern(['docx', 'docx/*'], DOCXJS_ONLY);
+const docxDynamic = restrictedDynamic(String.raw`/^docx(\/|$)/`, DOCXJS_ONLY);
+const officeOpenImport = restrictedPattern(['@office-open/*'], OFFICE_OPEN_ONLY);
+const officeOpenDynamic = restrictedDynamic(
+  String.raw`/^@office-open(\/|$)/`,
+  OFFICE_OPEN_ONLY
 );
-const officeOpenDynamic = [
-  restrictedSyntax(
-    'ImportExpression[source.value=/^@office-open/]',
-    'Only a core renderer/office-open directory may dynamically import @office-open packages.'
-  ),
-  restrictedSyntax(
-    "CallExpression[callee.type='Import'][arguments.0.value=/^@office-open/]",
-    'Only a core renderer/office-open directory may dynamically import @office-open packages.'
-  ),
-];
 const rendererImport = restrictedPattern(
   ['**/renderers', '**/renderers/**'],
-  'Compiler and production IR modules may not import renderers.'
+  NO_RENDERERS
 );
-const rendererDynamic = [
-  restrictedSyntax(
-    'ImportExpression[source.value=/renderers/]',
-    'Compiler and production IR modules may not dynamically import renderers.'
-  ),
-  restrictedSyntax(
-    "CallExpression[callee.type='Import'][arguments.0.value=/renderers/]",
-    'Compiler and production IR modules may not dynamically import renderers.'
-  ),
-];
+const rendererDynamic = restrictedDynamic(
+  String.raw`/(^|\/)renderers(\/|$)/`,
+  NO_RENDERERS
+);
 
 module.exports = {
   env: {

@@ -55,6 +55,38 @@ describe('table formatting compiles to IR', () => {
     });
   });
 
+  it('aliases a cell weight off the un-synthesized family', async () => {
+    // The cell must not inherit "Inter Light" as its base, or its own weight
+    // would stack a second suffix onto an already-synthesized name.
+    const table = await compileTable({
+      fontFace: 'Inter',
+      fontWeight: 300,
+      rows: [[{ text: 'a', fontWeight: 600 }, { text: 'b', bold: true }, 'c']],
+    });
+    expect(table.defaults.fontFamily).toBe('Inter Light');
+    expect(table.rows[0].cells[0].formatting?.fontFamily).toBe(
+      'Inter SemiBold'
+    );
+    expect(table.rows[0].cells[1].formatting).toMatchObject({
+      fontFamily: 'Inter',
+      bold: true,
+    });
+    // The plain-string cell states nothing of its own and inherits the alias.
+    expect(table.rows[0].cells[2].formatting).toBeUndefined();
+  });
+
+  it('does not alias a bold:false cell onto a bold sub-family', async () => {
+    const table = await compileTable({
+      fontFace: 'Inter',
+      fontWeight: 700,
+      rows: [[{ text: 'plain', bold: false }]],
+    });
+    expect(table.rows[0].cells[0].formatting?.fontFamily).not.toBe(
+      'Inter Bold'
+    );
+    expect(table.rows[0].cells[0].formatting?.bold).toBe(false);
+  });
+
   it('keeps cell overrides separate from table defaults', async () => {
     const table = await compileTable({
       fontFace: 'Inter',
