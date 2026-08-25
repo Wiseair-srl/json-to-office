@@ -12,7 +12,10 @@ import {
   runWithDiagnosticSink,
   type DiagnosticTone,
 } from '@json-to-office/jto-ops';
-import type { ValidationError } from '@json-to-office/shared';
+import {
+  RENDERER_DEPENDENCY_MISSING,
+  type ValidationError,
+} from '@json-to-office/shared';
 import { ValueErrorType } from '@sinclair/typebox/errors';
 
 export type DiagnosticSeverity = 'error' | 'warning' | 'info';
@@ -312,12 +315,26 @@ export function toolResult<T extends object>(
 /**
  * Errors that are the host's fault rather than ours.
  *
- * `shared`'s renderer loader renames a failed optional backend import so the
- * missing package can be told apart from a bug. `E_INTERNAL` on one of those
- * reads as "a bug here" and sends the agent to file an issue when the fix is
- * an install line, which the message already carries.
+ * `shared`'s renderer loader renames a failed backend import so the missing
+ * package can be told apart from a bug. `E_INTERNAL` on one of those reads as
+ * "a bug here" and sends the agent to file an issue when the fix is an install
+ * line, which the message already carries.
  */
-const HOST_DEPENDENCY_ERRORS = new Set(['RendererDependencyMissingError']);
+const HOST_DEPENDENCY_ERRORS = new Set([RENDERER_DEPENDENCY_MISSING]);
+
+/**
+ * Whether a stack trace may ride along on an internal failure.
+ *
+ * Off by default. A stack is absolute filesystem paths and our own module
+ * layout, and it goes into whatever transcript the client keeps — the agent
+ * reading it can do nothing with either, and the user did not ask to publish
+ * their home directory. `JTO_MCP_DEBUG_STACKS=1` puts it back for the case it
+ * was there for, which is someone debugging this server.
+ */
+function stackAllowed(): boolean {
+  const flag = process.env.JTO_MCP_DEBUG_STACKS;
+  return flag === '1' || flag === 'true';
+}
 
 /** A line `jto-ops` emitted mid-run, as a diagnostic the agent can read. */
 function hostNote(text: string, tone: DiagnosticTone = 'muted'): Diagnostic {
@@ -423,7 +440,8 @@ export async function guarded<T extends object>(
     return withHostNotes(
       failure(code, message, {
         context: {
-          ...(error instanceof Error &&
+          ...(stackAllowed() &&
+            error instanceof Error &&
             error.stack !== undefined && { stack: error.stack }),
         },
       }),

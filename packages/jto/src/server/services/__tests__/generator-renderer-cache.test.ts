@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { RendererStatus } from '@json-to-office/shared';
 import {
   PluginRegistry,
   type FormatAdapter,
@@ -61,6 +62,13 @@ class RecordingAdapter implements FormatAdapter {
 
   async rendererIds(): Promise<readonly string[]> {
     return ['docxjs', 'office-open'];
+  }
+
+  async rendererStatuses(): Promise<readonly RendererStatus[]> {
+    return [
+      { id: 'docxjs', default: true, available: true },
+      { id: 'office-open', default: false, available: true },
+    ];
   }
 }
 

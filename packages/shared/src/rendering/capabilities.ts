@@ -128,6 +128,26 @@ export function assertRendererSupports<TFeature extends string>(
 }
 
 /**
+ * Whether a registered renderer can actually run on this host.
+ *
+ * Registration says a renderer exists; it says nothing about whether its
+ * backend is installed, because the factory is only invoked on selection. A
+ * discovery surface that reports the ids alone therefore advertises renderers
+ * that fail at the first render — which is what `jto_info` and `jto_discover`
+ * used to do for `office-open` on a host that never installed it.
+ */
+export interface RendererStatus<TId extends string = string> {
+  id: TId;
+  /** The one used when a caller passes no id. */
+  default: boolean;
+  available: boolean;
+  /** Why not, when not — the message the load failure carried. */
+  reason?: string;
+  /** The command that would make it available. */
+  installHint?: string;
+}
+
+/**
  * A registry of renderers for a single format.
  *
  * Instances are created per format module, not per generation, and hold only
@@ -195,6 +215,52 @@ export class RendererRegistry<
       throw enrichLoadFailure(error, this.format, selected);
     }
   }
+
+  /**
+   * Every registered renderer, with whether it can actually be loaded here.
+   *
+   * Answers the question by loading each one, which is the only answer that
+   * cannot be wrong — a resolver check would still miss a backend that
+   * resolves and then throws on import.
+   *
+   * Memoized, and the promise rather than its value, so concurrent callers
+   * share one probe instead of racing several. Nothing installs a package into
+   * a running process, so the answer cannot go stale within one; without this
+   * `jto_validate` would pay a package import on every call, which is the tool
+   * an agent uses after every edit.
+   */
+  statuses(): Promise<RendererStatus<TId>[]> {
+    this.statusCache ??= this.probeStatuses();
+    return this.statusCache;
+  }
+
+  private statusCache?: Promise<RendererStatus<TId>[]>;
+
+  private async probeStatuses(): Promise<RendererStatus<TId>[]> {
+    return Promise.all(
+      this.ids().map(async (id) => {
+        const base = { id, default: id === this.defaultId };
+        try {
+          await this.resolve(id);
+          return { ...base, available: true };
+        } catch (error) {
+          const missing =
+            error instanceof Error &&
+            error.name === RENDERER_DEPENDENCY_MISSING;
+          const pkg =
+            missing && error instanceof Error
+              ? (error as { packageName?: string }).packageName
+              : undefined;
+          return {
+            ...base,
+            available: false,
+            reason: error instanceof Error ? error.message : String(error),
+            ...(pkg ? { installHint: `pnpm add ${pkg}` } : {}),
+          };
+        }
+      })
+    );
+  }
 }
 
 /**
@@ -216,14 +282,27 @@ function enrichLoadFailure(
   if (!isMissingModule) {
     return error instanceof Error ? error : new Error(message);
   }
-  const pkg = missingPackageName(message) ?? `the "${rendererId}" backend`;
+  const pkg = missingPackageName(message);
+  const named = pkg ?? `the "${rendererId}" backend`;
   const enriched = new Error(
-    `The "${rendererId}" ${format} renderer requires ${pkg}, which is not installed. ` +
-      `Install it with: pnpm add ${pkg}\nOriginal error: ${message}`
+    `The "${rendererId}" ${format} renderer requires ${named}, which is not installed. ` +
+      `Install it with: pnpm add ${named}\nOriginal error: ${message}`
   );
-  enriched.name = 'RendererDependencyMissingError';
+  enriched.name = RENDERER_DEPENDENCY_MISSING;
+  // Carried separately from the message so a caller can build its own install
+  // line rather than parsing one back out of English.
+  if (pkg) (enriched as Error & { packageName?: string }).packageName = pkg;
   return enriched;
 }
+
+/**
+ * `Error.name` marking a renderer whose optional backend is not installed.
+ *
+ * A name rather than a subclass: the error crosses a package boundary and an
+ * `instanceof` there would depend on both sides loading the same copy of this
+ * module, which under a workspace layout is not something to rely on.
+ */
+export const RENDERER_DEPENDENCY_MISSING = 'RendererDependencyMissingError';
 
 function missingPackageName(message: string): string | undefined {
   const match =

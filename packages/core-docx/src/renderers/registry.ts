@@ -1,13 +1,19 @@
 /**
  * DOCX renderer registry.
  *
- * Adapters are registered as async factories so an optional backend is only
- * imported when it is actually selected — choosing `docxjs` never loads
- * `@office-open/docx`, and a missing optional dependency surfaces as an
- * actionable install hint rather than a bare module-resolution failure.
+ * Adapters are registered as async factories so a backend is only imported
+ * when it is actually selected — choosing `docxjs` never loads
+ * `@office-open/docx`, and a backend that cannot be loaded at all (an
+ * `--omit=optional` install, a broken tree) surfaces as an actionable install
+ * hint rather than a bare module-resolution failure. `statuses()` asks the
+ * same question up front, so a discovery surface never advertises a renderer
+ * that would fail on the first render.
  */
 
-import { RendererRegistry } from '@json-to-office/shared/rendering';
+import {
+  RendererRegistry,
+  type RendererStatus,
+} from '@json-to-office/shared/rendering';
 import type { DocxFeature } from '../ir/features';
 import type { DocxIR } from '../ir/types';
 import {
@@ -41,6 +47,21 @@ export function resolveDocxRenderer(
 /** Renderer ids registered for DOCX. */
 export function docxRendererIds(): readonly DocxRendererId[] {
   return registry.ids();
+}
+
+/**
+ * Every registered renderer with whether its backend can be loaded here.
+ *
+ * Registration is not availability: the factory only runs on selection, so an
+ * id alone says nothing about whether the render behind it will work. Callers
+ * that advertise renderers — `jto_info`, `jto_discover` — report this instead
+ * of docxRendererIds() so a renderer that cannot run is never offered as one
+ * that can.
+ */
+export function docxRendererStatuses(): Promise<
+  RendererStatus<DocxRendererId>[]
+> {
+  return registry.statuses();
 }
 
 export function isDocxRendererId(value: string): value is DocxRendererId {

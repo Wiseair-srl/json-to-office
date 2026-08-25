@@ -106,6 +106,15 @@ function readPackageVersion(specifier: string): string | undefined {
   return undefined;
 }
 
+/** One renderer as `jto_info` reports it. */
+interface RendererReport {
+  id: string;
+  default: boolean;
+  available: boolean;
+  reason?: string;
+  installHint?: string;
+}
+
 export interface HostBinaryStatus {
   available: boolean;
   /** The candidate that satisfied the probe. */
@@ -299,7 +308,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Server info',
       description:
-        'Versions, supported formats and renderer ids, workspace availability, output-root and size limits, and whether the optional host dependencies (LibreOffice and poppler for jto_preview, a Highcharts export server for the DOCX `highcharts` component) are present on this host. Call this first.',
+        'Versions, supported formats with each renderer and whether its backend loads here, workspace availability, output-root and size limits, and whether the optional host dependencies (LibreOffice and poppler for jto_preview, a Highcharts export server for the DOCX `highcharts` component) are present on this host. Call this first.',
       annotations: { readOnlyHint: true, openWorldHint: false },
       inputSchema: S<{ includePreviewDependencies?: boolean }>({
         type: 'object',
@@ -353,10 +362,34 @@ export function register(server: McpServer, deps: ToolDeps): void {
                   rendererIds: {
                     type: 'array',
                     items: { type: 'string' },
-                    description: 'Defaults first.',
+                    description:
+                      'Defaults first. Registered, which is not the same as usable — read `renderers` before picking one.',
+                  },
+                  renderers: {
+                    type: 'array',
+                    description:
+                      'Every registered renderer with whether its backend loads on this host. A renderer with `available: false` will fail every render until `installHint` is run.',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        default: { type: 'boolean' },
+                        available: { type: 'boolean' },
+                        reason: { type: 'string' },
+                        installHint: { type: 'string' },
+                      },
+                      required: ['id', 'default', 'available'],
+                      additionalProperties: false,
+                    },
                   },
                 },
-                required: ['name', 'extension', 'label', 'rendererIds'],
+                required: [
+                  'name',
+                  'extension',
+                  'label',
+                  'rendererIds',
+                  'renderers',
+                ],
                 additionalProperties: false,
               },
             },
@@ -416,9 +449,25 @@ export function register(server: McpServer, deps: ToolDeps): void {
           const formats = await Promise.all(
             FORMAT_NAMES.map(async (name) => {
               const adapter = deps.getAdapter(name);
-              let rendererIds: string[] = [];
+              let renderers: RendererReport[] = [];
               try {
-                rendererIds = [...(await adapter.rendererIds())];
+                // Statuses rather than ids: an id says a renderer is
+                // registered, which is a claim about this repository, not
+                // about this host. #1 was exactly that gap — `office-open`
+                // advertised everywhere and installed nowhere.
+                renderers = (await adapter.rendererStatuses()).map(
+                  (status) => ({
+                    id: status.id,
+                    default: status.default,
+                    available: status.available,
+                    ...(status.reason !== undefined && {
+                      reason: status.reason,
+                    }),
+                    ...(status.installHint !== undefined && {
+                      installHint: status.installHint,
+                    }),
+                  })
+                );
               } catch (error) {
                 // A core that fails to load is a broken install, not a broken
                 // request: report the format with no renderers so the agent
@@ -433,11 +482,37 @@ export function register(server: McpServer, deps: ToolDeps): void {
                   )
                 );
               }
+
+              for (const renderer of renderers) {
+                if (renderer.available) continue;
+                diagnostics.push(
+                  diagnostic(
+                    ERROR_CODES.DEPENDENCY_MISSING,
+                    `The "${renderer.id}" ${name} renderer is registered but cannot load on this host, so every render through it will fail.`,
+                    {
+                      severity: 'warning',
+                      ...(renderer.installHint && {
+                        suggestion: `Install its backend: ${renderer.installHint}. Until then use one of: ${renderers
+                          .filter((entry) => entry.available)
+                          .map((entry) => `"${entry.id}"`)
+                          .join(', ')}.`,
+                      }),
+                      context: {
+                        format: name,
+                        renderer: renderer.id,
+                        ...(renderer.reason && { reason: renderer.reason }),
+                      },
+                    }
+                  )
+                );
+              }
+
               return {
                 name: adapter.name,
                 extension: adapter.extension,
                 label: adapter.label,
-                rendererIds,
+                rendererIds: renderers.map((renderer) => renderer.id),
+                renderers,
               };
             })
           );

@@ -162,6 +162,71 @@ describe('a document that will not build', () => {
       PREVIEW_ERROR_CODES.RENDER_FAILED
     );
   }, 60_000);
+
+  /**
+   * A build that fails because the renderer will not load.
+   *
+   * The generic build failure tells the caller to go and validate its JSON.
+   * For a missing backend that is precisely wrong — there is nothing in the
+   * document to repair — and following it costs a call that finds nothing.
+   * `jto_generate` already classified this correctly; preview did not.
+   */
+  it('blames the renderer, not the JSON, when the backend will not load', async () => {
+    const real = getAdapter('docx');
+    const failing = {
+      ...real,
+      name: real.name,
+      extension: real.extension,
+      label: real.label,
+      validateDocument: real.validateDocument.bind(real),
+      async generateBuffer(): Promise<Buffer> {
+        const error = new Error(
+          'The "office-open" docx renderer requires @office-open/docx, which is not installed.'
+        );
+        error.name = 'RendererDependencyMissingError';
+        throw error;
+      },
+    } as unknown as ReturnType<typeof getAdapter>;
+
+    const result = await renderPreview({
+      format: 'docx',
+      document: {
+        name: 'docx',
+        props: {},
+        children: [
+          {
+            name: 'section',
+            children: [{ name: 'paragraph', props: { text: 'Fine.' } }],
+          },
+        ],
+      },
+      getAdapter: () => failing,
+      cacheDir: null,
+      probe: async () => ({
+        libreoffice: {
+          available: true,
+          path: '/nowhere/soffice',
+          envVar: 'LIBREOFFICE_PATH',
+          searched: [],
+        },
+        pdftoppm: {
+          available: true,
+          path: '/nowhere/pdftoppm',
+          envVar: 'PDFTOPPM_PATH',
+          searched: [],
+        },
+      }),
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    // One diagnostic, correctly classified: no validation pass piled on top of
+    // a document that was never the problem.
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics[0].code).toBe(ERROR_CODES.DEPENDENCY_MISSING);
+    expect(result.diagnostics[0].suggestion).not.toContain('jto_validate');
+    expect(result.diagnostics[0].suggestion).toContain('not at fault');
+  }, 60_000);
 });
 
 describe('preview cache hygiene', () => {

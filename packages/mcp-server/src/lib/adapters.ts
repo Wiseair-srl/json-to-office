@@ -7,6 +7,7 @@
  * fresh instance per tool call would throw away every request.
  */
 
+import type { RendererStatus } from '@json-to-office/shared';
 import {
   DocxFormatAdapter,
   PptxFormatAdapter,
@@ -14,7 +15,14 @@ import {
   type FormatName,
 } from '@json-to-office/jto-ops';
 
-import { OPTION_ERROR_CODES, failure, type Failure } from './errors.js';
+import {
+  ERROR_CODES,
+  OPTION_ERROR_CODES,
+  diagnostic,
+  failure,
+  type Diagnostic,
+  type Failure,
+} from './errors.js';
 
 export type { FormatAdapter, FormatName };
 export type {
@@ -85,4 +93,75 @@ export function withRenderer(
     return document;
   }
   return { ...(document as Record<string, unknown>), renderer };
+}
+
+/**
+ * The renderer a document will actually be built with.
+ *
+ * `undefined` for both the explicit override and the document's own field
+ * means the format's default, which is what a render would pick.
+ */
+function effectiveRenderer(
+  document: unknown,
+  override: string | undefined
+): string | undefined {
+  if (override !== undefined) return override;
+  if (typeof document === 'object' && document !== null) {
+    const declared = (document as { renderer?: unknown }).renderer;
+    if (typeof declared === 'string') return declared;
+  }
+  return undefined;
+}
+
+/**
+ * Warn when the profile a document validates against cannot actually render.
+ *
+ * Validation used to return a clean bill of health for a renderer whose backend
+ * was not installed — profile findings and all — and the caller only learned
+ * otherwise one call later, at the render. That is the worst of both worlds: a
+ * green light followed by a failure the green light was supposed to rule out.
+ *
+ * A warning, not an error. The document may be perfectly good and the host
+ * merely incomplete, and which of the two the caller cares about is the
+ * caller's business.
+ */
+export async function rendererAvailability(
+  adapter: FormatAdapter,
+  document: unknown,
+  override: string | undefined
+): Promise<Diagnostic | undefined> {
+  const wanted = effectiveRenderer(document, override);
+  let statuses: readonly RendererStatus[];
+  try {
+    statuses = await adapter.rendererStatuses();
+  } catch {
+    // The core would not load at all. Generation will say so far more
+    // precisely than a guess from here could.
+    return undefined;
+  }
+  const status = wanted
+    ? statuses.find((entry) => entry.id === wanted)
+    : statuses.find((entry) => entry.default);
+  if (!status || status.available) return undefined;
+
+  const usable = statuses
+    .filter((entry) => entry.available)
+    .map((entry) => `"${entry.id}"`);
+  return diagnostic(
+    ERROR_CODES.DEPENDENCY_MISSING,
+    `This document validates against the "${status.id}" ${adapter.name} renderer, but that renderer cannot load on this host — generating with it will fail.`,
+    {
+      severity: 'warning',
+      suggestion: status.installHint
+        ? `Install its backend: ${status.installHint}.${
+            usable.length > 0 ? ` Or render with ${usable.join(' or ')}.` : ''
+          }`
+        : `Render with ${usable.join(' or ')} instead.`,
+      context: {
+        format: adapter.name,
+        renderer: status.id,
+        ...(status.reason && { reason: status.reason }),
+      },
+    }
+  );
 }

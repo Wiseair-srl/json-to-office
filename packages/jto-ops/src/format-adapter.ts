@@ -7,6 +7,7 @@ import type {
   PptxRasterizer,
   PptxBatchRasterizer,
   GenerationWarning,
+  RendererStatus,
 } from '@json-to-office/shared';
 import { validatePresentationDocument } from '@json-to-office/shared-pptx';
 import { validate as validateDocx } from '@json-to-office/shared-docx';
@@ -293,6 +294,17 @@ export interface FormatAdapter {
    */
   rendererIds(): Promise<readonly string[]>;
 
+  /**
+   * The same renderers, each with whether its backend loads on this host.
+   *
+   * `rendererIds` answers "what is registered", which is not the same question:
+   * a factory only runs when its renderer is selected, so an id says nothing
+   * about whether the render behind it will work. Anything that *advertises*
+   * renderers should report this instead — otherwise a caller picks one, gets
+   * a green light from validation, and fails a call later.
+   */
+  rendererStatuses(): Promise<readonly RendererStatus[]>;
+
   /** Cumulative visual pre-pass dedupe counters (DOCX only) (#156). */
   getVisualPrepassStats?(): Promise<any>;
   /** Reset per-format cache observability counters (DOCX only). */
@@ -308,6 +320,11 @@ export class DocxFormatAdapter implements FormatAdapter {
   async rendererIds(): Promise<readonly string[]> {
     const core = await import('@json-to-office/core-docx');
     return core.docxRendererIds();
+  }
+
+  async rendererStatuses(): Promise<readonly RendererStatus[]> {
+    const core = await import('@json-to-office/core-docx');
+    return core.docxRendererStatuses();
   }
 
   async generateBuffer(
@@ -620,6 +637,11 @@ export class PptxFormatAdapter implements FormatAdapter {
   async rendererIds(): Promise<readonly string[]> {
     const core = await import('@json-to-office/core-pptx');
     return core.pptxRendererIds();
+  }
+
+  async rendererStatuses(): Promise<readonly RendererStatus[]> {
+    const core = await import('@json-to-office/core-pptx');
+    return core.pptxRendererStatuses();
   }
 
   async generateBuffer(
