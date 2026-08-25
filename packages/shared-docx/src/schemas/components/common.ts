@@ -127,12 +127,36 @@ export const LineSpacingSchema = Type.Object(
   { description: 'Line spacing configuration', additionalProperties: false }
 );
 
+/**
+ * List-level indentation, in POINTS.
+ *
+ * Points, unlike `ParagraphIndentSchema` next door, which is twips — the two
+ * have always disagreed and neither said so, which is how every bundled theme
+ * came to ship `indent: 3` meaning half an inch and getting three points: the
+ * marker landed outside the page margin, to the left of the body text it was
+ * supposed to label.
+ */
 export const IndentSchema = Type.Object(
   {
-    left: Type.Optional(Type.Number({ minimum: 0 })),
-    hanging: Type.Optional(Type.Number({ minimum: 0 })),
+    left: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        description:
+          'Left indentation in points. Omit to inherit the per-level default of 36pt (half an inch) per level.',
+      })
+    ),
+    hanging: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        description:
+          'Hanging indent in points — how far the marker sits left of the text. Omit for the 18pt default.',
+      })
+    ),
   },
-  { description: 'Indentation configuration', additionalProperties: false }
+  {
+    description: 'Indentation configuration, in points',
+    additionalProperties: false,
+  }
 );
 
 export const ParagraphIndentSchema = Type.Object(

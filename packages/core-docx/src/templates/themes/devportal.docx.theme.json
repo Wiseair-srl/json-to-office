@@ -110,8 +110,7 @@
     },
     "list": {
       "format": "bullet",
-      "bullet": "\u2013",
-      "indent": 3
+      "bullet": "\u2013"
     },
     "image": {
       "alignment": "center"

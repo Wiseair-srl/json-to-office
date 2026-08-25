@@ -102,8 +102,7 @@
     },
     "list": {
       "format": "bullet",
-      "bullet": "\u2022",
-      "indent": 3
+      "bullet": "\u2022"
     },
     "statistic": {
       "alignment": "center"

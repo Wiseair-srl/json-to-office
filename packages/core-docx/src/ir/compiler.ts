@@ -41,7 +41,13 @@ import {
   compileNativeVisualGroup,
   type NativeVisualDeps,
 } from './nativeVisual';
-import { createDocumentStyles } from '../styles/themeToStyles';
+import {
+  createDocumentStyles,
+  createStatisticStyles,
+  STATISTIC_DESCRIPTION_STYLE_ID,
+  STATISTIC_NUMBER_STYLE_ID,
+  STATISTIC_SIZE_POINTS,
+} from '../styles/themeToStyles';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import { getNormalStyle, getThemeFonts } from '../themes/defaults';
 import { computeSectionOrdinals } from '../core/sectionOrdinals';
@@ -142,6 +148,7 @@ import {
   type DocxIrTableFloating,
   type DocxIrTableWidth,
   type DocxIrTableRow,
+  type DocxIrTextRun,
   type DocxIrTextWrap,
   type DocxIrVerticalAlign,
 } from './types';
@@ -215,6 +222,14 @@ interface CompileContext {
    */
   bookmarkNames: Set<string>;
   styleIds: Set<string>;
+  /**
+   * Whether the walk lowered a statistic.
+   *
+   * Decides whether the two statistic paragraph styles are appended to the
+   * style set: a document with no statistic keeps the exact style set it had
+   * before the component had styles at all.
+   */
+  usesStatistic: boolean;
   /** Numbering definitions, in the order the lists that need them appear. */
   numbering: DocxIrNumbering[];
   numberingByReference: Map<string, DocxIrNumbering>;
@@ -289,6 +304,7 @@ export function compileDocument(
     resourcesByHash: new Map(),
     nextBookmarkId: CONTENT_BOOKMARK_ID_BASE + 1,
     bookmarkNames: new Set(),
+    usesStatistic: false,
     styleIds: new Set([
       ...styles.paragraph.map((s) => s.id),
       ...styles.character.map((s) => s.id),
@@ -356,7 +372,19 @@ export function compileDocument(
         ? { noProofWords: noProofWords(structure.theme) }
         : {}),
     },
-    styles,
+    // The statistic styles are appended rather than built with the rest: a
+    // document that uses no statistic must keep the exact style set it had
+    // before the component had styles, or every recorded golden moves for a
+    // component the document does not contain.
+    styles: ctx.usesStatistic
+      ? {
+          ...styles,
+          paragraph: [
+            ...styles.paragraph,
+            ...createStatisticStyles(structure.theme),
+          ],
+        }
+      : styles,
     numbering: ctx.numbering,
     resources: ctx.resources,
     sections,
@@ -371,6 +399,48 @@ export function compileDocument(
     warnings: ctx.warnings,
     unsupported: ctx.unsupported,
   };
+}
+
+/**
+ * How far the first block after a table sits from its bottom rule.
+ *
+ * Twips. A table has no space-after in OOXML — the property does not exist —
+ * so whatever follows one draws hard against its bottom border unless it
+ * brings its own space-before. A heading does, from its style; a body
+ * paragraph and a list item do not, and both landed on the rule.
+ */
+const AFTER_TABLE_TWIPS = 120;
+
+/**
+ * Body styles, which is to say the ones whose style contributes no space above.
+ *
+ * A `Heading2` after a table is already spaced by `Heading2`, and giving it
+ * this instead would make it *less* spaced, not more. Only the styles that
+ * bring nothing of their own are topped up.
+ */
+const BODY_STYLE_IDS = new Set([undefined, 'Normal']);
+
+/**
+ * Give a body block above-space when a table sits directly above it.
+ *
+ * In place, on a block list that is otherwise final. Deliberately not a layout
+ * pass: it looks one block back, changes one number, and never moves anything
+ * — the alternative is either an empty spacer paragraph, which is content
+ * nobody wrote, or living with text drawn on a table border.
+ */
+function separateFromTables(blocks: DocxIrBlock[]): void {
+  for (let i = 1; i < blocks.length; i += 1) {
+    const block = blocks[i];
+    if (blocks[i - 1].kind !== 'table') continue;
+    if (block.kind !== 'paragraph') continue;
+    if (!BODY_STYLE_IDS.has(block.styleId)) continue;
+    // An author who stated their own space-before has already answered this.
+    if (block.formatting?.spacing?.beforeTwips !== undefined) continue;
+    block.formatting = {
+      ...block.formatting,
+      spacing: { ...block.formatting?.spacing, beforeTwips: AFTER_TABLE_TWIPS },
+    };
+  }
 }
 
 /**
@@ -535,6 +605,8 @@ function compileSection(
       })
     );
   });
+
+  separateFromTables(children);
 
   const compiled: DocxIrSection = {
     id: `s${index}`,
@@ -1783,13 +1855,32 @@ function compileToc(
  * authoring value has always been passed to the writer unconverted, and
  * reinterpreting it now would move every statistic in every document.
  */
+/**
+ * Direction marks for `trend`.
+ *
+ * A glyph rather than a colour: the DOCX theme palette has no semantic
+ * success/danger slot, so colouring a fall red would mean hardcoding a hex
+ * that no theme can restyle — and would decide for the author that down is
+ * bad, which for churn or cost it is not.
+ */
+const TREND_GLYPHS: Readonly<Record<string, string>> = {
+  up: '▲',
+  down: '▼',
+  neutral: '–',
+};
+
 function compileStatistic(
   component: ComponentDefinition,
   scope: ComponentScope
 ): DocxIrBlock[] {
-  const { path } = scope;
+  const { ctx, path } = scope;
   const props = (component.props ?? {}) as Record<string, any>;
   const alignment = compileAlignment(props.alignment) ?? 'center';
+
+  // Tells `compileDocument` to append the two statistic styles. Set here, on
+  // the walk, rather than by scanning the tree up front: this is the one place
+  // that knows a statistic actually reached the IR.
+  ctx.usesStatistic = true;
 
   // Stating `spacing` at all, even empty, is a statement: it produces a
   // `w:spacing` element that overrides whatever the style would apply.
@@ -1804,33 +1895,98 @@ function compileStatistic(
       }
     : undefined;
 
+  // `format` is declared, has never been implemented, and cannot be guessed at
+  // — "number format pattern" names no dialect. Saying so beats dropping it in
+  // silence, which is indistinguishable from a pattern that worked.
+  if (props.format !== undefined) {
+    warnOnce(
+      ctx,
+      'statistic',
+      'statistic "format" is not implemented and was ignored — format the value yourself and pass the result as "number".',
+      'W_STATISTIC_FORMAT_IGNORED'
+    );
+  }
+
+  const text = (value: unknown): string =>
+    normalizeUnicodeText(String(value ?? ''));
+
+  // The style pins the medium size, so only the other two need stating on the
+  // run — a document that never sets `size` carries no run properties at all
+  // and stays restylable from the style set alone.
+  const numberPoints =
+    STATISTIC_SIZE_POINTS[String(props.size)] ?? STATISTIC_SIZE_POINTS.medium;
+  const resized = numberPoints !== STATISTIC_SIZE_POINTS.medium;
+
+  // Unit and trend ride at half the figure, floored at 6pt: a percent sign set
+  // at the number's own size competes with the number.
+  const suffixHalfPoints = Math.max(12, Math.round(numberPoints));
+
+  const numberRuns: DocxIrTextRun[] = [];
+  const numberText = text(props.number);
+  if (numberText) {
+    numberRuns.push({
+      kind: 'text',
+      text: numberText,
+      ...(resized ? { formatting: { sizeHalfPoints: numberPoints * 2 } } : {}),
+    });
+  }
+
+  // No separator: `unit` is a suffix on the figure — "99" + "%" — and an
+  // author who wants a space writes one into the prop.
+  const unitText = text(props.unit);
+  if (unitText) {
+    numberRuns.push({
+      kind: 'text',
+      text: unitText,
+      formatting: { sizeHalfPoints: suffixHalfPoints },
+    });
+  }
+
+  const glyph =
+    typeof props.trend === 'string' ? TREND_GLYPHS[props.trend] : undefined;
+  const trendValue = text(props.trendValue);
+  if (glyph || trendValue) {
+    numberRuns.push({
+      kind: 'text',
+      text: `${numberRuns.length > 0 ? ' ' : ''}${[glyph, trendValue]
+        .filter(Boolean)
+        .join(' ')}`,
+      formatting: {
+        sizeHalfPoints: suffixHalfPoints,
+        color: irColor(resolveColor(ctx.theme.colors.textMuted, ctx.theme)),
+      },
+    });
+  }
+
   const line = (
-    text: unknown,
+    children: DocxIrTextRun[],
     styleId: string,
     suffix: string,
     formatting: DocxIrParagraphFormatting
-  ): DocxIrParagraph => {
-    const value = normalizeUnicodeText(String(text ?? ''));
-    return {
-      kind: 'paragraph',
-      id: `${scope.id}:${suffix}`,
-      path: `${path}.${suffix}`,
-      styleId,
-      formatting,
-      // Nothing to say is not the same as saying nothing: an empty statistic
-      // line is a styled blank paragraph, with no run inside it at all.
-      children: value ? [{ kind: 'text', text: value }] : [],
-    };
-  };
+  ): DocxIrParagraph => ({
+    kind: 'paragraph',
+    id: `${scope.id}:${suffix}`,
+    path: `${path}.${suffix}`,
+    styleId,
+    formatting,
+    // Nothing to say is not the same as saying nothing: an empty statistic
+    // line is a styled blank paragraph, with no run inside it at all.
+    children,
+  });
+
+  const descriptionText = text(props.description);
 
   return [
-    line(props.number, 'StatisticNumber', 'number', {
+    line(numberRuns, STATISTIC_NUMBER_STYLE_ID, 'number', {
       alignment,
       ...(spacing ? { spacing } : {}),
     }),
-    line(props.description, 'StatisticDescription', 'description', {
-      alignment,
-    }),
+    line(
+      descriptionText ? [{ kind: 'text', text: descriptionText }] : [],
+      STATISTIC_DESCRIPTION_STYLE_ID,
+      'description',
+      { alignment }
+    ),
   ];
 }
 
