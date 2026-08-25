@@ -1,5 +1,83 @@
 # @json-to-office/shared
 
+## 1.4.0
+
+### Minor Changes
+
+- 5dc65ef: The `office-open` renderer is installed rather than advertised, and every surface
+  that offers a renderer now says whether it can run.
+
+  `@office-open/docx` and `@office-open/pptx` were optional peer dependencies, so on
+  any install that did not opt in — `npx` above all, where there is no project to
+  `pnpm add` into — the renderer was listed by `jto_info`, listed per component by
+  `jto_discover`, validated against by `jto_validate`, and then failed every render.
+  The `visual` component's `renderMode: "native"` went with it, since that mode is
+  documented as requiring the backend. They are ordinary dependencies now: ESM-only,
+  no native code, no install scripts, 7.4 MB.
+
+  Availability is reported as well as fixed, because an `--omit=optional` install or
+  a broken tree can still produce the same gap:
+
+  - `RendererRegistry.statuses()` loads each registered renderer once, memoized, and
+    reports `{ id, default, available, reason, installHint }`. Exposed as
+    `docxRendererStatuses()` / `pptxRendererStatuses()` and as `rendererStatuses()`
+    on the format adapters.
+  - `jto_info` returns `formats[].renderers[]` beside the existing `rendererIds`,
+    and warns with the install line for any renderer that cannot load.
+  - `jto_discover` marks each renderer profile `available`.
+  - `jto_validate` warns when the profile a document will actually build with has no
+    backend, instead of returning a clean result that the next call contradicts.
+
+  Two error-reporting fixes alongside it:
+
+  - `jto_preview` classified a missing backend as a generic build failure and
+    suggested "a build failure is a defect in the JSON, not in the renderer" —
+    sending the caller to validate a document that was never at fault. It now
+    returns `E_DEPENDENCY_MISSING`, as `jto_generate` already did, and skips the
+    validation pass that only added noise.
+  - An internal failure no longer puts `error.stack` — absolute filesystem paths and
+    module layout — into the tool result, where it reached whatever transcript the
+    client keeps. Set `JTO_MCP_DEBUG_STACKS=1` to restore it.
+
+- f6476d3: A named PPTX text style now carries a place on the slide, and a table looks like a
+  table before anyone styles one.
+
+  **Named styles land in a band.** `title`, `subtitle`, `heading1`–`3`, `body` and
+  `caption` described type and nothing else, while every text box that stated no
+  `x`/`y` resolved to (0, 0). A slide with a `title` and a `subtitle` therefore drew
+  both blocks on top of each other in the top-left corner — the exact shape of the
+  shipped `pptx-deck` starter. Each style now has a default band expressed as
+  fractions of the slide extent, so it holds at any aspect ratio. Each axis is
+  decided on its own, so a stated `x` still wins for `x`, and a text box with no
+  `style` keeps the origin it has always had.
+
+  Two positionless boxes can still share a band — two of the same style — so that
+  case is reported as `TEXT_OVERLAP_UNPOSITIONED` rather than silently drawn.
+  Moving one of them is a layout engine's job and belongs with the coordinate-free
+  layout work, not with a default.
+
+  **Tables get a border and a header row.** No bundled theme defined
+  `componentDefaults.table`, so a table rendered as bare text in columns: no rule
+  between cells, nothing marking the first row. The themes now state a border, and
+  `headerRow` — a new optional prop on the PPTX table — defaults on through them. It
+  is a compile-time treatment of row 0, so nothing new reaches either renderer, and
+  every part of it yields to something the author said: a cell's own `fill`, `bold`
+  or `color`, or a table-wide `fill`, `color` or `fontWeight`. A stated
+  `fontWeight` aliases the family to a real sub-family rather than setting `bold`,
+  so the header leaves the weight alone there — otherwise an explicit `400` would
+  be overruled, and a Light table would get a header synthesised bolder than the
+  body under it.
+
+  No `margin` default: cell insets are a capability the `office-open` renderer
+  refuses, and a theme default every table inherited would have turned a working
+  backend into one that fails every table.
+
+  The two table components are also described honestly for the first time. The DOCX
+  table is column-major (`columns[]`, each with its own `header` and `cells[]`); the
+  PPTX table is row-major (`rows[][]`, no structural header). Both descriptions now
+  say which they are and name the other, so an agent that has just written one does
+  not get the other wrong on the first try.
+
 ## 1.3.0
 
 ### Minor Changes
