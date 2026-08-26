@@ -32,11 +32,18 @@ function humanizeContext(ctx: SelectionContext & { documentName?: string }) {
 
 /** One-line text preview */
 function previewText(text: string, max = 50) {
-  const oneLine = text.replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const oneLine = text
+    .replace(/[\n\r]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   return oneLine.length > max ? oneLine.slice(0, max) + '…' : oneLine;
 }
 
-export function ChatContextChip({ context, onRemove, variant = 'default' }: ChatContextChipProps) {
+export function ChatContextChip({
+  context,
+  onRemove,
+  variant = 'default',
+}: ChatContextChipProps) {
   const componentName = humanizeContext(context);
   const docName = context.documentName?.replace(/\.json$/, '') ?? '';
   const label = docName ? `${docName} › ${componentName}` : componentName;
@@ -44,12 +51,16 @@ export function ChatContextChip({ context, onRemove, variant = 'default' }: Chat
 
   const sent = variant === 'sent';
   const chip = (
-    <div className={`group flex items-center gap-1.5 rounded-md border pl-2 ${onRemove ? 'pr-1' : 'pr-2'} py-1 text-xs max-w-[280px] transition-colors ${
-      sent
-        ? 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/20'
-        : 'border-primary/20 bg-primary/5 hover:bg-primary/10'
-    }`}>
-      <FileCode2 className={`h-3 w-3 shrink-0 ${sent ? 'text-primary-foreground/60' : 'text-primary/60'}`} />
+    <div
+      className={`group flex items-center gap-1.5 rounded-md border pl-2 ${onRemove ? 'pr-1' : 'pr-2'} py-1 text-xs max-w-[280px] transition-colors ${
+        sent
+          ? 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/20'
+          : 'border-primary/20 bg-primary/5 hover:bg-primary/10'
+      }`}
+    >
+      <FileCode2
+        className={`h-3 w-3 shrink-0 ${sent ? 'text-primary-foreground/60' : 'text-primary/60'}`}
+      />
       <span className="truncate font-medium">{label}</span>
       {onRemove && (
         <button
@@ -71,7 +82,9 @@ export function ChatContextChip({ context, onRemove, variant = 'default' }: Chat
         <p className="text-xs font-medium mb-0.5">{label}</p>
         <p className="text-xs text-muted-foreground font-mono">{preview}</p>
         {context.jsonPath && (
-          <p className="text-[10px] text-muted-foreground/60 mt-1">{context.jsonPath}</p>
+          <p className="text-[10px] text-muted-foreground/60 mt-1">
+            {context.jsonPath}
+          </p>
         )}
       </TooltipContent>
     </Tooltip>

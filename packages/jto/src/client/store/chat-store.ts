@@ -60,9 +60,7 @@ export const initChatStore = (): ChatState => ({
   activeThreadId: {},
 });
 
-export const createChatStore = (
-  initState: ChatState = initChatStore()
-) => {
+export const createChatStore = (initState: ChatState = initChatStore()) => {
   return createStore<ChatStore>()(
     devtools(
       persist(

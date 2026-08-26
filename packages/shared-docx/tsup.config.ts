@@ -1,7 +1,11 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts', 'src/schemas/*.ts', 'src/validation/unified/index.ts'],
+  entry: [
+    'src/index.ts',
+    'src/schemas/*.ts',
+    'src/validation/unified/index.ts',
+  ],
   format: ['esm'],
   dts: {
     compilerOptions: {
@@ -12,5 +16,11 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: 'es2022',
-  external: ['@sinclair/typebox', 'ajv', 'ajv-formats', 'docx', '@json-to-office/shared'],
+  external: [
+    '@sinclair/typebox',
+    'ajv',
+    'ajv-formats',
+    'docx',
+    '@json-to-office/shared',
+  ],
 });

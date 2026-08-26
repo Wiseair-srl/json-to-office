@@ -1,10 +1,6 @@
 import { type ReactNode, createContext, useRef, useContext } from 'react';
 import { useStore } from 'zustand';
-import {
-  type ChatStore,
-  createChatStore,
-  initChatStore,
-} from './chat-store';
+import { type ChatStore, createChatStore, initChatStore } from './chat-store';
 
 export type ChatStoreApi = ReturnType<typeof createChatStore>;
 
@@ -29,9 +25,7 @@ export const ChatStoreProvider = ({ children }: ChatStoreProviderProps) => {
   );
 };
 
-export const useChatStore = <T,>(
-  selector: (store: ChatStore) => T
-): T => {
+export const useChatStore = <T,>(selector: (store: ChatStore) => T): T => {
   const chatStoreContext = useContext(ChatStoreContext);
 
   if (!chatStoreContext) {
