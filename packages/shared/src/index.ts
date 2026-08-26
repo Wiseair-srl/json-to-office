@@ -187,3 +187,11 @@ export {
   latestVersion,
   type ParsedSemver,
 } from './utils/semver';
+
+// Design-quality findings (#216)
+export {
+  QUALITY_CODES,
+  type QualityCode,
+  type QualityFinding,
+  type QualityFindingSeverity,
+} from './quality/findings';

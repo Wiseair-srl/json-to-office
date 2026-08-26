@@ -188,6 +188,26 @@ Each warning is a `PipelineWarning`:
 `generateBufferWithWarnings` makes it easy to enforce a zero-warning policy: fail the build when `warnings.length > 0`. You get DOCX-style strictness where you want it, without losing PPTX's resilience in interactive use.
 :::
 
+## Design-quality findings
+
+Schema-valid is not well-designed: a text box overflowing its bounds by 60×, a deck silently rendered on the 4:3 fallback canvas, or forty lines of prose on one slide all validate clean. The cores therefore ship quality collectors — `collectPptxQualityFindings` and `collectDocxQualityFindings` — that lint the design layer deterministically, before any render. The MCP server's `jto_validate` runs them on every call and reports the findings beside the structural diagnostics.
+
+Findings are path-addressed like validation errors, carry a `suggestion` and the measured values behind the verdict in `context`, and are **never errors**: `warning` means the defect almost certainly shows in the rendered result, `info` means worth a look. Generation is not gated on taste.
+
+| Code                             | Severity | Meaning                                                                                                          |
+| -------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `W_QUALITY_CANVAS_UNSPECIFIED`   | warning  | PPTX: no `slideWidth`/`slideHeight`; the renderer silently falls back to 4:3 (10×7.5″).                          |
+| `W_QUALITY_CANVAS_LEGACY`        | info     | PPTX: canvas is exactly the 4:3 legacy preset.                                                                   |
+| `W_QUALITY_CANVAS_NONSTANDARD`   | info     | PPTX: canvas matches no common preset (16:9, 1:1, 4:5, 9:16).                                                    |
+| `W_QUALITY_TEXT_OVERFLOW`        | warning  | PPTX: estimated text height exceeds the declared box by more than one line-height.                               |
+| `W_QUALITY_TEXT_TIGHT`           | info     | PPTX: text fits with almost no margin, or spills within one line-height (usually invisible — boxes do not clip). |
+| `W_QUALITY_SLIDE_DENSITY`        | warning  | PPTX: far more body text on one slide than an audience can read.                                                 |
+| `W_QUALITY_FONT_SIZE_MIN`        | warning  | PPTX: effective font size below 7pt — unreadable projected.                                                      |
+| `W_QUALITY_TABLE_WIDTH_OVERFLOW` | warning  | DOCX: fixed column widths (or percentages over 100%) no page setup can contain.                                  |
+| `W_QUALITY_HEADING_SKIP`         | info     | DOCX: a heading level jumps down more than one step, breaking the document outline.                              |
+
+The overflow estimator resolves the same tables the renderer resolves — theme style font sizes, the grid geometry, the fallback canvas — so the estimate and the render cannot drift apart, and it is calibrated so the stock templates pass warning-clean (`quality-calibration.test.ts` pins that). Text using `runs` or no declared box is skipped rather than guessed at.
+
 ## Validating from the CLI
 
 Both CLIs ship a `validate` command that runs the same validators against a file, a directory (`--recursive`), or a glob — with `--strict`, `--type document|theme|auto`, a custom `--schema`, and `--format json` for machine-readable output:

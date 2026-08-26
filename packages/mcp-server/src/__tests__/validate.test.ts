@@ -31,7 +31,7 @@ const VALID_DOCX = {
 
 const VALID_PPTX = {
   name: 'pptx',
-  props: {},
+  props: { slideWidth: 13.333, slideHeight: 7.5 },
   children: [
     {
       name: 'slide',
@@ -220,7 +220,7 @@ describe('jto_validate', () => {
   it('keeps renderer-profile findings out of the generation verdict', async () => {
     const deck = {
       name: 'pptx',
-      props: {},
+      props: { slideWidth: 13.333, slideHeight: 7.5 },
       children: [
         {
           name: 'slide',
@@ -259,7 +259,7 @@ describe('jto_validate', () => {
     const deck = {
       name: 'pptx',
       renderer: 'office-open',
-      props: {},
+      props: { slideWidth: 13.333, slideHeight: 7.5 },
       children: [
         {
           name: 'slide',
@@ -324,6 +324,91 @@ describe('jto_validate', () => {
     for (const entry of result.diagnostics) {
       expect(entry.severity).toBe('error');
     }
+  });
+
+  it('reports design-quality findings without moving the gate', async () => {
+    // No canvas, a box that cannot hold its text, an unreadable font size:
+    // all schema-valid, all wrong, all repairable from the diagnostics alone.
+    const { result } = await validate({
+      format: 'pptx',
+      document: {
+        name: 'pptx',
+        props: {},
+        children: [
+          {
+            name: 'slide',
+            children: [
+              {
+                name: 'text',
+                props: {
+                  text: 'word '.repeat(120).trim(),
+                  fontSize: 18,
+                  x: 1,
+                  y: 1,
+                  w: 2,
+                  h: 0.5,
+                },
+              },
+              { name: 'text', props: { text: 'fine print', fontSize: 5 } },
+            ],
+          },
+        ],
+      },
+    });
+
+    // Quality never blocks: the document still validates and still generates.
+    expect(result.ok).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.counts.error).toBe(0);
+
+    const byCode = new Map<string, any>(
+      result.diagnostics.map((entry: any) => [entry.code, entry])
+    );
+    expect(byCode.get('W_QUALITY_CANVAS_UNSPECIFIED')).toMatchObject({
+      severity: 'warning',
+      path: '/props',
+    });
+    expect(byCode.get('W_QUALITY_TEXT_OVERFLOW')).toMatchObject({
+      severity: 'warning',
+      path: '/children/0/children/0',
+    });
+    expect(byCode.get('W_QUALITY_FONT_SIZE_MIN')).toMatchObject({
+      severity: 'warning',
+      path: '/children/0/children/1/props',
+    });
+    for (const entry of result.diagnostics) {
+      expect(entry.code).toMatch(/^W_QUALITY_/);
+      expect(['warning', 'info']).toContain(entry.severity);
+      expect(typeof entry.suggestion).toBe('string');
+    }
+  });
+
+  it('reports DOCX quality findings the same way', async () => {
+    const { result } = await validate({
+      format: 'docx',
+      document: {
+        name: 'docx',
+        props: {},
+        children: [
+          {
+            name: 'section',
+            children: [
+              { name: 'heading', props: { text: 'One', level: 1 } },
+              { name: 'heading', props: { text: 'Deep', level: 3 } },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'W_QUALITY_HEADING_SKIP',
+        severity: 'info',
+        path: '/children/0/children/1/props/level',
+      })
+    );
   });
 
   it('answers a handle with a structured failure when no store is installed', async () => {

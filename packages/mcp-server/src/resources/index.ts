@@ -27,6 +27,7 @@ export const RESOURCE_URIS = {
   catalog: 'jto://catalog',
   renderers: 'jto://renderers',
   themes: 'jto://themes',
+  themeValues: 'jto://themes/values',
   templates: 'jto://templates',
   documentSchema: (format: FormatName) => `jto://schema/${format}/document`,
   themeSchema: (format: FormatName) => `jto://schema/${format}/theme`,
@@ -95,7 +96,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Built-in themes',
       description:
-        'Theme names shipped with each format, usable as a document’s props.theme or as the tools’ theme option.',
+        'Theme names shipped with each format, usable as a document’s props.theme or as the tools’ theme option. jto://themes/values carries what each name actually looks like.',
       mimeType: JSON_MIME,
     },
     async (uri) => {
@@ -107,6 +108,24 @@ export function register(server: McpServer, deps: ToolDeps): void {
         })),
       });
     }
+  );
+
+  server.registerResource(
+    'theme-values',
+    RESOURCE_URIS.themeValues,
+    {
+      title: 'Built-in theme values',
+      description:
+        'The palette, fonts, style tables and component defaults behind every built-in theme name — what a document actually opts into with props.theme. A name alone cannot tell you whether a theme fits the brief; this can.',
+      mimeType: JSON_MIME,
+    },
+    async (uri) =>
+      jsonContents(uri, {
+        formats: FORMAT_NAMES.map((format) => ({
+          format,
+          themes: deps.getAdapter(format).getBuiltinThemes(),
+        })),
+      })
   );
 
   server.registerResource(

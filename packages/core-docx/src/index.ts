@@ -78,6 +78,9 @@ export type {
 // Utilities
 export * from './utils/formatters';
 export { isNodeEnvironment, hasNodeBuiltins } from './utils/environment';
+
+// Design-quality collectors (#216)
+export { collectDocxQualityFindings } from './quality/preflight';
 export {
   generateWarningsDocument,
   formatWarningsText,

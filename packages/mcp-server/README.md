@@ -170,6 +170,8 @@ Nested components collapse to their names on purpose — describe those separate
 
 `ok` mirrors the gate generation applies: schema and semantic errors block it, renderer-profile findings (`W_UNSUPPORTED_RENDERER_FEATURE`) come back as warnings, because the renderer has the last word on those.
 
+Design-quality findings ride the same envelope as `W_QUALITY_*` warnings and infos: an undeclared slide canvas (the renderer silently falls back to 4:3), text estimated to overflow its declared box, an overcrowded slide, a font size nothing projected can read, table column widths no page can hold, a skipped heading level. They never move `ok` — schema-valid is not well-designed, and the design layer is advisory — but a `W_QUALITY_` warning almost always shows in the rendered result, so repair it like an error and confirm with `jto_preview`. Each finding carries the measured values behind the verdict in `context` and a one-sentence `suggestion`.
+
 The gate, not `jto://schema/{format}/document`. The two agree except on component nodes whose props are all optional, where the generated schema asks for a `props: {}` the validator and both renderers treat as omissible; validate follows the renderer, because that is what `jto_generate` runs.
 
 ### `jto_generate`
@@ -229,6 +231,7 @@ The same catalogues, for clients that read resources. URIs are stable.
 | `jto://catalog`              | The resource form of `jto_discover`: every format, in full.               |
 | `jto://renderers`            | Renderer ids per format, which is default, what each profile can draw.    |
 | `jto://themes`               | Built-in theme names per format.                                          |
+| `jto://themes/values`        | What each built-in theme actually is: palette, fonts, style tables.       |
 | `jto://templates`            | Every starter document.                                                   |
 | `jto://schema/docx/document` | Generated JSON Schema for a complete `.docx` document, by renderer.       |
 | `jto://schema/pptx/document` | The same for `.pptx`.                                                     |

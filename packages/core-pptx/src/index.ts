@@ -55,6 +55,9 @@ export type { WarningCode } from './utils/warn';
 // Themes
 export { DEFAULT_PPTX_THEME, getPptxTheme, pptxThemes } from './themes';
 
+// Design-quality collectors (#216)
+export { collectPptxQualityFindings } from './quality/preflight';
+
 // Plugin system
 export {
   createComponent,

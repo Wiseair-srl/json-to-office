@@ -477,10 +477,11 @@ export const STARTERS: readonly Starter[] = [
     id: 'pptx-minimal',
     format: 'pptx',
     title: 'Minimal presentation',
-    description: 'The smallest valid .pptx: root, one slide, one title text.',
+    description:
+      'The smallest well-formed .pptx: root with a declared 16:9 canvas, one slide, one title text. The canvas stays: without it the renderer silently falls back to 4:3.',
     document: {
       name: 'pptx',
-      props: { title: 'Untitled deck' },
+      props: { title: 'Untitled deck', slideWidth: 13.333, slideHeight: 7.5 },
       children: [
         {
           name: 'slide',

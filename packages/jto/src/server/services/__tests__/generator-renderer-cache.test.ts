@@ -44,6 +44,10 @@ class RecordingAdapter implements FormatAdapter {
     return { valid: true };
   }
 
+  async qualityCheck(): Promise<never[]> {
+    return [];
+  }
+
   generateSchema(): object {
     return {};
   }

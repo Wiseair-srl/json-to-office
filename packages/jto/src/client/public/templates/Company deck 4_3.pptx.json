@@ -4286,7 +4286,9 @@
           }
         ]
       }
-    ]
+    ],
+    "slideWidth": 10,
+    "slideHeight": 7.5
   },
   "children": [
     {

@@ -7,6 +7,7 @@ import type {
   PptxRasterizer,
   PptxBatchRasterizer,
   GenerationWarning,
+  QualityFinding,
   RendererStatus,
 } from '@json-to-office/shared';
 import { validatePresentationDocument } from '@json-to-office/shared-pptx';
@@ -278,6 +279,17 @@ export interface FormatAdapter {
   parseJson(input: string | object): unknown;
   validateDocument(doc: unknown): { valid: boolean; errors?: any[] };
 
+  /**
+   * The format's design-quality findings for `doc` (#216) — the layer schema
+   * validation has no opinion on: canvas, overflow estimates, density, table
+   * widths. Never blocks anything; findings are warnings and infos.
+   *
+   * Async because the collectors live in the cores, which are imported on
+   * demand — they read the same theme and grid tables the renderer uses, so
+   * the estimate and the render cannot drift apart.
+   */
+  qualityCheck(doc: unknown): Promise<QualityFinding[]>;
+
   generateSchema(options?: any): any;
 
   getBuiltinThemes(): Record<string, any>;
@@ -493,6 +505,11 @@ export class DocxFormatAdapter implements FormatAdapter {
       valid: result.valid,
       ...(result.errors.length > 0 && { errors: result.errors }),
     };
+  }
+
+  async qualityCheck(doc: unknown): Promise<QualityFinding[]> {
+    const core = await import('@json-to-office/core-docx');
+    return core.collectDocxQualityFindings(doc);
   }
 
   generateSchema(_options?: any): any {
@@ -789,6 +806,11 @@ export class PptxFormatAdapter implements FormatAdapter {
       valid: result.valid,
       ...(result.errors.length > 0 && { errors: result.errors }),
     };
+  }
+
+  async qualityCheck(doc: unknown): Promise<QualityFinding[]> {
+    const core = await import('@json-to-office/core-pptx');
+    return core.collectPptxQualityFindings(doc);
   }
 
   generateSchema(_options?: any): any {

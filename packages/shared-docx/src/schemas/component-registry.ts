@@ -173,7 +173,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       hasChildren: false,
       category: 'content',
       description:
-        'Heading text - supports levels 1-6 for document hierarchy. Level 1 is largest.',
+        'Heading text - supports levels 1-6 for document hierarchy. Level 1 is largest. Never skip a level going down (1 → 3): the gap breaks the document outline.',
     },
     {
       name: 'paragraph',
@@ -206,7 +206,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       hasChildren: false,
       category: 'content',
       description:
-        'Data table, declared COLUMN-MAJOR: `props.columns[]`, each with its own `header` and its own `cells[]` running down the column. Note the PPTX `table` is the other way round — rows of cells — so a table cannot be moved between the formats unchanged.',
+        'Data table, declared COLUMN-MAJOR: `props.columns[]`, each with its own `header` and its own `cells[]` running down the column. Note the PPTX `table` is the other way round — rows of cells — so a table cannot be moved between the formats unchanged. Fixed column widths are points and must fit the page; leave some columns unsized so they share the leftover space.',
     },
     {
       name: 'list',

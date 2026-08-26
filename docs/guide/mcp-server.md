@@ -67,11 +67,11 @@ In Claude Desktop and Cursor the equivalent is an `"env"` object beside `"comman
 
 ## What the agent gets
 
-Thirteen tools and eight `jto://` resources. The [package README](https://github.com/Wiseair-srl/json-to-office/tree/main/packages/mcp-server#tools) documents every input and output field; the shape of the loop is:
+Thirteen tools and nine `jto://` resources. The [package README](https://github.com/Wiseair-srl/json-to-office/tree/main/packages/mcp-server#tools) documents every input and output field; the shape of the loop is:
 
 **Discover.** `jto_info` reports versions, formats, renderer ids, the output root and whether preview can run here. `jto_discover` lists components, renderer profiles, themes and starter documents; `jto_describe_component` returns one component's exact schema, with nested components collapsed to names so nothing pulls a megabyte of schema through the model.
 
-**Author and repair.** `jto_validate` returns path-addressed diagnostics — RFC 6901 pointers into the document you sent, usable directly as patch targets. Optional workspaces (`jto_workspace_create`, `_inspect`, `_patch`, `_snapshot`, `_list`, `_close`) hold a document server-side so an agent can send an RFC 6902 patch for the two paths a diagnostic named instead of resending the whole tree. Everything that takes a `handle` also takes inline JSON: workspaces are an optimization, not a second source of truth.
+**Author and repair.** `jto_validate` returns path-addressed diagnostics — RFC 6901 pointers into the document you sent, usable directly as patch targets. Beside the structural errors it reports [design-quality findings](/guide/validation#design-quality-findings) (`W_QUALITY_*`): an undeclared slide canvas, text estimated to overflow its box, an overcrowded slide, table widths no page can hold — warnings that never block generation but almost always show in the rendered result, so an agent repairs the design in the same pass it repairs the schema, without paying a render and a vision round to see the problem. Optional workspaces (`jto_workspace_create`, `_inspect`, `_patch`, `_snapshot`, `_list`, `_close`) hold a document server-side so an agent can send an RFC 6902 patch for the two paths a diagnostic named instead of resending the whole tree. Everything that takes a `handle` also takes inline JSON: workspaces are an optimization, not a second source of truth.
 
 **Look.** `jto_preview` renders selected pages to PNG and hands them back as image blocks. This is the part that has no CLI equivalent worth the name: a model reasoning about whether a table overflowed is guessing, and a model looking at the page is not.
 

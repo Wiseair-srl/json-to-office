@@ -37,6 +37,7 @@ function brokenInstall(format: FormatName): FormatAdapter {
     createGenerator: real.createGenerator.bind(real),
     parseJson: real.parseJson.bind(real),
     validateDocument: real.validateDocument.bind(real),
+    qualityCheck: real.qualityCheck.bind(real),
     generateSchema: real.generateSchema.bind(real),
     getBuiltinThemes: real.getBuiltinThemes.bind(real),
     resolveTheme: real.resolveTheme.bind(real),
