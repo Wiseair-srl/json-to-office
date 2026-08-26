@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { QUALITY_CODES } from '@json-to-office/shared';
-import { collectPptxQualityFindings } from './preflight';
+import { QUALITY_CODES } from '@json-to-office/quality';
+import { analyzePptxQuality, collectPptxQualityFindings } from './preflight';
 
 const CANVAS = { slideWidth: 13.333, slideHeight: 7.5 };
 
@@ -407,7 +407,7 @@ describe('robustness', () => {
     ).toEqual([]);
   });
 
-  it('never produces error severity — quality cannot move the gate', () => {
+  it('keeps the compatibility collector non-blocking', () => {
     const findings = collectPptxQualityFindings(
       deck({}, [
         {
@@ -432,5 +432,13 @@ describe('robustness', () => {
     for (const finding of findings) {
       expect(['warning', 'info']).toContain(finding.severity);
     }
+  });
+
+  it('does not hide policy/profile contract errors', () => {
+    expect(() =>
+      analyzePptxQuality(deck(CANVAS, []), {
+        profile: { id: 'reports-only', formats: ['docx'] },
+      })
+    ).toThrow('does not support format');
   });
 });

@@ -13,6 +13,7 @@ import { rateLimiter } from '../middleware/hono/rate-limit.js';
 import { AppEnv } from '../types/hono.js';
 import {
   type FormatAdapter,
+  type GeneratorOptions,
   PluginRegistry,
   PluginDiscoveryService,
 } from '@json-to-office/jto-cli';
@@ -46,6 +47,15 @@ import { inlineTemplateMedia } from '../services/template-media-inliner.js';
  */
 function throwIfClientError(error: unknown): void {
   const code = (error as { code?: unknown } | undefined)?.code;
+  if (code === 'QUALITY_GATE_FAILED') {
+    throw new HTTPException(400, {
+      message: (error as Error).message,
+      cause: error,
+    });
+  }
+  if (code === 'QUALITY_PROFILE_INCOMPATIBLE') {
+    throw new HTTPException(400, { message: (error as Error).message });
+  }
   if (
     code === 'UNSUPPORTED_RENDERER_FEATURE' ||
     code === 'UNCOMPILED_COMPONENT' ||
@@ -198,6 +208,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
         // sourceName mapping above may set it.
         const clientOptions = { ...(options as Record<string, unknown>) };
         delete clientOptions.baseDir;
+        delete clientOptions.prepared;
 
         const result = await generatorService.generate({
           jsonDefinition: effectiveDefinition,
@@ -255,14 +266,14 @@ export function createFormatRouter(adapter: FormatAdapter) {
     tbValidator(LooseDocumentValidationRequestSchema),
     async (c) => {
       const generatorService = getContainer().get('generatorService');
-      const { jsonDefinition } = getValidated<{ jsonDefinition: any }>(
-        c,
-        'json'
-      );
+      const { jsonDefinition, options } = getValidated<{
+        jsonDefinition: any;
+        options?: GeneratorOptions;
+      }>(c, 'json');
       const requestId = c.get('requestId');
 
       try {
-        const result = await generatorService.validate(jsonDefinition);
+        const result = await generatorService.validate(jsonDefinition, options);
         return c.json({
           success: result.valid,
           data: result,
@@ -270,6 +281,7 @@ export function createFormatRouter(adapter: FormatAdapter) {
         });
       } catch (error) {
         logger.error('Validation failed', { error, requestId });
+        throwIfClientError(error);
         throw error;
       }
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { QUALITY_CODES } from '@json-to-office/shared';
-import { collectDocxQualityFindings } from './preflight';
+import { QUALITY_CODES } from '@json-to-office/quality';
+import { analyzeDocxQuality, collectDocxQualityFindings } from './preflight';
 
 function doc(children: unknown[]) {
   return { name: 'docx', props: {}, children };
@@ -185,5 +185,13 @@ describe('robustness', () => {
         children: [null, { name: 'table', props: { columns: 'nope' } }],
       })
     ).toEqual([]);
+  });
+
+  it('does not hide policy/profile contract errors', () => {
+    expect(() =>
+      analyzeDocxQuality(doc([]), {
+        profile: { id: 'slides-only', formats: ['pptx'] },
+      })
+    ).toThrow('does not support format');
   });
 });

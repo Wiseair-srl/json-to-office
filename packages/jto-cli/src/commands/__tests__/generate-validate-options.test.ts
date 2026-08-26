@@ -160,6 +160,35 @@ describe('generate command contract', () => {
     expect(existsSync(output)).toBe(false);
   });
 
+  it('shares one prepared model between quality and rendering', async () => {
+    const adapter = new DocxFormatAdapter();
+    const prepareDocument = vi.spyOn(adapter, 'prepareDocument');
+    const analyzeQuality = vi.spyOn(adapter, 'analyzeQuality');
+    const createGenerator = vi
+      .spyOn(adapter, 'createGenerator')
+      .mockResolvedValue({
+        generateBuffer: async () => Buffer.from('preview'),
+        hasPlugins: false,
+        pluginNames: [],
+      });
+    const directory = mkdtempSync(join(tmpdir(), 'jto-prepared-'));
+    const input = join(directory, 'input.json');
+    writeFileSync(
+      input,
+      JSON.stringify({ name: 'docx', props: {}, children: [] })
+    );
+
+    await createGenerateCommand(adapter).parseAsync([input, '--dry-run'], {
+      from: 'user',
+    });
+
+    expect(prepareDocument).toHaveBeenCalledOnce();
+    const analyzed = analyzeQuality.mock.calls[0]?.[1]?.prepared;
+    const rendered = createGenerator.mock.calls[0]?.[1]?.prepared;
+    expect(analyzed).toBeDefined();
+    expect(rendered).toBe(analyzed);
+  });
+
   /** Run `generate --dry-run` with `flags` and return the spied createGenerator. */
   async function runWithFlags(prefix: string, flags: string[]) {
     const adapter = new DocxFormatAdapter();

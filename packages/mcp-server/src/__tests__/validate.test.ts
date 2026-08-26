@@ -383,6 +383,36 @@ describe('jto_validate', () => {
     }
   });
 
+  it('moves the gate when the run policy requests it', async () => {
+    const { result, isError } = await validate({
+      format: 'pptx',
+      document: {
+        name: 'pptx',
+        props: { slideWidth: 13.333, slideHeight: 7.5 },
+        children: [
+          {
+            name: 'slide',
+            children: [
+              { name: 'text', props: { text: 'Too small', fontSize: 5 } },
+            ],
+          },
+        ],
+      },
+      quality: { policy: { gate: 'warning' } },
+    });
+
+    expect(isError).toBeFalsy();
+    expect(result).toMatchObject({ ok: false, valid: false });
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'W_QUALITY_FONT_SIZE_MIN',
+        blocking: true,
+        source: 'quality',
+        certainty: 'measured',
+      })
+    );
+  });
+
   it('reports DOCX quality findings the same way', async () => {
     const { result } = await validate({
       format: 'docx',

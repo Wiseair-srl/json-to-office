@@ -19,7 +19,6 @@ import type { FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from './fontResolution';
 import { toRasterizeFontFaces } from '@json-to-office/shared/fonts/node';
 import { collectVisualProps } from './prerasterizeVisuals';
-import { normalizeDocument } from '../json/normalizer';
 import { desugarExternals } from './desugarExternals';
 import { loadImageResources } from './imageResources';
 import { compileDocument, type UnsupportedComponent } from '../ir/compiler';
@@ -29,13 +28,13 @@ import type { DocxRendererId } from '../renderers/types';
 import type { ThemeConfig } from '../styles';
 import type { ReportComponentDefinition } from '../types';
 import { resolveGenerationDate } from '../utils/packageDocument';
-import {
-  resolveThemeContext,
-  type GenerationThemeContext,
-} from './generationContext';
+import type { GenerationThemeContext } from './generationContext';
 import { runWithBaseDir, runWithWarnings } from '../utils/generationContext';
 import { applyLayout } from './layout';
-import { processDocument } from './structure';
+import { processResolvedDocument, resolveDocumentTree } from './structure';
+import { prepareDocxQualityDocument } from '../quality/facts';
+import type { DocxQualityFact, DocxQualityModel } from '../quality/facts';
+import type { PreparedDocument } from '@json-to-office/quality';
 
 export interface IrDocxGenerationOptions {
   customThemes?: Record<string, ThemeConfig>;
@@ -57,6 +56,8 @@ export interface IrDocxGenerationOptions {
    * export-mode pre-pass inside it rewrites the document.
    */
   context?: GenerationThemeContext;
+  /** Reuse the canonical prologue shared with quality analysis. */
+  prepared?: PreparedDocument<DocxQualityModel, DocxQualityFact>;
 }
 
 export interface IrDocxGenerationResult {
@@ -131,13 +132,16 @@ async function compileDocumentScoped(
   // expanded before anything reads the tree, exactly as every other caller
   // does. Skipping it would make the IR path see a different document from the
   // one the rest of the pipeline sees.
-  const context =
-    options.context ??
-    resolveThemeContext(normalizeDocument(document)[0], {
+  const prepared =
+    options.prepared ??
+    prepareDocxQualityDocument(document, {
       customThemes: options.customThemes,
       fonts: options.fonts,
       warnings,
+      context: options.context,
+      renderer: options.renderer,
     });
+  const { context } = prepared.model;
 
   // Fonts resolve for the LibreOffice preview stager's side-channel:
   // `resolveDocumentFonts` fires `fonts.onResolved` when a listener is
@@ -176,9 +180,13 @@ async function compileDocumentScoped(
   // One date for the whole build: the metadata Word shows, the `{DATE}` a
   // paragraph resolves and the timestamps the package is pinned to all have to
   // agree, or a document says it was made at two different moments.
-  const structure = await processDocument(
+  const resolved =
+    desugared === context.document
+      ? prepared.model.document
+      : resolveDocumentTree(desugared, context.theme);
+  const structure = await processResolvedDocument(
     desugared,
-    context.theme,
+    resolved,
     context.themeName,
     resolveGenerationDate(options)
   );

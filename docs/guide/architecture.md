@@ -40,6 +40,13 @@ Generation happens in three stages:
 
 This split is what makes the whole system predictable and testable: all dynamic logic lives in the expansion stage, every layout decision is resolved by the time the IR exists, and an adapter is a pure translation with no cascade or default left to apply. The IR is also testable on its own — you can snapshot a compiled document without loading a renderer at all.
 
+Before compilation, official hosts create one format-specific `PreparedDocument`.
+It contains the effective model, facts, renderer target, and provenance back to the
+authored JSON. Rendering and design-quality analysis consume that same object.
+`@json-to-office/quality` owns only rule orchestration, profiles, run policies, and
+diagnostics; the cores own DOCX/PPTX facts and built-in rules. See
+[Design-quality findings](/guide/validation#design-quality-findings).
+
 There is deliberately no single shared IR across the two formats. A Word document is a flowing stream of blocks inside sections; a PowerPoint deck is absolutely-positioned shapes on fixed-size slides. What the formats share is the _contract_ — how a backend is selected, how it declares capabilities, how unsupported features are reported — and that lives in `@json-to-office/shared`.
 
 ### Choosing a backend
@@ -100,18 +107,21 @@ A component can hold **multiple semver-keyed versions** with different props and
 
 The monorepo is layered strictly bottom-up: format-agnostic shared code, then per-format schemas, then per-format engines, then the public APIs, then the tooling.
 
-```
-shared
-  ├── shared-docx ──► core-docx ──► json-to-docx ─┐
-  └── shared-pptx ──► core-pptx ──► json-to-pptx ─┤
-                                                  ├──► jto (CLI + playground)
-                                                  └──► jto-cli (lean CLI)
+```text
+quality ─────────────────┬──► core-docx ──► json-to-docx ─┐
+shared ─► shared-docx ───┘                                │
+quality ─────────────────┬──► core-pptx ─► json-to-pptx ─┤
+shared ─► shared-pptx ───┘                                │
+                                                           ├──► jto / HTTP
+                                                           ├──► jto-cli
+                                                           └──► mcp-server
 ```
 
-All nine packages are published to npm under the `@json-to-office` scope (currently 0.20.0; `shared` is 0.16.0):
+The packages are published under the `@json-to-office` scope:
 
 | Package                        | Role                                                                           |
 | ------------------------------ | ------------------------------------------------------------------------------ |
+| `@json-to-office/quality`      | Format-agnostic quality contracts, rule engine, profiles, policy, and gating   |
 | `@json-to-office/shared`       | Format-agnostic shared types, schemas, validation, and the font system         |
 | `@json-to-office/shared-docx`  | DOCX component schemas, component registry, validation                         |
 | `@json-to-office/shared-pptx`  | PPTX component schemas, component registry, validation                         |

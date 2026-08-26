@@ -165,6 +165,79 @@ describe('/api/docx/renderers', () => {
     expect(body.error).toContain('"docxjs"');
     expect(body.error).toContain('"office-open"');
   }, 30_000);
+
+  it('returns evidence-rich quality gate failures as client errors', async () => {
+    const skippedHeading = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        { name: 'heading', props: { level: 1, text: 'One' } },
+        { name: 'heading', props: { level: 3, text: 'Deep' } },
+      ],
+    };
+    const quality = { policy: { gate: 'info' } };
+
+    const response = await post(app, '/api/docx/generate', {
+      jsonDefinition: skippedHeading,
+      options: { quality },
+    });
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as Record<string, any>;
+    expect(body).toMatchObject({
+      success: false,
+      code: 'QUALITY_GATE_FAILED',
+      quality: { blocked: true },
+    });
+    expect(body.quality.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'W_QUALITY_HEADING_SKIP',
+        blocking: true,
+        certainty: 'deterministic',
+      })
+    );
+
+    const validation = await post(app, '/api/docx/validate', {
+      jsonDefinition: skippedHeading,
+      options: { quality },
+    });
+    const validationBody = (await validation.json()) as Record<string, any>;
+    expect(validationBody).toMatchObject({
+      success: false,
+      data: {
+        valid: false,
+        qualityAnalysis: { blocked: true },
+      },
+    });
+  }, 30_000);
+
+  it('rejects a profile targeting another renderer', async () => {
+    const quality = {
+      profile: {
+        id: 'office-open-only',
+        formats: ['docx'],
+        rendererTargets: ['office-open'],
+      },
+    };
+    const generation = await post(app, '/api/docx/generate', {
+      jsonDefinition: document,
+      options: { renderer: 'docxjs', quality },
+    });
+    const validation = await post(app, '/api/docx/validate', {
+      jsonDefinition: document,
+      options: { renderer: 'docxjs', quality },
+    });
+
+    expect(generation.status).toBe(400);
+    expect(validation.status).toBe(400);
+    expect((await generation.json()) as Record<string, unknown>).toMatchObject({
+      success: false,
+      error: expect.stringContaining('does not support renderer'),
+    });
+    expect((await validation.json()) as Record<string, unknown>).toMatchObject({
+      success: false,
+      error: expect.stringContaining('does not support renderer'),
+    });
+  });
 });
 
 describe('/api/pptx/generate renderer validation', () => {

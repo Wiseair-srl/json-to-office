@@ -5,7 +5,7 @@
     "rootDir": "./src",
     "resolveJsonModule": true,
     "composite": true,
-    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
   },
   "include": ["src/**/*.ts", "src/**/*.json"],
   "exclude": [
@@ -13,10 +13,11 @@
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "**/__tests__/**"
+    "**/__tests__/**",
   ],
   "references": [
+    { "path": "../quality" },
     { "path": "../shared" },
-    { "path": "../shared-pptx" }
-  ]
+    { "path": "../shared-pptx" },
+  ],
 }

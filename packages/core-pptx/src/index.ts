@@ -56,8 +56,29 @@ export type { WarningCode } from './utils/warn';
 export { DEFAULT_PPTX_THEME, getPptxTheme, pptxThemes } from './themes';
 
 // Design-quality collectors (#216)
-export { collectPptxQualityFindings } from './quality/preflight';
-export type { PptxQualityOptions } from './quality/preflight';
+export {
+  analyzePptxQuality,
+  collectPptxQualityFindings,
+} from './quality/preflight';
+export type {
+  PptxQualityAnalysisOptions,
+  PptxQualityOptions,
+} from './quality/preflight';
+export {
+  preparePptxQualityDocument,
+  type PptxCanvasFact,
+  type PptxQualityFact,
+  type PptxQualityModel,
+  type PptxSlideFact,
+  type PptxTextFact,
+  type PreparePptxQualityOptions,
+} from './quality/facts';
+export {
+  PPTX_DEFAULT_QUALITY_PROFILE,
+  PPTX_QUALITY_PROFILES,
+  PPTX_QUALITY_RULES,
+  pptxQualityEngine,
+} from './quality/rules';
 
 // Plugin system
 export {

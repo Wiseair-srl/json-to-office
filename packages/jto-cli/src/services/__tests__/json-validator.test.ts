@@ -273,5 +273,20 @@ describe('JsonValidator quality findings', () => {
         }),
       ])
     );
+
+    const [gated] = await new JsonValidator('pptx', adapter).validate(
+      documentPath,
+      { quality: { policy: { gate: 'warning' } } }
+    );
+    expect(gated.valid).toBe(false);
+    expect(gated.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'W_QUALITY_FONT_SIZE_MIN',
+          source: 'quality',
+          certainty: 'measured',
+        }),
+      ])
+    );
   });
 });

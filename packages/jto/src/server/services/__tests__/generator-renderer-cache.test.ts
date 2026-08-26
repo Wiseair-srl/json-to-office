@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { QualityFinding, RendererStatus } from '@json-to-office/shared';
+import type { RendererStatus } from '@json-to-office/shared';
+import type {
+  PreparedDocument,
+  QualityAnalysis,
+  QualityFinding,
+} from '@json-to-office/quality';
 import {
   PluginRegistry,
   type FormatAdapter,
@@ -21,11 +26,15 @@ class RecordingAdapter implements FormatAdapter {
   readonly label = 'document';
   readonly defaultPort = 3003;
   readonly calls: string[] = [];
+  qualityCalls = 0;
+  prepareCalls = 0;
+  preparedRenderCalls = 0;
 
   async generateBuffer(
     json: unknown,
     options: GeneratorOptions
   ): Promise<Buffer> {
+    if (options.prepared) this.preparedRenderCalls += 1;
     const renderer =
       options.renderer ?? (json as { renderer?: string }).renderer ?? 'docxjs';
     this.calls.push(renderer);
@@ -54,6 +63,47 @@ class RecordingAdapter implements FormatAdapter {
         suggestion: 'Use the next level.',
       },
     ];
+  }
+
+  async analyzeQuality(
+    _document: unknown,
+    options: GeneratorOptions = {}
+  ): Promise<QualityAnalysis> {
+    this.qualityCalls += 1;
+    expect(options.prepared).toBeDefined();
+    const blocking = options.quality?.policy?.gate === 'info';
+    return {
+      diagnostics: [
+        {
+          source: 'quality',
+          ruleId: 'docx/heading-hierarchy',
+          code: 'W_QUALITY_HEADING_SKIP',
+          category: 'hierarchy',
+          certainty: 'deterministic',
+          severity: 'info',
+          message: 'Heading level skipped.',
+          path: '/children/0',
+          suggestion: 'Use the next level.',
+          blocking,
+        },
+      ],
+      counts: { error: 0, warning: 0, info: 1 },
+      blocked: blocking,
+      truncated: false,
+      suppressedCount: 0,
+      evaluatedRuleIds: ['docx/heading-hierarchy'],
+      ruleErrors: [],
+    };
+  }
+
+  async prepareDocument(document: unknown): Promise<PreparedDocument> {
+    this.prepareCalls += 1;
+    return {
+      format: 'docx',
+      model: document,
+      facts: [],
+      provenance: {},
+    };
   }
 
   generateSchema(): object {
@@ -149,6 +199,10 @@ describe('GeneratorService renderer cache isolation', () => {
           severity: 'info',
         },
       ],
+      qualityAnalysis: {
+        blocked: false,
+        evaluatedRuleIds: ['docx/heading-hierarchy'],
+      },
     });
 
     const first = await service.generate({ jsonDefinition: DOCUMENT });
@@ -167,5 +221,22 @@ describe('GeneratorService renderer cache isolation', () => {
     );
     expect(second.cached).toBe(true);
     expect(second.warnings).toEqual(first.warnings);
+    expect(adapter.qualityCalls).toBe(3);
+    expect(adapter.prepareCalls).toBe(3);
+    expect(adapter.preparedRenderCalls).toBe(1);
+  });
+
+  it('stops before rendering when policy gates a diagnostic', async () => {
+    await expect(
+      service.generate({
+        jsonDefinition: DOCUMENT,
+        options: { quality: { policy: { gate: 'info' } } },
+      })
+    ).rejects.toMatchObject({
+      code: 'QUALITY_GATE_FAILED',
+      analysis: { blocked: true },
+    });
+    expect(adapter.calls).toEqual([]);
+    expect(adapter.prepareCalls).toBe(1);
   });
 });

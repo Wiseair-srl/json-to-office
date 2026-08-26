@@ -115,8 +115,18 @@ export async function processDocument(
   themeName: string,
   generationDate?: Date
 ): Promise<ProcessedDocument> {
-  const metadata = createDocumentMetadata(document.props, generationDate);
   const resolved = resolveDocumentTree(document, theme);
+  return processResolvedDocument(document, resolved, themeName, generationDate);
+}
+
+/** Process a tree whose effective theme/default cascade is already resolved. */
+export async function processResolvedDocument(
+  document: ReportComponentDefinition,
+  resolved: ResolvedDocumentTree,
+  themeName: string,
+  generationDate?: Date
+): Promise<ProcessedDocument> {
+  const metadata = createDocumentMetadata(document.props, generationDate);
   const effectiveTheme = resolved.theme;
 
   // Create context with effective theme so section-title headings

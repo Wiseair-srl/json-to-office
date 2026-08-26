@@ -26,7 +26,6 @@ import type {
 } from '../types';
 import { isPresentationComponent } from '../types';
 import { resolveDocumentFonts } from './fontResolution';
-import { resolveThemeContext } from './generationContext';
 import {
   assertNoContentConflicts,
   assertValidPresentationForGeneration,
@@ -34,7 +33,7 @@ import {
 } from './generationOptions';
 import { expandHighchartsComponents } from './expandHighcharts';
 import { resolveImageLayout } from './resolveImageLayout';
-import { processPresentation } from './structure';
+import { preparePptxQualityDocument } from '../quality/facts';
 
 /** Alias kept for readability at call sites inside the IR pipeline. */
 export type IrGenerationOptions = GenerationOptions;
@@ -94,21 +93,21 @@ export async function compileDocumentToIr(
   );
   const warnings: PipelineWarning[] = [];
 
-  const context = resolveThemeContext(component, {
-    customThemes: options?.customThemes,
-    fonts: options?.fonts,
-    warnings,
-  });
+  const prepared =
+    options?.prepared ??
+    preparePptxQualityDocument(component, {
+      customThemes: options?.customThemes,
+      fonts: options?.fonts,
+      warnings,
+      services: options?.services,
+      renderer: selectedRenderer,
+    });
 
-  assertNoContentConflicts(context.document);
+  assertNoContentConflicts(prepared.model.document);
 
   const result = await runWithBaseDir(options?.baseDir, async () => {
-    const processed = processPresentation(context.document, {
-      ...options,
-      theme: context.theme,
-    });
     const expansion = await expandHighchartsComponents(
-      processed,
+      prepared.model.processed,
       options?.services?.highcharts,
       warnings
     );
@@ -146,19 +145,23 @@ export async function generateBufferViaIr(
   );
   const warnings: PipelineWarning[] = [];
 
-  const context = resolveThemeContext(component, {
-    customThemes: options?.customThemes,
-    fonts: options?.fonts,
-    warnings,
-  });
+  const prepared =
+    options?.prepared ??
+    preparePptxQualityDocument(component, {
+      customThemes: options?.customThemes,
+      fonts: options?.fonts,
+      warnings,
+      services: options?.services,
+      renderer: selectedRenderer,
+    });
 
-  assertNoContentConflicts(context.document);
+  assertNoContentConflicts(prepared.model.document);
 
   // Fires `fonts.onResolved` for the preview stager, exactly as the legacy
   // path does. The PPTX itself never embeds font bytes.
   await resolveDocumentFonts(
-    context.document,
-    context.theme,
+    prepared.model.document,
+    prepared.model.theme,
     warnings,
     options?.fonts
   );
@@ -166,14 +169,7 @@ export async function generateBufferViaIr(
   // Relative asset paths are resolved during compilation, so the base-directory
   // scope has to span it (#142).
   const buffer = await runWithBaseDir(options?.baseDir, () =>
-    renderProcessedViaIr(
-      processPresentation(context.document, {
-        ...effectiveOptions,
-        theme: context.theme,
-      }),
-      warnings,
-      effectiveOptions
-    )
+    renderProcessedViaIr(prepared.model.processed, warnings, effectiveOptions)
   );
 
   return { buffer, warnings };

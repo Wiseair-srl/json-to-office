@@ -1,0 +1,47 @@
+export {
+  QUALITY_CODES,
+  type BuiltInQualityCode,
+  type DiagnosticSeverity,
+  type DiagnosticSource,
+  type DocumentDiagnostic,
+  type JsonPatchOperation,
+  type PreparedDocument,
+  type ProvenanceMap,
+  type QualityAnalysis,
+  type QualityCategory,
+  type QualityCertainty,
+  type QualityCode,
+  type QualityCounts,
+  type QualityDiagnostic,
+  type QualityEvidence,
+  type QualityFact,
+  type QualityFinding,
+  type QualityFindingSeverity,
+  type QualityGate,
+  type QualityPolicy,
+  type QualityProfile,
+  type QualityRule,
+  type QualityRuleConfiguration,
+  type QualityRuleContext,
+  type QualityRuleError,
+  type QualityRuleFinding,
+  type QualityRulePack,
+  type QualitySuppression,
+  type ResolvedQualityRuleConfiguration,
+  type SourceReference,
+} from './types';
+
+export {
+  isBlocking,
+  isSuppressed,
+  resolveRuleConfiguration,
+  severityRank,
+} from './policy';
+export { DuplicateQualityRuleError, QualityRuleRegistry } from './registry';
+export {
+  QualityEngine,
+  QualityGateError,
+  QualityProfileError,
+  qualitySeverityCounts,
+  type QualityAnalyzeOptions,
+} from './engine';

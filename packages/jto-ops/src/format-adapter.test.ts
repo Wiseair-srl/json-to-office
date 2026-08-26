@@ -96,6 +96,63 @@ describe('PptxFormatAdapter.qualityCheck', () => {
   });
 });
 
+describe('prepared document reuse', () => {
+  it('shares one canonical DOCX model with analysis and rendering', async () => {
+    const adapter = new DocxFormatAdapter();
+    const document = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [{ name: 'paragraph', props: { text: 'Prepared once.' } }],
+    };
+    const prepared = await adapter.prepareDocument(document);
+    expect(prepared.renderer).toBe('docxjs');
+    const analysis = await adapter.analyzeQuality(document, { prepared });
+    const direct = await adapter.generateBuffer(document, {
+      deterministic: true,
+    });
+    const reused = await adapter.generateBuffer(document, {
+      deterministic: true,
+      prepared,
+    });
+    const generator = await adapter.createGenerator([], {
+      deterministic: true,
+      prepared,
+    });
+    const reusedByGenerator = await generator.generateBuffer(document);
+
+    expect(analysis.ruleErrors).toEqual([]);
+    expect(reused.equals(direct)).toBe(true);
+    expect(reusedByGenerator.equals(direct)).toBe(true);
+  });
+
+  it('shares one canonical PPTX model with analysis and rendering', async () => {
+    const adapter = new PptxFormatAdapter();
+    const document = {
+      ...deck({ text: 'Prepared once.', x: 1, y: 1, w: 4, h: 1 }),
+      props: { slideWidth: 13.333, slideHeight: 7.5 },
+    };
+    const prepared = await adapter.prepareDocument(document);
+    expect(prepared.renderer).toBe('pptxgenjs');
+    const analysis = await adapter.analyzeQuality(document, { prepared });
+    const direct = await adapter.generateBuffer(document, {
+      deterministic: true,
+    });
+    const reused = await adapter.generateBuffer(document, {
+      deterministic: true,
+      prepared,
+    });
+    const generator = await adapter.createGenerator([], {
+      deterministic: true,
+      prepared,
+    });
+    const reusedByGenerator = await generator.generateBuffer(document);
+
+    expect(analysis.ruleErrors).toEqual([]);
+    expect(reused.equals(direct)).toBe(true);
+    expect(reusedByGenerator.equals(direct)).toBe(true);
+  });
+});
+
 describe('DocxFormatAdapter.validateDocument', () => {
   it('returns real schema errors', () => {
     const result = new DocxFormatAdapter().validateDocument({

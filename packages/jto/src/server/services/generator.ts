@@ -1,5 +1,6 @@
 import {
   type FormatAdapter,
+  type GeneratorOptions,
   cacheEvents,
   PluginRegistry,
 } from '@json-to-office/jto-cli';
@@ -16,20 +17,54 @@ import {
   type FontRegistryEntry,
   type ResolvedFont,
   type GenerationWarning,
-  type QualityFinding,
 } from '@json-to-office/shared';
+import {
+  QualityGateError,
+  type QualityAnalysis,
+  type QualityDiagnostic,
+  type QualityFinding,
+} from '@json-to-office/quality';
 
-function toQualityWarnings(findings: QualityFinding[]): GenerationWarning[] {
+type QualityWarningInput = QualityFinding | QualityDiagnostic;
+
+function toQualityWarnings(
+  findings: readonly QualityWarningInput[]
+): GenerationWarning[] {
   return findings.map((finding) => ({
     component: 'quality',
     message: `[${finding.code}] ${finding.message}`,
-    severity: finding.severity,
+    severity: finding.severity === 'info' ? 'info' : 'warning',
     context: {
       code: finding.code,
       path: finding.path,
+      originalSeverity: finding.severity,
+      ...(finding.ruleId && { ruleId: finding.ruleId }),
+      ...(finding.category && { category: finding.category }),
+      ...(finding.certainty && { certainty: finding.certainty }),
+      ...('blocking' in finding && { blocking: finding.blocking }),
       ...(finding.suggestion && { suggestion: finding.suggestion }),
+      ...(finding.relatedPaths && { relatedPaths: finding.relatedPaths }),
+      ...(finding.evidence && { evidence: finding.evidence }),
+      ...(finding.fixes && { fixes: finding.fixes }),
       ...(finding.context ?? {}),
     },
+  }));
+}
+
+function analysisToFindings(analysis: QualityAnalysis): QualityFinding[] {
+  return analysis.diagnostics.map((diagnostic) => ({
+    code: diagnostic.code,
+    severity: diagnostic.severity === 'info' ? 'info' : 'warning',
+    message: diagnostic.message,
+    path: diagnostic.path,
+    suggestion: diagnostic.suggestion,
+    context: diagnostic.context ? { ...diagnostic.context } : undefined,
+    ruleId: diagnostic.ruleId,
+    category: diagnostic.category,
+    certainty: diagnostic.certainty,
+    relatedPaths: diagnostic.relatedPaths,
+    evidence: diagnostic.evidence,
+    fixes: diagnostic.fixes,
   }));
 }
 
@@ -429,6 +464,73 @@ export class GeneratorService {
       'string'
         ? (options as { renderer: string }).renderer
         : undefined;
+    const resolvedFonts: ResolvedFont[] = [];
+    const coreWarnings: GenerationWarning[] = [];
+    const needsFontOpts =
+      extraEntries.length > 0 ||
+      declaresRegistry ||
+      fontMode !== undefined ||
+      fontSubstitution !== undefined ||
+      callerStrict !== undefined;
+    const fontOpts = needsFontOpts
+      ? {
+          ...(extraEntries.length > 0 && { extraEntries }),
+          ...(fontMode && { mode: fontMode }),
+          ...(fontSubstitution && { substitution: fontSubstitution }),
+          ...(callerStrict !== undefined && { strict: callerStrict }),
+          onResolved: (resolved: ResolvedFont[]) => {
+            resolvedFonts.push(...resolved);
+          },
+        }
+      : undefined;
+    const registry = PluginRegistry.getInstance();
+    const quality = (options as { quality?: GeneratorOptions['quality'] })
+      ?.quality;
+    const prepared =
+      !registry.hasPlugins() &&
+      this.adapter.prepareDocument &&
+      this.adapter.validateDocument(config).valid
+        ? await this.adapter.prepareDocument(config, {
+            customThemes,
+            fonts: fontOpts,
+            baseDir,
+            renderer,
+            warnings: coreWarnings,
+          })
+        : undefined;
+    const qualityOptions: GeneratorOptions = {
+      customThemes,
+      fonts: fontOpts,
+      baseDir,
+      renderer,
+      quality,
+      prepared,
+    };
+    let qualityWarnings: GenerationWarning[] = [];
+    try {
+      if (this.adapter.analyzeQuality) {
+        const analysis = await this.adapter.analyzeQuality(
+          config,
+          qualityOptions
+        );
+        if (analysis.blocked) throw new QualityGateError(analysis);
+        qualityWarnings = toQualityWarnings(analysis.diagnostics);
+      } else if (this.adapter.qualityCheck) {
+        qualityWarnings = toQualityWarnings(
+          await this.adapter.qualityCheck(config, qualityOptions)
+        );
+      }
+    } catch (error) {
+      const errorCode = (error as { code?: unknown } | undefined)?.code;
+      if (
+        errorCode === 'QUALITY_GATE_FAILED' ||
+        errorCode === 'QUALITY_PROFILE_INCOMPATIBLE' ||
+        quality?.policy?.onRuleError === 'throw'
+      ) {
+        throw error;
+      }
+      logger.warn('Quality analysis failed', { error });
+    }
     const cacheKeyData = {
       config,
       customThemes:
@@ -456,10 +558,13 @@ export class GeneratorService {
           filename: `${config.metadata?.title || this.adapter.label}${this.adapter.extension}`,
           fileId: Date.now().toString(),
           buffer: cached.buffer,
-          // Warnings ride along with the bytes: a cache hit describes the same
-          // document, so it must report the same font problems.
+          // Render warnings ride with bytes. Quality is request policy, so it
+          // is recomputed and merged even when the rendered artifact is cached.
           cached: true,
-          warnings: cached.warnings,
+          warnings:
+            cached.warnings || qualityWarnings.length > 0
+              ? [...(cached.warnings ?? []), ...qualityWarnings]
+              : null,
         };
       }
     }
@@ -468,43 +573,7 @@ export class GeneratorService {
     logger.info(`Generating ${this.adapter.label}`, {
       title: config.metadata?.title,
     });
-    const registry = PluginRegistry.getInstance();
     let buffer: Buffer;
-
-    const resolvedFonts: ResolvedFont[] = [];
-    // Forward fonts.mode + fonts.substitution + fonts.strict from the
-    // request body so API consumers can opt into substitution, custom
-    // (as-is), or strict-validation behaviour. Embedding is no longer
-    // supported. `extraEntries` is authoritative in this flow:
-    // caller-supplied entries were merged with auto-Google entries above
-    // and are passed down unified here.
-    // `declaresRegistry` (computed above, next to `bypassCache`) is what keeps
-    // a document-declared registry from falling through every branch here:
-    // without it the preview's `onResolved` listener is never registered,
-    // `resolveDocumentFonts` short-circuits, and an uploaded font is validated
-    // but never materialized — the preview then uses a host fallback.
-    const needsFontOpts =
-      extraEntries.length > 0 ||
-      declaresRegistry ||
-      fontMode !== undefined ||
-      fontSubstitution !== undefined ||
-      callerStrict !== undefined;
-    const fontOpts = needsFontOpts
-      ? {
-          ...(extraEntries.length > 0 && { extraEntries }),
-          ...(fontMode && { mode: fontMode }),
-          ...(fontSubstitution && { substitution: fontSubstitution }),
-          ...(callerStrict !== undefined && { strict: callerStrict }),
-          onResolved: (r: ResolvedFont[]) => {
-            resolvedFonts.push(...r);
-          },
-        }
-      : undefined;
-
-    // Per-request sink for core warnings. `createGenerator` is invoked per
-    // request just below, so one generator never accumulates another
-    // request's warnings.
-    const coreWarnings: GenerationWarning[] = [];
 
     if (registry.hasPlugins()) {
       const plugins = registry.getPlugins();
@@ -514,6 +583,7 @@ export class GeneratorService {
         baseDir,
         renderer,
         warnings: coreWarnings,
+        quality,
       });
       buffer = await generator.generateBuffer(config);
     } else {
@@ -523,18 +593,9 @@ export class GeneratorService {
         baseDir,
         renderer,
         warnings: coreWarnings,
+        quality,
+        prepared,
       });
-    }
-
-    let qualityWarnings: GenerationWarning[] = [];
-    if (this.adapter.qualityCheck) {
-      try {
-        qualityWarnings = toQualityWarnings(
-          await this.adapter.qualityCheck(config, { customThemes })
-        );
-      } catch (error) {
-        logger.warn('Quality analysis failed', { error });
-      }
     }
 
     // Surface non-canonical fontWeight values (e.g. 450, 550) — the render
@@ -562,14 +623,18 @@ export class GeneratorService {
 
     // Core first: FONT_UNRESOLVED is actionable and should read above the
     // informational FONT_OVERRIDE_LOCAL / FONT_NONCANONICAL_WEIGHT entries.
-    const allWarnings = [...coreWarnings, ...qualityWarnings, ...extraWarnings];
+    const renderWarnings = [...coreWarnings, ...extraWarnings];
+    const allWarnings = [...renderWarnings, ...qualityWarnings];
 
-    // Store in cache — buffer and warnings together, so a later HIT is not a
-    // silent render. `resolvedFonts` deliberately stays out: it is a TTF byte
-    // side-channel, and its only consumer passes `bypassCache: true`.
+    // Cache renderer output only. Quality depends on request policy/profile
+    // and is recomputed before every HIT. `resolvedFonts` stays out: it is a
+    // TTF byte side-channel whose consumer passes `bypassCache: true`.
     this.cacheService.set(
       cacheKey,
-      { buffer, warnings: allWarnings.length > 0 ? allWarnings : null },
+      {
+        buffer,
+        warnings: renderWarnings.length > 0 ? renderWarnings : null,
+      },
       config,
       { bypassCache: bypassCache || hasDynamicContent }
     );
@@ -584,10 +649,14 @@ export class GeneratorService {
     };
   }
 
-  async validate(jsonDefinition: any): Promise<{
+  async validate(
+    jsonDefinition: any,
+    options: GeneratorOptions = {}
+  ): Promise<{
     valid: boolean;
     errors?: any[];
     quality: QualityFinding[];
+    qualityAnalysis?: QualityAnalysis;
   }> {
     const config =
       typeof jsonDefinition === 'string'
@@ -595,8 +664,24 @@ export class GeneratorService {
         : jsonDefinition;
 
     const result = this.adapter.validateDocument(config);
+    if (this.adapter.analyzeQuality) {
+      const prepared =
+        result.valid && this.adapter.prepareDocument
+          ? await this.adapter.prepareDocument(config, options)
+          : undefined;
+      const qualityAnalysis = await this.adapter.analyzeQuality(
+        config,
+        prepared ? { ...options, prepared } : options
+      );
+      return {
+        ...result,
+        valid: result.valid && !qualityAnalysis.blocked,
+        quality: analysisToFindings(qualityAnalysis),
+        qualityAnalysis,
+      };
+    }
     const quality = this.adapter.qualityCheck
-      ? await this.adapter.qualityCheck(config)
+      ? await this.adapter.qualityCheck(config, options)
       : [];
     return { ...result, quality };
   }

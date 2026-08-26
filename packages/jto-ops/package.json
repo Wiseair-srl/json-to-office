@@ -32,6 +32,7 @@
   "dependencies": {
     "@json-to-office/core-docx": "workspace:^",
     "@json-to-office/core-pptx": "workspace:^",
+    "@json-to-office/quality": "workspace:^",
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-docx": "workspace:^",
     "@json-to-office/shared-pptx": "workspace:^",

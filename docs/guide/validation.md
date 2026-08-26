@@ -190,9 +190,9 @@ Each warning is a `PipelineWarning`:
 
 ## Design-quality findings
 
-Schema-valid is not well-designed: a text box overflowing its bounds by 60×, a deck silently rendered on the 4:3 fallback canvas, or forty lines of prose on one slide all validate clean. The cores therefore ship quality collectors — `collectPptxQualityFindings` and `collectDocxQualityFindings` — that lint the design layer deterministically, before any render. MCP, CLI and HTTP validation run them beside structural validation; playground generation shows them in its warnings panel.
+Schema-valid is not well-designed: a text box overflowing its bounds by 60×, a deck silently rendered on the 4:3 fallback canvas, or forty lines of prose on one slide all validate clean. `@json-to-office/quality` supplies the format-agnostic engine, profiles, policies, evidence, and gate; each core supplies format facts and rules. `analyzePptxQuality` / `analyzeDocxQuality` return the rich result. The old `collect*QualityFindings` functions remain as non-blocking compatibility facades.
 
-Findings are path-addressed like validation errors, carry a `suggestion` and the measured values behind the verdict in `context`, and are **never errors**: `warning` means the defect almost certainly shows in the rendered result, `info` means worth a look. Generation is not gated on taste.
+Diagnostics are path-addressed like validation errors and carry category, certainty, evidence, a suggestion, and optional RFC 6902 fixes. Severity does not pretend certainty: `estimated` remains estimated even when policy promotes it to an error. Quality is advisory by default; an explicit run policy can gate `error`, `warning`, or `info` diagnostics.
 
 | Code                             | Severity | Meaning                                                                                                          |
 | -------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -206,7 +206,25 @@ Findings are path-addressed like validation errors, carry a `suggestion` and the
 | `W_QUALITY_TABLE_WIDTH_OVERFLOW` | warning  | DOCX: combined fixed and percentage column widths exceed the usable width of their actual section.               |
 | `W_QUALITY_HEADING_SKIP`         | info     | DOCX: a heading level jumps down more than one step, breaking the document outline.                              |
 
-The collectors reuse renderer normalization — effective themes, component defaults, templates, placeholders, grids, disabled state and section page overrides — instead of rebuilding it from authored JSON. They are calibrated so stock templates pass warning-clean (`quality-calibration.test.ts` pins that). Text using `runs` or no declared box is skipped rather than guessed at.
+Official adapters build one `PreparedDocument` with effective themes, defaults, templates, placeholders, grids, disabled state, renderer, facts, and authored-path provenance. Analysis and rendering reuse it. The five initial profiles and their poor/professional/excellent acceptance cases are pinned by `quality-reference-corpus.test.ts`; stock templates remain warning-clean. Text using `runs` or no declared box is skipped rather than guessed at.
+
+```bash
+jto pptx validate deck.json --quality-gate warning
+jto docx generate report.json \
+  --quality-profile executive-report.json \
+  --quality-policy ci-quality-policy.json
+```
+
+HTTP generation and validation accept the same shape under `options.quality`:
+
+```json
+{
+  "quality": {
+    "profile": { "id": "executive-presentation", "formats": ["pptx"] },
+    "policy": { "gate": "warning" }
+  }
+}
+```
 
 ## Validating from the CLI
 

@@ -80,8 +80,28 @@ export * from './utils/formatters';
 export { isNodeEnvironment, hasNodeBuiltins } from './utils/environment';
 
 // Design-quality collectors (#216)
-export { collectDocxQualityFindings } from './quality/preflight';
-export type { DocxQualityOptions } from './quality/preflight';
+export {
+  analyzeDocxQuality,
+  collectDocxQualityFindings,
+} from './quality/preflight';
+export type {
+  DocxQualityAnalysisOptions,
+  DocxQualityOptions,
+} from './quality/preflight';
+export {
+  prepareDocxQualityDocument,
+  type DocxHeadingFact,
+  type DocxQualityFact,
+  type DocxQualityModel,
+  type DocxTableWidthFact,
+  type PrepareDocxQualityOptions,
+} from './quality/facts';
+export {
+  DOCX_DEFAULT_QUALITY_PROFILE,
+  DOCX_QUALITY_PROFILES,
+  DOCX_QUALITY_RULES,
+  docxQualityEngine,
+} from './quality/rules';
 export {
   generateWarningsDocument,
   formatWarningsText,

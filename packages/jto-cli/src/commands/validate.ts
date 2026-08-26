@@ -13,8 +13,13 @@ import {
   writeJson,
   EXIT_CODES,
 } from './ui.js';
+import {
+  loadQualityOptions,
+  parseQualityGate,
+  type QualityCommandOptions,
+} from './quality-options.js';
 
-interface ValidateCommandOptions {
+interface ValidateCommandOptions extends QualityCommandOptions {
   type?: 'document' | 'theme' | 'auto';
   schema?: string;
   strict?: boolean;
@@ -47,6 +52,13 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
       '-r, --recursive',
       'Validate all JSON files in directory recursively'
     )
+    .option('--quality-profile <path>', 'JSON design profile')
+    .option('--quality-policy <path>', 'JSON run policy')
+    .option(
+      '--quality-gate <severity>',
+      'Gate: none, error, warning, or info',
+      parseQualityGate
+    )
     .action(
       async (fileOrDirectory: string, options: ValidateCommandOptions) => {
         const validator = new JsonValidator(adapter.name, adapter);
@@ -63,6 +75,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
               schema: options.schema,
               strict: options.strict,
               recursive: options.recursive,
+              quality: loadQualityOptions(options),
             });
           };
 
@@ -148,6 +161,7 @@ ${chalk.gray('Examples:')}
   $ jto ${adapter.name} validate theme.json --type theme
   $ jto ${adapter.name} validate ./documents --recursive
   $ jto ${adapter.name} validate document.json --format json
+  $ jto ${adapter.name} validate document.json --quality-gate warning
 `
     );
 }

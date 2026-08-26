@@ -1,7 +1,11 @@
 import { readFileSync, statSync, readdirSync } from 'fs';
 import { resolve, join, extname } from 'path';
 import { glob } from 'glob';
-import type { FormatAdapter, FormatName } from '@json-to-office/jto-ops';
+import type {
+  FormatAdapter,
+  FormatName,
+  GeneratorOptions,
+} from '@json-to-office/jto-ops';
 
 export interface ValidationError {
   path: string;
@@ -11,6 +15,13 @@ export interface ValidationError {
   column?: number;
   suggestion?: string;
   value?: any;
+  source?: string;
+  ruleId?: string;
+  category?: string;
+  certainty?: string;
+  relatedPaths?: readonly string[];
+  evidence?: unknown;
+  fixes?: readonly unknown[];
 }
 
 export interface ValidateFileResult {
@@ -26,6 +37,7 @@ export interface ValidateOptions {
   schema?: string;
   strict?: boolean;
   recursive?: boolean;
+  quality?: GeneratorOptions['quality'];
 }
 
 export class JsonValidator {
@@ -96,7 +108,7 @@ export class JsonValidator {
           filePath,
           jsonData,
           content,
-          options.strict
+          options
         );
       } else if (validationType === 'theme') {
         return await this.validateAsTheme(
@@ -138,40 +150,68 @@ export class JsonValidator {
     filePath: string,
     jsonData: any,
     jsonString: string,
-    strict?: boolean
+    options: ValidateOptions
   ): Promise<ValidateFileResult> {
     try {
       const { validate, validateStrict } =
         this.format === 'docx'
           ? await import('@json-to-office/shared-docx')
           : await import('@json-to-office/shared-pptx');
-      const validator = strict ? validateStrict : validate;
+      const validator = options.strict ? validateStrict : validate;
       const result = validator.jsonDocument(jsonString);
       const schemaWarnings = (result as any).warnings?.map((e: any) => ({
         ...e,
         code: e.code || 'WARNING',
       }));
-      const quality = this.adapter?.qualityCheck
-        ? await this.adapter.qualityCheck(jsonData)
+      const analysis = this.adapter?.analyzeQuality
+        ? await this.adapter.analyzeQuality(jsonData, {
+            quality: options.quality,
+          })
+        : undefined;
+      const quality = analysis
+        ? analysis.diagnostics
+        : this.adapter?.qualityCheck
+          ? await this.adapter.qualityCheck(jsonData)
+          : [];
+      const qualityEntries = quality.map((finding) => ({
+        path: finding.path,
+        message: finding.message,
+        code: finding.code,
+        suggestion: finding.suggestion,
+        value: finding.context,
+        ...('source' in finding && { source: finding.source }),
+        ...('ruleId' in finding && { ruleId: finding.ruleId }),
+        ...('category' in finding && { category: finding.category }),
+        ...('certainty' in finding && { certainty: finding.certainty }),
+        ...('relatedPaths' in finding && {
+          relatedPaths: finding.relatedPaths,
+        }),
+        ...('evidence' in finding && { evidence: finding.evidence }),
+        ...('fixes' in finding && { fixes: finding.fixes }),
+      }));
+      const qualityErrors = analysis?.blocked
+        ? qualityEntries.filter(
+            (_, index) => analysis.diagnostics[index].blocking
+          )
         : [];
-      const warnings = [
-        ...(schemaWarnings ?? []),
-        ...quality.map((finding) => ({
-          path: finding.path,
-          message: finding.message,
-          code: finding.code,
-          suggestion: finding.suggestion,
-          value: finding.context,
-        })),
+      const qualityWarnings = analysis?.blocked
+        ? qualityEntries.filter(
+            (_, index) => !analysis.diagnostics[index].blocking
+          )
+        : qualityEntries;
+      const warnings = [...(schemaWarnings ?? []), ...qualityWarnings];
+      const errors = [
+        ...(result.errors?.map((e: any) => ({
+          ...e,
+          code: e.code || 'VALIDATION_ERROR',
+        })) ?? []),
+        ...qualityErrors,
       ];
       return {
         file: filePath,
-        valid: result.valid,
+        valid: result.valid && !analysis?.blocked,
         type: 'document',
-        errors: result.errors?.map((e: any) => ({
-          ...e,
-          code: e.code || 'VALIDATION_ERROR',
-        })),
+        ...(errors.length > 0 && { errors }),
         ...(warnings.length > 0 && { warnings }),
       };
     } catch (error: any) {

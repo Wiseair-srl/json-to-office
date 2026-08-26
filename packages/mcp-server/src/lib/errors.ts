@@ -14,9 +14,16 @@ import {
 } from '@json-to-office/jto-ops';
 import {
   RENDERER_DEPENDENCY_MISSING,
-  type QualityFinding,
   type ValidationError,
 } from '@json-to-office/shared';
+import type {
+  JsonPatchOperation,
+  QualityAnalysis,
+  QualityCategory,
+  QualityCertainty,
+  QualityEvidence,
+  QualityFinding,
+} from '@json-to-office/quality';
 import { ValueErrorType } from '@sinclair/typebox/errors';
 
 export type DiagnosticSeverity = 'error' | 'warning' | 'info';
@@ -39,6 +46,14 @@ export interface Diagnostic {
   suggestion?: string;
   /** Free-form extras (offending value, component name, renderer id, …). */
   context?: Record<string, unknown>;
+  source?: 'schema' | 'semantic' | 'renderer' | 'quality';
+  ruleId?: string;
+  category?: QualityCategory;
+  certainty?: QualityCertainty;
+  relatedPaths?: readonly string[];
+  evidence?: QualityEvidence;
+  fixes?: readonly JsonPatchOperation[];
+  blocking?: boolean;
 }
 
 /**
@@ -576,6 +591,38 @@ export function qualityDiagnostics(
       suggestion: finding.suggestion,
     }),
     ...(finding.context !== undefined && { context: finding.context }),
+  }));
+}
+
+/** Preserve the autonomous quality package's evidence-rich diagnostics. */
+export function qualityAnalysisDiagnostics(
+  analysis: QualityAnalysis
+): Diagnostic[] {
+  return analysis.diagnostics.map((diagnostic) => ({
+    source: diagnostic.source,
+    ruleId: diagnostic.ruleId,
+    category: diagnostic.category,
+    certainty: diagnostic.certainty,
+    severity: diagnostic.severity,
+    code: diagnostic.code,
+    message: diagnostic.message,
+    path: diagnostic.path,
+    blocking: diagnostic.blocking,
+    ...(diagnostic.suggestion !== undefined && {
+      suggestion: diagnostic.suggestion,
+    }),
+    ...(diagnostic.context !== undefined && {
+      context: { ...diagnostic.context },
+    }),
+    ...(diagnostic.relatedPaths !== undefined && {
+      relatedPaths: diagnostic.relatedPaths,
+    }),
+    ...(diagnostic.evidence !== undefined && {
+      evidence: { ...diagnostic.evidence },
+    }),
+    ...(diagnostic.fixes !== undefined && {
+      fixes: diagnostic.fixes,
+    }),
   }));
 }
 
