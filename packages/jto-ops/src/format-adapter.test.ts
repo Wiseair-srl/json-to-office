@@ -4,6 +4,7 @@ import { createComponent, createVersion } from '@json-to-office/core-docx';
 import {
   createComponent as createPptxComponent,
   createVersion as createPptxVersion,
+  pptxThemes,
 } from '@json-to-office/core-pptx';
 import type { GenerationWarning } from '@json-to-office/shared';
 import { DocxFormatAdapter, PptxFormatAdapter } from './format-adapter';
@@ -65,6 +66,33 @@ describe('PptxFormatAdapter.validateDocument', () => {
     expect(
       adapter.validateDocument({ ...transition, renderer: 'office-open' }).valid
     ).toBe(true);
+  });
+});
+
+describe('PptxFormatAdapter.qualityCheck', () => {
+  it('resolves the same custom theme options as generation', async () => {
+    const tinyTheme = {
+      ...pptxThemes.minimal,
+      name: 'tiny',
+      defaults: { ...pptxThemes.minimal.defaults, fontSize: 6 },
+    };
+    const document = {
+      ...deck({ text: 'Unreadable by theme' }),
+      props: {
+        theme: 'tiny',
+        slideWidth: 13.333,
+        slideHeight: 7.5,
+      },
+    };
+
+    const findings = await new PptxFormatAdapter().qualityCheck(document, {
+      customThemes: { tiny: tinyTheme },
+    });
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'W_QUALITY_FONT_SIZE_MIN' }),
+      ])
+    );
   });
 });
 

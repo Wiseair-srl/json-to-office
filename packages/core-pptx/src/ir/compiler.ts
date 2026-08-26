@@ -24,7 +24,6 @@ import {
 import type { TextSegment } from '@json-to-office/shared-pptx';
 import { PATTERN_FILL_PRESETS } from '@json-to-office/shared-pptx';
 import type {
-  GridConfig,
   PipelineWarning,
   PptxComponentInput,
   PptxThemeConfig,
@@ -36,16 +35,14 @@ import type {
 } from '../types';
 import { definedChartColorTokens, resolveColor } from '../utils/color';
 import { applyFontWeight } from '../utils/fontAliasContext';
-import { getDefaultsForType } from '../utils/componentDefaults';
-import { resolveComponentDefaults } from '../utils/resolveComponentTree';
 import { resolveImageSource, safeLocalPath } from '../utils/imageSource';
 import {
   HYPERLINK_SLIDE_UNRESOLVED,
   type HyperlinkProps,
 } from '../utils/hyperlink';
 import { mergeGridConfigs, resolveComponentGridPosition } from '../core/grid';
-import { mergeWithDefaults } from '@json-to-office/shared';
 import { W, warn } from '../utils/warn';
+import { resolvePlaceholderComponents } from '../core/placeholders';
 import type { PptxFeature } from './features';
 import {
   ResourceTable,
@@ -394,12 +391,17 @@ function compileSlide(
     );
   }
 
-  for (const component of compilePlaceholderComponents(
+  for (const { component } of resolvePlaceholderComponents(
     slide,
     template,
     effectiveGrid,
-    slideIndex,
-    ctx
+    {
+      theme: ctx.theme,
+      slideWidth: ctx.slideWidthInches,
+      slideHeight: ctx.slideHeightInches,
+      slideIndex,
+      warnings: ctx.warnings,
+    }
   )) {
     push(
       compileComponent(component, {
@@ -499,96 +501,6 @@ function slideContextFor(
     pageNumberFormat: processed.pageNumberFormat,
     language: processed.language,
   };
-}
-
-/**
- * Merge slide-side placeholder content with its master declaration.
- *
- * Precedence matches the pre-IR renderer: componentDefaults < declared
- * position < declared defaults < the component's own props.
- */
-function compilePlaceholderComponents(
-  slide: ProcessedSlide,
-  template: TemplateSlideDefinition | undefined,
-  effectiveGrid: GridConfig | undefined,
-  slideIndex: number,
-  ctx: CompileContext
-): PptxComponentInput[] {
-  if (!slide.placeholders) return [];
-  const out: PptxComponentInput[] = [];
-
-  if (!template) {
-    // No template: a placeholder is only renderable if it positions itself.
-    for (const [name, component] of Object.entries(slide.placeholders)) {
-      const defaulted = resolveComponentDefaults(component, ctx.theme);
-      const positioned =
-        defaulted.props.x != null ||
-        defaulted.props.y != null ||
-        defaulted.props.grid;
-      if (!positioned) {
-        warn(
-          ctx.warnings,
-          W.PLACEHOLDER_NO_POSITION,
-          `Placeholder "${name}" has no template and no explicit position — skipped`,
-          { slide: slideIndex }
-        );
-        continue;
-      }
-      out.push(
-        resolveComponentGridPosition(
-          defaulted,
-          effectiveGrid,
-          ctx.slideWidthInches,
-          ctx.slideHeightInches,
-          ctx.warnings
-        )
-      );
-    }
-    return out;
-  }
-
-  const declared = new Map(
-    (template.placeholders ?? []).map((placeholder) => [
-      placeholder.name,
-      placeholder,
-    ])
-  );
-
-  for (const [name, component] of Object.entries(slide.placeholders)) {
-    const definition = declared.get(name);
-    if (!definition) {
-      warn(
-        ctx.warnings,
-        W.UNKNOWN_PLACEHOLDER,
-        `Unknown placeholder "${name}" in template "${slide.template}". Available: ${[...declared.keys()].join(', ')}`,
-        { slide: slideIndex }
-      );
-      continue;
-    }
-
-    const gridResolved = resolveComponentGridPosition(
-      component,
-      effectiveGrid,
-      ctx.slideWidthInches,
-      ctx.slideHeightInches,
-      ctx.warnings
-    );
-
-    const typeDefaults = getDefaultsForType(component.name, ctx.theme);
-    const positionDefaults: Record<string, unknown> = {};
-    if (definition.x != null) positionDefaults.x = definition.x;
-    if (definition.y != null) positionDefaults.y = definition.y;
-    if (definition.w != null) positionDefaults.w = definition.w;
-    if (definition.h != null) positionDefaults.h = definition.h;
-
-    let props = mergeWithDefaults(positionDefaults, typeDefaults);
-    props = mergeWithDefaults(definition.defaults?.props ?? {}, props);
-    props = mergeWithDefaults(gridResolved.props, props);
-
-    out.push({ ...gridResolved, props });
-  }
-
-  return out;
 }
 
 /* ------------------------------------------------------------------ *

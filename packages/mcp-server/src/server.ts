@@ -40,7 +40,7 @@ Working rules:
 - Discover before authoring. Call jto_info first, then jto_discover and jto_describe_component (or read the jto:// resources) for the components and renderer ids a format actually supports.
 - Make small edits. With a workspace handle, patch precisely (RFC 6902 over RFC 6901 paths) instead of resending the whole document; without one, change one region at a time.
 - Validate often. Run jto_validate after each edit rather than once at the end; diagnostics are path-addressed, so they map straight back onto the JSON you just changed.
-- Treat design findings as defects. Schema-valid is not well-designed: jto_validate also lints layout and legibility (W_QUALITY_* — undeclared slide canvas, text overflowing its box, overcrowded slides, table widths no page can hold). These never block generation, but they almost always show in the rendered result — repair them like errors.
+- Treat design findings as defects. Schema-valid is not well-designed: jto_validate also lints layout and legibility (W_QUALITY_* — undeclared slide canvas, text overflowing its box, overcrowded slides, table widths exceeding their section). These never block generation, but they almost always show in the rendered result — repair them like errors.
 - Preview when the answer is visual. jto_preview renders pages to PNG; use it whenever layout, overflow or fit is in question, not only before finishing.
 - Snapshot before risky changes. jto_workspace_snapshot pins the current revision so a restructuring you cannot cleanly undo is still recoverable.
 

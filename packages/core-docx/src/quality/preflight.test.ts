@@ -72,6 +72,49 @@ describe('table widths', () => {
     );
     expect(findings).toEqual([]);
   });
+
+  it('combines fixed and percentage widths against the same page', () => {
+    const findings = collectDocxQualityFindings(
+      doc([
+        {
+          name: 'table',
+          props: {
+            columns: [
+              { header: { content: 'A' }, cells: [], width: 400 },
+              { header: { content: 'B' }, cells: [], width: '50%' },
+            ],
+          },
+        },
+      ])
+    );
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.TABLE_WIDTH_OVERFLOW,
+      context: { pointSum: 400, percentSum: 50 },
+    });
+  });
+
+  it('accepts a 600pt table when an A3 section has room', () => {
+    const findings = collectDocxQualityFindings(
+      doc([
+        {
+          name: 'section',
+          props: { page: { size: 'A3' } },
+          children: [
+            {
+              name: 'table',
+              props: {
+                columns: [
+                  { header: { content: 'A' }, cells: [], width: 300 },
+                  { header: { content: 'B' }, cells: [], width: 300 },
+                ],
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toEqual([]);
+  });
 });
 
 describe('heading hierarchy', () => {
@@ -103,6 +146,29 @@ describe('heading hierarchy', () => {
         { name: 'heading', props: { text: 'Two', level: 2 } },
         { name: 'heading', props: { text: 'Three', level: 3 } },
         { name: 'heading', props: { text: 'Back', level: 1 } },
+      ])
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it('ignores disabled content and disabled subtrees', () => {
+    const findings = collectDocxQualityFindings(
+      doc([
+        { name: 'heading', props: { text: 'One', level: 1 } },
+        {
+          name: 'section',
+          enabled: false,
+          children: [
+            { name: 'heading', props: { text: 'Skipped', level: 4 } },
+            {
+              name: 'table',
+              props: {
+                columns: [{ header: { content: 'A' }, cells: [], width: 900 }],
+              },
+            },
+          ],
+        },
+        { name: 'heading', props: { text: 'Two', level: 2 } },
       ])
     );
     expect(findings).toEqual([]);

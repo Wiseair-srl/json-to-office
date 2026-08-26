@@ -119,13 +119,20 @@ export function register(server: McpServer, deps: ToolDeps): void {
         'The palette, fonts, style tables and component defaults behind every built-in theme name — what a document actually opts into with props.theme. A name alone cannot tell you whether a theme fits the brief; this can.',
       mimeType: JSON_MIME,
     },
-    async (uri) =>
-      jsonContents(uri, {
-        formats: FORMAT_NAMES.map((format) => ({
-          format,
-          themes: deps.getAdapter(format).getBuiltinThemes(),
-        })),
-      })
+    async (uri) => {
+      const formats = await Promise.all(
+        FORMAT_NAMES.map(async (format) => {
+          const adapter = deps.getAdapter(format);
+          return {
+            format,
+            themes: adapter.getBuiltinThemeValues
+              ? await adapter.getBuiltinThemeValues()
+              : adapter.getBuiltinThemes(),
+          };
+        })
+      );
+      return jsonContents(uri, { formats });
+    }
   );
 
   server.registerResource(

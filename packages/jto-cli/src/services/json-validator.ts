@@ -1,7 +1,7 @@
 import { readFileSync, statSync, readdirSync } from 'fs';
 import { resolve, join, extname } from 'path';
 import { glob } from 'glob';
-import type { FormatName } from '@json-to-office/jto-ops';
+import type { FormatAdapter, FormatName } from '@json-to-office/jto-ops';
 
 export interface ValidationError {
   path: string;
@@ -30,9 +30,11 @@ export interface ValidateOptions {
 
 export class JsonValidator {
   private format: FormatName;
+  private adapter?: FormatAdapter;
 
-  constructor(format: FormatName = 'docx') {
+  constructor(format: FormatName = 'docx', adapter?: FormatAdapter) {
     this.format = format;
+    this.adapter = adapter;
   }
 
   async validate(
@@ -145,6 +147,23 @@ export class JsonValidator {
           : await import('@json-to-office/shared-pptx');
       const validator = strict ? validateStrict : validate;
       const result = validator.jsonDocument(jsonString);
+      const schemaWarnings = (result as any).warnings?.map((e: any) => ({
+        ...e,
+        code: e.code || 'WARNING',
+      }));
+      const quality = this.adapter?.qualityCheck
+        ? await this.adapter.qualityCheck(jsonData)
+        : [];
+      const warnings = [
+        ...(schemaWarnings ?? []),
+        ...quality.map((finding) => ({
+          path: finding.path,
+          message: finding.message,
+          code: finding.code,
+          suggestion: finding.suggestion,
+          value: finding.context,
+        })),
+      ];
       return {
         file: filePath,
         valid: result.valid,
@@ -153,10 +172,7 @@ export class JsonValidator {
           ...e,
           code: e.code || 'VALIDATION_ERROR',
         })),
-        warnings: (result as any).warnings?.map((e: any) => ({
-          ...e,
-          code: e.code || 'WARNING',
-        })),
+        ...(warnings.length > 0 && { warnings }),
       };
     } catch (error: any) {
       // A missing/broken validation module must not silently pass the file.

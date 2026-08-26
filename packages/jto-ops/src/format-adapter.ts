@@ -285,14 +285,18 @@ export interface FormatAdapter {
    * widths. Never blocks anything; findings are warnings and infos.
    *
    * Async because the collectors live in the cores, which are imported on
-   * demand — they read the same theme and grid tables the renderer uses, so
-   * the estimate and the render cannot drift apart.
+   * demand and reuse renderer theme/layout normalization.
    */
-  qualityCheck(doc: unknown): Promise<QualityFinding[]>;
+  qualityCheck?(
+    doc: unknown,
+    options?: GeneratorOptions
+  ): Promise<QualityFinding[]>;
 
   generateSchema(options?: any): any;
 
   getBuiltinThemes(): Record<string, any>;
+  /** Full values for ESM hosts; falls back to `getBuiltinThemes` for plugins. */
+  getBuiltinThemeValues?(): Promise<Record<string, any>>;
   resolveTheme(options: GeneratorOptions): Promise<any>;
   loadCustomThemes(
     options: GeneratorOptions
@@ -507,9 +511,21 @@ export class DocxFormatAdapter implements FormatAdapter {
     };
   }
 
-  async qualityCheck(doc: unknown): Promise<QualityFinding[]> {
+  async qualityCheck(
+    doc: unknown,
+    options: GeneratorOptions = {}
+  ): Promise<QualityFinding[]> {
     const core = await import('@json-to-office/core-docx');
-    return core.collectDocxQualityFindings(doc);
+    const parsed = typeof doc === 'string' ? JSON.parse(doc) : doc;
+    const resolved = await this.resolveThemes(options);
+    const normalized = withRequestedTheme(
+      parsed,
+      resolved.requested,
+      resolved.customThemes
+    );
+    return core.collectDocxQualityFindings(normalized.document, {
+      customThemes: normalized.customThemes,
+    });
   }
 
   generateSchema(_options?: any): any {
@@ -519,12 +535,16 @@ export class DocxFormatAdapter implements FormatAdapter {
 
   getBuiltinThemes(): Record<string, any> {
     try {
-      // Dynamic import at call time
       const core = require('@json-to-office/core-docx');
       return core.themes || {};
     } catch {
       return {};
     }
+  }
+
+  async getBuiltinThemeValues(): Promise<Record<string, any>> {
+    const core = await import('@json-to-office/core-docx');
+    return core.themes || {};
   }
 
   async resolveTheme(options: GeneratorOptions): Promise<any> {
@@ -808,9 +828,21 @@ export class PptxFormatAdapter implements FormatAdapter {
     };
   }
 
-  async qualityCheck(doc: unknown): Promise<QualityFinding[]> {
+  async qualityCheck(
+    doc: unknown,
+    options: GeneratorOptions = {}
+  ): Promise<QualityFinding[]> {
     const core = await import('@json-to-office/core-pptx');
-    return core.collectPptxQualityFindings(doc);
+    const parsed = typeof doc === 'string' ? JSON.parse(doc) : doc;
+    const resolved = await this.resolveThemes(options);
+    const normalized = withRequestedTheme(
+      parsed,
+      resolved.requested,
+      resolved.customThemes
+    );
+    return core.collectPptxQualityFindings(normalized.document, {
+      customThemes: normalized.customThemes,
+    });
   }
 
   generateSchema(_options?: any): any {
@@ -824,6 +856,11 @@ export class PptxFormatAdapter implements FormatAdapter {
     } catch {
       return {};
     }
+  }
+
+  async getBuiltinThemeValues(): Promise<Record<string, any>> {
+    const core = await import('@json-to-office/core-pptx');
+    return core.pptxThemes || {};
   }
 
   async resolveTheme(options: GeneratorOptions): Promise<any> {

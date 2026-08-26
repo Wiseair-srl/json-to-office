@@ -8,10 +8,9 @@
  * `jto_validate` instead of paying a render plus a vision pass to see the
  * overflow with its own eyes.
  *
- * The rules deliberately read the same tables the renderer reads —
- * `getPptxTheme` for style font sizes, `resolveGridPosition` for box geometry,
- * the renderer's own 10×7.5 fallback canvas — so the estimate and the render
- * cannot drift apart the way an external checker's mirrored constants did.
+ * The collector starts from renderer normalization: resolved theme and
+ * component defaults, enabled slides, templates, placeholders and effective
+ * grids. Only the text-height heuristic is quality-specific.
  *
  * The text-height estimator is conservative (it slightly under-estimates how
  * much fits): a clean run is a strong signal, a TIGHT margin is fragile, an
@@ -20,9 +19,19 @@
  */
 
 import { QUALITY_CODES, type QualityFinding } from '@json-to-office/shared';
-import type { GridConfig, GridPosition, TextStyle } from '../types';
+import type {
+  GridConfig,
+  GridPosition,
+  PipelineWarning,
+  PptxComponentInput,
+  PptxThemeConfig,
+  PresentationComponentDefinition,
+  TextStyle,
+} from '../types';
 import { mergeGridConfigs, resolveGridPosition } from '../core/grid';
-import { DEFAULT_PPTX_THEME, getPptxTheme } from '../themes/defaults';
+import { resolveThemeContext } from '../core/generationContext';
+import { resolvePlaceholderComponents } from '../core/placeholders';
+import { processPresentation } from '../core/structure';
 
 /** The canvas pptxgenjs falls back to when the document declares none. */
 const RENDERER_DEFAULT_WIDTH_IN = 10;
@@ -101,41 +110,12 @@ interface ThemeContext {
   defaultFontSize: number;
 }
 
-/**
- * The style table the render will resolve against.
- *
- * Mirrors `resolveThemeContext` in `core/generationContext.ts`: an inline
- * theme object wins, a named theme resolves through `getPptxTheme` (which
- * never misses), anything else is the default theme. An inline theme's styles
- * layer over the defaults rather than replacing them, so `style: "heading1"`
- * keeps a size even when the inline theme only restyles `title`.
- */
-function themeContext(docProps: Rec): ThemeContext {
-  const theme = docProps.theme;
-  const base =
-    typeof theme === 'string' ? getPptxTheme(theme) : DEFAULT_PPTX_THEME;
-  const styles: Partial<Record<string, TextStyle>> = { ...base.styles };
-  let defaultFontSize =
-    asNumber(base.defaults?.fontSize) ??
-    asNumber(DEFAULT_PPTX_THEME.defaults?.fontSize) ??
-    18;
-
-  const inline = asRecord(theme);
-  if (inline) {
-    const inlineStyles = asRecord(inline.styles);
-    if (inlineStyles) {
-      for (const [name, style] of Object.entries(inlineStyles)) {
-        const styleRec = asRecord(style);
-        if (styleRec) {
-          styles[name] = { ...styles[name], ...(styleRec as TextStyle) };
-        }
-      }
-    }
-    const inlineDefault = asNumber(asRecord(inline.defaults)?.fontSize);
-    if (inlineDefault !== undefined) defaultFontSize = inlineDefault;
-  }
-
-  return { styles, defaultFontSize };
+/** The exact style table and default the renderer resolved. */
+function themeContext(theme: PptxThemeConfig): ThemeContext {
+  return {
+    styles: theme.styles ?? {},
+    defaultFontSize: asNumber(theme.defaults?.fontSize) ?? 18,
+  };
 }
 
 /**
@@ -231,7 +211,7 @@ interface TextNode {
  */
 function collectTextNodes(component: unknown, path: string, out: TextNode[]) {
   const rec = asRecord(component);
-  if (!rec) return;
+  if (!rec || rec.enabled === false) return;
   const props = asRecord(rec.props) ?? {};
   const text = typeof props.text === 'string' ? props.text : undefined;
   if (text !== undefined && text.trim() !== '' && props.runs === undefined) {
@@ -298,26 +278,24 @@ function checkCanvas(docProps: Rec, findings: QualityFinding[]): void {
   }
 }
 
+interface ComponentAtPath {
+  component: PptxComponentInput;
+  path: string;
+}
+
 function analyzeSlide(
-  slide: Rec,
+  roots: ComponentAtPath[],
   slidePath: string,
-  docGrid: GridConfig | undefined,
+  grid: GridConfig | undefined,
   slideWidthIn: number,
   slideHeightIn: number,
   ctx: ThemeContext,
   findings: QualityFinding[]
 ): void {
-  const slideProps = asRecord(slide.props) ?? {};
-  const grid = mergeGridConfigs(
-    docGrid,
-    (asRecord(slideProps.grid) as GridConfig | undefined) ?? undefined
-  );
-
   const nodes: TextNode[] = [];
-  const children = Array.isArray(slide.children) ? slide.children : [];
-  children.forEach((child, index) =>
-    collectTextNodes(child, `${slidePath}/children/${index}`, nodes)
-  );
+  for (const root of roots) {
+    collectTextNodes(root.component, root.path, nodes);
+  }
 
   let bodyWords = 0;
 
@@ -435,7 +413,18 @@ function analyzeSlide(
  * whatever findings its recognizable parts support, and never a throw — the
  * caller reports these beside validation errors, not instead of them.
  */
-export function collectPptxQualityFindings(doc: unknown): QualityFinding[] {
+export interface PptxQualityOptions {
+  customThemes?: Record<string, PptxThemeConfig>;
+}
+
+function pointerSegment(value: string): string {
+  return value.replace(/~/g, '~0').replace(/\//g, '~1');
+}
+
+export function collectPptxQualityFindings(
+  doc: unknown,
+  options: PptxQualityOptions = {}
+): QualityFinding[] {
   const findings: QualityFinding[] = [];
   const root = asRecord(doc);
   if (!root || root.name !== 'pptx') return findings;
@@ -443,26 +432,96 @@ export function collectPptxQualityFindings(doc: unknown): QualityFinding[] {
   const props = asRecord(root.props) ?? {};
   checkCanvas(props, findings);
 
-  const slideWidthIn = asNumber(props.slideWidth) ?? RENDERER_DEFAULT_WIDTH_IN;
-  const slideHeightIn =
-    asNumber(props.slideHeight) ?? RENDERER_DEFAULT_HEIGHT_IN;
-  const docGrid = asRecord(props.grid) as GridConfig | undefined;
-  const ctx = themeContext(props);
-
-  const children = Array.isArray(root.children) ? root.children : [];
-  children.forEach((child, index) => {
-    const slide = asRecord(child);
-    if (!slide || slide.name !== 'slide') return;
-    analyzeSlide(
-      slide,
-      `/children/${index}`,
-      docGrid,
-      slideWidthIn,
-      slideHeightIn,
-      ctx,
-      findings
+  try {
+    const warnings: PipelineWarning[] = [];
+    const context = resolveThemeContext(
+      root as unknown as PresentationComponentDefinition,
+      { customThemes: options.customThemes, warnings }
     );
-  });
+    const processed = processPresentation(context.document, {
+      theme: context.theme,
+      customThemes: options.customThemes,
+    });
+    const ctx = themeContext(processed.theme);
+
+    const authoredChildren = Array.isArray(root.children) ? root.children : [];
+    const slideIndexes = authoredChildren.flatMap((child, index) => {
+      const slide = asRecord(child);
+      return slide?.name === 'slide' && slide.enabled !== false ? [index] : [];
+    });
+    const templateIndexes = new Map<string, number>();
+    const templates = new Map(
+      (processed.templates ?? []).map((template, index) => {
+        templateIndexes.set(template.name, index);
+        return [template.name, template] as const;
+      })
+    );
+
+    processed.slides.forEach((slide, renderedIndex) => {
+      const authoredIndex = slideIndexes[renderedIndex];
+      if (authoredIndex === undefined) return;
+      const slidePath = `/children/${authoredIndex}`;
+      const authoredSlide = asRecord(authoredChildren[authoredIndex]);
+      const authoredComponents = Array.isArray(authoredSlide?.children)
+        ? authoredSlide.children
+        : [];
+      const template = slide.template
+        ? templates.get(slide.template)
+        : undefined;
+      const effectiveGrid = mergeGridConfigs(processed.grid, template?.grid);
+      const roots: ComponentAtPath[] = [];
+
+      const templateIndex = template
+        ? templateIndexes.get(template.name)
+        : undefined;
+      if (template && templateIndex !== undefined) {
+        template.objects?.forEach((component, index) => {
+          roots.push({
+            component,
+            path: `/props/templates/${templateIndex}/objects/${index}`,
+          });
+        });
+      }
+
+      slide.components.forEach((component, index) => {
+        if (authoredComponents[index] === undefined) return;
+        roots.push({
+          component,
+          path: `${slidePath}/children/${index}`,
+        });
+      });
+
+      for (const resolved of resolvePlaceholderComponents(
+        slide,
+        template,
+        effectiveGrid,
+        {
+          theme: processed.theme,
+          slideWidth: processed.slideWidth,
+          slideHeight: processed.slideHeight,
+          slideIndex: renderedIndex,
+          warnings,
+        }
+      )) {
+        roots.push({
+          component: resolved.component,
+          path: `${slidePath}/props/placeholders/${pointerSegment(resolved.name)}`,
+        });
+      }
+
+      analyzeSlide(
+        roots,
+        slidePath,
+        effectiveGrid,
+        processed.slideWidth,
+        processed.slideHeight,
+        ctx,
+        findings
+      );
+    });
+  } catch {
+    // Structural validation owns malformed trees; quality remains additive.
+  }
 
   return findings;
 }

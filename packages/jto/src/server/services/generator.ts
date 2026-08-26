@@ -16,7 +16,22 @@ import {
   type FontRegistryEntry,
   type ResolvedFont,
   type GenerationWarning,
+  type QualityFinding,
 } from '@json-to-office/shared';
+
+function toQualityWarnings(findings: QualityFinding[]): GenerationWarning[] {
+  return findings.map((finding) => ({
+    component: 'quality',
+    message: `[${finding.code}] ${finding.message}`,
+    severity: finding.severity,
+    context: {
+      code: finding.code,
+      path: finding.path,
+      ...(finding.suggestion && { suggestion: finding.suggestion }),
+      ...(finding.context ?? {}),
+    },
+  }));
+}
 
 /**
  * Playground-only convenience: scan the document for font names that match
@@ -511,6 +526,17 @@ export class GeneratorService {
       });
     }
 
+    let qualityWarnings: GenerationWarning[] = [];
+    if (this.adapter.qualityCheck) {
+      try {
+        qualityWarnings = toQualityWarnings(
+          await this.adapter.qualityCheck(config, { customThemes })
+        );
+      } catch (error) {
+        logger.warn('Quality analysis failed', { error });
+      }
+    }
+
     // Surface non-canonical fontWeight values (e.g. 450, 550) — the render
     // path silently coerces these to Regular/Bold via a bold-fallback, so
     // without a warning an author writing `fontWeight: 450` has no way to
@@ -536,7 +562,7 @@ export class GeneratorService {
 
     // Core first: FONT_UNRESOLVED is actionable and should read above the
     // informational FONT_OVERRIDE_LOCAL / FONT_NONCANONICAL_WEIGHT entries.
-    const allWarnings = [...coreWarnings, ...extraWarnings];
+    const allWarnings = [...coreWarnings, ...qualityWarnings, ...extraWarnings];
 
     // Store in cache — buffer and warnings together, so a later HIT is not a
     // silent render. `resolvedFonts` deliberately stays out: it is a TTF byte
@@ -558,15 +584,21 @@ export class GeneratorService {
     };
   }
 
-  async validate(
-    jsonDefinition: any
-  ): Promise<{ valid: boolean; errors?: string[] }> {
+  async validate(jsonDefinition: any): Promise<{
+    valid: boolean;
+    errors?: any[];
+    quality: QualityFinding[];
+  }> {
     const config =
       typeof jsonDefinition === 'string'
         ? JSON.parse(jsonDefinition)
         : jsonDefinition;
 
-    return this.adapter.validateDocument(config);
+    const result = this.adapter.validateDocument(config);
+    const quality = this.adapter.qualityCheck
+      ? await this.adapter.qualityCheck(config)
+      : [];
+    return { ...result, quality };
   }
 
   destroy(): void {

@@ -57,6 +57,7 @@ export { DEFAULT_PPTX_THEME, getPptxTheme, pptxThemes } from './themes';
 
 // Design-quality collectors (#216)
 export { collectPptxQualityFindings } from './quality/preflight';
+export type { PptxQualityOptions } from './quality/preflight';
 
 // Plugin system
 export {

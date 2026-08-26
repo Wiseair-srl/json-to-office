@@ -61,28 +61,26 @@ export interface ProcessedSection {
   };
 }
 
-/**
- * Process document definition into structured format
- */
-export async function processDocument(
-  document: ReportComponentDefinition,
-  theme: ThemeConfig,
-  themeName: string,
-  generationDate?: Date
-): Promise<ProcessedDocument> {
-  const metadata = createDocumentMetadata(document.props, generationDate);
+export interface ResolvedDocumentTree {
+  theme: ThemeConfig;
+  children: ComponentDefinition[];
+}
 
-  // Merge document-level componentDefaults on top of theme-level ones
-  // (document overrides theme)
+/**
+ * Apply document-level defaults to the theme and component tree.
+ *
+ * Kept synchronous and renderer-free so preflight checks can inspect exactly
+ * the props structure processing will render.
+ */
+export function resolveDocumentTree(
+  document: ReportComponentDefinition,
+  theme: ThemeConfig
+): ResolvedDocumentTree {
   const docDefaults = document.props.componentDefaults;
   const mergedComponentDefaults = docDefaults
     ? mergeWithDefaults(docDefaults, theme.componentDefaults || {})
     : undefined;
 
-  // Fold the document's known-words allowlist into the theme object so it
-  // reaches every text primitive (createText/createHeading) without threading
-  // a new parameter through the whole render tree. Document words are added to
-  // any house-style words the theme already defines.
   const docNoProofWords = document.props.noProofWords;
   const mergedNoProofWords =
     docNoProofWords || theme.noProofWords
@@ -102,6 +100,25 @@ export async function processDocument(
         }
       : theme;
 
+  return {
+    theme: effectiveTheme,
+    children: resolveComponentTree(document.children || [], effectiveTheme),
+  };
+}
+
+/**
+ * Process document definition into structured format
+ */
+export async function processDocument(
+  document: ReportComponentDefinition,
+  theme: ThemeConfig,
+  themeName: string,
+  generationDate?: Date
+): Promise<ProcessedDocument> {
+  const metadata = createDocumentMetadata(document.props, generationDate);
+  const resolved = resolveDocumentTree(document, theme);
+  const effectiveTheme = resolved.theme;
+
   // Create context with effective theme so section-title headings
   // created in extractSections also see document-level defaults
   const context = createRenderContext(
@@ -117,13 +134,8 @@ export async function processDocument(
 
   // Resolve componentDefaults on every component before
   // extractSections reads any props (fixes section pageBreak, table defaults, etc.)
-  const resolvedChildren = resolveComponentTree(
-    document.children || [],
-    effectiveTheme
-  );
-
   // Extract sections from components
-  const sections = await extractSections(resolvedChildren, context);
+  const sections = await extractSections(resolved.children, context);
 
   return {
     metadata,

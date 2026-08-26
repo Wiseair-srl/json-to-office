@@ -7,6 +7,7 @@ import {
   generateUnifiedDocumentSchema,
   ThemeConfigSchema,
 } from '@json-to-office/shared-docx';
+import { PptxFormatAdapter } from '@json-to-office/jto-ops';
 import { JsonValidator } from '../json-validator.js';
 
 const directories: string[] = [];
@@ -232,6 +233,45 @@ describe('JsonValidator custom schemas', () => {
     );
     expect(errors.map((error) => error.message)).toContain(
       "must have required property 'colors'"
+    );
+  });
+});
+
+describe('JsonValidator quality findings', () => {
+  it('keeps a schema-valid file valid and returns design warnings', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'jto-json-validator-'));
+    directories.push(directory);
+    const documentPath = join(directory, 'deck.json');
+    await writeFile(
+      documentPath,
+      JSON.stringify({
+        name: 'pptx',
+        props: { slideWidth: 13.333, slideHeight: 7.5 },
+        children: [
+          {
+            name: 'slide',
+            props: {},
+            children: [
+              { name: 'text', props: { text: 'Unreadable', fontSize: 6 } },
+            ],
+          },
+        ],
+      })
+    );
+
+    const adapter = new PptxFormatAdapter();
+    const [result] = await new JsonValidator('pptx', adapter).validate(
+      documentPath
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'W_QUALITY_FONT_SIZE_MIN',
+          path: '/children/0/children/0/props',
+        }),
+      ])
     );
   });
 });

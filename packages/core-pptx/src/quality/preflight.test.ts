@@ -248,6 +248,151 @@ describe('legibility', () => {
   });
 });
 
+describe('renderer normalization parity', () => {
+  it('ignores disabled slides and disabled component subtrees', () => {
+    const findings = collectPptxQualityFindings(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          enabled: false,
+          children: [{ name: 'text', props: { text: 'tiny', fontSize: 5 } }],
+        },
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'shape',
+              enabled: false,
+              props: {},
+              children: [
+                { name: 'text', props: { text: 'tiny', fontSize: 5 } },
+              ],
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it('sees presentation componentDefaults and template objects', () => {
+    const findings = collectPptxQualityFindings(
+      deck(
+        {
+          ...CANVAS,
+          componentDefaults: { text: { fontSize: 6 } },
+          templates: [
+            {
+              name: 'branded',
+              objects: [{ name: 'text', props: { text: 'Template label' } }],
+            },
+          ],
+        },
+        [
+          {
+            name: 'slide',
+            props: { template: 'branded' },
+            children: [{ name: 'text', props: { text: 'Slide label' } }],
+          },
+        ]
+      )
+    );
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: QUALITY_CODES.FONT_SIZE_MIN,
+          path: '/props/templates/0/objects/0/props',
+        }),
+        expect.objectContaining({
+          code: QUALITY_CODES.FONT_SIZE_MIN,
+          path: '/children/0/children/0/props',
+        }),
+      ])
+    );
+  });
+
+  it('uses the renderer placeholder merge precedence', () => {
+    const findings = collectPptxQualityFindings(
+      deck(
+        {
+          ...CANVAS,
+          templates: [
+            {
+              name: 'branded',
+              placeholders: [
+                {
+                  name: 'body',
+                  x: 1,
+                  y: 1,
+                  w: 4,
+                  h: 1,
+                  defaults: { name: 'text', props: { fontSize: 6 } },
+                },
+              ],
+            },
+          ],
+        },
+        [
+          {
+            name: 'slide',
+            props: {
+              template: 'branded',
+              placeholders: {
+                body: { name: 'text', props: { text: 'Placeholder body' } },
+              },
+            },
+          },
+        ]
+      )
+    );
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: QUALITY_CODES.FONT_SIZE_MIN,
+          path: '/children/0/props/placeholders/body/props',
+        }),
+      ])
+    );
+  });
+
+  it('does not invent named styles missing from an inline theme', () => {
+    const inlineTheme = {
+      name: 'self-contained',
+      colors: {
+        primary: '000000',
+        secondary: '111111',
+        accent: '222222',
+        background: 'FFFFFF',
+        text: '000000',
+      },
+      fonts: { heading: 'Arial', body: 'Arial' },
+      defaults: { fontSize: 18, fontColor: '000000' },
+      styles: { title: { fontSize: 36 } },
+    };
+    const findings = collectPptxQualityFindings(
+      deck({ ...CANVAS, theme: inlineTheme }, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: {
+                text: 'A quarterly business review title that wraps across several lines',
+                style: 'heading1',
+                x: 1,
+                y: 1,
+                w: 4,
+                h: 1.2,
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toEqual([]);
+  });
+});
+
 describe('robustness', () => {
   it('answers nothing for non-pptx or malformed input, never throws', () => {
     expect(collectPptxQualityFindings(undefined)).toEqual([]);

@@ -49,7 +49,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
     )
     .action(
       async (fileOrDirectory: string, options: ValidateCommandOptions) => {
-        const validator = new JsonValidator(adapter.name);
+        const validator = new JsonValidator(adapter.name, adapter);
         const isJsonFormat = options.format === 'json';
         const startTime = performance.now();
 
@@ -90,10 +90,11 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
           } else {
             const lines = [];
             for (const result of results) {
-              if (result.valid) continue;
+              if (result.valid && (result.warnings?.length ?? 0) === 0)
+                continue;
               lines.push({
-                text: `FAIL ${relative(process.cwd(), result.file)}`,
-                tone: 'error' as const,
+                text: `${result.valid ? 'WARN' : 'FAIL'} ${relative(process.cwd(), result.file)}`,
+                tone: result.valid ? ('warning' as const) : ('error' as const),
               });
               for (const error of result.errors ?? []) {
                 lines.push({
@@ -112,13 +113,17 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
             if (results.length > 1 && !options.quiet) {
               const rows = results.map((result) => [
                 relative(process.cwd(), result.file),
-                result.valid ? chalk.green('OK') : chalk.red('FAIL'),
+                !result.valid
+                  ? chalk.red('FAIL')
+                  : (result.warnings?.length ?? 0) > 0
+                    ? chalk.yellow('WARN')
+                    : chalk.green('OK'),
                 result.valid
-                  ? '-'
+                  ? String(result.warnings?.length || 0)
                   : chalk.red(String(result.errors?.length || 0)),
               ]);
               lines.push({
-                text: createTable(['File', 'Status', 'Errors'], rows),
+                text: createTable(['File', 'Status', 'Diagnostics'], rows),
               });
             }
             await renderLines(lines);

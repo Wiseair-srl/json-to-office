@@ -224,6 +224,29 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
               }
             }
 
+            if (adapter.qualityCheck) {
+              try {
+                const findings = await adapter.qualityCheck(
+                  documentDefinition,
+                  {
+                    theme: mergedConfig.theme,
+                    themePath: mergedConfig.themePath,
+                  }
+                );
+                for (const finding of findings) {
+                  reporter.log(
+                    `[${finding.code}] ${finding.path}: ${finding.message}${finding.suggestion ? ` Fix: ${finding.suggestion}` : ''}`,
+                    finding.severity
+                  );
+                }
+              } catch (error: any) {
+                reporter.log(
+                  `Quality analysis unavailable: ${error?.message ?? error}`,
+                  'warning'
+                );
+              }
+            }
+
             reporter.update(
               options.dryRun
                 ? `Validating ${adapter.label} preview...`

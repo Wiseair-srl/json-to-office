@@ -81,6 +81,7 @@ export { isNodeEnvironment, hasNodeBuiltins } from './utils/environment';
 
 // Design-quality collectors (#216)
 export { collectDocxQualityFindings } from './quality/preflight';
+export type { DocxQualityOptions } from './quality/preflight';
 export {
   generateWarningsDocument,
   formatWarningsText,

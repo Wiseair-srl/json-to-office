@@ -83,7 +83,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Validate a document',
       description:
-        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary, e.g. `E_REQUIRED_PROPERTY`, `E_UNEXPECTED_PROPERTY`, `E_TYPE_MISMATCH`, `E_UNKNOWN_COMPONENT`. `ok` mirrors the gate generation applies: schema and semantic errors block it — the semantic rules the published JSON Schema cannot state, such as a text component needing one of `text`/`runs`, are checked here and only here — while renderer-profile findings (code `W_UNSUPPORTED_RENDERER_FEATURE`) come back as warnings because the renderer, not the schema, has the last word on those. Design-quality findings come back here too, as `W_QUALITY_*` warnings and infos: an undeclared slide canvas, text estimated to overflow its box, an overcrowded slide, table column widths no page can hold. They never block generation, but a `W_QUALITY_` warning almost always shows up in the rendered result — repair it like an error, then confirm the fix visually with jto_preview. A broken document is a normal result with `ok: false`, never an error. A renderer whose backend is not installed on this host is reported here too, as a `E_DEPENDENCY_MISSING` warning — the document may be fine and the host merely incomplete.',
+        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary, e.g. `E_REQUIRED_PROPERTY`, `E_UNEXPECTED_PROPERTY`, `E_TYPE_MISMATCH`, `E_UNKNOWN_COMPONENT`. `ok` mirrors the gate generation applies: schema and semantic errors block it — the semantic rules the published JSON Schema cannot state, such as a text component needing one of `text`/`runs`, are checked here and only here — while renderer-profile findings (code `W_UNSUPPORTED_RENDERER_FEATURE`) come back as warnings because the renderer, not the schema, has the last word on those. Design-quality findings come back here too, as `W_QUALITY_*` warnings and infos: an undeclared slide canvas, text estimated to overflow its box, an overcrowded slide, table widths exceeding their actual section. They never block generation, but a `W_QUALITY_` warning almost always shows up in the rendered result — repair it like an error, then confirm the fix visually with jto_preview. A broken document is a normal result with `ok: false`, never an error. A renderer whose backend is not installed on this host is reported here too, as a `E_DEPENDENCY_MISSING` warning — the document may be fine and the host merely incomplete.',
       annotations: { readOnlyHint: true, openWorldHint: false },
       inputSchema: S<ValidateArgs>({
         type: 'object',
@@ -160,7 +160,9 @@ export function register(server: McpServer, deps: ToolDeps): void {
           );
           // Third question: schema-valid ≠ well-designed. The quality
           // collectors never produce errors, so they cannot move the gate.
-          const quality = await adapter.qualityCheck(resolved.document);
+          const quality = adapter.qualityCheck
+            ? await adapter.qualityCheck(resolved.document)
+            : [];
           const all = [
             ...validationDiagnostics(result.errors),
             ...(unavailable ? [unavailable] : []),
