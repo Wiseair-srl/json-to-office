@@ -1,1 +1,7 @@
 THIRD-PARTY-NOTICES.md
+
+# LLM prompt sources. The compact single-line JSON examples in these files are
+# deliberate: Prettier explodes them across many lines, which inflates every
+# system prompt we send by ~4% and changes the authoring style the model is
+# shown by example. These files are product behaviour, not code style.
+packages/jto/src/server/prompts/
