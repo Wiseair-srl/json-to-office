@@ -18,7 +18,5 @@ export default defineConfig({
     '**/temp/**',
     '**/.git/**',
   ],
-  external: [
-    'pptxgenjs',
-  ],
+  external: ['pptxgenjs'],
 });

@@ -63,7 +63,7 @@ function generateUnionErrorMessage(error: ValueError): string {
         return `Invalid component configuration for '${(value as any).name}'. Check that all required fields are present.`;
       }
       if ('children' in value && Array.isArray((value as any).children)) {
-        return 'Document is missing required \'name\' field.';
+        return "Document is missing required 'name' field.";
       }
     }
     return 'Invalid document structure. Check required fields.';

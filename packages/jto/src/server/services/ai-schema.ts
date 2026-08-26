@@ -81,10 +81,14 @@ export async function getThemeSchema(format: string): Promise<any> {
   return schema;
 }
 
-export async function getSchemaString(format: string, docType: 'document' | 'theme'): Promise<string> {
-  const schema = docType === 'theme'
-    ? await getThemeSchema(format)
-    : await getDocumentSchema(format);
+export async function getSchemaString(
+  format: string,
+  docType: 'document' | 'theme'
+): Promise<string> {
+  const schema =
+    docType === 'theme'
+      ? await getThemeSchema(format)
+      : await getDocumentSchema(format);
   return JSON.stringify(schema, null, 2);
 }
 

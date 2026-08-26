@@ -12,5 +12,10 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: 'es2022',
-  external: ['@sinclair/typebox', 'ajv', 'ajv-formats', '@json-to-office/shared'],
+  external: [
+    '@sinclair/typebox',
+    'ajv',
+    'ajv-formats',
+    '@json-to-office/shared',
+  ],
 });

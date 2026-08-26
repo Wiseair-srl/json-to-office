@@ -13,13 +13,13 @@
       "@json-to-office/shared-docx": ["packages/shared-docx/src/index.ts"],
       "@json-to-office/shared-docx/*": ["packages/shared-docx/src/*"],
       "@json-to-office/shared-pptx": ["packages/shared-pptx/src/index.ts"],
-      "@json-to-office/shared-pptx/*": ["packages/shared-pptx/src/*"],
+      "@json-to-office/shared-pptx/*": ["packages/shared-pptx/src/*"]
     },
-    "sourceMap": false,
+    "sourceMap": false
   },
   "include": [
     "check-renderer-import-boundaries.ts",
     "generate-renderer-docs.ts",
-    "renderer-feature-notes.ts",
-  ],
+    "renderer-feature-notes.ts"
+  ]
 }

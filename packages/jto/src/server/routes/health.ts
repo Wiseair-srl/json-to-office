@@ -14,7 +14,15 @@ healthRouter.get('/', (c) => {
     const cacheService = getContainer().get('cacheService');
     cacheStats = cacheService.getStats();
   } catch {
-    cacheStats = { enabled: false, hits: 0, misses: 0, hitRate: 0, evictions: 0, size: 0, itemCount: 0 };
+    cacheStats = {
+      enabled: false,
+      hits: 0,
+      misses: 0,
+      hitRate: 0,
+      evictions: 0,
+      size: 0,
+      itemCount: 0,
+    };
   }
 
   return c.json({

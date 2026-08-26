@@ -8,8 +8,8 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./src/client/*"],
-    },
+      "@/*": ["./src/client/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "dist"],
@@ -20,6 +20,6 @@
     { "path": "../shared-pptx" },
     { "path": "../core-docx" },
     { "path": "../core-pptx" },
-    { "path": "../jto-cli" },
-  ],
+    { "path": "../jto-cli" }
+  ]
 }

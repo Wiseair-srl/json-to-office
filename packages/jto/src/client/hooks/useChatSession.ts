@@ -4,7 +4,11 @@ import { DefaultChatTransport, type UIMessage, type FileUIPart } from 'ai';
 import { useChatStore } from '../store/chat-store-provider';
 import { useDocumentsStore } from '../store/documents-store-provider';
 import { FORMAT } from '../lib/env';
-import { mergeAiOutput, applyId, mergeTemplatesDelta } from '../lib/apply-merge';
+import {
+  mergeAiOutput,
+  applyId,
+  mergeTemplatesDelta,
+} from '../lib/apply-merge';
 import type { SelectionContext } from '../lib/monaco-selection-utils';
 import type { AiScope } from '../store/chat-store';
 
@@ -13,10 +17,16 @@ type ContextEntry = (SelectionContext & { documentName?: string })[];
 /** Validate & return the last JSON code block, preserving original formatting. */
 function tryParseJsonBlocks(blocks: RegExpMatchArray[]): string | null {
   const raw = blocks[blocks.length - 1][1];
-  try { JSON.parse(raw); return raw; } catch {}
+  try {
+    JSON.parse(raw);
+    return raw;
+  } catch {}
   if (blocks.length > 1) {
-    const combined = blocks.map(m => m[1]).join('\n');
-    try { JSON.parse(combined); return combined; } catch {}
+    const combined = blocks.map((m) => m[1]).join('\n');
+    try {
+      JSON.parse(combined);
+      return combined;
+    } catch {}
   }
   return null;
 }
@@ -30,7 +40,7 @@ function tryParseJsonBlocks(blocks: RegExpMatchArray[]): string | null {
 function scopedMerge(
   currentDoc: string,
   aiOutput: string,
-  scope: AiScope,
+  scope: AiScope
 ): { original: string; modified: string } | null {
   if (scope === 'global') return null;
   try {
@@ -40,7 +50,10 @@ function scopedMerge(
       doc.children = fragment.children;
     } else if (scope === 'templates' && Array.isArray(fragment.templates)) {
       if (!doc.props) doc.props = {};
-      doc.props.templates = mergeTemplatesDelta(doc.props.templates || [], fragment.templates);
+      doc.props.templates = mergeTemplatesDelta(
+        doc.props.templates || [],
+        fragment.templates
+      );
     } else {
       return null; // unexpected shape, fall back
     }
@@ -94,11 +107,15 @@ export function useChatSession() {
 
   const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
   if (!transportRef.current) {
-    transportRef.current = new DefaultChatTransport<UIMessage>({ api: '/api/ai/chat' });
+    transportRef.current = new DefaultChatTransport<UIMessage>({
+      api: '/api/ai/chat',
+    });
   }
 
   const getActiveDocument = useCallback(() => {
-    const doc = documentsRef.current.find((d) => d.name === activeTabRef.current);
+    const doc = documentsRef.current.find(
+      (d) => d.name === activeTabRef.current
+    );
     return doc ? { name: doc.name, text: doc.text } : undefined;
   }, []);
 
@@ -120,7 +137,9 @@ export function useChatSession() {
         // Auto-title from first user message
         const thread = threadsRef.current[tid];
         if (thread && thread.title.startsWith('Chat ')) {
-          const firstUserMsg = (allMsgs as any[]).find((m) => m.role === 'user');
+          const firstUserMsg = (allMsgs as any[]).find(
+            (m) => m.role === 'user'
+          );
           if (firstUserMsg) {
             const text =
               firstUserMsg.parts
@@ -148,13 +167,18 @@ export function useChatSession() {
       }
 
       // Auto-apply: extract last JSON code block from assistant response
-      const lastMsg = (allMsgs as any[]).filter((m) => m.role === 'assistant').pop();
+      const lastMsg = (allMsgs as any[])
+        .filter((m) => m.role === 'assistant')
+        .pop();
       if (lastMsg) {
-        const fullText = lastMsg.parts
-          ?.filter((p: any) => p.type === 'text')
-          .map((p: any) => p.text)
-          .join('') || '';
-        const jsonBlocks = [...fullText.matchAll(/```(?:json|jsonc)\s*\n([\s\S]*?)```/g)];
+        const fullText =
+          lastMsg.parts
+            ?.filter((p: any) => p.type === 'text')
+            .map((p: any) => p.text)
+            .join('') || '';
+        const jsonBlocks = [
+          ...fullText.matchAll(/```(?:json|jsonc)\s*\n([\s\S]*?)```/g),
+        ];
         if (jsonBlocks.length > 0) {
           const formatted = tryParseJsonBlocks(jsonBlocks);
           if (formatted) {
@@ -166,11 +190,18 @@ export function useChatSession() {
               const ctx = sendContext[0];
               const scopedResult = scopedMerge(original, formatted, sendScope);
               if (!scopedResult && sendScope !== 'global') {
-                console.warn(`[chat] scopedMerge failed for scope="${sendScope}", falling back to text merge`);
+                console.warn(
+                  `[chat] scopedMerge failed for scope="${sendScope}", falling back to text merge`
+                );
               }
-              const { original: orig, modified } = scopedResult
-                ?? mergeAiOutput(original, formatted, ctx);
-              setPendingDiff(tab, orig, modified, applyId(raw.replace(/\n$/, '')));
+              const { original: orig, modified } =
+                scopedResult ?? mergeAiOutput(original, formatted, ctx);
+              setPendingDiff(
+                tab,
+                orig,
+                modified,
+                applyId(raw.replace(/\n$/, ''))
+              );
             } else {
               const name = `ai-generated-${Date.now()}`;
               createDocument(name, formatted);
@@ -192,7 +223,8 @@ export function useChatSession() {
       if (id in messageContextMapRef.current) break; // already mapped
       if (pendingContextsRef.current.length > 0) {
         messageContextMapRef.current[id] = pendingContextsRef.current[0];
-        messageScopeMapRef.current[id] = pendingScopesRef.current[0] || 'global';
+        messageScopeMapRef.current[id] =
+          pendingScopesRef.current[0] || 'global';
         bumpMapVersion();
       }
       break; // only process the latest unmapped user message
@@ -212,18 +244,31 @@ export function useChatSession() {
           format: FORMAT,
           context: contextAttachments,
           activeDocument: getActiveDocument(),
-          documentType: (activeTabRef.current && documentTypesRef.current[activeTabRef.current]) || 'application/json+report',
+          documentType:
+            (activeTabRef.current &&
+              documentTypesRef.current[activeTabRef.current]) ||
+            'application/json+report',
           scope,
           model,
         },
       });
     },
-    [chat.sendMessage, contextAttachments, getActiveDocument, clearContext, scope, model]
+    [
+      chat.sendMessage,
+      contextAttachments,
+      getActiveDocument,
+      clearContext,
+      scope,
+      model,
+    ]
   );
 
-  const getMessageScope = useCallback((userMsgId: string): AiScope | undefined => {
-    return messageScopeMapRef.current[userMsgId];
-  }, []);
+  const getMessageScope = useCallback(
+    (userMsgId: string): AiScope | undefined => {
+      return messageScopeMapRef.current[userMsgId];
+    },
+    []
+  );
 
   return {
     messages: chat.messages,

@@ -13,7 +13,9 @@ export type DocumentsState = {
   activeTab: string;
   buildErrors: { [key: string]: string };
   documentTypes: { [key: string]: DocumentType };
-  pendingDiffs: { [key: string]: { original: string; modified: string; applyId?: string } };
+  pendingDiffs: {
+    [key: string]: { original: string; modified: string; applyId?: string };
+  };
   acceptedApplyIds: string[];
 };
 
@@ -26,7 +28,12 @@ export type DocumentsActions = {
   closeDocument: (name: string) => void;
   setActiveTab: (name: string) => void;
   setBuildError: (name: string, buildError?: string) => void;
-  setPendingDiff: (name: string, original: string, modified: string, applyId?: string) => void;
+  setPendingDiff: (
+    name: string,
+    original: string,
+    modified: string,
+    applyId?: string
+  ) => void;
   clearPendingDiff: (name: string, accepted?: boolean) => void;
 };
 
@@ -129,7 +136,9 @@ export const createDocumentsStore = (
               );
               if (docIndex === -1) return state;
               const documents = state.documents.map((doc, i) =>
-                i === docIndex ? { ...doc, name: newName, ctime: new Date() } : doc
+                i === docIndex
+                  ? { ...doc, name: newName, ctime: new Date() }
+                  : doc
               );
               const docType = state.documentTypes[oldName];
               if (docType) {
@@ -151,9 +160,10 @@ export const createDocumentsStore = (
               );
               let openTabs = state.openTabs;
               if (!openTabs.includes(name)) {
-                openTabs = openTabs.length >= MAX_OPEN_TABS
-                  ? [...openTabs.slice(1), name]
-                  : [...openTabs, name];
+                openTabs =
+                  openTabs.length >= MAX_OPEN_TABS
+                    ? [...openTabs.slice(1), name]
+                    : [...openTabs, name];
               }
               return { documents, openTabs, activeTab: name };
             }),
@@ -220,7 +230,9 @@ export const createDocumentsStore = (
               for (const doc of state.documents) {
                 for (const key of ['mtime', 'ctime', 'atime'] as const) {
                   if (doc[key] && typeof doc[key] === 'string') {
-                    (doc as Record<string, unknown>)[key] = new Date(doc[key] as unknown as string);
+                    (doc as Record<string, unknown>)[key] = new Date(
+                      doc[key] as unknown as string
+                    );
                   }
                 }
               }

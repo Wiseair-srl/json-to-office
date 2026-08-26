@@ -6,7 +6,5 @@
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "src/**/*.test.ts"],
-  "references": [
-    { "path": "../shared" }
-  ]
+  "references": [{ "path": "../shared" }]
 }

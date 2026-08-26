@@ -11,8 +11,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // In prod (tsup): __dirname = dist → look for prompts in src/server/prompts (fallback)
 function resolvePromptsDir(): string {
   const candidates = [
-    join(__dirname, '..', 'prompts'),           // dev: src/server/prompts
-    join(__dirname, 'prompts'),                  // bundled: dist/prompts
+    join(__dirname, '..', 'prompts'), // dev: src/server/prompts
+    join(__dirname, 'prompts'), // bundled: dist/prompts
     join(__dirname, '..', 'src', 'server', 'prompts'), // prod from dist/
   ];
   for (const dir of candidates) {

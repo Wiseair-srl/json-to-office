@@ -7,6 +7,6 @@
     { "path": "./packages/shared-docx" },
     { "path": "./packages/shared-pptx" },
     { "path": "./packages/core-docx" },
-    { "path": "./packages/core-pptx" },
-  ],
+    { "path": "./packages/core-pptx" }
+  ]
 }
