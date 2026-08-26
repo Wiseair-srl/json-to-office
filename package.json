@@ -45,7 +45,8 @@
     "version-packages": "changeset version",
     "release": "pnpm build && changeset publish",
     "\n\n=== GIT HOOKS ===": "",
-    "prepare": "husky"
+    "prepare": "husky",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "keywords": [
     "docx",
