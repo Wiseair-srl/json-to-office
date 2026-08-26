@@ -23,7 +23,7 @@ export function mergeTemplatesDelta(existing: any[], delta: any[]): any[] {
 export function applyId(str: string): string {
   let h = 0;
   for (let i = 0; i < str.length; i++) {
-    h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
   }
   return (h >>> 0).toString(36);
 }
@@ -80,7 +80,12 @@ export function mergeAiOutput(
 
     // indexOf failed — try line-range splice
     if (ctx.startLine && ctx.endLine) {
-      const result = lineRangeSplice(currentDoc, aiOutput, ctx.startLine, ctx.endLine);
+      const result = lineRangeSplice(
+        currentDoc,
+        aiOutput,
+        ctx.startLine,
+        ctx.endLine
+      );
       if (result) return result;
     }
 
@@ -114,7 +119,8 @@ function tryNamedObjectSplice(
   } catch {
     return null;
   }
-  if (!aiParsed || typeof aiParsed !== 'object' || Array.isArray(aiParsed)) return null;
+  if (!aiParsed || typeof aiParsed !== 'object' || Array.isArray(aiParsed))
+    return null;
   const name = aiParsed.name;
   if (typeof name !== 'string' || !name) return null;
 
@@ -138,11 +144,20 @@ function tryNamedObjectSplice(
 
 /** Recursively walk a parsed JSON tree and replace the first object whose
  *  "name" matches `target`. Returns true if a replacement was made. */
-function replaceNamedObject(node: unknown, target: string, replacement: Record<string, unknown>): boolean {
+function replaceNamedObject(
+  node: unknown,
+  target: string,
+  replacement: Record<string, unknown>
+): boolean {
   if (Array.isArray(node)) {
     for (let i = 0; i < node.length; i++) {
       const item = node[i];
-      if (item && typeof item === 'object' && !Array.isArray(item) && (item as Record<string, unknown>).name === target) {
+      if (
+        item &&
+        typeof item === 'object' &&
+        !Array.isArray(item) &&
+        (item as Record<string, unknown>).name === target
+      ) {
         node[i] = replacement;
         return true;
       }
@@ -294,7 +309,13 @@ export function findKeyValueSpans(text: string, keyPattern: string): Span[] {
     let prev = keyIdx - 1;
     while (prev >= 0 && (text[prev] === ' ' || text[prev] === '\t')) prev--;
     const precChar = prev < 0 ? '' : text[prev];
-    if (precChar !== '' && precChar !== '{' && precChar !== ',' && precChar !== '\n' && precChar !== '\r') {
+    if (
+      precChar !== '' &&
+      precChar !== '{' &&
+      precChar !== ',' &&
+      precChar !== '\n' &&
+      precChar !== '\r'
+    ) {
       searchFrom = keyIdx + 1;
       continue;
     }
@@ -384,11 +405,13 @@ export function lineRangeSplice(
   endLine: number
 ): { original: string; modified: string } | null {
   const lines = doc.split('\n');
-  if (startLine < 1 || endLine < startLine || startLine > lines.length) return null;
+  if (startLine < 1 || endLine < startLine || startLine > lines.length)
+    return null;
 
   const before = lines.slice(0, startLine - 1).join('\n');
   const after = lines.slice(endLine).join('\n');
-  const modified = before + (before ? '\n' : '') + replacement + (after ? '\n' : '') + after;
+  const modified =
+    before + (before ? '\n' : '') + replacement + (after ? '\n' : '') + after;
   return { original: doc, modified };
 }
 
@@ -424,7 +447,11 @@ function charOffsetForLine(text: string, line: number): number {
 }
 
 /** Find all occurrences and return the one closest to `targetOffset`. */
-function pickClosest(text: string, needle: string, targetOffset: number): number {
+function pickClosest(
+  text: string,
+  needle: string,
+  targetOffset: number
+): number {
   let best = -1;
   let bestDist = Infinity;
   let idx = text.indexOf(needle);

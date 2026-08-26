@@ -7,7 +7,11 @@ export {
   calculatePosition,
 } from './error-transformer';
 
-export type { ValidationError, ValidationResult, TransformedError } from './types';
+export type {
+  ValidationError,
+  ValidationResult,
+  TransformedError,
+} from './types';
 
 export {
   type ErrorFormatterConfig,

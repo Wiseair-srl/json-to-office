@@ -12,7 +12,9 @@ import {
 describe('mergeAiOutput — selection splice', () => {
   it('splices unique match', () => {
     const doc = '{"a": 1, "b": 2}';
-    const { modified } = mergeAiOutput(doc, '"b": 99', { selectedText: '"b": 2' });
+    const { modified } = mergeAiOutput(doc, '"b": 99', {
+      selectedText: '"b": 2',
+    });
     expect(modified).toBe('{"a": 1, "b": 99}');
   });
 
@@ -238,7 +240,11 @@ describe('mergeAiOutput — named-object splice', () => {
 
   it('replaces only the matching named object', () => {
     const aiOutput = JSON.stringify(
-      { name: 'COVER', background: { color: 'green' }, objects: [{ type: 'text' }] },
+      {
+        name: 'COVER',
+        background: { color: 'green' },
+        objects: [{ type: 'text' }],
+      },
       null,
       2
     );
@@ -291,7 +297,11 @@ describe('mergeAiOutput — named-object splice', () => {
   });
 
   it('falls through to full-doc when AI name matches only the root', () => {
-    const aiOutput = JSON.stringify({ name: 'pptx', props: { templates: [] } }, null, 2);
+    const aiOutput = JSON.stringify(
+      { name: 'pptx', props: { templates: [] } },
+      null,
+      2
+    );
     const { modified } = mergeAiOutput(doc, aiOutput);
     // 'pptx' only exists on the root (not inside any array), so named splice
     // can't find it → falls through to full-doc replacement

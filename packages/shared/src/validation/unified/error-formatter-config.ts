@@ -10,7 +10,11 @@ export interface ErrorFormatterConfig {
 
 function isCI(): boolean {
   if (typeof process === 'undefined' || !process.env) return false;
-  return !!(process.env.CI || process.env.GITHUB_ACTIONS || process.env.GITLAB_CI);
+  return !!(
+    process.env.CI ||
+    process.env.GITHUB_ACTIONS ||
+    process.env.GITLAB_CI
+  );
 }
 
 function hasColorSupport(): boolean {

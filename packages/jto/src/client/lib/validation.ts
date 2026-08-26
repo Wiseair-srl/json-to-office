@@ -35,9 +35,11 @@ export function getDocumentFormSchema(
   }
 
   if (mode === 'create') {
-    properties['template'] = Type.Optional(Type.String({
-      description: 'Template selection',
-    }));
+    properties['template'] = Type.Optional(
+      Type.String({
+        description: 'Template selection',
+      })
+    );
   }
 
   // Create the base schema
@@ -71,7 +73,7 @@ export function getDocumentFormSchema(
         if (!trimmed) {
           errors.push({
             path: 'name',
-            message: 'Name can\'t be empty',
+            message: "Name can't be empty",
           });
         } else {
           // Update the data with trimmed value

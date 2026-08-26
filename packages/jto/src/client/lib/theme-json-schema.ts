@@ -13,7 +13,8 @@ export async function fetchThemeJsonSchema(): Promise<any> {
 
   const res = await fetch('/api/discovery/schemas/theme');
   const json = await res.json();
-  if (!json.success) throw new Error(json.error ?? 'Failed to fetch theme schema');
+  if (!json.success)
+    throw new Error(json.error ?? 'Failed to fetch theme schema');
 
   _cachedSchema = json.data;
   return _cachedSchema;

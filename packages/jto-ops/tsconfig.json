@@ -3,20 +3,20 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "lib": ["ES2022"],
+    "lib": ["ES2022"]
   },
   "include": ["src/**/*.ts"],
   "exclude": [
     "node_modules",
     "dist",
     "src/**/*.test.ts",
-    "src/**/__tests__/**",
+    "src/**/__tests__/**"
   ],
   "references": [
     { "path": "../shared" },
     { "path": "../shared-docx" },
     { "path": "../shared-pptx" },
     { "path": "../core-docx" },
-    { "path": "../core-pptx" },
-  ],
+    { "path": "../core-pptx" }
+  ]
 }

@@ -51,6 +51,4 @@ export type HighchartsComponentDefaults = Static<
 export type ChartComponentDefaults = Static<
   typeof ChartComponentDefaultsSchema
 >;
-export type PptxComponentDefaults = Static<
-  typeof PptxComponentDefaultsSchema
->;
+export type PptxComponentDefaults = Static<typeof PptxComponentDefaultsSchema>;
