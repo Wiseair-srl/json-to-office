@@ -325,4 +325,30 @@ describe('GeneratorService renderer cache isolation', () => {
       message: expect.stringContaining('maxDiagnostics'),
     });
   });
+
+  it('refuses to call a gated document valid when the analysis never ran', async () => {
+    // An analysis that died for an unnamed reason leaves the requested gate
+    // unevaluated. `generate` rejects that; validation answering `valid: true`
+    // would promise a generation the same service then refuses.
+    adapter.analyzeQuality = async () => {
+      throw new Error('facts unavailable');
+    };
+
+    await expect(
+      service.validate(DOCUMENT, { quality: { policy: { gate: 'warning' } } })
+    ).rejects.toThrow('facts unavailable');
+    await expect(
+      service.validate(DOCUMENT, {
+        quality: { policy: { onRuleError: 'throw' } },
+      })
+    ).rejects.toThrow('facts unavailable');
+
+    // Advisory runs keep degrading to "no quality analysis".
+    await expect(
+      service.validate(DOCUMENT, { quality: { policy: { gate: 'none' } } })
+    ).resolves.toMatchObject({ valid: true });
+    await expect(service.validate(DOCUMENT)).resolves.toMatchObject({
+      valid: true,
+    });
+  });
 });

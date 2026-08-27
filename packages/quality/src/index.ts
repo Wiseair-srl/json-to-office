@@ -34,6 +34,7 @@ export {
   assertValidQualityProfile,
   isBlocking,
   isSuppressed,
+  mergeQualityProfiles,
   QualityPolicyError,
   resolveRuleConfiguration,
   severityRank,

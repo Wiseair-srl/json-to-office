@@ -164,6 +164,28 @@ describe('QualityEngine', () => {
         policy: { onRuleError: 'ignore' } as unknown as QualityPolicy,
       })
     ).toThrow('invalid onRuleError');
+
+    // A policy parsed from JSON can hold anything under a rule id, and
+    // `null.severity` would surface as a TypeError rather than the
+    // configuration error every other malformed policy reports.
+    for (const configuration of [null, 'error', ['error']]) {
+      expect(() =>
+        engine.analyzeSync(prepared, {
+          policy: {
+            rules: { 'test/minimum': configuration },
+          } as unknown as QualityPolicy,
+        })
+      ).toThrow(QualityPolicyError);
+    }
+
+    expect(() =>
+      engine.analyzeSync(prepared, {
+        profile: {
+          id: 'strict',
+          rules: { 'test/minimum': null },
+        } as unknown as QualityProfile,
+      })
+    ).toThrow('invalid configuration');
   });
 
   it('applies subtree suppressions and reports their count', async () => {

@@ -349,6 +349,27 @@ const HOST_DEPENDENCY_ERRORS = new Set([RENDERER_DEPENDENCY_MISSING]);
  * — the same reasoning the HTTP surface documents, which maps this exact set
  * to 400.
  */
+/**
+ * The option defect an unusable `quality` argument names, as a diagnostic.
+ *
+ * `guarded` turns the same error into a whole-call failure, which is right
+ * when the options are the only thing wrong. A caller that sent a broken
+ * document AND a bad profile needs both answers, and the schema errors are the
+ * half it can act on — so that path folds this in beside them instead.
+ */
+export function qualityOptionDiagnostic(
+  error: unknown
+): Diagnostic | undefined {
+  const code = qualityCallerCode(error);
+  if (code === undefined || code === ERROR_CODES.INVALID_DOCUMENT) {
+    return undefined;
+  }
+  return diagnostic(
+    code,
+    error instanceof Error ? error.message : String(error)
+  );
+}
+
 function qualityCallerCode(error: unknown): string | undefined {
   const code = (error as { code?: unknown } | undefined)?.code;
   if (code === 'QUALITY_PROFILE_INCOMPATIBLE')

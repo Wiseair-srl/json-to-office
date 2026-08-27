@@ -276,6 +276,19 @@ describe('shipped profiles', () => {
     expect(analysis.diagnostics).toEqual([]);
   });
 
+  it("keeps a shipped rule's severity when the caller overrides one field", () => {
+    const analysis = analyzeDocxQuality(skipped, {
+      profile: {
+        id: 'executive-report',
+        formats: ['docx'],
+        rules: { 'docx/heading-hierarchy': { enabled: true } },
+      },
+    });
+    // Without the per-rule merge, `enabled` replaces the whole configuration
+    // and the finding drops back to the rule's own `info` default.
+    expect(analysis.diagnostics[0]).toMatchObject({ severity: 'warning' });
+  });
+
   it('leaves an unregistered profile exactly as the caller wrote it', () => {
     const analysis = analyzeDocxQuality(skipped, {
       profile: {
@@ -313,6 +326,24 @@ describe('preparation failures', () => {
     expect(() =>
       analyzeDocxQuality(broken, { policy: { onRuleError: 'throw' } })
     ).toThrow();
+  });
+
+  it('still reports an unusable policy or profile', () => {
+    // The document being broken is no reason to accept a policy the engine
+    // would have rejected: the caller hears about its own configuration first.
+    expect(() =>
+      analyzeDocxQuality(broken, {
+        policy: { onRuleError: 'ignore' } as never,
+      })
+    ).toThrow(/invalid onRuleError/);
+    expect(() =>
+      analyzeDocxQuality(broken, {
+        profile: {
+          id: 'strict',
+          rules: { 'docx/heading-hierarchy': { severity: 'fatal' } },
+        } as never,
+      })
+    ).toThrow(/invalid severity/);
   });
 });
 

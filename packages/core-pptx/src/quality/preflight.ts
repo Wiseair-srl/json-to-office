@@ -1,11 +1,13 @@
 /** PPTX quality analysis over renderer-aligned prepared facts. */
 
-import type {
-  PreparedDocument,
-  QualityAnalysis,
-  QualityPolicy,
-  QualityProfile,
-  QualityRuleError,
+import {
+  assertValidQualityPolicy,
+  assertValidQualityProfile,
+  type PreparedDocument,
+  type QualityAnalysis,
+  type QualityPolicy,
+  type QualityProfile,
+  type QualityRuleError,
 } from '@json-to-office/quality';
 import type {
   PptxThemeConfig,
@@ -52,6 +54,11 @@ export function analyzePptxQuality(
   doc: unknown,
   options: PptxQualityAnalysisOptions = {}
 ): QualityAnalysis {
+  // Ahead of every early return: a malformed document must not be the reason a
+  // caller never hears that its own policy or profile was unusable.
+  assertValidQualityPolicy(options.policy);
+  assertValidQualityProfile(options.profile);
+
   if (
     typeof doc !== 'object' ||
     doc === null ||

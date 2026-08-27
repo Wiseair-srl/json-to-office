@@ -581,6 +581,35 @@ describe('jto_validate', () => {
     expect(result.diagnostics[0].message).toContain('executive-report');
   });
 
+  it('answers a malformed document with its schema errors, not an option error', async () => {
+    // Two defects at once — a broken document AND a profile scoped to the
+    // other format. Quality used to run first, so the profile threw and the
+    // schema errors, the only thing the agent can act on here, never shipped.
+    const { result, isError } = await validate({
+      format: 'pptx',
+      document: {
+        name: 'pptx',
+        props: { slideWidth: 13.333, slideHeight: 7.5 },
+        children: [{ name: 'not-a-component', props: {} }],
+      },
+      quality: { profile: { id: 'executive-report', formats: ['docx'] } },
+    });
+
+    expect(isError).toBeFalsy();
+    expect(result.ok).toBe(false);
+    // Both defects, in one answer: the schema errors are the half the agent
+    // can repair, and the profile is the half it chose.
+    expect(result.diagnostics.map((entry: any) => entry.path)).toContain(
+      '/children/0/name'
+    );
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'E_INVALID_QUALITY_PROFILE',
+        message: expect.stringContaining('executive-report'),
+      })
+    );
+  });
+
   it('blames the caller for a policy value that is not a legal one', async () => {
     // The policy schema is `additionalProperties: true` — the tool declares
     // `gate` and takes the rest as written — so a typo in any other field

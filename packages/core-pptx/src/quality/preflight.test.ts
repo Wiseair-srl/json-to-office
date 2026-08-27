@@ -657,6 +657,21 @@ describe('shipped profiles', () => {
     ]);
   });
 
+  it("keeps a shipped rule's parameters when the caller overrides one field", () => {
+    const analysis = analyzePptxQuality(small, {
+      profile: {
+        id: 'executive-presentation',
+        formats: ['pptx'],
+        rules: { 'pptx/minimum-font-size': { severity: 'error' } },
+      },
+    });
+    // The 14pt executive floor survives a severity-only override; without the
+    // per-rule merge the rule falls back to its 7pt default and 10pt passes.
+    expect(
+      analysis.diagnostics.map((finding) => [finding.code, finding.severity])
+    ).toEqual([[QUALITY_CODES.FONT_SIZE_MIN, 'error']]);
+  });
+
   it('leaves an unregistered profile exactly as the caller wrote it', () => {
     const analysis = analyzePptxQuality(small, {
       profile: {
@@ -698,6 +713,24 @@ describe('preparation failures', () => {
     expect(() =>
       analyzePptxQuality(broken, { policy: { onRuleError: 'throw' } })
     ).toThrow();
+  });
+
+  it('still reports an unusable policy or profile', () => {
+    // The document being broken is no reason to accept a policy the engine
+    // would have rejected: the caller hears about its own configuration first.
+    expect(() =>
+      analyzePptxQuality(broken, {
+        policy: { onRuleError: 'ignore' } as never,
+      })
+    ).toThrow(/invalid onRuleError/);
+    expect(() =>
+      analyzePptxQuality(broken, {
+        profile: {
+          id: 'strict',
+          rules: { 'pptx/minimum-font-size': { severity: 'fatal' } },
+        } as never,
+      })
+    ).toThrow(/invalid severity/);
   });
 });
 

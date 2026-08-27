@@ -231,11 +231,14 @@ describe('prepared document reuse', () => {
     });
     const generator = await adapter.createGenerator([], {
       theme: 'modern',
+      deterministic: true,
       prepared,
     });
 
     const rendered = await generator.generateBuffer(report('corporate'));
-    const modern = await adapter.generateBuffer(report('modern'), {});
+    const modern = await adapter.generateBuffer(report('modern'), {
+      deterministic: true,
+    });
 
     expect(rendered.equals(modern)).toBe(true);
   });

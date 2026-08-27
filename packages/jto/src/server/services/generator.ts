@@ -662,10 +662,16 @@ export class GeneratorService {
         };
       } catch (error) {
         const errorCode = (error as { code?: unknown } | undefined)?.code;
+        const quality = options.quality;
         if (
           errorCode === 'QUALITY_GATE_FAILED' ||
           errorCode === 'QUALITY_PROFILE_INCOMPATIBLE' ||
-          errorCode === 'QUALITY_POLICY_INVALID'
+          errorCode === 'QUALITY_POLICY_INVALID' ||
+          quality?.policy?.onRuleError === 'throw' ||
+          // Same rule `generate` applies: an analysis that never ran leaves a
+          // requested gate unevaluated, and answering `valid: true` there would
+          // promise a generation this service would then refuse.
+          (quality?.policy?.gate && quality.policy.gate !== 'none')
         ) {
           throw error;
         }

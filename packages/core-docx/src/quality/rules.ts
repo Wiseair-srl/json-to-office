@@ -1,4 +1,5 @@
 import {
+  mergeQualityProfiles,
   QUALITY_CODES,
   QualityEngine,
   type QualityProfile,
@@ -178,12 +179,7 @@ export function resolveDocxQualityProfile(
   if (!requested) return undefined;
   const registered = DOCX_PROFILES_BY_ID[requested.id];
   if (!registered) return requested;
-  return {
-    ...registered,
-    ...requested,
-    rules: { ...registered.rules, ...requested.rules },
-    parameters: { ...registered.parameters, ...requested.parameters },
-  };
+  return mergeQualityProfiles(registered, requested);
 }
 
 export const docxQualityEngine = new QualityEngine(DOCX_QUALITY_RULES.rules);

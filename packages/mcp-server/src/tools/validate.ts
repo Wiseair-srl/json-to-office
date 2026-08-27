@@ -36,6 +36,7 @@ import {
   diagnostic,
   guarded,
   qualityAnalysisDiagnostics,
+  qualityOptionDiagnostic,
   toolResult,
   validationDiagnostics,
   type Diagnostic,
@@ -218,15 +219,31 @@ export function register(server: McpServer, deps: ToolDeps): void {
           );
           // Third question: schema-valid ≠ well-designed. Advisory by default;
           // an explicit run policy can promote quality into the gate.
-          const analysis = adapter.analyzeQuality
-            ? await adapter.analyzeQuality(resolved.document, {
+          let analysis: QualityAnalysis | undefined;
+          let qualityOption: Diagnostic | undefined;
+          if (adapter.analyzeQuality) {
+            try {
+              analysis = await adapter.analyzeQuality(resolved.document, {
                 renderer: args.renderer,
                 quality: args.quality,
-              })
-            : undefined;
+              });
+            } catch (error) {
+              // Two defects at once — a malformed document AND an unusable
+              // profile or policy. `guarded` would answer with the option
+              // error alone, dropping the repair list this tool exists to
+              // produce, so a broken document keeps its diagnostics and
+              // carries the option defect alongside them.
+              const option = result.valid
+                ? undefined
+                : qualityOptionDiagnostic(error);
+              if (!option) throw error;
+              qualityOption = option;
+            }
+          }
           const structural = [
             ...validationDiagnostics(result.errors),
             ...(unavailable ? [unavailable] : []),
+            ...(qualityOption ? [qualityOption] : []),
           ];
           const all = [
             ...structural,

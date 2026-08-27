@@ -29,11 +29,23 @@ function isSeverity(value: unknown): value is DiagnosticSeverity {
   return value === 'error' || value === 'warning' || value === 'info';
 }
 
-function assertRuleSeverities(
+function assertRuleConfigurations(
   rules: Readonly<Record<string, QualityRuleConfiguration>> | undefined,
   origin: 'policy' | 'profile'
 ): void {
   for (const [ruleId, configuration] of Object.entries(rules ?? {})) {
+    // A hand-written JSON policy can hold `null` or a scalar here; reading
+    // `severity` off one is a TypeError, not the configuration error callers
+    // are told to expect.
+    if (
+      typeof configuration !== 'object' ||
+      configuration === null ||
+      Array.isArray(configuration)
+    ) {
+      throw new QualityPolicyError(
+        `Quality ${origin} rule "${ruleId}" has invalid configuration ${JSON.stringify(configuration)}; expected an object`
+      );
+    }
     if (
       configuration.severity !== undefined &&
       !isSeverity(configuration.severity)
@@ -58,7 +70,7 @@ export function assertValidQualityPolicy(
       `Quality policy has invalid gate ${JSON.stringify(policy.gate)}; expected "none", "error", "warning" or "info"`
     );
   }
-  assertRuleSeverities(policy.rules, 'policy');
+  assertRuleConfigurations(policy.rules, 'policy');
   if (
     policy.maxDiagnostics !== undefined &&
     (!Number.isInteger(policy.maxDiagnostics) || policy.maxDiagnostics < 0)
@@ -82,7 +94,39 @@ export function assertValidQualityProfile(
   profile: QualityProfile | undefined
 ): void {
   if (!profile) return;
-  assertRuleSeverities(profile.rules, 'profile');
+  assertRuleConfigurations(profile.rules, 'profile');
+}
+
+/**
+ * Layer a caller's profile over a shipped one. A caller who names a profile and
+ * overrides a single field of a single rule — `{ severity: 'error' }` — means to
+ * keep the rest: replacing the whole configuration would silently drop the
+ * shipped parameters, so every overlapping rule merges field by field.
+ */
+export function mergeQualityProfiles(
+  base: QualityProfile,
+  override: QualityProfile
+): QualityProfile {
+  const rules: Record<string, QualityRuleConfiguration> = { ...base.rules };
+  for (const [ruleId, configuration] of Object.entries(override.rules ?? {})) {
+    const shipped = rules[ruleId];
+    rules[ruleId] = shipped
+      ? {
+          ...shipped,
+          ...configuration,
+          parameters: {
+            ...shipped.parameters,
+            ...configuration.parameters,
+          },
+        }
+      : configuration;
+  }
+  return {
+    ...base,
+    ...override,
+    rules,
+    parameters: { ...base.parameters, ...override.parameters },
+  };
 }
 
 export function resolveRuleConfiguration(
