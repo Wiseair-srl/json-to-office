@@ -8,6 +8,8 @@
     "incremental": false,
     "noEmit": true,
     "paths": {
+      "@json-to-office/quality": ["packages/quality/src/index.ts"],
+      "@json-to-office/quality/*": ["packages/quality/src/*"],
       "@json-to-office/shared": ["packages/shared/src/index.ts"],
       "@json-to-office/shared/*": ["packages/shared/src/*"],
       "@json-to-office/shared-docx": ["packages/shared-docx/src/index.ts"],
