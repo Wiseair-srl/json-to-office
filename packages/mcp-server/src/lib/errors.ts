@@ -22,7 +22,6 @@ import type {
   QualityCategory,
   QualityCertainty,
   QualityEvidence,
-  QualityFinding,
 } from '@json-to-office/quality';
 import { ValueErrorType } from '@sinclair/typebox/errors';
 
@@ -569,29 +568,6 @@ export function validationDiagnostics(
       };
     })
   );
-}
-
-/**
- * Adapt the cores' design-quality findings (#216) to diagnostics.
- *
- * Nothing to normalize: the collectors already speak the published vocabulary
- * (`W_QUALITY_*`), carry RFC 6901 pointers, and decide their own severity —
- * always `warning` or `info`, so a quality finding can never flip a tool's
- * `ok`. The mapping exists only to change the field spelling.
- */
-export function qualityDiagnostics(
-  findings: readonly QualityFinding[]
-): Diagnostic[] {
-  return findings.map((finding) => ({
-    severity: finding.severity,
-    code: finding.code,
-    message: finding.message,
-    path: finding.path,
-    ...(finding.suggestion !== undefined && {
-      suggestion: finding.suggestion,
-    }),
-    ...(finding.context !== undefined && { context: finding.context }),
-  }));
 }
 
 /** Preserve the autonomous quality package's evidence-rich diagnostics. */

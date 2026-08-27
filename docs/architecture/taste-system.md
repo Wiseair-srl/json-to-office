@@ -90,7 +90,7 @@ authored JSON
 Official pipelines prepare once per request. Renderer and quality analysis consume
 the same opaque prepared model through `FormatAdapter.prepareDocument`; neither
 independently reconstructs effective defaults. Third-party/plugin adapters without
-that optional capability use the compatibility path. The model remains
+that optional capability may prepare inside `analyzeQuality`. The model remains
 format-specific because DOCX flow and PPTX geometry are genuinely different.
 
 Provenance is created during transformation. Every resolved or synthetic node knows
@@ -153,7 +153,7 @@ interface QualityRule<TFact> {
     | 'consistency'
     | 'information-design'
     | 'brand';
-  evaluate(context: QualityContext<TFact>): readonly QualityFinding[];
+  evaluate(context: QualityContext<TFact>): readonly QualityRuleFinding[];
 }
 ```
 

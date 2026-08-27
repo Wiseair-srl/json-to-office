@@ -190,7 +190,7 @@ Each warning is a `PipelineWarning`:
 
 ## Design-quality findings
 
-Schema-valid is not well-designed: a text box overflowing its bounds by 60×, a deck silently rendered on the 4:3 fallback canvas, or forty lines of prose on one slide all validate clean. `@json-to-office/quality` supplies the format-agnostic engine, profiles, policies, evidence, and gate; each core supplies format facts and rules. `analyzePptxQuality` / `analyzeDocxQuality` return the rich result. The old `collect*QualityFindings` functions remain as non-blocking compatibility facades.
+Schema-valid is not well-designed: a text box overflowing its bounds by 60×, a deck silently rendered on the 4:3 fallback canvas, or forty lines of prose on one slide all validate clean. `@json-to-office/quality` supplies the format-agnostic engine, profiles, policies, evidence, and gate; each core supplies format facts and rules. `analyzePptxQuality` / `analyzeDocxQuality` return the evidence-rich `QualityAnalysis` result.
 
 Diagnostics are path-addressed like validation errors and carry category, certainty, evidence, a suggestion, and optional RFC 6902 fixes. Severity does not pretend certainty: `estimated` remains estimated even when policy promotes it to an error. Quality is advisory by default; an explicit run policy can gate `error`, `warning`, or `info` diagnostics.
 

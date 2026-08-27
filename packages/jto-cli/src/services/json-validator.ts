@@ -168,11 +168,7 @@ export class JsonValidator {
             quality: options.quality,
           })
         : undefined;
-      const quality = analysis
-        ? analysis.diagnostics
-        : this.adapter?.qualityCheck
-          ? await this.adapter.qualityCheck(jsonData)
-          : [];
+      const quality = analysis?.diagnostics ?? [];
       const qualityEntries = quality.map((finding) => ({
         path: finding.path,
         message: finding.message,

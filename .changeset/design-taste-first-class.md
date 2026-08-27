@@ -15,12 +15,12 @@ Design quality becomes a first-class pipeline (#216, #218).
 
 Adds autonomous `@json-to-office/quality`: facts/rules/profiles/policy,
 certainty and evidence, suppressions, budgets, rule isolation, rich diagnostics,
-and explicit gates. Shared keeps compatibility re-exports.
+and explicit gates.
 
 DOCX/PPTX cores own preparation, authored-path provenance, facts, built-in rule
 packs, and five initial document-class profiles. Official adapters reuse one
-opaque `PreparedDocument` for analysis and rendering. Legacy `collect*Findings`
-and optional `qualityCheck` remain compatible.
+opaque `PreparedDocument` for analysis and rendering. Core entry points and
+format adapters expose the evidence-rich `QualityAnalysis` contract directly.
 
 CLI, MCP, HTTP, cache hits, and playground generation preserve rich quality
 diagnostics. Advisory remains default; profile/policy can block validation or

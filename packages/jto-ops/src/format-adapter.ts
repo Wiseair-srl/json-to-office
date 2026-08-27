@@ -12,7 +12,6 @@ import type {
 import type {
   PreparedDocument,
   QualityAnalysis,
-  QualityFinding,
   QualityPolicy,
   QualityProfile,
 } from '@json-to-office/quality';
@@ -57,25 +56,6 @@ function toGenerationWarnings(
       ...(w?.code !== undefined && { code: w.code }),
       ...(w?.slide !== undefined && { slide: w.slide }),
     },
-  }));
-}
-
-function analysisToFindings(analysis: QualityAnalysis): QualityFinding[] {
-  return analysis.diagnostics.map((diagnostic) => ({
-    code: diagnostic.code,
-    severity: diagnostic.severity === 'info' ? 'info' : 'warning',
-    message: diagnostic.message,
-    path: diagnostic.path,
-    ruleId: diagnostic.ruleId,
-    category: diagnostic.category,
-    certainty: diagnostic.certainty,
-    ...(diagnostic.suggestion && { suggestion: diagnostic.suggestion }),
-    ...(diagnostic.context && { context: { ...diagnostic.context } }),
-    ...(diagnostic.relatedPaths && {
-      relatedPaths: diagnostic.relatedPaths,
-    }),
-    ...(diagnostic.evidence && { evidence: diagnostic.evidence }),
-    ...(diagnostic.fixes && { fixes: diagnostic.fixes }),
   }));
 }
 
@@ -316,20 +296,7 @@ export interface FormatAdapter {
   parseJson(input: string | object): unknown;
   validateDocument(doc: unknown): { valid: boolean; errors?: any[] };
 
-  /**
-   * The format's design-quality findings for `doc` (#216) — the layer schema
-   * validation has no opinion on: canvas, overflow estimates, density, table
-   * widths. Never blocks anything; findings are warnings and infos.
-   *
-   * Async because the collectors live in the cores, which are imported on
-   * demand and reuse renderer theme/layout normalization.
-   */
-  qualityCheck?(
-    doc: unknown,
-    options?: GeneratorOptions
-  ): Promise<QualityFinding[]>;
-
-  /** Rich quality analysis; preferred over the compatibility collector. */
+  /** Analyze format-specific design quality with profiles, policy, and gate. */
   analyzeQuality?(
     doc: unknown,
     options?: GeneratorOptions
@@ -584,13 +551,6 @@ export class DocxFormatAdapter implements FormatAdapter {
       valid: result.valid,
       ...(result.errors.length > 0 && { errors: result.errors }),
     };
-  }
-
-  async qualityCheck(
-    doc: unknown,
-    options: GeneratorOptions = {}
-  ): Promise<QualityFinding[]> {
-    return analysisToFindings(await this.analyzeQuality(doc, options));
   }
 
   async analyzeQuality(
@@ -968,13 +928,6 @@ export class PptxFormatAdapter implements FormatAdapter {
       valid: result.valid,
       ...(result.errors.length > 0 && { errors: result.errors }),
     };
-  }
-
-  async qualityCheck(
-    doc: unknown,
-    options: GeneratorOptions = {}
-  ): Promise<QualityFinding[]> {
-    return analysisToFindings(await this.analyzeQuality(doc, options));
   }
 
   async analyzeQuality(

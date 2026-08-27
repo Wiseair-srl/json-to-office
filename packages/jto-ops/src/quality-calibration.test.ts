@@ -38,7 +38,8 @@ describe('stock templates pass the quality rules clean', () => {
       const adapter = file.endsWith('.pptx.json')
         ? new PptxFormatAdapter()
         : new DocxFormatAdapter();
-      const findings = await adapter.qualityCheck(document);
+      const analysis = await adapter.analyzeQuality(document);
+      const findings = analysis.diagnostics;
 
       const warnings = findings.filter(
         (finding) => finding.severity === 'warning'

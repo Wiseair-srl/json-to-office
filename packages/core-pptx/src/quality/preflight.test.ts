@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { QUALITY_CODES } from '@json-to-office/quality';
-import { analyzePptxQuality, collectPptxQualityFindings } from './preflight';
+import { analyzePptxQuality } from './preflight';
 
 const CANVAS = { slideWidth: 13.333, slideHeight: 7.5 };
 
@@ -8,15 +8,17 @@ function deck(props: Record<string, unknown>, slides: unknown[]) {
   return { name: 'pptx', props, children: slides };
 }
 
+function pptxDiagnostics(input: unknown) {
+  return analyzePptxQuality(input).diagnostics;
+}
+
 function codes(doc: unknown): string[] {
-  return collectPptxQualityFindings(doc).map((finding) => finding.code);
+  return pptxDiagnostics(doc).map((finding) => finding.code);
 }
 
 describe('canvas', () => {
   it('warns when no canvas is declared — the renderer falls back to 4:3', () => {
-    const findings = collectPptxQualityFindings(
-      deck({ title: 'No canvas' }, [])
-    );
+    const findings = pptxDiagnostics(deck({ title: 'No canvas' }, []));
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({
       code: QUALITY_CODES.CANVAS_UNSPECIFIED,
@@ -38,7 +40,7 @@ describe('canvas', () => {
   });
 
   it('flags 4:3 legacy and unknown sizes as info, not warning', () => {
-    const legacy = collectPptxQualityFindings(
+    const legacy = pptxDiagnostics(
       deck({ slideWidth: 10, slideHeight: 7.5 }, [])
     );
     expect(legacy[0]).toMatchObject({
@@ -46,9 +48,7 @@ describe('canvas', () => {
       severity: 'info',
     });
 
-    const odd = collectPptxQualityFindings(
-      deck({ slideWidth: 9, slideHeight: 5 }, [])
-    );
+    const odd = pptxDiagnostics(deck({ slideWidth: 9, slideHeight: 5 }, []));
     expect(odd[0]).toMatchObject({
       code: QUALITY_CODES.CANVAS_NONSTANDARD,
       severity: 'info',
@@ -58,7 +58,7 @@ describe('canvas', () => {
 
 describe('text overflow', () => {
   it('flags text that cannot fit its declared box, with the measurements', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(CANVAS, [
         {
           name: 'slide',
@@ -100,7 +100,7 @@ describe('text overflow', () => {
       w: 4,
       h: 1.2,
     };
-    const styled = collectPptxQualityFindings(
+    const styled = pptxDiagnostics(
       deck(CANVAS, [
         {
           name: 'slide',
@@ -112,7 +112,7 @@ describe('text overflow', () => {
       QUALITY_CODES.TEXT_OVERFLOW
     );
 
-    const unstyled = collectPptxQualityFindings(
+    const unstyled = pptxDiagnostics(
       deck(CANVAS, [{ name: 'slide', children: [{ name: 'text', props }] }])
     );
     expect(
@@ -121,7 +121,7 @@ describe('text overflow', () => {
   });
 
   it('reports a fragile fit as TEXT_TIGHT info', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(CANVAS, [
         {
           name: 'slide',
@@ -142,7 +142,7 @@ describe('text overflow', () => {
   });
 
   it('resolves grid-positioned boxes through the renderer grid math', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(CANVAS, [
         {
           name: 'slide',
@@ -165,7 +165,7 @@ describe('text overflow', () => {
   });
 
   it('skips runs-based text and boxless text rather than guessing', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(CANVAS, [
         {
           name: 'slide',
@@ -197,7 +197,7 @@ describe('text overflow', () => {
 
 describe('legibility', () => {
   it('warns on an overcrowded slide, pointing at the slide', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(CANVAS, [
         {
           name: 'slide',
@@ -215,7 +215,7 @@ describe('legibility', () => {
   });
 
   it('does not count title and subtitle toward density', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(CANVAS, [
         {
           name: 'slide',
@@ -232,7 +232,7 @@ describe('legibility', () => {
   });
 
   it('warns on an unreadable font size', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(CANVAS, [
         {
           name: 'slide',
@@ -250,7 +250,7 @@ describe('legibility', () => {
 
 describe('renderer normalization parity', () => {
   it('ignores disabled slides and disabled component subtrees', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(CANVAS, [
         {
           name: 'slide',
@@ -276,7 +276,7 @@ describe('renderer normalization parity', () => {
   });
 
   it('sees presentation componentDefaults and template objects', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(
         {
           ...CANVAS,
@@ -312,7 +312,7 @@ describe('renderer normalization parity', () => {
   });
 
   it('uses the renderer placeholder merge precedence', () => {
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck(
         {
           ...CANVAS,
@@ -369,7 +369,7 @@ describe('renderer normalization parity', () => {
       defaults: { fontSize: 18, fontColor: '000000' },
       styles: { title: { fontSize: 36 } },
     };
-    const findings = collectPptxQualityFindings(
+    const findings = pptxDiagnostics(
       deck({ ...CANVAS, theme: inlineTheme }, [
         {
           name: 'slide',
@@ -395,11 +395,11 @@ describe('renderer normalization parity', () => {
 
 describe('robustness', () => {
   it('answers nothing for non-pptx or malformed input, never throws', () => {
-    expect(collectPptxQualityFindings(undefined)).toEqual([]);
-    expect(collectPptxQualityFindings('not a document')).toEqual([]);
-    expect(collectPptxQualityFindings({ name: 'docx' })).toEqual([]);
+    expect(pptxDiagnostics(undefined)).toEqual([]);
+    expect(pptxDiagnostics('not a document')).toEqual([]);
+    expect(pptxDiagnostics({ name: 'docx' })).toEqual([]);
     expect(
-      collectPptxQualityFindings({
+      pptxDiagnostics({
         name: 'pptx',
         props: CANVAS,
         children: [null, 42, { name: 'slide', children: 'nope' }],
@@ -407,8 +407,8 @@ describe('robustness', () => {
     ).toEqual([]);
   });
 
-  it('keeps the compatibility collector non-blocking', () => {
-    const findings = collectPptxQualityFindings(
+  it('keeps the default policy non-blocking', () => {
+    const analysis = analyzePptxQuality(
       deck({}, [
         {
           name: 'slide',
@@ -428,8 +428,9 @@ describe('robustness', () => {
         },
       ])
     );
-    expect(findings.length).toBeGreaterThan(0);
-    for (const finding of findings) {
+    expect(analysis.blocked).toBe(false);
+    expect(analysis.diagnostics.length).toBeGreaterThan(0);
+    for (const finding of analysis.diagnostics) {
       expect(['warning', 'info']).toContain(finding.severity);
     }
   });

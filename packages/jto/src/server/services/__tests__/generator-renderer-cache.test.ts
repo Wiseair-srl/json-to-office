@@ -3,7 +3,6 @@ import type { RendererStatus } from '@json-to-office/shared';
 import type {
   PreparedDocument,
   QualityAnalysis,
-  QualityFinding,
 } from '@json-to-office/quality';
 import {
   PluginRegistry,
@@ -51,18 +50,6 @@ class RecordingAdapter implements FormatAdapter {
 
   validateDocument(): { valid: boolean } {
     return { valid: true };
-  }
-
-  async qualityCheck(): Promise<QualityFinding[]> {
-    return [
-      {
-        code: 'W_QUALITY_HEADING_SKIP',
-        severity: 'info',
-        message: 'Heading level skipped.',
-        path: '/children/0',
-        suggestion: 'Use the next level.',
-      },
-    ];
   }
 
   async analyzeQuality(
@@ -193,12 +180,6 @@ describe('GeneratorService renderer cache isolation', () => {
     const validation = await service.validate(DOCUMENT);
     expect(validation).toMatchObject({
       valid: true,
-      quality: [
-        {
-          code: 'W_QUALITY_HEADING_SKIP',
-          severity: 'info',
-        },
-      ],
       qualityAnalysis: {
         blocked: false,
         evaluatedRuleIds: ['docx/heading-hierarchy'],

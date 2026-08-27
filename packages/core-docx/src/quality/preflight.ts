@@ -1,16 +1,8 @@
-/**
- * DOCX quality preflight compatibility facade.
- *
- * Preparation extracts renderer-aligned facts once; the format-agnostic engine
- * interprets them through rules and policy. `collectDocxQualityFindings` keeps
- * the original non-blocking API while `analyzeDocxQuality` exposes the richer
- * result.
- */
+/** DOCX quality analysis over renderer-aligned prepared facts. */
 
 import type {
   PreparedDocument,
   QualityAnalysis,
-  QualityFinding,
   QualityPolicy,
   QualityProfile,
 } from '@json-to-office/quality';
@@ -70,27 +62,4 @@ export function analyzeDocxQuality(
     profile: options.profile ?? DOCX_DEFAULT_QUALITY_PROFILE,
     policy: options.policy,
   });
-}
-
-/** Backward-compatible, non-blocking collector. */
-export function collectDocxQualityFindings(
-  doc: unknown,
-  options: DocxQualityOptions = {}
-): QualityFinding[] {
-  return analyzeDocxQuality(doc, options).diagnostics.map((diagnostic) => ({
-    code: diagnostic.code,
-    severity: diagnostic.severity === 'info' ? 'info' : 'warning',
-    message: diagnostic.message,
-    path: diagnostic.path,
-    ruleId: diagnostic.ruleId,
-    category: diagnostic.category,
-    certainty: diagnostic.certainty,
-    ...(diagnostic.suggestion && { suggestion: diagnostic.suggestion }),
-    ...(diagnostic.context && { context: { ...diagnostic.context } }),
-    ...(diagnostic.relatedPaths && {
-      relatedPaths: diagnostic.relatedPaths,
-    }),
-    ...(diagnostic.evidence && { evidence: diagnostic.evidence }),
-    ...(diagnostic.fixes && { fixes: diagnostic.fixes }),
-  }));
 }

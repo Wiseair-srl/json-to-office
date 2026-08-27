@@ -271,23 +271,15 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
                 generatorOptions
               );
             }
-            if (adapter.analyzeQuality || adapter.qualityCheck) {
+            if (adapter.analyzeQuality) {
               let blocked = false;
               try {
-                const analysis = adapter.analyzeQuality
-                  ? await adapter.analyzeQuality(
-                      documentDefinition,
-                      generatorOptions
-                    )
-                  : undefined;
-                blocked = analysis?.blocked ?? false;
-                const findings = analysis
-                  ? analysis.diagnostics
-                  : await adapter.qualityCheck!(
-                      documentDefinition,
-                      generatorOptions
-                    );
-                for (const finding of findings) {
+                const analysis = await adapter.analyzeQuality(
+                  documentDefinition,
+                  generatorOptions
+                );
+                blocked = analysis.blocked;
+                for (const finding of analysis.diagnostics) {
                   reporter.log(
                     `[${finding.code}] ${finding.path}: ${finding.message}${finding.suggestion ? ` Fix: ${finding.suggestion}` : ''}`,
                     finding.severity

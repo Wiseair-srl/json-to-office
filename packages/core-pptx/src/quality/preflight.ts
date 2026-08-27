@@ -1,9 +1,8 @@
-/** PPTX quality preflight compatibility facade. */
+/** PPTX quality analysis over renderer-aligned prepared facts. */
 
 import type {
   PreparedDocument,
   QualityAnalysis,
-  QualityFinding,
   QualityPolicy,
   QualityProfile,
 } from '@json-to-office/quality';
@@ -65,27 +64,4 @@ export function analyzePptxQuality(
     profile: options.profile ?? PPTX_DEFAULT_QUALITY_PROFILE,
     policy: options.policy,
   });
-}
-
-/** Backward-compatible, non-blocking collector. */
-export function collectPptxQualityFindings(
-  doc: unknown,
-  options: PptxQualityOptions = {}
-): QualityFinding[] {
-  return analyzePptxQuality(doc, options).diagnostics.map((diagnostic) => ({
-    code: diagnostic.code,
-    severity: diagnostic.severity === 'info' ? 'info' : 'warning',
-    message: diagnostic.message,
-    path: diagnostic.path,
-    ruleId: diagnostic.ruleId,
-    category: diagnostic.category,
-    certainty: diagnostic.certainty,
-    ...(diagnostic.suggestion && { suggestion: diagnostic.suggestion }),
-    ...(diagnostic.context && { context: { ...diagnostic.context } }),
-    ...(diagnostic.relatedPaths && {
-      relatedPaths: diagnostic.relatedPaths,
-    }),
-    ...(diagnostic.evidence && { evidence: diagnostic.evidence }),
-    ...(diagnostic.fixes && { fixes: diagnostic.fixes }),
-  }));
 }

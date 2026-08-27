@@ -22,15 +22,12 @@ import {
   QualityGateError,
   type QualityAnalysis,
   type QualityDiagnostic,
-  type QualityFinding,
 } from '@json-to-office/quality';
 
-type QualityWarningInput = QualityFinding | QualityDiagnostic;
-
 function toQualityWarnings(
-  findings: readonly QualityWarningInput[]
+  diagnostics: readonly QualityDiagnostic[]
 ): GenerationWarning[] {
-  return findings.map((finding) => ({
+  return diagnostics.map((finding) => ({
     component: 'quality',
     message: `[${finding.code}] ${finding.message}`,
     severity: finding.severity === 'info' ? 'info' : 'warning',
@@ -41,30 +38,13 @@ function toQualityWarnings(
       ...(finding.ruleId && { ruleId: finding.ruleId }),
       ...(finding.category && { category: finding.category }),
       ...(finding.certainty && { certainty: finding.certainty }),
-      ...('blocking' in finding && { blocking: finding.blocking }),
+      blocking: finding.blocking,
       ...(finding.suggestion && { suggestion: finding.suggestion }),
       ...(finding.relatedPaths && { relatedPaths: finding.relatedPaths }),
       ...(finding.evidence && { evidence: finding.evidence }),
       ...(finding.fixes && { fixes: finding.fixes }),
       ...(finding.context ?? {}),
     },
-  }));
-}
-
-function analysisToFindings(analysis: QualityAnalysis): QualityFinding[] {
-  return analysis.diagnostics.map((diagnostic) => ({
-    code: diagnostic.code,
-    severity: diagnostic.severity === 'info' ? 'info' : 'warning',
-    message: diagnostic.message,
-    path: diagnostic.path,
-    suggestion: diagnostic.suggestion,
-    context: diagnostic.context ? { ...diagnostic.context } : undefined,
-    ruleId: diagnostic.ruleId,
-    category: diagnostic.category,
-    certainty: diagnostic.certainty,
-    relatedPaths: diagnostic.relatedPaths,
-    evidence: diagnostic.evidence,
-    fixes: diagnostic.fixes,
   }));
 }
 
@@ -515,10 +495,6 @@ export class GeneratorService {
         );
         if (analysis.blocked) throw new QualityGateError(analysis);
         qualityWarnings = toQualityWarnings(analysis.diagnostics);
-      } else if (this.adapter.qualityCheck) {
-        qualityWarnings = toQualityWarnings(
-          await this.adapter.qualityCheck(config, qualityOptions)
-        );
       }
     } catch (error) {
       const errorCode = (error as { code?: unknown } | undefined)?.code;
@@ -655,7 +631,6 @@ export class GeneratorService {
   ): Promise<{
     valid: boolean;
     errors?: any[];
-    quality: QualityFinding[];
     qualityAnalysis?: QualityAnalysis;
   }> {
     const config =
@@ -676,14 +651,10 @@ export class GeneratorService {
       return {
         ...result,
         valid: result.valid && !qualityAnalysis.blocked,
-        quality: analysisToFindings(qualityAnalysis),
         qualityAnalysis,
       };
     }
-    const quality = this.adapter.qualityCheck
-      ? await this.adapter.qualityCheck(config, options)
-      : [];
-    return { ...result, quality };
+    return result;
   }
 
   destroy(): void {

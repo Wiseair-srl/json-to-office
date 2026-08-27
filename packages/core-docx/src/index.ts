@@ -79,11 +79,8 @@ export type {
 export * from './utils/formatters';
 export { isNodeEnvironment, hasNodeBuiltins } from './utils/environment';
 
-// Design-quality collectors (#216)
-export {
-  analyzeDocxQuality,
-  collectDocxQualityFindings,
-} from './quality/preflight';
+// Design-quality analysis (#216)
+export { analyzeDocxQuality } from './quality/preflight';
 export type {
   DocxQualityAnalysisOptions,
   DocxQualityOptions,

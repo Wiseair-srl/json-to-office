@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { QUALITY_CODES } from '@json-to-office/quality';
-import { analyzeDocxQuality, collectDocxQualityFindings } from './preflight';
+import { analyzeDocxQuality } from './preflight';
 
 function doc(children: unknown[]) {
   return { name: 'docx', props: {}, children };
 }
 
+function docxDiagnostics(input: unknown) {
+  return analyzeDocxQuality(input).diagnostics;
+}
+
 describe('table widths', () => {
   it('warns when fixed widths overshoot every page setup', () => {
-    const findings = collectDocxQualityFindings(
+    const findings = docxDiagnostics(
       doc([
         {
           name: 'section',
@@ -36,7 +40,7 @@ describe('table widths', () => {
   });
 
   it('warns when percentage widths pass 100%', () => {
-    const findings = collectDocxQualityFindings(
+    const findings = docxDiagnostics(
       doc([
         {
           name: 'table',
@@ -56,7 +60,7 @@ describe('table widths', () => {
   });
 
   it("leaves plausible widths to the compiler's exact check", () => {
-    const findings = collectDocxQualityFindings(
+    const findings = docxDiagnostics(
       doc([
         {
           name: 'table',
@@ -74,7 +78,7 @@ describe('table widths', () => {
   });
 
   it('combines fixed and percentage widths against the same page', () => {
-    const findings = collectDocxQualityFindings(
+    const findings = docxDiagnostics(
       doc([
         {
           name: 'table',
@@ -94,7 +98,7 @@ describe('table widths', () => {
   });
 
   it('accepts a 600pt table when an A3 section has room', () => {
-    const findings = collectDocxQualityFindings(
+    const findings = docxDiagnostics(
       doc([
         {
           name: 'section',
@@ -119,7 +123,7 @@ describe('table widths', () => {
 
 describe('heading hierarchy', () => {
   it('flags a skipped level going down, as info', () => {
-    const findings = collectDocxQualityFindings(
+    const findings = docxDiagnostics(
       doc([
         {
           name: 'section',
@@ -140,7 +144,7 @@ describe('heading hierarchy', () => {
   });
 
   it('accepts stepping down one level and jumping back up any number', () => {
-    const findings = collectDocxQualityFindings(
+    const findings = docxDiagnostics(
       doc([
         { name: 'heading', props: { text: 'One', level: 1 } },
         { name: 'heading', props: { text: 'Two', level: 2 } },
@@ -152,7 +156,7 @@ describe('heading hierarchy', () => {
   });
 
   it('ignores disabled content and disabled subtrees', () => {
-    const findings = collectDocxQualityFindings(
+    const findings = docxDiagnostics(
       doc([
         { name: 'heading', props: { text: 'One', level: 1 } },
         {
@@ -177,10 +181,10 @@ describe('heading hierarchy', () => {
 
 describe('robustness', () => {
   it('answers nothing for non-docx or malformed input, never throws', () => {
-    expect(collectDocxQualityFindings(undefined)).toEqual([]);
-    expect(collectDocxQualityFindings({ name: 'pptx' })).toEqual([]);
+    expect(docxDiagnostics(undefined)).toEqual([]);
+    expect(docxDiagnostics({ name: 'pptx' })).toEqual([]);
     expect(
-      collectDocxQualityFindings({
+      docxDiagnostics({
         name: 'docx',
         children: [null, { name: 'table', props: { columns: 'nope' } }],
       })

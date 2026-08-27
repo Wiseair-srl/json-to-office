@@ -17,8 +17,7 @@ export type BuiltInQualityCode =
 /** Built-ins stay discoverable while external rule packs can own stable codes. */
 export type QualityCode = BuiltInQualityCode | (string & {});
 
-export type QualityFindingSeverity = 'warning' | 'info';
-export type DiagnosticSeverity = 'error' | QualityFindingSeverity;
+export type DiagnosticSeverity = 'error' | 'warning' | 'info';
 
 export type QualityCertainty =
   | 'deterministic'
@@ -52,24 +51,6 @@ export interface QualityEvidence {
   expected?: unknown;
   unit?: string;
   values?: Readonly<Record<string, unknown>>;
-}
-
-/** Backward-compatible collector output. Rules may enrich every optional field. */
-export interface QualityFinding {
-  code: QualityCode;
-  severity: QualityFindingSeverity;
-  message: string;
-  /** RFC 6901 JSON Pointer into the authored document. */
-  path: string;
-  suggestion?: string;
-  /** Compatibility field for existing consumers. Prefer structured evidence. */
-  context?: Record<string, unknown>;
-  ruleId?: string;
-  category?: QualityCategory;
-  certainty?: QualityCertainty;
-  relatedPaths?: readonly string[];
-  evidence?: QualityEvidence;
-  fixes?: readonly JsonPatchOperation[];
 }
 
 export interface DocumentDiagnostic {

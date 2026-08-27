@@ -69,7 +69,7 @@ describe('PptxFormatAdapter.validateDocument', () => {
   });
 });
 
-describe('PptxFormatAdapter.qualityCheck', () => {
+describe('PptxFormatAdapter.analyzeQuality', () => {
   it('resolves the same custom theme options as generation', async () => {
     const tinyTheme = {
       ...pptxThemes.minimal,
@@ -85,10 +85,10 @@ describe('PptxFormatAdapter.qualityCheck', () => {
       },
     };
 
-    const findings = await new PptxFormatAdapter().qualityCheck(document, {
+    const analysis = await new PptxFormatAdapter().analyzeQuality(document, {
       customThemes: { tiny: tinyTheme },
     });
-    expect(findings).toEqual(
+    expect(analysis.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'W_QUALITY_FONT_SIZE_MIN' }),
       ])

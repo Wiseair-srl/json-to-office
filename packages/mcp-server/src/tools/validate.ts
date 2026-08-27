@@ -1,6 +1,6 @@
 /**
  * `jto_validate` — will this document render, and if not, where is it broken?
- * And when it renders: will it look right? The cores' quality collectors
+ * And when it renders: will it look right? The cores' quality analyzers
  * (#216) answer the second question in the same pass, as `W_QUALITY_*`
  * warnings and infos; an explicit run policy may move the gate.
  *
@@ -29,7 +29,6 @@ import { resolveDocumentSource, sourceSummary } from '../lib/doc-source.js';
 import {
   countDiagnostics,
   guarded,
-  qualityDiagnostics,
   qualityAnalysisDiagnostics,
   toolResult,
   validationDiagnostics,
@@ -194,14 +193,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
                   quality: args.quality,
                 })
               )
-            : adapter.qualityCheck
-              ? qualityDiagnostics(
-                  await adapter.qualityCheck(resolved.document, {
-                    renderer: args.renderer,
-                    quality: args.quality,
-                  })
-                )
-              : [];
+            : [];
           const all = [
             ...validationDiagnostics(result.errors),
             ...(unavailable ? [unavailable] : []),

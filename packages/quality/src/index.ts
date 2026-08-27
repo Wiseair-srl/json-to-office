@@ -15,8 +15,6 @@ export {
   type QualityDiagnostic,
   type QualityEvidence,
   type QualityFact,
-  type QualityFinding,
-  type QualityFindingSeverity,
   type QualityGate,
   type QualityPolicy,
   type QualityProfile,
