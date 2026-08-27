@@ -25,6 +25,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run --passWithNoTests",
+    "test:ground-truth": "vitest run --config vitest.harness.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "prepublishOnly": "node ../../scripts/copy-license.cjs"

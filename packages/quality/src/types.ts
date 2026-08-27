@@ -171,6 +171,7 @@ export interface QualityRuleContext<
   prepared: PreparedDocument<TModel, TFact>;
   facts: readonly TFact[];
   profile?: QualityProfile;
+  policy?: QualityPolicy;
   configuration: ResolvedQualityRuleConfiguration;
 }
 

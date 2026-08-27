@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { QUALITY_CODES } from '@json-to-office/quality';
+import { preparePptxQualityDocument } from './facts';
 import { analyzePptxQuality } from './preflight';
 
 const CANVAS = { slideWidth: 13.333, slideHeight: 7.5 };
@@ -98,6 +99,169 @@ describe('text overflow', () => {
     });
     expect(overflow?.context).toMatchObject({ availablePt: 72 });
     expect(overflow?.context?.estimatedTextPt as number).toBeGreaterThan(72);
+
+    // 400 chars in a 144×72pt box: no readable size fits, so no fix — the
+    // text or the box has to change, and that stays the author's call.
+    expect(overflow?.fixes).toBeUndefined();
+  });
+
+  it('attaches a fontSize fix when a readable size fits the box', () => {
+    const findings = pptxDiagnostics(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: {
+                text: 'word '.repeat(24).trim(),
+                fontSize: 30,
+                x: 1,
+                y: 1,
+                w: 4,
+                h: 1.4,
+              },
+            },
+          ],
+        },
+      ])
+    );
+    const overflow = findings.find(
+      (finding) => finding.code === QUALITY_CODES.TEXT_OVERFLOW
+    );
+    expect(overflow).toBeDefined();
+    const fix = overflow?.fixes?.[0];
+    expect(fix).toMatchObject({
+      op: 'add',
+      path: '/children/0/children/0/props/fontSize',
+    });
+    const value = fix?.value as number;
+    expect(value).toBeLessThan(30);
+    expect(value).toBeGreaterThanOrEqual(7);
+  });
+
+  it('offers a fix for a fixed-height grid box', () => {
+    const findings = pptxDiagnostics(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: {
+                text: 'word '.repeat(24).trim(),
+                fontSize: 30,
+                grid: { column: 0, row: 0, columnSpan: 4, rowSpan: 2 },
+              },
+            },
+          ],
+        },
+      ])
+    );
+    const overflow = findings.find(
+      (finding) => finding.code === QUALITY_CODES.TEXT_OVERFLOW
+    );
+    expect(overflow).toBeDefined();
+    expect(overflow?.fixes?.[0]).toMatchObject({
+      path: '/children/0/children/0/props/fontSize',
+    });
+  });
+
+  it('does not diagnose an auto-growing box with no height source', () => {
+    const findings = pptxDiagnostics(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: {
+                text: 'word '.repeat(120).trim(),
+                fontSize: 18,
+                x: 1,
+                y: 1,
+                w: 3,
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(
+      findings.find((finding) => finding.code === QUALITY_CODES.TEXT_OVERFLOW)
+    ).toBeUndefined();
+  });
+
+  it('does not offer a fix below the active profile or policy font floor', () => {
+    const input = deck(CANVAS, [
+      {
+        name: 'slide',
+        children: [
+          {
+            name: 'text',
+            props: {
+              text: 'word '.repeat(28).trim(),
+              fontSize: 30,
+              x: 1,
+              y: 1,
+              w: 4,
+              h: 1.4,
+            },
+          },
+        ],
+      },
+    ]);
+    const analyses = [
+      analyzePptxQuality(input, {
+        profile: { id: 'executive-presentation', formats: ['pptx'] },
+      }),
+      analyzePptxQuality(input, {
+        policy: {
+          rules: {
+            'pptx/minimum-font-size': {
+              parameters: { minimumFontPt: 14 },
+            },
+          },
+        },
+      }),
+    ];
+    for (const analysis of analyses) {
+      const overflow = analysis.diagnostics.find(
+        (finding) => finding.code === QUALITY_CODES.TEXT_OVERFLOW
+      );
+      expect(overflow).toBeDefined();
+      expect(overflow?.fixes).toBeUndefined();
+    }
+  });
+
+  it('records effective alignment and rotation for rendered measurements', () => {
+    const prepared = preparePptxQualityDocument(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: {
+                text: 'Rotated middle text',
+                x: 1,
+                y: 1,
+                w: 3,
+                h: 1,
+                valign: 'middle',
+                rotate: 300,
+              },
+            },
+          ],
+        },
+      ]) as any
+    );
+    const fact = prepared.facts.find((entry) => entry.kind === 'pptx/text');
+    expect(fact).toMatchObject({
+      verticalAlign: 'middle',
+      rotationDeg: 300,
+      autoFit: false,
+    });
   });
 
   it('resolves style-table font sizes: styled text overflows a box its default size would fit', () => {
@@ -255,6 +419,9 @@ describe('legibility', () => {
       code: QUALITY_CODES.FONT_SIZE_MIN,
       severity: 'warning',
       path: '/children/0/children/0/props',
+      fixes: [
+        { op: 'add', path: '/children/0/children/0/props/fontSize', value: 7 },
+      ],
     });
   });
 });

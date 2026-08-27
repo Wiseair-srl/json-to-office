@@ -1,6 +1,7 @@
 import {
   QUALITY_CODES,
   QualityEngine,
+  resolveRuleConfiguration,
   type QualityProfile,
   type QualityRule,
   type QualityRuleFinding,
@@ -16,7 +17,17 @@ import type {
 
 const RENDERER_DEFAULT_WIDTH_IN = 10;
 const RENDERER_DEFAULT_HEIGHT_IN = 7.5;
-const DEFAULT_CHAR_WIDTH_FACTOR = 0.45;
+// Calibrated against rendered ground truth (jto-ops quality ground-truth
+// harness, 2026-08: 130 comparable mutated-template measurements plus per-box
+// adjudication of every comparable authored flag, all measured from the
+// soffice PDF). 0.46 is the highest value at which the stock templates stay
+// warning-clean — the binding constraint, since a rule that flags known-good
+// templates trains every consumer to ignore it. At that operating point the
+// rendered sample catches 52% of >1-line-height spills as OVERFLOW, 91% when
+// TIGHT is included, and 87% of any visible spill, with no OVERFLOW false
+// alarms. Remaining misses require rendered evidence (`rendered` certainty),
+// not a character-count model — see the harness header for the full method.
+const DEFAULT_CHAR_WIDTH_FACTOR = 0.46;
 const DEFAULT_SAFETY_BUFFER_PT = 8;
 const DEFAULT_MIN_READABLE_FONT_PT = 7;
 const DEFAULT_MAX_BODY_WORDS_PER_SLIDE = 130;
@@ -181,9 +192,54 @@ export const pptxMinimumFontRule: QualityRule<
         suggestion: `Use at least ${minimum}pt; captions rarely work below 10pt.`,
         context: { fontSize: fact.fontSizePt, threshold: minimum },
         evidence: { actual: fact.fontSizePt, expected: minimum, unit: 'pt' },
+        // `add` replaces an existing member, so this lifts an explicit
+        // fontSize and overrides an inherited style value alike.
+        fixes: [
+          {
+            op: 'add' as const,
+            path: `${fact.path}/props/fontSize`,
+            value: minimum,
+          },
+        ],
       }));
   },
 };
+
+/**
+ * Largest whole font size that fits the box, for a ready-made overflow fix.
+ *
+ * Conservative on purpose: the authored leading is kept even when it derives
+ * from the font size (real leading would shrink too), so a size this returns
+ * fits under the same model that produced the finding. Undefined when no
+ * readable size fits (the text or the box has to change) or when the box
+ * auto-grows (`h` omitted — there is nothing to overflow).
+ */
+function fittingFontSizePt(
+  fact: PptxTextFact,
+  charWidthFactor: number,
+  minimumFontPt: number
+): number | undefined {
+  if (fact.autoFit === true) return undefined;
+  const minimumWholeSize = Math.ceil(minimumFontPt);
+  for (
+    let size = Math.floor(fact.fontSizePt) - 1;
+    size >= minimumWholeSize;
+    size--
+  ) {
+    const estimate = estimateTextHeightPt(
+      { ...fact, fontSizePt: size },
+      charWidthFactor
+    );
+    if (
+      estimate !== undefined &&
+      fact.boxHeightPt !== undefined &&
+      estimate.heightPt <= fact.boxHeightPt
+    ) {
+      return size;
+    }
+  }
+  return undefined;
+}
 
 export const pptxTextFitRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
   id: 'pptx/text-fit',
@@ -196,7 +252,7 @@ export const pptxTextFitRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
     characterWidthFactor: DEFAULT_CHAR_WIDTH_FACTOR,
     safetyBufferPt: DEFAULT_SAFETY_BUFFER_PT,
   },
-  evaluate: ({ facts, configuration }) => {
+  evaluate: ({ facts, configuration, profile, policy }) => {
     const factor = numberParameter(
       configuration.parameters,
       'characterWidthFactor',
@@ -207,6 +263,18 @@ export const pptxTextFitRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
       'safetyBufferPt',
       DEFAULT_SAFETY_BUFFER_PT
     );
+    const minimumFontConfiguration = resolveRuleConfiguration(
+      pptxMinimumFontRule,
+      profile,
+      policy
+    );
+    const minimumFontPt = minimumFontConfiguration.enabled
+      ? numberParameter(
+          minimumFontConfiguration.parameters,
+          'minimumFontPt',
+          DEFAULT_MIN_READABLE_FONT_PT
+        )
+      : DEFAULT_MIN_READABLE_FONT_PT;
     const findings: QualityRuleFinding[] = [];
     for (const fact of textFacts(facts)) {
       const estimate = estimateTextHeightPt(fact, factor);
@@ -222,6 +290,7 @@ export const pptxTextFitRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
       };
 
       if (marginPt < -fact.lineSpacingPt) {
+        const fittingSize = fittingFontSizePt(fact, factor, minimumFontPt);
         findings.push({
           code: QUALITY_CODES.TEXT_OVERFLOW,
           severity: 'warning',
@@ -235,6 +304,17 @@ export const pptxTextFitRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
             expected: measured.availablePt,
             unit: 'pt',
           },
+          // A ready-made patch only when a readable size fits; shortening
+          // the text or growing the box stays the author's call.
+          ...(fittingSize !== undefined && {
+            fixes: [
+              {
+                op: 'add' as const,
+                path: `${fact.path}/props/fontSize`,
+                value: fittingSize,
+              },
+            ],
+          }),
         });
         continue;
       }

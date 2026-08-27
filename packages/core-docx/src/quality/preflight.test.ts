@@ -37,6 +37,19 @@ describe('table widths', () => {
       path: '/children/0/children/0/props/columns',
     });
     expect(findings[0].context).toMatchObject({ pointSum: 600 });
+
+    // The ready-made repair scales both widths into the section, keeping
+    // their proportions (equal columns stay equal).
+    const fixes = findings[0].fixes ?? [];
+    expect(fixes.map((fix) => fix.path)).toEqual([
+      '/children/0/children/0/props/columns/0/width',
+      '/children/0/children/0/props/columns/1/width',
+    ]);
+    const values = fixes.map((fix) => fix.value as number);
+    expect(values[0]).toBe(values[1]);
+    expect(values[0]).toBeLessThan(300);
+    const availablePt = (findings[0].context as any).availableWidthPt;
+    expect(values[0] + values[1]).toBeLessThanOrEqual(availablePt);
   });
 
   it('warns when percentage widths pass 100%', () => {
@@ -57,6 +70,14 @@ describe('table widths', () => {
       code: QUALITY_CODES.TABLE_WIDTH_OVERFLOW,
     });
     expect(findings[0].context).toMatchObject({ percentSum: 115 });
+
+    // Percent widths rescale as percent strings summing to ≤ 100%.
+    const values = (findings[0].fixes ?? []).map((fix) => fix.value as string);
+    expect(values).toHaveLength(2);
+    for (const value of values) expect(value.endsWith('%')).toBe(true);
+    const sum = values.reduce((acc, value) => acc + parseFloat(value), 0);
+    expect(sum).toBeLessThanOrEqual(100);
+    expect(sum).toBeGreaterThan(98);
   });
 
   it('counts a percentage past 100% at its authored width', () => {
@@ -99,6 +120,27 @@ describe('table widths', () => {
       ])
     );
     expect(findings).toEqual([]);
+  });
+
+  it('does not collapse unstated columns with a ready-made fix', () => {
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'table',
+          props: {
+            columns: [
+              { header: { content: 'A' }, cells: [], width: 400 },
+              { header: { content: 'B' }, cells: [], width: 400 },
+              { header: { content: 'C' }, cells: [] },
+            ],
+          },
+        },
+      ])
+    );
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.TABLE_WIDTH_OVERFLOW,
+    });
+    expect(findings[0].fixes).toBeUndefined();
   });
 
   it('combines fixed and percentage widths against the same page', () => {
@@ -164,6 +206,9 @@ describe('heading hierarchy', () => {
       severity: 'info',
       path: '/children/0/children/1/props/level',
       context: { level: 3, previousLevel: 1 },
+      fixes: [
+        { op: 'add', path: '/children/0/children/1/props/level', value: 2 },
+      ],
     });
   });
 

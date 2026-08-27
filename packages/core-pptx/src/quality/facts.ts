@@ -37,8 +37,17 @@ export interface PptxTextFact extends QualityFact {
   paraSpaceBeforePt: number;
   paraSpaceAfterPt: number;
   styleName?: string;
+  boxXPt?: number;
+  boxYPt?: number;
   boxWidthPt?: number;
   boxHeightPt?: number;
+  verticalAlign: 'top' | 'middle' | 'bottom';
+  rotationDeg: number;
+  /**
+   * True when neither `h` nor a grid supplies a height. The compiler resolves
+   * grid positions before checking `props.h`, so grid height is a hard ceiling.
+   */
+  autoFit: boolean;
 }
 
 export interface PptxSlideFact extends QualityFact {
@@ -200,6 +209,8 @@ function addSlideFacts(
     if (analyzedTextPaths.has(node.path)) return;
     analyzedTextPaths.add(node.path);
 
+    let boxXPt = dimToPt(node.props.x, slideWidthIn);
+    let boxYPt = dimToPt(node.props.y, slideHeightIn);
     let boxWidthPt = dimToPt(node.props.w, slideWidthIn);
     let boxHeightPt = dimToPt(node.props.h, slideHeightIn);
     const gridPos = asRecord(node.props.grid);
@@ -207,7 +218,10 @@ function addSlideFacts(
       gridPos !== undefined &&
       asNumber(gridPos.column) !== undefined &&
       asNumber(gridPos.row) !== undefined &&
-      (boxWidthPt === undefined || boxHeightPt === undefined)
+      (boxXPt === undefined ||
+        boxYPt === undefined ||
+        boxWidthPt === undefined ||
+        boxHeightPt === undefined)
     ) {
       const resolved = resolveGridPosition(
         gridPos as unknown as GridPosition,
@@ -215,6 +229,8 @@ function addSlideFacts(
         slideWidthIn,
         slideHeightIn
       );
+      boxXPt ??= resolved.x * 72;
+      boxYPt ??= resolved.y * 72;
       boxWidthPt ??= resolved.w * 72;
       boxHeightPt ??= resolved.h * 72;
     }
@@ -230,8 +246,16 @@ function addSlideFacts(
       paraSpaceBeforePt: typography.paraSpaceBefore,
       paraSpaceAfterPt: typography.paraSpaceAfter,
       ...(typography.styleName && { styleName: typography.styleName }),
+      ...(boxXPt !== undefined && { boxXPt }),
+      ...(boxYPt !== undefined && { boxYPt }),
       ...(boxWidthPt !== undefined && boxWidthPt > 0 && { boxWidthPt }),
       ...(boxHeightPt !== undefined && boxHeightPt > 0 && { boxHeightPt }),
+      verticalAlign:
+        node.props.valign === 'middle' || node.props.valign === 'bottom'
+          ? node.props.valign
+          : 'top',
+      rotationDeg: asNumber(node.props.rotate) ?? 0,
+      autoFit: node.props.h === undefined && gridPos === undefined,
     });
   });
 

@@ -54,6 +54,19 @@ export const docxTableWidthRule: QualityRule<
         const totalPt = Math.round((fact.totalWidthTwips / 20) * 10) / 10;
         const availablePt =
           Math.round((fact.availableWidthTwips / 20) * 10) / 10;
+        // Deterministic repair: scale every explicit width by the overshoot
+        // so proportions survive and the sum lands on the available width.
+        const scale = fact.availableWidthTwips / fact.totalWidthTwips;
+        const fixes = fact.allColumnsExplicit
+          ? fact.explicitWidths.map(({ index, width }) => ({
+              op: 'replace' as const,
+              path: `${fact.path}/${index}/width`,
+              value:
+                typeof width === 'number'
+                  ? Math.floor(width * scale * 10) / 10
+                  : `${Math.floor(Number(width.trim().slice(0, -1)) * scale * 10) / 10}%`,
+            }))
+          : [];
         return {
           message: `Column widths use ${totalPt}pt, but this section has ${availablePt}pt available — the table will spill off the right edge.`,
           path: fact.path,
@@ -70,6 +83,7 @@ export const docxTableWidthRule: QualityRule<
             expected: availablePt,
             unit: 'pt',
           },
+          ...(fixes.length > 0 && { fixes }),
         };
       });
   },
@@ -103,6 +117,16 @@ export const docxHeadingHierarchyRule: QualityRule<
               actual: fact.level,
               expected: previousLevel + 1,
             },
+            // The fact path already addresses `.../props/level`; RFC 6902
+            // `add` replaces an existing member, so this works whether the
+            // level was explicit or defaulted.
+            fixes: [
+              {
+                op: 'add' as const,
+                path: fact.path,
+                value: previousLevel + 1,
+              },
+            ],
           },
         ];
       }),

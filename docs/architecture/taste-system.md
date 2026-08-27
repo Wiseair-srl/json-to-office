@@ -187,6 +187,28 @@ the package-part goldens.
 False positives are regressions. A suppression can document a deliberate exception,
 but stock examples may not become clean merely by globally disabling a rule.
 
+## Rendered ground truth
+
+The corpus pins false positives; it cannot see false negatives — a rule that never
+fires passes every clean-template check. The ground-truth harness
+(`packages/jto-ops/src/quality-ground-truth.harness.test.ts`, run with
+`pnpm --filter @json-to-office/jto-ops test:ground-truth`; needs LibreOffice and
+poppler) measures the other direction: it renders mutated stock templates through
+soffice, reads exact word geometry back out of the intermediate PDF with
+`pdftotext -bbox` (`extractPdfTextGeometry` in jto-ops), and scores every estimated
+verdict against what the renderer actually laid out. Bottom-edge scoring admits
+only top-aligned, unrotated text; other alignments and rotations are reported as
+unsupported until the harness models their top edge and coordinate transform. A
+second suite adjudicates every comparable finding the rules raise on the authored
+templates the same way.
+
+Estimator thresholds are tuned against these measurements, not by feel — the
+`characterWidthFactor` default records its measured operating point in
+`core-pptx/src/quality/rules.ts`. The harness also marks the model's ceiling:
+static character-count estimates top out near half of the >1-line-height spills
+under the zero-false-warning constraint, and the remainder is reachable only as
+`rendered`-certainty findings built on the same PDF geometry.
+
 ## Non-goals
 
 - A single opaque quality score.

@@ -29,8 +29,15 @@ export interface DocxTableWidthFact extends QualityFact {
   totalWidthTwips: number;
   availableWidthTwips: number;
   hasExplicitWidth: boolean;
+  allColumnsExplicit: boolean;
   pointSum: number;
   percentSum: number;
+  /**
+   * Authored explicit widths by column index (points as numbers, `"NN%"`
+   * strings kept verbatim) — what a fix has to rescale. Columns without an
+   * explicit width are absent.
+   */
+  explicitWidths: ReadonlyArray<{ index: number; width: number | string }>;
 }
 
 export interface DocxHeadingFact extends QualityFact {
@@ -89,11 +96,13 @@ function tableFact(
   let hasExplicitWidth = false;
   let pointSum = 0;
   let percentSum = 0;
+  const explicitWidths: Array<{ index: number; width: number | string }> = [];
 
-  for (const column of columns) {
+  columns.forEach((column, index) => {
     const width = asRecord(column)?.width;
     if (typeof width === 'number' && Number.isFinite(width)) {
       hasExplicitWidth = true;
+      explicitWidths.push({ index, width });
       totalWidthTwips += relativeLengthToTwips(width, availableWidthTwips);
       pointSum += width;
     } else if (typeof width === 'string') {
@@ -102,6 +111,7 @@ function tableFact(
         ? Number(width.trim().slice(0, -1))
         : Number.NaN;
       if (Number.isFinite(percent)) {
+        explicitWidths.push({ index, width });
         percentSum += percent;
         // relativeLengthToTwips clamps anything past 100% to zero for the
         // renderer; the fact must carry the authored width or the widest
@@ -112,7 +122,7 @@ function tableFact(
         );
       }
     }
-  }
+  });
 
   return {
     id: `docx:table-width:${path}`,
@@ -121,8 +131,10 @@ function tableFact(
     totalWidthTwips,
     availableWidthTwips,
     hasExplicitWidth,
+    allColumnsExplicit: explicitWidths.length === columns.length,
     pointSum,
     percentSum,
+    explicitWidths,
   };
 }
 

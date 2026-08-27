@@ -140,6 +140,7 @@ export class QualityEngine<
           prepared,
           facts: prepared.facts,
           profile: options.profile,
+          policy: options.policy,
           configuration,
         });
       } catch (error) {
@@ -179,6 +180,7 @@ export class QualityEngine<
           prepared,
           facts: prepared.facts,
           profile: options.profile,
+          policy: options.policy,
           configuration,
         });
       } catch (error) {
