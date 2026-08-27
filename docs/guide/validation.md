@@ -2,13 +2,15 @@
 
 json-to-office is validation-first: every component's props are described by a TypeBox schema, and documents are checked against those schemas before anything is rendered. Because the document is data, errors can point at an exact JSON path with an actionable message — instead of a stack trace from deep inside a rendering library.
 
-The two formats take different stances on _when_ that check runs:
+Both formats gate generation on that check. `generateBufferFromJson` validates before it renders and refuses to build an invalid document; only the error class differs — `JsonValidationError` for DOCX, `PresentationValidationError` for PPTX. Both carry the deep validator's full error list, and both honour the same `options.validation` switches (`enabled`, `allowUnknownFields`).
 
-- **DOCX**: validation is built into generation. `generateBufferFromJson` refuses to render an invalid document, throwing `JsonValidationError`.
-- **PPTX**: generation does **not** validate — validation is an explicit, separate step (`validate.document(...)` or `jto pptx validate`). Render-time problems the schema can't catch — an invalid chart series, an unknown color — surface as coded **pipeline warnings** rather than sinking the whole deck.
+Where the two formats do differ is in what happens to problems a schema _can't_ express:
 
-::: tip Validate your PPTX before generating
-Because PPTX generation skips the schema check, a typo in a prop name is silently ignored rather than reported. Run the validator first in any pipeline where the JSON isn't hand-checked.
+- **Schema errors** — an unknown prop, a wrong type, illegal nesting — throw before anything is rendered, in both formats.
+- **Pipeline warnings** — an invalid chart series, an unresolvable font, a grid position outside the grid — are reported as coded warnings and the file is still produced. PPTX emits far more of these than DOCX, because its pipeline is built to skip a bad node and keep going.
+
+::: tip Validating on its own is still worth it
+The generation gate throws, which is what you want in a build and a poor fit for an editor loop, a pre-commit hook, or a directory of documents. `validate.document(...)` and `jto pptx validate` return the same error list without producing a file — and the CLI adds `--recursive`, `--format json`, and the [quality gate](#design-quality-findings).
 :::
 
 ## DOCX validation
@@ -140,11 +142,22 @@ if (!result.valid) {
 For PPTX, `validateStrict` is currently an alias of `validate`: the PPTX deep validation never cleans data or applies defaults, so there is no lenient/strict split to choose between.
 :::
 
-### Warnings, not errors, at generation
+### Errors at generation time
 
-PPTX generation does not run the deep validator — validation is a separate step you invoke yourself. The only hard failures at generation time are a root component that isn't `pptx`, and the image source mutual-exclusivity rule (one of `path` / `base64` / `svg`), both of which throw a plain `Error`.
+PPTX generation runs the deep walker before rendering, exactly as DOCX does, unless you opt out with `options.validation.enabled = false`:
 
-Everything else the pipeline can recover from — skipped charts, unknown colors, clamped grid positions — is reported as a structured warning rather than an exception. The warning-friendly entry point returns both the file and the warning list:
+- Schema violations → `PresentationValidationError`, carrying the same `{ path, message, code }` list the standalone validator returns. A root component that isn't `pptx` is caught here too.
+- Content conflicts the per-field schema can't express → a plain `Error`: an `image` with more than one of `path` / `base64` / `svg`, a `text` carrying both `text` and `runs` or neither. This check runs **unconditionally**, so it is still the net under `validation.enabled = false`.
+
+Renderer-profile errors (code `unsupported_renderer_feature`) are the one class the gate deliberately lets through: the compiler reports them with more context than the schema has, so generation defers to it rather than failing twice.
+
+::: warning
+`options.validation.enabled = false` skips the schema check but does **not** make a bad deck render correctly — it moves the failure downstream, into a warning or a renderer error. Keep it on outside of tightly controlled pipelines.
+:::
+
+### Warnings, not errors, for what the schema can't see
+
+Everything the pipeline can recover from — skipped charts, unknown colors, clamped grid positions — is reported as a structured warning rather than an exception. The warning-friendly entry point returns both the file and the warning list:
 
 ```ts
 import { generateBufferWithWarnings } from '@json-to-office/json-to-pptx';
@@ -168,13 +181,19 @@ Each warning is a `PipelineWarning`:
 | `UNKNOWN_COMPONENT`          | Component name not recognized; node skipped.                                                                                                                       |
 | `UNKNOWN_CHART_TYPE`         | `chart.type` isn't a supported chart type.                                                                                                                         |
 | `UNKNOWN_SHAPE`              | `shape.type` isn't a supported shape type.                                                                                                                         |
+| `UNKNOWN_PATTERN_PRESET`     | `fill.pattern.preset` isn't a supported preset; falls back to the solid foreground.                                                                                |
+| `ADVANCED_FILL_FALLBACK`     | A shape fill sets both `gradient` and `pattern` (the gradient wins), or a gradient carries no stops (it is ignored).                                               |
 | `CHART_NO_DATA`              | Chart has no data series to render.                                                                                                                                |
 | `CHART_INVALID_SERIES`       | A series is missing `labels` or `values`; the chart is skipped.                                                                                                    |
 | `CHART_MULTI_SERIES`         | Pie/doughnut chart given multiple series; only the first is rendered.                                                                                              |
+| `CHART_FONT_WEIGHT_DROPPED`  | A chart font weight renders as Regular: PowerPoint gives that slot no bold toggle, and only non-RIBBI weights resolve to a sub-family face.                        |
 | `IMAGE_NO_SOURCE`            | Image has none of `path` / `base64` / `svg`; skipped.                                                                                                              |
 | `IMAGE_PROBE_FAILED`         | Intrinsic image dimensions could not be probed (affects auto-sizing).                                                                                              |
 | `IMAGE_ZERO_BOX`             | Image sizing box resolved to zero width or height.                                                                                                                 |
 | `IMAGE_SVG_RASTER_FAILED`    | An inline `svg` image could not be rasterized, so viewers without SVG support show a broken-image placeholder (PowerPoint 2016+ is unaffected).                    |
+| `IMAGE_PATH_OUTSIDE_ROOTS`   | Image `path` resolves outside the document base directory; the image is dropped.                                                                                   |
+| `TEXT_NO_CONTENT`            | Text has neither `text` nor `runs`; skipped. Only reachable with `validation.enabled = false` — the gate rejects it otherwise.                                     |
+| `TEXT_OVERLAP_UNPOSITIONED`  | Two `text` components with no `x`/`y` overlap on one slide. Give at least one explicit coordinates, or a named style whose default band differs.                   |
 | `MISSING_TEMPLATE`           | Slide references a template name that isn't defined.                                                                                                               |
 | `UNKNOWN_PLACEHOLDER`        | Slide fills a placeholder name the template doesn't declare.                                                                                                       |
 | `PLACEHOLDER_NO_POSITION`    | Placeholder used without a template and without any position; skipped.                                                                                             |
@@ -184,8 +203,10 @@ Each warning is a `PipelineWarning`:
 | `GRID_POSITION_CLAMPED`      | Grid `column` / `row` out of range; clamped into the grid.                                                                                                         |
 | `FONT_UNRESOLVED`            | Referenced font family could not be resolved (see [Fonts](/guide/fonts)).                                                                                          |
 
+Every code above except `HYPERLINK_SLIDE_UNRESOLVED` is a member of the exported `WarningCodes` registry; that one is owned by the hyperlink resolver and exported separately.
+
 ::: tip Treat warnings as CI failures
-`generateBufferWithWarnings` makes it easy to enforce a zero-warning policy: fail the build when `warnings.length > 0`. You get DOCX-style strictness where you want it, without losing PPTX's resilience in interactive use.
+`generateBufferWithWarnings` makes it easy to enforce a zero-warning policy: fail the build when `warnings.length > 0`. Schema errors already throw; this closes the gap on everything the schema can't see, without losing the pipeline's resilience in interactive use.
 :::
 
 ## Design-quality findings

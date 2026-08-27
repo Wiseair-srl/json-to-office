@@ -211,10 +211,10 @@ accepts a backend object. Use `generateBufferFromJson` /
 `generateAndSaveFromJson`.
 :::
 
-`GenerationResult` is `{ buffer: Buffer; warnings: PipelineWarning[] }`, where each warning is `{ code, message, component?, slide? }`. The `WarningCodes` enum lists every code (`UNKNOWN_COMPONENT`, `CHART_INVALID_SERIES`, `IMAGE_NO_SOURCE`, `GRID_POSITION_CLAMPED`, `FONT_UNRESOLVED`, …) and is exported from the package.
+`GenerationResult` is `{ buffer: Buffer; warnings: PipelineWarning[] }`, where each warning is `{ code, message, component?, slide? }`. The `WarningCodes` enum lists the codes (`UNKNOWN_COMPONENT`, `CHART_INVALID_SERIES`, `IMAGE_NO_SOURCE`, `GRID_POSITION_CLAMPED`, `FONT_UNRESOLVED`, …) and is exported from the package; `HYPERLINK_SLIDE_UNRESOLVED` lives outside that registry and is exported on its own.
 
-::: warning PPTX generation does not validate
-Unlike DOCX, PPTX generation does **not** run the schema validator. Structural mistakes surface as pipeline warnings or are silently skipped, so run `validate.document(...)` from the same package (or `jto pptx validate`) yourself before generating. See [Validation](/guide/validation).
+::: tip PPTX generation validates, like DOCX
+Generation runs the schema validator before rendering and throws `PresentationValidationError` on schema errors — set `options.validation.enabled = false` to skip it. Pipeline warnings cover only what the schema can't express. See [Validation](/guide/validation).
 :::
 
 ### `GenerationOptions`
@@ -225,7 +225,7 @@ Unlike DOCX, PPTX generation does **not** run the schema validator. Structural m
 | `services`      | [`ServicesConfig`](#servicesconfig)   | —             | e.g. `{ highcharts: { serverUrl, headers } }` for the `highcharts` component.                                                                                                                                                                      |
 | `fonts`         | [`FontRuntimeOpts`](#fontruntimeopts) | —             | Font resolution and export-mode handling, same shape as DOCX.                                                                                                                                                                                      |
 | `renderer`      | `'pptxgenjs' \| 'office-open'`        | `'pptxgenjs'` | Backend that turns the compiled presentation into bytes. `pptxgenjs` is the default and produces the output this pipeline has always produced. `office-open` is experimental, opt-in, and fails before rendering on any feature it cannot express. |
-| `validation`    | `GenerationValidationOptions`         | —             | `{ enabled, allowUnknownFields }`. Validation runs before rendering and throws `ComponentValidationError`; set `enabled: false` to skip it.                                                                                                        |
+| `validation`    | `GenerationValidationOptions`         | —             | `{ enabled, allowUnknownFields }`. Validation runs before rendering and throws `PresentationValidationError`; set `enabled: false` to skip it.                                                                                                     |
 | `deterministic` | `boolean`                             | `true`        | Normalize package metadata and ZIP timestamps for byte-identical output, including the XLSX packages embedded in native charts. See [Reproducible output](/guide/core-concepts#reproducible-output).                                               |
 | `generatedAt`   | `string \| Date`                      | epoch         | Timestamp written into package metadata. Defaults to a stable `2000-01-01T00:00:00Z`; must be on or after 1980-01-01 or generation throws.                                                                                                         |
 
