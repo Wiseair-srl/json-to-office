@@ -1,6 +1,7 @@
 import { DOCX_QUALITY_PROFILES } from '@json-to-office/core-docx';
 import { PPTX_QUALITY_PROFILES } from '@json-to-office/core-pptx';
 import type {
+  DiagnosticSeverity,
   QualityCategory,
   QualityCertainty,
   QualityProfile,
@@ -13,6 +14,7 @@ export interface ExpectedQualityDiagnostic {
   code: string;
   category: QualityCategory;
   certainty: QualityCertainty;
+  severity: DiagnosticSeverity;
 }
 
 export interface QualityReferenceCase {
@@ -68,13 +70,34 @@ function docxDocument(profileId: string, tier: QualityReferenceTier) {
   };
 }
 
+function bodyWords(count: number): string {
+  return Array.from({ length: count }, (_, index) => `word${index}`).join(' ');
+}
+
+/**
+ * Type size and body length are judged against the profile's own bar, so a
+ * `poor` slide has to be poor *for that profile*: 12pt over 90 words is an
+ * ordinary technical slide and an unreadable executive one. That is why
+ * `executive-presentation/poor` and `technical-presentation/professional`
+ * carry the same slide body — only the profile decides the verdict.
+ */
+function pptxSlideBody(profileId: string, tier: QualityReferenceTier) {
+  const executive = profileId === 'executive-presentation';
+  if (tier === 'excellent') {
+    return { text: 'One decision. One supporting number.', fontSize: 28 };
+  }
+  if (tier === 'professional') {
+    return executive
+      ? { text: 'Decision and supporting evidence.', fontSize: 18 }
+      : { text: bodyWords(90), fontSize: 12 };
+  }
+  return executive
+    ? { text: bodyWords(90), fontSize: 12 }
+    : { text: bodyWords(145), fontSize: 5 };
+}
+
 function pptxDocument(profileId: string, tier: QualityReferenceTier) {
-  const poor = tier === 'poor';
-  const text = poor
-    ? Array.from({ length: 145 }, (_, index) => `word${index}`).join(' ')
-    : tier === 'excellent'
-      ? 'One decision. One supporting number.'
-      : 'Decision and supporting evidence.';
+  const body = pptxSlideBody(profileId, tier);
   return {
     name: 'pptx',
     props: {
@@ -91,14 +114,75 @@ function pptxDocument(profileId: string, tier: QualityReferenceTier) {
           {
             name: 'text',
             props: {
-              text,
-              fontSize: poor ? 5 : tier === 'excellent' ? 28 : 18,
+              text: body.text,
+              fontSize: body.fontSize,
             },
           },
         ],
       },
     ],
   };
+}
+
+/**
+ * Pinned per profile by hand. Reading the severity back off the profile's own
+ * `rules` block would agree with itself after that block was deleted, which is
+ * exactly the regression these expectations exist to catch.
+ */
+function expectedDocx(
+  profileId: string,
+  tier: QualityReferenceTier
+): readonly ExpectedQualityDiagnostic[] {
+  if (tier !== 'poor') return [];
+  return [
+    {
+      code: 'W_QUALITY_HEADING_SKIP',
+      category: 'hierarchy',
+      certainty: 'deterministic',
+      severity: profileId === 'executive-report' ? 'warning' : 'info',
+    },
+    {
+      code: 'W_QUALITY_TABLE_WIDTH_OVERFLOW',
+      category: 'integrity',
+      certainty: 'deterministic',
+      severity: 'warning',
+    },
+  ];
+}
+
+function expectedPptx(
+  tier: QualityReferenceTier
+): readonly ExpectedQualityDiagnostic[] {
+  if (tier !== 'poor') return [];
+  return [
+    {
+      code: 'W_QUALITY_FONT_SIZE_MIN',
+      category: 'legibility',
+      certainty: 'measured',
+      severity: 'warning',
+    },
+    {
+      code: 'W_QUALITY_SLIDE_DENSITY',
+      category: 'information-design',
+      certainty: 'estimated',
+      severity: 'warning',
+    },
+  ];
+}
+
+function pptxRationale(profileId: string, tier: QualityReferenceTier): string {
+  const executive = profileId === 'executive-presentation';
+  if (tier === 'poor') {
+    return executive
+      ? 'Type and density a technical deck tolerates and an executive audience cannot scan.'
+      : 'Unreadable type and document-like density on one slide.';
+  }
+  if (tier === 'professional') {
+    return executive
+      ? 'Readable, bounded, single-message slide.'
+      : 'Detail-dense but readable — what a technical deck is for.';
+  }
+  return 'Decisive composition with ample type and minimal cognitive load.';
 }
 
 const docxProfiles = Object.values(DOCX_QUALITY_PROFILES);
@@ -119,21 +203,7 @@ export const QUALITY_REFERENCE_CORPUS: readonly QualityReferenceCase[] = [
             ? 'Clear hierarchy and bounded table geometry.'
             : 'Conclusion-first structure with deliberate hierarchy and rhythm.',
       document: docxDocument(profile.id, tier),
-      expected:
-        tier === 'poor'
-          ? [
-              {
-                code: 'W_QUALITY_HEADING_SKIP',
-                category: 'hierarchy' as const,
-                certainty: 'deterministic' as const,
-              },
-              {
-                code: 'W_QUALITY_TABLE_WIDTH_OVERFLOW',
-                category: 'integrity' as const,
-                certainty: 'deterministic' as const,
-              },
-            ]
-          : [],
+      expected: expectedDocx(profile.id, tier),
     }))
   ),
   ...pptxProfiles.flatMap((profile) =>
@@ -143,30 +213,46 @@ export const QUALITY_REFERENCE_CORPUS: readonly QualityReferenceCase[] = [
       tier,
       profile,
       renderer: 'pptxgenjs',
-      rationale:
-        tier === 'poor'
-          ? 'Unreadable type and document-like density on one slide.'
-          : tier === 'professional'
-            ? 'Readable, bounded, single-message slide.'
-            : 'Decisive composition with ample type and minimal cognitive load.',
+      rationale: pptxRationale(profile.id, tier),
       document: pptxDocument(profile.id, tier),
-      expected:
-        tier === 'poor'
-          ? [
-              {
-                code: 'W_QUALITY_FONT_SIZE_MIN',
-                category: 'legibility' as const,
-                certainty: 'measured' as const,
-              },
-              {
-                code: 'W_QUALITY_SLIDE_DENSITY',
-                category: 'information-design' as const,
-                certainty: 'estimated' as const,
-              },
-            ]
-          : [],
+      expected: expectedPptx(tier),
     }))
   ),
+];
+
+/**
+ * The same authored document read against a second profile. Each entry pins
+ * what the *other* profile says about a case its own profile calls poor, so
+ * the corpus proves the profile — not the document — moved the verdict.
+ */
+export const QUALITY_REFERENCE_CROSS_PROFILE: readonly {
+  caseId: string;
+  profile: QualityProfile;
+  expected: readonly ExpectedQualityDiagnostic[];
+}[] = [
+  {
+    caseId: 'executive-report/poor',
+    profile: DOCX_QUALITY_PROFILES['technical-report'],
+    expected: [
+      {
+        code: 'W_QUALITY_HEADING_SKIP',
+        category: 'hierarchy',
+        certainty: 'deterministic',
+        severity: 'info',
+      },
+      {
+        code: 'W_QUALITY_TABLE_WIDTH_OVERFLOW',
+        category: 'integrity',
+        certainty: 'deterministic',
+        severity: 'warning',
+      },
+    ],
+  },
+  {
+    caseId: 'executive-presentation/poor',
+    profile: PPTX_QUALITY_PROFILES['technical-presentation'],
+    expected: [],
+  },
 ];
 
 /** Pinned authored-structure hashes; renderer/package goldens live in each core. */
@@ -190,7 +276,7 @@ export const QUALITY_REFERENCE_DIGESTS: Readonly<Record<string, string>> = {
   'legal-appendix/excellent':
     '17670dbb01c9f7b94f8a03429602609157c3893bb58a47ead92d2d0d18c55531',
   'executive-presentation/poor':
-    '219dbab6d5bf7e0f7d25d66aa0bded53d1a17cb0856ec3e67e011be32421fb65',
+    'b0b6381c95adb078b37644168239f7940213bb1dfc8f2c535c1195dce7fb4b57',
   'executive-presentation/professional':
     'ccd4f28492260e58ed6e4ebf96c9628fea42eed5c95cd7a98fd8bbf70a6f17dc',
   'executive-presentation/excellent':
@@ -198,7 +284,7 @@ export const QUALITY_REFERENCE_DIGESTS: Readonly<Record<string, string>> = {
   'technical-presentation/poor':
     'bdb8460c0467987e822ecc9c98c0e3439a2cf974b45d29a965eb3ae8c56771ce',
   'technical-presentation/professional':
-    '39ef97e807c4c830bef24a495b4411e756816cc6810ed66430e47460aebe588b',
+    'c70d4adeb5c2d57712a9ad27814aeaa5a03b9d2403c56126f7f4ad25c0de352a',
   'technical-presentation/excellent':
     '2e6b70ef98a686c1a311adb36298a6b14e16b758ba72e3aad82479929fa06f6d',
 };

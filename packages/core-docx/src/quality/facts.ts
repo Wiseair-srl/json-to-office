@@ -92,18 +92,25 @@ function tableFact(
 
   for (const column of columns) {
     const width = asRecord(column)?.width;
-    if (
-      (typeof width === 'number' && Number.isFinite(width)) ||
-      typeof width === 'string'
-    ) {
+    if (typeof width === 'number' && Number.isFinite(width)) {
       hasExplicitWidth = true;
       totalWidthTwips += relativeLengthToTwips(width, availableWidthTwips);
-    }
-    if (typeof width === 'number' && Number.isFinite(width)) {
       pointSum += width;
-    } else if (typeof width === 'string' && width.trim().endsWith('%')) {
-      const percent = Number(width.trim().slice(0, -1));
-      if (Number.isFinite(percent)) percentSum += percent;
+    } else if (typeof width === 'string') {
+      hasExplicitWidth = true;
+      const percent = width.trim().endsWith('%')
+        ? Number(width.trim().slice(0, -1))
+        : Number.NaN;
+      if (Number.isFinite(percent)) {
+        percentSum += percent;
+        // relativeLengthToTwips clamps anything past 100% to zero for the
+        // renderer; the fact must carry the authored width or the widest
+        // tables of all report as clean.
+        totalWidthTwips += Math.max(
+          0,
+          Math.round((availableWidthTwips * percent) / 100)
+        );
+      }
     }
   }
 

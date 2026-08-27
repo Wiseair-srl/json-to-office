@@ -179,6 +179,7 @@ function addSlideFacts(
   slideWidthIn: number,
   slideHeightIn: number,
   ctx: ThemeContext,
+  analyzedTextPaths: Set<string>,
   addFact: (fact: PptxQualityFact) => void
 ): void {
   const nodes: TextNode[] = [];
@@ -193,6 +194,11 @@ function addSlideFacts(
     ) {
       bodyWords += node.text.split(/\s+/).filter(Boolean).length;
     }
+
+    // Shared template objects count toward every slide's density, but their
+    // authored path should be analyzed only once.
+    if (analyzedTextPaths.has(node.path)) return;
+    analyzedTextPaths.add(node.path);
 
     let boxWidthPt = dimToPt(node.props.w, slideWidthIn);
     let boxHeightPt = dimToPt(node.props.h, slideHeightIn);
@@ -290,6 +296,7 @@ export function preparePptxQualityDocument(
       return [template.name, template] as const;
     })
   );
+  const analyzedTextPaths = new Set<string>();
 
   processed.slides.forEach((slide, renderedIndex) => {
     const authoredIndex = slideIndexes[renderedIndex];
@@ -349,6 +356,7 @@ export function preparePptxQualityDocument(
       processed.slideWidth,
       processed.slideHeight,
       ctx,
+      analyzedTextPaths,
       addFact
     );
   });

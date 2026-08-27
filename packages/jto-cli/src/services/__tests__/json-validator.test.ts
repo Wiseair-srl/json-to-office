@@ -289,4 +289,127 @@ describe('JsonValidator quality findings', () => {
       ])
     );
   });
+
+  it('returns schema errors before quality analysis', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'jto-json-validator-'));
+    directories.push(directory);
+    const documentPath = join(directory, 'deck.json');
+    await writeFile(
+      documentPath,
+      JSON.stringify({
+        name: 'pptx',
+        props: { slideWidth: 13.333, slideHeight: 7.5 },
+        children: [null, { name: 'slide', props: {}, children: [] }],
+      })
+    );
+
+    const adapter = new PptxFormatAdapter();
+    let qualityCalls = 0;
+    adapter.analyzeQuality = async () => {
+      qualityCalls += 1;
+      throw new TypeError("Cannot read properties of null (reading 'name')");
+    };
+
+    const [result] = await new JsonValidator('pptx', adapter).validate(
+      documentPath
+    );
+
+    expect(result.valid).toBe(false);
+    const codes = result.errors?.map((error) => error.code) ?? [];
+    expect(codes).not.toContain('validator_error');
+    expect(codes.length).toBeGreaterThan(0);
+    expect(qualityCalls).toBe(0);
+  });
+
+  it('preserves info severity in structured quality warnings', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'jto-json-validator-'));
+    directories.push(directory);
+    const documentPath = join(directory, 'deck.json');
+    await writeFile(
+      documentPath,
+      JSON.stringify({
+        name: 'pptx',
+        props: { slideWidth: 13.333, slideHeight: 7.5 },
+        children: [{ name: 'slide', props: {}, children: [] }],
+      })
+    );
+
+    const adapter = new PptxFormatAdapter();
+    adapter.analyzeQuality = async () => ({
+      diagnostics: [
+        {
+          source: 'quality',
+          ruleId: 'pptx/informational',
+          code: 'W_QUALITY_INFORMATIONAL',
+          category: 'composition',
+          certainty: 'deterministic',
+          severity: 'info',
+          message: 'Informational finding.',
+          path: '/props',
+          blocking: false,
+        },
+      ],
+      counts: { error: 0, warning: 0, info: 1 },
+      blocked: false,
+      truncated: false,
+      suppressedCount: 0,
+      evaluatedRuleIds: ['pptx/informational'],
+      ruleErrors: [],
+    });
+
+    const validator = new JsonValidator('pptx', adapter);
+    const [result] = await validator.validate(documentPath);
+    expect(result.warnings).toContainEqual(
+      expect.objectContaining({
+        code: 'W_QUALITY_INFORMATIONAL',
+        severity: 'info',
+      })
+    );
+    expect(JSON.parse(validator.formatResultsAsJson([result]))).toEqual([
+      expect.objectContaining({
+        warnings: expect.arrayContaining([
+          expect.objectContaining({ severity: 'info' }),
+        ]),
+      }),
+    ]);
+  });
+
+  it('reports a rule that threw instead of calling the file clean', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'jto-json-validator-'));
+    directories.push(directory);
+    const documentPath = join(directory, 'deck.json');
+    await writeFile(
+      documentPath,
+      JSON.stringify({
+        name: 'pptx',
+        props: { slideWidth: 13.333, slideHeight: 7.5 },
+        children: [{ name: 'slide', props: {}, children: [] }],
+      })
+    );
+
+    const adapter = new PptxFormatAdapter();
+    adapter.analyzeQuality = async () => ({
+      diagnostics: [],
+      counts: { error: 0, warning: 0, info: 0 },
+      blocked: false,
+      truncated: false,
+      suppressedCount: 0,
+      evaluatedRuleIds: [],
+      ruleErrors: [{ ruleId: 'W_QUALITY_FONT_SIZE_MIN', message: 'boom' }],
+    });
+
+    const [result] = await new JsonValidator('pptx', adapter).validate(
+      documentPath
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'quality_rule_error',
+          ruleId: 'W_QUALITY_FONT_SIZE_MIN',
+        }),
+      ])
+    );
+  });
 });

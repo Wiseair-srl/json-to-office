@@ -11,6 +11,7 @@ export interface ValidationError {
   path: string;
   message: string;
   code?: string;
+  severity?: 'error' | 'warning' | 'info';
   line?: number;
   column?: number;
   suggestion?: string;
@@ -163,16 +164,57 @@ export class JsonValidator {
         ...e,
         code: e.code || 'WARNING',
       }));
-      const analysis = this.adapter?.analyzeQuality
-        ? await this.adapter.analyzeQuality(jsonData, {
-            quality: options.quality,
-          })
-        : undefined;
+      if (!result.valid) {
+        const errors = result.errors?.map((e: any) => ({
+          ...e,
+          code: e.code || 'VALIDATION_ERROR',
+        }));
+        return {
+          file: filePath,
+          valid: false,
+          type: 'document',
+          ...(errors?.length && { errors }),
+          ...(schemaWarnings?.length && { warnings: schemaWarnings }),
+        };
+      }
+      const qualityNotices: ValidationError[] = [];
+      let analyzed:
+        | Awaited<ReturnType<NonNullable<FormatAdapter['analyzeQuality']>>>
+        | undefined;
+      try {
+        analyzed = this.adapter?.analyzeQuality
+          ? await this.adapter.analyzeQuality(jsonData, {
+              quality: options.quality,
+            })
+          : undefined;
+      } catch (error: any) {
+        // Quality analysis is advisory; a throw here must not take the schema
+        // errors down with it.
+        qualityNotices.push({
+          path: 'root',
+          message: `Quality analysis unavailable: ${error?.message ?? error}`,
+          code: 'quality_unavailable',
+        });
+      }
+      // Const so the partition below keeps its narrowing inside the callbacks.
+      const analysis = analyzed;
+      // A rule that threw is dropped by the engine's default `continue`, which
+      // silently removes its whole finding class — say so rather than report
+      // the file clean.
+      for (const ruleError of analysis?.ruleErrors ?? []) {
+        qualityNotices.push({
+          path: 'root',
+          message: `Quality rule ${ruleError.ruleId} failed: ${ruleError.message}`,
+          code: 'quality_rule_error',
+          ruleId: ruleError.ruleId,
+        });
+      }
       const quality = analysis?.diagnostics ?? [];
       const qualityEntries = quality.map((finding) => ({
         path: finding.path,
         message: finding.message,
         code: finding.code,
+        severity: finding.severity,
         suggestion: finding.suggestion,
         value: finding.context,
         ...('source' in finding && { source: finding.source }),
@@ -195,7 +237,11 @@ export class JsonValidator {
             (_, index) => !analysis.diagnostics[index].blocking
           )
         : qualityEntries;
-      const warnings = [...(schemaWarnings ?? []), ...qualityWarnings];
+      const warnings = [
+        ...(schemaWarnings ?? []),
+        ...qualityWarnings,
+        ...qualityNotices,
+      ];
       const errors = [
         ...(result.errors?.map((e: any) => ({
           ...e,

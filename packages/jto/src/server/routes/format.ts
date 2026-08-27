@@ -53,7 +53,12 @@ function throwIfClientError(error: unknown): void {
       cause: error,
     });
   }
-  if (code === 'QUALITY_PROFILE_INCOMPATIBLE') {
+  if (
+    code === 'QUALITY_PROFILE_INCOMPATIBLE' ||
+    // A gate or severity the policy parser cannot read came in on the
+    // request, so the request is what is at fault.
+    code === 'QUALITY_POLICY_INVALID'
+  ) {
     throw new HTTPException(400, { message: (error as Error).message });
   }
   if (

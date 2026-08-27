@@ -344,7 +344,7 @@ Generation is forgiving about recoverable content problems: instead of failing o
 ::: tip Schema errors fail before any of this
 Generation validates the document against the schema first, so a wrong prop name or invalid nesting throws `PresentationValidationError` rather than reaching the warning path. Warnings only cover what the schema can't express. `validate.document(...)` and `jto pptx validate` run the same check without producing a file. See [Validation](/guide/validation).
 
-The other hard failures at generation time: a root component that isn't `pptx`, an image with more than one source (`path` / `base64` / `svg` are mutually exclusive), a `text` carrying both `text` and `runs`, and `highcharts` errors (unreachable export server, or running in a browser).
+The other hard failures at generation time: an image with more than one source (`path` / `base64` / `svg` are mutually exclusive), a `text` carrying both `text` and `runs`, and `highcharts` errors (unreachable export server, or running in a browser).
 :::
 
 ## Where to go next

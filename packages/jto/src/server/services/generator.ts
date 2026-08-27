@@ -32,6 +32,7 @@ function toQualityWarnings(
     message: `[${finding.code}] ${finding.message}`,
     severity: finding.severity === 'info' ? 'info' : 'warning',
     context: {
+      ...(finding.context ?? {}),
       code: finding.code,
       path: finding.path,
       originalSeverity: finding.severity,
@@ -43,7 +44,6 @@ function toQualityWarnings(
       ...(finding.relatedPaths && { relatedPaths: finding.relatedPaths }),
       ...(finding.evidence && { evidence: finding.evidence }),
       ...(finding.fixes && { fixes: finding.fixes }),
-      ...(finding.context ?? {}),
     },
   }));
 }
@@ -501,7 +501,13 @@ export class GeneratorService {
       if (
         errorCode === 'QUALITY_GATE_FAILED' ||
         errorCode === 'QUALITY_PROFILE_INCOMPATIBLE' ||
-        quality?.policy?.onRuleError === 'throw'
+        // An unusable policy is the caller's configuration, not a hiccup.
+        errorCode === 'QUALITY_POLICY_INVALID' ||
+        quality?.policy?.onRuleError === 'throw' ||
+        // A caller who asked for a gate must not receive an ungated document:
+        // if the analysis failed, the gate never ran. Only the advisory case
+        // (no gate requested) degrades to a warning.
+        (quality?.policy?.gate && quality.policy.gate !== 'none')
       ) {
         throw error;
       }
@@ -639,20 +645,35 @@ export class GeneratorService {
         : jsonDefinition;
 
     const result = this.adapter.validateDocument(config);
+    if (!result.valid) return result;
     if (this.adapter.analyzeQuality) {
-      const prepared =
-        result.valid && this.adapter.prepareDocument
+      try {
+        const prepared = this.adapter.prepareDocument
           ? await this.adapter.prepareDocument(config, options)
           : undefined;
-      const qualityAnalysis = await this.adapter.analyzeQuality(
-        config,
-        prepared ? { ...options, prepared } : options
-      );
-      return {
-        ...result,
-        valid: result.valid && !qualityAnalysis.blocked,
-        qualityAnalysis,
-      };
+        const qualityAnalysis = await this.adapter.analyzeQuality(
+          config,
+          prepared ? { ...options, prepared } : options
+        );
+        return {
+          ...result,
+          valid: result.valid && !qualityAnalysis.blocked,
+          qualityAnalysis,
+        };
+      } catch (error) {
+        const errorCode = (error as { code?: unknown } | undefined)?.code;
+        if (
+          errorCode === 'QUALITY_GATE_FAILED' ||
+          errorCode === 'QUALITY_PROFILE_INCOMPATIBLE' ||
+          errorCode === 'QUALITY_POLICY_INVALID'
+        ) {
+          throw error;
+        }
+        // Reporting a malformed document is what this endpoint is for: a
+        // preparation that chokes on it must degrade to "no quality
+        // analysis", not bury the schema errors under a 500.
+        logger.warn('Quality analysis failed', { error });
+      }
     }
     return result;
   }

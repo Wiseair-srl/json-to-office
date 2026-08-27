@@ -59,6 +59,30 @@ describe('table widths', () => {
     expect(findings[0].context).toMatchObject({ percentSum: 115 });
   });
 
+  it('counts a percentage past 100% at its authored width', () => {
+    const table = (...widths: string[]) =>
+      doc([
+        {
+          name: 'table',
+          props: {
+            columns: widths.map((width) => ({
+              header: { content: width },
+              cells: [],
+              width,
+            })),
+          },
+        },
+      ]);
+    expect(docxDiagnostics(table('150%', '150%'))[0]).toMatchObject({
+      code: QUALITY_CODES.TABLE_WIDTH_OVERFLOW,
+      context: { percentSum: 300 },
+    });
+    expect(docxDiagnostics(table('101%', '5%'))[0]).toMatchObject({
+      code: QUALITY_CODES.TABLE_WIDTH_OVERFLOW,
+      context: { percentSum: 106 },
+    });
+  });
+
   it("leaves plausible widths to the compiler's exact check", () => {
     const findings = docxDiagnostics(
       doc([
@@ -176,6 +200,74 @@ describe('heading hierarchy', () => {
       ])
     );
     expect(findings).toEqual([]);
+  });
+});
+
+describe('shipped profiles', () => {
+  const skipped = doc([
+    { name: 'heading', props: { text: 'One', level: 1 } },
+    { name: 'heading', props: { text: 'Deep', level: 3 } },
+  ]);
+
+  it('applies a shipped profile named by id alone', () => {
+    const analysis = analyzeDocxQuality(skipped, {
+      profile: { id: 'executive-report', formats: ['docx'] },
+    });
+    expect(analysis.profileId).toBe('executive-report');
+    expect(analysis.diagnostics[0]).toMatchObject({
+      code: QUALITY_CODES.HEADING_SKIP,
+      severity: 'warning',
+    });
+  });
+
+  it("lets the caller's own keys win over the registered profile", () => {
+    const analysis = analyzeDocxQuality(skipped, {
+      profile: {
+        id: 'executive-report',
+        formats: ['docx'],
+        rules: { 'docx/heading-hierarchy': { enabled: false } },
+      },
+    });
+    expect(analysis.diagnostics).toEqual([]);
+  });
+
+  it('leaves an unregistered profile exactly as the caller wrote it', () => {
+    const analysis = analyzeDocxQuality(skipped, {
+      profile: {
+        id: 'house-style',
+        formats: ['docx'],
+        rules: { 'docx/heading-hierarchy': { severity: 'error' } },
+      },
+    });
+    expect(analysis.diagnostics[0]).toMatchObject({ severity: 'error' });
+  });
+});
+
+describe('preparation failures', () => {
+  const broken = { name: 'docx', props: {}, children: 'not an array' };
+
+  it('records the failure rather than reporting a clean document', () => {
+    const analysis = analyzeDocxQuality(broken);
+    expect(analysis.diagnostics).toEqual([]);
+    expect(analysis.ruleErrors).toEqual([
+      { ruleId: 'quality/prepare', message: expect.any(String) },
+    ]);
+    expect(analysis.blocked).toBe(false);
+  });
+
+  it('fails closed when a gate is active', () => {
+    expect(
+      analyzeDocxQuality(broken, { policy: { gate: 'warning' } }).blocked
+    ).toBe(true);
+    expect(
+      analyzeDocxQuality(broken, { policy: { gate: 'none' } }).blocked
+    ).toBe(false);
+  });
+
+  it('rethrows when the policy asks for it', () => {
+    expect(() =>
+      analyzeDocxQuality(broken, { policy: { onRuleError: 'throw' } })
+    ).toThrow();
   });
 });
 

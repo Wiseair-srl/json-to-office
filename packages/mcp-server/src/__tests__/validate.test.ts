@@ -14,9 +14,19 @@ import * as path from 'path';
 
 import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server';
 import { Client } from '@modelcontextprotocol/client';
+import {
+  QualityEngine,
+  type QualityAnalysis,
+  type QualityRule,
+} from '@json-to-office/quality';
 
 import { createToolDeps } from '../lib/deps.js';
 import { createOutputRoot } from '../lib/output-root.js';
+import {
+  getAdapter,
+  type FormatAdapter,
+  type FormatName,
+} from '../lib/adapters.js';
 import { toJsonPointer } from '../lib/errors.js';
 import { register } from '../tools/validate.js';
 
@@ -44,10 +54,13 @@ const VALID_PPTX = {
 let scratch: string;
 let client: Client;
 
-async function connect(): Promise<Client> {
+async function connect(
+  getAdapterFor?: (format: FormatName) => FormatAdapter
+): Promise<Client> {
   const deps = createToolDeps({
     outputRoot: createOutputRoot({ flagDir: path.join(scratch, 'out') }),
     serverVersion: '9.9.9-test',
+    ...(getAdapterFor && { getAdapter: getAdapterFor }),
   });
   const server = new McpServer(
     { name: 'json-to-office', version: '9.9.9-test' },
@@ -66,9 +79,10 @@ async function connect(): Promise<Client> {
 }
 
 async function validate(
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  on: Client = client
 ): Promise<{ result: Record<string, any>; isError: unknown }> {
-  const called = await client.callTool({
+  const called = await on.callTool({
     name: 'jto_validate',
     arguments: args,
   });
@@ -326,6 +340,72 @@ describe('jto_validate', () => {
     }
   });
 
+  it('keeps blocking diagnostics ahead of advisory peers when capped', async () => {
+    const stubbed = await connect((format) => {
+      const real = getAdapter(format);
+      return {
+        ...real,
+        validateDocument: real.validateDocument.bind(real),
+        rendererIds: real.rendererIds.bind(real),
+        rendererStatuses: real.rendererStatuses.bind(real),
+        async analyzeQuality(): Promise<QualityAnalysis> {
+          return {
+            diagnostics: [
+              {
+                source: 'quality',
+                ruleId: 'pptx/advisory',
+                code: 'W_QUALITY_ADVISORY',
+                category: 'composition',
+                certainty: 'deterministic',
+                severity: 'warning',
+                message: 'Advisory warning.',
+                path: '/children/0',
+                blocking: false,
+              },
+              {
+                source: 'quality',
+                ruleId: 'pptx/blocking',
+                code: 'W_QUALITY_BLOCKING',
+                category: 'composition',
+                certainty: 'deterministic',
+                severity: 'warning',
+                message: 'Blocking warning.',
+                path: '/children/0/props',
+                blocking: true,
+              },
+            ],
+            counts: { error: 0, warning: 2, info: 0 },
+            blocked: true,
+            truncated: false,
+            suppressedCount: 0,
+            evaluatedRuleIds: ['pptx/advisory', 'pptx/blocking'],
+            ruleErrors: [],
+          };
+        },
+      };
+    });
+
+    try {
+      const { result } = await validate(
+        { format: 'pptx', document: VALID_PPTX, maxDiagnostics: 1 },
+        stubbed
+      );
+      expect(result).toMatchObject({
+        ok: false,
+        valid: false,
+        truncated: true,
+      });
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          code: 'W_QUALITY_BLOCKING',
+          blocking: true,
+        }),
+      ]);
+    } finally {
+      await stubbed.close();
+    }
+  });
+
   it('reports design-quality findings without moving the gate', async () => {
     // No canvas, a box that cannot hold its text, an unreadable font size:
     // all schema-valid, all wrong, all repairable from the diagnostics alone.
@@ -409,6 +489,250 @@ describe('jto_validate', () => {
         blocking: true,
         source: 'quality',
         certainty: 'measured',
+      })
+    );
+  });
+
+  it('follows the gate rather than the severity a policy chose', async () => {
+    // A policy that raises one rule to `error` and asks for no gate. The
+    // finding is severe and the document still generates, so `ok` has to
+    // answer for the gate — reading it off the error tally instead called a
+    // renderable document invalid, which is the one verdict a caller acts on.
+    const { result } = await validate({
+      format: 'pptx',
+      document: {
+        name: 'pptx',
+        props: { slideWidth: 13.333, slideHeight: 7.5 },
+        children: [
+          {
+            name: 'slide',
+            children: [
+              { name: 'text', props: { text: 'Too small', fontSize: 5 } },
+            ],
+          },
+        ],
+      },
+      quality: {
+        policy: { rules: { 'pptx/minimum-font-size': { severity: 'error' } } },
+      },
+    });
+
+    expect(result).toMatchObject({ ok: true, valid: true });
+    expect(result.counts.error).toBe(1);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'W_QUALITY_FONT_SIZE_MIN',
+        severity: 'error',
+        blocking: false,
+      })
+    );
+  });
+
+  it('reports the analysis budget as a truncation of its own', async () => {
+    // `truncated` used to answer only for this tool's own cap, so a report the
+    // policy budget had already shortened came back reading complete.
+    const { result } = await validate({
+      format: 'pptx',
+      document: {
+        name: 'pptx',
+        props: {},
+        children: [
+          {
+            name: 'slide',
+            children: [
+              { name: 'text', props: { text: 'fine print', fontSize: 5 } },
+            ],
+          },
+        ],
+      },
+      quality: { policy: { maxDiagnostics: 1 } },
+    });
+
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.truncated).toBe(true);
+  });
+
+  it('names the profile the analysis ran under', async () => {
+    const { result } = await validate({
+      format: 'pptx',
+      document: VALID_PPTX,
+      quality: { profile: { id: 'executive-presentation', formats: ['pptx'] } },
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      profileId: 'executive-presentation',
+    });
+  });
+
+  it('blames the caller for a profile that does not fit the run', async () => {
+    // A profile scoped to another format is a defect in the REQUEST. It used
+    // to escape as `E_INTERNAL`, which this server documents as always a bug
+    // here and never the caller's — so the agent was sent to file an issue
+    // about the one argument it could have fixed itself.
+    const { result, isError } = await validate({
+      format: 'pptx',
+      document: VALID_PPTX,
+      quality: { profile: { id: 'executive-report', formats: ['docx'] } },
+    });
+
+    expect(isError).toBeFalsy();
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics[0].code).toBe('E_INVALID_QUALITY_PROFILE');
+    expect(result.diagnostics[0].message).toContain('executive-report');
+  });
+
+  it('blames the caller for a policy value that is not a legal one', async () => {
+    // The policy schema is `additionalProperties: true` — the tool declares
+    // `gate` and takes the rest as written — so a typo in any other field
+    // arrives at the engine intact. Before the engine checked, an unknown
+    // severity counted into no bucket and the report came back with NaN
+    // totals; once it checked, the throw reached the agent as `E_INTERNAL`,
+    // the code reserved for bugs in this server.
+    const severity = await validate({
+      format: 'pptx',
+      document: VALID_PPTX,
+      quality: {
+        policy: { rules: { 'pptx/minimum-font-size': { severity: 'fatal' } } },
+      },
+    });
+    expect(severity.isError).toBeFalsy();
+    expect(severity.result.ok).toBe(false);
+    expect(severity.result.diagnostics[0].code).toBe(
+      'E_INVALID_QUALITY_POLICY'
+    );
+    expect(severity.result.diagnostics[0].code).not.toBe('E_INTERNAL');
+    // The offending value, so the agent knows which of its rules to fix.
+    expect(severity.result.diagnostics[0].message).toContain('fatal');
+
+    const budget = await validate({
+      format: 'pptx',
+      document: VALID_PPTX,
+      quality: { policy: { maxDiagnostics: -1 } },
+    });
+    expect(budget.result.diagnostics[0].code).toBe('E_INVALID_QUALITY_POLICY');
+  });
+
+  it('refuses a typo’d gate at the schema, before the engine sees it', async () => {
+    // `gate` is the one policy field the tool enumerates, so the SDK rejects
+    // `"warn"` as invalid arguments and the body never runs — a protocol
+    // error, which is the one shape this tool otherwise never returns.
+    // Asserted because that enum is all that stands between a misspelled gate
+    // and a gate that silently never fires: narrow it away and the engine's
+    // own check becomes the only line, exactly as for every other field.
+    const { result, isError } = await validate({
+      format: 'pptx',
+      document: VALID_PPTX,
+      quality: { policy: { gate: 'warn' } },
+    });
+    expect(isError).toBe(true);
+    expect(result).toBeUndefined();
+  });
+
+  it('reports a rule that threw rather than an empty clean bill', async () => {
+    // The engine's default `onRuleError: "continue"` records the failure and
+    // carries on, so the entire class of findings that rule owns vanishes from
+    // the answer — and an agent handed `ok: true` with an empty list reads
+    // that as "nothing to fix" rather than "nobody looked".
+    const exploding: QualityRule = {
+      id: 'pptx/explodes',
+      code: 'W_QUALITY_TEXT_OVERFLOW',
+      category: 'layout',
+      defaultSeverity: 'warning',
+      defaultCertainty: 'measured',
+      evaluate() {
+        throw new Error('slide facts were missing');
+      },
+    };
+    // A real engine run: recording the failure is the engine's behaviour and
+    // surfacing it is this tool's, so only the analyzer is stood in for.
+    const stubbed = await connect((format) => {
+      const real = getAdapter(format);
+      return {
+        ...real,
+        validateDocument: real.validateDocument.bind(real),
+        rendererIds: real.rendererIds.bind(real),
+        rendererStatuses: real.rendererStatuses.bind(real),
+        async analyzeQuality() {
+          return new QualityEngine([exploding]).analyzeSync({
+            format,
+            model: {},
+            facts: [],
+            provenance: {},
+          });
+        },
+      };
+    });
+
+    try {
+      const { result } = await validate(
+        { format: 'pptx', document: VALID_PPTX },
+        stubbed
+      );
+      // A hole in the report, not a defect in the document: still `ok`.
+      expect(result.ok).toBe(true);
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'W_QUALITY_RULE_ERROR',
+          source: 'quality',
+          // The rule id is the whole point: it names what went unchecked.
+          ruleId: 'pptx/explodes',
+          message: expect.stringContaining('slide facts were missing'),
+        })
+      );
+      expect(result.counts).toMatchObject({ error: 0, warning: 1 });
+    } finally {
+      await stubbed.close();
+    }
+  });
+
+  it('keeps the two halves of the verdict apart', async () => {
+    // `ok` was `counts.error === 0 && !blocked`, and `counts` includes the
+    // quality findings — so a policy that raised one to `error` without asking
+    // for a gate reported a renderable document invalid. Same document, same
+    // policy, twice: the quality error alone never blocks, and a schema error
+    // beside it always does.
+    const policy = {
+      policy: {
+        gate: 'none',
+        rules: { 'pptx/minimum-font-size': { severity: 'error' } },
+      },
+    };
+    const slide = (extra: unknown[]) => ({
+      name: 'pptx',
+      props: { slideWidth: 13.333, slideHeight: 7.5 },
+      children: [
+        {
+          name: 'slide',
+          children: [
+            { name: 'text', props: { text: 'Too small', fontSize: 5 } },
+            ...extra,
+          ],
+        },
+      ],
+    });
+
+    const advisory = await validate({
+      format: 'pptx',
+      document: slide([]),
+      quality: policy,
+    });
+    expect(advisory.result).toMatchObject({ ok: true, valid: true });
+    expect(advisory.result.counts.error).toBe(1);
+
+    const broken = await validate({
+      format: 'pptx',
+      document: slide([{ name: 'text', props: { text: 'ok', bogus: true } }]),
+      quality: policy,
+    });
+    expect(broken.result).toMatchObject({ ok: false, valid: false });
+    // Both errors counted; only the schema one moved the verdict.
+    expect(broken.result.counts.error).toBe(2);
+    expect(broken.result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'W_QUALITY_FONT_SIZE_MIN',
+        severity: 'error',
+        blocking: false,
       })
     );
   });

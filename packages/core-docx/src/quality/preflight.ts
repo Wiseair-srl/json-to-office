@@ -5,12 +5,20 @@ import type {
   QualityAnalysis,
   QualityPolicy,
   QualityProfile,
+  QualityRuleError,
 } from '@json-to-office/quality';
 import type { ThemeConfig } from '../styles';
 import type { ReportComponentDefinition } from '../types';
 import { prepareDocxQualityDocument } from './facts';
 import type { DocxQualityFact, DocxQualityModel } from './facts';
-import { DOCX_DEFAULT_QUALITY_PROFILE, docxQualityEngine } from './rules';
+import {
+  DOCX_DEFAULT_QUALITY_PROFILE,
+  docxQualityEngine,
+  resolveDocxQualityProfile,
+} from './rules';
+
+/** Synthetic rule id for a failure raised before any rule could run. */
+const PREPARE_RULE_ID = 'quality/prepare';
 
 export interface DocxQualityOptions {
   customThemes?: Record<string, ThemeConfig>;
@@ -23,15 +31,18 @@ export interface DocxQualityAnalysisOptions extends DocxQualityOptions {
   prepared?: PreparedDocument<DocxQualityModel, DocxQualityFact>;
 }
 
-function emptyAnalysis(): QualityAnalysis {
+function emptyAnalysis(
+  ruleErrors: readonly QualityRuleError[] = [],
+  blocked = false
+): QualityAnalysis {
   return {
     diagnostics: [],
     counts: { error: 0, warning: 0, info: 0 },
-    blocked: false,
+    blocked,
     truncated: false,
     suppressedCount: 0,
     evaluatedRuleIds: [],
-    ruleErrors: [],
+    ruleErrors,
   };
 }
 
@@ -54,12 +65,26 @@ export function analyzeDocxQuality(
       doc as ReportComponentDefinition,
       options
     );
-  } catch {
+  } catch (error) {
     // Structural validation owns malformed trees; quality remains additive.
-    return emptyAnalysis();
+    if (options.policy?.onRuleError === 'throw') throw error;
+    const gate = options.policy?.gate;
+    // A gate that could never be evaluated has not been satisfied: report the
+    // failure and fail closed rather than pass a document nothing inspected.
+    return emptyAnalysis(
+      [
+        {
+          ruleId: PREPARE_RULE_ID,
+          message: error instanceof Error ? error.message : String(error),
+        },
+      ],
+      gate !== undefined && gate !== 'none'
+    );
   }
   return docxQualityEngine.analyzeSync(prepared, {
-    profile: options.profile ?? DOCX_DEFAULT_QUALITY_PROFILE,
+    profile:
+      resolveDocxQualityProfile(options.profile) ??
+      DOCX_DEFAULT_QUALITY_PROFILE,
     policy: options.policy,
   });
 }

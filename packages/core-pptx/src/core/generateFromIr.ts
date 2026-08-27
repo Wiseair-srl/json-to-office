@@ -91,6 +91,7 @@ export async function compileDocumentToIr(
       : component,
     options?.validation
   );
+  assertNoContentConflicts(component);
   const warnings: PipelineWarning[] = [];
 
   const prepared =
@@ -102,8 +103,6 @@ export async function compileDocumentToIr(
       services: options?.services,
       renderer: selectedRenderer,
     });
-
-  assertNoContentConflicts(prepared.model.document);
 
   const result = await runWithBaseDir(options?.baseDir, async () => {
     const expansion = await expandHighchartsComponents(
@@ -143,6 +142,7 @@ export async function generateBufferViaIr(
       : component,
     options?.validation
   );
+  assertNoContentConflicts(component);
   const warnings: PipelineWarning[] = [];
 
   const prepared =
@@ -154,8 +154,6 @@ export async function generateBufferViaIr(
       services: options?.services,
       renderer: selectedRenderer,
     });
-
-  assertNoContentConflicts(prepared.model.document);
 
   // Fires `fonts.onResolved` for the preview stager, exactly as the legacy
   // path does. The PPTX itself never embeds font bytes.

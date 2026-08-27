@@ -238,6 +238,38 @@ describe('/api/docx/renderers', () => {
       error: expect.stringContaining('does not support renderer'),
     });
   });
+
+  it('rejects a policy whose gate it cannot read', async () => {
+    // `policy` crosses the wire as a free-form object, so a typo'd gate meets
+    // a parser for the first time once analysis starts. It used to be ignored
+    // there, leaving gating quietly off for a request that asked for it — and
+    // once the parser started throwing, an unmapped code would have made the
+    // caller's typo read as a server fault.
+    const quality = { policy: { gate: 'warn' } };
+    const generation = await post(app, '/api/docx/generate', {
+      jsonDefinition: document,
+      options: { quality },
+    });
+    const validation = await post(app, '/api/docx/validate', {
+      jsonDefinition: document,
+      options: { quality },
+    });
+
+    expect(generation.status).toBe(400);
+    expect(validation.status).toBe(400);
+    // The message names the value and the ones that would have worked;
+    // without it the client is told "400" and left to guess which key.
+    expect((await generation.json()) as Record<string, unknown>).toMatchObject({
+      success: false,
+      code: 'CLIENT_ERROR',
+      error: expect.stringContaining('invalid gate "warn"'),
+    });
+    expect((await validation.json()) as Record<string, unknown>).toMatchObject({
+      success: false,
+      code: 'CLIENT_ERROR',
+      error: expect.stringContaining('invalid gate "warn"'),
+    });
+  });
 });
 
 describe('/api/pptx/generate renderer validation', () => {

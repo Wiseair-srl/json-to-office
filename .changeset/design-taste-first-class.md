@@ -8,7 +8,7 @@
 '@json-to-office/jto-ops': minor
 '@json-to-office/jto-cli': minor
 '@json-to-office/mcp-server': minor
-'@json-to-office/jto': patch
+'@json-to-office/jto': minor
 ---
 
 Design quality becomes a first-class pipeline (#216, #218).

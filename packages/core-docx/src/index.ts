@@ -98,6 +98,7 @@ export {
   DOCX_QUALITY_PROFILES,
   DOCX_QUALITY_RULES,
   docxQualityEngine,
+  resolveDocxQualityProfile,
 } from './quality/rules';
 export {
   generateWarningsDocument,

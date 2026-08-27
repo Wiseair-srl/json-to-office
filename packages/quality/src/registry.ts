@@ -26,6 +26,14 @@ export class QualityRuleRegistry<
   }
 
   registerPack(pack: QualityRulePack<TModel, TFact>): this {
+    const ids = new Set(this.entries.keys());
+    for (const rule of pack.rules) {
+      if (ids.has(rule.id)) {
+        throw new DuplicateQualityRuleError(rule.id);
+      }
+      ids.add(rule.id);
+    }
+
     for (const rule of pack.rules) this.register(rule);
     return this;
   }

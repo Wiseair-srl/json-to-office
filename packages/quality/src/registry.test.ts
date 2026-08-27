@@ -32,4 +32,22 @@ describe('QualityRuleRegistry', () => {
       registry.registerPack({ id: 'duplicate', rules: [rule] })
     ).toThrow(DuplicateQualityRuleError);
   });
+
+  it('validates a whole pack before registering any rule', () => {
+    const first = { ...rule, id: 'test/first' };
+    const registry = new QualityRuleRegistry([rule]);
+
+    expect(() =>
+      registry.registerPack({ id: 'not-atomic', rules: [first, rule] })
+    ).toThrow(DuplicateQualityRuleError);
+    expect(registry.has(first.id)).toBe(false);
+
+    expect(() =>
+      registry.registerPack({
+        id: 'self-duplicate',
+        rules: [first, { ...first }],
+      })
+    ).toThrow(DuplicateQualityRuleError);
+    expect(registry.has(first.id)).toBe(false);
+  });
 });

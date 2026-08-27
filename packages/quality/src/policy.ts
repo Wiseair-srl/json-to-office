@@ -4,6 +4,7 @@ import type {
   QualityPolicy,
   QualityProfile,
   QualityRule,
+  QualityRuleConfiguration,
   QualitySuppression,
   ResolvedQualityRuleConfiguration,
 } from './types';
@@ -13,6 +14,76 @@ const SEVERITY_RANK: Readonly<Record<DiagnosticSeverity, number>> = {
   warning: 1,
   info: 2,
 };
+
+/** Policies arrive from untrusted input (HTTP body, MCP tool call, CLI file). */
+export class QualityPolicyError extends Error {
+  readonly code = 'QUALITY_POLICY_INVALID';
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'QualityPolicyError';
+  }
+}
+
+function isSeverity(value: unknown): value is DiagnosticSeverity {
+  return value === 'error' || value === 'warning' || value === 'info';
+}
+
+function assertRuleSeverities(
+  rules: Readonly<Record<string, QualityRuleConfiguration>> | undefined,
+  origin: 'policy' | 'profile'
+): void {
+  for (const [ruleId, configuration] of Object.entries(rules ?? {})) {
+    if (
+      configuration.severity !== undefined &&
+      !isSeverity(configuration.severity)
+    ) {
+      throw new QualityPolicyError(
+        `Quality ${origin} rule "${ruleId}" has invalid severity ${JSON.stringify(configuration.severity)}; expected "error", "warning" or "info"`
+      );
+    }
+  }
+}
+
+export function assertValidQualityPolicy(
+  policy: QualityPolicy | undefined
+): void {
+  if (!policy) return;
+  if (
+    policy.gate !== undefined &&
+    policy.gate !== 'none' &&
+    !isSeverity(policy.gate)
+  ) {
+    throw new QualityPolicyError(
+      `Quality policy has invalid gate ${JSON.stringify(policy.gate)}; expected "none", "error", "warning" or "info"`
+    );
+  }
+  assertRuleSeverities(policy.rules, 'policy');
+  if (
+    policy.maxDiagnostics !== undefined &&
+    (!Number.isInteger(policy.maxDiagnostics) || policy.maxDiagnostics < 0)
+  ) {
+    throw new QualityPolicyError(
+      `Quality policy has invalid maxDiagnostics ${JSON.stringify(policy.maxDiagnostics)}; expected a non-negative integer`
+    );
+  }
+  if (
+    policy.onRuleError !== undefined &&
+    policy.onRuleError !== 'continue' &&
+    policy.onRuleError !== 'throw'
+  ) {
+    throw new QualityPolicyError(
+      `Quality policy has invalid onRuleError ${JSON.stringify(policy.onRuleError)}; expected "continue" or "throw"`
+    );
+  }
+}
+
+export function assertValidQualityProfile(
+  profile: QualityProfile | undefined
+): void {
+  if (!profile) return;
+  assertRuleSeverities(profile.rules, 'profile');
+}
 
 export function resolveRuleConfiguration(
   rule: QualityRule,
@@ -26,6 +97,7 @@ export function resolveRuleConfiguration(
     enabled: policyRule?.enabled ?? profileRule?.enabled ?? true,
     severity:
       policyRule?.severity ?? profileRule?.severity ?? rule.defaultSeverity,
+    severityOverride: policyRule?.severity ?? profileRule?.severity,
     parameters: {
       ...(rule.defaultParameters ?? {}),
       ...(profile?.parameters ?? {}),

@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { generateBufferFromJson } from '../generator';
+import {
+  generateBufferFromJson,
+  PresentationValidationError,
+} from '../generator';
 
 const SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>';
@@ -24,7 +27,23 @@ describe('generateBufferFromJson — image source conflicts', () => {
       generateBufferFromJson(
         doc({ svg: SVG, path: 'https://example.com/x.png' }) as any
       )
-    ).rejects.toThrow(/only one source/);
+    ).rejects.toMatchObject({
+      name: PresentationValidationError.name,
+      message: expect.stringMatching(/only one source/),
+    });
+  });
+
+  it('reports content conflicts before preparation failures', async () => {
+    const conflicted = {
+      ...doc({ svg: SVG, path: 'https://example.com/x.png' }),
+      props: null,
+    };
+
+    await expect(
+      generateBufferFromJson(conflicted as any, {
+        validation: { enabled: false },
+      })
+    ).rejects.toThrow(/Document validation failed/);
   });
 
   it('generates normally with a single (svg) source', async () => {

@@ -140,4 +140,26 @@ export const DOCX_QUALITY_PROFILES = {
 export const DOCX_DEFAULT_QUALITY_PROFILE: QualityProfile =
   DOCX_QUALITY_PROFILES['technical-report'];
 
+const DOCX_PROFILES_BY_ID: Readonly<Record<string, QualityProfile>> =
+  DOCX_QUALITY_PROFILES;
+
+/**
+ * Callers name a shipped profile by id — `{ id: 'executive-report', formats: ['docx'] }`.
+ * Without this lookup that request reaches the engine carrying nothing but its id,
+ * so the analysis runs on defaults while stamping the requested profileId.
+ */
+export function resolveDocxQualityProfile(
+  requested: QualityProfile | undefined
+): QualityProfile | undefined {
+  if (!requested) return undefined;
+  const registered = DOCX_PROFILES_BY_ID[requested.id];
+  if (!registered) return requested;
+  return {
+    ...registered,
+    ...requested,
+    rules: { ...registered.rules, ...requested.rules },
+    parameters: { ...registered.parameters, ...requested.parameters },
+  };
+}
+
 export const docxQualityEngine = new QualityEngine(DOCX_QUALITY_RULES.rules);

@@ -30,8 +30,11 @@ export {
 } from './types';
 
 export {
+  assertValidQualityPolicy,
+  assertValidQualityProfile,
   isBlocking,
   isSuppressed,
+  QualityPolicyError,
   resolveRuleConfiguration,
   severityRank,
 } from './policy';

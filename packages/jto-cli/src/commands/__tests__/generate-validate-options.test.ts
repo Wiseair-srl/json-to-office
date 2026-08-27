@@ -3,12 +3,15 @@ import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { themes } from '@json-to-office/core-docx';
-import { DocxFormatAdapter } from '@json-to-office/jto-ops';
+import { DocxFormatAdapter, PptxFormatAdapter } from '@json-to-office/jto-ops';
 import { createGenerateCommand, defaultOutputName } from '../generate.js';
 import { createValidateCommand } from '../validate.js';
 
 /** Summary lines the command printed, captured from the mocked renderer. */
-const { rendered } = vi.hoisted(() => ({ rendered: [] as string[] }));
+const { rendered, renderedTones } = vi.hoisted(() => ({
+  rendered: [] as string[],
+  renderedTones: [] as Array<string | undefined>,
+}));
 
 // `generate` calls `loadConfig()` with no startPath, so cosmiconfig walks up
 // out of the repo. Without this, a stray `.json-to-office.config.*` anywhere
@@ -40,8 +43,9 @@ vi.mock('../ui.js', async () => {
         log(message: string): void;
       }) => Promise<unknown>
     ) => task({ update: () => undefined, log: () => undefined }),
-    renderLines: async (lines: { text: string }[]) => {
+    renderLines: async (lines: { text: string; tone?: string }[]) => {
       rendered.push(...lines.map((line) => line.text));
+      renderedTones.push(...lines.map((line) => line.tone));
     },
   };
 });
@@ -303,6 +307,75 @@ describe('validate command contract', () => {
     expect(command.opts()).toMatchObject({ type: 'auto', format: 'pretty' });
     expect(command.options.map((option) => option.long)).toEqual(
       expect.arrayContaining(['--quiet', '--format', '--recursive'])
+    );
+  });
+
+  async function runPptxValidation(document: unknown, flags: string[] = []) {
+    const directory = mkdtempSync(join(tmpdir(), 'jto-validate-options-'));
+    const input = join(directory, 'input.json');
+    writeFileSync(input, JSON.stringify(document));
+    rendered.length = 0;
+    renderedTones.length = 0;
+    const exit = vi
+      .spyOn(process, 'exit')
+      .mockImplementation((() => undefined) as never);
+
+    try {
+      await createValidateCommand(new PptxFormatAdapter()).parseAsync(
+        [input, ...flags],
+        { from: 'user' }
+      );
+    } finally {
+      exit.mockRestore();
+    }
+
+    return rendered.map((text, index) => ({
+      text,
+      tone: renderedTones[index],
+    }));
+  }
+
+  it('suppresses warning-only results in quiet mode', async () => {
+    const lines = await runPptxValidation(
+      {
+        name: 'pptx',
+        props: { slideWidth: 13.333, slideHeight: 7.5 },
+        children: [
+          {
+            name: 'slide',
+            props: {},
+            children: [{ name: 'text', props: { text: 'Tiny', fontSize: 6 } }],
+          },
+        ],
+      },
+      ['--quiet']
+    );
+
+    expect(lines).toEqual([]);
+  });
+
+  it('keeps invalid results and errors in quiet mode', async () => {
+    const lines = await runPptxValidation(
+      { name: 'pptx', props: {}, children: [null] },
+      ['--quiet']
+    );
+
+    expect(lines[0]?.text).toContain('FAIL');
+    expect(lines.some((line) => line.tone === 'error')).toBe(true);
+  });
+
+  it('renders informational quality findings as info', async () => {
+    const lines = await runPptxValidation({
+      name: 'pptx',
+      props: { slideWidth: 10, slideHeight: 7.5 },
+      children: [{ name: 'slide', props: {}, children: [] }],
+    });
+
+    expect(lines).toContainEqual(
+      expect.objectContaining({
+        text: expect.stringContaining('Canvas is 4:3 legacy'),
+        tone: 'info',
+      })
     );
   });
 });

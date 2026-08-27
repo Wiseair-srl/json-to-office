@@ -123,11 +123,17 @@ export function register(server: McpServer, deps: ToolDeps): void {
       const formats = await Promise.all(
         FORMAT_NAMES.map(async (format) => {
           const adapter = deps.getAdapter(format);
+          let themes;
+          try {
+            themes = adapter.getBuiltinThemeValues
+              ? await adapter.getBuiltinThemeValues()
+              : adapter.getBuiltinThemes();
+          } catch {
+            themes = adapter.getBuiltinThemes();
+          }
           return {
             format,
-            themes: adapter.getBuiltinThemeValues
-              ? await adapter.getBuiltinThemeValues()
-              : adapter.getBuiltinThemes(),
+            themes,
           };
         })
       );

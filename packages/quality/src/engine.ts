@@ -1,4 +1,6 @@
 import {
+  assertValidQualityPolicy,
+  assertValidQualityProfile,
   isBlocking,
   isSuppressed,
   resolveRuleConfiguration,
@@ -108,6 +110,8 @@ export class QualityEngine<
     prepared: PreparedDocument<TModel, TFact>,
     options: QualityAnalyzeOptions = {}
   ): Promise<QualityAnalysis> {
+    assertValidQualityPolicy(options.policy);
+    assertValidQualityProfile(options.profile);
     assertProfileSupports(options.profile, prepared);
     return this.runAsync(prepared, options);
   }
@@ -116,6 +120,8 @@ export class QualityEngine<
     prepared: PreparedDocument<TModel, TFact>,
     options: QualityAnalyzeOptions = {}
   ): QualityAnalysis {
+    assertValidQualityPolicy(options.policy);
+    assertValidQualityProfile(options.profile);
     assertProfileSupports(options.profile, prepared);
     const state = createAnalysisState();
 
@@ -128,22 +134,24 @@ export class QualityEngine<
       if (!configuration.enabled) continue;
       state.evaluatedRuleIds.push(rule.id);
 
+      let findings;
       try {
-        const findings = rule.evaluate({
+        findings = rule.evaluate({
           prepared,
           facts: prepared.facts,
           profile: options.profile,
           configuration,
         });
-        if (isPromiseLike(findings)) {
-          throw new Error(
-            `Quality rule "${rule.id}" is asynchronous; use analyze()`
-          );
-        }
-        appendFindings(state, rule, findings, options);
       } catch (error) {
         handleRuleError(state.ruleErrors, rule.id, error, options.policy);
+        continue;
       }
+      if (isPromiseLike(findings)) {
+        throw new Error(
+          `Quality rule "${rule.id}" is asynchronous; use analyze()`
+        );
+      }
+      appendFindings(state, rule, findings, options);
     }
 
     return finalizeAnalysis(state, options);
@@ -230,7 +238,12 @@ function appendFindings(
     options.policy
   );
   for (const finding of findings) {
-    const severity = finding.severity ?? configuration.severity;
+    // An operator's explicit override outranks the per-code severity a rule sets
+    // inline, which in turn outranks the rule's resolved default.
+    const severity =
+      configuration.severityOverride ??
+      finding.severity ??
+      configuration.severity;
     const diagnostic: QualityDiagnostic = {
       source: 'quality',
       ruleId: rule.id,
@@ -278,16 +291,28 @@ function finalizeAnalysis(
     maxDiagnostics >= 0 &&
     state.diagnostics.length > maxDiagnostics
   ) {
-    kept = state.diagnostics
+    const ordered = state.diagnostics
       .map((diagnostic, index) => ({ diagnostic, index }))
       .sort(
         (a, b) =>
           severityRank(a.diagnostic.severity) -
             severityRank(b.diagnostic.severity) || a.index - b.index
-      )
-      .slice(0, maxDiagnostics)
+      );
+    // maxDiagnostics is a display budget, not a correctness lever: dropping a
+    // blocking diagnostic would leave a failed gate with nothing to point at.
+    const blockingCount = ordered.filter(
+      ({ diagnostic }) => diagnostic.blocking
+    ).length;
+    let budget = Math.max(0, maxDiagnostics - blockingCount);
+    kept = ordered
+      .filter(({ diagnostic }) => {
+        if (diagnostic.blocking) return true;
+        if (budget === 0) return false;
+        budget -= 1;
+        return true;
+      })
       .map(({ diagnostic }) => diagnostic);
-    truncated = true;
+    truncated = kept.length < state.diagnostics.length;
   }
 
   return {

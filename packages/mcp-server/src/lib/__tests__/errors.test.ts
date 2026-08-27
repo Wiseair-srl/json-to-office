@@ -1,8 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { emitDiagnostic } from '@json-to-office/jto-ops';
+import {
+  QualityGateError,
+  QualityPolicyError,
+  QualityProfileError,
+  type QualityAnalysis,
+} from '@json-to-office/quality';
 
 import {
   ERROR_CODES,
+  OPTION_ERROR_CODES,
   diagnostic,
   failure,
   fromValidationError,
@@ -252,6 +259,105 @@ describe('guarded', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.diagnostics[0].code).toBe(ERROR_CODES.DEPENDENCY_MISSING);
+  });
+});
+
+/**
+ * The engine raises three plain exceptions, and `guarded` classified escapes by
+ * `error.name` alone — so every one of them reached the agent as `E_INTERNAL`,
+ * which this module documents as "always a bug here, never the caller's". All
+ * three are the caller's, and each names a different thing to repair.
+ */
+describe('quality failures the caller can repair', () => {
+  /** The gate error carries the analysis that failed; it reads `diagnostics`. */
+  const BLOCKED: QualityAnalysis = {
+    diagnostics: [
+      {
+        source: 'quality',
+        ruleId: 'pptx/minimum-font-size',
+        code: 'W_QUALITY_FONT_SIZE_MIN',
+        category: 'legibility',
+        certainty: 'measured',
+        severity: 'warning',
+        message: 'Effective font size is 5pt.',
+        path: '/children/0/children/0/props',
+        blocking: true,
+      },
+    ],
+    counts: { error: 0, warning: 1, info: 0 },
+    blocked: true,
+    truncated: false,
+    suppressedCount: 0,
+    evaluatedRuleIds: ['pptx/minimum-font-size'],
+    ruleErrors: [],
+  };
+
+  it('names the argument to fix rather than sending the agent to file a bug', async () => {
+    const cases: Array<[Error, string]> = [
+      // The profile does not fit the run: repair `quality.profile`.
+      [
+        new QualityProfileError(
+          'Quality profile "executive-report" does not support format "pptx"'
+        ),
+        OPTION_ERROR_CODES.INVALID_QUALITY_PROFILE,
+      ],
+      // A gate, severity or budget that is not a legal value: repair
+      // `quality.policy`. Every entry point takes the policy object as written
+      // — the HTTP body, the MCP arguments and the CLI file are all loose — so
+      // this is the only place a typo there is caught.
+      [
+        new QualityPolicyError(
+          'Quality policy has invalid gate "warn"; expected "none", "error", "warning" or "info"'
+        ),
+        OPTION_ERROR_CODES.INVALID_QUALITY_POLICY,
+      ],
+      // Not an option defect at all: the options were legal and the DOCUMENT
+      // failed the gate they asked for.
+      [new QualityGateError(BLOCKED), ERROR_CODES.INVALID_DOCUMENT],
+    ];
+
+    for (const [error, code] of cases) {
+      const result = await guarded(async () => {
+        throw error;
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.diagnostics[0].code).toBe(code);
+      expect(result.diagnostics[0].code).not.toBe(ERROR_CODES.INTERNAL);
+      // The message is the repair instruction; it must survive the mapping.
+      expect(result.diagnostics[0].message).toBe(error.message);
+    }
+  });
+
+  it('matches the code, not the class the engine happened to be imported as', async () => {
+    // The engine reaches a tool through the cores' dynamic imports, so the
+    // class an `instanceof` here would test against is not necessarily the one
+    // that threw. Neither the name nor the prototype is set below: `.code` is
+    // the only thing left to classify on, which is what the mapping reads.
+    const foreign = Object.assign(
+      new Error('Quality policy has invalid maxDiagnostics -1'),
+      { code: 'QUALITY_POLICY_INVALID' }
+    );
+    const result = await guarded(async () => {
+      throw foreign;
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.diagnostics[0].code).toBe(
+      OPTION_ERROR_CODES.INVALID_QUALITY_POLICY
+    );
+  });
+
+  it('leaves a code that is nobody’s quality failure alone', async () => {
+    // Matching on a bare `.code` is broad — plenty of errors carry one. Only
+    // the three the engine defines are the caller's; the rest are still bugs.
+    const enoent = Object.assign(new Error('no such file'), { code: 'ENOENT' });
+    const result = await guarded(async () => {
+      throw enoent;
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.diagnostics[0].code).toBe(ERROR_CODES.INTERNAL);
   });
 });
 

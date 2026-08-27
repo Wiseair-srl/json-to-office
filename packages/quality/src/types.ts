@@ -117,6 +117,8 @@ export interface QualityRuleConfiguration {
 export interface ResolvedQualityRuleConfiguration {
   enabled: boolean;
   severity: DiagnosticSeverity;
+  /** Set only when a profile or policy explicitly overrode this rule. */
+  severityOverride?: DiagnosticSeverity;
   parameters: Readonly<Record<string, unknown>>;
 }
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { QualityEngine, QualityGateError, QualityProfileError } from './engine';
-import type { PreparedDocument, QualityFact, QualityRule } from './types';
+import { QualityPolicyError } from './policy';
+import type {
+  PreparedDocument,
+  QualityFact,
+  QualityPolicy,
+  QualityProfile,
+  QualityRule,
+} from './types';
 
 interface TestFact extends QualityFact {
   kind: 'measurement';
@@ -78,6 +85,87 @@ describe('QualityEngine', () => {
     ]);
   });
 
+  it('lets an explicit severity override outrank a rule inline severity', async () => {
+    const inlineRule: QualityRule<{}, TestFact> = {
+      ...minimumRule,
+      id: 'test/inline',
+      code: 'W_TEST_INLINE',
+      defaultSeverity: 'info',
+      evaluate: ({ facts }) =>
+        facts.map((fact) => ({
+          path: fact.path,
+          message: 'inline',
+          ...(fact.value > 10 && { severity: 'warning' as const }),
+        })),
+    };
+    const engine = new QualityEngine([inlineRule]);
+
+    const untouched = await engine.analyze(prepared);
+    expect(untouched.diagnostics.map((entry) => entry.severity)).toEqual([
+      'warning',
+      'info',
+    ]);
+
+    const promoted = await engine.analyze(prepared, {
+      policy: { rules: { 'test/inline': { severity: 'error' } } },
+    });
+    expect(promoted.diagnostics.map((entry) => entry.severity)).toEqual([
+      'error',
+      'error',
+    ]);
+
+    const demoted = await engine.analyze(prepared, {
+      profile: {
+        id: 'lenient',
+        rules: { 'test/inline': { severity: 'info' } },
+      },
+    });
+    expect(demoted.diagnostics.map((entry) => entry.severity)).toEqual([
+      'info',
+      'info',
+    ]);
+  });
+
+  it('rejects invalid policy and profile configuration', async () => {
+    const engine = new QualityEngine([minimumRule]);
+
+    await expect(
+      engine.analyze(prepared, {
+        policy: { gate: 'fatal' } as unknown as QualityPolicy,
+      })
+    ).rejects.toMatchObject({
+      code: 'QUALITY_POLICY_INVALID',
+      message: expect.stringContaining('invalid gate'),
+    });
+
+    expect(() =>
+      engine.analyzeSync(prepared, { policy: { maxDiagnostics: -1 } })
+    ).toThrow(QualityPolicyError);
+
+    expect(() =>
+      engine.analyzeSync(prepared, {
+        policy: {
+          rules: { 'test/minimum': { severity: 'warn' } },
+        } as unknown as QualityPolicy,
+      })
+    ).toThrow('invalid severity');
+
+    expect(() =>
+      engine.analyzeSync(prepared, {
+        profile: {
+          id: 'strict',
+          rules: { 'test/minimum': { severity: 'fatal' } },
+        } as unknown as QualityProfile,
+      })
+    ).toThrow('invalid severity');
+
+    expect(() =>
+      engine.analyzeSync(prepared, {
+        policy: { onRuleError: 'ignore' } as unknown as QualityPolicy,
+      })
+    ).toThrow('invalid onRuleError');
+  });
+
   it('applies subtree suppressions and reports their count', async () => {
     const analysis = await new QualityEngine([minimumRule]).analyze(prepared, {
       profile: { id: 'strict', parameters: { minimum: 15 } },
@@ -122,6 +210,43 @@ describe('QualityEngine', () => {
     ]);
   });
 
+  it('never truncates a blocking diagnostic away', async () => {
+    const infoRule: QualityRule<{}, TestFact> = {
+      ...minimumRule,
+      id: 'test/info',
+      code: 'W_TEST_INFO',
+      defaultSeverity: 'info',
+    };
+    const engine = new QualityEngine([infoRule, minimumRule]);
+
+    const zeroBudget = await engine.analyze(prepared, {
+      profile: { id: 'strict', parameters: { minimum: 15 } },
+      policy: { gate: 'warning', maxDiagnostics: 0 },
+    });
+
+    expect(zeroBudget.blocked).toBe(true);
+    expect(zeroBudget.truncated).toBe(true);
+    expect(zeroBudget.diagnostics.map((entry) => entry.severity)).toEqual([
+      'warning',
+      'warning',
+    ]);
+    expect(new QualityGateError(zeroBudget).message).toContain(
+      '2 blocking diagnostics'
+    );
+
+    const spareBudget = await engine.analyze(prepared, {
+      profile: { id: 'strict', parameters: { minimum: 15 } },
+      policy: { gate: 'warning', maxDiagnostics: 3 },
+    });
+
+    expect(spareBudget.truncated).toBe(true);
+    expect(spareBudget.diagnostics.map((entry) => entry.severity)).toEqual([
+      'warning',
+      'warning',
+      'info',
+    ]);
+  });
+
   it('isolates rule failures unless policy asks to throw', async () => {
     const brokenRule: QualityRule<{}, TestFact> = {
       ...minimumRule,
@@ -147,6 +272,18 @@ describe('QualityEngine', () => {
     const analysis = new QualityEngine([minimumRule]).analyzeSync(prepared);
     expect(analysis.diagnostics).toHaveLength(1);
     expect(analysis.diagnostics[0].path).toBe('/children/1');
+  });
+
+  it('always rejects asynchronous rules in synchronous analysis', () => {
+    const asynchronous: QualityRule<{}, TestFact> = {
+      ...minimumRule,
+      id: 'test/asynchronous',
+      evaluate: async () => [],
+    };
+
+    expect(() =>
+      new QualityEngine([asynchronous]).analyzeSync(prepared)
+    ).toThrow('is asynchronous; use analyze()');
   });
 
   it('rejects a profile for another format', async () => {

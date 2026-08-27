@@ -16,7 +16,11 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/server';
-import type { QualityPolicy, QualityProfile } from '@json-to-office/quality';
+import type {
+  QualityAnalysis,
+  QualityPolicy,
+  QualityProfile,
+} from '@json-to-office/quality';
 
 import {
   checkRenderer,
@@ -27,7 +31,9 @@ import {
 import type { ToolDeps } from '../lib/deps.js';
 import { resolveDocumentSource, sourceSummary } from '../lib/doc-source.js';
 import {
+  ERROR_CODES,
   countDiagnostics,
+  diagnostic,
   guarded,
   qualityAnalysisDiagnostics,
   toolResult,
@@ -65,9 +71,29 @@ function capDiagnostics(
   if (diagnostics.length <= limit)
     return { kept: diagnostics, truncated: false };
   const ordered = [...diagnostics].sort(
-    (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
+    (a, b) =>
+      SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] ||
+      Number(b.blocking === true) - Number(a.blocking === true)
   );
   return { kept: ordered.slice(0, limit), truncated: true };
+}
+
+/**
+ * A rule that threw is a hole in the report, not a clean bill of health.
+ *
+ * The engine's default `onRuleError: 'continue'` records the failure and
+ * carries on, so the entire class of findings that rule owns disappears from
+ * the answer — and an agent handed `ok: true` with an empty list reads that as
+ * "nothing to fix" rather than "nobody looked".
+ */
+function ruleErrorDiagnostics(analysis: QualityAnalysis): Diagnostic[] {
+  return analysis.ruleErrors.map((entry) =>
+    diagnostic(
+      ERROR_CODES.QUALITY_RULE_ERROR,
+      `Quality rule "${entry.ruleId}" failed: ${entry.message}`,
+      { severity: 'warning', source: 'quality', ruleId: entry.ruleId }
+    )
+  );
 }
 
 const DEFAULT_MAX_DIAGNOSTICS = 100;
@@ -157,7 +183,13 @@ export function register(server: McpServer, deps: ToolDeps): void {
           },
           truncated: {
             type: 'boolean',
-            description: '`diagnostics` was capped by `maxDiagnostics`.',
+            description:
+              '`diagnostics` was capped, by `maxDiagnostics` or by the budget the quality policy set.',
+          },
+          profileId: {
+            type: 'string',
+            description:
+              'The quality profile the design analysis ran under, when one applied.',
           },
         })
       ),
@@ -186,37 +218,52 @@ export function register(server: McpServer, deps: ToolDeps): void {
           );
           // Third question: schema-valid ≠ well-designed. Advisory by default;
           // an explicit run policy can promote quality into the gate.
-          const quality = adapter.analyzeQuality
-            ? qualityAnalysisDiagnostics(
-                await adapter.analyzeQuality(resolved.document, {
-                  renderer: args.renderer,
-                  quality: args.quality,
-                })
-              )
-            : [];
-          const all = [
+          const analysis = adapter.analyzeQuality
+            ? await adapter.analyzeQuality(resolved.document, {
+                renderer: args.renderer,
+                quality: args.quality,
+              })
+            : undefined;
+          const structural = [
             ...validationDiagnostics(result.errors),
             ...(unavailable ? [unavailable] : []),
-            ...quality,
+          ];
+          const all = [
+            ...structural,
+            ...(analysis
+              ? [
+                  ...qualityAnalysisDiagnostics(analysis),
+                  ...ruleErrorDiagnostics(analysis),
+                ]
+              : []),
           ];
           const counts = countDiagnostics(all);
-          const qualityBlocked = quality.some(
-            (diagnostic) => diagnostic.blocking === true
-          );
+          // The gate, not the severity tally. A policy may raise a quality
+          // finding to `error` without asking for it to block, and generation
+          // would still succeed — so the quality half of the verdict is the
+          // engine's `blocked`, which is the only thing that decided it.
+          const blocked =
+            countDiagnostics(structural).error > 0 ||
+            analysis?.blocked === true;
           const { kept, truncated } = capDiagnostics(
             all,
             args.maxDiagnostics ?? DEFAULT_MAX_DIAGNOSTICS
           );
 
           return {
-            ok: counts.error === 0 && !qualityBlocked,
+            ok: !blocked,
             diagnostics: kept,
-            valid: counts.error === 0 && !qualityBlocked,
+            valid: !blocked,
             format: args.format,
             ...(args.renderer !== undefined && { renderer: args.renderer }),
             source: sourceSummary(resolved),
             counts,
-            truncated,
+            // The engine caps its own list under a policy budget, so a report
+            // shortened there would otherwise come back reading complete.
+            truncated: truncated || analysis?.truncated === true,
+            ...(analysis?.profileId !== undefined && {
+              profileId: analysis.profileId,
+            }),
           };
         })
       )

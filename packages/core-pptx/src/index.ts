@@ -75,6 +75,7 @@ export {
   PPTX_QUALITY_PROFILES,
   PPTX_QUALITY_RULES,
   pptxQualityEngine,
+  resolvePptxQualityProfile,
 } from './quality/rules';
 
 // Plugin system

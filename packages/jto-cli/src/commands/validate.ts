@@ -103,6 +103,7 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
           } else {
             const lines = [];
             for (const result of results) {
+              if (options.quiet && result.valid) continue;
               if (result.valid && (result.warnings?.length ?? 0) === 0)
                 continue;
               lines.push({
@@ -115,11 +116,16 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
                   tone: 'error' as const,
                 });
               }
-              for (const warning of result.warnings ?? []) {
-                lines.push({
-                  text: validator.formatError(warning, 2),
-                  tone: 'warning' as const,
-                });
+              if (!options.quiet) {
+                for (const warning of result.warnings ?? []) {
+                  lines.push({
+                    text: validator.formatError(warning, 2),
+                    tone:
+                      warning.severity === 'info'
+                        ? ('info' as const)
+                        : ('warning' as const),
+                  });
+                }
               }
             }
 

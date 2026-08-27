@@ -93,16 +93,25 @@ export const pptxCanvasRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
     if (!canvas) return [];
     const { widthIn: width, heightIn: height } = canvas;
     if (width === undefined || height === undefined) {
+      const missing = [
+        width === undefined ? 'props.slideWidth' : undefined,
+        height === undefined ? 'props.slideHeight' : undefined,
+      ].filter((entry): entry is string => entry !== undefined);
+      const state =
+        missing.length === 2
+          ? 'No slide canvas declared'
+          : `Incomplete slide canvas (${missing[0]} missing)`;
       return [
         {
           code: QUALITY_CODES.CANVAS_UNSPECIFIED,
           severity: 'warning',
           category: 'integrity',
-          message: `No slide canvas declared: the renderer falls back to 4:3 (${RENDERER_DEFAULT_WIDTH_IN}×${RENDERER_DEFAULT_HEIGHT_IN}"), and 16:9 content on that canvas leaves a dead strip at the bottom.`,
+          message: `${state}: the renderer falls back to 4:3 (${RENDERER_DEFAULT_WIDTH_IN}×${RENDERER_DEFAULT_HEIGHT_IN}"), and 16:9 content on that canvas leaves a dead strip at the bottom.`,
           path: canvas.path,
           suggestion:
             'Declare props.slideWidth and props.slideHeight — 13.333 × 7.5 for a standard 16:9 deck.',
           context: {
+            missing,
             rendererDefault: {
               slideWidth: RENDERER_DEFAULT_WIDTH_IN,
               slideHeight: RENDERER_DEFAULT_HEIGHT_IN,
@@ -316,5 +325,27 @@ export const PPTX_QUALITY_PROFILES = {
 
 export const PPTX_DEFAULT_QUALITY_PROFILE: QualityProfile =
   PPTX_QUALITY_PROFILES['technical-presentation'];
+
+const PPTX_PROFILES_BY_ID: Readonly<Record<string, QualityProfile>> =
+  PPTX_QUALITY_PROFILES;
+
+/**
+ * Callers name a shipped profile by id — `{ id: 'executive-presentation', formats: ['pptx'] }`.
+ * Without this lookup that request reaches the engine carrying nothing but its id,
+ * so the analysis runs on defaults while stamping the requested profileId.
+ */
+export function resolvePptxQualityProfile(
+  requested: QualityProfile | undefined
+): QualityProfile | undefined {
+  if (!requested) return undefined;
+  const registered = PPTX_PROFILES_BY_ID[requested.id];
+  if (!registered) return requested;
+  return {
+    ...registered,
+    ...requested,
+    rules: { ...registered.rules, ...requested.rules },
+    parameters: { ...registered.parameters, ...requested.parameters },
+  };
+}
 
 export const pptxQualityEngine = new QualityEngine(PPTX_QUALITY_RULES.rules);

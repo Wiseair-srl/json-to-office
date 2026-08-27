@@ -27,6 +27,17 @@ describe('canvas', () => {
     });
   });
 
+  it('names the missing dimension on a partial canvas', () => {
+    expect(pptxDiagnostics(deck({ slideWidth: 13.333 }, []))[0]).toMatchObject({
+      message: expect.stringContaining('props.slideHeight missing'),
+      context: { missing: ['props.slideHeight'] },
+    });
+    expect(pptxDiagnostics(deck({ slideHeight: 7.5 }, []))[0]).toMatchObject({
+      message: expect.stringContaining('props.slideWidth missing'),
+      context: { missing: ['props.slideWidth'] },
+    });
+  });
+
   it('accepts every common preset silently', () => {
     for (const [w, h] of [
       [13.333, 7.5],
@@ -311,6 +322,47 @@ describe('renderer normalization parity', () => {
     );
   });
 
+  it('analyzes shared template objects once but counts them on every slide', () => {
+    const findings = pptxDiagnostics(
+      deck(
+        {
+          ...CANVAS,
+          templates: [
+            {
+              name: 'shared',
+              objects: [
+                {
+                  name: 'text',
+                  props: {
+                    text: 'word '.repeat(150).trim(),
+                    fontSize: 6,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        [
+          { name: 'slide', props: { template: 'shared' } },
+          { name: 'slide', props: { template: 'shared' } },
+        ]
+      )
+    );
+
+    expect(
+      findings.filter(
+        (finding) =>
+          finding.code === QUALITY_CODES.FONT_SIZE_MIN &&
+          finding.path === '/props/templates/0/objects/0/props'
+      )
+    ).toHaveLength(1);
+    expect(
+      findings
+        .filter((finding) => finding.code === QUALITY_CODES.SLIDE_DENSITY)
+        .map((finding) => finding.path)
+    ).toEqual(['/children/0', '/children/1']);
+  });
+
   it('uses the renderer placeholder merge precedence', () => {
     const findings = pptxDiagnostics(
       deck(
@@ -390,6 +442,95 @@ describe('renderer normalization parity', () => {
       ])
     );
     expect(findings).toEqual([]);
+  });
+});
+
+describe('shipped profiles', () => {
+  // 10pt clears the 7pt default floor but not the executive profile's 14pt.
+  const small = deck(CANVAS, [
+    {
+      name: 'slide',
+      children: [{ name: 'text', props: { text: 'fine print', fontSize: 10 } }],
+    },
+  ]);
+
+  it('applies a shipped profile named by id alone', () => {
+    expect(codes(small)).toEqual([]);
+    const analysis = analyzePptxQuality(small, {
+      profile: { id: 'executive-presentation', formats: ['pptx'] },
+    });
+    expect(analysis.profileId).toBe('executive-presentation');
+    expect(analysis.diagnostics.map((finding) => finding.code)).toEqual([
+      QUALITY_CODES.FONT_SIZE_MIN,
+    ]);
+  });
+
+  it("merges the caller's rules over the registered ones", () => {
+    const dense = deck(CANVAS, [
+      {
+        name: 'slide',
+        children: [
+          { name: 'text', props: { text: 'word '.repeat(80).trim() } },
+          { name: 'text', props: { text: 'fine print', fontSize: 10 } },
+        ],
+      },
+    ]);
+    const analysis = analyzePptxQuality(dense, {
+      profile: {
+        id: 'executive-presentation',
+        formats: ['pptx'],
+        rules: {
+          'pptx/minimum-font-size': { parameters: { minimumFontPt: 8 } },
+        },
+      },
+    });
+    // Overridden font floor stays silent; the profile's 70-word density holds.
+    expect(analysis.diagnostics.map((finding) => finding.code)).toEqual([
+      QUALITY_CODES.SLIDE_DENSITY,
+    ]);
+  });
+
+  it('leaves an unregistered profile exactly as the caller wrote it', () => {
+    const analysis = analyzePptxQuality(small, {
+      profile: {
+        id: 'house-style',
+        formats: ['pptx'],
+        rules: {
+          'pptx/minimum-font-size': { parameters: { minimumFontPt: 12 } },
+        },
+      },
+    });
+    expect(analysis.diagnostics.map((finding) => finding.code)).toEqual([
+      QUALITY_CODES.FONT_SIZE_MIN,
+    ]);
+  });
+});
+
+describe('preparation failures', () => {
+  const broken = { name: 'pptx', props: { ...CANVAS, templates: 'nope' } };
+
+  it('records the failure rather than reporting a clean deck', () => {
+    const analysis = analyzePptxQuality(broken);
+    expect(analysis.diagnostics).toEqual([]);
+    expect(analysis.ruleErrors).toEqual([
+      { ruleId: 'quality/prepare', message: expect.any(String) },
+    ]);
+    expect(analysis.blocked).toBe(false);
+  });
+
+  it('fails closed when a gate is active', () => {
+    expect(
+      analyzePptxQuality(broken, { policy: { gate: 'warning' } }).blocked
+    ).toBe(true);
+    expect(
+      analyzePptxQuality(broken, { policy: { gate: 'none' } }).blocked
+    ).toBe(false);
+  });
+
+  it('rethrows when the policy asks for it', () => {
+    expect(() =>
+      analyzePptxQuality(broken, { policy: { onRuleError: 'throw' } })
+    ).toThrow();
   });
 });
 

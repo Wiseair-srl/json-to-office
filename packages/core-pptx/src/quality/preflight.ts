@@ -5,6 +5,7 @@ import type {
   QualityAnalysis,
   QualityPolicy,
   QualityProfile,
+  QualityRuleError,
 } from '@json-to-office/quality';
 import type {
   PptxThemeConfig,
@@ -12,7 +13,14 @@ import type {
 } from '../types';
 import { preparePptxQualityDocument } from './facts';
 import type { PptxQualityFact, PptxQualityModel } from './facts';
-import { PPTX_DEFAULT_QUALITY_PROFILE, pptxQualityEngine } from './rules';
+import {
+  PPTX_DEFAULT_QUALITY_PROFILE,
+  pptxQualityEngine,
+  resolvePptxQualityProfile,
+} from './rules';
+
+/** Synthetic rule id for a failure raised before any rule could run. */
+const PREPARE_RULE_ID = 'quality/prepare';
 
 export interface PptxQualityOptions {
   customThemes?: Record<string, PptxThemeConfig>;
@@ -25,15 +33,18 @@ export interface PptxQualityAnalysisOptions extends PptxQualityOptions {
   prepared?: PreparedDocument<PptxQualityModel, PptxQualityFact>;
 }
 
-function emptyAnalysis(): QualityAnalysis {
+function emptyAnalysis(
+  ruleErrors: readonly QualityRuleError[] = [],
+  blocked = false
+): QualityAnalysis {
   return {
     diagnostics: [],
     counts: { error: 0, warning: 0, info: 0 },
-    blocked: false,
+    blocked,
     truncated: false,
     suppressedCount: 0,
     evaluatedRuleIds: [],
-    ruleErrors: [],
+    ruleErrors,
   };
 }
 
@@ -56,12 +67,26 @@ export function analyzePptxQuality(
       doc as PresentationComponentDefinition,
       options
     );
-  } catch {
+  } catch (error) {
     // Structural validation owns malformed trees; quality remains additive.
-    return emptyAnalysis();
+    if (options.policy?.onRuleError === 'throw') throw error;
+    const gate = options.policy?.gate;
+    // A gate that could never be evaluated has not been satisfied: report the
+    // failure and fail closed rather than pass a document nothing inspected.
+    return emptyAnalysis(
+      [
+        {
+          ruleId: PREPARE_RULE_ID,
+          message: error instanceof Error ? error.message : String(error),
+        },
+      ],
+      gate !== undefined && gate !== 'none'
+    );
   }
   return pptxQualityEngine.analyzeSync(prepared, {
-    profile: options.profile ?? PPTX_DEFAULT_QUALITY_PROFILE,
+    profile:
+      resolvePptxQualityProfile(options.profile) ??
+      PPTX_DEFAULT_QUALITY_PROFILE,
     policy: options.policy,
   });
 }
