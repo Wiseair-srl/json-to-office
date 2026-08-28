@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/shared-pptx",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "description": "PPTX-specific schemas, component registry and validation",
   "type": "module",
   "main": "dist/index.js",

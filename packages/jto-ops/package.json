@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/jto-ops",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "JSON to Office host operations - format adapters, LibreOffice rasterizer and font staging, free of terminal dependencies",
   "type": "module",
   "main": "./dist/index.js",
