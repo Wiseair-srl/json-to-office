@@ -9,6 +9,11 @@ Quality findings are advisory by default. Each finding explains the problem,
 points to the authored JSON path and records how certain the check is. A policy
 can promote, suppress or use findings to block CI and generation.
 
+Every surface runs the same analysis. This guide uses the CLI because it is the
+shortest thing to show, but the [playground](/guide/playground#design-quality)
+is the fastest way to see findings on a document you are writing: it analyses as
+you type, and applies the suggested fixes with a click.
+
 ## Start with the CLI
 
 Run the default rules without blocking:
