@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { API_ENDPOINTS } from '../config/api';
+import { FORMAT } from '../lib/env';
 import { countBySeverity, findingsFromAnalysis } from '../lib/quality-findings';
 import { buildQualityOptions, storedProfileId } from '../lib/quality-profiles';
 import {
@@ -108,6 +109,9 @@ export function useQualityAnalysis(): {
   const profileIds = useSettingsStore((state) => state.qualityProfileIds);
   const profileId = storedProfileId(profileIds);
   const gate = useSettingsStore((state) => state.qualityGate);
+  const policyText = useSettingsStore(
+    (state) => state.qualityPolicies?.[FORMAT]
+  );
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -159,7 +163,7 @@ export function useQualityAnalysis(): {
       abortRef.current = controller;
       const ticket = nextQualityTicket();
 
-      const quality = buildQualityOptions(profileId, gate);
+      const quality = buildQualityOptions(profileId, gate, policyText);
 
       try {
         const response = await fetch(API_ENDPOINTS.validate, {
@@ -236,7 +240,7 @@ export function useQualityAnalysis(): {
         if (abortRef.current === controller) abortRef.current = null;
       }
     },
-    [commit, gate, outputStore, profileId]
+    [commit, gate, outputStore, policyText, profileId]
   );
 
   const analyze = useCallback(

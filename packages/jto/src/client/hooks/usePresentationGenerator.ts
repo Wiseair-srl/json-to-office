@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { FORMAT, FORMAT_LABEL } from '../lib/env';
 import { API_ENDPOINTS } from '../config/api';
+import type { QualityRequestOptions } from '../lib/quality-profiles';
 import { useSettingsStore } from '../store/settings-store-provider';
 
 export interface GenerationWarning {
@@ -23,11 +24,13 @@ export interface DocumentGenerationResult {
   warnings: GenerationWarning[];
 }
 
-/** The `options.quality` shape the generate route accepts, unchanged. */
-export interface QualityRequestOptions {
-  profile?: { id: string; formats: string[] };
-  policy?: { gate: 'error' | 'warning' | 'info' };
-}
+/**
+ * The `options.quality` shape the generate route accepts.
+ *
+ * Re-exported from the one place that builds it: a second declaration here
+ * drifted the moment the policy grew past a bare gate.
+ */
+export type { QualityRequestOptions } from '../lib/quality-profiles';
 
 /** The gate's own payload: which findings refused the build. */
 export interface QualityGatePayload {

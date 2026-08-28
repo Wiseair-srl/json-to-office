@@ -47,4 +47,11 @@ export type Settings = {
   qualityGate?: 'none' | 'error' | 'warning' | 'info';
   /** Lowest severity the panel shows. A display filter, never a gate. */
   qualityMinSeverity?: 'error' | 'warning' | 'info';
+  /**
+   * Hand-written run policy per format, as raw JSON text.
+   *
+   * Text rather than a parsed object so a half-typed policy survives a reload;
+   * it is parsed at the point of use and ignored until it is valid.
+   */
+  qualityPolicies?: Partial<Record<FormatName, string>>;
 };

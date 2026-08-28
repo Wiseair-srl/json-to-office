@@ -27,6 +27,7 @@ import {
   usePresentationGenerator,
 } from '../../hooks/usePresentationGenerator';
 import { useQualityAnalysis } from '../../hooks/useQualityAnalysis';
+import { FORMAT } from '../../lib/env';
 import {
   buildQualityOptions,
   storedProfileId,
@@ -92,9 +93,12 @@ function EditorComponent() {
   );
   const qualityProfileId = storedProfileId(qualityProfileIds);
   const qualityGate = useSettingsStore((state) => state.qualityGate);
+  const qualityPolicyText = useSettingsStore(
+    (state) => state.qualityPolicies?.[FORMAT]
+  );
   const qualityOptions = useMemo(
-    () => buildQualityOptions(qualityProfileId, qualityGate),
-    [qualityProfileId, qualityGate]
+    () => buildQualityOptions(qualityProfileId, qualityGate, qualityPolicyText),
+    [qualityProfileId, qualityGate, qualityPolicyText]
   );
   const { analyze: analyzeQuality, cancel: cancelQualityAnalysis } =
     useQualityAnalysis();

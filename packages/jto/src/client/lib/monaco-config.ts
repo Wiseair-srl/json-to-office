@@ -13,6 +13,7 @@ import { schemaService } from './schema-service';
 import { registerFontCodeLens } from './monaco-fonts-codelens';
 import { registerMonacoThemes } from './monaco-theme';
 import { unionBranches } from '@json-to-office/shared';
+import { createQualityPolicySchemaConfig } from './quality-policy-schema';
 
 let isConfigured = false;
 let completionDisposable: { dispose(): void } | null = null;
@@ -129,7 +130,7 @@ export function configureMonacoInstance(monaco: Monaco): void {
     allowComments: false,
     trailingCommas: 'error',
     schemaValidation: 'error', // Strict schema validation
-    schemas: [reportSchema, themeSchema],
+    schemas: [reportSchema, themeSchema, createQualityPolicySchemaConfig()],
     schemaRequest: 'ignore', // Ignore unresolvable $schema URIs (domain doesn't exist)
   });
 
@@ -437,7 +438,7 @@ export async function updateMonacoWithPlugins(
       allowComments: false,
       trailingCommas: 'error',
       schemaValidation: 'error',
-      schemas: [reportSchema, themeSchema],
+      schemas: [reportSchema, themeSchema, createQualityPolicySchemaConfig()],
       schemaRequest: 'ignore',
     });
 

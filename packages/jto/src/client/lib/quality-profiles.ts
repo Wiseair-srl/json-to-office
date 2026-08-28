@@ -14,6 +14,7 @@
  */
 
 import { FORMAT, type FormatName } from './env';
+import { parseQualityPolicy } from './quality-policy';
 
 export interface QualityProfileChoice {
   id: string;
@@ -76,7 +77,7 @@ export function isProfileForFormat(id: string | undefined): id is string {
 
 export interface QualityRequestOptions {
   profile?: { id: string; formats: string[] };
-  policy?: { gate: 'error' | 'warning' | 'info' };
+  policy?: Record<string, unknown>;
 }
 
 /**
@@ -88,14 +89,25 @@ export interface QualityRequestOptions {
  */
 export function buildQualityOptions(
   profileId: string | undefined,
-  gate: string | undefined
+  gate: string | undefined,
+  policyText?: string
 ): QualityRequestOptions | undefined {
   const options: QualityRequestOptions = {};
   if (isProfileForFormat(profileId)) {
     options.profile = { id: profileId, formats: [FORMAT] };
   }
-  if (gate === 'error' || gate === 'warning' || gate === 'info') {
-    options.policy = { gate };
+  // A policy still being typed is not sent at all: the run keeps working under
+  // the last good one rather than failing on every unbalanced brace.
+  const parsed = parseQualityPolicy(policyText);
+  const authored = parsed.ok ? parsed.policy : undefined;
+  const hasGate = gate === 'error' || gate === 'warning' || gate === 'info';
+  if (authored || hasGate) {
+    options.policy = {
+      ...(authored ?? {}),
+      // The Gate control owns this field; `parseQualityPolicy` rejects a policy
+      // that also names it, so there is nothing here to overwrite.
+      ...(hasGate && { gate }),
+    };
   }
   return options.profile || options.policy ? options : undefined;
 }

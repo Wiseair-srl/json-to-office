@@ -10,6 +10,7 @@ import {
 } from '../ui/select';
 import { FORMAT, type FormatName } from '../../lib/env';
 import { cn } from '../../lib/utils';
+import { QualityPolicyEditor } from './quality-policy-editor';
 import type { Settings } from '../../lib/types';
 import { useSettingsStore } from '../../store/settings-store-provider';
 
@@ -265,6 +266,13 @@ export function QualityControls({
             {selectedGate.description}.
           </p>
         </div>
+      </div>
+
+      <div className="h-px shrink-0 bg-border/60" />
+
+      <div className="flex min-w-0 flex-col gap-3">
+        <SectionHeading>Rule policy</SectionHeading>
+        <QualityPolicyEditor />
       </div>
 
       <div className="h-px shrink-0 bg-border/60" />
