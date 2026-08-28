@@ -22,7 +22,26 @@ import {
   useThemesStore,
   ThemesStoreContext,
 } from '../../store/themes-store-provider';
-import { usePresentationGenerator } from '../../hooks/usePresentationGenerator';
+import {
+  QualityGateFailedError,
+  usePresentationGenerator,
+} from '../../hooks/usePresentationGenerator';
+import { useQualityAnalysis } from '../../hooks/useQualityAnalysis';
+import {
+  buildQualityOptions,
+  storedProfileId,
+} from '../../lib/quality-profiles';
+import {
+  isStaleQualityTicket,
+  nextQualityTicket,
+} from '../../lib/quality-sequence';
+import {
+  countBySeverity,
+  findingsFromAnalysis,
+  splitQualityWarnings,
+  type GenerationWarningLike,
+} from '../../lib/quality-findings';
+import type { GenerationWarning, QualityState } from '../../store/output-store';
 import { retry, RetryStrategies } from '../../utils/retry';
 import { themeChangeEmitter } from '../../utils/theme-change-emitter';
 import { useShallow } from 'zustand/react/shallow';
@@ -33,6 +52,8 @@ interface BuildRequest {
   doc: any;
   signal: AbortSignal;
   timestamp: number;
+  /** Ordering ticket for the quality slice; see lib/quality-sequence.ts. */
+  qualityTicket: number;
 }
 
 function EditorComponent() {
@@ -66,6 +87,17 @@ function EditorComponent() {
     useShallow((state) => ({ customThemes: state.customThemes }))
   );
   const { generatePresentation, cancelGeneration } = usePresentationGenerator();
+  const qualityProfileIds = useSettingsStore(
+    (state) => state.qualityProfileIds
+  );
+  const qualityProfileId = storedProfileId(qualityProfileIds);
+  const qualityGate = useSettingsStore((state) => state.qualityGate);
+  const qualityOptions = useMemo(
+    () => buildQualityOptions(qualityProfileId, qualityGate),
+    [qualityProfileId, qualityGate]
+  );
+  const { analyze: analyzeQuality, cancel: cancelQualityAnalysis } =
+    useQualityAnalysis();
 
   // Refs to track ongoing operations and prevent race conditions
   const buildAbortControllersRef = useRef<Map<string, AbortController>>(
@@ -200,6 +232,9 @@ function EditorComponent() {
         doc,
         signal: finalSignal,
         timestamp: Date.now(),
+        // Claimed now, not on completion: a long build must not overwrite the
+        // live analysis of an edit made while it was running.
+        qualityTicket: nextQualityTicket(),
       };
 
       await processBuildRequestRef.current(buildRequest, version, options);
@@ -214,7 +249,13 @@ function EditorComponent() {
       version: number,
       options?: { bypassCache?: boolean }
     ) => {
-      const { doc, signal, id } = request;
+      const { doc, signal, id, qualityTicket } = request;
+      // A build's findings describe the text it was handed. Anything newer in
+      // the store was computed against text the editor actually holds now.
+      const qualityIfCurrent = (next: QualityState) =>
+        isStaleQualityTicket(outputStore.getState().quality, qualityTicket)
+          ? {}
+          : { quality: next };
 
       // Check if this is still the latest request
       if (lastBuildRequestIdRef.current !== id) {
@@ -278,7 +319,10 @@ function EditorComponent() {
               doc.text,
               freshThemeData,
               onProgress,
-              options
+              {
+                ...options,
+                ...(qualityOptions ? { quality: qualityOptions } : {}),
+              }
             );
           },
           {
@@ -343,6 +387,17 @@ function EditorComponent() {
             version,
           });
 
+          // Quality findings arrive flattened into the same warnings array
+          // as component warnings. Left there they are counted as warnings
+          // whatever their real severity, which is how a stock deck's two
+          // hundred advisory infos became a warning-coloured bar.
+          const { findings, others } = splitQualityWarnings(
+            (result as any).warnings as
+              | GenerationWarningLike[]
+              | null
+              | undefined
+          );
+
           setOutput({
             name: result.name as string,
             text: result.text as string,
@@ -360,7 +415,19 @@ function EditorComponent() {
               | 'UNKNOWN'
               | undefined,
             cacheHitRate: (result as any).cacheHitRate as string | undefined,
-            warnings: (result as any).warnings as any,
+            warnings: others as GenerationWarning[],
+            ...qualityIfCurrent({
+              findings,
+              counts: countBySeverity(findings),
+              // The generate response does not name the profile it ran, so
+              // only an explicit choice is reported; a blank label is honest
+              // about the server having picked the format's default.
+              ...(qualityProfileId ? { profileId: qualityProfileId } : {}),
+              documentName: doc.name,
+              seq: qualityTicket,
+              source: 'generate',
+              analyzedAt: Date.now(),
+            }),
           });
           setBuildError(result.name as string, undefined);
         }
@@ -378,11 +445,33 @@ function EditorComponent() {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
 
+        // A gate rejection is the only failure that says something about the
+        // document rather than about the request, and it ships the findings
+        // that caused it — so the panel names them instead of leaving the
+        // author with "blocked" and nothing to act on.
+        const gateFindings =
+          error instanceof QualityGateFailedError
+            ? findingsFromAnalysis(error.quality)
+            : null;
+
         setOutput({
           globalError: errorMessage,
           isGenerating: false,
           generationProgress: undefined,
           generationStartedAt: undefined,
+          ...(gateFindings
+            ? qualityIfCurrent({
+                findings: gateFindings,
+                counts: countBySeverity(gateFindings),
+                ...(qualityProfileId ? { profileId: qualityProfileId } : {}),
+                documentName: doc.name,
+                seq: qualityTicket,
+                blocked: true,
+                source: 'generate' as const,
+                analyzedAt: Date.now(),
+                gateError: errorMessage,
+              })
+            : {}),
         });
 
         setBuildError(doc.name, errorMessage);
@@ -393,6 +482,8 @@ function EditorComponent() {
     [
       generatePresentation,
       getFreshThemeData,
+      qualityOptions,
+      qualityProfileId,
       setOutput,
       setBuildError,
       outputStore,
@@ -455,6 +546,35 @@ function EditorComponent() {
     documentTypes,
     buildDocument,
     cancelGeneration,
+  ]);
+
+  // Refresh the quality findings as the document settles, so the panel tracks
+  // the editor instead of only the last build. `analyze` debounces and aborts
+  // its own in-flight request, so a stale analysis can never land on top of a
+  // newer one; returning `cancel` drops the pending work on unmount and on a
+  // document switch.
+  useEffect(() => {
+    const activeFile = documents.find((doc) => doc.name === activeTab);
+    const docType = documentTypes[activeTab] || 'application/json+report';
+    if (!activeFile || docType !== 'application/json+report') {
+      // A theme has no document findings of its own, and an analysis started
+      // for the previous tab would report them under this one. Clearing rather
+      // than only cancelling matters because nothing else ever will: without
+      // it the previous document's findings stay on screen, and actionable,
+      // for as long as a theme tab is open.
+      cancelQualityAnalysis();
+      setOutput({ quality: null });
+      return;
+    }
+    analyzeQuality(activeTab, activeFile.text);
+    return cancelQualityAnalysis;
+  }, [
+    activeTab,
+    analyzeQuality,
+    cancelQualityAnalysis,
+    documents,
+    documentTypes,
+    setOutput,
   ]);
 
   // Track which documents use which themes (only parse the active doc to avoid O(n) JSON.parse)

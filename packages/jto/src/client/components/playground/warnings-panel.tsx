@@ -10,7 +10,16 @@ interface WarningsPanelProps {
 export function WarningsPanel({ warnings, className }: WarningsPanelProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
-  if (!warnings || warnings.length === 0) {
+  // Quality findings arrive as warnings too, and counting them here is what
+  // made a stock deck announce "48 warnings" for forty-eight advisory infos.
+  // They belong to QualityPanel; callers should already have split them out,
+  // but one that forgets must not resurrect that bar.
+  const reportable = React.useMemo(
+    () => (warnings ?? []).filter((w) => w.component !== 'quality'),
+    [warnings]
+  );
+
+  if (reportable.length === 0) {
     return null;
   }
 
@@ -26,13 +35,13 @@ export function WarningsPanel({ warnings, className }: WarningsPanelProps) {
         />
         <AlertTriangle className="h-3.5 w-3.5 text-warning flex-shrink-0" />
         <span className="text-xs font-medium text-warning">
-          {warnings.length} warning{warnings.length !== 1 ? 's' : ''}
+          {reportable.length} warning{reportable.length !== 1 ? 's' : ''}
         </span>
       </button>
 
       {isExpanded && (
         <div className="mt-1.5 space-y-1.5">
-          {warnings.map((warning, index) => (
+          {reportable.map((warning, index) => (
             <div
               key={index}
               className="flex items-start gap-2 rounded-sm border bg-card px-3 py-2"
