@@ -361,7 +361,12 @@ export function Preview() {
         {/* The local header draws its own `border-b`; a standalone separator
             underneath it stacked two hairlines. */}
         {!localHeaderVisible && <Separator />}
-        {/* Status Bar: cache + stale combined */}
+        {/* One status strip, not two. Build state and quality state describe
+            the same document at the same moment, and stacking them cost two
+            hairlines and two rows of height above the page being read.
+            Segments carry their own colour instead of the row carrying a
+            tint, so a stale build and a failing gate can be shown at once
+            without two backgrounds competing. */}
         {(() => {
           const hasUnsyncedEdits =
             (editSequence ?? 0) > (lastBuiltSequence ?? 0);
@@ -369,77 +374,80 @@ export function Preview() {
             (isPreviewStale || hasUnsyncedEdits) &&
             !isGenerating &&
             !isRendering;
+          const buildStatus = isStale ? (
+            <>
+              <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-warning" />
+              <span className="truncate text-xs text-warning">
+                Outdated — click Run
+              </span>
+            </>
+          ) : cacheStatus === 'HIT' ? (
+            <>
+              <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-success" />
+              <span className="truncate text-xs text-muted-foreground">
+                Cached
+              </span>
+            </>
+          ) : cacheStatus === 'MISS' ? (
+            <>
+              <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent2" />
+              <span className="truncate text-xs text-muted-foreground">
+                Fresh {FORMAT_LABEL.toLowerCase()}
+              </span>
+            </>
+          ) : null;
+          const showBuildStatus =
+            Boolean(buildStatus) &&
+            ((cacheStatus && cacheStatus !== 'UNKNOWN') || isStale);
+
           return (
-            ((cacheStatus && cacheStatus !== 'UNKNOWN') || isStale) && (
-              <div
-                className={`px-3 py-1.5 flex items-center justify-between border-b overflow-hidden ${
-                  isStale ? 'bg-warning/10' : 'bg-header-bg'
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0 truncate">
-                  {cacheStatus === 'HIT' && !isStale ? (
-                    <>
-                      <div className="h-1.5 w-1.5 rounded-full bg-success flex-shrink-0" />
-                      <span className="text-xs text-muted-foreground truncate">
-                        Cached
-                      </span>
-                    </>
-                  ) : cacheStatus === 'MISS' && !isStale ? (
-                    <>
-                      <div className="h-1.5 w-1.5 rounded-full bg-accent2 flex-shrink-0" />
-                      <span className="text-xs text-muted-foreground truncate">
-                        Fresh {FORMAT_LABEL.toLowerCase()}
-                      </span>
-                    </>
-                  ) : isStale ? (
-                    <>
-                      <div className="h-1.5 w-1.5 rounded-full bg-warning flex-shrink-0" />
-                      <span className="text-xs text-warning truncate">
-                        Outdated — click Run
-                      </span>
-                    </>
-                  ) : null}
+            <div className="flex items-center gap-2 overflow-hidden border-b bg-header-bg px-3 py-1.5">
+              {showBuildStatus && (
+                <div className="flex min-w-0 flex-shrink items-center gap-2">
+                  {buildStatus}
                 </div>
-                {!isStale && cacheHitRate && cacheHitRate !== '0.0%' && (
-                  <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                    {cacheHitRate} hit rate
-                  </span>
+              )}
+              {showBuildStatus && activeQuality && (
+                <div
+                  aria-hidden="true"
+                  className="h-3 w-px flex-shrink-0 bg-border"
+                />
+              )}
+              <QualitySummary
+                quality={activeQuality}
+                open={showQualityFindings}
+                onToggle={() => setShowQualityFindings((open) => !open)}
+                controlsId={qualityDrawerId}
+                className="min-w-0 flex-1"
+              />
+              {/* The hit rate is a diagnostic, so it is the first thing to go
+                  when the row runs out of width; the full figures live in the
+                  cache dialog. */}
+              {!isStale && cacheHitRate && cacheHitRate !== '0.0%' && (
+                <span className="hidden flex-shrink-0 text-xs text-muted-foreground lg:inline">
+                  {cacheHitRate} hit rate
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowQualityControls(!showQualityControls)}
+                aria-expanded={showQualityControls}
+                className={cn(
+                  'flex flex-shrink-0 items-center gap-1.5 rounded-sm px-1.5 py-0.5',
+                  'text-[11px] font-medium text-muted-foreground',
+                  'transition-colors hover:bg-accent hover:text-foreground',
+                  'focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
                 )}
-              </div>
-            )
+              >
+                <SlidersHorizontal className="h-3 w-3" aria-hidden="true" />
+                <span className="hidden sm:inline">Quality settings</span>
+              </button>
+            </div>
           );
         })()}
         {/* Warnings Panel */}
         <WarningsPanel warnings={otherWarnings} className="mx-3 my-2" />
         <UnavailableThemeWarning className="mx-3 my-2" />
-        {/* Quality lives next to the preview rather than in the preview
-            header: the header is shared chrome owned elsewhere and already at
-            its width budget, and the profile and gate are only legible beside
-            the findings they produce. One row, always: the verdict on the
-            left, its settings on the right. */}
-        <div className="mx-3 my-2 flex items-center gap-2">
-          <QualitySummary
-            quality={activeQuality}
-            open={showQualityFindings}
-            onToggle={() => setShowQualityFindings((open) => !open)}
-            controlsId={qualityDrawerId}
-            className="min-w-0 flex-1"
-          />
-          <button
-            type="button"
-            onClick={() => setShowQualityControls(!showQualityControls)}
-            aria-expanded={showQualityControls}
-            className={cn(
-              'ml-auto flex flex-shrink-0 items-center gap-1.5 rounded-sm px-1.5 py-0.5',
-              'text-[11px] font-medium text-muted-foreground',
-              'transition-colors hover:bg-accent hover:text-foreground',
-              'focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
-            )}
-          >
-            <SlidersHorizontal className="h-3 w-3" aria-hidden="true" />
-            Quality settings
-          </button>
-        </div>
         {/* The drawers float over this region rather than sitting above it in
             the column. Quality re-analyses on every pause in typing, and a
             panel in flow would shove the page the author is reading down the
