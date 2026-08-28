@@ -121,12 +121,21 @@ true.
 | `pptx/minimum-font-size` | `W_QUALITY_FONT_SIZE_MIN`                                                                 | warning                              | measured      | Effective text size below `minimumFontPt` (7pt by default) |
 | `pptx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`, `W_QUALITY_TEXT_TIGHT`                                         | warning for overflow; otherwise info | estimated     | Estimated text height exceeds, or nearly fills, its box    |
 | `pptx/slide-density`     | `W_QUALITY_SLIDE_DENSITY`                                                                 | warning                              | estimated     | Body text exceeds `maximumBodyWords` (130 by default)      |
+| `pptx/text-contrast`     | `W_QUALITY_TEXT_CONTRAST`                                                                 | warning                              | deterministic | Text falls below WCAG AA against the surface behind it     |
 
 The canvas rule recognizes these deliberate presets: 16:9 standard
 (`13.333 × 7.5`), 16:9 small (`10 × 5.625`), square (`7.5 × 7.5`), 4:5
 vertical (`7.5 × 9.375`) and 9:16 story (`4.5 × 8`). If no size is declared,
 the renderer uses a 10 × 7.5 inch 4:3 canvas, so the missing-canvas finding is a
 warning rather than informational.
+
+Contrast compares the resolved run colour against whatever actually sits
+behind the text: its own shape fill, else the topmost earlier-drawn shape
+covering it, else the slide background. Gradients are sampled at the text box
+rather than reduced to their harshest stop, and a background the analyzer
+cannot see through — an image, a chart — produces no finding instead of a
+guess. Thresholds follow WCAG 2.1 AA: `normalRatio: 4.5`, dropping to
+`largeRatio: 3` at `largeTextPt: 18`.
 
 Text fit uses `characterWidthFactor: 0.46` and `safetyBufferPt: 8` by default.
 It is an estimate, not a rendered measurement: it considers box dimensions,
@@ -142,8 +151,11 @@ the safety buffer is `W_QUALITY_TEXT_TIGHT`.
 - Text authored with `runs` is currently excluded from text facts. The analyzer
   does not guess at mixed run styles.
 - Density counts body words, not titles or all visible characters.
-- The analyzer does not render slides. It cannot judge overlaps, contrast,
-  image quality, alignment, factual correctness or narrative quality.
+- Contrast covers colours the document states. Text over an image or a chart
+  is skipped, and a box laid across a gradient is judged at its worst sampled
+  point — which can be a shortfall no single ink colour resolves.
+- The analyzer does not render slides. It cannot judge overlaps, image quality,
+  alignment, factual correctness or narrative quality.
 
 These omissions are deliberate. Missing evidence produces no finding rather
 than a confident-sounding guess.
@@ -154,6 +166,22 @@ than a confident-sounding guess.
 | ------------------------ | -------------------------------- | ------- | ------------- | -------------------------------------------------------------------------------------------------- |
 | `docx/table-width`       | `W_QUALITY_TABLE_WIDTH_OVERFLOW` | warning | deterministic | Explicit column widths exceed the usable width of their section, with a 10-twip rounding tolerance |
 | `docx/heading-hierarchy` | `W_QUALITY_HEADING_SKIP`         | info    | deterministic | A heading jumps down by more than one level                                                        |
+| `docx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`        | warning | estimated     | A word too wide for its floating frame, or a frame whose wrapped block runs off the sheet          |
+| `docx/svg-text-bounds`   | `W_QUALITY_SVG_TEXT_CLIPPED`     | warning | deterministic | A `<text>` baseline in an inline SVG falls outside the viewBox, so the words are never painted     |
+
+Frame text fit only inspects paragraphs pinned into a floating frame, where
+the author rather than the layout engine decides the available room; flowed
+body copy repaginates and needs no check. Its width model sums per-character
+advances — a single characters-per-point factor cannot serve both caps and
+lowercase, which measured 0.694 and 0.435 em per character on the same face —
+and it reports only past an 8% tolerance, the measured error of that model. An
+overrun smaller than one line height is likewise ignored. Marginal cases are
+therefore out of reach by construction, and belong to a rendered-certainty
+pass rather than a static estimate.
+
+SVG text bounds needs no estimate: the baseline and the viewBox are both
+authored numbers, and text below the canvas is dropped from the PDF text layer
+as well as the page, so it escapes search, copy and screen readers.
 
 Table analysis accounts for the actual section width and margins. It reports a
 repair patch only when every column width is explicit, because proportional
