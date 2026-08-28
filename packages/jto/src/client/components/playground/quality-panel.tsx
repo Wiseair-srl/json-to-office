@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronRight,
+  Crosshair,
   Info,
   ShieldAlert,
   Wand2,
@@ -106,26 +107,35 @@ interface PathChipProps {
 
 function PathChip({ path, onRevealPath, muted }: PathChipProps) {
   const base = cn(
-    'max-w-full truncate rounded-sm bg-header-bg px-1 py-0.5 font-mono text-[10px]',
-    muted ? 'text-muted-foreground/70' : 'text-muted-foreground'
+    'inline-flex max-w-full items-center gap-1 rounded-sm font-mono text-[10px]',
+    muted ? 'text-muted-foreground/60' : 'text-muted-foreground/80'
   );
 
   if (!onRevealPath) {
-    return <span className={base}>{path}</span>;
+    return (
+      <span className={base}>
+        <span className="truncate">{path}</span>
+      </span>
+    );
   }
 
   return (
     <button
       type="button"
       onClick={() => onRevealPath(path)}
-      title={`Reveal ${path}`}
+      title={`Reveal ${path} in the editor`}
       className={cn(
         base,
-        'transition-colors hover:bg-accent hover:text-foreground',
+        // A pointer is a destination, not a label. The crosshair and the
+        // underline on hover are what say so — the old chip read as metadata
+        // and nobody discovered it was clickable.
+        '-mx-1 px-1 py-0.5 transition-colors',
+        'hover:bg-accent hover:text-foreground hover:underline',
         'focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
       )}
     >
-      {path}
+      <Crosshair className="h-2.5 w-2.5 flex-shrink-0" aria-hidden="true" />
+      <span className="truncate">{path}</span>
     </button>
   );
 }
@@ -155,105 +165,126 @@ function FindingRow({
   const relatedPaths = finding.relatedPaths ?? [];
 
   return (
-    <div className="flex items-start gap-2 rounded-sm border bg-card px-3 py-2">
-      <Icon className={cn('mt-0.5 h-3.5 w-3.5 flex-shrink-0', tone)} />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-1.5">
-          {finding.code && (
-            <code
-              className={cn(
-                'rounded-sm px-1 py-0.5 text-[11px] font-medium',
-                finding.severity === 'error' && 'bg-destructive/15',
-                finding.severity === 'warning' && 'bg-warning/15',
-                finding.severity === 'info' && 'bg-data-blue/15',
-                tone
-              )}
-            >
-              {finding.code}
-            </code>
+    <div className="rounded-sm border bg-card px-3 py-2.5">
+      {/* What is wrong, first and in plain language. The code used to lead
+          here, which put the least readable thing in the most prominent slot;
+          it is reference data for writing a policy, so it sits in the footer
+          with the other machine-readable fields. */}
+      <div className="flex items-start gap-2">
+        <Icon className={cn('mt-0.5 h-3.5 w-3.5 flex-shrink-0', tone)} />
+        <div className="min-w-0 flex-1">
+          {finding.blocking && (
+            <span className="mr-1.5 rounded-sm bg-destructive/15 px-1 py-0.5 align-[1px] text-[10px] font-medium tracking-wide text-destructive uppercase">
+              blocking
+            </span>
           )}
           <span className="text-xs leading-relaxed text-foreground">
             {finding.message}
           </span>
         </div>
+      </div>
 
-        {(finding.category || certainty || finding.blocking) && (
-          <div className="mt-1 flex flex-wrap items-center gap-1">
-            {finding.category && (
-              <span className="rounded-sm border px-1 py-0.5 text-[10px] tracking-wide text-muted-foreground">
-                {finding.category}
-              </span>
-            )}
-            {certainty && (
-              <span
-                className="rounded-sm border px-1 py-0.5 text-[10px] tracking-wide text-muted-foreground"
-                title="How the analysis reached this finding"
-              >
-                {certainty}
-              </span>
-            )}
-            {finding.blocking && (
-              <span className="rounded-sm bg-destructive/15 px-1 py-0.5 text-[10px] font-medium tracking-wide text-destructive">
-                blocking
-              </span>
-            )}
-          </div>
-        )}
-
+      <div className="mt-1.5 pl-[1.375rem]">
+        {/* Expectation before reality, matching how the message reads, and in
+            words rather than the `actual · expected` pair that looked like
+            debug output. */}
         {hasComparison && evidence && (
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {evidence.actual !== undefined && (
-              <>
-                <span className="text-foreground/80">actual</span>{' '}
-                <span className="font-mono">
-                  {formatEvidenceValue(evidence.actual, evidence.unit)}
-                </span>
-              </>
-            )}
-            {evidence.actual !== undefined &&
-              evidence.expected !== undefined && (
-                <span className="text-muted-foreground/50"> · </span>
-              )}
+          <p className="text-[11px] text-muted-foreground">
             {evidence.expected !== undefined && (
               <>
-                <span className="text-foreground/80">expected</span>{' '}
-                <span className="font-mono">
+                Expected{' '}
+                <span className="font-mono font-medium text-foreground/90">
                   {formatEvidenceValue(evidence.expected, evidence.unit)}
                 </span>
               </>
             )}
-          </p>
-        )}
-
-        {finding.suggestion && (
-          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/80">
-            <span aria-hidden="true">→ </span>
-            {finding.suggestion}
-          </p>
-        )}
-
-        {(finding.path || relatedPaths.length > 0) && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-1">
-            {/* An empty path is a valid pointer to the document root, which is
-                never what a finding meant, so it is not offered as a target. */}
-            {finding.path && (
-              <PathChip path={finding.path} onRevealPath={onRevealPath} />
+            {evidence.expected !== undefined &&
+              evidence.actual !== undefined && (
+                <span className="text-muted-foreground/50"> · </span>
+              )}
+            {evidence.actual !== undefined && (
+              <>
+                {evidence.expected === undefined ? 'Found' : 'found'}{' '}
+                <span className="font-mono font-medium text-foreground/90">
+                  {formatEvidenceValue(evidence.actual, evidence.unit)}
+                </span>
+              </>
             )}
-            {relatedPaths.map((related) => (
-              <PathChip
-                key={related}
-                path={related}
-                onRevealPath={onRevealPath}
-                muted
-              />
-            ))}
+          </p>
+        )}
+
+        {/* Advice and the button that enacts it are one thing, so they share
+            one block. The button used to float in the card's top corner, an
+            inch from the sentence explaining what it would do. */}
+        {(finding.suggestion || showFix) && (
+          <div
+            className={cn(
+              'mt-1.5 flex items-center gap-2 rounded-sm bg-header-bg/70 px-2 py-1.5',
+              !finding.suggestion && 'justify-end'
+            )}
+          >
+            {finding.suggestion && (
+              <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-muted-foreground">
+                {finding.suggestion}
+              </p>
+            )}
+            {showFix && (
+              <button
+                type="button"
+                onClick={() => onApplyFixes?.(finding)}
+                disabled={isApplying}
+                className={cn(
+                  'flex flex-shrink-0 items-center gap-1 rounded-sm border bg-card px-1.5 py-1',
+                  'text-[11px] font-medium text-foreground transition-colors',
+                  'hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring',
+                  'focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60'
+                )}
+              >
+                {isApplying ? (
+                  <Spinner size="sm" variant="muted" className="h-3 w-3" />
+                ) : (
+                  <Wand2 className="h-3 w-3" aria-hidden="true" />
+                )}
+                Apply fix
+              </button>
+            )}
           </div>
         )}
+
+        {/* Where, how sure, and what to call it in a policy. All reference:
+            muted, one line, out of the way of the sentence above. The category
+            is not repeated here — the group heading above already names it. */}
+        <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          {finding.path && (
+            <PathChip path={finding.path} onRevealPath={onRevealPath} />
+          )}
+          {relatedPaths.map((related) => (
+            <PathChip
+              key={related}
+              path={related}
+              onRevealPath={onRevealPath}
+              muted
+            />
+          ))}
+          {certainty && (
+            <span
+              className="text-[10px] text-muted-foreground/70"
+              title="How the analysis reached this finding"
+            >
+              {certainty}
+            </span>
+          )}
+          {finding.code && (
+            <code className="text-[10px] text-muted-foreground/60">
+              {finding.code}
+            </code>
+          )}
+        </div>
 
         {rest && (
           <details className="mt-1.5">
             <summary className="cursor-pointer text-[11px] text-muted-foreground/70 hover:text-foreground">
-              Evidence
+              More evidence
             </summary>
             <pre className="mt-1 overflow-x-auto rounded-sm bg-header-bg p-1.5 text-[11px] text-muted-foreground">
               {JSON.stringify(rest, null, 2)}
@@ -261,27 +292,6 @@ function FindingRow({
           </details>
         )}
       </div>
-
-      {showFix && (
-        <button
-          type="button"
-          onClick={() => onApplyFixes?.(finding)}
-          disabled={isApplying}
-          className={cn(
-            'flex flex-shrink-0 items-center gap-1 rounded-sm border px-1.5 py-1',
-            'text-[11px] font-medium text-foreground transition-colors',
-            'hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring',
-            'focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60'
-          )}
-        >
-          {isApplying ? (
-            <Spinner size="sm" variant="muted" className="h-3 w-3" />
-          ) : (
-            <Wand2 className="h-3 w-3" aria-hidden="true" />
-          )}
-          Apply fix
-        </button>
-      )}
     </div>
   );
 }
