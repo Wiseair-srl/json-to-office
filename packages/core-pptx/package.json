@@ -33,6 +33,7 @@
     "prepublishOnly": "node ../../scripts/copy-license.cjs"
   },
   "dependencies": {
+    "@json-to-office/quality": "workspace:^",
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-pptx": "workspace:^",
     "@office-open/pptx": "0.11.0",

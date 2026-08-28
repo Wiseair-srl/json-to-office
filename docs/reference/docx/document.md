@@ -54,7 +54,7 @@ OOXML core properties have no slot for a company or a version string, so both ar
 One field is deliberately not written into document properties: `date` is a display/placeholder value. It fixes the generation date used by `{DATE}` and `{DATETIME}` (and by the render cache key), not a package timestamp.
 
 ::: warning No `created` / `modified` here
-The metadata object has **no** `created` or `modified` field, and supplying one fails validation (`additionalProperties: false`) unless you enable [`allowUnknownFields`](/guide/validation), which strips it.
+The metadata object has **no** `created` or `modified` field, and supplying one fails validation (`additionalProperties: false`) unless you enable [`allowUnknownFields`](/guide/validation), which ignores it for validation. Do not rely on that option as a sanitization step.
 
 Package timestamps are not authored per document: `dcterms:created` and `dcterms:modified` come from the **`generatedAt` generation option**, which the deterministic packaging step writes over whatever the `docx` library stamped. Set `generatedAt` to control them; leave it unset and every build gets the same fixed epoch, which is what keeps output byte-identical. With `deterministic: false` that rewrite is skipped entirely and the timestamps are the `docx` library's wall clock — `generatedAt` has no effect on them. See [Reproducible output](/guide/core-concepts#reproducible-output).
 :::

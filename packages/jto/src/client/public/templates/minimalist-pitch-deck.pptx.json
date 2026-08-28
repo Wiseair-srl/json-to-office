@@ -216,7 +216,7 @@
             "w": 1.314,
             "h": 0.313,
             "text": "YOUR LOGO",
-            "color": "background",
+            "color": "text",
             "style": "heading3"
           }
         },
@@ -417,7 +417,7 @@
             "w": 4.159,
             "h": 1.439,
             "text": "Welcome \nTo Our Pitch",
-            "color": "background",
+            "color": "text",
             "style": "title"
           }
         },
@@ -484,7 +484,7 @@
             "h": 0.682,
             "fontSize": 36,
             "text": "231K",
-            "color": "background"
+            "color": "text"
           }
         },
         {
@@ -496,7 +496,7 @@
             "h": 0.552,
             "fontSize": 8,
             "text": "Lorem ipsum dolor sit onsectetur adipiscing elit. Proin bibendum risus sit.",
-            "color": "background",
+            "color": "text",
             "lineSpacing": 12.5
           }
         },
@@ -523,7 +523,7 @@
             "w": 1.314,
             "h": 0.313,
             "text": "YOUR LOGO",
-            "color": "background",
+            "color": "text",
             "style": "heading3"
           }
         },
@@ -536,7 +536,7 @@
             "h": 0.372,
             "align": "center",
             "text": "2025",
-            "color": "background",
+            "color": "text",
             "style": "heading1"
           }
         }
@@ -594,7 +594,7 @@
             "h": 0.6,
             "fontSize": 8,
             "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper sit amet venen atis tristique. ",
-            "color": "background",
+            "color": "text",
             "lineSpacing": 12.5
           }
         },
@@ -619,7 +619,7 @@
             "h": 0.45,
             "fontSize": 8,
             "text": "Lorem ipsum dolor sit ame consectetur adipiscing elit. Proin dum risus sit amet venen atistristique. Morbi tortor justo",
-            "color": "background",
+            "color": "text",
             "lineSpacing": 12.5
           }
         },
@@ -642,7 +642,7 @@
             "h": 0.985,
             "fontSize": 54,
             "text": "234+",
-            "color": "background"
+            "color": "text"
           }
         },
         {
@@ -653,7 +653,7 @@
             "w": 2.774,
             "h": 0.647,
             "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit amet venen atis tristique. Morbi.",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -708,7 +708,7 @@
             "h": 0.372,
             "align": "center",
             "text": "2025",
-            "color": "background",
+            "color": "text",
             "style": "heading1"
           }
         }
@@ -1473,7 +1473,7 @@
             "w": 3.271,
             "h": 1.439,
             "text": "Product Overview",
-            "color": "background",
+            "color": "text",
             "style": "title"
           }
         },
@@ -1485,7 +1485,7 @@
             "w": 2.033,
             "h": 0.303,
             "text": "Minimalist Design",
-            "color": "background",
+            "color": "text",
             "style": "heading2"
           }
         },
@@ -1497,7 +1497,7 @@
             "w": 2.582,
             "h": 0.844,
             "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -1519,7 +1519,7 @@
             "w": 2.156,
             "h": 0.985,
             "text": "234+",
-            "color": "background",
+            "color": "text",
             "style": "subtitle"
           }
         },
@@ -1531,7 +1531,7 @@
             "w": 2.774,
             "h": 0.647,
             "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit amet venen atis tristique. Morbi.",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -1543,7 +1543,7 @@
             "w": 1.314,
             "h": 0.313,
             "text": "YOUR LOGO",
-            "color": "background",
+            "color": "text",
             "style": "heading3"
           }
         },
@@ -1622,7 +1622,7 @@
             "w": 5.923,
             "h": 0.757,
             "text": "Product Features",
-            "color": "background",
+            "color": "text",
             "style": "title"
           }
         },
@@ -1634,7 +1634,7 @@
             "w": 2.909,
             "h": 0.303,
             "text": "Every Feature Is Intentional",
-            "color": "background",
+            "color": "text",
             "style": "heading2"
           }
         },
@@ -1646,7 +1646,7 @@
             "w": 2.708,
             "h": 0.303,
             "text": "No Extras, No Distractions",
-            "color": "background",
+            "color": "text",
             "style": "heading2"
           }
         },
@@ -1658,7 +1658,7 @@
             "w": 2.708,
             "h": 0.303,
             "text": "Just Powerful Essentials.",
-            "color": "background",
+            "color": "text",
             "style": "heading2"
           }
         },
@@ -1670,7 +1670,7 @@
             "w": 2.119,
             "h": 0.451,
             "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -1705,7 +1705,7 @@
             "h": 0.372,
             "align": "center",
             "text": "2025",
-            "color": "background",
+            "color": "text",
             "style": "heading1"
           }
         }
@@ -2586,7 +2586,7 @@
             "w": 2.545,
             "h": 0.647,
             "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit amet venen atis tristique. Morbi.",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -2622,7 +2622,7 @@
             "h": 0.576,
             "fontSize": 8,
             "text": "Lorem ipsum dolor sit amet, consectetur adipiscig elit. Proin dum risus sit amet.",
-            "color": "background",
+            "color": "text",
             "lineSpacing": 12.5
           }
         },
@@ -2634,7 +2634,7 @@
             "w": 3.27,
             "h": 0.303,
             "text": "People Are Overwhelmed",
-            "color": "background",
+            "color": "text",
             "style": "heading2"
           }
         },
@@ -2646,7 +2646,7 @@
             "w": 3.27,
             "h": 0.647,
             "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -2682,7 +2682,7 @@
             "w": 1.314,
             "h": 0.313,
             "text": "YOUR LOGO",
-            "color": "background",
+            "color": "text",
             "style": "heading3"
           }
         },
@@ -2695,7 +2695,7 @@
             "h": 0.372,
             "align": "center",
             "text": "2025",
-            "color": "background",
+            "color": "text",
             "style": "heading1"
           }
         }
@@ -2766,7 +2766,7 @@
             "w": 1.138,
             "h": 0.985,
             "text": "23",
-            "color": "background",
+            "color": "text",
             "style": "subtitle"
           }
         },
@@ -2778,7 +2778,7 @@
             "w": 1.784,
             "h": 0.844,
             "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -2790,7 +2790,7 @@
             "w": 2.81,
             "h": 0.303,
             "text": "Minimalist Design Focuses",
-            "color": "background",
+            "color": "text",
             "style": "heading2"
           }
         },
@@ -2802,7 +2802,7 @@
             "w": 3.27,
             "h": 0.647,
             "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -2827,7 +2827,7 @@
             "h": 0.372,
             "align": "center",
             "text": "2025",
-            "color": "background",
+            "color": "text",
             "style": "heading1"
           }
         }
@@ -3364,7 +3364,7 @@
             "h": 0.372,
             "align": "center",
             "text": "2025",
-            "color": "background",
+            "color": "text",
             "style": "heading1"
           }
         }
@@ -3404,7 +3404,7 @@
             "w": 2.106,
             "h": 2.121,
             "text": "Meet The Team",
-            "color": "background",
+            "color": "text",
             "style": "title"
           }
         },
@@ -3473,7 +3473,7 @@
             "fontSize": 21,
             "fontFace": "Montserrat",
             "text": "Your Name ",
-            "color": "background"
+            "color": "text"
           }
         },
         {
@@ -3484,7 +3484,7 @@
             "w": 1.345,
             "h": 0.328,
             "text": "Your Name ",
-            "color": "background",
+            "color": "text",
             "style": "heading1"
           }
         },
@@ -3508,7 +3508,7 @@
             "w": 2.81,
             "h": 0.303,
             "text": "Minimalist Design Focuses",
-            "color": "background",
+            "color": "text",
             "style": "heading2"
           }
         },
@@ -3520,7 +3520,7 @@
             "w": 3.27,
             "h": 0.647,
             "text": "Lorem ipsum dolor sit amet, consectetur adipisci\nng elit. Proin dum risus sit amet venen atis tristique. Morbi tortor justo, p eget sequat ac, semper.",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -3532,7 +3532,7 @@
             "w": 1.314,
             "h": 0.313,
             "text": "YOUR LOGO",
-            "color": "background",
+            "color": "text",
             "style": "heading3"
           }
         },
@@ -3585,7 +3585,7 @@
             "w": 3.743,
             "h": 0.757,
             "text": "Contact us ",
-            "color": "background",
+            "color": "text",
             "style": "title"
           }
         },
@@ -3607,7 +3607,7 @@
             "w": 3.813,
             "h": 0.647,
             "text": "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas porttitor congue massa. Fusce posuere, magna sed pulvinar ultricies, purus lectus.",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -3636,7 +3636,7 @@
             "fontSize": 11,
             "fontFace": "Montserrat",
             "text": "Phone",
-            "color": "background",
+            "color": "text",
             "lineSpacing": 17.2
           }
         },
@@ -3650,7 +3650,7 @@
             "fontSize": 11,
             "fontFace": "Montserrat",
             "text": "Website",
-            "color": "background",
+            "color": "text",
             "lineSpacing": 17.2
           }
         },
@@ -3664,7 +3664,7 @@
             "fontSize": 11,
             "fontFace": "Montserrat",
             "text": "Email",
-            "color": "background",
+            "color": "text",
             "lineSpacing": 17.2
           }
         },
@@ -3676,7 +3676,7 @@
             "w": 1.109,
             "h": 0.254,
             "text": "+1234567890",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -3688,7 +3688,7 @@
             "w": 1.486,
             "h": 0.254,
             "text": "https://www.web.com",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -3700,7 +3700,7 @@
             "w": 1.109,
             "h": 0.254,
             "text": "mail@mail.com",
-            "color": "background",
+            "color": "text",
             "style": "body"
           }
         },
@@ -3732,7 +3732,7 @@
             "w": 1.314,
             "h": 0.313,
             "text": "YOUR LOGO",
-            "color": "background",
+            "color": "text",
             "style": "heading3"
           }
         },
@@ -3745,7 +3745,7 @@
             "h": 0.372,
             "align": "center",
             "text": "2025",
-            "color": "background",
+            "color": "text",
             "style": "heading1"
           }
         }
@@ -3860,7 +3860,7 @@
             "h": 0.372,
             "align": "center",
             "text": "2025",
-            "color": "background",
+            "color": "text",
             "style": "heading1"
           }
         }

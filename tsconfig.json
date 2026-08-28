@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
+    { "path": "./packages/quality" },
     { "path": "./packages/shared" },
     { "path": "./packages/shared-docx" },
     { "path": "./packages/shared-pptx" },

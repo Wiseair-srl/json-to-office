@@ -4,7 +4,7 @@
  * resources really are the generated artifacts rather than a summary of them.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 
 import { InMemoryTransport } from '@modelcontextprotocol/server';
 import { Client } from '@modelcontextprotocol/client';
@@ -54,6 +54,7 @@ describe('discovery resources', () => {
       RESOURCE_URIS.catalog,
       RESOURCE_URIS.renderers,
       RESOURCE_URIS.themes,
+      RESOURCE_URIS.themeValues,
       RESOURCE_URIS.templates,
       RESOURCE_URIS.documentSchema('docx'),
       RESOURCE_URIS.documentSchema('pptx'),
@@ -118,6 +119,37 @@ describe('discovery resources', () => {
     const themes = await readJson(RESOURCE_URIS.themes);
     for (const entry of themes.formats) {
       expect(entry.themes.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('serves non-empty built-in theme values in ESM', async () => {
+    const values = await readJson(RESOURCE_URIS.themeValues);
+    for (const entry of values.formats) {
+      expect(Object.keys(entry.themes).length).toBeGreaterThan(0);
+      const [theme] = Object.values(entry.themes) as any[];
+      expect(theme.colors).toBeDefined();
+      expect(theme.fonts).toBeDefined();
+    }
+  });
+
+  it('falls back to theme names when detailed values fail per format', async () => {
+    const adapter = deps.getAdapter('docx');
+    const detailed = vi
+      .spyOn(adapter, 'getBuiltinThemeValues')
+      .mockRejectedValue(new Error('dynamic import failed'));
+    const fallback = vi
+      .spyOn(adapter, 'getBuiltinThemes')
+      .mockReturnValue({ fallback: { name: 'fallback' } });
+
+    try {
+      const values = await readJson(RESOURCE_URIS.themeValues);
+      expect(
+        values.formats.find((entry: any) => entry.format === 'docx').themes
+      ).toEqual({ fallback: { name: 'fallback' } });
+      expect(fallback).toHaveBeenCalledOnce();
+    } finally {
+      detailed.mockRestore();
+      fallback.mockRestore();
     }
   });
 

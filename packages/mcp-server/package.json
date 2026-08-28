@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@json-to-office/jto-ops": "workspace:^",
+    "@json-to-office/quality": "workspace:^",
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-docx": "workspace:^",
     "@json-to-office/shared-pptx": "workspace:^",

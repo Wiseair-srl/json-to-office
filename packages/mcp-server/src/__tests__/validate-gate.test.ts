@@ -46,7 +46,7 @@ import { register } from '../tools/validate.js';
  */
 const PROPLESS_SLIDES = {
   name: 'pptx',
-  props: { title: 'No slide props' },
+  props: { title: 'No slide props', slideWidth: 13.333, slideHeight: 7.5 },
   children: [
     {
       name: 'slide',
@@ -80,13 +80,13 @@ const BROKEN_DOCX = {
  */
 const PROPLESS_TEXT = {
   name: 'pptx',
-  props: { title: 'No text props' },
+  props: { title: 'No text props', slideWidth: 13.333, slideHeight: 7.5 },
   children: [{ name: 'slide', children: [{ name: 'text' }] }],
 };
 
 const TEXT_WITH_PROPS = {
   name: 'pptx',
-  props: { title: 'Text with props' },
+  props: { title: 'Text with props', slideWidth: 13.333, slideHeight: 7.5 },
   children: [
     { name: 'slide', children: [{ name: 'text', props: { text: 'Hello' } }] },
   ],
@@ -100,7 +100,7 @@ const TEXT_WITH_PROPS = {
  */
 const NULL_PROPS_SLIDE = {
   name: 'pptx',
-  props: { title: 'Null slide props' },
+  props: { title: 'Null slide props', slideWidth: 13.333, slideHeight: 7.5 },
   children: [
     {
       name: 'slide',

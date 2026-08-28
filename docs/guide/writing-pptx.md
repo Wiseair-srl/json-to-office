@@ -93,7 +93,7 @@ You can position anything with explicit `x`/`y`/`w`/`h` coordinates, but hand-pl
 }
 ```
 
-`column` and `row` are **0-indexed**; spans default to 1. The library resolves each grid placement to concrete inches at generation time, so the same layout logic adapts automatically if you change the slide size or grid configuration. You can customize the grid per presentation (and per template) via the root `grid` prop — for example the bundled Company deck uses a 12 × 12 grid with tighter 0.16 in gutters for finer vertical control.
+`column` and `row` are **0-indexed**; spans default to 1. The library resolves each grid placement to concrete inches at generation time, so the same layout logic adapts automatically if you change the slide size or grid configuration. You can customize the grid per presentation (and per template) via the root `grid` prop — for example a dense corporate deck might use a 12 × 12 grid with tighter 0.16 in gutters for finer vertical control.
 
 The full resolution math, clamping behavior, and explicit-coordinate overrides are covered in [Slides & the grid](/reference/pptx/slides-and-grid).
 
@@ -224,7 +224,7 @@ Once a deck has more than a few slides, you will notice the same layouts repeati
 {
   "name": "pptx",
   "props": {
-    "title": "Company deck",
+    "title": "Quarterly review",
     "slideWidth": 13.33,
     "slideHeight": 7.5,
     "grid": { "columns": 12, "rows": 12 },
@@ -341,10 +341,10 @@ for (const w of warnings) {
 
 Generation is forgiving about recoverable content problems: instead of failing on them, it emits **pipeline warnings** and produces the best file it can. Each warning has a machine-readable `code` — for example `GRID_POSITION_CLAMPED` (a grid placement fell outside the grid and was clamped), `MISSING_TEMPLATE` (a slide referenced a template name that doesn't exist), `HYPERLINK_SLIDE_UNRESOLVED` (an internal link pointed at no emitted slide and was dropped), `IMAGE_NO_SOURCE`, `CHART_INVALID_SERIES`, `THEME_COLOR_FALLBACK`, or `FONT_UNRESOLVED` — and, where available, the component and/or slide it came from.
 
-::: tip Validation is a separate step
-Generation does **not** validate the document against the schema, so structural mistakes (wrong prop names, invalid nesting) surface as warnings or renderer errors rather than a clean upfront failure. Run `validate.document(...)` from the package — or `jto pptx validate` — before generating if you want schema errors reported properly. See [Validation](/guide/validation).
+::: tip Schema errors fail before any of this
+Generation validates the document against the schema first, so a wrong prop name or invalid nesting throws `PresentationValidationError` rather than reaching the warning path. Warnings only cover what the schema can't express. `validate.document(...)` and `jto pptx validate` run the same check without producing a file. See [Validation](/guide/validation).
 
-The hard failures at generation time are: a root component that isn't `pptx`, an image with more than one source (`path` + `base64` + `svg` are mutually exclusive), and `highcharts` errors (unreachable export server, or running in a browser).
+The other hard failures at generation time: an image with more than one source (`path` / `base64` / `svg` are mutually exclusive), a `text` carrying both `text` and `runs`, and `highcharts` errors (unreachable export server, or running in a browser).
 :::
 
 ## Where to go next

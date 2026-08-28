@@ -14,6 +14,7 @@
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "dist"],
   "references": [
+    { "path": "../quality" },
     { "path": "../shared" },
     { "path": "../shared-docx" },
     { "path": "../shared-pptx" },

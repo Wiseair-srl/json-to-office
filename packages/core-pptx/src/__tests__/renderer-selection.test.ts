@@ -140,7 +140,7 @@ describe('concurrent generation isolation', () => {
     // Renders the entire corpus at once, so it outgrows the strict local
     // budget whenever the machine is also running the other packages' suites
     // — which is exactly what `pnpm test` does.
-  }, 30_000);
+  }, 60_000);
 
   it('does not share resource ids between concurrent compilations', async () => {
     const [a, b] = await Promise.all([

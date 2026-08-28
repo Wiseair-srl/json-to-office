@@ -1,5 +1,8 @@
 /**
  * `jto_validate` — will this document render, and if not, where is it broken?
+ * And when it renders: will it look right? The cores' quality analyzers
+ * (#216) answer the second question in the same pass, as `W_QUALITY_*`
+ * warnings and infos; an explicit run policy may move the gate.
  *
  * A document defect is never a protocol error and never `isError`: the whole
  * point of the tool is to hand an agent a list of places to repair, which a
@@ -13,6 +16,11 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/server';
+import type {
+  QualityAnalysis,
+  QualityPolicy,
+  QualityProfile,
+} from '@json-to-office/quality';
 
 import {
   checkRenderer,
@@ -23,8 +31,12 @@ import {
 import type { ToolDeps } from '../lib/deps.js';
 import { resolveDocumentSource, sourceSummary } from '../lib/doc-source.js';
 import {
+  ERROR_CODES,
   countDiagnostics,
+  diagnostic,
   guarded,
+  qualityAnalysisDiagnostics,
+  qualityOptionDiagnostic,
   toolResult,
   validationDiagnostics,
   type Diagnostic,
@@ -60,9 +72,29 @@ function capDiagnostics(
   if (diagnostics.length <= limit)
     return { kept: diagnostics, truncated: false };
   const ordered = [...diagnostics].sort(
-    (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
+    (a, b) =>
+      SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] ||
+      Number(b.blocking === true) - Number(a.blocking === true)
   );
   return { kept: ordered.slice(0, limit), truncated: true };
+}
+
+/**
+ * A rule that threw is a hole in the report, not a clean bill of health.
+ *
+ * The engine's default `onRuleError: 'continue'` records the failure and
+ * carries on, so the entire class of findings that rule owns disappears from
+ * the answer — and an agent handed `ok: true` with an empty list reads that as
+ * "nothing to fix" rather than "nobody looked".
+ */
+function ruleErrorDiagnostics(analysis: QualityAnalysis): Diagnostic[] {
+  return analysis.ruleErrors.map((entry) =>
+    diagnostic(
+      ERROR_CODES.QUALITY_RULE_ERROR,
+      `Quality rule "${entry.ruleId}" failed: ${entry.message}`,
+      { severity: 'warning', source: 'quality', ruleId: entry.ruleId }
+    )
+  );
 }
 
 const DEFAULT_MAX_DIAGNOSTICS = 100;
@@ -71,6 +103,7 @@ interface ValidateArgs extends DocumentSourceInput {
   format: FormatName;
   renderer?: string;
   maxDiagnostics?: number;
+  quality?: { profile?: QualityProfile; policy?: QualityPolicy };
 }
 
 export function register(server: McpServer, deps: ToolDeps): void {
@@ -79,7 +112,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Validate a document',
       description:
-        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary, e.g. `E_REQUIRED_PROPERTY`, `E_UNEXPECTED_PROPERTY`, `E_TYPE_MISMATCH`, `E_UNKNOWN_COMPONENT`. `ok` mirrors the gate generation applies: schema and semantic errors block it — the semantic rules the published JSON Schema cannot state, such as a text component needing one of `text`/`runs`, are checked here and only here — while renderer-profile findings (code `W_UNSUPPORTED_RENDERER_FEATURE`) come back as warnings because the renderer, not the schema, has the last word on those. A broken document is a normal result with `ok: false`, never an error. A renderer whose backend is not installed on this host is reported here too, as a `E_DEPENDENCY_MISSING` warning — the document may be fine and the host merely incomplete.',
+        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary. `ok` mirrors generation: schema and semantic errors block; design-quality `W_QUALITY_*` findings advise by default and block only when `quality.policy.gate` requests it. A broken document is a normal result with `ok: false`, never a protocol error.',
       annotations: { readOnlyHint: true, openWorldHint: false },
       inputSchema: S<ValidateArgs>({
         type: 'object',
@@ -96,6 +129,30 @@ export function register(server: McpServer, deps: ToolDeps): void {
             minimum: 1,
             maximum: 1000,
             description: `Cap on returned diagnostics (default ${DEFAULT_MAX_DIAGNOSTICS}). Errors are kept ahead of warnings when the cap bites.`,
+          },
+          quality: {
+            type: 'object',
+            description:
+              'Optional design profile plus per-run enforcement policy.',
+            properties: {
+              profile: {
+                type: 'object',
+                properties: { id: { type: 'string', minLength: 1 } },
+                required: ['id'],
+                additionalProperties: true,
+              },
+              policy: {
+                type: 'object',
+                properties: {
+                  gate: {
+                    type: 'string',
+                    enum: ['none', 'error', 'warning', 'info'],
+                  },
+                },
+                additionalProperties: true,
+              },
+            },
+            additionalProperties: false,
           },
         },
         required: ['format'],
@@ -127,7 +184,13 @@ export function register(server: McpServer, deps: ToolDeps): void {
           },
           truncated: {
             type: 'boolean',
-            description: '`diagnostics` was capped by `maxDiagnostics`.',
+            description:
+              '`diagnostics` was capped, by `maxDiagnostics` or by the budget the quality policy set.',
+          },
+          profileId: {
+            type: 'string',
+            description:
+              'The quality profile the design analysis ran under, when one applied.',
           },
         })
       ),
@@ -154,25 +217,70 @@ export function register(server: McpServer, deps: ToolDeps): void {
             resolved.document,
             args.renderer
           );
-          const all = [
+          // Third question: schema-valid ≠ well-designed. Advisory by default;
+          // an explicit run policy can promote quality into the gate.
+          let analysis: QualityAnalysis | undefined;
+          let qualityOption: Diagnostic | undefined;
+          if (adapter.analyzeQuality) {
+            try {
+              analysis = await adapter.analyzeQuality(resolved.document, {
+                renderer: args.renderer,
+                quality: args.quality,
+              });
+            } catch (error) {
+              // Two defects at once — a malformed document AND an unusable
+              // profile or policy. `guarded` would answer with the option
+              // error alone, dropping the repair list this tool exists to
+              // produce, so a broken document keeps its diagnostics and
+              // carries the option defect alongside them.
+              const option = result.valid
+                ? undefined
+                : qualityOptionDiagnostic(error);
+              if (!option) throw error;
+              qualityOption = option;
+            }
+          }
+          const structural = [
             ...validationDiagnostics(result.errors),
             ...(unavailable ? [unavailable] : []),
+            ...(qualityOption ? [qualityOption] : []),
+          ];
+          const all = [
+            ...structural,
+            ...(analysis
+              ? [
+                  ...qualityAnalysisDiagnostics(analysis),
+                  ...ruleErrorDiagnostics(analysis),
+                ]
+              : []),
           ];
           const counts = countDiagnostics(all);
+          // The gate, not the severity tally. A policy may raise a quality
+          // finding to `error` without asking for it to block, and generation
+          // would still succeed — so the quality half of the verdict is the
+          // engine's `blocked`, which is the only thing that decided it.
+          const blocked =
+            countDiagnostics(structural).error > 0 ||
+            analysis?.blocked === true;
           const { kept, truncated } = capDiagnostics(
             all,
             args.maxDiagnostics ?? DEFAULT_MAX_DIAGNOSTICS
           );
 
           return {
-            ok: counts.error === 0,
+            ok: !blocked,
             diagnostics: kept,
-            valid: counts.error === 0,
+            valid: !blocked,
             format: args.format,
             ...(args.renderer !== undefined && { renderer: args.renderer }),
             source: sourceSummary(resolved),
             counts,
-            truncated,
+            // The engine caps its own list under a policy budget, so a report
+            // shortened there would otherwise come back reading complete.
+            truncated: truncated || analysis?.truncated === true,
+            ...(analysis?.profileId !== undefined && {
+              profileId: analysis.profileId,
+            }),
           };
         })
       )

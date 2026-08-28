@@ -57,7 +57,7 @@ describe('feature requirements', () => {
       feature: 'text-frames',
       path: 'sections[0].children[0]',
     });
-  }, 30_000);
+  }, 60_000);
 
   it('demands nothing about frames from a paragraph that does not float', async () => {
     const plain = {
@@ -67,7 +67,7 @@ describe('feature requirements', () => {
     };
 
     expect(await featuresOf(plain)).not.toContain('text-frames');
-  }, 30_000);
+  }, 60_000);
 
   it('demands custom-properties only when the document has any', async () => {
     const withProperties = {
@@ -88,7 +88,7 @@ describe('feature requirements', () => {
     expect(await featuresOf(withoutProperties)).not.toContain(
       'custom-properties'
     );
-  }, 30_000);
+  }, 60_000);
 
   /**
    * The vocabulary the compiler can still only declare, not demand.

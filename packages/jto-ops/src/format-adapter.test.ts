@@ -4,6 +4,7 @@ import { createComponent, createVersion } from '@json-to-office/core-docx';
 import {
   createComponent as createPptxComponent,
   createVersion as createPptxVersion,
+  pptxThemes,
 } from '@json-to-office/core-pptx';
 import type { GenerationWarning } from '@json-to-office/shared';
 import { DocxFormatAdapter, PptxFormatAdapter } from './format-adapter';
@@ -65,6 +66,232 @@ describe('PptxFormatAdapter.validateDocument', () => {
     expect(
       adapter.validateDocument({ ...transition, renderer: 'office-open' }).valid
     ).toBe(true);
+  });
+});
+
+describe('PptxFormatAdapter.analyzeQuality', () => {
+  it('resolves the same custom theme options as generation', async () => {
+    const tinyTheme = {
+      ...pptxThemes.minimal,
+      name: 'tiny',
+      defaults: { ...pptxThemes.minimal.defaults, fontSize: 6 },
+    };
+    const document = {
+      ...deck({ text: 'Unreadable by theme' }),
+      props: {
+        theme: 'tiny',
+        slideWidth: 13.333,
+        slideHeight: 7.5,
+      },
+    };
+
+    const analysis = await new PptxFormatAdapter().analyzeQuality(document, {
+      customThemes: { tiny: tinyTheme },
+    });
+    expect(analysis.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'W_QUALITY_FONT_SIZE_MIN' }),
+      ])
+    );
+  });
+});
+
+describe('prepared document reuse', () => {
+  it('shares one canonical DOCX model with analysis and rendering', async () => {
+    const adapter = new DocxFormatAdapter();
+    const document = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [{ name: 'paragraph', props: { text: 'Prepared once.' } }],
+    };
+    const prepared = await adapter.prepareDocument(document);
+    expect(prepared.renderer).toBe('docxjs');
+    const analysis = await adapter.analyzeQuality(document, { prepared });
+    const direct = await adapter.generateBuffer(document, {
+      deterministic: true,
+    });
+    const reused = await adapter.generateBuffer(document, {
+      deterministic: true,
+      prepared,
+    });
+    const generator = await adapter.createGenerator([], {
+      deterministic: true,
+      prepared,
+    });
+    const reusedByGenerator = await generator.generateBuffer(document);
+
+    expect(analysis.ruleErrors).toEqual([]);
+    expect(reused.equals(direct)).toBe(true);
+    expect(reusedByGenerator.equals(direct)).toBe(true);
+  });
+
+  it('shares one canonical PPTX model with analysis and rendering', async () => {
+    const adapter = new PptxFormatAdapter();
+    const document = {
+      ...deck({ text: 'Prepared once.', x: 1, y: 1, w: 4, h: 1 }),
+      props: { slideWidth: 13.333, slideHeight: 7.5 },
+    };
+    const prepared = await adapter.prepareDocument(document);
+    expect(prepared.renderer).toBe('pptxgenjs');
+    const analysis = await adapter.analyzeQuality(document, { prepared });
+    const direct = await adapter.generateBuffer(document, {
+      deterministic: true,
+    });
+    const reused = await adapter.generateBuffer(document, {
+      deterministic: true,
+      prepared,
+    });
+    const generator = await adapter.createGenerator([], {
+      deterministic: true,
+      prepared,
+    });
+    const reusedByGenerator = await generator.generateBuffer(document);
+
+    expect(analysis.ruleErrors).toEqual([]);
+    expect(reused.equals(direct)).toBe(true);
+    expect(reusedByGenerator.equals(direct)).toBe(true);
+  });
+
+  /** A prepared model that is not this document's must never render instead. */
+  const docA = {
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [{ name: 'paragraph', props: { text: 'Document A.' } }],
+  };
+  const docB = {
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [{ name: 'paragraph', props: { text: 'Document B.' } }],
+  };
+
+  it('ignores a DOCX prepared model built from another document', async () => {
+    const adapter = new DocxFormatAdapter();
+    const prepared = await adapter.prepareDocument(docA);
+
+    const stale = await adapter.generateBuffer(docB, {
+      deterministic: true,
+      prepared,
+    });
+    const generator = await adapter.createGenerator([], {
+      deterministic: true,
+      prepared,
+    });
+    const staleByGenerator = await generator.generateBuffer(docB);
+    const expected = await adapter.generateBuffer(docB, {
+      deterministic: true,
+    });
+    const renderedA = await adapter.generateBuffer(docA, {
+      deterministic: true,
+    });
+
+    expect(stale.equals(expected)).toBe(true);
+    expect(staleByGenerator.equals(expected)).toBe(true);
+    expect(expected.equals(renderedA)).toBe(false);
+  });
+
+  const deckA = {
+    ...deck({ text: 'Deck A.', x: 1, y: 1, w: 4, h: 1 }),
+    props: { slideWidth: 13.333, slideHeight: 7.5 },
+  };
+  const deckB = {
+    ...deck({ text: 'Deck B.', x: 1, y: 1, w: 4, h: 1 }),
+    props: { slideWidth: 13.333, slideHeight: 7.5 },
+  };
+
+  it('ignores a PPTX prepared model built from another document', async () => {
+    const adapter = new PptxFormatAdapter();
+    const prepared = await adapter.prepareDocument(deckA);
+
+    const stale = await adapter.generateBuffer(deckB, {
+      deterministic: true,
+      prepared,
+    });
+    const generator = await adapter.createGenerator([], {
+      deterministic: true,
+      prepared,
+    });
+    const staleByGenerator = await generator.generateBuffer(deckB);
+    const expected = await adapter.generateBuffer(deckB, {
+      deterministic: true,
+    });
+    const renderedA = await adapter.generateBuffer(deckA, {
+      deterministic: true,
+    });
+
+    expect(stale.equals(expected)).toBe(true);
+    expect(staleByGenerator.equals(expected)).toBe(true);
+    expect(expected.equals(renderedA)).toBe(false);
+  });
+
+  it('still applies the requested theme to the document it is handed', async () => {
+    const adapter = new DocxFormatAdapter();
+    // Prepared from one object, rendered from an equal but distinct one.
+    const prepared = await adapter.prepareDocument(report('corporate'), {
+      theme: 'modern',
+    });
+    const generator = await adapter.createGenerator([], {
+      theme: 'modern',
+      deterministic: true,
+      prepared,
+    });
+
+    const rendered = await generator.generateBuffer(report('corporate'));
+    const modern = await adapter.generateBuffer(report('modern'), {
+      deterministic: true,
+    });
+
+    expect(rendered.equals(modern)).toBe(true);
+  });
+});
+
+describe('renderer identity', () => {
+  it("prepares a DOCX model for the document's own renderer", async () => {
+    const adapter = new DocxFormatAdapter();
+
+    const own = await adapter.prepareDocument({
+      ...report(),
+      renderer: 'office-open',
+    });
+    const overridden = await adapter.prepareDocument(
+      { ...report(), renderer: 'office-open' },
+      { renderer: 'docxjs' }
+    );
+
+    expect(own.renderer).toBe('office-open');
+    expect(overridden.renderer).toBe('docxjs');
+  });
+
+  it("prepares a PPTX model for the document's own renderer", async () => {
+    const adapter = new PptxFormatAdapter();
+
+    const own = await adapter.prepareDocument({
+      ...themedDeck(),
+      renderer: 'office-open',
+    });
+    const overridden = await adapter.prepareDocument(
+      { ...themedDeck(), renderer: 'office-open' },
+      { renderer: 'pptxgenjs' }
+    );
+
+    expect(own.renderer).toBe('office-open');
+    expect(overridden.renderer).toBe('pptxgenjs');
+  });
+
+  it('accepts a renderer-targeted profile the document qualifies for', async () => {
+    const analysis = await new DocxFormatAdapter().analyzeQuality(
+      { ...report(), renderer: 'office-open' },
+      {
+        quality: {
+          profile: {
+            id: 'oo-only',
+            formats: ['docx'],
+            rendererTargets: ['office-open'],
+          },
+        },
+      }
+    );
+
+    expect(analysis.ruleErrors).toEqual([]);
   });
 });
 
@@ -504,5 +731,122 @@ describe('generation warnings sink', () => {
         await (await pptx.createGenerator([], {})).generateBuffer(themedDeck())
       )
     ).toBe(true);
+  });
+});
+
+/** A deck whose slide fills a placeholder its template never declared. */
+function deckWithUnknownPlaceholder() {
+  return {
+    name: 'pptx',
+    props: {
+      slideWidth: 13.333,
+      slideHeight: 7.5,
+      templates: [
+        {
+          name: 'base',
+          placeholders: [{ name: 'title', x: 0.5, y: 0.5, w: 8, h: 1 }],
+        },
+      ],
+    },
+    children: [
+      {
+        name: 'slide',
+        props: {
+          template: 'base',
+          placeholders: {
+            title: { name: 'text', props: { text: 'Declared' } },
+            subtitle: { name: 'text', props: { text: 'Never declared' } },
+          },
+        },
+        children: [],
+      },
+    ],
+  };
+}
+
+const withCode = (warnings: GenerationWarning[], code: string) =>
+  warnings.filter((w) => w.context?.code === code);
+
+describe('preparation warnings', () => {
+  it('forwards an unresolvable docx theme, and only once', async () => {
+    const adapter = new DocxFormatAdapter();
+    const warnings: GenerationWarning[] = [];
+    const document = report('no-such-theme');
+
+    const prepared = await adapter.prepareDocument(document, { warnings });
+    await adapter.generateBuffer(document, { warnings, prepared });
+
+    expect(withCode(warnings, 'theme_not_found')).toHaveLength(1);
+  });
+
+  it('reports an unknown pptx placeholder once across prepare and render', async () => {
+    const adapter = new PptxFormatAdapter();
+    const warnings: GenerationWarning[] = [];
+    const document = deckWithUnknownPlaceholder();
+
+    const prepared = await adapter.prepareDocument(document, { warnings });
+    await adapter.generateBuffer(document, {
+      warnings,
+      prepared,
+      deterministic: true,
+    });
+
+    expect(withCode(warnings, 'UNKNOWN_PLACEHOLDER')).toHaveLength(1);
+  });
+
+  it('still reports it when no prepared model is reused', async () => {
+    const warnings: GenerationWarning[] = [];
+
+    await new PptxFormatAdapter().generateBuffer(deckWithUnknownPlaceholder(), {
+      warnings,
+      deterministic: true,
+    });
+
+    // Only the prepare/render overlap is deduplicated: whatever the render
+    // pipeline reports on its own is left exactly as it was.
+    expect(withCode(warnings, 'UNKNOWN_PLACEHOLDER').length).toBeGreaterThan(0);
+  });
+});
+
+describe('quality analysis of a malformed document', () => {
+  const malformedReport = { name: 'docx', props: {}, children: 'not an array' };
+  const malformedDeck = { name: 'pptx', props: null, children: [] };
+
+  it('reports a docx preparation failure instead of throwing', async () => {
+    const analysis = await new DocxFormatAdapter().analyzeQuality(
+      malformedReport
+    );
+
+    expect(analysis.ruleErrors.map((error) => error.ruleId)).toContain(
+      'quality/prepare'
+    );
+    expect(analysis.blocked).toBe(false);
+  });
+
+  it('reports a pptx preparation failure instead of throwing', async () => {
+    const analysis = await new PptxFormatAdapter().analyzeQuality(
+      malformedDeck
+    );
+
+    expect(analysis.ruleErrors.map((error) => error.ruleId)).toContain(
+      'quality/prepare'
+    );
+    expect(analysis.blocked).toBe(false);
+  });
+
+  it('fails closed when a gate was requested', async () => {
+    const gated = { quality: { policy: { gate: 'warning' as const } } };
+
+    const docx = await new DocxFormatAdapter().analyzeQuality(
+      malformedReport,
+      gated
+    );
+    const pptx = await new PptxFormatAdapter().analyzeQuality(
+      malformedDeck,
+      gated
+    );
+
+    expect(docx.blocked).toBe(true);
+    expect(pptx.blocked).toBe(true);
   });
 });

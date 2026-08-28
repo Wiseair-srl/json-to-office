@@ -18,6 +18,7 @@ import {
   EXIT_CODES,
   type UiLine,
 } from './ui.js';
+import { exitAfterFlush } from './exit.js';
 
 interface DiscoveryResult {
   plugins: any[];
@@ -145,7 +146,7 @@ export function createDiscoverCommand(adapter: FormatAdapter): Command {
         }
       } catch (error: any) {
         await formatError(error);
-        process.exit(EXIT_CODES.FAIL);
+        await exitAfterFlush(EXIT_CODES.FAIL);
       } finally {
         PluginRegistry.getInstance().clear();
       }

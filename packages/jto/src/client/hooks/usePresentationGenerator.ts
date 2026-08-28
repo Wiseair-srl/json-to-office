@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { FORMAT, FORMAT_LABEL } from '../lib/env';
 import { API_ENDPOINTS } from '../config/api';
+import type { QualityRequestOptions } from '../lib/quality-profiles';
 import { useSettingsStore } from '../store/settings-store-provider';
 
 export interface GenerationWarning {
@@ -21,6 +22,38 @@ export interface DocumentGenerationResult {
   cacheStatus: 'HIT' | 'MISS' | 'UNKNOWN';
   cacheHitRate: string;
   warnings: GenerationWarning[];
+}
+
+/**
+ * The `options.quality` shape the generate route accepts.
+ *
+ * Re-exported from the one place that builds it: a second declaration here
+ * drifted the moment the policy grew past a bare gate.
+ */
+export type { QualityRequestOptions } from '../lib/quality-profiles';
+
+/** The gate's own payload: which findings refused the build. */
+export interface QualityGatePayload {
+  blocked?: boolean;
+  diagnostics?: unknown;
+}
+
+/**
+ * A build the run policy refused.
+ *
+ * The gate answers 400 with the diagnostics that tripped it, and a plain Error
+ * would flatten those to `describeFailure`'s one sentence — leaving the author
+ * told that the build was blocked but not by which findings. Carrying the
+ * payload on the error is what lets the caller put them in the quality panel.
+ */
+export class QualityGateFailedError extends Error {
+  readonly quality: QualityGatePayload | undefined;
+
+  constructor(message: string, quality: QualityGatePayload | undefined) {
+    super(message);
+    this.name = 'QualityGateFailedError';
+    this.quality = quality;
+  }
 }
 
 /** Resolve once per request so a later picker change cannot relabel its bytes. */
@@ -127,6 +160,8 @@ export function usePresentationGenerator() {
           mode?: 'substitute' | 'custom';
           substitution?: Record<string, string>;
         };
+        /** Profile and gate for the server-side quality analysis. */
+        quality?: QualityRequestOptions;
       }
     ): Promise<DocumentGenerationResult> => {
       // Cancel any previous generation
@@ -170,6 +205,7 @@ export function usePresentationGenerator() {
               substitution?: Record<string, string>;
               strict?: boolean;
             };
+            quality?: QualityRequestOptions;
           };
         } = {
           jsonDefinition,
@@ -211,6 +247,19 @@ export function usePresentationGenerator() {
         // what produced `Unexpected token '<', "<!DOCTYPE "...` instead of
         // anything an author could act on.
         const responseData = await readJsonBody(response);
+
+        // The gate's rejection is checked before the generic failure path so
+        // its diagnostics survive; `describeFailure` reads only `body.error`
+        // and would drop them.
+        if (
+          response.status === 400 &&
+          responseData?.code === 'QUALITY_GATE_FAILED'
+        ) {
+          throw new QualityGateFailedError(
+            describeFailure(response, responseData),
+            responseData.quality as QualityGatePayload | undefined
+          );
+        }
 
         if (!response.ok || !responseData?.success) {
           throw new Error(describeFailure(response, responseData));

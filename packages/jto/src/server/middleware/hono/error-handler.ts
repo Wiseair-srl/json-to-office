@@ -11,6 +11,21 @@ export const errorHandler: ErrorHandler = (err, c) => {
 
   // Handle Hono HTTPException
   if (err instanceof HTTPException) {
+    const cause = (err as Error & { cause?: unknown }).cause as
+      | { code?: unknown; analysis?: unknown }
+      | undefined;
+    if (cause?.code === 'QUALITY_GATE_FAILED') {
+      return c.json(
+        {
+          success: false,
+          error: err.message,
+          code: cause.code,
+          quality: cause.analysis,
+          requestId,
+        },
+        400
+      );
+    }
     return c.json(
       {
         success: false,

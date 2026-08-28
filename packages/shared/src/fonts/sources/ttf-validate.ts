@@ -6,12 +6,15 @@
  * 2. Duplicate usWeightClass across weights  (Exo Thin/ExtraLight)
  * 3. Non-unique `name` subfamily records     (Inter, Manrope, Recursive)
  *
- * We don't throw on mismatch — both our patch helpers (`patchUsWeightClass`,
- * `normalizeNameTable`) have already tried to fix the bytes. The validator
+ * We don't throw on mismatch — the pipeline has already tried to fix the
+ * bytes where it can (`rewriteFontSubfamilyNames` after variable-font
+ * instancing; `rewriteFontFamilyName` at preview staging). The validator
  * returns human-readable diagnostics so the caller can emit warnings tagged
  * `FONT_METADATA_DEFECT`, pointing users at the upstream override escape
  * hatch before they ship a broken document.
  */
+
+import { standardSubfamilyNames } from './ttf-name';
 
 const HEADER_SIZE = 12;
 const TABLE_RECORD_SIZE = 16;
@@ -93,18 +96,6 @@ export interface FontMetadataDiagnostic {
   message: string;
 }
 
-const STANDARD_SUBFAMILY: Record<number, string> = {
-  100: 'Thin',
-  200: 'ExtraLight',
-  300: 'Light',
-  400: 'Regular',
-  500: 'Medium',
-  600: 'SemiBold',
-  700: 'Bold',
-  800: 'ExtraBold',
-  900: 'Black',
-};
-
 /**
  * Inspect a font's metadata against the weight + italic we asked it to
  * represent. Returns one diagnostic per detected defect.
@@ -131,17 +122,10 @@ export function validateFontMetadata(
   // child process. Permission warnings would be pure noise for every
   // Google Fonts resolution.
 
-  const subfamily = STANDARD_SUBFAMILY[weight];
-  if (!subfamily) return diags;
-  const expected17 = italic ? `${subfamily} Italic` : subfamily;
-  const expected2 =
-    weight >= 600
-      ? italic
-        ? 'Bold Italic'
-        : 'Bold'
-      : italic
-        ? 'Italic'
-        : 'Regular';
+  const std = standardSubfamilyNames(weight, italic);
+  if (!std) return diags;
+  const expected17 = std.typographic;
+  const expected2 = std.legacy;
 
   const names = readNames(ttf, new Set([2, 17]));
   for (const n of names) {

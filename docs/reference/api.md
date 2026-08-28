@@ -89,7 +89,7 @@ if (!result.valid) {
 | Option                          | Type                                  | Default         | Description                                                                                                                                                                                                                                 |
 | ------------------------------- | ------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `validation.enabled`            | `boolean`                             | `true`          | Validate the definition before building; schema errors throw `JsonValidationError`.                                                                                                                                                         |
-| `validation.allowUnknownFields` | `boolean`                             | `false`         | Strip unknown props instead of rejecting them — an escape hatch when migrating documents across versions.                                                                                                                                   |
+| `validation.allowUnknownFields` | `boolean`                             | `false`         | Ignore unknown props during validation — a migration escape hatch. Do not rely on it to return or render a recursively stripped clone.                                                                                                      |
 | `customThemes`                  | `Record<string, ThemeConfig>`         | —               | Custom themes keyed by name; `props.theme` in the document is matched case-insensitively against this map before falling back to built-in themes. See [Themes & styling](/guide/themes).                                                    |
 | `services`                      | [`ServicesConfig`](#servicesconfig)   | —               | External service wiring for `highcharts` and `visual` components.                                                                                                                                                                           |
 | `fonts`                         | [`FontRuntimeOpts`](#fontruntimeopts) | —               | Font resolution: extra registry entries, Google Fonts fetching, export mode, strictness. See [Fonts](/guide/fonts).                                                                                                                         |
@@ -211,10 +211,10 @@ accepts a backend object. Use `generateBufferFromJson` /
 `generateAndSaveFromJson`.
 :::
 
-`GenerationResult` is `{ buffer: Buffer; warnings: PipelineWarning[] }`, where each warning is `{ code, message, component?, slide? }`. The `WarningCodes` enum lists every code (`UNKNOWN_COMPONENT`, `CHART_INVALID_SERIES`, `IMAGE_NO_SOURCE`, `GRID_POSITION_CLAMPED`, `FONT_UNRESOLVED`, …) and is exported from the package.
+`GenerationResult` is `{ buffer: Buffer; warnings: PipelineWarning[] }`, where each warning is `{ code, message, component?, slide? }`. The exported `WarningCodes` registry lists the standard codes (`UNKNOWN_COMPONENT`, `CHART_INVALID_SERIES`, `IMAGE_NO_SOURCE`, `GRID_POSITION_CLAMPED`, `FONT_UNRESOLVED`, …). `HYPERLINK_SLIDE_UNRESOLVED` is also emitted but lives outside that registry. See [PPTX warnings](/reference/pptx/warnings).
 
-::: warning PPTX generation does not validate
-Unlike DOCX, PPTX generation does **not** run the schema validator. Structural mistakes surface as pipeline warnings or are silently skipped, so run `validate.document(...)` from the same package (or `jto pptx validate`) yourself before generating. See [Validation](/guide/validation).
+::: tip PPTX generation validates, like DOCX
+Generation runs the schema validator before rendering and throws `PresentationValidationError` on schema errors — set `options.validation.enabled = false` to skip it. Pipeline warnings cover only recoverable problems found later. See [Validation](/guide/validation) and [PPTX warnings](/reference/pptx/warnings).
 :::
 
 ### `GenerationOptions`
@@ -225,9 +225,35 @@ Unlike DOCX, PPTX generation does **not** run the schema validator. Structural m
 | `services`      | [`ServicesConfig`](#servicesconfig)   | —             | e.g. `{ highcharts: { serverUrl, headers } }` for the `highcharts` component.                                                                                                                                                                      |
 | `fonts`         | [`FontRuntimeOpts`](#fontruntimeopts) | —             | Font resolution and export-mode handling, same shape as DOCX.                                                                                                                                                                                      |
 | `renderer`      | `'pptxgenjs' \| 'office-open'`        | `'pptxgenjs'` | Backend that turns the compiled presentation into bytes. `pptxgenjs` is the default and produces the output this pipeline has always produced. `office-open` is experimental, opt-in, and fails before rendering on any feature it cannot express. |
-| `validation`    | `GenerationValidationOptions`         | —             | `{ enabled, allowUnknownFields }`. Validation runs before rendering and throws `ComponentValidationError`; set `enabled: false` to skip it.                                                                                                        |
+| `validation`    | `GenerationValidationOptions`         | —             | `{ enabled, allowUnknownFields }`. Validation runs before rendering and throws `PresentationValidationError`; set `enabled: false` to skip it.                                                                                                     |
 | `deterministic` | `boolean`                             | `true`        | Normalize package metadata and ZIP timestamps for byte-identical output, including the XLSX packages embedded in native charts. See [Reproducible output](/guide/core-concepts#reproducible-output).                                               |
 | `generatedAt`   | `string \| Date`                      | epoch         | Timestamp written into package metadata. Defaults to a stable `2000-01-01T00:00:00Z`; must be on or after 1980-01-01 or generation throws.                                                                                                         |
+
+## Quality analysis
+
+Design-quality analysis is an explicit core API. It is not re-exported by the
+`json-to-*` facade packages, and direct library generation does not apply a
+quality gate automatically:
+
+```ts
+import { analyzeDocxQuality } from '@json-to-office/core-docx';
+import { analyzePptxQuality } from '@json-to-office/core-pptx';
+
+const analysis = analyzePptxQuality(deck, {
+  profile: { id: 'executive-presentation', formats: ['pptx'] },
+  policy: { gate: 'warning' },
+});
+
+if (analysis.blocked) throw new Error('Quality gate failed');
+```
+
+Both analyzers are synchronous and accept `{ customThemes?, renderer?, profile?,
+policy?, prepared? }`. They return a `QualityAnalysis` containing diagnostics,
+severity counts, the gate verdict, suppression/truncation metadata and rule
+errors. The cores also export their format facts, profiles, rule packs and
+prepared-document helpers; `@json-to-office/quality` exports the shared engine
+and contracts. See [Design quality](/guide/design-quality) for rules, profiles,
+policy precedence and limits.
 
 ## Plugin API
 

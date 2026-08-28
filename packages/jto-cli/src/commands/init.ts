@@ -10,6 +10,7 @@ import {
   runTask,
   EXIT_CODES,
 } from './ui.js';
+import { exitAfterFlush } from './exit.js';
 
 interface InitOptions {
   template?: string;
@@ -155,7 +156,7 @@ export function createInitCommand(adapter: FormatAdapter): Command {
         ]);
       } catch (error: any) {
         await formatError(error);
-        process.exit(EXIT_CODES.FAIL);
+        await exitAfterFlush(EXIT_CODES.FAIL);
       }
     });
 }

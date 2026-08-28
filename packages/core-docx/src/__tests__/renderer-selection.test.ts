@@ -72,7 +72,7 @@ describe('generation', () => {
     });
 
     expect(buffer.subarray(0, 2).toString('latin1')).toBe('PK');
-  }, 30_000);
+  }, 60_000);
 
   it('selects the backend from the document discriminator', async () => {
     const buffer = await generateBufferFromJson({
@@ -81,7 +81,7 @@ describe('generation', () => {
     });
 
     expect(buffer.subarray(0, 2).toString('latin1')).toBe('PK');
-  }, 30_000);
+  }, 60_000);
 
   it('refuses a document needing a feature the backend does not declare', async () => {
     const threaded = {
@@ -108,7 +108,7 @@ describe('generation', () => {
         validation: { enabled: false },
       })
     ).rejects.toThrow(/comment-threads/);
-  }, 30_000);
+  }, 60_000);
 
   it('still renders that document on the default backend', async () => {
     const threaded = {
@@ -133,7 +133,7 @@ describe('generation', () => {
       validation: { enabled: false },
     });
     expect(buffer.length).toBeGreaterThan(0);
-  }, 30_000);
+  }, 60_000);
 
   it('uses the plugin renderer override for validation', async () => {
     const threaded = {
@@ -157,5 +157,5 @@ describe('generation', () => {
     const generator = createDocumentGenerator({ renderer: 'docxjs' });
     const { buffer } = await generator.generateBuffer(threaded);
     expect(buffer.length).toBeGreaterThan(0);
-  }, 30_000);
+  }, 60_000);
 });

@@ -1,5 +1,6 @@
 import {
   type FormatAdapter,
+  type GeneratorOptions,
   cacheEvents,
   PluginRegistry,
 } from '@json-to-office/jto-cli';
@@ -17,6 +18,35 @@ import {
   type ResolvedFont,
   type GenerationWarning,
 } from '@json-to-office/shared';
+import {
+  QualityGateError,
+  type QualityAnalysis,
+  type QualityDiagnostic,
+} from '@json-to-office/quality';
+
+function toQualityWarnings(
+  diagnostics: readonly QualityDiagnostic[]
+): GenerationWarning[] {
+  return diagnostics.map((finding) => ({
+    component: 'quality',
+    message: `[${finding.code}] ${finding.message}`,
+    severity: finding.severity === 'info' ? 'info' : 'warning',
+    context: {
+      ...(finding.context ?? {}),
+      code: finding.code,
+      path: finding.path,
+      originalSeverity: finding.severity,
+      ...(finding.ruleId && { ruleId: finding.ruleId }),
+      ...(finding.category && { category: finding.category }),
+      ...(finding.certainty && { certainty: finding.certainty }),
+      blocking: finding.blocking,
+      ...(finding.suggestion && { suggestion: finding.suggestion }),
+      ...(finding.relatedPaths && { relatedPaths: finding.relatedPaths }),
+      ...(finding.evidence && { evidence: finding.evidence }),
+      ...(finding.fixes && { fixes: finding.fixes }),
+    },
+  }));
+}
 
 /**
  * Playground-only convenience: scan the document for font names that match
@@ -414,6 +444,75 @@ export class GeneratorService {
       'string'
         ? (options as { renderer: string }).renderer
         : undefined;
+    const resolvedFonts: ResolvedFont[] = [];
+    const coreWarnings: GenerationWarning[] = [];
+    const needsFontOpts =
+      extraEntries.length > 0 ||
+      declaresRegistry ||
+      fontMode !== undefined ||
+      fontSubstitution !== undefined ||
+      callerStrict !== undefined;
+    const fontOpts = needsFontOpts
+      ? {
+          ...(extraEntries.length > 0 && { extraEntries }),
+          ...(fontMode && { mode: fontMode }),
+          ...(fontSubstitution && { substitution: fontSubstitution }),
+          ...(callerStrict !== undefined && { strict: callerStrict }),
+          onResolved: (resolved: ResolvedFont[]) => {
+            resolvedFonts.push(...resolved);
+          },
+        }
+      : undefined;
+    const registry = PluginRegistry.getInstance();
+    const quality = (options as { quality?: GeneratorOptions['quality'] })
+      ?.quality;
+    const prepared =
+      !registry.hasPlugins() &&
+      this.adapter.prepareDocument &&
+      this.adapter.validateDocument(config).valid
+        ? await this.adapter.prepareDocument(config, {
+            customThemes,
+            fonts: fontOpts,
+            baseDir,
+            renderer,
+            warnings: coreWarnings,
+          })
+        : undefined;
+    const qualityOptions: GeneratorOptions = {
+      customThemes,
+      fonts: fontOpts,
+      baseDir,
+      renderer,
+      quality,
+      prepared,
+    };
+    let qualityWarnings: GenerationWarning[] = [];
+    try {
+      if (this.adapter.analyzeQuality) {
+        const analysis = await this.adapter.analyzeQuality(
+          config,
+          qualityOptions
+        );
+        if (analysis.blocked) throw new QualityGateError(analysis);
+        qualityWarnings = toQualityWarnings(analysis.diagnostics);
+      }
+    } catch (error) {
+      const errorCode = (error as { code?: unknown } | undefined)?.code;
+      if (
+        errorCode === 'QUALITY_GATE_FAILED' ||
+        errorCode === 'QUALITY_PROFILE_INCOMPATIBLE' ||
+        // An unusable policy is the caller's configuration, not a hiccup.
+        errorCode === 'QUALITY_POLICY_INVALID' ||
+        quality?.policy?.onRuleError === 'throw' ||
+        // A caller who asked for a gate must not receive an ungated document:
+        // if the analysis failed, the gate never ran. Only the advisory case
+        // (no gate requested) degrades to a warning.
+        (quality?.policy?.gate && quality.policy.gate !== 'none')
+      ) {
+        throw error;
+      }
+      logger.warn('Quality analysis failed', { error });
+    }
     const cacheKeyData = {
       config,
       customThemes:
@@ -441,10 +540,13 @@ export class GeneratorService {
           filename: `${config.metadata?.title || this.adapter.label}${this.adapter.extension}`,
           fileId: Date.now().toString(),
           buffer: cached.buffer,
-          // Warnings ride along with the bytes: a cache hit describes the same
-          // document, so it must report the same font problems.
+          // Render warnings ride with bytes. Quality is request policy, so it
+          // is recomputed and merged even when the rendered artifact is cached.
           cached: true,
-          warnings: cached.warnings,
+          warnings:
+            cached.warnings || qualityWarnings.length > 0
+              ? [...(cached.warnings ?? []), ...qualityWarnings]
+              : null,
         };
       }
     }
@@ -453,43 +555,7 @@ export class GeneratorService {
     logger.info(`Generating ${this.adapter.label}`, {
       title: config.metadata?.title,
     });
-    const registry = PluginRegistry.getInstance();
     let buffer: Buffer;
-
-    const resolvedFonts: ResolvedFont[] = [];
-    // Forward fonts.mode + fonts.substitution + fonts.strict from the
-    // request body so API consumers can opt into substitution, custom
-    // (as-is), or strict-validation behaviour. Embedding is no longer
-    // supported. `extraEntries` is authoritative in this flow:
-    // caller-supplied entries were merged with auto-Google entries above
-    // and are passed down unified here.
-    // `declaresRegistry` (computed above, next to `bypassCache`) is what keeps
-    // a document-declared registry from falling through every branch here:
-    // without it the preview's `onResolved` listener is never registered,
-    // `resolveDocumentFonts` short-circuits, and an uploaded font is validated
-    // but never materialized — the preview then uses a host fallback.
-    const needsFontOpts =
-      extraEntries.length > 0 ||
-      declaresRegistry ||
-      fontMode !== undefined ||
-      fontSubstitution !== undefined ||
-      callerStrict !== undefined;
-    const fontOpts = needsFontOpts
-      ? {
-          ...(extraEntries.length > 0 && { extraEntries }),
-          ...(fontMode && { mode: fontMode }),
-          ...(fontSubstitution && { substitution: fontSubstitution }),
-          ...(callerStrict !== undefined && { strict: callerStrict }),
-          onResolved: (r: ResolvedFont[]) => {
-            resolvedFonts.push(...r);
-          },
-        }
-      : undefined;
-
-    // Per-request sink for core warnings. `createGenerator` is invoked per
-    // request just below, so one generator never accumulates another
-    // request's warnings.
-    const coreWarnings: GenerationWarning[] = [];
 
     if (registry.hasPlugins()) {
       const plugins = registry.getPlugins();
@@ -499,6 +565,7 @@ export class GeneratorService {
         baseDir,
         renderer,
         warnings: coreWarnings,
+        quality,
       });
       buffer = await generator.generateBuffer(config);
     } else {
@@ -508,6 +575,8 @@ export class GeneratorService {
         baseDir,
         renderer,
         warnings: coreWarnings,
+        quality,
+        prepared,
       });
     }
 
@@ -536,14 +605,18 @@ export class GeneratorService {
 
     // Core first: FONT_UNRESOLVED is actionable and should read above the
     // informational FONT_OVERRIDE_LOCAL / FONT_NONCANONICAL_WEIGHT entries.
-    const allWarnings = [...coreWarnings, ...extraWarnings];
+    const renderWarnings = [...coreWarnings, ...extraWarnings];
+    const allWarnings = [...renderWarnings, ...qualityWarnings];
 
-    // Store in cache — buffer and warnings together, so a later HIT is not a
-    // silent render. `resolvedFonts` deliberately stays out: it is a TTF byte
-    // side-channel, and its only consumer passes `bypassCache: true`.
+    // Cache renderer output only. Quality depends on request policy/profile
+    // and is recomputed before every HIT. `resolvedFonts` stays out: it is a
+    // TTF byte side-channel whose consumer passes `bypassCache: true`.
     this.cacheService.set(
       cacheKey,
-      { buffer, warnings: allWarnings.length > 0 ? allWarnings : null },
+      {
+        buffer,
+        warnings: renderWarnings.length > 0 ? renderWarnings : null,
+      },
       config,
       { bypassCache: bypassCache || hasDynamicContent }
     );
@@ -559,14 +632,56 @@ export class GeneratorService {
   }
 
   async validate(
-    jsonDefinition: any
-  ): Promise<{ valid: boolean; errors?: string[] }> {
+    jsonDefinition: any,
+    options: GeneratorOptions = {}
+  ): Promise<{
+    valid: boolean;
+    errors?: any[];
+    qualityAnalysis?: QualityAnalysis;
+  }> {
     const config =
       typeof jsonDefinition === 'string'
         ? JSON.parse(jsonDefinition)
         : jsonDefinition;
 
-    return this.adapter.validateDocument(config);
+    const result = this.adapter.validateDocument(config);
+    if (!result.valid) return result;
+    if (this.adapter.analyzeQuality) {
+      try {
+        const prepared = this.adapter.prepareDocument
+          ? await this.adapter.prepareDocument(config, options)
+          : undefined;
+        const qualityAnalysis = await this.adapter.analyzeQuality(
+          config,
+          prepared ? { ...options, prepared } : options
+        );
+        return {
+          ...result,
+          valid: result.valid && !qualityAnalysis.blocked,
+          qualityAnalysis,
+        };
+      } catch (error) {
+        const errorCode = (error as { code?: unknown } | undefined)?.code;
+        const quality = options.quality;
+        if (
+          errorCode === 'QUALITY_GATE_FAILED' ||
+          errorCode === 'QUALITY_PROFILE_INCOMPATIBLE' ||
+          errorCode === 'QUALITY_POLICY_INVALID' ||
+          quality?.policy?.onRuleError === 'throw' ||
+          // Same rule `generate` applies: an analysis that never ran leaves a
+          // requested gate unevaluated, and answering `valid: true` there would
+          // promise a generation this service would then refuse.
+          (quality?.policy?.gate && quality.policy.gate !== 'none')
+        ) {
+          throw error;
+        }
+        // Reporting a malformed document is what this endpoint is for: a
+        // preparation that chokes on it must degrade to "no quality
+        // analysis", not bury the schema errors under a 500.
+        logger.warn('Quality analysis failed', { error });
+      }
+    }
+    return result;
   }
 
   destroy(): void {

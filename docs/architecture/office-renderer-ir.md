@@ -136,7 +136,7 @@ Both IRs:
   across generations)
 - normalise colours to explicit values — no unresolved theme tokens
 - name units in the property itself (`widthEmu`, `sizeHalfPoints`,
-  `spacingTwips`)
+  `beforeTwips`)
 - contain no backend-specific JSON, no backend workaround, no raw XML
 - are testable with no renderer loaded
 - snapshot stably, with binary resources represented by content hash

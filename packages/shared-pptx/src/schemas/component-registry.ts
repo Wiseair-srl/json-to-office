@@ -65,7 +65,7 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
       // is a decision, not the schema's own answer, so it is declared.
       propsRequired: true,
       description:
-        'Main presentation container - defines the overall presentation structure. Required as the root component.',
+        'Main presentation container - defines the overall presentation structure. Required as the root component. Always declare `slideWidth`/`slideHeight` (13.333 × 7.5 for 16:9) — omitted, the renderer silently falls back to 4:3 and 16:9 content leaves a dead strip.',
       special: {
         hasSchemaField: true,
       },
@@ -81,7 +81,7 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
       // the schema asks for one, so `{ "name": "slide", "children": [...] }`
       // is a whole slide and the published schema says so.
       description:
-        'Slide container - groups content elements on a single slide.',
+        'Slide container - groups content elements on a single slide. One idea per slide: past roughly 40 words of body text, split the content across more slides.',
     },
 
     // Content components are canonical in @json-to-office/shared so DOCX

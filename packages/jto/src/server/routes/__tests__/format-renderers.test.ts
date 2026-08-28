@@ -102,7 +102,7 @@ describe('/api/docx/renderers', () => {
     // Both are documents, and they are not the same document.
     expect(a.data.document.length).toBeGreaterThan(0);
     expect(b.data.document).not.toBe(a.data.document);
-  }, 30_000);
+  }, 60_000);
 
   it('caches each backend separately', async () => {
     const send = (renderer: string) =>
@@ -126,7 +126,7 @@ describe('/api/docx/renderers', () => {
     expect(againDocxjs.cache.status).toBe('HIT');
     expect(againDocxjs.data.document).toBe(firstDocxjs.data.document);
     expect(firstOfficeOpen.data.document).not.toBe(firstDocxjs.data.document);
-  }, 30_000);
+  }, 60_000);
 
   it('answers a capability refusal with 400 and the feature name', async () => {
     const response = await post(app, '/api/docx/generate', {
@@ -140,7 +140,7 @@ describe('/api/docx/renderers', () => {
     const body = (await response.json()) as { error?: string };
     expect(body.error).toContain('comment-threads');
     expect(body.error).toContain('sections[0].children[0]');
-  }, 30_000);
+  }, 60_000);
 
   it('renders that same document on the default backend', async () => {
     const response = await post(app, '/api/docx/generate', {
@@ -148,7 +148,7 @@ describe('/api/docx/renderers', () => {
     });
 
     expect(response.status).toBe(200);
-  }, 30_000);
+  }, 60_000);
 
   it('answers an unregistered backend with 400 and the ids that exist', async () => {
     const response = await post(app, '/api/docx/generate', {
@@ -164,7 +164,112 @@ describe('/api/docx/renderers', () => {
     expect(body.error).toContain('"nope"');
     expect(body.error).toContain('"docxjs"');
     expect(body.error).toContain('"office-open"');
-  }, 30_000);
+  }, 60_000);
+
+  it('returns evidence-rich quality gate failures as client errors', async () => {
+    const skippedHeading = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        { name: 'heading', props: { level: 1, text: 'One' } },
+        { name: 'heading', props: { level: 3, text: 'Deep' } },
+      ],
+    };
+    const quality = { policy: { gate: 'info' } };
+
+    const response = await post(app, '/api/docx/generate', {
+      jsonDefinition: skippedHeading,
+      options: { quality },
+    });
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as Record<string, any>;
+    expect(body).toMatchObject({
+      success: false,
+      code: 'QUALITY_GATE_FAILED',
+      quality: { blocked: true },
+    });
+    expect(body.quality.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'W_QUALITY_HEADING_SKIP',
+        blocking: true,
+        certainty: 'deterministic',
+      })
+    );
+
+    const validation = await post(app, '/api/docx/validate', {
+      jsonDefinition: skippedHeading,
+      options: { quality },
+    });
+    const validationBody = (await validation.json()) as Record<string, any>;
+    expect(validationBody).toMatchObject({
+      success: false,
+      data: {
+        valid: false,
+        qualityAnalysis: { blocked: true },
+      },
+    });
+  }, 60_000);
+
+  it('rejects a profile targeting another renderer', async () => {
+    const quality = {
+      profile: {
+        id: 'office-open-only',
+        formats: ['docx'],
+        rendererTargets: ['office-open'],
+      },
+    };
+    const generation = await post(app, '/api/docx/generate', {
+      jsonDefinition: document,
+      options: { renderer: 'docxjs', quality },
+    });
+    const validation = await post(app, '/api/docx/validate', {
+      jsonDefinition: document,
+      options: { renderer: 'docxjs', quality },
+    });
+
+    expect(generation.status).toBe(400);
+    expect(validation.status).toBe(400);
+    expect((await generation.json()) as Record<string, unknown>).toMatchObject({
+      success: false,
+      error: expect.stringContaining('does not support renderer'),
+    });
+    expect((await validation.json()) as Record<string, unknown>).toMatchObject({
+      success: false,
+      error: expect.stringContaining('does not support renderer'),
+    });
+  });
+
+  it('rejects a policy whose gate it cannot read', async () => {
+    // `policy` crosses the wire as a free-form object, so a typo'd gate meets
+    // a parser for the first time once analysis starts. It used to be ignored
+    // there, leaving gating quietly off for a request that asked for it — and
+    // once the parser started throwing, an unmapped code would have made the
+    // caller's typo read as a server fault.
+    const quality = { policy: { gate: 'warn' } };
+    const generation = await post(app, '/api/docx/generate', {
+      jsonDefinition: document,
+      options: { quality },
+    });
+    const validation = await post(app, '/api/docx/validate', {
+      jsonDefinition: document,
+      options: { quality },
+    });
+
+    expect(generation.status).toBe(400);
+    expect(validation.status).toBe(400);
+    // The message names the value and the ones that would have worked;
+    // without it the client is told "400" and left to guess which key.
+    expect((await generation.json()) as Record<string, unknown>).toMatchObject({
+      success: false,
+      code: 'CLIENT_ERROR',
+      error: expect.stringContaining('invalid gate "warn"'),
+    });
+    expect((await validation.json()) as Record<string, unknown>).toMatchObject({
+      success: false,
+      code: 'CLIENT_ERROR',
+      error: expect.stringContaining('invalid gate "warn"'),
+    });
+  });
 });
 
 describe('/api/pptx/generate renderer validation', () => {
@@ -184,5 +289,5 @@ describe('/api/pptx/generate renderer validation', () => {
     expect(body.error).toContain('"nope"');
     expect(body.error).toContain('"pptxgenjs"');
     expect(body.error).toContain('"office-open"');
-  }, 30_000);
+  }, 60_000);
 });

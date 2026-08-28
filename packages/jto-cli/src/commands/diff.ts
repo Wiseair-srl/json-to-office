@@ -12,6 +12,7 @@ import {
   writeJson,
   EXIT_CODES,
 } from './ui.js';
+import { exitAfterFlush } from './exit.js';
 
 interface DiffOptions {
   output?: string;
@@ -205,9 +206,9 @@ export function createDiffCommand(adapter: FormatAdapter): Command {
           } else {
             await formatError(error);
           }
-          process.exit(EXIT_CODES.FAIL);
+          await exitAfterFlush(EXIT_CODES.FAIL);
         }
-        process.exit(EXIT_CODES.OK);
+        await exitAfterFlush(EXIT_CODES.OK);
       }
     )
     .addHelpText(

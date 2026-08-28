@@ -11,7 +11,7 @@
     "validate:assets": "tsx scripts/validate-shipped-assets.ts",
     "notices": "tsx scripts/generate-notices.ts",
     "test": "turbo test --output-logs=errors-only --log-order=grouped",
-    "lint": "turbo lint --output-logs=errors-only --log-order=grouped && pnpm check:renderer-imports",
+    "lint": "turbo lint --output-logs=errors-only --log-order=grouped && pnpm check:renderer-imports && pnpm check:test-timeouts",
     "check:renderer-imports": "tsx scripts/check-renderer-import-boundaries.ts",
     "typecheck": "turbo typecheck --output-logs=errors-only --log-order=grouped && pnpm typecheck:scripts",
     "typecheck:scripts": "tsc --noEmit -p scripts/tsconfig.json",
@@ -46,7 +46,8 @@
     "release": "pnpm build && changeset publish",
     "\n\n=== GIT HOOKS ===": "",
     "prepare": "husky",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "check:test-timeouts": "tsx scripts/check-test-timeouts.ts"
   },
   "keywords": [
     "docx",

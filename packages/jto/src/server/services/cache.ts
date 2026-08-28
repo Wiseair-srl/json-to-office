@@ -6,9 +6,9 @@ import { cacheEvents } from '@json-to-office/jto-cli';
 import type { GenerationWarning } from '@json-to-office/shared';
 
 /**
- * A cached generation: the bytes plus the warnings that produced them.
- * Storing bare Buffers meant a cache HIT reported no warnings at all, so the
- * second render of a document with an unresolvable font went silent.
+ * Render bytes plus render-time warnings. Request-specific quality diagnostics
+ * are recomputed and merged on every hit; caching them would leak one policy's
+ * verdict into another request.
  */
 export interface CachedGeneration {
   buffer: Buffer;

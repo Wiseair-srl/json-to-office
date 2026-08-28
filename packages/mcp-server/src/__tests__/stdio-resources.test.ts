@@ -48,6 +48,7 @@ describe('discovery resources over stdio', () => {
         'jto://schema/pptx/theme',
         'jto://templates',
         'jto://themes',
+        'jto://themes/values',
       ]);
 
       for (const resource of resources) {

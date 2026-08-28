@@ -15,5 +15,9 @@
     "**/*.spec.ts",
     "**/__tests__/**"
   ],
-  "references": [{ "path": "../shared" }, { "path": "../shared-docx" }]
+  "references": [
+    { "path": "../quality" },
+    { "path": "../shared" },
+    { "path": "../shared-docx" }
+  ]
 }

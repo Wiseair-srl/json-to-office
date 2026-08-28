@@ -30,6 +30,19 @@ const FontOptionsSchema = Type.Object(
   { additionalProperties: false }
 );
 
+const QualityOptionsSchema = Type.Object(
+  {
+    profile: Type.Optional(
+      Type.Object(
+        { id: Type.String({ minLength: 1, maxLength: 128 }) },
+        { additionalProperties: true }
+      )
+    ),
+    policy: Type.Optional(Type.Object({}, { additionalProperties: true })),
+  },
+  { additionalProperties: false }
+);
+
 export const LooseDocumentGenerationRequestSchema = Type.Object(
   {
     jsonDefinition: Type.Union([
@@ -47,6 +60,7 @@ export const LooseDocumentGenerationRequestSchema = Type.Object(
           // enum: the registry owns the list, answers an unknown id with the
           // ids that exist, and the route turns that into a 400.
           renderer: Type.Optional(Type.String({ maxLength: 64 })),
+          quality: Type.Optional(QualityOptionsSchema),
           // Name of the discovered document this definition came from; the
           // server maps it to that document's directory so relative asset
           // paths resolve against it (#142). Names, never paths — a client
@@ -69,6 +83,15 @@ export const LooseDocumentValidationRequestSchema = Type.Object(
       Type.String(), // Allow JSON string
       Type.Object({}, { additionalProperties: true }), // Allow any object
     ]),
+    options: Type.Optional(
+      Type.Object(
+        {
+          renderer: Type.Optional(Type.String({ maxLength: 64 })),
+          quality: Type.Optional(QualityOptionsSchema),
+        },
+        { additionalProperties: false }
+      )
+    ),
   },
   { additionalProperties: true }
 );

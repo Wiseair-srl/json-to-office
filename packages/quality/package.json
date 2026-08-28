@@ -1,0 +1,62 @@
+{
+  "name": "@json-to-office/quality",
+  "version": "1.4.0",
+  "description": "Format-agnostic document quality contracts, rule engine and policy resolution",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup && tsc --emitDeclarationOnly --declaration",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "prepublishOnly": "node ../../scripts/copy-license.cjs"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.0",
+    "tsup": "8.5.0",
+    "typescript": "5.3.3",
+    "vitest": "1.6.1"
+  },
+  "license": "MIT",
+  "author": "Paolo Barbato",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wiseair-srl/json-to-office.git",
+    "directory": "packages/quality"
+  },
+  "homepage": "https://github.com/Wiseair-srl/json-to-office/tree/main/packages/quality",
+  "bugs": {
+    "url": "https://github.com/Wiseair-srl/json-to-office/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "json-to-office",
+    "document-quality",
+    "lint",
+    "design-system"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

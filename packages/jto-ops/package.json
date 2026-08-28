@@ -25,6 +25,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run --passWithNoTests",
+    "test:ground-truth": "vitest run --config vitest.harness.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "prepublishOnly": "node ../../scripts/copy-license.cjs"
@@ -32,6 +33,7 @@
   "dependencies": {
     "@json-to-office/core-docx": "workspace:^",
     "@json-to-office/core-pptx": "workspace:^",
+    "@json-to-office/quality": "workspace:^",
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-docx": "workspace:^",
     "@json-to-office/shared-pptx": "workspace:^",

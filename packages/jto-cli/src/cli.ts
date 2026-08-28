@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { registerCoreCommands } from './cli-register.js';
 import { EXIT_CODES, renderLines } from './commands/ui.js';
+import { exitAfterFlush } from './commands/exit.js';
 
 declare const __PACKAGE_VERSION__: string | undefined;
 const PACKAGE_VERSION =
@@ -61,26 +62,12 @@ for (const sub of program.commands) registerDevHint(sub);
 
 program.exitOverride();
 
-/** Resolves once the stream has drained everything already queued. */
-function flush(stream: NodeJS.WriteStream): Promise<void> {
-  if (stream.writableEnded || stream.writableLength === 0) {
-    return Promise.resolve();
-  }
-  return new Promise((resolve) => {
-    stream.write('', () => resolve());
-  });
-}
-
 // Ink can leave handles attached to stdio after the last frame — on Windows a
 // piped stdin keeps the event loop alive long after the command is done, so the
 // process lingers instead of exiting. Commands already terminate explicitly on
 // failure; do the same on success, once output has been flushed, so the CLI
 // exits as soon as its work is finished rather than waiting for the loop to
 // drain on its own. Guarded by src/commands/__tests__/generate-exit.test.ts.
-async function exitAfterFlush(code: number): Promise<never> {
-  await Promise.all([flush(process.stdout), flush(process.stderr)]);
-  process.exit(code);
-}
 
 (async () => {
   try {

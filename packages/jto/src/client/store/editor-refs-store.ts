@@ -25,6 +25,14 @@ export interface EditorReference {
    * must call `collapse.resyncDecorations()` afterwards so chips re-anchor.
    */
   collapse?: CollapseController;
+  /**
+   * Commit any keystrokes still sitting in the save debounce.
+   *
+   * Anything that WRITES the document back to the store must call this first,
+   * or the trailing save fires afterwards holding pre-write text and silently
+   * reverts the write.
+   */
+  flushPendingSave?: () => void;
 }
 
 interface EditorRefsState {
@@ -38,7 +46,8 @@ interface EditorRefsActions {
     editor: MonacoEditorType.IStandaloneCodeEditor,
     monaco: Monaco,
     toStorageValue?: (modelText: string) => string,
-    collapse?: CollapseController
+    collapse?: CollapseController,
+    flushPendingSave?: () => void
   ) => void;
   unregisterEditor: (documentName: string) => void;
   setActiveEditor: (documentName: string | null) => void;
@@ -52,7 +61,14 @@ export const useEditorRefsStore = create<EditorRefsStore>((set, get) => ({
   editors: new Map(),
   activeEditorName: null,
 
-  registerEditor: (documentName, editor, monaco, toStorageValue, collapse) => {
+  registerEditor: (
+    documentName,
+    editor,
+    monaco,
+    toStorageValue,
+    collapse,
+    flushPendingSave
+  ) => {
     set((state) => {
       const newEditors = new Map(state.editors);
       newEditors.set(documentName, {
@@ -61,6 +77,7 @@ export const useEditorRefsStore = create<EditorRefsStore>((set, get) => ({
         documentName,
         toStorageValue: toStorageValue ?? ((text) => text),
         collapse,
+        flushPendingSave,
       });
       return { editors: newEditors };
     });

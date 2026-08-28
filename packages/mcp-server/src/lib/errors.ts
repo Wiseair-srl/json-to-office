@@ -16,6 +16,13 @@ import {
   RENDERER_DEPENDENCY_MISSING,
   type ValidationError,
 } from '@json-to-office/shared';
+import type {
+  JsonPatchOperation,
+  QualityAnalysis,
+  QualityCategory,
+  QualityCertainty,
+  QualityEvidence,
+} from '@json-to-office/quality';
 import { ValueErrorType } from '@sinclair/typebox/errors';
 
 export type DiagnosticSeverity = 'error' | 'warning' | 'info';
@@ -38,6 +45,14 @@ export interface Diagnostic {
   suggestion?: string;
   /** Free-form extras (offending value, component name, renderer id, …). */
   context?: Record<string, unknown>;
+  source?: 'schema' | 'semantic' | 'renderer' | 'quality';
+  ruleId?: string;
+  category?: QualityCategory;
+  certainty?: QualityCertainty;
+  relatedPaths?: readonly string[];
+  evidence?: QualityEvidence;
+  fixes?: readonly JsonPatchOperation[];
+  blocking?: boolean;
 }
 
 /**
@@ -108,6 +123,8 @@ export const ERROR_CODES = {
   HOST_NOTE: 'W_HOST_NOTE',
   /** A generation warning the core raised without a code of its own. */
   GENERATION: 'W_GENERATION',
+  /** A design-quality rule threw, so its whole class of findings is missing. */
+  QUALITY_RULE_ERROR: 'W_QUALITY_RULE_ERROR',
   /** A required host binary (LibreOffice, poppler) is absent. */
   DEPENDENCY_MISSING: 'E_DEPENDENCY_MISSING',
   /** The client cancelled the request. */
@@ -323,6 +340,49 @@ export function toolResult<T extends object>(
 const HOST_DEPENDENCY_ERRORS = new Set([RENDERER_DEPENDENCY_MISSING]);
 
 /**
+ * Quality failures that are the caller's, and what each one really is.
+ *
+ * All three reach us as plain exceptions, and `E_INTERNAL` on one of them says
+ * "a bug here, file an issue" when the repair is in the profile, the policy or
+ * the document the agent just sent. Matched on `.code` rather than
+ * `instanceof`, because the engine arrives through the cores' dynamic imports
+ * — the same reasoning the HTTP surface documents, which maps this exact set
+ * to 400.
+ */
+/**
+ * The option defect an unusable `quality` argument names, as a diagnostic.
+ *
+ * `guarded` turns the same error into a whole-call failure, which is right
+ * when the options are the only thing wrong. A caller that sent a broken
+ * document AND a bad profile needs both answers, and the schema errors are the
+ * half it can act on — so that path folds this in beside them instead.
+ */
+export function qualityOptionDiagnostic(
+  error: unknown
+): Diagnostic | undefined {
+  const code = qualityCallerCode(error);
+  if (code === undefined || code === ERROR_CODES.INVALID_DOCUMENT) {
+    return undefined;
+  }
+  return diagnostic(
+    code,
+    error instanceof Error ? error.message : String(error)
+  );
+}
+
+function qualityCallerCode(error: unknown): string | undefined {
+  const code = (error as { code?: unknown } | undefined)?.code;
+  if (code === 'QUALITY_PROFILE_INCOMPATIBLE')
+    return OPTION_ERROR_CODES.INVALID_QUALITY_PROFILE;
+  if (code === 'QUALITY_POLICY_INVALID')
+    return OPTION_ERROR_CODES.INVALID_QUALITY_POLICY;
+  // Not an option defect: the options were legal and the document failed the
+  // gate they asked for, which is the document's own defect.
+  if (code === 'QUALITY_GATE_FAILED') return ERROR_CODES.INVALID_DOCUMENT;
+  return undefined;
+}
+
+/**
  * Whether a stack trace may ride along on an internal failure.
  *
  * Off by default. A stack is absolute filesystem paths and our own module
@@ -434,9 +494,10 @@ export async function guarded<T extends object>(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const code =
-      error instanceof Error && HOST_DEPENDENCY_ERRORS.has(error.name)
+      qualityCallerCode(error) ??
+      (error instanceof Error && HOST_DEPENDENCY_ERRORS.has(error.name)
         ? ERROR_CODES.DEPENDENCY_MISSING
-        : ERROR_CODES.INTERNAL;
+        : ERROR_CODES.INTERNAL);
     return withHostNotes(
       failure(code, message, {
         context: {
@@ -466,6 +527,10 @@ export const OPTION_ERROR_CODES = {
   INVALID_THEME_PATH: 'E_INVALID_THEME_PATH',
   /** The tool does not support the requested format. */
   UNSUPPORTED_FORMAT: 'E_UNSUPPORTED_FORMAT',
+  /** `quality.profile` does not cover the format or renderer of this run. */
+  INVALID_QUALITY_PROFILE: 'E_INVALID_QUALITY_PROFILE',
+  /** `quality.policy` sets a gate, severity or budget that is not a legal value. */
+  INVALID_QUALITY_POLICY: 'E_INVALID_QUALITY_POLICY',
 } as const;
 
 /**
@@ -553,6 +618,38 @@ export function validationDiagnostics(
       };
     })
   );
+}
+
+/** Preserve the autonomous quality package's evidence-rich diagnostics. */
+export function qualityAnalysisDiagnostics(
+  analysis: QualityAnalysis
+): Diagnostic[] {
+  return analysis.diagnostics.map((diagnostic) => ({
+    source: diagnostic.source,
+    ruleId: diagnostic.ruleId,
+    category: diagnostic.category,
+    certainty: diagnostic.certainty,
+    severity: diagnostic.severity,
+    code: diagnostic.code,
+    message: diagnostic.message,
+    path: diagnostic.path,
+    blocking: diagnostic.blocking,
+    ...(diagnostic.suggestion !== undefined && {
+      suggestion: diagnostic.suggestion,
+    }),
+    ...(diagnostic.context !== undefined && {
+      context: { ...diagnostic.context },
+    }),
+    ...(diagnostic.relatedPaths !== undefined && {
+      relatedPaths: diagnostic.relatedPaths,
+    }),
+    ...(diagnostic.evidence !== undefined && {
+      evidence: { ...diagnostic.evidence },
+    }),
+    ...(diagnostic.fixes !== undefined && {
+      fixes: diagnostic.fixes,
+    }),
+  }));
 }
 
 function looksLikeValidationErrors(value: unknown): value is ValidationError[] {

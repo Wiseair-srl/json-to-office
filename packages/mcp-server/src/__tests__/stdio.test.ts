@@ -92,6 +92,7 @@ describe.skipIf(!built)('jto-mcp over stdio', () => {
       'jto://schema/pptx/theme',
       'jto://templates',
       'jto://themes',
+      'jto://themes/values',
     ]);
 
     // Bodies are built lazily, so listing them proves nothing about reading

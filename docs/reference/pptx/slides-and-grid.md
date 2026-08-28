@@ -31,7 +31,7 @@ The grid is configured once on the `pptx` root via the `grid` prop (and optional
 }
 ```
 
-This 12 × 12 setup (from the bundled Company deck template) trades the default's coarse 6 rows for fine-grained vertical control — a good choice for dense, designed layouts.
+This 12 × 12 setup trades the default's coarse 6 rows for fine-grained vertical control — a good choice for dense, designed layouts.
 
 ## Per-component placement
 
@@ -156,13 +156,13 @@ All three surface in the `warnings` array of `generateBufferWithWarnings` (see [
 
 ## A complete example
 
-Root configuration and one template, in the style of the bundled Company deck:
+Root configuration and one template, in the style of a dense corporate deck:
 
 ```json
 {
   "name": "pptx",
   "props": {
-    "title": "Company deck",
+    "title": "Quarterly review",
     "pageNumberFormat": "09",
     "slideWidth": 13.333,
     "slideHeight": 7.5,

@@ -164,11 +164,13 @@ Nested components collapse to their names on purpose — describe those separate
 
 ### `jto_validate`
 
-**In** — `format` (required); document source; `renderer` (validate against this profile instead of the document's own, for this check only); `maxDiagnostics` (1–1000, default 100 — errors are kept ahead of warnings when the cap bites).
+**In** — `format` (required); document source; `renderer` (validate against this profile instead of the document's own, for this check only); `quality` `{profile?, policy?}`; `maxDiagnostics` (1–1000, default 100 — errors are kept ahead of warnings when the cap bites).
 
 **Out** — `valid`, `format`, `renderer` (when one was requested), `source` `{origin, handle?, revision?}`, `counts` `{error, warning, info}` (before any cap), `truncated`.
 
 `ok` mirrors the gate generation applies: schema and semantic errors block it, renderer-profile findings (`W_UNSUPPORTED_RENDERER_FEATURE`) come back as warnings, because the renderer has the last word on those.
+
+Design-quality findings ride the same envelope as `W_QUALITY_*` warnings and infos: an undeclared slide canvas, estimated text overflow, overcrowding, unreadable type, table overflow, or a skipped heading. They carry category, certainty, evidence, suggestion, and optional fixes. They are advisory by default; `quality.policy.gate: "warning"` makes warning-or-higher findings set `ok: false` without turning the tool call into a protocol error.
 
 The gate, not `jto://schema/{format}/document`. The two agree except on component nodes whose props are all optional, where the generated schema asks for a `props: {}` the validator and both renderers treat as omissible; validate follows the renderer, because that is what `jto_generate` runs.
 
@@ -229,6 +231,7 @@ The same catalogues, for clients that read resources. URIs are stable.
 | `jto://catalog`              | The resource form of `jto_discover`: every format, in full.               |
 | `jto://renderers`            | Renderer ids per format, which is default, what each profile can draw.    |
 | `jto://themes`               | Built-in theme names per format.                                          |
+| `jto://themes/values`        | What each built-in theme actually is: palette, fonts, style tables.       |
 | `jto://templates`            | Every starter document.                                                   |
 | `jto://schema/docx/document` | Generated JSON Schema for a complete `.docx` document, by renderer.       |
 | `jto://schema/pptx/document` | The same for `.pptx`.                                                     |

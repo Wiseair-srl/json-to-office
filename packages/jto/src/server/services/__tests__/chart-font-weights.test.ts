@@ -20,8 +20,10 @@ import {
  * That door is open now. Each font-face prop has a `<prop>FontWeight` sibling
  * (integer 100–900) and `packages/core-pptx/src/components/chart.ts` runs the
  * pair through the same `applyFontWeight` → `synthesizeFamilyName` seam that
- * run-level `fontFace` uses. The six sites below carry their designed weight
+ * run-level `fontFace` uses. The site below carries its designed weight
  * again; the remaining five name a family and genuinely want Regular.
+ * (Five of the original six sat in the four legacy playground decks, dropped
+ * from the repo along with them.)
  *
  * Both lists are pinned, not merely counted, so that:
  *   - a template edit that adds a chart font reference has to come here and
@@ -30,11 +32,6 @@ import {
  *     (rather than using the weight companion) fails loudly.
  */
 const WEIGHTED_CHART_FONT_SITES = [
-  'Alternative deck 16_9.pptx.json :: $.props.templates[6].placeholders[2].defaults.props.dataLabelFontFace :: Inter @300',
-  'Company deck 16_9.pptx.json :: $.props.templates[12].placeholders[5].defaults.props.dataLabelFontFace :: Inter @300',
-  'Company deck 16_9.pptx.json :: $.props.templates[6].placeholders[2].defaults.props.dataLabelFontFace :: Inter @300',
-  'Company deck 4_3.pptx.json :: $.children[6].props.placeholders.chart.props.legendFontFace :: Inter @300',
-  'Company deck 4_3.pptx.json :: $.props.templates[7].placeholders[2].defaults.props.dataLabelFontFace :: Inter @300',
   'data-report-presentation.pptx.json :: $.children[4].children[4].props.catAxisLabelFontFace :: Space Grotesk @500',
 ];
 

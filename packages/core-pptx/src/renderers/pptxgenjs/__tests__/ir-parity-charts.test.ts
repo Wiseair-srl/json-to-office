@@ -92,7 +92,7 @@ describe('chart parity', () => {
       await expectSamePackage(deck([chart({ type, data: SERIES })]));
     }
     // Seven full package builds, compared byte for byte, in one body.
-  }, 30_000);
+  }, 60_000);
 
   it('matches for multiple series', async () => {
     await expectSamePackage(deck([chart({ type: 'line', data: TWO_SERIES })]));

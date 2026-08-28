@@ -83,7 +83,7 @@ export const PPTX_SLIDE_CONTENT_COMPONENTS = [
     // fact (validation/text-content-conflicts.ts rejects neither and both).
     propsRequired: true,
     description:
-      'Text element - displays text with formatting, positioning and styling options.',
+      'Text element - displays text with formatting, positioning and styling options. Prefer the named `style` values (title, heading1, body…) and theme color tokens over raw fontSize/hex — a theme swap must restyle the deck without editing every node.',
   },
   {
     name: 'image',
@@ -132,7 +132,7 @@ export const PPTX_SLIDE_CONTENT_COMPONENTS = [
     hasChildren: false,
     category: 'content',
     description:
-      'Native PowerPoint chart - editable, scalable, no external server needed.',
+      'Native PowerPoint chart - editable, scalable, no external server needed. Always set series colors (theme-derived, one accent per series) — the auto-palette reads as default Office.',
   },
 ] as const satisfies readonly PptxSlideContentComponentDescriptor[];
 

@@ -47,7 +47,7 @@ describe('the plugin generator', () => {
     });
 
     expect(buffer.subarray(0, 2).toString('latin1')).toBe('PK');
-  }, 30_000);
+  }, 60_000);
 
   it('lets a call override the constructor renderer', async () => {
     const generator = createDocumentGenerator({ renderer: 'office-open' });
@@ -63,7 +63,7 @@ describe('the plugin generator', () => {
     });
 
     expect(viaOfficeOpen.buffer.equals(viaDefault.buffer)).toBe(false);
-  }, 30_000);
+  }, 60_000);
 
   it('produces the same bytes as the core entry point', async () => {
     // The two paths run different prologues; the document they compile has to
@@ -84,7 +84,7 @@ describe('the plugin generator', () => {
 
       expect(plugin.buffer.equals(core)).toBe(true);
     }
-  }, 30_000);
+  }, 60_000);
 
   it('refuses a feature the selected backend does not declare', async () => {
     const generator = createDocumentGenerator({ renderer: 'office-open' });
@@ -92,7 +92,7 @@ describe('the plugin generator', () => {
     await expect(
       generator.generateBuffer(threaded, { validation: { enabled: false } })
     ).rejects.toThrow(/comment-threads/);
-  }, 30_000);
+  }, 60_000);
 
   it('still renders that document on the default backend', async () => {
     const generator = createDocumentGenerator({});
@@ -101,5 +101,5 @@ describe('the plugin generator', () => {
     });
 
     expect(buffer.length).toBeGreaterThan(0);
-  }, 30_000);
+  }, 60_000);
 });

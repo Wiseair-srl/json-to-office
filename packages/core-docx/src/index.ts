@@ -78,6 +78,28 @@ export type {
 // Utilities
 export * from './utils/formatters';
 export { isNodeEnvironment, hasNodeBuiltins } from './utils/environment';
+
+// Design-quality analysis (#216)
+export { analyzeDocxQuality } from './quality/preflight';
+export type {
+  DocxQualityAnalysisOptions,
+  DocxQualityOptions,
+} from './quality/preflight';
+export {
+  prepareDocxQualityDocument,
+  type DocxHeadingFact,
+  type DocxQualityFact,
+  type DocxQualityModel,
+  type DocxTableWidthFact,
+  type PrepareDocxQualityOptions,
+} from './quality/facts';
+export {
+  DOCX_DEFAULT_QUALITY_PROFILE,
+  DOCX_QUALITY_PROFILES,
+  DOCX_QUALITY_RULES,
+  docxQualityEngine,
+  resolveDocxQualityProfile,
+} from './quality/rules';
 export {
   generateWarningsDocument,
   formatWarningsText,

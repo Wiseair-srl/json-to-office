@@ -2,7 +2,11 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import chalk from 'chalk';
-import type { FormatAdapter, GeneratorResult } from '@json-to-office/jto-ops';
+import type {
+  FormatAdapter,
+  GeneratorOptions,
+  GeneratorResult,
+} from '@json-to-office/jto-ops';
 import { PluginRegistry } from '../services/plugin-registry.js';
 import { GeneratorFactory } from '../services/generator-factory.js';
 import { PluginConfigService } from '../config/plugin-config.js';
@@ -18,8 +22,14 @@ import {
 import { parseFontFlag, parseFontsDir } from './font-flags.js';
 import type { FontRegistryEntry } from '@json-to-office/shared';
 import { isSafeFont } from '@json-to-office/shared';
+import {
+  loadQualityOptions,
+  parseQualityGate,
+  type QualityCommandOptions,
+} from './quality-options.js';
+import { exitAfterFlush } from './exit.js';
 
-interface GenerateOptions {
+interface GenerateOptions extends QualityCommandOptions {
   output?: string;
   template?: string;
   plugins?: string | boolean;
@@ -144,6 +154,13 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
       '--renderer <id>',
       `Rendering backend for ${adapter.label} (default: the format's own; run with an unknown id to list them)`
     )
+    .option('--quality-profile <path>', 'JSON design profile')
+    .option('--quality-policy <path>', 'JSON run policy')
+    .option(
+      '--quality-gate <severity>',
+      'Gate: none, error, warning, or info',
+      parseQualityGate
+    )
     .option('--dry-run', 'Preview without writing files')
     .action(async (input: string, options: GenerateOptions) => {
       const startTime = performance.now();
@@ -224,18 +241,15 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
               }
             }
 
-            reporter.update(
-              options.dryRun
-                ? `Validating ${adapter.label} preview...`
-                : `Generating ${adapter.label}...`
-            );
-            const generator: GeneratorResult = await factory.createGenerator({
+            const quality = loadQualityOptions(options);
+            const generatorOptions: GeneratorOptions = {
               theme: mergedConfig.theme,
               themePath: mergedConfig.themePath,
               validation: mergedConfig.validation,
               deterministic: options.deterministic,
               generatedAt: parseGeneratedAt(options.generatedAt),
               renderer: options.renderer,
+              quality,
               // Relative asset paths resolve against the document's own
               // directory, not the invocation cwd (#142).
               baseDir: dirname(inputPath),
@@ -251,7 +265,52 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
                   }),
                 },
               },
-            });
+            };
+            if (!pluginInfo.hasPlugins && adapter.prepareDocument) {
+              generatorOptions.prepared = await adapter.prepareDocument(
+                documentDefinition,
+                generatorOptions
+              );
+            }
+            if (adapter.analyzeQuality) {
+              let blocked = false;
+              try {
+                const analysis = await adapter.analyzeQuality(
+                  documentDefinition,
+                  generatorOptions
+                );
+                blocked = analysis.blocked;
+                for (const finding of analysis.diagnostics) {
+                  reporter.log(
+                    `[${finding.code}] ${finding.path}: ${finding.message}${finding.suggestion ? ` Fix: ${finding.suggestion}` : ''}`,
+                    finding.severity
+                  );
+                }
+              } catch (error: any) {
+                if (
+                  error?.code === 'QUALITY_PROFILE_INCOMPATIBLE' ||
+                  quality?.policy?.onRuleError === 'throw' ||
+                  (quality?.policy?.gate && quality.policy.gate !== 'none')
+                ) {
+                  throw error;
+                }
+                reporter.log(
+                  `Quality analysis unavailable: ${error?.message ?? error}`,
+                  'warning'
+                );
+              }
+              if (blocked) {
+                throw new Error('Quality gate failed');
+              }
+            }
+
+            reporter.update(
+              options.dryRun
+                ? `Validating ${adapter.label} preview...`
+                : `Generating ${adapter.label}...`
+            );
+            const generator: GeneratorResult =
+              await factory.createGenerator(generatorOptions);
             const buffer = await generator.generateBuffer(documentDefinition);
 
             if (!options.dryRun) {
@@ -297,7 +356,7 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
         ]);
       } catch (error: any) {
         await formatError(error);
-        process.exit(EXIT_CODES.FAIL);
+        await exitAfterFlush(EXIT_CODES.FAIL);
       } finally {
         PluginRegistry.getInstance().clear();
       }
@@ -312,6 +371,7 @@ ${chalk.gray('Examples:')}
   $ jto ${adapter.name} generate doc.json --dry-run
   $ jto ${adapter.name} generate doc.json --no-deterministic
   $ jto ${adapter.name} generate doc.json --generated-at 2026-01-01T00:00:00Z
+  $ jto ${adapter.name} generate doc.json --quality-gate warning
 `
     );
 }

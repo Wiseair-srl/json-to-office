@@ -1,16 +1,28 @@
 import { readFileSync, statSync, readdirSync } from 'fs';
 import { resolve, join, extname } from 'path';
 import { glob } from 'glob';
-import type { FormatName } from '@json-to-office/jto-ops';
+import type {
+  FormatAdapter,
+  FormatName,
+  GeneratorOptions,
+} from '@json-to-office/jto-ops';
 
 export interface ValidationError {
   path: string;
   message: string;
   code?: string;
+  severity?: 'error' | 'warning' | 'info';
   line?: number;
   column?: number;
   suggestion?: string;
   value?: any;
+  source?: string;
+  ruleId?: string;
+  category?: string;
+  certainty?: string;
+  relatedPaths?: readonly string[];
+  evidence?: unknown;
+  fixes?: readonly unknown[];
 }
 
 export interface ValidateFileResult {
@@ -26,13 +38,16 @@ export interface ValidateOptions {
   schema?: string;
   strict?: boolean;
   recursive?: boolean;
+  quality?: GeneratorOptions['quality'];
 }
 
 export class JsonValidator {
   private format: FormatName;
+  private adapter?: FormatAdapter;
 
-  constructor(format: FormatName = 'docx') {
+  constructor(format: FormatName = 'docx', adapter?: FormatAdapter) {
     this.format = format;
+    this.adapter = adapter;
   }
 
   async validate(
@@ -94,7 +109,7 @@ export class JsonValidator {
           filePath,
           jsonData,
           content,
-          options.strict
+          options
         );
       } else if (validationType === 'theme') {
         return await this.validateAsTheme(
@@ -136,27 +151,110 @@ export class JsonValidator {
     filePath: string,
     jsonData: any,
     jsonString: string,
-    strict?: boolean
+    options: ValidateOptions
   ): Promise<ValidateFileResult> {
     try {
       const { validate, validateStrict } =
         this.format === 'docx'
           ? await import('@json-to-office/shared-docx')
           : await import('@json-to-office/shared-pptx');
-      const validator = strict ? validateStrict : validate;
+      const validator = options.strict ? validateStrict : validate;
       const result = validator.jsonDocument(jsonString);
-      return {
-        file: filePath,
-        valid: result.valid,
-        type: 'document',
-        errors: result.errors?.map((e: any) => ({
+      const schemaWarnings = (result as any).warnings?.map((e: any) => ({
+        ...e,
+        code: e.code || 'WARNING',
+      }));
+      if (!result.valid) {
+        const errors = result.errors?.map((e: any) => ({
           ...e,
           code: e.code || 'VALIDATION_ERROR',
-        })),
-        warnings: (result as any).warnings?.map((e: any) => ({
+        }));
+        return {
+          file: filePath,
+          valid: false,
+          type: 'document',
+          ...(errors?.length && { errors }),
+          ...(schemaWarnings?.length && { warnings: schemaWarnings }),
+        };
+      }
+      const qualityNotices: ValidationError[] = [];
+      let analyzed:
+        | Awaited<ReturnType<NonNullable<FormatAdapter['analyzeQuality']>>>
+        | undefined;
+      try {
+        analyzed = this.adapter?.analyzeQuality
+          ? await this.adapter.analyzeQuality(jsonData, {
+              quality: options.quality,
+            })
+          : undefined;
+      } catch (error: any) {
+        // Quality analysis is advisory; a throw here must not take the schema
+        // errors down with it.
+        qualityNotices.push({
+          path: 'root',
+          message: `Quality analysis unavailable: ${error?.message ?? error}`,
+          code: 'quality_unavailable',
+        });
+      }
+      // Const so the partition below keeps its narrowing inside the callbacks.
+      const analysis = analyzed;
+      // A rule that threw is dropped by the engine's default `continue`, which
+      // silently removes its whole finding class — say so rather than report
+      // the file clean.
+      for (const ruleError of analysis?.ruleErrors ?? []) {
+        qualityNotices.push({
+          path: 'root',
+          message: `Quality rule ${ruleError.ruleId} failed: ${ruleError.message}`,
+          code: 'quality_rule_error',
+          ruleId: ruleError.ruleId,
+        });
+      }
+      const quality = analysis?.diagnostics ?? [];
+      const qualityEntries = quality.map((finding) => ({
+        path: finding.path,
+        message: finding.message,
+        code: finding.code,
+        severity: finding.severity,
+        suggestion: finding.suggestion,
+        value: finding.context,
+        ...('source' in finding && { source: finding.source }),
+        ...('ruleId' in finding && { ruleId: finding.ruleId }),
+        ...('category' in finding && { category: finding.category }),
+        ...('certainty' in finding && { certainty: finding.certainty }),
+        ...('relatedPaths' in finding && {
+          relatedPaths: finding.relatedPaths,
+        }),
+        ...('evidence' in finding && { evidence: finding.evidence }),
+        ...('fixes' in finding && { fixes: finding.fixes }),
+      }));
+      const qualityErrors = analysis?.blocked
+        ? qualityEntries.filter(
+            (_, index) => analysis.diagnostics[index].blocking
+          )
+        : [];
+      const qualityWarnings = analysis?.blocked
+        ? qualityEntries.filter(
+            (_, index) => !analysis.diagnostics[index].blocking
+          )
+        : qualityEntries;
+      const warnings = [
+        ...(schemaWarnings ?? []),
+        ...qualityWarnings,
+        ...qualityNotices,
+      ];
+      const errors = [
+        ...(result.errors?.map((e: any) => ({
           ...e,
-          code: e.code || 'WARNING',
-        })),
+          code: e.code || 'VALIDATION_ERROR',
+        })) ?? []),
+        ...qualityErrors,
+      ];
+      return {
+        file: filePath,
+        valid: result.valid && !analysis?.blocked,
+        type: 'document',
+        ...(errors.length > 0 && { errors }),
+        ...(warnings.length > 0 && { warnings }),
       };
     } catch (error: any) {
       // A missing/broken validation module must not silently pass the file.

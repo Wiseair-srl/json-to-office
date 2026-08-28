@@ -1,11 +1,51 @@
 import { devtools } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
+import type { QualityFinding } from '../lib/quality-findings';
 
 export interface GenerationWarning {
   component: string;
   message: string;
   severity?: 'warning' | 'info';
   context?: Record<string, unknown>;
+}
+
+/**
+ * The last quality analysis, whichever round trip produced it.
+ *
+ * `/generate` and `/validate` report the same findings in different shapes, so
+ * both are normalised into this one slice — the panel should not have to know
+ * which endpoint the author's last action happened to hit.
+ */
+export interface QualityState {
+  findings: QualityFinding[];
+  counts: { error: number; warning: number; info: number };
+  /**
+   * The document these findings were computed against.
+   *
+   * Every finding is a JSON Pointer plus, sometimes, an RFC 6902 patch. Both
+   * are meaningless against a different file, and a tab switch leaves the panel
+   * showing the previous document's findings until a new analysis lands — so
+   * "Apply fix" and "Reveal" must both refuse to act when this no longer names
+   * the active tab.
+   */
+  documentName: string;
+  /** Ordering ticket; see lib/quality-sequence.ts. */
+  seq: number;
+  profileId?: string;
+  blocked?: boolean;
+  truncated?: boolean;
+  /** Which round trip produced this: a full build, or a validate-only pass. */
+  source: 'generate' | 'validate';
+  analyzedAt: number;
+  /**
+   * Set only when the run policy's gate actually rejected the build. The panel
+   * paints a destructive "blocked" state from this, so a transport failure must
+   * never land here — it would assert a rejection that never happened, and with
+   * the default gate of `none` no gate was even evaluated.
+   */
+  gateError?: string;
+  /** The analysis could not be run (offline, rate limited, server error). */
+  analysisError?: string;
 }
 
 export type OutputState = {
@@ -24,6 +64,7 @@ export type OutputState = {
   cacheStatus?: 'HIT' | 'MISS' | 'UNKNOWN'; // cache hit/miss status
   cacheHitRate?: string; // cache hit rate percentage
   warnings?: GenerationWarning[] | null; // warnings from custom component processing
+  quality?: QualityState | null; // last quality analysis; null until one runs
   isRendering?: boolean; // preview rendering in progress (iframe/LibreOffice)
   isPreviewStale?: boolean; // preview outdated (new blob generated but not yet rendered)
   editSequence?: number; // incremented on every Monaco keystroke (init 0)
@@ -53,6 +94,7 @@ export const initOutputStore = (): OutputState => {
     editSequence: 0,
     lastBuiltSequence: 0,
     hasValidationErrors: false,
+    quality: null,
   };
 };
 

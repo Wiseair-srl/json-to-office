@@ -205,6 +205,8 @@ A JSON document is a tree of **components**. Every node has the same shape, and 
 
 The **processor** walks the tree. When it encounters a custom component, it validates the props against the schema, resolves the requested semver version, calls `render()`, and splices the result back into the tree. If `render()` returns other custom components, the processor re-expands them recursively (up to 20 levels deep). The output is a flat tree of base components only. That tree is then **compiled** to a renderer-neutral intermediate representation (`DocxIR` / `PptxIR`) — theme colours resolved, fonts substituted, units explicit, authoring-only components expanded — and a **renderer adapter** turns the IR into bytes. docx.js and pptxgenjs are the defaults; an experimental `office-open` backend is installed alongside them and selected per document or per invocation. Each adapter declares what it supports, so an unsupported feature fails before any bytes exist rather than going missing in the file.
 
+The same prepared tree feeds the first-class **quality layer**. `@json-to-office/quality` applies design profiles and run policies to format facts, producing path-addressed diagnostics with certainty and evidence. Quality advises by default and can gate CI or generation explicitly. See [Design quality](docs/guide/design-quality.md).
+
 ![The json-to-office generation pipeline: validate, expand, resolve, compile to IR, then a renderer adapter and a deterministic packaging pass](docs/architecture.png)
 
 ### Custom components (plugin system)
@@ -446,13 +448,14 @@ See the `[examples/](examples/)` directory for complete, runnable JSON definitio
 
 ## Packages
 
-| Package                                                 | Description                          |
-| ------------------------------------------------------- | ------------------------------------ |
-| `[@json-to-office/json-to-docx](packages/json-to-docx)` | DOCX generation from JSON            |
-| `[@json-to-office/json-to-pptx](packages/json-to-pptx)` | PPTX generation from JSON            |
-| `[@json-to-office/jto](packages/jto)`                   | CLI + dev server + visual playground |
-| `[@json-to-office/jto-cli](packages/jto-cli)`           | Lean CLI (no playground deps)        |
-| `[@json-to-office/mcp-server](packages/mcp-server)`     | MCP server for agents (stdio)        |
+| Package                                                 | Description                           |
+| ------------------------------------------------------- | ------------------------------------- |
+| `[@json-to-office/json-to-docx](packages/json-to-docx)` | DOCX generation from JSON             |
+| `[@json-to-office/json-to-pptx](packages/json-to-pptx)` | PPTX generation from JSON             |
+| `[@json-to-office/jto](packages/jto)`                   | CLI + dev server + visual playground  |
+| `[@json-to-office/jto-cli](packages/jto-cli)`           | Lean CLI (no playground deps)         |
+| `[@json-to-office/mcp-server](packages/mcp-server)`     | MCP server for agents (stdio)         |
+| `[@json-to-office/quality](packages/quality)`           | Quality contracts, engine, and policy |
 
 Internal packages
 

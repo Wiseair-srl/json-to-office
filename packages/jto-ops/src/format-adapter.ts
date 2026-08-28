@@ -9,6 +9,12 @@ import type {
   GenerationWarning,
   RendererStatus,
 } from '@json-to-office/shared';
+import type {
+  PreparedDocument,
+  QualityAnalysis,
+  QualityPolicy,
+  QualityProfile,
+} from '@json-to-office/quality';
 import { validatePresentationDocument } from '@json-to-office/shared-pptx';
 import { validate as validateDocx } from '@json-to-office/shared-docx';
 import {
@@ -51,6 +57,92 @@ function toGenerationWarnings(
       ...(w?.slide !== undefined && { slide: w.slide }),
     },
   }));
+}
+
+function preparedThemeLabel(prepared: PreparedDocument): string | undefined {
+  const label = prepared.metadata?.themeLabel;
+  return typeof label === 'string' ? label : undefined;
+}
+
+/**
+ * The document a prepared model was built from, and the warnings its
+ * preparation already reported.
+ *
+ * Symbols, so neither crosses a serialization boundary: `PreparedDocument` is
+ * a serializable contract, and a model that arrives without its source is
+ * re-prepared rather than rendered in place of the document it was handed.
+ */
+const PREPARED_SOURCE = Symbol('jto.prepared.source');
+const PREPARED_WARNINGS = Symbol('jto.prepared.warnings');
+
+interface PreparedInternals {
+  [PREPARED_SOURCE]?: unknown;
+  [PREPARED_WARNINGS]?: readonly GenerationWarning[];
+}
+
+/** Bind a prepared model to the document and the warnings it came from. */
+function stampPrepared<T extends PreparedDocument>(
+  prepared: T,
+  source: unknown,
+  warnings: readonly GenerationWarning[]
+): T {
+  return Object.assign(prepared, {
+    [PREPARED_SOURCE]: source,
+    [PREPARED_WARNINGS]: warnings,
+  });
+}
+
+/**
+ * A prepared model, but only for the document it was prepared from.
+ *
+ * `generateBuffer(document)` is a per-document API while `prepared` is fixed
+ * when the generator is built, so any other document would be validated as
+ * itself and then rendered as the prepared one.
+ */
+function preparedFor<T extends PreparedDocument>(
+  prepared: T | undefined,
+  document: unknown
+): T | undefined {
+  if (!prepared) return undefined;
+  const source = (prepared as PreparedInternals)[PREPARED_SOURCE];
+  return source !== undefined && source === document ? prepared : undefined;
+}
+
+/** Warning identity, for the prepare/render overlap only. */
+function warningKey(warning: GenerationWarning): string {
+  return `${warning.component}|${warning.context?.code ?? ''}|${warning.message}`;
+}
+
+/**
+ * Drop render warnings this model's preparation already reported.
+ *
+ * Preparation repeats work the render does again — pptx placeholder and grid
+ * resolution above all — so reusing a prepared model would report those
+ * warnings twice. Deliberately narrow: nothing is deduplicated except against
+ * what preparing this very model emitted.
+ */
+function withoutPreparedWarnings(
+  warnings: GenerationWarning[],
+  prepared: PreparedDocument | undefined
+): GenerationWarning[] {
+  const emitted = (prepared as PreparedInternals | undefined)?.[
+    PREPARED_WARNINGS
+  ];
+  if (!emitted || emitted.length === 0) return warnings;
+  const seen = new Set(emitted.map(warningKey));
+  return warnings.filter((warning) => !seen.has(warningKey(warning)));
+}
+
+/**
+ * The renderer the document itself names. Core generation resolves
+ * `options.renderer ?? document.renderer`, so preparation that reads only the
+ * option stamps the default onto the model and misjudges a profile targeted
+ * at the backend the document actually renders with.
+ */
+function documentRenderer(document: unknown): string | undefined {
+  const renderer = (document as { renderer?: unknown } | null | undefined)
+    ?.renderer;
+  return typeof renderer === 'string' ? renderer : undefined;
 }
 
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -228,6 +320,13 @@ export interface GeneratorOptions {
    * `GeneratorResult` — allocate one array per logical request.
    */
   warnings?: GenerationWarning[];
+  /** Design profile and invocation-specific enforcement. */
+  quality?: {
+    profile?: QualityProfile;
+    policy?: QualityPolicy;
+  };
+  /** Opaque canonical prologue output shared by analysis and rendering. */
+  prepared?: PreparedDocument;
 }
 
 export interface GeneratorResult {
@@ -278,9 +377,23 @@ export interface FormatAdapter {
   parseJson(input: string | object): unknown;
   validateDocument(doc: unknown): { valid: boolean; errors?: any[] };
 
+  /** Analyze format-specific design quality with profiles, policy, and gate. */
+  analyzeQuality?(
+    doc: unknown,
+    options?: GeneratorOptions
+  ): Promise<QualityAnalysis>;
+
+  /** Prepare effective values and provenance once for official pipelines. */
+  prepareDocument?(
+    doc: unknown,
+    options?: GeneratorOptions
+  ): Promise<PreparedDocument>;
+
   generateSchema(options?: any): any;
 
   getBuiltinThemes(): Record<string, any>;
+  /** Full values for ESM hosts; falls back to `getBuiltinThemes` for plugins. */
+  getBuiltinThemeValues?(): Promise<Record<string, any>>;
   resolveTheme(options: GeneratorOptions): Promise<any>;
   loadCustomThemes(
     options: GeneratorOptions
@@ -333,12 +446,28 @@ export class DocxFormatAdapter implements FormatAdapter {
   ): Promise<Buffer> {
     const core = await import('@json-to-office/core-docx');
     const parsed = typeof json === 'string' ? JSON.parse(json as string) : json;
-    const resolved = await this.resolveThemes(options);
-    const { document: docDefinition, customThemes } = withRequestedTheme(
-      parsed,
-      resolved.requested,
-      resolved.customThemes
+    const prepared = preparedFor(
+      options.prepared?.format === 'docx'
+        ? (options.prepared as ReturnType<
+            typeof core.prepareDocxQualityDocument
+          >)
+        : undefined,
+      parsed
     );
+    let docDefinition: unknown;
+    let customThemes: Record<string, any> | undefined;
+    if (prepared) {
+      docDefinition = prepared.model.authored;
+    } else {
+      const resolved = await this.resolveThemes(options);
+      const normalized = withRequestedTheme(
+        parsed,
+        resolved.requested,
+        resolved.customThemes
+      );
+      docDefinition = normalized.document;
+      customThemes = normalized.customThemes;
+    }
     const services = buildDocxServices();
     // Collect rather than swallow: without a sink, core warnings (an
     // unresolvable `props.theme` among them) never reach the terminal and the
@@ -355,10 +484,12 @@ export class DocxFormatAdapter implements FormatAdapter {
       generatedAt: options.generatedAt,
       baseDir: options.baseDir,
       renderer: options.renderer as DocxRendererId | undefined,
+      prepared,
       warnings,
     });
-    emitGenerationWarnings(warnings);
-    options.warnings?.push(...toGenerationWarnings(warnings));
+    const emitted = withoutPreparedWarnings(warnings, prepared);
+    emitGenerationWarnings(emitted);
+    options.warnings?.push(...toGenerationWarnings(emitted));
     return buffer;
   }
 
@@ -371,37 +502,63 @@ export class DocxFormatAdapter implements FormatAdapter {
     const pluginNames = plugins.map((p) => p.name);
     const services = buildDocxServices();
 
-    // Resolved once: repeating it per document would repeat the file read and
-    // any unknown-theme warning that comes with it.
-    const {
-      requested: requestedTheme,
-      customThemes,
-      label: themeLabel,
-    } = await this.resolveThemes(options);
+    // Resolve once unless the canonical model already carries the result.
+    const prepared =
+      !hasPlugins && options.prepared?.format === 'docx'
+        ? (options.prepared as ReturnType<
+            typeof core.prepareDocxQualityDocument
+          >)
+        : undefined;
+    const resolved = prepared ? undefined : await this.resolveThemes(options);
+    const requestedTheme = resolved?.requested;
+    const customThemes = resolved?.customThemes;
+    const themeLabel = prepared
+      ? preparedThemeLabel(prepared)
+      : resolved?.label;
 
     if (!hasPlugins) {
+      // A prepared model renders only its own document; any other one falls
+      // back to resolving themes here, memoized so a bad `--theme` still
+      // warns once per generator.
+      let fallbackThemes: Promise<ResolvedThemes> | undefined;
+      const themesFor = (): Promise<ResolvedThemes> =>
+        (fallbackThemes ??= resolved
+          ? Promise.resolve(resolved)
+          : this.resolveThemes(options));
       return {
         generateBuffer: async (document: any) => {
           const parsed =
             typeof document === 'string' ? JSON.parse(document) : document;
-          const { document: docDefinition, customThemes: themes } =
-            withRequestedTheme(parsed, requestedTheme, customThemes);
+          const usable = preparedFor(prepared, parsed);
+          const themes = usable ? undefined : await themesFor();
+          const normalized = usable
+            ? { document: usable.model.authored, customThemes: undefined }
+            : withRequestedTheme(
+                parsed,
+                themes?.requested,
+                themes?.customThemes
+              );
           const warnings: GenerationWarning[] = [];
-          const buffer = await core.generateBufferFromJson(docDefinition, {
-            customThemes: themes,
-            services,
-            fonts: options.fonts,
-            validation: {
-              allowUnknownFields: options.validation?.allowUnknownFields,
-            },
-            deterministic: options.deterministic,
-            generatedAt: options.generatedAt,
-            baseDir: options.baseDir,
-            renderer: options.renderer as DocxRendererId | undefined,
-            warnings,
-          });
-          emitGenerationWarnings(warnings);
-          options.warnings?.push(...toGenerationWarnings(warnings));
+          const buffer = await core.generateBufferFromJson(
+            normalized.document,
+            {
+              customThemes: normalized.customThemes,
+              services,
+              fonts: options.fonts,
+              validation: {
+                allowUnknownFields: options.validation?.allowUnknownFields,
+              },
+              deterministic: options.deterministic,
+              generatedAt: options.generatedAt,
+              baseDir: options.baseDir,
+              renderer: options.renderer as DocxRendererId | undefined,
+              prepared: usable,
+              warnings,
+            }
+          );
+          const emitted = withoutPreparedWarnings(warnings, usable);
+          emitGenerationWarnings(emitted);
+          options.warnings?.push(...toGenerationWarnings(emitted));
           return buffer;
         },
         hasPlugins: false,
@@ -495,6 +652,88 @@ export class DocxFormatAdapter implements FormatAdapter {
     };
   }
 
+  async analyzeQuality(
+    doc: unknown,
+    options: GeneratorOptions = {}
+  ): Promise<QualityAnalysis> {
+    const core = await import('@json-to-office/core-docx');
+    const parsed = typeof doc === 'string' ? JSON.parse(doc) : doc;
+    let prepared = preparedFor(
+      options.prepared?.format === 'docx'
+        ? (options.prepared as ReturnType<
+            typeof core.prepareDocxQualityDocument
+          >)
+        : undefined,
+      parsed
+    );
+    if (!prepared) {
+      try {
+        prepared = (await this.prepareModel(parsed, options, [])) as ReturnType<
+          typeof core.prepareDocxQualityDocument
+        >;
+      } catch {
+        // Structural validation owns malformed trees. The core guards its own
+        // preparation, so handing it the document instead of a model turns a
+        // throw into an analysis that reports the failure.
+      }
+    }
+    return core.analyzeDocxQuality(prepared?.model.authored ?? parsed, {
+      ...(prepared && { prepared }),
+      renderer: options.renderer ?? documentRenderer(parsed),
+      profile: options.quality?.profile,
+      policy: options.quality?.policy,
+    });
+  }
+
+  async prepareDocument(
+    doc: unknown,
+    options: GeneratorOptions = {}
+  ): Promise<PreparedDocument> {
+    // Preparation resolves the theme context the render then skips, so these
+    // warnings reach the host from here or not at all.
+    const warnings: GenerationWarning[] = [];
+    const prepared = await this.prepareModel(doc, options, warnings);
+    emitGenerationWarnings(warnings);
+    options.warnings?.push(...toGenerationWarnings(warnings));
+    return prepared;
+  }
+
+  /** Prepare into a caller-owned sink; `prepareDocument` owns the reporting. */
+  private async prepareModel(
+    doc: unknown,
+    options: GeneratorOptions,
+    warnings: GenerationWarning[]
+  ): Promise<PreparedDocument> {
+    const core = await import('@json-to-office/core-docx');
+    const parsed = typeof doc === 'string' ? JSON.parse(doc) : doc;
+    const resolved = await this.resolveThemes(options);
+    const normalized = withRequestedTheme(
+      parsed,
+      resolved.requested,
+      resolved.customThemes
+    );
+    const prepared = core.prepareDocxQualityDocument(
+      normalized.document as any,
+      {
+        customThemes: normalized.customThemes,
+        fonts: options.fonts,
+        renderer: options.renderer ?? documentRenderer(parsed),
+        warnings,
+      }
+    );
+    return stampPrepared(
+      {
+        ...prepared,
+        metadata: {
+          ...prepared.metadata,
+          ...(resolved.label && { themeLabel: resolved.label }),
+        },
+      },
+      parsed,
+      toGenerationWarnings(warnings)
+    );
+  }
+
   generateSchema(_options?: any): any {
     // Delegate to shared-docx
     return null;
@@ -502,12 +741,16 @@ export class DocxFormatAdapter implements FormatAdapter {
 
   getBuiltinThemes(): Record<string, any> {
     try {
-      // Dynamic import at call time
       const core = require('@json-to-office/core-docx');
       return core.themes || {};
     } catch {
       return {};
     }
+  }
+
+  async getBuiltinThemeValues(): Promise<Record<string, any>> {
+    const core = await import('@json-to-office/core-docx');
+    return core.themes || {};
   }
 
   async resolveTheme(options: GeneratorOptions): Promise<any> {
@@ -650,12 +893,28 @@ export class PptxFormatAdapter implements FormatAdapter {
   ): Promise<Buffer> {
     const core = await import('@json-to-office/core-pptx');
     const parsed = typeof json === 'string' ? JSON.parse(json as string) : json;
-    const resolved = await this.resolveThemes(options);
-    const { document: docDefinition, customThemes } = withRequestedTheme(
-      parsed,
-      resolved.requested,
-      resolved.customThemes
+    const prepared = preparedFor(
+      options.prepared?.format === 'pptx'
+        ? (options.prepared as ReturnType<
+            typeof core.preparePptxQualityDocument
+          >)
+        : undefined,
+      parsed
     );
+    let docDefinition: unknown;
+    let customThemes: Record<string, any> | undefined;
+    if (prepared) {
+      docDefinition = prepared.model.authored;
+    } else {
+      const resolved = await this.resolveThemes(options);
+      const normalized = withRequestedTheme(
+        parsed,
+        resolved.requested,
+        resolved.customThemes
+      );
+      docDefinition = normalized.document;
+      customThemes = normalized.customThemes;
+    }
     const services = buildServicesFromEnv();
     // The warnings-returning entry point: `generateBufferFromJson` allocates
     // the pipeline's warning array internally and throws it away, so core
@@ -672,10 +931,14 @@ export class PptxFormatAdapter implements FormatAdapter {
       generatedAt: options.generatedAt,
       baseDir: options.baseDir,
       renderer: options.renderer as PptxRendererId | undefined,
+      prepared,
     });
-    const normalized = toGenerationWarnings(result.warnings);
-    emitGenerationWarnings(normalized);
-    options.warnings?.push(...normalized);
+    const emitted = withoutPreparedWarnings(
+      toGenerationWarnings(result.warnings),
+      prepared
+    );
+    emitGenerationWarnings(emitted);
+    options.warnings?.push(...emitted);
     return result.buffer;
   }
 
@@ -688,36 +951,64 @@ export class PptxFormatAdapter implements FormatAdapter {
     const pluginNames = plugins.map((p) => p.name);
     const services = buildServicesFromEnv();
 
-    // Resolved once: repeating it per document would repeat the file read and
-    // any unknown-theme warning that comes with it.
-    const {
-      requested: requestedTheme,
-      customThemes,
-      label: themeLabel,
-    } = await this.resolveThemes(options);
+    // Resolve once unless the canonical model already carries the result.
+    const prepared =
+      !hasPlugins && options.prepared?.format === 'pptx'
+        ? (options.prepared as ReturnType<
+            typeof core.preparePptxQualityDocument
+          >)
+        : undefined;
+    const resolved = prepared ? undefined : await this.resolveThemes(options);
+    const requestedTheme = resolved?.requested;
+    const customThemes = resolved?.customThemes;
+    const themeLabel = prepared
+      ? preparedThemeLabel(prepared)
+      : resolved?.label;
 
     if (!hasPlugins) {
+      // A prepared model renders only its own document; any other one falls
+      // back to resolving themes here, memoized so a bad `--theme` still
+      // warns once per generator.
+      let fallbackThemes: Promise<ResolvedThemes> | undefined;
+      const themesFor = (): Promise<ResolvedThemes> =>
+        (fallbackThemes ??= resolved
+          ? Promise.resolve(resolved)
+          : this.resolveThemes(options));
       return {
         generateBuffer: async (document: any) => {
           const parsed =
             typeof document === 'string' ? JSON.parse(document) : document;
-          const { document: docDefinition, customThemes: themes } =
-            withRequestedTheme(parsed, requestedTheme, customThemes);
-          const result = await core.generateBufferWithWarnings(docDefinition, {
-            customThemes: themes,
-            services,
-            fonts: options.fonts,
-            validation: {
-              allowUnknownFields: options.validation?.allowUnknownFields,
-            },
-            deterministic: options.deterministic,
-            generatedAt: options.generatedAt,
-            baseDir: options.baseDir,
-            renderer: options.renderer as PptxRendererId | undefined,
-          });
-          const normalized = toGenerationWarnings(result.warnings);
-          emitGenerationWarnings(normalized);
-          options.warnings?.push(...normalized);
+          const usable = preparedFor(prepared, parsed);
+          const themes = usable ? undefined : await themesFor();
+          const normalized = usable
+            ? { document: usable.model.authored, customThemes: undefined }
+            : withRequestedTheme(
+                parsed,
+                themes?.requested,
+                themes?.customThemes
+              );
+          const result = await core.generateBufferWithWarnings(
+            normalized.document,
+            {
+              customThemes: normalized.customThemes,
+              services,
+              fonts: options.fonts,
+              validation: {
+                allowUnknownFields: options.validation?.allowUnknownFields,
+              },
+              deterministic: options.deterministic,
+              generatedAt: options.generatedAt,
+              baseDir: options.baseDir,
+              renderer: options.renderer as PptxRendererId | undefined,
+              prepared: usable,
+            }
+          );
+          const warnings = withoutPreparedWarnings(
+            toGenerationWarnings(result.warnings),
+            usable
+          );
+          emitGenerationWarnings(warnings);
+          options.warnings?.push(...warnings);
           return result.buffer;
         },
         hasPlugins: false,
@@ -791,6 +1082,90 @@ export class PptxFormatAdapter implements FormatAdapter {
     };
   }
 
+  async analyzeQuality(
+    doc: unknown,
+    options: GeneratorOptions = {}
+  ): Promise<QualityAnalysis> {
+    const core = await import('@json-to-office/core-pptx');
+    const parsed = typeof doc === 'string' ? JSON.parse(doc) : doc;
+    let prepared = preparedFor(
+      options.prepared?.format === 'pptx'
+        ? (options.prepared as ReturnType<
+            typeof core.preparePptxQualityDocument
+          >)
+        : undefined,
+      parsed
+    );
+    if (!prepared) {
+      try {
+        prepared = (await this.prepareModel(parsed, options, [])) as ReturnType<
+          typeof core.preparePptxQualityDocument
+        >;
+      } catch {
+        // Structural validation owns malformed trees. The core guards its own
+        // preparation, so handing it the document instead of a model turns a
+        // throw into an analysis that reports the failure.
+      }
+    }
+    return core.analyzePptxQuality(prepared?.model.authored ?? parsed, {
+      ...(prepared && { prepared }),
+      renderer: options.renderer ?? documentRenderer(parsed),
+      profile: options.quality?.profile,
+      policy: options.quality?.policy,
+    });
+  }
+
+  async prepareDocument(
+    doc: unknown,
+    options: GeneratorOptions = {}
+  ): Promise<PreparedDocument> {
+    // Preparation resolves the theme context the render then skips, so these
+    // warnings reach the host from here or not at all.
+    const warnings: any[] = [];
+    const prepared = await this.prepareModel(doc, options, warnings);
+    const normalized = toGenerationWarnings(warnings);
+    emitGenerationWarnings(normalized);
+    options.warnings?.push(...normalized);
+    return prepared;
+  }
+
+  /** Prepare into a caller-owned sink; `prepareDocument` owns the reporting. */
+  private async prepareModel(
+    doc: unknown,
+    options: GeneratorOptions,
+    warnings: any[]
+  ): Promise<PreparedDocument> {
+    const core = await import('@json-to-office/core-pptx');
+    const parsed = typeof doc === 'string' ? JSON.parse(doc) : doc;
+    const resolved = await this.resolveThemes(options);
+    const normalized = withRequestedTheme(
+      parsed,
+      resolved.requested,
+      resolved.customThemes
+    );
+    const prepared = core.preparePptxQualityDocument(
+      normalized.document as any,
+      {
+        customThemes: normalized.customThemes,
+        fonts: options.fonts,
+        services: buildServicesFromEnv(),
+        renderer: options.renderer ?? documentRenderer(parsed),
+        warnings,
+      }
+    );
+    return stampPrepared(
+      {
+        ...prepared,
+        metadata: {
+          ...prepared.metadata,
+          ...(resolved.label && { themeLabel: resolved.label }),
+        },
+      },
+      parsed,
+      toGenerationWarnings(warnings)
+    );
+  }
+
   generateSchema(_options?: any): any {
     return null;
   }
@@ -802,6 +1177,11 @@ export class PptxFormatAdapter implements FormatAdapter {
     } catch {
       return {};
     }
+  }
+
+  async getBuiltinThemeValues(): Promise<Record<string, any>> {
+    const core = await import('@json-to-office/core-pptx');
+    return core.pptxThemes || {};
   }
 
   async resolveTheme(options: GeneratorOptions): Promise<any> {

@@ -117,6 +117,12 @@ function EditorMonacoJson({
     console.debug('Setting up Monaco for JSON editor');
   }, []);
 
+  // Commit a queued save immediately. lodash's `flush` is a no-op when nothing
+  // is pending, so callers can flush unconditionally before writing.
+  const flushPendingSave = useCallback(() => {
+    debouncedSaveDocumentRef.current.flush();
+  }, []);
+
   // Reconstruct the full document (collapsed sentinels → original values) before persisting.
   const toStorageValue = useCallback(
     (modelText: string) =>
@@ -148,7 +154,14 @@ function EditorMonacoJson({
     // Register editor in the refs store. Pass the sentinel reconstructor so any
     // consumer reading live text (preview/build) expands collapsed strings, and
     // the collapse controller so outline reorders can re-anchor chips.
-    registerEditor(name, editor, monaco, toStorageValue, collapseRef.current);
+    registerEditor(
+      name,
+      editor,
+      monaco,
+      toStorageValue,
+      collapseRef.current,
+      flushPendingSave
+    );
     setActiveEditor(name);
 
     // Add context menu action for AI assistant

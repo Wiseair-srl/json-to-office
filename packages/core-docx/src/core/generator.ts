@@ -24,6 +24,8 @@ import { ThemeConfig } from '../styles';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { generateBufferViaIr } from './generateFromIr';
 import type { DocxRendererId } from '../renderers/types';
+import type { PreparedDocument } from '@json-to-office/quality';
+import type { DocxQualityFact, DocxQualityModel } from '../quality/facts';
 
 // JSON support imports
 import {
@@ -82,6 +84,8 @@ export interface JsonGenerationOptions {
    * produced; anything else is opt-in and may not.
    */
   renderer?: DocxRendererId;
+  /** Canonical prepared model; internal hosts use it to avoid a second prologue. */
+  prepared?: PreparedDocument<DocxQualityModel, DocxQualityFact>;
 }
 
 /** A generated package, with whatever the pipeline had to say about it. */
@@ -152,6 +156,7 @@ export async function generateBufferWithWarnings(
       ? { generatedAt: options.generatedAt }
       : {}),
     ...(renderer ? { renderer } : {}),
+    ...(options?.prepared ? { prepared: options.prepared } : {}),
   });
 }
 

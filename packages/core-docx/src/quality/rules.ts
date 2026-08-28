@@ -1,0 +1,344 @@
+import {
+  mergeQualityProfiles,
+  QUALITY_CODES,
+  QualityEngine,
+  type QualityProfile,
+  type QualityRule,
+  type QualityRulePack,
+} from '@json-to-office/quality';
+import type {
+  DocxFrameTextFact,
+  DocxHeadingFact,
+  DocxQualityFact,
+  DocxQualityModel,
+  DocxSvgTextFact,
+  DocxTableWidthFact,
+} from './facts';
+import { estimateTextWidthPt, estimateWrappedLines } from './text-metrics';
+
+/** Half a point: enough to absorb integer-twip rounding. */
+const WIDTH_TOLERANCE_TWIPS = 10;
+
+function numberParameter(
+  parameters: Readonly<Record<string, unknown>>,
+  name: string,
+  fallback: number
+): number {
+  const value = parameters[name];
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+export const docxTableWidthRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/table-width',
+  code: QUALITY_CODES.TABLE_WIDTH_OVERFLOW,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultParameters: { toleranceTwips: WIDTH_TOLERANCE_TWIPS },
+  evaluate: ({ facts, configuration }) => {
+    const toleranceTwips = numberParameter(
+      configuration.parameters,
+      'toleranceTwips',
+      WIDTH_TOLERANCE_TWIPS
+    );
+    return facts
+      .filter(
+        (fact): fact is DocxTableWidthFact => fact.kind === 'docx/table-width'
+      )
+      .filter(
+        (fact) =>
+          fact.hasExplicitWidth &&
+          fact.totalWidthTwips > fact.availableWidthTwips + toleranceTwips
+      )
+      .map((fact) => {
+        const totalPt = Math.round((fact.totalWidthTwips / 20) * 10) / 10;
+        const availablePt =
+          Math.round((fact.availableWidthTwips / 20) * 10) / 10;
+        // Deterministic repair: scale every explicit width by the overshoot
+        // so proportions survive and the sum lands on the available width.
+        const scale = fact.availableWidthTwips / fact.totalWidthTwips;
+        const fixes = fact.allColumnsExplicit
+          ? fact.explicitWidths.map(({ index, width }) => ({
+              op: 'replace' as const,
+              path: `${fact.path}/${index}/width`,
+              value:
+                typeof width === 'number'
+                  ? Math.floor(width * scale * 10) / 10
+                  : `${Math.floor(Number(width.trim().slice(0, -1)) * scale * 10) / 10}%`,
+            }))
+          : [];
+        return {
+          message: `Column widths use ${totalPt}pt, but this section has ${availablePt}pt available — the table will spill off the right edge.`,
+          path: fact.path,
+          suggestion:
+            'Reduce fixed/percentage widths, widen the page, or leave columns unsized so they share the remainder.',
+          context: {
+            totalWidthPt: totalPt,
+            availableWidthPt: availablePt,
+            pointSum: fact.pointSum,
+            percentSum: fact.percentSum,
+          },
+          evidence: {
+            actual: totalPt,
+            expected: availablePt,
+            unit: 'pt',
+          },
+          ...(fixes.length > 0 && { fixes }),
+        };
+      });
+  },
+};
+
+export const docxHeadingHierarchyRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/heading-hierarchy',
+  code: QUALITY_CODES.HEADING_SKIP,
+  category: 'hierarchy',
+  defaultSeverity: 'info',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  evaluate: ({ facts }) =>
+    facts
+      .filter((fact): fact is DocxHeadingFact => fact.kind === 'docx/heading')
+      .flatMap((fact) => {
+        const previousLevel = fact.previousLevel;
+        if (previousLevel === undefined || fact.level <= previousLevel + 1) {
+          return [];
+        }
+        return [
+          {
+            message: `Heading level ${fact.level} follows level ${previousLevel} — the skipped level breaks the document outline.`,
+            path: fact.path,
+            suggestion: `Use level ${previousLevel + 1}, or promote this heading's section.`,
+            context: { level: fact.level, previousLevel },
+            evidence: {
+              actual: fact.level,
+              expected: previousLevel + 1,
+            },
+            // The fact path already addresses `.../props/level`; RFC 6902
+            // `add` replaces an existing member, so this works whether the
+            // level was explicit or defaulted.
+            fixes: [
+              {
+                op: 'add' as const,
+                path: fact.path,
+                value: previousLevel + 1,
+              },
+            ],
+          },
+        ];
+      }),
+};
+
+/**
+ * How far past a box the width model must land before the rule speaks.
+ *
+ * `estimateTextWidthPt` sits within roughly 8% of rendered geometry, so an
+ * overflow inside that band is indistinguishable from a fit. Firing there would
+ * trade real defects for noise on every template that merely sets tight type.
+ * The band is the honest limit of a static model: catching a 3% overrun needs
+ * measured glyph positions, which is the rendered-certainty pass, not this rule.
+ */
+const WIDTH_MODEL_TOLERANCE = 1.08;
+const TWIPS_PER_POINT = 20;
+
+function frameTextFacts(
+  facts: readonly DocxQualityFact[]
+): DocxFrameTextFact[] {
+  return facts.filter(
+    (fact): fact is DocxFrameTextFact => fact.kind === 'docx/frame-text'
+  );
+}
+
+export const docxTextFitRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
+  id: 'docx/text-fit',
+  code: QUALITY_CODES.TEXT_OVERFLOW,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'estimated',
+  formats: ['docx'],
+  defaultParameters: { widthTolerance: WIDTH_MODEL_TOLERANCE },
+  evaluate: ({ facts, configuration }) => {
+    const tolerance = numberParameter(
+      configuration.parameters,
+      'widthTolerance',
+      WIDTH_MODEL_TOLERANCE
+    );
+    const findings = [];
+
+    for (const fact of frameTextFacts(facts)) {
+      const frameWidthPt = fact.frameWidthTwips / TWIPS_PER_POINT;
+
+      // A word wider than its frame has nowhere to wrap, so the renderer breaks
+      // it mid-word. Unlike a paragraph that merely runs long, the damage lands
+      // inside a single word.
+      const longestWordPt = estimateTextWidthPt(
+        fact.longestWord,
+        fact.fontSizePt,
+        fact.characterSpacingPt
+      );
+      if (longestWordPt > frameWidthPt * tolerance) {
+        findings.push({
+          message: `"${fact.longestWord}" is estimated at ${Math.round(longestWordPt)}pt in a ${Math.round(frameWidthPt)}pt frame — with no wrap point it will break mid-word.`,
+          path: `${fact.path}/props/floating/width`,
+          suggestion:
+            'Widen the frame, reduce fontSize, or condense the run further.',
+          context: {
+            longestWord: fact.longestWord,
+            estimatedWidthPt: Math.round(longestWordPt),
+            frameWidthPt: Math.round(frameWidthPt),
+            fontSizePt: fact.fontSizePt,
+          },
+          evidence: {
+            actual: Math.round(longestWordPt),
+            expected: Math.round(frameWidthPt),
+            unit: 'pt',
+          },
+        });
+        continue;
+      }
+
+      // A frame pinned near the foot of the page takes its wrapped height with
+      // it. When that runs past the last usable twip the overflow does not
+      // clip — it repaginates, and a heading arrives split across two pages.
+      if (fact.offsetYTwips === undefined) continue;
+      const lines = estimateWrappedLines(
+        fact.text,
+        frameWidthPt,
+        fact.fontSizePt,
+        fact.characterSpacingPt
+      );
+      const heightTwips = lines * fact.lineHeightPt * TWIPS_PER_POINT;
+      const bottomTwips = fact.offsetYTwips + heightTwips;
+      // The line count inherits the width model's error, so an overrun smaller
+      // than one line is inside the noise — a 143-twip "overflow" on the stock
+      // annual report turned out to start and finish on the same page. Only an
+      // overrun that actually costs a line is worth a warning.
+      const overrunTwips = bottomTwips - fact.pageBottomTwips;
+      if (overrunTwips <= fact.lineHeightPt * TWIPS_PER_POINT) continue;
+
+      findings.push({
+        message: `Frame starts at ${fact.offsetYTwips} twips and needs ${Math.round(heightTwips)} more for ${lines} line${lines === 1 ? '' : 's'} of ${fact.fontSizePt}pt — it runs ${Math.round(overrunTwips)} twips past the page, so the text breaks onto the next one.`,
+        path: `${fact.path}/props/floating/verticalPosition/offset`,
+        suggestion:
+          'Raise the frame, shorten the text, or reduce fontSize so the block finishes on the page.',
+        context: {
+          offsetYTwips: fact.offsetYTwips,
+          estimatedHeightTwips: Math.round(heightTwips),
+          pageBottomTwips: fact.pageBottomTwips,
+          lines,
+        },
+        evidence: {
+          actual: Math.round(bottomTwips),
+          expected: fact.pageBottomTwips,
+          unit: 'twips',
+        },
+      });
+    }
+
+    return findings;
+  },
+};
+
+export const docxSvgTextBoundsRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/svg-text-bounds',
+  code: QUALITY_CODES.SVG_TEXT_CLIPPED,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  evaluate: ({ facts }) =>
+    facts
+      .filter((fact): fact is DocxSvgTextFact => fact.kind === 'docx/svg-text')
+      .flatMap((fact) => {
+        const canvasBottom = fact.viewBoxMinY + fact.viewBoxHeight;
+        // The baseline is the last thing that must land inside the canvas;
+        // descenders below it are a rendering nicety, the baseline is the
+        // difference between painted and gone.
+        if (fact.baselineY <= canvasBottom) return [];
+        const overflow = Math.round((fact.baselineY - canvasBottom) * 10) / 10;
+        return [
+          {
+            message: `SVG text "${fact.content}" sits ${overflow} units below the viewBox — it is clipped away and never reaches the document's text layer.`,
+            path: fact.path,
+            suggestion: `Move the baseline above ${Math.round(canvasBottom)}, or grow the viewBox height.`,
+            context: {
+              content: fact.content,
+              baselineY: fact.baselineY,
+              canvasBottom,
+              overflowUnits: overflow,
+            },
+            evidence: {
+              actual: fact.baselineY,
+              expected: canvasBottom,
+              unit: 'viewBox units',
+            },
+          },
+        ];
+      }),
+};
+
+export const DOCX_QUALITY_RULES: QualityRulePack<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/default',
+  rules: [
+    docxTableWidthRule,
+    docxHeadingHierarchyRule,
+    docxTextFitRule,
+    docxSvgTextBoundsRule,
+  ],
+};
+
+export const DOCX_QUALITY_PROFILES = {
+  'executive-report': {
+    id: 'executive-report',
+    formats: ['docx'],
+    description: 'Short decision document with strict outline continuity.',
+    rules: {
+      'docx/heading-hierarchy': { severity: 'warning' },
+    },
+  },
+  'technical-report': {
+    id: 'technical-report',
+    formats: ['docx'],
+    description: 'Portable professional report defaults.',
+  },
+  'legal-appendix': {
+    id: 'legal-appendix',
+    formats: ['docx'],
+    description: 'Dense appendix: preserve integrity without editorial taste.',
+  },
+} as const satisfies Record<string, QualityProfile>;
+
+export const DOCX_DEFAULT_QUALITY_PROFILE: QualityProfile =
+  DOCX_QUALITY_PROFILES['technical-report'];
+
+const DOCX_PROFILES_BY_ID: Readonly<Record<string, QualityProfile>> =
+  DOCX_QUALITY_PROFILES;
+
+/**
+ * Callers name a shipped profile by id — `{ id: 'executive-report', formats: ['docx'] }`.
+ * Without this lookup that request reaches the engine carrying nothing but its id,
+ * so the analysis runs on defaults while stamping the requested profileId.
+ */
+export function resolveDocxQualityProfile(
+  requested: QualityProfile | undefined
+): QualityProfile | undefined {
+  if (!requested) return undefined;
+  const registered = DOCX_PROFILES_BY_ID[requested.id];
+  if (!registered) return requested;
+  return mergeQualityProfiles(registered, requested);
+}
+
+export const docxQualityEngine = new QualityEngine(DOCX_QUALITY_RULES.rules);

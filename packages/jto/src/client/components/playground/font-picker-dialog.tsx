@@ -21,6 +21,7 @@ import {
 } from '../ui/dropdown-menu';
 import { useToast } from '../ui/use-toast';
 import { useDocumentsStore } from '../../store/documents-store-provider';
+import { currentDocumentText } from '../../lib/active-document-text';
 import {
   useFontPickerStore,
   type FontPickerContext,
@@ -134,9 +135,10 @@ function useMutateActiveTheme() {
       }
       const doc = documents.find((d) => d.name === activeTab);
       if (!doc) return { ok: false as const, error: 'Active theme not found' };
+      const text = currentDocumentText(activeTab, doc.text);
       let parsed: any;
       try {
-        parsed = JSON.parse(doc.text);
+        parsed = JSON.parse(text);
       } catch (err) {
         return {
           ok: false as const,
@@ -163,9 +165,10 @@ function useMutateActiveDocumentAtPath() {
       const doc = documents.find((d) => d.name === activeTab);
       if (!doc)
         return { ok: false as const, error: 'Active document not found' };
+      const text = currentDocumentText(activeTab, doc.text);
       let parsed: any;
       try {
-        parsed = JSON.parse(doc.text);
+        parsed = JSON.parse(text);
       } catch (err) {
         return {
           ok: false as const,
@@ -213,9 +216,10 @@ function useMutateActiveDocumentFontRegistry() {
       const doc = documents.find((d) => d.name === activeTab);
       if (!doc)
         return { ok: false as const, error: 'Active document not found' };
+      const text = currentDocumentText(activeTab, doc.text);
       let parsed: any;
       try {
-        parsed = JSON.parse(doc.text);
+        parsed = JSON.parse(text);
       } catch (err) {
         return {
           ok: false as const,

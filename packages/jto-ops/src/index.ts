@@ -22,6 +22,15 @@ export {
   type RasterizerCacheStats,
 } from './pptx-rasterizer.js';
 
+// PDF text geometry — rendered ground truth for the quality estimators
+export {
+  parsePdfTextBbox,
+  extractPdfTextGeometry,
+  pdftotextAvailable,
+  type PdfTextWord,
+  type PdfTextPage,
+} from './pdf-text-geometry.js';
+
 // LibreOffice font staging — used by the rasterizer above and by the
 // playground's PDF-preview converter in `@json-to-office/jto`.
 export {

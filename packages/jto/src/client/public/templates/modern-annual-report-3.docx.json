@@ -2194,7 +2194,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "Artifical Intelligence",
+            "text": "Artificial Intelligence",
             "font": {
               "family": "Geist",
               "fontWeight": 500,

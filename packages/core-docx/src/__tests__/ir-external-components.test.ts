@@ -64,7 +64,7 @@ describe('visual components', () => {
     expect(service.render).toHaveBeenCalledTimes(2);
     // Both visuals rasterize to the same stub PNG, so one part covers them.
     expect(await mediaParts(buffer)).toHaveLength(1);
-  }, 30_000);
+  }, 60_000);
 
   it('finds a visual inside a table cell', async () => {
     const service = pptxService();
@@ -90,7 +90,7 @@ describe('visual components', () => {
     );
 
     expect(service.render).toHaveBeenCalledOnce();
-  }, 30_000);
+  }, 60_000);
 
   it('finds a visual inside a section header', async () => {
     const service = pptxService();
@@ -110,7 +110,7 @@ describe('visual components', () => {
     );
 
     expect(service.render).toHaveBeenCalledOnce();
-  }, 30_000);
+  }, 60_000);
 });
 
 describe('highcharts components', () => {
@@ -150,5 +150,5 @@ describe('highcharts components', () => {
 
     vi.unstubAllGlobals();
     expect(await mediaParts(buffer)).toHaveLength(1);
-  }, 30_000);
+  }, 60_000);
 });

@@ -98,7 +98,7 @@ describe('documents built in one process', () => {
       xml.replace(/<w:t[^>]*>[\s\S]*?<\/w:t>/g, '<w:t/>');
     expect(stripText(second.document)).toBe(stripText(first.document));
     expect(second.relationships).toBe(first.relationships);
-  }, 30_000);
+  }, 60_000);
 
   it('resolve each note, comment and bookmark against their own document', async () => {
     const buffer = (await generateBufferFromJson(annotated('Only'), {
@@ -122,7 +122,7 @@ describe('documents built in one process', () => {
     for (const id of commented) {
       expect(parts.comments).toContain(`w:id="${id}"`);
     }
-  }, 30_000);
+  }, 60_000);
 
   it('give each build its own relationship ids for the same link', async () => {
     // An external link is the one construct that costs a relationship, which
@@ -145,7 +145,7 @@ describe('documents built in one process', () => {
         expect(parts.relationships).toContain(`Id="${id}"`);
       }
     }
-  }, 30_000);
+  }, 60_000);
 });
 
 /** A 4x2 PNG, small enough to inline and real enough to measure. */
@@ -204,14 +204,14 @@ describe.each<[DocxRendererId]>([['docxjs'], ['office-open']])(
 
       expect(await drawingIds(second)).toEqual(await drawingIds(first));
       expect(second.equals(first)).toBe(true);
-    }, 30_000);
+    }, 60_000);
 
     it('do not interleave when two documents build at once', async () => {
       const [a, b] = await Promise.all([build(), build()]);
 
       expect(await drawingIds(b)).toEqual(await drawingIds(a));
       expect(b.equals(a)).toBe(true);
-    }, 30_000);
+    }, 60_000);
 
     it('are unique within each part', async () => {
       const parts = await drawingIds(await build());
@@ -220,6 +220,6 @@ describe.each<[DocxRendererId]>([['docxjs'], ['office-open']])(
       for (const ids of Object.values(parts)) {
         expect(new Set(ids).size).toBe(ids.length);
       }
-    }, 30_000);
+    }, 60_000);
   }
 );

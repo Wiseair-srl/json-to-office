@@ -68,6 +68,7 @@ export default defineConfig({
             { text: 'CLI workflows', link: '/guide/cli' },
             { text: 'The MCP server', link: '/guide/mcp-server' },
             { text: 'Validation', link: '/guide/validation' },
+            { text: 'Design quality', link: '/guide/design-quality' },
           ],
         },
         {
@@ -98,6 +99,7 @@ export default defineConfig({
             { text: 'Slides & grid', link: '/reference/pptx/slides-and-grid' },
             { text: 'Components', link: '/reference/pptx/components' },
             { text: 'Charts', link: '/reference/pptx/charts' },
+            { text: 'Warnings', link: '/reference/pptx/warnings' },
           ],
         },
         {

@@ -20,6 +20,8 @@ import type {
 } from '../types';
 import type { PresentationPackagingOptions } from './finalizePackage';
 import type { PptxRendererId } from '../renderers/types';
+import type { PreparedDocument } from '@json-to-office/quality';
+import type { PptxQualityFact, PptxQualityModel } from '../quality/facts';
 
 export interface GenerationValidationOptions {
   /** Validate the complete component tree before rendering. Defaults to true. */
@@ -53,6 +55,8 @@ export interface GenerationOptions extends PresentationPackagingOptions {
    * features and fails before rendering on anything outside it.
    */
   renderer?: PptxRendererId;
+  /** Canonical prepared model; internal hosts use it to avoid a second prologue. */
+  prepared?: PreparedDocument<PptxQualityModel, PptxQualityFact>;
 }
 
 /** Result from `generateBufferWithWarnings`. */
