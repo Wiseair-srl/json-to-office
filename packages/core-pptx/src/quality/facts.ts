@@ -49,6 +49,8 @@ export interface PptxTextFact extends QualityFact {
    * grid positions before checking `props.h`, so grid height is a hard ceiling.
    */
   autoFit: boolean;
+  /** Effective bold, from the run or its named style. */
+  bold: boolean;
   /** Resolved run colour, bare hex, when the document states one. */
   colorHex?: string;
   /**
@@ -91,6 +93,7 @@ interface Typography {
   lineSpacing: number;
   paraSpaceBefore: number;
   paraSpaceAfter: number;
+  bold: boolean;
   styleName?: string;
 }
 
@@ -368,12 +371,24 @@ function resolveTypography(props: Rec, ctx: ThemeContext): Typography {
         style?.lineSpacing ??
         defaultLineHeightPt(fontSize);
 
+  // WCAG treats bold text as large from 14pt, so weight has to survive the
+  // same explicit-prop -> named-style resolution the size does. `fontWeight`
+  // wins over `bold` in the renderer, so it wins here too.
+  const weight = asNumber(props.fontWeight) ?? style?.fontWeight;
+  const bold =
+    weight !== undefined
+      ? weight >= 600
+      : typeof props.bold === 'boolean'
+        ? props.bold
+        : style?.bold ?? false;
+
   return {
     fontSize,
     lineSpacing,
     paraSpaceBefore: asNumber(props.paraSpaceBefore) ?? 0,
     paraSpaceAfter:
       asNumber(props.paraSpaceAfter) ?? style?.paraSpaceAfter ?? 0,
+    bold,
     ...(styleName && { styleName }),
   };
 }
@@ -525,16 +540,26 @@ function addSlideFacts(
       slideWidthIn * 72,
       slideHeightIn * 72
     );
+    // A node's own fill spans the node, not the slide, so it is sampled in the
+    // node's own box. Reusing the slide fractions here would read a shape's
+    // gradient at the shape's position on the slide — a shape an inch into a
+    // 13in canvas would never reach its own later stops.
     const ownFill = [
       ...new Set(
-        slideSamples.flatMap(([fx, fy]) =>
+        sampleFractions(
+          nodeBox,
+          boxXPt ?? 0,
+          boxYPt ?? 0,
+          boxWidthPt ?? 0,
+          boxHeightPt ?? 0
+        ).flatMap(([fx, fy]) =>
           paintedColorHexes(
             node.props.fill,
             theme,
             fx,
             fy,
-            slideWidthIn,
-            slideHeightIn
+            (boxWidthPt ?? 0) / 72,
+            (boxHeightPt ?? 0) / 72
           )
         )
       ),
@@ -606,6 +631,7 @@ function addSlideFacts(
           ? node.props.valign
           : 'top',
       rotationDeg: asNumber(node.props.rotate) ?? 0,
+      bold: typography.bold,
       autoFit: node.props.h === undefined && gridPos === undefined,
       ...(colorHex !== undefined && { colorHex }),
       ...(!backgroundUnknown &&

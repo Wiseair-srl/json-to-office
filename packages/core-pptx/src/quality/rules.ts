@@ -383,6 +383,8 @@ export const pptxSlideDensityRule: QualityRule<
 const AA_NORMAL_RATIO = 4.5;
 const AA_LARGE_RATIO = 3;
 const LARGE_TEXT_PT = 18;
+/** AA counts bold text as large from 14pt, two sizes below regular text. */
+const LARGE_BOLD_TEXT_PT = 14;
 
 function channelLuminance(channel: number): number {
   const c = channel / 255;
@@ -422,6 +424,7 @@ export const pptxTextContrastRule: QualityRule<
     normalRatio: AA_NORMAL_RATIO,
     largeRatio: AA_LARGE_RATIO,
     largeTextPt: LARGE_TEXT_PT,
+    largeBoldTextPt: LARGE_BOLD_TEXT_PT,
   },
   evaluate: ({ facts, configuration }) => {
     const normalRatio = numberParameter(
@@ -439,6 +442,11 @@ export const pptxTextContrastRule: QualityRule<
       'largeTextPt',
       LARGE_TEXT_PT
     );
+    const largeBoldTextPt = numberParameter(
+      configuration.parameters,
+      'largeBoldTextPt',
+      LARGE_BOLD_TEXT_PT
+    );
 
     return textFacts(facts).flatMap((fact) => {
       const { colorHex, backgroundHexes } = fact;
@@ -454,14 +462,16 @@ export const pptxTextContrastRule: QualityRule<
       }
       if (!worst) return [];
 
-      const required =
-        fact.fontSizePt >= largeTextPt ? largeRatio : normalRatio;
+      const isLarge =
+        fact.fontSizePt >= largeTextPt ||
+        (fact.bold && fact.fontSizePt >= largeBoldTextPt);
+      const required = isLarge ? largeRatio : normalRatio;
       if (worst.ratio >= required) return [];
 
       const rounded = Math.round(worst.ratio * 100) / 100;
       return [
         {
-          message: `Text at #${colorHex} on #${worst.background} has ${rounded}:1 contrast — below the ${required}:1 needed at ${fact.fontSizePt}pt.`,
+          message: `Text at #${colorHex} on #${worst.background} has ${rounded}:1 contrast — below the ${required}:1 needed at ${fact.fontSizePt}pt${fact.bold ? ' bold' : ''}.`,
           path: fact.path,
           suggestion:
             'Darken the text, lighten it further, or change the surface behind it.',
@@ -471,6 +481,7 @@ export const pptxTextContrastRule: QualityRule<
             ratio: rounded,
             required,
             fontSizePt: fact.fontSizePt,
+            bold: fact.bold,
             backgroundHexes,
           },
           evidence: {

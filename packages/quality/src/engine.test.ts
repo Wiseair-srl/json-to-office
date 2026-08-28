@@ -142,6 +142,37 @@ describe('QualityEngine', () => {
       engine.analyzeSync(prepared, { policy: { maxDiagnostics: -1 } })
     ).toThrow(QualityPolicyError);
 
+    // Suppressions reach `isSuppressed`, which reads selectors off each entry
+    // without guarding. Without validation here a malformed policy surfaces as
+    // a TypeError from inside the analysis instead of a policy error.
+    expect(() =>
+      engine.analyzeSync(prepared, {
+        policy: { suppressions: 'all' } as unknown as QualityPolicy,
+      })
+    ).toThrow(QualityPolicyError);
+
+    expect(() =>
+      engine.analyzeSync(prepared, {
+        policy: { suppressions: [null] } as unknown as QualityPolicy,
+      })
+    ).toThrow(QualityPolicyError);
+
+    expect(() =>
+      engine.analyzeSync(prepared, {
+        policy: {
+          suppressions: [{ code: 42 }],
+        } as unknown as QualityPolicy,
+      })
+    ).toThrow(QualityPolicyError);
+
+    expect(() =>
+      engine.analyzeSync(prepared, {
+        policy: {
+          suppressions: [{ path: '/children/0', pathMatch: 'deep' }],
+        } as unknown as QualityPolicy,
+      })
+    ).toThrow(QualityPolicyError);
+
     expect(() =>
       engine.analyzeSync(prepared, {
         policy: {

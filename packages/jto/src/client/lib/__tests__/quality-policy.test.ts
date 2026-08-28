@@ -26,6 +26,14 @@ describe('parseQualityPolicy', () => {
     });
   });
 
+  it('rejects a misspelled root key instead of dropping it', () => {
+    // Every root key is read by name, so a typo used to parse as a valid empty
+    // policy: the editor showed no error and the budget never applied.
+    const result = parseQualityPolicy('{"maxDiagnostic": 0}');
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.error).toContain('maxDiagnostic');
+  });
+
   it('accepts rule severity, enable and parameters', () => {
     const result = parseQualityPolicy(
       JSON.stringify({

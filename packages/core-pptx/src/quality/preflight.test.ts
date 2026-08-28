@@ -993,4 +993,80 @@ describe('text contrast', () => {
     expect(at(36)).toEqual([]);
     expect(at(10)).toHaveLength(1);
   });
+
+  it('counts bold text as large from 14pt', () => {
+    // 3.5:1 clears the large-text floor and misses the normal one, so the only
+    // thing separating these two cases is whether bold moves the boundary.
+    const at = (fontSize: number, extra: Record<string, unknown>) =>
+      contrastFindings(
+        deck({ ...CANVAS, theme: 'default' }, [
+          {
+            name: 'slide',
+            props: { background: { color: '#898989' } },
+            children: [
+              {
+                name: 'text',
+                props: {
+                  text: 'Mid grey at 3.5:1',
+                  color: '#FFFFFF',
+                  fontSize,
+                  x: 1,
+                  y: 1,
+                  w: 4,
+                  h: 1,
+                  ...extra,
+                },
+              },
+            ],
+          },
+        ])
+      );
+    expect(at(14, { bold: true })).toEqual([]);
+    expect(at(14, {})).toHaveLength(1);
+    // fontWeight wins over bold in the renderer, so it wins here too.
+    expect(at(14, { fontWeight: 700 })).toEqual([]);
+    expect(at(14, { bold: true, fontWeight: 300 })).toHaveLength(1);
+    // Still below the bold threshold.
+    expect(at(12, { bold: true })).toHaveLength(1);
+  });
+
+  it('samples a shape gradient across the shape, not the slide', () => {
+    // A small shape parked far from the origin: sampled in slide coordinates
+    // its fractions never reach the later stops, so the light end that makes
+    // white text illegible would go unseen.
+    const findings = contrastFindings(
+      deck({ ...CANVAS, theme: 'default' }, [
+        {
+          name: 'slide',
+          props: { background: { color: '#101820' } },
+          children: [
+            {
+              name: 'shape',
+              props: {
+                text: 'On a gradient chip',
+                color: '#FFFFFF',
+                fontSize: 12,
+                x: 0.5,
+                y: 0.5,
+                w: 2,
+                h: 1,
+                fill: {
+                  gradient: {
+                    type: 'linear',
+                    angle: 0,
+                    stops: [
+                      { color: '#101820', pos: 0 },
+                      { color: light, pos: 100 },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0].context).toMatchObject({ backgroundHex: 'F0CDC4' });
+  });
 });

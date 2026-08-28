@@ -71,6 +71,47 @@ export function assertValidQualityPolicy(
     );
   }
   assertRuleConfigurations(policy.rules, 'policy');
+  // `isSuppressed` reads selectors off each entry without guarding, so a
+  // non-array or a null entry becomes a TypeError mid-analysis rather than a
+  // policy error at the boundary — the difference between "your policy is
+  // wrong" and "the analyzer crashed".
+  if (policy.suppressions !== undefined) {
+    if (!Array.isArray(policy.suppressions)) {
+      throw new QualityPolicyError(
+        `Quality policy has invalid suppressions ${JSON.stringify(policy.suppressions)}; expected an array`
+      );
+    }
+    policy.suppressions.forEach((suppression, index) => {
+      if (
+        typeof suppression !== 'object' ||
+        suppression === null ||
+        Array.isArray(suppression)
+      ) {
+        throw new QualityPolicyError(
+          `Quality policy suppression ${index} is ${JSON.stringify(suppression)}; expected an object`
+        );
+      }
+      for (const key of ['ruleId', 'code', 'path', 'reason'] as const) {
+        if (
+          suppression[key] !== undefined &&
+          typeof suppression[key] !== 'string'
+        ) {
+          throw new QualityPolicyError(
+            `Quality policy suppression ${index} has invalid ${key} ${JSON.stringify(suppression[key])}; expected a string`
+          );
+        }
+      }
+      if (
+        suppression.pathMatch !== undefined &&
+        suppression.pathMatch !== 'exact' &&
+        suppression.pathMatch !== 'subtree'
+      ) {
+        throw new QualityPolicyError(
+          `Quality policy suppression ${index} has invalid pathMatch ${JSON.stringify(suppression.pathMatch)}; expected "exact" or "subtree"`
+        );
+      }
+    });
+  }
   if (
     policy.maxDiagnostics !== undefined &&
     (!Number.isInteger(policy.maxDiagnostics) || policy.maxDiagnostics < 0)

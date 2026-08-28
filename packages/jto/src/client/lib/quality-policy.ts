@@ -87,6 +87,23 @@ export function parseQualityPolicy(
     };
   }
 
+  // Every key below is read by name, so anything else would be dropped in
+  // silence — `{"maxDiagnostic": 0}` parsed as a valid empty policy and the
+  // budget the author asked for never applied. Say so instead.
+  const EDITABLE_KEYS = new Set([
+    'rules',
+    'suppressions',
+    'maxDiagnostics',
+    'onRuleError',
+  ]);
+  const unknownKey = Object.keys(parsed).find((key) => !EDITABLE_KEYS.has(key));
+  if (unknownKey !== undefined) {
+    return {
+      ok: false,
+      error: `Unknown key "${unknownKey}". A policy takes: ${[...EDITABLE_KEYS].join(', ')}.`,
+    };
+  }
+
   const known = new Set(rulesForFormat().map((rule) => rule.id));
   const policy: EditableQualityPolicy = {};
 

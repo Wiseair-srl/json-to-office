@@ -203,7 +203,15 @@ export function useQualityAnalysis(): {
           // failure would tell an author with no gate configured that their
           // document was blocked, and discarding the findings alongside it
           // would take away the only thing on screen that was still true.
-          const previous = outputStore.getState().quality;
+          // Keeping the findings is only right while they still describe this
+          // document. Across a tab switch they describe the previous one, and
+          // every finding is a JSON Pointer into a file that is no longer on
+          // screen — "Apply fix" would patch the wrong document. A stale
+          // `blocked` is worse still: a gate rejection from before the switch
+          // would keep the new document blocked on a transport error.
+          const stored = outputStore.getState().quality;
+          const previous =
+            stored && stored.documentName === documentName ? stored : undefined;
           commit(ticket, {
             ...(previous ?? {
               findings: [],
@@ -213,6 +221,7 @@ export function useQualityAnalysis(): {
             documentName,
             seq: ticket,
             analyzedAt: Date.now(),
+            blocked: previous?.blocked ?? false,
             gateError: undefined,
             analysisError: message,
           });

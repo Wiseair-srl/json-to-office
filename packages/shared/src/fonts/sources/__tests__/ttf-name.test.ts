@@ -214,3 +214,44 @@ describe('rewriteFontSubfamilyNames', () => {
     expect(afterCodes).toContain('WEIGHT_CLASS_MISMATCH');
   });
 });
+
+/** Offset and length of the `name` table in an sfnt buffer. */
+function nameTableSpan(buf: Buffer): { offset: number; length: number } {
+  const numTables = buf.readUInt16BE(4);
+  for (let i = 0; i < numTables; i += 1) {
+    const eo = 12 + i * 16;
+    if (buf.toString('ascii', eo, eo + 4) === 'name') {
+      return {
+        offset: buf.readUInt32BE(eo + 8),
+        length: buf.readUInt32BE(eo + 12),
+      };
+    }
+  }
+  throw new Error('no name table');
+}
+
+describe('format-1 name tables', () => {
+  // `buildNameTable` only emits format 0, which has no language-tag section.
+  // Rewriting a format-1 table through it would drop the tags while keeping
+  // languageIDs >= 0x8000 that index into them, leaving records pointing at
+  // nothing. Refusing the rewrite keeps the font intact.
+  const formatOne = (): Buffer => {
+    const buf = Buffer.from(readFileSync(FIXTURE));
+    const { offset } = nameTableSpan(buf);
+    buf.writeUInt16BE(1, offset);
+    return buf;
+  };
+
+  it('leaves the font untouched rather than stripping language tags', () => {
+    const input = formatOne();
+    expect(rewriteFontFamilyName(input, 'Renamed')).toEqual(input);
+    expect(
+      rewriteFontSubfamilyNames(input, standardSubfamilyNames('Bold'))
+    ).toEqual(input);
+  });
+
+  it('still rewrites an ordinary format-0 table', () => {
+    const input = Buffer.from(readFileSync(FIXTURE));
+    expect(rewriteFontFamilyName(input, 'Renamed')).not.toEqual(input);
+  });
+});

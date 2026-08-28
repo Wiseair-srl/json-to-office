@@ -165,6 +165,14 @@ function rewriteNameTable(
   // Parse existing name records so we preserve all non-family entries.
   const nameBuf = tables[nameIdx].data;
   if (nameBuf.length < 6) return input;
+  // `buildNameTable` emits format 0, which has no language-tag section. A
+  // format-1 table keeps its tags after the name records, and any record with
+  // languageID >= 0x8000 is an index into them — rewriting it as format 0
+  // would strip the tags and leave those records pointing at nothing. Leaving
+  // the font unstamped is the lesser loss, so hand it back untouched.
+  // Preserving the tag section (and re-homing its string offsets) is the
+  // follow-up if a real font ever needs the rewrite.
+  if (nameBuf.readUInt16BE(0) !== 0) return input;
   const recordCount = nameBuf.readUInt16BE(2);
   const stringOffset = nameBuf.readUInt16BE(4);
   if (nameBuf.length < 6 + recordCount * 12) return input;
