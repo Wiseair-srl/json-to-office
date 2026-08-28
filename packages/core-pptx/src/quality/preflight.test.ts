@@ -784,3 +784,213 @@ describe('robustness', () => {
     ).toThrow('does not support format');
   });
 });
+
+describe('text contrast', () => {
+  function contrastFindings(doc: unknown) {
+    return pptxDiagnostics(doc).filter(
+      (finding) => finding.code === QUALITY_CODES.TEXT_CONTRAST
+    );
+  }
+
+  const light = '#F0CDC4';
+
+  it('warns on white text over a light solid background', () => {
+    const findings = contrastFindings(
+      deck({ ...CANVAS, theme: 'default' }, [
+        {
+          name: 'slide',
+          props: { background: { color: light } },
+          children: [
+            {
+              name: 'text',
+              props: {
+                text: 'Barely there',
+                color: '#FFFFFF',
+                fontSize: 12,
+                x: 1,
+                y: 1,
+                w: 4,
+                h: 1,
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0].context).toMatchObject({
+      colorHex: 'FFFFFF',
+      backgroundHex: 'F0CDC4',
+    });
+    expect((findings[0].context as { ratio: number }).ratio).toBeCloseTo(
+      1.48,
+      1
+    );
+  });
+
+  it('reads the shape a label sits on, not the slide behind it', () => {
+    // White on a white slide, but the text belongs to a shape filled dark —
+    // attributing the slide here is what makes a contrast rule cry wolf.
+    expect(
+      contrastFindings(
+        deck({ ...CANVAS, theme: 'default' }, [
+          {
+            name: 'slide',
+            props: { background: { color: '#FFFFFF' } },
+            children: [
+              {
+                name: 'shape',
+                props: {
+                  text: 'Legible',
+                  color: '#FFFFFF',
+                  fill: { color: '#101820' },
+                  fontSize: 12,
+                  x: 1,
+                  y: 1,
+                  w: 4,
+                  h: 1,
+                },
+              },
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+
+  it('looks through to a covering shape drawn under the text', () => {
+    expect(
+      contrastFindings(
+        deck({ ...CANVAS, theme: 'default' }, [
+          {
+            name: 'slide',
+            props: { background: { color: '#FFFFFF' } },
+            children: [
+              {
+                name: 'shape',
+                props: { fill: { color: '#101820' }, x: 0, y: 0, w: 8, h: 4 },
+              },
+              {
+                name: 'text',
+                props: {
+                  text: 'On the card',
+                  color: '#FFFFFF',
+                  fontSize: 12,
+                  x: 1,
+                  y: 1,
+                  w: 4,
+                  h: 1,
+                },
+              },
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+
+  it('samples a gradient where the text sits, not at its worst stop', () => {
+    // Radial from the bottom-right: the last stop is reached half a diagonal
+    // out, so the top-left corner is pure light and the focus corner is dark.
+    const gradientSlide = (x: number, y: number) =>
+      deck({ ...CANVAS, theme: 'default' }, [
+        {
+          name: 'slide',
+          props: {
+            background: {
+              gradient: {
+                type: 'radial',
+                focus: 'bottomRight',
+                stops: [
+                  { color: '#101820', pos: 0 },
+                  { color: '#101820', pos: 79 },
+                  { color: light, pos: 100 },
+                ],
+              },
+            },
+          },
+          children: [
+            {
+              name: 'text',
+              props: {
+                text: 'Sample',
+                color: '#FFFFFF',
+                fontSize: 12,
+                x,
+                y,
+                w: 2,
+                h: 0.5,
+              },
+            },
+          ],
+        },
+      ]);
+
+    // Top-left: fully into the light stop, so white text fails there.
+    const farCorner = contrastFindings(gradientSlide(0.3, 0.3));
+    expect(farCorner).toHaveLength(1);
+    expect(farCorner[0].context).toMatchObject({ backgroundHex: 'F0CDC4' });
+
+    // Beside the focus: still the dark stop, and white reads fine.
+    expect(contrastFindings(gradientSlide(11, 6.5))).toEqual([]);
+  });
+
+  it('says nothing when an image hides the background', () => {
+    expect(
+      contrastFindings(
+        deck({ ...CANVAS, theme: 'default' }, [
+          {
+            name: 'slide',
+            props: { background: { color: light } },
+            children: [
+              {
+                name: 'image',
+                props: { path: 'photo.png', x: 0, y: 0, w: 8, h: 4 },
+              },
+              {
+                name: 'text',
+                props: {
+                  text: 'Over a photo',
+                  color: '#FFFFFF',
+                  fontSize: 12,
+                  x: 1,
+                  y: 1,
+                  w: 4,
+                  h: 1,
+                },
+              },
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+
+  it('allows 3:1 for large text but holds small text to 4.5:1', () => {
+    const at = (fontSize: number) =>
+      contrastFindings(
+        deck({ ...CANVAS, theme: 'default' }, [
+          {
+            name: 'slide',
+            props: { background: { color: '#898989' } },
+            children: [
+              {
+                name: 'text',
+                props: {
+                  text: 'Mid grey at 3.5:1',
+                  color: '#FFFFFF',
+                  fontSize,
+                  x: 1,
+                  y: 1,
+                  w: 4,
+                  h: 1,
+                },
+              },
+            ],
+          },
+        ])
+      );
+    expect(at(36)).toEqual([]);
+    expect(at(10)).toHaveLength(1);
+  });
+});

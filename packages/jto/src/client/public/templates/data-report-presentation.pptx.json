@@ -314,7 +314,7 @@
             "fontSize": 12,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 0.9
           }
         },
@@ -329,7 +329,7 @@
             "fontSize": 12,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 0.9
           }
         },
@@ -353,7 +353,7 @@
             "y": 5.079,
             "w": 4.964,
             "h": 1.232,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 1.4,
             "style": "body"
           }
@@ -408,7 +408,7 @@
             "fontSize": 44,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "align": "right",
             "lineSpacingMultiple": 0.9
           }
@@ -424,7 +424,7 @@
             "fontSize": 44,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "align": "right",
             "lineSpacingMultiple": 0.9
           }
@@ -440,7 +440,7 @@
             "fontSize": 44,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "align": "right",
             "lineSpacingMultiple": 0.9
           }
@@ -807,7 +807,7 @@
             "y": 0.736,
             "w": 1.82,
             "h": 0.3,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 0.9,
             "style": "heading3"
           }
@@ -832,7 +832,7 @@
             "y": 3.855,
             "w": 4.5280000000000005,
             "h": 0.666,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 1.4,
             "style": "body"
           }
@@ -857,7 +857,7 @@
             "y": 5.547,
             "w": 2.856,
             "h": 0.666,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 1.4,
             "style": "body"
           }
@@ -1082,7 +1082,7 @@
             "fontSize": 9,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "text2",
+            "color": "background",
             "align": "right"
           }
         }
@@ -1375,7 +1375,7 @@
             "fontSize": 16,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 0.9
           }
         },
@@ -1390,7 +1390,7 @@
             "fontSize": 12,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 0.9
           }
         },
@@ -1405,7 +1405,7 @@
             "fontSize": 12,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 0.9
           }
         },
@@ -1419,7 +1419,7 @@
             "h": 1.75,
             "fontSize": 14,
             "fontFace": "Space Grotesk",
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 1.4
           }
         },
@@ -1863,7 +1863,7 @@
             "h": 0.35,
             "fontSize": 15,
             "fontFace": "Space Grotesk",
-            "color": "accent6",
+            "color": "background",
             "align": "center",
             "lineSpacingMultiple": 0.9
           }
@@ -2418,7 +2418,7 @@
             "y": 0.915,
             "w": 3.028,
             "h": 1.515,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 1.4,
             "style": "body"
           }
@@ -2434,7 +2434,7 @@
             "fontSize": 16,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 0.9
           }
         },
@@ -2458,7 +2458,7 @@
             "y": 5.869,
             "w": 0.9200000000000002,
             "h": 0.6,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 0.9,
             "style": "heading3"
           }
@@ -2592,7 +2592,7 @@
             "fontSize": 16,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 0.9
           }
         },
@@ -2606,7 +2606,7 @@
             "h": 1.42,
             "fontSize": 14,
             "fontFace": "Space Grotesk",
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 1.4
           }
         },
@@ -2877,7 +2877,7 @@
             "y": 0.67,
             "w": 4.746,
             "h": 1.232,
-            "color": "background",
+            "color": "accent6",
             "lineSpacingMultiple": 1.4,
             "style": "body"
           }
@@ -3243,7 +3243,7 @@
             "fontSize": 9,
             "fontFace": "Space Grotesk",
             "fontWeight": 500,
-            "color": "text2",
+            "color": "background",
             "align": "right"
           }
         }

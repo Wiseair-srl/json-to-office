@@ -375,6 +375,115 @@ export const pptxSlideDensityRule: QualityRule<
   },
 };
 
+/**
+ * WCAG 2.1 AA. Large text — 18pt, or 14pt bold — is legible at 3:1; everything
+ * else needs 4.5:1. Projection is less forgiving than a screen, not more, so
+ * these are floors rather than targets.
+ */
+const AA_NORMAL_RATIO = 4.5;
+const AA_LARGE_RATIO = 3;
+const LARGE_TEXT_PT = 18;
+
+function channelLuminance(channel: number): number {
+  const c = channel / 255;
+  return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+/** Relative luminance of a bare 6-digit hex, or undefined if unparseable. */
+function relativeLuminance(hex: string): number | undefined {
+  const match = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!match) return undefined;
+  const value = parseInt(match[1], 16);
+  return (
+    0.2126 * channelLuminance((value >> 16) & 255) +
+    0.7152 * channelLuminance((value >> 8) & 255) +
+    0.0722 * channelLuminance(value & 255)
+  );
+}
+
+function contrastRatio(a: string, b: string): number | undefined {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  if (la === undefined || lb === undefined) return undefined;
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+export const pptxTextContrastRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/text-contrast',
+  code: QUALITY_CODES.TEXT_CONTRAST,
+  category: 'accessibility',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultParameters: {
+    normalRatio: AA_NORMAL_RATIO,
+    largeRatio: AA_LARGE_RATIO,
+    largeTextPt: LARGE_TEXT_PT,
+  },
+  evaluate: ({ facts, configuration }) => {
+    const normalRatio = numberParameter(
+      configuration.parameters,
+      'normalRatio',
+      AA_NORMAL_RATIO
+    );
+    const largeRatio = numberParameter(
+      configuration.parameters,
+      'largeRatio',
+      AA_LARGE_RATIO
+    );
+    const largeTextPt = numberParameter(
+      configuration.parameters,
+      'largeTextPt',
+      LARGE_TEXT_PT
+    );
+
+    return textFacts(facts).flatMap((fact) => {
+      const { colorHex, backgroundHexes } = fact;
+      if (!colorHex || !backgroundHexes?.length) return [];
+
+      // A gradient is only as legible as its worst stop: the text crosses all
+      // of them, and the reader only remembers where it disappeared.
+      let worst: { ratio: number; background: string } | undefined;
+      for (const background of backgroundHexes) {
+        const ratio = contrastRatio(colorHex, background);
+        if (ratio === undefined) continue;
+        if (!worst || ratio < worst.ratio) worst = { ratio, background };
+      }
+      if (!worst) return [];
+
+      const required =
+        fact.fontSizePt >= largeTextPt ? largeRatio : normalRatio;
+      if (worst.ratio >= required) return [];
+
+      const rounded = Math.round(worst.ratio * 100) / 100;
+      return [
+        {
+          message: `Text at #${colorHex} on #${worst.background} has ${rounded}:1 contrast — below the ${required}:1 needed at ${fact.fontSizePt}pt.`,
+          path: fact.path,
+          suggestion:
+            'Darken the text, lighten it further, or change the surface behind it.',
+          context: {
+            colorHex,
+            backgroundHex: worst.background,
+            ratio: rounded,
+            required,
+            fontSizePt: fact.fontSizePt,
+            backgroundHexes,
+          },
+          evidence: {
+            actual: rounded,
+            expected: required,
+            unit: ':1',
+          },
+        },
+      ];
+    });
+  },
+};
+
 export const PPTX_QUALITY_RULES: QualityRulePack<
   PptxQualityModel,
   PptxQualityFact
@@ -385,6 +494,7 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxMinimumFontRule,
     pptxTextFitRule,
     pptxSlideDensityRule,
+    pptxTextContrastRule,
   ],
 };
 
