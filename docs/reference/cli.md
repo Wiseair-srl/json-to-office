@@ -54,9 +54,12 @@ jto <docx|pptx> generate <input> [options]
 | `--font-substitute <family=safe>` | string, repeatable                       | `[]`                                        | Map a non-safe family to a specific safe font; the target must be in the safe-fonts list or the command errors                                                                           |
 | `--dry-run`                       | boolean                                  | `false`                                     | Print a summary — input, output, format, theme, plugins (when any loaded), and `Validation: passed` — without writing files                                                              |
 | `--renderer <id>`                 | string                                   | format default                              | Backend that writes the file — see [Choosing a backend](#choosing-a-backend)                                                                                                             |
-| `--quality-profile <path>`        | JSON file                                | default format profile                      | Design profile: document class, rule parameters, and intended renderer targets                                                                                                           |
+| `--quality-profile <path>`        | JSON file                                | default format profile                      | Custom profile or shipped-profile override: document class, rule parameters, and intended renderer targets                                                                               |
 | `--quality-policy <path>`         | JSON file                                | advisory                                    | Per-run rule overrides, suppressions, diagnostic budget, and gate                                                                                                                        |
 | `--quality-gate <severity>`       | `none` \| `error` \| `warning` \| `info` | `none`                                      | Fail before rendering when a diagnostic at or above the threshold exists                                                                                                                 |
+
+See [Design quality](/guide/design-quality) for the built-in rules, shipped
+profiles, policy format, gate semantics and known limits.
 
 ### Choosing a backend
 
@@ -144,9 +147,12 @@ The argument accepts a JSON file, a directory, or a glob pattern (`node_modules`
 | `-q, --quiet`               | boolean                                  | `false`                | Only output errors                                                                                                                                                                |
 | `-f, --format <format>`     | `pretty` \| `json`                       | `pretty`               | `json` prints a machine-readable result array per file                                                                                                                            |
 | `-r, --recursive`           | boolean                                  | `false`                | Recurse into directories (`**/*.json`)                                                                                                                                            |
-| `--quality-profile <path>`  | JSON file                                | default format profile | Design profile used by quality rules                                                                                                                                              |
+| `--quality-profile <path>`  | JSON file                                | default format profile | Custom profile or shipped-profile override used by quality rules                                                                                                                  |
 | `--quality-policy <path>`   | JSON file                                | advisory               | Rule overrides, suppressions, budget, and gate                                                                                                                                    |
 | `--quality-gate <severity>` | `none` \| `error` \| `warning` \| `info` | `none`                 | Mark files invalid at or above the selected quality severity                                                                                                                      |
+
+Quality remains advisory unless the profile/policy or `--quality-gate` supplies
+a gate. See [Design quality](/guide/design-quality).
 
 Multi-file runs print a File/Status/Errors table. **Exit code `1` if any file is invalid, else `0`.** Zero matched files warns and exits `0`.
 

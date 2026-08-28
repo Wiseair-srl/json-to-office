@@ -45,7 +45,7 @@ It contains the effective model, facts, renderer target, and provenance back to 
 authored JSON. Rendering and design-quality analysis consume that same object.
 `@json-to-office/quality` owns only rule orchestration, profiles, run policies, and
 diagnostics; the cores own DOCX/PPTX facts and built-in rules. See
-[Design-quality findings](/guide/validation#design-quality-findings).
+[Design quality](/guide/design-quality).
 
 There is deliberately no single shared IR across the two formats. A Word document is a flowing stream of blocks inside sections; a PowerPoint deck is absolutely-positioned shapes on fixed-size slides. What the formats share is the _contract_ — how a backend is selected, how it declares capabilities, how unsupported features are reported — and that lives in `@json-to-office/shared`.
 
