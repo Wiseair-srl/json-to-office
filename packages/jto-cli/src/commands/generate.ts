@@ -27,6 +27,7 @@ import {
   parseQualityGate,
   type QualityCommandOptions,
 } from './quality-options.js';
+import { exitAfterFlush } from './exit.js';
 
 interface GenerateOptions extends QualityCommandOptions {
   output?: string;
@@ -355,7 +356,7 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
         ]);
       } catch (error: any) {
         await formatError(error);
-        process.exit(EXIT_CODES.FAIL);
+        await exitAfterFlush(EXIT_CODES.FAIL);
       } finally {
         PluginRegistry.getInstance().clear();
       }

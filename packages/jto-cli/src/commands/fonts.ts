@@ -27,6 +27,7 @@ import {
   runTask,
   type UiLine,
 } from './ui.js';
+import { exitAfterFlush } from './exit.js';
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -182,7 +183,7 @@ function createInspectCommand(): Command {
         await renderLines(lines);
       } catch (error) {
         await formatError(error);
-        process.exit(EXIT_CODES.FAIL);
+        await exitAfterFlush(EXIT_CODES.FAIL);
       }
     });
 }
@@ -303,7 +304,7 @@ function createInstallCommand(): Command {
         ]);
       } catch (error) {
         await formatError(error);
-        process.exit(EXIT_CODES.FAIL);
+        await exitAfterFlush(EXIT_CODES.FAIL);
       }
     });
 }

@@ -18,6 +18,7 @@ import {
   parseQualityGate,
   type QualityCommandOptions,
 } from './quality-options.js';
+import { exitAfterFlush } from './exit.js';
 
 interface ValidateCommandOptions extends QualityCommandOptions {
   type?: 'document' | 'theme' | 'auto';
@@ -148,14 +149,16 @@ export function createValidateCommand(adapter: FormatAdapter): Command {
             await renderLines(lines);
           }
 
-          process.exit(invalidFiles > 0 ? EXIT_CODES.FAIL : EXIT_CODES.OK);
+          await exitAfterFlush(
+            invalidFiles > 0 ? EXIT_CODES.FAIL : EXIT_CODES.OK
+          );
         } catch (error: any) {
           if (isJsonFormat) {
             writeJson({ error: true, message: error.message });
           } else {
             await formatError(error);
           }
-          process.exit(EXIT_CODES.FAIL);
+          await exitAfterFlush(EXIT_CODES.FAIL);
         }
       }
     )

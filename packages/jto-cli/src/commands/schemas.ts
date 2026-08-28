@@ -15,6 +15,7 @@ import {
   runTask,
   EXIT_CODES,
 } from './ui.js';
+import { exitAfterFlush } from './exit.js';
 
 interface JsonSchemaOptions {
   outputDir?: string;
@@ -115,7 +116,7 @@ export function createSchemasCommand(adapter: FormatAdapter): Command {
       } catch (error: any) {
         await formatError(error);
         PluginRegistry.getInstance().clear();
-        process.exit(EXIT_CODES.FAIL);
+        await exitAfterFlush(EXIT_CODES.FAIL);
       }
     })
     .addHelpText(
