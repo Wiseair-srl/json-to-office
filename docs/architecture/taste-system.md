@@ -187,13 +187,20 @@ the package-part goldens.
 False positives are regressions. A suppression can document a deliberate exception,
 but stock examples may not become clean merely by globally disabling a rule.
 
+The same false-positive bar applies to real documents through the calibration
+suite (`packages/jto-ops/src/quality-calibration.test.ts`), which holds the
+reference stock templates (`STOCK_REFERENCE_TEMPLATES`) warning-clean under the
+default profile. Only that curated set is reference quality; the remaining
+playground templates are starting points and must not constrain thresholds.
+
 ## Rendered ground truth
 
 The corpus pins false positives; it cannot see false negatives — a rule that never
 fires passes every clean-template check. The ground-truth harness
 (`packages/jto-ops/src/quality-ground-truth.harness.test.ts`, run with
 `pnpm --filter @json-to-office/jto-ops test:ground-truth`; needs LibreOffice and
-poppler) measures the other direction: it renders mutated stock templates through
+poppler) measures the other direction: it renders mutated stock templates (every
+template, reference or not — mutation only borrows realistic geometry) through
 soffice, reads exact word geometry back out of the intermediate PDF with
 `pdftotext -bbox` (`extractPdfTextGeometry` in jto-ops), and scores every estimated
 verdict against what the renderer actually laid out. Bottom-edge scoring admits

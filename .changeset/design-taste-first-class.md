@@ -25,8 +25,8 @@ format adapters expose the evidence-rich `QualityAnalysis` contract directly.
 CLI, MCP, HTTP, cache hits, and playground generation preserve rich quality
 diagnostics. Advisory remains default; profile/policy can block validation or
 generation before rendering. The executable 15-case reference corpus pins
-poor/professional/excellent verdicts and authored digests; stock templates stay
-warning-clean.
+poor/professional/excellent verdicts and authored digests; the reference stock
+templates stay warning-clean.
 
 Estimator thresholds are calibrated against rendered ground truth: a new
 harness (jto-ops `test:ground-truth`) renders mutated stock templates through

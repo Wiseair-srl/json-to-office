@@ -1,15 +1,18 @@
 /**
- * The quality rules, calibrated against the stock templates (#216).
+ * The quality rules, calibrated against the reference stock templates (#216).
  *
  * The acceptance bar for a design lint is that known-good documents come back
- * clean: a rule that flags the shipped templates trains every consumer to
- * ignore it. Warning-severity findings must therefore be zero across the
- * whole corpus *under the default profile*; infos (tight fits, a deliberate
- * 4:3 canvas) are advisory and allowed. A rule change that breaks this suite
- * is mistuned until proven otherwise — fix the threshold, not the template,
- * unless the template is genuinely wrong (that has happened once:
- * `Company deck 4_3` relied on the renderer's silent 4:3 fallback instead of
- * declaring its canvas).
+ * clean: a rule that flags reference-quality documents trains every consumer
+ * to ignore it. Warning-severity findings must therefore be zero across the
+ * reference templates *under the default profile*; infos (tight fits) are
+ * advisory and allowed. A rule change that breaks this suite is mistuned
+ * until proven otherwise — fix the threshold, not the template, unless the
+ * template is genuinely wrong.
+ *
+ * Only `STOCK_REFERENCE_TEMPLATES` participate. The other playground
+ * templates (the legacy 16:9/4:3 decks) are starting points, not quality
+ * references — findings on them are acceptable and must never bend a
+ * threshold.
  *
  * The bar is deliberately not extended to every profile. `executive-presentation`
  * flags most stock templates and is right to: they are reusable layouts, not
@@ -23,19 +26,19 @@ import { readFileSync, readdirSync } from 'fs';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 import { DocxFormatAdapter, PptxFormatAdapter } from './format-adapter';
+import { STOCK_REFERENCE_TEMPLATES } from './quality-reference-corpus';
 
 const TEMPLATES_DIR = path.resolve(
   __dirname,
   '../../jto/src/client/public/templates'
 );
 
-const files = readdirSync(TEMPLATES_DIR).filter(
-  (file) => file.endsWith('.pptx.json') || file.endsWith('.docx.json')
-);
+const files = STOCK_REFERENCE_TEMPLATES;
 
-describe('stock templates pass the quality rules clean', () => {
+describe('reference stock templates pass the quality rules clean', () => {
   it('found the corpus', () => {
-    expect(files.length).toBeGreaterThanOrEqual(10);
+    const present = new Set(readdirSync(TEMPLATES_DIR));
+    expect(files.filter((file) => !present.has(file))).toEqual([]);
   });
 
   for (const file of files) {
