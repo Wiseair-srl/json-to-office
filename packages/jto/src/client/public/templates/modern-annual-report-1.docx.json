@@ -8635,7 +8635,7 @@
         {
           "name": "image",
           "props": {
-            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8.27in\" height=\"11.69in\" viewBox=\"0 0 827 1169\"><rect x=\"83.0\" y=\"380.0\" width=\"80.0\" height=\"81.7\" fill=\"#4152A5\"/><rect x=\"3.0\" y=\"460.0\" width=\"80.0\" height=\"81.7\" fill=\"#4152A5\"/><rect x=\"83.0\" y=\"542.0\" width=\"170.0\" height=\"81.7\" fill=\"#4152A5\"/><rect x=\"0.0\" y=\"623.0\" width=\"163.3\" height=\"81.7\" fill=\"#4152A5\"/><line x1=\"2.0\" y1=\"705.0\" x2=\"827.0\" y2=\"705.0\" stroke=\"#000000\" stroke-width=\"0.69\"/><rect x=\"683.0\" y=\"1008.0\" width=\"72.3\" height=\"76.2\" fill=\"#BFBFBF\"/><rect x=\"755.0\" y=\"1085.0\" width=\"72.3\" height=\"84.5\" fill=\"#BFBFBF\"/><text x=\"50.0\" y=\"1047.5\" font-family=\"Inter Medium\" font-size=\"69.4\" fill=\"#000000\">Sustainability</text><text x=\"50.0\" y=\"1114.7\" font-family=\"Inter Medium\" font-size=\"69.4\" fill=\"#000000\">&amp;</text><text x=\"50.0\" y=\"1181.9\" font-family=\"Inter Medium\" font-size=\"69.4\" fill=\"#000000\">Esg Overview</text></svg>"
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8.27in\" height=\"11.69in\" viewBox=\"0 0 827 1169\"><rect x=\"83.0\" y=\"380.0\" width=\"80.0\" height=\"81.7\" fill=\"#4152A5\"/><rect x=\"3.0\" y=\"460.0\" width=\"80.0\" height=\"81.7\" fill=\"#4152A5\"/><rect x=\"83.0\" y=\"542.0\" width=\"170.0\" height=\"81.7\" fill=\"#4152A5\"/><rect x=\"0.0\" y=\"623.0\" width=\"163.3\" height=\"81.7\" fill=\"#4152A5\"/><line x1=\"2.0\" y1=\"705.0\" x2=\"827.0\" y2=\"705.0\" stroke=\"#000000\" stroke-width=\"0.69\"/><rect x=\"683.0\" y=\"1008.0\" width=\"72.3\" height=\"76.2\" fill=\"#BFBFBF\"/><rect x=\"755.0\" y=\"1085.0\" width=\"72.3\" height=\"84.5\" fill=\"#BFBFBF\"/><text x=\"50.0\" y=\"1020.5\" font-family=\"Inter Medium\" font-size=\"69.4\" fill=\"#000000\">Sustainability</text><text x=\"50.0\" y=\"1087.7\" font-family=\"Inter Medium\" font-size=\"69.4\" fill=\"#000000\">&amp;</text><text x=\"50.0\" y=\"1154.9\" font-family=\"Inter Medium\" font-size=\"69.4\" fill=\"#000000\">Esg Overview</text></svg>"
           }
         },
         {
@@ -8713,7 +8713,7 @@
             {
               "name": "paragraph",
               "props": {
-                "text": "Enviromental",
+                "text": "Environmental",
                 "font": {
                   "family": "Inter",
                   "fontWeight": 500,

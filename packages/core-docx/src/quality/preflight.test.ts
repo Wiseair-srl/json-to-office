@@ -367,3 +367,165 @@ describe('robustness', () => {
     ).toThrow('does not support format');
   });
 });
+
+describe('frame text fit', () => {
+  it('warns when a word cannot wrap inside its frame', () => {
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'section',
+          children: [
+            {
+              name: 'paragraph',
+              props: {
+                text: 'Global Footprint',
+                font: { size: 107 },
+                // 3000 twips = 150pt; "Footprint" needs roughly 420pt.
+                floating: { width: 3000 },
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.TEXT_OVERFLOW,
+      severity: 'warning',
+      path: '/children/0/children/0/props/floating/width',
+    });
+    expect(findings[0].context).toMatchObject({ longestWord: 'Footprint' });
+  });
+
+  it('stays quiet when the frame has room, tracking included', () => {
+    expect(
+      docxDiagnostics(
+        doc([
+          {
+            name: 'section',
+            children: [
+              {
+                name: 'paragraph',
+                props: {
+                  text: 'Global Footprint',
+                  font: {
+                    size: 107,
+                    characterSpacing: { type: 'condensed', value: 192 },
+                  },
+                  floating: { width: 9000 },
+                },
+              },
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+
+  it('warns when a frame near the foot of the page loses a line to the next', () => {
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'section',
+          props: { page: { size: 'A4' } },
+          children: [
+            {
+              name: 'paragraph',
+              props: {
+                // Every word fits the frame; the wrapped block is what runs
+                // off the sheet, so this exercises the vertical check rather
+                // than the mid-word one.
+                text: 'OUR AWARDS FOR THE YEAR',
+                font: { size: 76 },
+                floating: {
+                  width: 9800,
+                  verticalPosition: { offset: 14213 },
+                },
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.TEXT_OVERFLOW,
+      path: '/children/0/children/0/props/floating/verticalPosition/offset',
+    });
+  });
+
+  it('ignores an overrun smaller than the line it would cost', () => {
+    // A frame ending a few twips past the sheet is inside the width model's
+    // error; only an overrun that actually displaces a line is reportable.
+    expect(
+      docxDiagnostics(
+        doc([
+          {
+            name: 'section',
+            props: { page: { size: 'A4' } },
+            children: [
+              {
+                name: 'paragraph',
+                props: {
+                  text: 'Footer note',
+                  font: { size: 9 },
+                  floating: {
+                    width: 5112,
+                    verticalPosition: { offset: 16700 },
+                  },
+                },
+              },
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+});
+
+describe('svg text bounds', () => {
+  it('warns when a baseline falls outside the viewBox', () => {
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'section',
+          children: [
+            {
+              name: 'image',
+              props: {
+                svg: '<svg viewBox="0 0 827 1169"><text x="50" y="1181.9" font-size="69.4">Esg Overview</text></svg>',
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.SVG_TEXT_CLIPPED,
+      severity: 'warning',
+      path: '/children/0/children/0/props/svg',
+    });
+    expect(findings[0].context).toMatchObject({ content: 'Esg Overview' });
+  });
+
+  it('accepts a baseline inside the canvas', () => {
+    expect(
+      docxDiagnostics(
+        doc([
+          {
+            name: 'section',
+            children: [
+              {
+                name: 'image',
+                props: {
+                  svg: '<svg viewBox="0 0 827 1169"><text x="50" y="1154.9" font-size="69.4">Esg Overview</text></svg>',
+                },
+              },
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+});

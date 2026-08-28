@@ -7,11 +7,14 @@ import {
   type QualityRulePack,
 } from '@json-to-office/quality';
 import type {
+  DocxFrameTextFact,
   DocxHeadingFact,
   DocxQualityFact,
   DocxQualityModel,
+  DocxSvgTextFact,
   DocxTableWidthFact,
 } from './facts';
+import { estimateTextWidthPt, estimateWrappedLines } from './text-metrics';
 
 /** Half a point: enough to absorb integer-twip rounding. */
 const WIDTH_TOLERANCE_TWIPS = 10;
@@ -133,12 +136,168 @@ export const docxHeadingHierarchyRule: QualityRule<
       }),
 };
 
+/**
+ * How far past a box the width model must land before the rule speaks.
+ *
+ * `estimateTextWidthPt` sits within roughly 8% of rendered geometry, so an
+ * overflow inside that band is indistinguishable from a fit. Firing there would
+ * trade real defects for noise on every template that merely sets tight type.
+ * The band is the honest limit of a static model: catching a 3% overrun needs
+ * measured glyph positions, which is the rendered-certainty pass, not this rule.
+ */
+const WIDTH_MODEL_TOLERANCE = 1.08;
+const TWIPS_PER_POINT = 20;
+
+function frameTextFacts(
+  facts: readonly DocxQualityFact[]
+): DocxFrameTextFact[] {
+  return facts.filter(
+    (fact): fact is DocxFrameTextFact => fact.kind === 'docx/frame-text'
+  );
+}
+
+export const docxTextFitRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
+  id: 'docx/text-fit',
+  code: QUALITY_CODES.TEXT_OVERFLOW,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'estimated',
+  formats: ['docx'],
+  defaultParameters: { widthTolerance: WIDTH_MODEL_TOLERANCE },
+  evaluate: ({ facts, configuration }) => {
+    const tolerance = numberParameter(
+      configuration.parameters,
+      'widthTolerance',
+      WIDTH_MODEL_TOLERANCE
+    );
+    const findings = [];
+
+    for (const fact of frameTextFacts(facts)) {
+      const frameWidthPt = fact.frameWidthTwips / TWIPS_PER_POINT;
+
+      // A word wider than its frame has nowhere to wrap, so the renderer breaks
+      // it mid-word. Unlike a paragraph that merely runs long, the damage lands
+      // inside a single word.
+      const longestWordPt = estimateTextWidthPt(
+        fact.longestWord,
+        fact.fontSizePt,
+        fact.characterSpacingPt
+      );
+      if (longestWordPt > frameWidthPt * tolerance) {
+        findings.push({
+          message: `"${fact.longestWord}" is estimated at ${Math.round(longestWordPt)}pt in a ${Math.round(frameWidthPt)}pt frame — with no wrap point it will break mid-word.`,
+          path: `${fact.path}/props/floating/width`,
+          suggestion:
+            'Widen the frame, reduce fontSize, or condense the run further.',
+          context: {
+            longestWord: fact.longestWord,
+            estimatedWidthPt: Math.round(longestWordPt),
+            frameWidthPt: Math.round(frameWidthPt),
+            fontSizePt: fact.fontSizePt,
+          },
+          evidence: {
+            actual: Math.round(longestWordPt),
+            expected: Math.round(frameWidthPt),
+            unit: 'pt',
+          },
+        });
+        continue;
+      }
+
+      // A frame pinned near the foot of the page takes its wrapped height with
+      // it. When that runs past the last usable twip the overflow does not
+      // clip — it repaginates, and a heading arrives split across two pages.
+      if (fact.offsetYTwips === undefined) continue;
+      const lines = estimateWrappedLines(
+        fact.text,
+        frameWidthPt,
+        fact.fontSizePt,
+        fact.characterSpacingPt
+      );
+      const heightTwips = lines * fact.lineHeightPt * TWIPS_PER_POINT;
+      const bottomTwips = fact.offsetYTwips + heightTwips;
+      // The line count inherits the width model's error, so an overrun smaller
+      // than one line is inside the noise — a 143-twip "overflow" on the stock
+      // annual report turned out to start and finish on the same page. Only an
+      // overrun that actually costs a line is worth a warning.
+      const overrunTwips = bottomTwips - fact.pageBottomTwips;
+      if (overrunTwips <= fact.lineHeightPt * TWIPS_PER_POINT) continue;
+
+      findings.push({
+        message: `Frame starts at ${fact.offsetYTwips} twips and needs ${Math.round(heightTwips)} more for ${lines} line${lines === 1 ? '' : 's'} of ${fact.fontSizePt}pt — it runs ${Math.round(overrunTwips)} twips past the page, so the text breaks onto the next one.`,
+        path: `${fact.path}/props/floating/verticalPosition/offset`,
+        suggestion:
+          'Raise the frame, shorten the text, or reduce fontSize so the block finishes on the page.',
+        context: {
+          offsetYTwips: fact.offsetYTwips,
+          estimatedHeightTwips: Math.round(heightTwips),
+          pageBottomTwips: fact.pageBottomTwips,
+          lines,
+        },
+        evidence: {
+          actual: Math.round(bottomTwips),
+          expected: fact.pageBottomTwips,
+          unit: 'twips',
+        },
+      });
+    }
+
+    return findings;
+  },
+};
+
+export const docxSvgTextBoundsRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/svg-text-bounds',
+  code: QUALITY_CODES.SVG_TEXT_CLIPPED,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  evaluate: ({ facts }) =>
+    facts
+      .filter((fact): fact is DocxSvgTextFact => fact.kind === 'docx/svg-text')
+      .flatMap((fact) => {
+        const canvasBottom = fact.viewBoxMinY + fact.viewBoxHeight;
+        // The baseline is the last thing that must land inside the canvas;
+        // descenders below it are a rendering nicety, the baseline is the
+        // difference between painted and gone.
+        if (fact.baselineY <= canvasBottom) return [];
+        const overflow = Math.round((fact.baselineY - canvasBottom) * 10) / 10;
+        return [
+          {
+            message: `SVG text "${fact.content}" sits ${overflow} units below the viewBox — it is clipped away and never reaches the document's text layer.`,
+            path: fact.path,
+            suggestion: `Move the baseline above ${Math.round(canvasBottom)}, or grow the viewBox height.`,
+            context: {
+              content: fact.content,
+              baselineY: fact.baselineY,
+              canvasBottom,
+              overflowUnits: overflow,
+            },
+            evidence: {
+              actual: fact.baselineY,
+              expected: canvasBottom,
+              unit: 'viewBox units',
+            },
+          },
+        ];
+      }),
+};
+
 export const DOCX_QUALITY_RULES: QualityRulePack<
   DocxQualityModel,
   DocxQualityFact
 > = {
   id: 'docx/default',
-  rules: [docxTableWidthRule, docxHeadingHierarchyRule],
+  rules: [
+    docxTableWidthRule,
+    docxHeadingHierarchyRule,
+    docxTextFitRule,
+    docxSvgTextBoundsRule,
+  ],
 };
 
 export const DOCX_QUALITY_PROFILES = {

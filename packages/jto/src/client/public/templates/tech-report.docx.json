@@ -1969,11 +1969,11 @@
             "text": "Vision, Mission & Purpose",
             "font": {
               "family": "DM Sans",
-              "size": 80,
+              "size": 68,
               "color": "background",
               "lineSpacing": {
                 "type": "exactly",
-                "value": 76
+                "value": 65
               },
               "characterSpacing": {
                 "type": "condensed",
@@ -1981,7 +1981,7 @@
               }
             },
             "floating": {
-              "width": 9418,
+              "width": 4308,
               "horizontalPosition": {
                 "offset": 744
               },
@@ -4236,11 +4236,11 @@
             "text": "Financial Performance",
             "font": {
               "family": "DM Sans",
-              "size": 80,
+              "size": 49,
               "color": "background",
               "lineSpacing": {
                 "type": "exactly",
-                "value": 76
+                "value": 47
               },
               "characterSpacing": {
                 "type": "condensed",
@@ -4248,7 +4248,7 @@
               }
             },
             "floating": {
-              "width": 9189,
+              "width": 4347,
               "horizontalPosition": {
                 "offset": 728
               },
@@ -4784,7 +4784,7 @@
               }
             },
             "floating": {
-              "width": 7557,
+              "width": 8200,
               "horizontalPosition": {
                 "offset": 723
               },
@@ -6493,7 +6493,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "Contact Informaton",
+            "text": "Contact Information",
             "font": {
               "family": "DM Sans",
               "size": 80,

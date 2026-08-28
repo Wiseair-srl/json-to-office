@@ -3076,7 +3076,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "Artifical Intelligence",
+            "text": "Artificial Intelligence",
             "font": {
               "family": "Geist",
               "size": 18,
@@ -13352,7 +13352,7 @@
               }
             },
             "floating": {
-              "width": 9800,
+              "width": 10600,
               "height": 240,
               "wrap": {
                 "type": "none"
