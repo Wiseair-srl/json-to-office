@@ -12,11 +12,11 @@ export type QualityReferenceTier = 'poor' | 'professional' | 'excellent';
 
 /**
  * Stock templates that count as reference-quality documents — the calibration
- * bar for the quality rules. The remaining playground templates (`Alternative
- * deck 16_9`, `Brand template 16_9`, `Company deck 16_9`, `Company deck 4_3`)
- * are starting points, not quality references: they may carry findings and
- * must never constrain a threshold. Add a template here only when it is
- * accepted as reference quality.
+ * bar for the quality rules. Since the four legacy playground decks were
+ * dropped from the repo this list is every shipped template, but the two are
+ * not the same thing: a template earns a place here by being accepted as
+ * reference quality, not by being present in `public/templates`. A new
+ * starting-point template ships without being added here.
  */
 export const STOCK_REFERENCE_TEMPLATES: readonly string[] = [
   'modern-annual-report-1.docx.json',

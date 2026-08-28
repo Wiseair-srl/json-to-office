@@ -93,7 +93,7 @@ You can position anything with explicit `x`/`y`/`w`/`h` coordinates, but hand-pl
 }
 ```
 
-`column` and `row` are **0-indexed**; spans default to 1. The library resolves each grid placement to concrete inches at generation time, so the same layout logic adapts automatically if you change the slide size or grid configuration. You can customize the grid per presentation (and per template) via the root `grid` prop — for example the bundled Company deck uses a 12 × 12 grid with tighter 0.16 in gutters for finer vertical control.
+`column` and `row` are **0-indexed**; spans default to 1. The library resolves each grid placement to concrete inches at generation time, so the same layout logic adapts automatically if you change the slide size or grid configuration. You can customize the grid per presentation (and per template) via the root `grid` prop — for example a dense corporate deck might use a 12 × 12 grid with tighter 0.16 in gutters for finer vertical control.
 
 The full resolution math, clamping behavior, and explicit-coordinate overrides are covered in [Slides & the grid](/reference/pptx/slides-and-grid).
 
@@ -224,7 +224,7 @@ Once a deck has more than a few slides, you will notice the same layouts repeati
 {
   "name": "pptx",
   "props": {
-    "title": "Company deck",
+    "title": "Quarterly review",
     "slideWidth": 13.33,
     "slideHeight": 7.5,
     "grid": { "columns": 12, "rows": 12 },
