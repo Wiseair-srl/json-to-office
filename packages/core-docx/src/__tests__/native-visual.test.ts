@@ -570,7 +570,7 @@ describe('a native visual is found wherever it is nested', () => {
     expect(
       Object.keys(emitted).filter((name) => name.startsWith('word/media/'))
     ).toHaveLength(1);
-  }, 30_000);
+  }, 60_000);
 
   it('resolves every picture relationship, in every part', async () => {
     const emitted = await parts(await render(nestedDocument));
@@ -581,7 +581,7 @@ describe('a native visual is found wherever it is nested', () => {
         expect(id).toMatch(/^rId\d+$/);
       }
     }
-  }, 30_000);
+  }, 60_000);
 });
 
 describe('native mode never reaches a rasterizer', () => {

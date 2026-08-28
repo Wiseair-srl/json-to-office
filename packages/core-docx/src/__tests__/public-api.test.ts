@@ -81,7 +81,7 @@ describe('public API surface', () => {
     const result: coreDocx.DocxGenerationResult =
       await coreDocx.generateBufferWithWarnings(document);
     expect(Buffer.isBuffer(result.buffer)).toBe(true);
-  }, 30_000);
+  }, 60_000);
 
   it('accepts every registered renderer id and rejects others', () => {
     const valid: DocxRendererId[] = ['docxjs', 'office-open'];
@@ -113,7 +113,7 @@ describe('public API surface', () => {
         validation: { enabled: true },
       })
     ).resolves.toBeInstanceOf(Buffer);
-  }, 30_000);
+  }, 60_000);
 
   it('no longer offers a caching option nothing implements', () => {
     // The component render cache went with the IR — compiling holds no

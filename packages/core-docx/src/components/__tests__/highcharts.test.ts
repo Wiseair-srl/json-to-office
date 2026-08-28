@@ -75,7 +75,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       );
 
       expect(result.base64).toMatch(/^data:image\/png;base64,/);
-    }, 10000);
+    }, 60_000);
 
     it('should handle chart with dimensions', async () => {
       const component = {

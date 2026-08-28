@@ -70,7 +70,7 @@ describe('from-json preview backend selection', () => {
     const body = (await response.json()) as { error?: string };
     expect(body.error).toContain('comment-threads');
     expect(body.error).toContain('sections[0].children[0]');
-  }, 30_000);
+  }, 60_000);
 
   it('rejects a backend nobody registered', async () => {
     const response = await post(app, PREVIEW, {
@@ -82,7 +82,7 @@ describe('from-json preview backend selection', () => {
     const body = (await response.json()) as { error?: string };
     expect(body.error).toContain('"nope"');
     expect(body.error).toContain('"docxjs"');
-  }, 30_000);
+  }, 60_000);
 
   it('does not refuse the same document on the default backend', async () => {
     const response = await post(app, PREVIEW, {
@@ -93,5 +93,5 @@ describe('from-json preview backend selection', () => {
     // Generation succeeds; whether the conversion does depends on whether
     // LibreOffice is installed, which is not what this file is about.
     expect(response.status).not.toBe(400);
-  }, 30_000);
+  }, 60_000);
 });

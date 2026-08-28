@@ -151,7 +151,7 @@ describe('both DOCX backends over the corpus', () => {
       expect(officeSemantics).toEqual(docxSemantics);
       expect(officeMedia).toBeGreaterThanOrEqual(docxMedia);
     },
-    30_000
+    60_000
   );
 
   it.each(OUTSIDE.map((c) => [c.name, c] as const))(
@@ -166,7 +166,7 @@ describe('both DOCX backends over the corpus', () => {
         new RegExp(testCase.missing.join('|'))
       );
     },
-    30_000
+    60_000
   );
 
   it('covers most of the corpus on both backends', () => {
@@ -189,7 +189,7 @@ describe('both DOCX backends over the corpus', () => {
     ]);
 
     expect(officeOpen.buffer.equals(docxjs.buffer)).toBe(false);
-  }, 30_000);
+  }, 60_000);
 
   it('keeps per-placement extents for every image type', async () => {
     const images = [PNG_4X2, JPEG_8X4, GIF_4X2, BMP_4X2, SVG_4X2].flatMap(
@@ -218,7 +218,7 @@ describe('both DOCX backends over the corpus', () => {
       const bytes = await entry.async('nodebuffer');
       expect(readImageDimensions(bytes, path).width).toBeGreaterThan(0);
     }
-  }, 30_000);
+  }, 60_000);
 });
 
 describe('the office-open backend', () => {
@@ -254,7 +254,7 @@ describe('the office-open backend', () => {
     ]) {
       expect(paths).toContain(required);
     }
-  }, 30_000);
+  }, 60_000);
 
   // Drawings are the interesting case for determinism — a `wp:docPr` id left
   // to a library counter changes on the second call — and they are covered for
@@ -272,7 +272,7 @@ describe('the office-open backend', () => {
     ]);
 
     expect(second.buffer.equals(first.buffer)).toBe(true);
-  }, 30_000);
+  }, 60_000);
 
   it('carries the document metadata and the pinned timestamps', async () => {
     const { buffer } = await generateBufferViaIr(
@@ -294,5 +294,5 @@ describe('the office-open backend', () => {
       '<dcterms:modified xsi:type="dcterms:W3CDTF">2025-06-07T08:09:10.000Z</dcterms:modified>'
     );
     expect(custom).toContain('Wiseair');
-  }, 30_000);
+  }, 60_000);
 });

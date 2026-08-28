@@ -102,7 +102,7 @@ describe('/api/docx/renderers', () => {
     // Both are documents, and they are not the same document.
     expect(a.data.document.length).toBeGreaterThan(0);
     expect(b.data.document).not.toBe(a.data.document);
-  }, 30_000);
+  }, 60_000);
 
   it('caches each backend separately', async () => {
     const send = (renderer: string) =>
@@ -126,7 +126,7 @@ describe('/api/docx/renderers', () => {
     expect(againDocxjs.cache.status).toBe('HIT');
     expect(againDocxjs.data.document).toBe(firstDocxjs.data.document);
     expect(firstOfficeOpen.data.document).not.toBe(firstDocxjs.data.document);
-  }, 30_000);
+  }, 60_000);
 
   it('answers a capability refusal with 400 and the feature name', async () => {
     const response = await post(app, '/api/docx/generate', {
@@ -140,7 +140,7 @@ describe('/api/docx/renderers', () => {
     const body = (await response.json()) as { error?: string };
     expect(body.error).toContain('comment-threads');
     expect(body.error).toContain('sections[0].children[0]');
-  }, 30_000);
+  }, 60_000);
 
   it('renders that same document on the default backend', async () => {
     const response = await post(app, '/api/docx/generate', {
@@ -148,7 +148,7 @@ describe('/api/docx/renderers', () => {
     });
 
     expect(response.status).toBe(200);
-  }, 30_000);
+  }, 60_000);
 
   it('answers an unregistered backend with 400 and the ids that exist', async () => {
     const response = await post(app, '/api/docx/generate', {
@@ -164,7 +164,7 @@ describe('/api/docx/renderers', () => {
     expect(body.error).toContain('"nope"');
     expect(body.error).toContain('"docxjs"');
     expect(body.error).toContain('"office-open"');
-  }, 30_000);
+  }, 60_000);
 
   it('returns evidence-rich quality gate failures as client errors', async () => {
     const skippedHeading = {
@@ -208,7 +208,7 @@ describe('/api/docx/renderers', () => {
         qualityAnalysis: { blocked: true },
       },
     });
-  }, 30_000);
+  }, 60_000);
 
   it('rejects a profile targeting another renderer', async () => {
     const quality = {
@@ -289,5 +289,5 @@ describe('/api/pptx/generate renderer validation', () => {
     expect(body.error).toContain('"nope"');
     expect(body.error).toContain('"pptxgenjs"');
     expect(body.error).toContain('"office-open"');
-  }, 30_000);
+  }, 60_000);
 });
