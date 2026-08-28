@@ -480,8 +480,11 @@ export function Preview() {
               />
               <div
                 className={cn(
-                  'absolute inset-x-3 top-2 z-40 overflow-y-auto',
-                  'max-h-[min(60%,32rem)] rounded-sm border bg-card p-4 shadow-lg'
+                  // Pinned top and bottom rather than capped: a long findings
+                  // list gets the whole pane to scroll inside, and the drawer
+                  // stops looking like a tooltip that ran out of room.
+                  'absolute inset-x-3 top-2 bottom-2 z-40 overflow-y-auto',
+                  'rounded-sm border bg-card p-4 shadow-lg'
                 )}
               >
                 {showQualityControls && <QualityControls />}
