@@ -18,12 +18,97 @@ Both are deployments of the exact same dev server you get with `jto docx dev` / 
 - **Monaco JSON editor with schema autocomplete.** The editor is Monaco (the VS Code editor) wired to the generated JSON Schemas, so you get autocomplete for component names and props, inline validation errors, and hover documentation as you type. See [Validation](/guide/validation) for how the same schemas are used outside the playground.
 - **Document outline.** The sidebar shows a semantic table of contents for the active document — numbered slides labeled by their titles (PPTX), the heading hierarchy (DOCX), or top-level keys (themes). Clicking a node jumps the editor to its JSON; moving the cursor highlights the node you're in. Nodes with validation errors get a red dot, and slides or whole heading sections can be reordered by dragging them in the outline.
 - **Live preview.** The preview re-renders as the JSON changes, so you iterate on layout and content without a download-open-check loop.
+- **Design quality analysis.** A schema-valid document can still overflow its boxes or break its outline. The playground analyses the document as you type and reports findings — with evidence, the authored path, and often a one-click fix — beside the preview. See [Design quality in the playground](#design-quality) below.
 - **Template gallery.** Built-in starting templates for each format, so you never begin from an empty `{}`. Browse them in the document sidebar and use them as a base for your own documents.
 - **Theme switching.** Swap the document's theme and watch colors, fonts, and component defaults change instantly. See [Themes & styling](/guide/themes).
 - **Compare (DOCX only).** The Compare button diffs two document JSONs into a redline `.docx` with native Word tracked changes — the same engine as `jto docx diff` and `POST /api/docx/diff`. See [the CLI guide](/guide/cli) for the command-line equivalent.
 - **Download with font-mode prompt.** When you export a document that references fonts outside the safe list, a dialog asks how to handle them: **keep custom fonts** (references ship as-is; recipients without the font get a fallback) or **convert to safe fonts** (non-safe families are rewritten to Calibri / Georgia / Consolas so every recipient sees the same glyphs). This mirrors the library's `fonts.mode` option — see [Fonts](/guide/fonts).
 
 ![Playground screenshot](../playground-screenshot.png)
+
+## Design quality
+
+Structural [validation](/guide/validation) answers "will this render?". [Design
+quality](/guide/design-quality) answers "will it read well?" — text estimated to
+overflow its box, a heading that skips a level, a table wider than its section.
+The playground runs that analysis continuously, so findings track the editor
+rather than waiting for a build.
+
+### The status row
+
+The strip above the preview carries the verdict: a severity breakdown
+(`2 errors · 5 warnings`), the profile the analysis ran under, and — when a gate
+refused the build — a `blocked` badge. A clean document says `No findings`
+rather than showing nothing, so silence never has to be interpreted.
+
+Click it to open the findings drawer. The drawer floats over the preview
+instead of pushing it down, because the analysis re-runs on every pause in
+typing and a panel in the column would move the page you are reading each time
+a finding appeared or cleared. `Escape` or a click on the page dismisses it.
+
+### Findings
+
+Each finding leads with what is wrong in plain language, then:
+
+- **evidence** — `Expected 487.3 pt · found 600 pt`, the measurement the rule
+  actually made;
+- **a suggestion**, paired with an **Apply fix** button when the finding carries
+  RFC 6902 operations that repair it;
+- **the authored path** — click it to reveal that node in the editor;
+- **certainty and code**, as reference. Certainty matters: a `deterministic`
+  finding measured the resolved document, while an `estimated` one applied a
+  heuristic and can be wrong.
+
+Applying a fix rewrites the document JSON and re-analyses it, so the panel
+reflects the repair immediately. Fixes are proposals — review them, especially
+when shrinking type would preserve fit at the cost of design intent.
+
+### Quality settings
+
+The **Quality settings** button opens the same drawer with the run controls:
+
+- **Profile** — one of the shipped profiles for the current format, or the
+  format's default. Only profiles that fit the open format are offered.
+- **Gate** — the severity that makes generation fail. `Never blocks` is the
+  default: findings are reported and the run always finishes. With a gate set,
+  a failing build opens the drawer with the diagnostics that refused it.
+- **Show** — a display filter for the panel only. It defaults to
+  warning-and-above, because the shipped templates produce a large number of
+  advisory infos; anything hidden is still counted and one click away.
+
+### Rule policy
+
+The **Rule policy** editor covers the rest of the
+[policy contract](/guide/design-quality#policies-and-gates): per-rule severity,
+enable/disable and parameters, suppressions, the diagnostic budget, and
+`onRuleError`. It is schema-backed, so completion offers the real rule ids for
+the open format and explains each parameter.
+
+```json
+{
+  "rules": {
+    "pptx/minimum-font-size": { "parameters": { "minimumFontPt": 12 } },
+    "pptx/slide-density": { "severity": "error" }
+  },
+  "suppressions": [
+    {
+      "ruleId": "pptx/text-fit",
+      "path": "/children/4",
+      "reason": "Deliberate full-bleed quote slide."
+    }
+  ]
+}
+```
+
+Two rules of the road:
+
+- `gate` and `profile` are **not** accepted here — they have their own controls
+  above, and two writable sources for one setting means one of them lies.
+- A policy that does not parse is not sent at all, so a half-typed brace leaves
+  the previous run standing instead of failing every keystroke.
+
+Every suppression requires a `reason`. That is deliberate: a muted finding
+nobody has to justify is how a rule quietly stops being enforced.
 
 ## High-fidelity PDF preview (LibreOffice)
 
