@@ -56,14 +56,19 @@ export interface UpstreamOverride {
 }
 
 /**
- * rsms/inter ships `InterVariable.ttf` (the upright variable font) and
- * `InterVariable-Italic.ttf` on jsDelivr. We instance the upright at each
- * advertised weight so Inter Thin (100), ExtraLight (200), Light (300),
- * Medium (500), SemiBold (600), ExtraBold (800), and Black (900) come out
- * with distinct glyph outlines instead of the near-duplicates Google's
- * static redistribution ships. Regular (400) and Bold (700) from Google
- * were already clean, but instancing them from the same variable font
- * keeps the full family visually consistent.
+ * rsms/inter publishes the upright variable master as `InterVariable.ttf`
+ * on jsDelivr, but the italic master ONLY as `InterVariable-Italic.woff2`
+ * — no italic `.ttf` exists under `docs/font-files/` at any tag, so a
+ * `.ttf` italic URL 404s and every italic Inter run silently falls back
+ * to host defaults. The variable fetcher accepts woff2 sources (fontverter
+ * converts to sfnt before instancing), so point at the woff2 directly.
+ *
+ * We instance each master at every advertised weight so Inter Thin (100),
+ * ExtraLight (200), Light (300), Medium (500), SemiBold (600), ExtraBold
+ * (800), and Black (900) come out with distinct glyph outlines instead of
+ * the near-duplicates Google's static redistribution ships. Regular (400)
+ * and Bold (700) from Google were already clean, but instancing them from
+ * the same variable font keeps the full family visually consistent.
  *
  * Version pin: `@v4.1` — the last stable rsms/inter release at the time
  * of writing. jsDelivr caches the file aggressively; a version bump here
@@ -72,7 +77,7 @@ export interface UpstreamOverride {
 const INTER_VARIABLE_URL =
   'https://cdn.jsdelivr.net/gh/rsms/inter@v4.1/docs/font-files/InterVariable.ttf';
 const INTER_VARIABLE_ITALIC_URL =
-  'https://cdn.jsdelivr.net/gh/rsms/inter@v4.1/docs/font-files/InterVariable-Italic.ttf';
+  'https://cdn.jsdelivr.net/gh/rsms/inter@v4.1/docs/font-files/InterVariable-Italic.woff2';
 
 function interVariants(): UpstreamVariant[] {
   const weights = [100, 200, 300, 400, 500, 600, 700, 800, 900];

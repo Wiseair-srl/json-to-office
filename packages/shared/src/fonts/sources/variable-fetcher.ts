@@ -1,8 +1,9 @@
 /**
- * Variable-font instancer. Fetches a variable TTF once (disk-cached), then
- * pins its `wght` axis (plus any additional axes) to produce a clean static
- * TTF per requested weight. Uses harfbuzz via `subset-font` — pure JS + WASM,
- * no native toolchain.
+ * Variable-font instancer. Fetches a variable font once (disk-cached; TTF,
+ * OTF, or WOFF/WOFF2 — fontverter converts compressed containers before
+ * instancing), then pins its `wght` axis (plus any additional axes) to
+ * produce a clean static TTF per requested weight. Uses harfbuzz via
+ * `subset-font` — pure JS + WASM, no native toolchain.
  *
  * Why this exists. Google Fonts serves pre-instanced static TTFs for many
  * families, but the instancing step is lossy: Inter Thin (100) and
@@ -12,9 +13,9 @@
  * `wght` axis at exactly 100 vs 200 produces properly distinct instances.
  *
  * Cache strategy:
- *   1. Raw variable TTF cached at key `varsrc|<url>` — one download per URL
+ *   1. Raw variable font cached at key `varsrc|<url>` — one download per URL
  *      per process (+ optional disk layer).
- *   2. Instanced static TTF cached at `variable|<url>|<weight>|<italic>` —
+ *   2. Instanced static TTF cached at `variable2|<url>|<weight>|<italic>` —
  *      avoids re-running harfbuzz for weights we've already produced.
  *
  * Full-glyph retention. subset-font's `text` parameter drives which
@@ -29,6 +30,7 @@
 
 import type { ResolvedFontSource } from '../types';
 import { detectFontFormat } from './format';
+import { rewriteFontSubfamilyNames } from './ttf-name';
 import { isAllowedFontUrl } from './url-allowlist';
 
 // `subset-font` carries a harfbuzz WASM payload and is Node-only. Lazy-load
@@ -83,7 +85,9 @@ function instanceCacheKey(
         .map(([k, v]) => `${k}=${v}`)
         .join(',')
     : '';
-  return `variable|${url}|${weight}|${italic ? 'i' : 'r'}${axisPart}`;
+  // `variable2`: v2 stamps standard subfamily names into the instanced
+  // output — bumped so persistent disk caches drop pre-stamp instances.
+  return `variable2|${url}|${weight}|${italic ? 'i' : 'r'}${axisPart}`;
 }
 
 /**
@@ -149,7 +153,16 @@ async function fetchVariableSource(
     if (buf.length < 1024)
       return { error: `response too small (${buf.length}B)` };
     const format = detectFontFormat(buf);
-    if (format !== 'ttf' && format !== 'otf') {
+    // WOFF/WOFF2 sources are fine: subset-font funnels every input through
+    // fontverter (sfnt/woff/woff2 → truetype) before harfbuzz sees it, and
+    // the instanced output is always plain sfnt. Needed in practice —
+    // rsms/inter publishes its italic variable master only as woff2.
+    if (
+      format !== 'ttf' &&
+      format !== 'otf' &&
+      format !== 'woff' &&
+      format !== 'woff2'
+    ) {
       return { error: `unexpected font format: ${format}` };
     }
     opts.memoryCache?.set(key, buf);
@@ -205,7 +218,8 @@ export async function fetchVariableFontSource(
   // Harfbuzz refuses to emit WOFF2 for subset-font's default SFNT target,
   // but we need plain SFNT anyway — Office embeds TTFs, not compressed
   // formats. Pin the weight (and any extra axes) and preserve the name
-  // records that our downstream `normalizeNameTable` depends on.
+  // records that our downstream name rewrites (`rewriteFontFamilyName`,
+  // `rewriteFontSubfamilyNames`) depend on.
   //
   // Note: italic is encoded by URL (separate italic master), not by axis pin.
   // The `ital` axis exists on some fonts but not others (Inter ships a
@@ -236,6 +250,13 @@ export async function fetchVariableFontSource(
       ],
     };
   }
+
+  // harfbuzz preserves the source's name records verbatim, so the instanced
+  // static still carries the variable font's default-instance subfamily
+  // (typically "Regular") in nameID 2/17 — which would trip
+  // validateFontMetadata's FONT_METADATA_DEFECT warning for every non-
+  // Regular weight. Stamp the standard subfamily for the pinned pair.
+  instanced = rewriteFontSubfamilyNames(instanced, opts.weight, opts.italic);
 
   opts.memoryCache?.set(key, instanced);
   await opts.diskCache?.set(key, instanced);

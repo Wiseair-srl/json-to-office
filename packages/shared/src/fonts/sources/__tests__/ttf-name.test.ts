@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { rewriteFontFamilyName } from '../ttf-name';
+import {
+  rewriteFontFamilyName,
+  rewriteFontSubfamilyNames,
+  standardSubfamilyNames,
+} from '../ttf-name';
 import { validateFontMetadata } from '../ttf-validate';
 
 const FIXTURE = path.resolve(
@@ -126,5 +130,87 @@ describe('rewriteFontFamilyName', () => {
     // Readable name table
     const names = readNameStrings(out);
     expect(names.get(1)?.[0]).toBe('Probe');
+  });
+});
+
+describe('standardSubfamilyNames', () => {
+  it('maps standard weights to typographic + RIBBI legacy forms', () => {
+    expect(standardSubfamilyNames(400, false)).toEqual({
+      typographic: 'Regular',
+      legacy: 'Regular',
+    });
+    expect(standardSubfamilyNames(700, false)).toEqual({
+      typographic: 'Bold',
+      legacy: 'Bold',
+    });
+    expect(standardSubfamilyNames(700, true)).toEqual({
+      typographic: 'Bold Italic',
+      legacy: 'Bold Italic',
+    });
+    // Legacy collapses to RIBBI: SemiBold+ maps to Bold, lighter to Regular.
+    expect(standardSubfamilyNames(600, true)).toEqual({
+      typographic: 'SemiBold Italic',
+      legacy: 'Bold Italic',
+    });
+    expect(standardSubfamilyNames(300, true)).toEqual({
+      typographic: 'Light Italic',
+      legacy: 'Italic',
+    });
+  });
+
+  it('returns null for non-standard weights', () => {
+    expect(standardSubfamilyNames(450, false)).toBeNull();
+    expect(standardSubfamilyNames(0, false)).toBeNull();
+  });
+});
+
+describe('rewriteFontSubfamilyNames', () => {
+  const original = readFileSync(FIXTURE);
+
+  it('is a no-op for non-sfnt input', () => {
+    const junk = Buffer.from('not a font');
+    expect(rewriteFontSubfamilyNames(junk, 700, false)).toBe(junk);
+  });
+
+  it('is a no-op for non-standard weights', () => {
+    expect(rewriteFontSubfamilyNames(original, 450, false)).toBe(original);
+  });
+
+  it('stamps nameID 2/17 with the standard subfamily for the pair', () => {
+    const out = rewriteFontSubfamilyNames(original, 700, false);
+    const names = readNameStrings(out);
+    const legacy = names.get(2) ?? [];
+    expect(legacy.length).toBeGreaterThan(0);
+    for (const s of legacy) expect(s).toBe('Bold');
+    // Typographic subfamily only rewritten where the font carries one.
+    for (const s of names.get(17) ?? []) expect(s).toBe('Bold');
+  });
+
+  it('leaves family records untouched', () => {
+    const out = rewriteFontSubfamilyNames(original, 700, false);
+    const before = readNameStrings(original);
+    const after = readNameStrings(out);
+    for (const id of [1, 4, 6, 16]) {
+      expect(after.get(id)).toEqual(before.get(id));
+    }
+  });
+
+  it('clears subfamily diagnostics without blunting the validator', () => {
+    // The fixture is a Medium (500); asked to represent 700 it mismatches
+    // on both subfamily names and OS/2.usWeightClass.
+    const beforeCodes = validateFontMetadata(original, 700, false, 'X').map(
+      (d) => d.code
+    );
+    expect(beforeCodes).toContain('LEGACY_SUBFAMILY_MISMATCH');
+
+    const out = rewriteFontSubfamilyNames(original, 700, false);
+    const afterCodes = validateFontMetadata(out, 700, false, 'X').map(
+      (d) => d.code
+    );
+    expect(afterCodes).not.toContain('LEGACY_SUBFAMILY_MISMATCH');
+    expect(afterCodes).not.toContain('SUBFAMILY_MISMATCH');
+    // usWeightClass still reports the mismatch — names were fixed, not
+    // the validator's other checks.
+    expect(afterCodes).toContain('WEIGHT_CLASS_MISMATCH');
   });
 });

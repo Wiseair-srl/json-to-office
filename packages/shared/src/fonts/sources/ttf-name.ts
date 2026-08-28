@@ -1,12 +1,22 @@
 /**
- * Rewrite a TTF/OTF's `name` table so `nameID` 1 / 4 / 6 / 16 carry the
- * supplied synthetic family name. Used by the preview-side font stagers
- * so that running-text references like `"Inter Light"` resolve to the
- * correct face when the stager registers it with Core Text / fontconfig
- * / GDI (all of which index by the font's internal `name` table rather
- * than the filename).
+ * Name-table rewriting for TTF/OTF sfnt fonts. Two public transforms share
+ * the rebuild machinery:
  *
- * The transform rebuilds the whole font: new `name` table bytes, new
+ * - `rewriteFontFamilyName` — rewrite `nameID` 1 / 4 / 6 / 16 to a
+ *   synthetic family name. Used by the preview-side font stagers so that
+ *   running-text references like `"Inter Light"` resolve to the correct
+ *   face when the stager registers it with Core Text / fontconfig / GDI
+ *   (all of which index by the font's internal `name` table rather than
+ *   the filename).
+ *
+ * - `rewriteFontSubfamilyNames` — rewrite `nameID` 2 / 17 to the standard
+ *   subfamily strings for a (weight, italic) pair. Used by the variable-
+ *   font instancer: harfbuzz preserves the source font's name records
+ *   verbatim, so an instanced Bold would otherwise keep the variable
+ *   font's default-instance "Regular" subfamily and trip
+ *   `validateFontMetadata`.
+ *
+ * Each transform rebuilds the whole font: new `name` table bytes, new
  * table directory with shifted offsets, recomputed per-table checksums,
  * and the magic `head.checkSumAdjustment` recomputed against the whole
  * output buffer. Nothing else is touched.
@@ -15,7 +25,7 @@
  * structure, so the same code handles both.
  */
 
-const TARGET_NAME_IDS = new Set<number>([
+const FAMILY_NAME_IDS = new Set<number>([
   1, // Font Family
   4, // Full Font Name
   6, // PostScript Name
@@ -103,14 +113,20 @@ function buildNameTable(records: NameRecord[]): Buffer {
   return raw;
 }
 
+/** Per-record decision for `rewriteNameTable`. */
+type NameRewrite =
+  | { action: 'keep' }
+  | { action: 'drop' }
+  | { action: 'set'; value: string };
+
 /**
- * Return a copy of `input` whose name table has `nameID` 1/4/6/16 rewritten
- * to `newFamily`. Returns the original buffer unchanged if the font has no
+ * Return a copy of `input` whose name records have been mapped through
+ * `decide`. Returns the original buffer unchanged if the font has no
  * `name` table or the sfnt header is invalid.
  */
-export function rewriteFontFamilyName(
+function rewriteNameTable(
   input: Buffer,
-  newFamily: string
+  decide: (record: NameRecord) => NameRewrite
 ): Buffer {
   if (input.length < 12) return input;
   const version = input.readUInt32BE(0);
@@ -169,37 +185,13 @@ export function rewriteFontFamilyName(
     records.push({ platformID, encodingID, languageID, nameID, bytes });
   }
 
-  // Rewrite target records. PostScript names (nameID 6) are restricted to
-  // printable ASCII 33-126 minus `[](){}<>/%` per the OpenType spec — fold
-  // spaces out and strip any forbidden chars so Word doesn't silently
-  // reject the font.
-  const psForbidden = /[[\](){}<>/%]/g;
-  // eslint-disable-next-line no-control-regex
-  const isAscii = /^[\x00-\x7f]*$/.test(newFamily);
   const survivors: NameRecord[] = [];
   for (const r of records) {
-    if (!TARGET_NAME_IDS.has(r.nameID)) {
-      survivors.push(r);
-      continue;
+    const verdict = decide(r);
+    if (verdict.action === 'drop') continue;
+    if (verdict.action === 'set') {
+      r.bytes = encodeString(r, verdict.value);
     }
-    // Platform 1 (Macintosh Roman) only round-trips ASCII. For non-ASCII
-    // family names (e.g. CJK), `Buffer.from(value, 'ascii')` silently
-    // drops the high bytes and produces garbled Roman-encoded strings
-    // that Core Text may still index. Drop those records instead —
-    // platforms 0 (Unicode) and 3 (Microsoft) carry the UTF-16 form and
-    // are what modern consumers prefer anyway.
-    if (r.platformID === 1 && !isAscii) {
-      continue;
-    }
-    const value =
-      r.nameID === 6
-        ? newFamily
-            .replace(/\s+/g, '')
-            .replace(psForbidden, '')
-            // eslint-disable-next-line no-control-regex
-            .replace(/[^\x21-\x7e]/g, '')
-        : newFamily;
-    r.bytes = encodeString(r, value);
     survivors.push(r);
   }
   records.length = 0;
@@ -263,4 +255,96 @@ export function rewriteFontFamilyName(
   }
 
   return out;
+}
+
+/**
+ * Return a copy of `input` whose name table has `nameID` 1/4/6/16 rewritten
+ * to `newFamily`. Returns the original buffer unchanged if the font has no
+ * `name` table or the sfnt header is invalid.
+ */
+export function rewriteFontFamilyName(
+  input: Buffer,
+  newFamily: string
+): Buffer {
+  // PostScript names (nameID 6) are restricted to printable ASCII 33-126
+  // minus `[](){}<>/%` per the OpenType spec — fold spaces out and strip
+  // any forbidden chars so Word doesn't silently reject the font.
+  const psForbidden = /[[\](){}<>/%]/g;
+  // eslint-disable-next-line no-control-regex
+  const isAscii = /^[\x00-\x7f]*$/.test(newFamily);
+  const psName = newFamily
+    .replace(/\s+/g, '')
+    .replace(psForbidden, '')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[^\x21-\x7e]/g, '');
+  return rewriteNameTable(input, (r) => {
+    if (!FAMILY_NAME_IDS.has(r.nameID)) return { action: 'keep' };
+    // Platform 1 (Macintosh Roman) only round-trips ASCII. For non-ASCII
+    // family names (e.g. CJK), `Buffer.from(value, 'ascii')` silently
+    // drops the high bytes and produces garbled Roman-encoded strings
+    // that Core Text may still index. Drop those records instead —
+    // platforms 0 (Unicode) and 3 (Microsoft) carry the UTF-16 form and
+    // are what modern consumers prefer anyway.
+    if (r.platformID === 1 && !isAscii) return { action: 'drop' };
+    return { action: 'set', value: r.nameID === 6 ? psName : newFamily };
+  });
+}
+
+const STANDARD_SUBFAMILY: Record<number, string> = {
+  100: 'Thin',
+  200: 'ExtraLight',
+  300: 'Light',
+  400: 'Regular',
+  500: 'Medium',
+  600: 'SemiBold',
+  700: 'Bold',
+  800: 'ExtraBold',
+  900: 'Black',
+};
+
+/**
+ * Standard OpenType subfamily strings for a (weight, italic) pair, or null
+ * for a non-standard weight. `typographic` is the nameID 17 form (full
+ * weight vocabulary); `legacy` is the nameID 2 form, restricted to the
+ * four-style RIBBI model (Regular/Italic/Bold/Bold Italic) that GDI-era
+ * consumers expect. Single source of truth shared with
+ * `validateFontMetadata` so writer and checker cannot diverge.
+ */
+export function standardSubfamilyNames(
+  weight: number,
+  italic: boolean
+): { typographic: string; legacy: string } | null {
+  const base = STANDARD_SUBFAMILY[weight];
+  if (!base) return null;
+  return {
+    typographic: italic ? `${base} Italic` : base,
+    legacy:
+      weight >= 600
+        ? italic
+          ? 'Bold Italic'
+          : 'Bold'
+        : italic
+          ? 'Italic'
+          : 'Regular',
+  };
+}
+
+/**
+ * Return a copy of `input` whose existing `nameID` 2/17 records carry the
+ * standard subfamily strings for (weight, italic). Missing records are not
+ * added. Returns the original buffer unchanged for non-standard weights,
+ * or if the font has no `name` table or the sfnt header is invalid.
+ */
+export function rewriteFontSubfamilyNames(
+  input: Buffer,
+  weight: number,
+  italic: boolean
+): Buffer {
+  const std = standardSubfamilyNames(weight, italic);
+  if (!std) return input;
+  return rewriteNameTable(input, (r) => {
+    if (r.nameID === 2) return { action: 'set', value: std.legacy };
+    if (r.nameID === 17) return { action: 'set', value: std.typographic };
+    return { action: 'keep' };
+  });
 }
