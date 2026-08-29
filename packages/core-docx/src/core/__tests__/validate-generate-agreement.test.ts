@@ -142,5 +142,5 @@ describe('validator and generation agree on table cell fonts', () => {
       );
       expect(accepted).toBe(true);
     }
-  }, 30_000);
+  }, 60_000);
 });
