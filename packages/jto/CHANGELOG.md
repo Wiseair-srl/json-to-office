@@ -1,5 +1,31 @@
 # @json-to-office/jto
 
+## 1.6.0
+
+### Minor Changes
+
+- 40ceaa4: New `vermilion-annual-report` gallery template — a 16-page A4 annual report
+  (SVG page art, page-anchored floating text, real financial tables) with
+  bundled Clash Display fonts declared through `fontRegistry` file sources — and
+  a new bundled `vermilion` theme (poster-red / ink / creams). All runnable
+  `examples/` and the shipped `proposal` and `technical-guide` templates are
+  restyled onto it.
+
+  Table cells also gain `font.lineSpacing` (single / atLeast / exactly / double
+  / multiple), carried end to end — `exactly` pins the line height for dense rows —
+  with an agreement test pinning that validate and generate accept the same
+  documents.
+
+### Patch Changes
+
+- Updated dependencies [40ceaa4]
+- Updated dependencies [40ceaa4]
+- Updated dependencies [40ceaa4]
+  - @json-to-office/core-docx@1.6.0
+  - @json-to-office/shared@1.6.0
+  - @json-to-office/shared-docx@1.6.0
+  - @json-to-office/quality@1.6.0
+
 ## 1.5.0
 
 ### Minor Changes
