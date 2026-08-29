@@ -29,8 +29,7 @@ const UNKNOWN_FAMILY = 'Acme Brand Sans';
 
 const docWithUnknownFont = {
   name: 'docx',
-  props: { theme: 'minimal' },
-  metadata: { title: 'route-warnings' },
+  props: { theme: 'minimal', metadata: { title: 'route-warnings' } },
   children: [
     {
       name: 'paragraph',

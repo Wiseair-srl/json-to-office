@@ -40,6 +40,37 @@ import {
 } from './renderer';
 
 /**
+ * A position under a component's `props` where full component definitions are
+ * embedded outside the shared `children` array.
+ *
+ * Declaring these here is what keeps the deep-validation walk aligned with the
+ * live document schema: the same entry's `createPropsSchema` wires a recursive
+ * component ref into these positions, and the walk visits exactly what is
+ * declared. `embedded-component-regions.test.ts` probes each factory with a
+ * marker schema and fails when a declaration and the factory disagree, so a
+ * new embedded position cannot silently become a walk blind spot (#292).
+ */
+export interface EmbeddedComponentRegion {
+  /** Path segments under `props`; `'*'` means every element of an array. */
+  path: readonly string[];
+  /**
+   * `'component'` — the position holds one component definition;
+   * `'component-array'` — it holds an array of them. Values of another legal
+   * shape at the position (a string cell content, `'linkToPrevious'`) are
+   * simply not walked.
+   */
+  arity: 'component' | 'component-array';
+  /**
+   * Whether the walk reports malformed entries (a non-object, a missing
+   * `name`) at this position. True where the static props schema types the
+   * position loosely (`Type.Any()` — the walk is its only structural checker);
+   * false where the props schema already validates structure, so the walk only
+   * adds per-component prop errors and must not double-report.
+   */
+  reportStructure: boolean;
+}
+
+/**
  * Component definition with metadata
  */
 export interface StandardComponentDefinition {
@@ -62,6 +93,13 @@ export interface StandardComponentDefinition {
    * available, used instead of the static `propsSchema`.
    */
   createPropsSchema?: (recursiveRef: TSchema) => TSchema;
+  /**
+   * Where `createPropsSchema` embeds component definitions inside `props`.
+   * Drives the deep-validation walk; must match the factory (enforced by
+   * `embedded-component-regions.test.ts`). Omit when the component embeds
+   * none.
+   */
+  embeddedComponents?: readonly EmbeddedComponentRegion[];
   /**
    * The renderers that can draw this component. Omitted means all of them.
    *
@@ -114,6 +152,13 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       name: 'section',
       propsSchema: SectionPropsSchema,
       createPropsSchema: createSectionPropsSchema,
+      embeddedComponents: [
+        // The static schema types both regions as an array of Type.Any() (or
+        // the 'linkToPrevious' literal), so the walk is their only structural
+        // checker — report malformed entries too.
+        { path: ['header'], arity: 'component-array', reportStructure: true },
+        { path: ['footer'], arity: 'component-array', reportStructure: true },
+      ],
       hasChildren: true,
       allowedChildren: [
         'heading',
@@ -203,6 +248,22 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       name: 'table',
       propsSchema: TablePropsSchema,
       createPropsSchema: createTablePropsSchema,
+      embeddedComponents: [
+        // Cell content is `string | component`. The table's own props schema
+        // already validates the cell structure, so the walk only adds the
+        // per-component prop errors the loose static content ref misses —
+        // reporting structure here would double-report.
+        {
+          path: ['columns', '*', 'header', 'content'],
+          arity: 'component',
+          reportStructure: false,
+        },
+        {
+          path: ['columns', '*', 'cells', '*', 'content'],
+          arity: 'component',
+          reportStructure: false,
+        },
+      ],
       hasChildren: false,
       category: 'content',
       description:

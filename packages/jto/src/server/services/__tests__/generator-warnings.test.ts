@@ -23,8 +23,7 @@ const UNKNOWN_FAMILY = 'Acme Brand Sans';
 function report(props: Record<string, unknown>, title: string) {
   return {
     name: 'docx',
-    props: { theme: 'minimal' },
-    metadata: { title },
+    props: { theme: 'minimal', metadata: { title } },
     children: [{ name: 'paragraph', props: { text: 'Body.', ...props } }],
   };
 }

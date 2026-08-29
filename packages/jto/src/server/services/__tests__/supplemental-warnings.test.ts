@@ -130,8 +130,7 @@ describe('FONT_OVERRIDE_LOCAL end-to-end', () => {
     const result = await service.generate({
       jsonDefinition: {
         name: 'docx',
-        props: { theme: 'minimal' },
-        metadata: { title: 'override-local' },
+        props: { theme: 'minimal', metadata: { title: 'override-local' } },
         children: [
           {
             name: 'paragraph',

@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { validate } from '../validation/unified';
-import { isValidDocument } from '../validation/unified/document-validator';
+import { validate, validateStrict } from '../validation/unified';
+import {
+  isValidDocument,
+  validateDocument,
+} from '../validation/unified/document-validator';
 
 describe('validateJsonDocument: docx root recognition', () => {
   it('accepts a minimal docx document with a heading child', () => {
@@ -698,5 +701,147 @@ describe('paragraph boldColor accepts the same values as font.color', () => {
     expect(
       (result.errors ?? []).some((e) => e.path.includes('boldColor'))
     ).toBe(true);
+  });
+});
+
+describe('stage-1 rejection with an empty deep walk fails closed (#292)', () => {
+  const base = {
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [
+      {
+        name: 'section',
+        children: [{ name: 'paragraph', props: { text: 'hi' } }],
+      },
+    ],
+  };
+
+  it('rejects an unknown key next to name/props at the root', () => {
+    const doc = { ...base, bogus: 1 };
+    const lenient = validate.jsonDocument(JSON.stringify(doc));
+    const strict = validateStrict.jsonDocument(JSON.stringify(doc));
+
+    expect(lenient.valid).toBe(false);
+    expect(strict.valid).toBe(false);
+    expect((lenient.errors ?? []).length).toBeGreaterThan(0);
+  });
+
+  it('rejects an unknown sibling key on a nested component', () => {
+    const doc = {
+      ...base,
+      children: [
+        {
+          name: 'section',
+          children: [{ name: 'paragraph', props: { text: 'hi' }, bogus: 1 }],
+        },
+      ],
+    };
+
+    expect(validate.jsonDocument(JSON.stringify(doc)).valid).toBe(false);
+    expect(validateStrict.jsonDocument(JSON.stringify(doc)).valid).toBe(false);
+  });
+
+  it('still accepts unknown keys when the caller opts into allowUnknownFields', () => {
+    const sibling = { ...base, bogus: 1 };
+    const inProps = {
+      ...base,
+      children: [
+        {
+          name: 'section',
+          children: [{ name: 'paragraph', props: { text: 'hi', bogus: 1 } }],
+        },
+      ],
+    };
+
+    expect(validateDocument(sibling, { allowUnknownFields: true }).valid).toBe(
+      true
+    );
+    expect(validateDocument(inProps, { allowUnknownFields: true }).valid).toBe(
+      true
+    );
+  });
+
+  it('still accepts a document that uses a registered plugin component', () => {
+    const doc = {
+      ...base,
+      children: [
+        {
+          name: 'section',
+          children: [{ name: 'my-widget', props: { anything: true } }],
+        },
+      ],
+    };
+
+    const result = validateDocument(doc, {
+      knownCustomNames: new Set(['my-widget']),
+    });
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects a defective document even when custom names are registered but unused', () => {
+    const doc = { ...base, bogus: 1 };
+
+    const result = validateDocument(doc, {
+      knownCustomNames: new Set(['my-widget']),
+    });
+    expect(result.valid).toBe(false);
+  });
+});
+
+describe('wrong-typed sibling keys fail everywhere the schema types them', () => {
+  // `enabled`/`id` are known sibling keys, so a key-presence check passes
+  // them; only their TYPE is wrong. The live schema rejects the value, and
+  // the containment-relaxed rescue gate must not re-admit it — it once did
+  // for embedded regions, because the gate was built without the recursive
+  // ref and fell back to the static section schema's Type.Any() regions.
+  const withHeaderParagraph = (extra: Record<string, unknown>) => ({
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [
+      {
+        name: 'section',
+        props: {
+          header: [{ name: 'paragraph', props: { text: 'x' }, ...extra }],
+        },
+        children: [{ name: 'paragraph', props: { text: 'body' } }],
+      },
+    ],
+  });
+
+  it('rejects a non-boolean enabled on a paragraph inside a section header', () => {
+    const result = validate.jsonDocument(
+      JSON.stringify(withHeaderParagraph({ enabled: 'yes' }))
+    );
+    expect(result.valid).toBe(false);
+    expect((result.errors ?? []).some((e) => e.path.includes('/enabled'))).toBe(
+      true
+    );
+  });
+
+  it('rejects a non-string id on a nested child', () => {
+    const doc = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'section',
+          children: [{ name: 'paragraph', props: { text: 'x' }, id: 7 }],
+        },
+      ],
+    };
+    const result = validate.jsonDocument(JSON.stringify(doc));
+    expect(result.valid).toBe(false);
+    expect((result.errors ?? []).some((e) => e.path.includes('/id'))).toBe(
+      true
+    );
+  });
+
+  it('still accepts well-typed sibling keys in a header', () => {
+    const result = validate.jsonDocument(
+      JSON.stringify(withHeaderParagraph({ enabled: true, id: 'p1' }))
+    );
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
   });
 });

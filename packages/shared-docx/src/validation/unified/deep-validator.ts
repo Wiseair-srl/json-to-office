@@ -18,12 +18,93 @@ const COMPONENT_SCHEMAS: Record<string, TSchema> = Object.fromEntries([
   ['custom', CustomComponentDefinitionSchema],
 ]);
 
+// Where each component embeds full component definitions inside its props
+// (section header/footer, table cell content, …), sourced from the registry so
+// the walk covers exactly what each entry's `createPropsSchema` wires into the
+// live document schema — the declaration and the factory are pinned to each
+// other by embedded-component-regions.test.ts (#292).
+const EMBEDDED_REGIONS = new Map(
+  STANDARD_COMPONENTS_REGISTRY.filter(
+    (c) => (c.embeddedComponents?.length ?? 0) > 0
+  ).map((c) => [c.name, c.embeddedComponents!])
+);
+
 // Root component names that may appear at the top of a document.
 const ROOT_COMPONENT_NAMES = new Set(
   STANDARD_COMPONENTS_REGISTRY.filter((c) =>
     Boolean(c.special?.hasSchemaField)
   ).map((c) => c.name)
 );
+
+// The sibling keys legal NEXT TO `name`/`props` on each component node,
+// mirroring what createComponentSchemaObject puts on the whole-document
+// schema. Per-component props checks never see these positions, so without
+// this list a junk key beside `props` is invisible to the walk and used to
+// fail only via the generic fail-closed net (#292).
+const ALLOWED_SIBLING_KEYS: ReadonlyMap<string, ReadonlySet<string>> = new Map(
+  STANDARD_COMPONENTS_REGISTRY.map((c) => [
+    c.name,
+    new Set([
+      'name',
+      'id',
+      'enabled',
+      'props',
+      ...(c.hasChildren ? ['children'] : []),
+      ...(c.special?.hasSchemaField ? ['$schema', 'renderer'] : []),
+    ]),
+  ])
+);
+
+// What each legal sibling key must hold, per the whole-document schema.
+// `name` and `children` are typed by their own dedicated checks.
+const SIBLING_KEY_TYPES: Record<string, 'string' | 'boolean'> = {
+  id: 'string',
+  enabled: 'boolean',
+  $schema: 'string',
+  renderer: 'string',
+};
+
+/**
+ * Report sibling-key faults on a component node: keys the whole-document
+ * schema does not define, and known keys holding a wrong-typed value (an
+ * `enabled: "yes"` — key presence alone would pass it). Unknown keys are
+ * skipped under `allowUnknownFields`; names outside the registry are skipped
+ * entirely (unknown components and the legacy `custom` shape are reported
+ * through other channels).
+ */
+function collectSiblingKeyErrors(
+  node: Record<string, unknown>,
+  path: string,
+  opts: DeepValidateOptions,
+  errors: ValidationError[]
+): void {
+  const allowed =
+    typeof node.name === 'string'
+      ? ALLOWED_SIBLING_KEYS.get(node.name)
+      : undefined;
+  if (!allowed) return;
+  for (const key of Object.keys(node)) {
+    if (!allowed.has(key)) {
+      if (opts.allowUnknownFields) continue;
+      errors.push({
+        path: `${path}/${key}`,
+        message: `Unknown key "${key}" on component "${node.name}". Allowed keys: ${[
+          ...allowed,
+        ].join(', ')}.`,
+        code: 'unknown_key',
+      });
+      continue;
+    }
+    const expected = SIBLING_KEY_TYPES[key];
+    if (expected && typeof node[key] !== expected) {
+      errors.push({
+        path: `${path}/${key}`,
+        message: `Key "${key}" on component "${node.name}" must be a ${expected}.`,
+        code: 'invalid_type',
+      });
+    }
+  }
+}
 
 /**
  * Options that tune deep validation.
@@ -338,6 +419,10 @@ export function deepValidateDocument(
     });
   }
 
+  // Junk keys next to the root's name/props/children are outside every
+  // per-component props check; report them here.
+  collectSiblingKeyErrors(data, '', opts, allErrors);
+
   // Validate props section when the key is present so explicit `null` (or any
   // falsy non-object) is checked against the component's schema instead of
   // silently passing.
@@ -393,16 +478,13 @@ export function deepValidateDocument(
  *    `section`, `columns` and `text-box` (added by the component registry), so
  *    a bad prop inside a `text-box` or `columns` child is caught however deeply
  *    it is nested; and
- *  - the `header` / `footer` paragraph regions under `props` — typed only
- *    loosely on the section schema (an array of `Type.Any()`, or the
- *    `'linkToPrevious'` literal, which is skipped), so their entries are not
- *    deep-checked by the parent's per-component validation.
+ *  - the embedded-component regions each registry entry declares
+ *    (`embeddedComponents`: section `header`/`footer`, table cell content) —
+ *    positions the static per-component props schemas type loosely, so their
+ *    entries are not deep-checked by the parent's per-component validation.
  *
  * The node's own props are NOT validated here — the caller validates the root
- * props, and every entry is validated as it is visited. `table` and `list`
- * nest their components inside their own recursive props schemas, so those are
- * already covered by `validateComponentProps` and are intentionally not
- * re-walked here.
+ * props, and every entry is validated as it is visited.
  */
 function walkComponentTree(
   node: any,
@@ -452,6 +534,9 @@ function walkComponentTree(
     // nor misreported as unknown.
     if (opts.knownCustomNames?.has(child.name)) return;
 
+    // Junk keys next to name/props are outside the props check below.
+    collectSiblingKeyErrors(child, childPath, opts, errors);
+
     // Validate props against the component's schema. When props is omitted,
     // validate an empty object so the schema decides whether props are
     // required (e.g. `section` needs none; `heading` requires text+level).
@@ -478,45 +563,39 @@ function walkComponentTree(
     walkComponentTree(child, childPath, opts, errors);
   };
 
-  // header/footer entries are validated strictly: the static section schema
-  // types them as `Type.Any()`, so the editor's whole-tree schema (where they
-  // resolve to the component union) is stricter than the per-component check —
-  // the walk closes that gap, flagging non-component entries too. A bare
-  // `'linkToPrevious'` value is not an array, so it is skipped here.
-  for (const region of ['header', 'footer'] as const) {
-    const entries = node.props?.[region];
-    if (Array.isArray(entries)) {
-      entries.forEach((child: any, i: number) =>
-        validateEntry(child, `${path}/props/${region}/${i}`, true)
+  // Visit every embedded-component region this component declares in the
+  // registry. A value of another legal shape at the position (a string cell
+  // content, a `'linkToPrevious'` header) simply fails the arity guard and is
+  // not walked.
+  const regions =
+    typeof node.name === 'string' ? EMBEDDED_REGIONS.get(node.name) : undefined;
+  if (regions && node.props && typeof node.props === 'object') {
+    for (const region of regions) {
+      resolveRegionValues(
+        node.props,
+        region.path,
+        `${path}/props`,
+        (value, valuePath) => {
+          if (region.arity === 'component-array') {
+            if (Array.isArray(value)) {
+              value.forEach((child: any, i: number) =>
+                validateEntry(
+                  child,
+                  `${valuePath}/${i}`,
+                  region.reportStructure
+                )
+              );
+            }
+          } else if (
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value)
+          ) {
+            validateEntry(value, valuePath, region.reportStructure);
+          }
+        }
       );
     }
-  }
-
-  // `table` nests its cell content under `props` (not the shared `children`
-  // field), and the static table schema types that content loosely — the
-  // cell-content ref accepts any props object, just like the `Type.Any()`
-  // header/footer above. So a bad prop deep in a cell (e.g. `font.size` over the
-  // cap) slips past the per-component table check; walk each content component
-  // so its props are validated against the real schema. Structural problems
-  // with a cell are already reported by the table's own props validation, hence
-  // the lenient (`false`) entry check to avoid double-reporting.
-  if (node.name === 'table' && Array.isArray(node.props?.columns)) {
-    node.props.columns.forEach((col: any, c: number) => {
-      if (!col || typeof col !== 'object') return;
-      const base = `${path}/props/columns/${c}`;
-      const headerContent = col.header?.content;
-      if (headerContent && typeof headerContent === 'object') {
-        validateEntry(headerContent, `${base}/header/content`, false);
-      }
-      if (Array.isArray(col.cells)) {
-        col.cells.forEach((cell: any, r: number) => {
-          const content = cell?.content;
-          if (content && typeof content === 'object') {
-            validateEntry(content, `${base}/cells/${r}/content`, false);
-          }
-        });
-      }
-    });
   }
 
   if (Array.isArray(node.children)) {
@@ -537,6 +616,37 @@ function walkComponentTree(
       code: 'invalid_type',
     });
   }
+}
+
+/**
+ * Resolve an embedded-region path over a props value and call `visit` with
+ * each terminal value. Fixed segments descend into objects; `'*'` fans out
+ * over every element of an array. A segment that does not resolve (missing
+ * key, `'*'` over a non-array, descent into a non-object) ends that branch
+ * silently — the shape is either legal (an optional region) or already
+ * reported by the owning component's props validation.
+ */
+function resolveRegionValues(
+  value: any,
+  segments: readonly string[],
+  path: string,
+  visit: (value: any, path: string) => void
+): void {
+  if (segments.length === 0) {
+    visit(value, path);
+    return;
+  }
+  if (!value || typeof value !== 'object') return;
+
+  const [head, ...rest] = segments;
+  if (head === '*') {
+    if (!Array.isArray(value)) return;
+    value.forEach((item, i) =>
+      resolveRegionValues(item, rest, `${path}/${i}`, visit)
+    );
+    return;
+  }
+  resolveRegionValues(value[head!], rest, `${path}/${head}`, visit);
 }
 
 /**
