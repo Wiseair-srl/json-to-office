@@ -1,6 +1,6 @@
 /**
  * A cell's `font.lineSpacing` drives the cell paragraph's line spacing —
- * per-cell row-height control the theme's tableCell style can only set
+ * per-cell line-spacing control the theme's tableCell style can only set
  * table-wide. The cell's own value wins over the theme, cascades through
  * `cellDefaults`/`headerCellDefaults` like every other font field, and leaves
  * untouched cells on the theme's spacing.

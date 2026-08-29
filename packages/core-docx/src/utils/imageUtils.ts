@@ -93,6 +93,24 @@ export async function rasterizeSvgFallback(
 
   try {
     const markup = svg.toString('utf-8');
+
+    // Text rasterizes with whatever fonts this machine offers — the same SVG
+    // yields different fallback bytes on macOS, Linux and Windows, and on a
+    // bare server the glyphs come from some substitute family anyway. A
+    // package must not depend on where it was generated (goldens digest every
+    // byte across platforms), so a text-bearing SVG keeps the vector-only
+    // fallback instead of a raster that lies twice.
+    if (/<(?:[A-Za-z][\w.-]*:)?text[\s>/]/.test(markup)) {
+      reportWarning(
+        'image',
+        'IMAGE_SVG_RASTER_SKIPPED',
+        'Inline SVG contains <text>, which would rasterize with machine-' +
+          'dependent fonts, so its fallback only renders in Word 2016+. ' +
+          'Convert the text to paths for a portable fallback.'
+      );
+      return undefined;
+    }
+
     const probeImage = new Resvg(markup);
     // resvg scales uniformly, so pick the axis that makes the bitmap cover
     // the placed box on both — matching the box aspect is not enough.

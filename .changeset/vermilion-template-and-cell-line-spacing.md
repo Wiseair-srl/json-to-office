@@ -12,6 +12,6 @@ a new bundled `vermilion` theme (poster-red / ink / creams). All runnable
 restyled onto it.
 
 Table cells also gain `font.lineSpacing` (single / atLeast / exactly / double
-/ multiple), carried end to end — `exactly` gives dense fixed-height rows —
+/ multiple), carried end to end — `exactly` pins the line height for dense rows —
 with an agreement test pinning that validate and generate accept the same
 documents.
