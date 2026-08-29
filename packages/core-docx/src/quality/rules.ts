@@ -308,7 +308,16 @@ export const docxFrameCollisionRule: QualityRule<
     // which only ever keeps the rule quieter.
     const chains = new Map<string, FrameRect>();
     for (const fact of frameTextFacts(facts)) {
-      if (!fact.absoluteOffsetTwips) continue;
+      // A `text`-relative origin moves with the frame's own anchor paragraph,
+      // so two such frames can share a group key without sharing a coordinate
+      // origin. Only the fixed origins — `page` and `margin` — compare.
+      if (
+        !fact.absoluteOffsetTwips ||
+        fact.anchorHorizontal === 'text' ||
+        fact.anchorVertical === 'text'
+      ) {
+        continue;
+      }
       const lines = estimateWrappedLines(
         fact.text,
         fact.frameWidthTwips / TWIPS_PER_POINT,
