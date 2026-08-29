@@ -501,3 +501,91 @@ describe('theme validation', () => {
     expect(result.errors.length).toBeGreaterThan(0);
   });
 });
+
+describe('wrong-typed sibling keys are rejected (#292 parity)', () => {
+  // Key PRESENCE next to name/props has always been checked here, but the
+  // value's type was not: `enabled: "yes"` or `id: 7` passed the walk (the
+  // only validator — there is no whole-document stage to catch it) and
+  // rendered, while the published schema types both fields. These pin the
+  // walk to the published schema's sibling typing.
+  const text = { name: 'text', props: { text: 'hi', x: 1, y: 1 } };
+
+  it('rejects a non-boolean enabled on the root', () => {
+    const result = validate.document({
+      ...deck([slide([text])]),
+      enabled: 'yes',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.path === '/enabled')).toBe(true);
+  });
+
+  it('rejects a non-boolean enabled on a nested component', () => {
+    const result = validate.document(
+      deck([slide([{ ...text, enabled: 'yes' }])])
+    );
+    expect(result.valid).toBe(false);
+    expect(
+      result.errors.some((e) => e.path === '/children/0/children/0/enabled')
+    ).toBe(true);
+  });
+
+  it('rejects a non-string id on a nested component', () => {
+    const result = validate.document(deck([slide([{ ...text, id: 7 }])]));
+    expect(result.valid).toBe(false);
+    expect(
+      result.errors.some((e) => e.path === '/children/0/children/0/id')
+    ).toBe(true);
+  });
+
+  it('rejects a non-string $schema on the root', () => {
+    const result = validate.document({
+      ...deck([slide([text])]),
+      $schema: 123,
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.path === '/$schema')).toBe(true);
+  });
+
+  it('rejects a wrong-typed enabled inside a placeholder value', () => {
+    const result = validate.document(
+      deck([
+        slide([], { placeholders: { title: { ...text, enabled: 'yes' } } }),
+      ])
+    );
+    expect(result.valid).toBe(false);
+    expect(
+      result.errors.some(
+        (e) => e.path === '/children/0/props/placeholders/title/enabled'
+      )
+    ).toBe(true);
+  });
+
+  it('rejects a non-string version on a plugin component', () => {
+    const result = validatePresentationDocument(
+      deck([slide([{ name: 'my-widget', props: {}, version: 2 }])]),
+      { knownCustomNames: new Set(['my-widget']) }
+    );
+    expect(result.valid).toBe(false);
+    expect(
+      result.errors.some((e) => e.path === '/children/0/children/0/version')
+    ).toBe(true);
+  });
+
+  it('still accepts well-typed sibling keys everywhere', () => {
+    const doc = {
+      ...deck([
+        {
+          ...slide([{ ...text, id: 't1', enabled: true }]),
+          id: 's1',
+          enabled: true,
+        },
+      ]),
+      $schema: 'https://example.com/schema.json',
+      enabled: true,
+      id: 'root',
+    };
+    const result = validateStrict.document(doc);
+    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+});
