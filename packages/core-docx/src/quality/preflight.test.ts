@@ -483,6 +483,140 @@ describe('frame text fit', () => {
   });
 });
 
+describe('frame collisions', () => {
+  const frame = (
+    text: string,
+    x: number,
+    y: number,
+    width: number,
+    fontSize = 12
+  ) => ({
+    name: 'paragraph',
+    props: {
+      text,
+      font: { size: fontSize },
+      floating: {
+        width,
+        horizontalPosition: { offset: x },
+        verticalPosition: { offset: y },
+      },
+    },
+  });
+
+  // ~30 words of 12pt wrap to several lines in a 4000-twip (200pt) frame:
+  // an estimated block a good thousand twips tall.
+  const body = Array.from({ length: 30 }, () => 'word').join(' ');
+
+  it('warns when two page-anchored frames claim the same region', () => {
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'section',
+          children: [
+            frame(body, 1000, 1000, 4000),
+            frame(body, 1000, 1400, 4000),
+          ],
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.FRAME_COLLISION,
+      severity: 'warning',
+      certainty: 'estimated',
+      path: '/children/0/children/1/props/floating/verticalPosition/offset',
+      relatedPaths: ['/children/0/children/0'],
+    });
+    expect(findings[0].context).toMatchObject({
+      partnerPath: '/children/0/children/0',
+    });
+  });
+
+  it('accepts frames laid out side by side', () => {
+    expect(
+      docxDiagnostics(
+        doc([
+          {
+            name: 'section',
+            children: [
+              frame(body, 1000, 1000, 4000),
+              frame(body, 5200, 1000, 4000),
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+
+  it('ignores an overlap smaller than one line', () => {
+    // Each frame is one estimated 288-twip line; the boxes intersect by 188.
+    // That is inside the height model's own error, and exactly the slack
+    // tight editorial layouts spend on purpose.
+    expect(
+      docxDiagnostics(
+        doc([
+          {
+            name: 'section',
+            children: [
+              frame('Quarterly totals', 1000, 1000, 4000),
+              frame('Board approval', 1000, 1100, 4000),
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+
+  it('reads consecutive identical frames as one flowing OOXML frame', () => {
+    // The stock stat-card idiom: number, caption and body share one framePr,
+    // so Word stacks them inside a single frame rather than painting three
+    // paragraphs onto the same spot.
+    expect(
+      docxDiagnostics(
+        doc([
+          {
+            name: 'section',
+            children: [
+              frame('$94.7', 1365, 5976, 4176, 46),
+              frame('Total Revenue 2030 (USD M)', 1365, 5976, 4176, 14),
+              frame(body, 1365, 5976, 4176, 10),
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+
+  it('never compares frames from different sections', () => {
+    expect(
+      docxDiagnostics(
+        doc([
+          { name: 'section', children: [frame(body, 1000, 1000, 4000)] },
+          { name: 'section', children: [frame(body, 1000, 1200, 4000)] },
+        ])
+      )
+    ).toEqual([]);
+  });
+
+  it('ignores a sliver of shared width', () => {
+    // The boxes brush by 200 twips, but ragged-right text does not reach its
+    // own frame edge that reliably.
+    expect(
+      docxDiagnostics(
+        doc([
+          {
+            name: 'section',
+            children: [
+              frame(body, 1000, 1000, 4000),
+              frame(body, 4800, 1000, 4000),
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+});
+
 describe('svg text bounds', () => {
   it('warns when a baseline falls outside the viewBox', () => {
     const findings = docxDiagnostics(

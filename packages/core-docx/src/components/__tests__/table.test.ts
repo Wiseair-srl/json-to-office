@@ -143,10 +143,18 @@ describe('components/table', () => {
       sizeEighthPoints: 24,
       color: { hex: '333333' },
     });
-    expect(table.rows[2].cells[0].borders?.top).toEqual({
+    // The column's border shows on a side the cell above does not contest.
+    expect(table.rows[2].cells[0].borders?.bottom).toEqual({
       style: 'single',
       sizeEighthPoints: 16,
       color: { hex: '222222' },
+    });
+    // The shared edge is adjudicated: the first cell's heavier bottom wins it
+    // (ECMA-376 §17.4.66 — wider first) and is mirrored onto this cell's top.
+    expect(table.rows[2].cells[0].borders?.top).toEqual({
+      style: 'single',
+      sizeEighthPoints: 24,
+      color: { hex: '333333' },
     });
   });
 

@@ -297,6 +297,64 @@ describe('tables', () => {
       columnWidths: [2400],
     });
   });
+
+  it('spells every stated cell border side and leaves the table bare', () => {
+    // The table model already adjudicated the borders: every cell states all
+    // four sides — `none` included — and facing halves of a shared edge agree
+    // (see `core/tableModel.ts`), so neither Word nor LibreOffice is left a
+    // conflict to resolve. The backend's whole job is spelling each side as
+    // `{style, size, color}` with the size already in eighths. The table
+    // itself states no borders, and none may be invented for it: docx.js
+    // writes its default single/auto/sz-4 `w:tblBorders` there while this
+    // backend writes none — a recorded difference (see
+    // docs/architecture/office-renderer-ir.md) that no reader can see, since
+    // the fully-stated cells shadow the table everywhere.
+    const bordered: DocxIrTable = {
+      ...table,
+      rows: [
+        {
+          cells: [
+            {
+              children: [],
+              borders: {
+                top: {
+                  style: 'none',
+                  sizeEighthPoints: 0,
+                  color: { hex: '000000' },
+                },
+                bottom: {
+                  style: 'single',
+                  sizeEighthPoints: 4,
+                  color: { hex: 'EF4130' },
+                },
+                left: {
+                  style: 'none',
+                  sizeEighthPoints: 0,
+                  color: { hex: '000000' },
+                },
+                right: {
+                  style: 'single',
+                  sizeEighthPoints: 4,
+                  color: { hex: 'C7C8CA' },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const emitted = block(bordered).table as Record<string, never>;
+    expect(emitted['borders' as never]).toBeUndefined();
+    expect((emitted.rows as never[])[0]['cells' as never][0]).toMatchObject({
+      borders: {
+        top: { style: 'none', size: 0, color: '000000' },
+        bottom: { style: 'single', size: 4, color: 'EF4130' },
+        left: { style: 'none', size: 0, color: '000000' },
+        right: { style: 'single', size: 4, color: 'C7C8CA' },
+      },
+    });
+  });
 });
 
 describe('floating placement', () => {

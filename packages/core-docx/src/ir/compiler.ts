@@ -4252,6 +4252,9 @@ function compileTableCell(
   rowRevision?: RowRevision,
   markRevision?: DocxIrParagraphMarkRevision
 ): DocxIrTableCell {
+  // The cell's own `font.lineSpacing` wins over the theme's tableCell style,
+  // the same precedence its sibling font fields get in cellRunFormatting.
+  const cellLine = compileLineSpacing(cell.font?.lineSpacing);
   const paragraph: DocxIrParagraph = {
     kind: 'paragraph',
     id: scope.id,
@@ -4267,9 +4270,16 @@ function compileTableCell(
       spacing: {
         beforeTwips: spacing.before,
         afterTwips: spacing.after,
-        ...(spacing.line !== undefined
-          ? { lineTwips: spacing.line, lineRule: lineRule(spacing.lineRule) }
-          : {}),
+        ...(cellLine
+          ? {
+              ...(cellLine.lineTwips !== undefined
+                ? { lineTwips: cellLine.lineTwips }
+                : {}),
+              lineRule: cellLine.lineRule,
+            }
+          : spacing.line !== undefined
+            ? { lineTwips: spacing.line, lineRule: lineRule(spacing.lineRule) }
+            : {}),
       },
       ...(keepNext ? { keepNext: true } : {}),
     },

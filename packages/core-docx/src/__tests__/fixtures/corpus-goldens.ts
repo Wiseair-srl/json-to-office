@@ -337,13 +337,15 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'tables/borders-uniform':
     '637f2590abd61f42f3d0f0ed6273cfa01854963bc80d21a37077504ed12abcdf',
   'tables/borders-per-side':
-    '0866ad9e87bc6c9aec3f1c128df931569ac267bde26941d53cf29f46826b002f',
+    '2808133e803c56a687a9e443c78f8411a51f6a8d6fbfb04a3cde2d1eec19cd91',
   'tables/borders-zero-size':
-    '2aa1274b24a303fa089b8a0f586c41a3b83699cb7f8d7c1780822177b3d2a0cf',
+    'b8938092794501ac7a4648500c226bba9dd32a1aa23018225c01ac3c1008b4f1',
   'tables/hide-borders-all':
     'a1348e1dd222c4fb96d0ec3129d4b125296636220e0b770be08c2357fd33d425',
   'tables/hide-borders-selective':
     '4dd570b50d90f5f63ecce072f89b5ed3a4c4788b3dfe1ed0858084ce977bdda4',
+  'tables/borders-edge-ownership':
+    '96054ddd1c0da1825d8b4b9318a38bdbb18dde78e4c75520ec9feef2e8764298',
   'tables/shading-levels':
     '627970b73f34e4c35425aa6c3e9e27812d599a2147628479547ebd69791c9184',
   'tables/zebra-banding':
@@ -559,7 +561,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/no-proof-words':
     'da5ed13283ad1fb39dbbf421ec24ca773240b6a3e50fa0e384e492bac1debf1c',
   'theme/example-proposal':
-    '17ad7210a1033b19706425fb72e33f4ec4591925026a790af11690b6b2e0e829',
+    'b9ae985be247d2e1a84737987e83bc986be4a07681cd12b9a681a5e86a9cf253',
   'theme/example-technical-guide':
-    'fd69ad900a5ac4ddb0e185aa7643339856056ea7f75c2c607417ceea788024f8',
+    '12b02fea788d986d50b474c6588eacf7d4c3008f38c1f1c560d6daefa6641450',
 };

@@ -6,14 +6,260 @@
       "author": "Arcline Engineering",
       "description": "Technical reference for integrating external systems with the Arcline Platform API"
     },
-    "theme": "devportal"
+    "theme": "vermilion"
   },
   "children": [
     {
       "name": "section",
       "props": {
         "meta": {
-          "title": "Platform Integration Guide"
+          "title": "Cover"
+        },
+        "page": {
+          "margins": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0,
+            "header": 0,
+            "footer": 0
+          }
+        },
+        "header": [],
+        "footer": []
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8.39in\" height=\"11.81in\" viewBox=\"0 0 806 1134\"><rect width=\"806\" height=\"1134\" fill=\"#282829\"/><line x1=\"62\" y1=\"0\" x2=\"62\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"124\" y1=\"0\" x2=\"124\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"186\" y1=\"0\" x2=\"186\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"248\" y1=\"0\" x2=\"248\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"310\" y1=\"0\" x2=\"310\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"372\" y1=\"0\" x2=\"372\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"434\" y1=\"0\" x2=\"434\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"496\" y1=\"0\" x2=\"496\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"558\" y1=\"0\" x2=\"558\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"620\" y1=\"0\" x2=\"620\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"682\" y1=\"0\" x2=\"682\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"744\" y1=\"0\" x2=\"744\" y2=\"1134\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"62\" x2=\"806\" y2=\"62\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"124\" x2=\"806\" y2=\"124\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"186\" x2=\"806\" y2=\"186\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"248\" x2=\"806\" y2=\"248\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"310\" x2=\"806\" y2=\"310\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"372\" x2=\"806\" y2=\"372\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"434\" x2=\"806\" y2=\"434\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"496\" x2=\"806\" y2=\"496\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"558\" x2=\"806\" y2=\"558\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"620\" x2=\"806\" y2=\"620\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"682\" x2=\"806\" y2=\"682\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"744\" x2=\"806\" y2=\"744\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"806\" x2=\"806\" y2=\"806\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"868\" x2=\"806\" y2=\"868\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"930\" x2=\"806\" y2=\"930\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"992\" x2=\"806\" y2=\"992\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"1054\" x2=\"806\" y2=\"1054\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"0\" y1=\"1116\" x2=\"806\" y2=\"1116\" stroke=\"#3A3A3C\" stroke-width=\"1\"/><line x1=\"520\" y1=\"150\" x2=\"620\" y2=\"110\" stroke=\"#58595B\" stroke-width=\"1.5\"/><line x1=\"620\" y1=\"110\" x2=\"700\" y2=\"180\" stroke=\"#58595B\" stroke-width=\"1.5\"/><line x1=\"700\" y1=\"180\" x2=\"600\" y2=\"230\" stroke=\"#58595B\" stroke-width=\"1.5\"/><line x1=\"600\" y1=\"230\" x2=\"520\" y2=\"150\" stroke=\"#58595B\" stroke-width=\"1.5\"/><line x1=\"700\" y1=\"180\" x2=\"726\" y2=\"300\" stroke=\"#58595B\" stroke-width=\"1.5\"/><circle cx=\"520\" cy=\"150\" r=\"5\" fill=\"#282829\" stroke=\"#EF4130\" stroke-width=\"2\"/><circle cx=\"620\" cy=\"110\" r=\"5\" fill=\"#282829\" stroke=\"#EF4130\" stroke-width=\"2\"/><circle cx=\"700\" cy=\"180\" r=\"5\" fill=\"#282829\" stroke=\"#EF4130\" stroke-width=\"2\"/><circle cx=\"600\" cy=\"230\" r=\"5\" fill=\"#282829\" stroke=\"#EF4130\" stroke-width=\"2\"/><circle cx=\"726\" cy=\"300\" r=\"6\" fill=\"#EF4130\"/><text x=\"470\" y=\"860\" font-family=\"Consolas, monospace\" font-size=\"260\" fill=\"#3A3A3C\">&#123;</text><text x=\"640\" y=\"860\" font-family=\"Consolas, monospace\" font-size=\"260\" fill=\"#3A3A3C\">&#125;</text><rect x=\"77\" y=\"336\" width=\"118\" height=\"3\" fill=\"#EF4130\"/><rect x=\"77\" y=\"84\" width=\"176\" height=\"34\" rx=\"5\" fill=\"#1D1D1F\" stroke=\"#58595B\"/><circle cx=\"95\" cy=\"101\" r=\"4\" fill=\"#EF4130\"/><circle cx=\"109\" cy=\"101\" r=\"4\" fill=\"#58595B\"/><circle cx=\"123\" cy=\"101\" r=\"4\" fill=\"#58595B\"/><text x=\"138\" y=\"106\" font-family=\"Consolas, monospace\" font-size=\"13\" fill=\"#939598\">arcline v3.2</text><rect x=\"0\" y=\"1040\" width=\"806\" height=\"94\" fill=\"#1D1D1F\"/><rect x=\"0\" y=\"1040\" width=\"806\" height=\"2\" fill=\"#EF4130\"/></svg>",
+            "width": 806,
+            "height": 1134,
+            "floating": {
+              "behindDocument": true,
+              "zIndex": 0,
+              "allowOverlap": true,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": -86
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": -86
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "ARCLINE PLATFORM",
+            "noProof": true,
+            "alignment": "left",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 10.5,
+              "color": "#EF4130",
+              "family": "Arial",
+              "bold": true,
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 40
+              }
+            },
+            "floating": {
+              "width": 9000,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 1134
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 4160
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Integration Guide",
+            "noProof": true,
+            "alignment": "left",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 42,
+              "color": "background",
+              "family": "Arial",
+              "bold": true,
+              "lineSpacing": {
+                "type": "exactly",
+                "value": 48
+              }
+            },
+            "floating": {
+              "width": 9400,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 1134
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 5330
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Arcline API v3.2 — Technical Reference",
+            "noProof": true,
+            "alignment": "left",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 16,
+              "color": "#EF4130",
+              "family": "Arial",
+              "lineSpacing": {
+                "type": "exactly",
+                "value": 21
+              }
+            },
+            "floating": {
+              "width": 8800,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 1134
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 6700
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Last updated April 2026  ·  For developers, system architects, and DevOps engineers",
+            "noProof": true,
+            "alignment": "left",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 11,
+              "color": "#939598",
+              "family": "Calibri"
+            },
+            "floating": {
+              "width": 8600,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 1134
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 8100
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Confidential — Arcline Inc. — Do not distribute",
+            "noProof": true,
+            "alignment": "left",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 9.5,
+              "color": "#939598",
+              "family": "Calibri"
+            },
+            "floating": {
+              "width": 6500,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 1134
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 15690
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "docs.arcline.io",
+            "noProof": true,
+            "alignment": "right",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 9.5,
+              "color": "#EF4130",
+              "family": "Consolas"
+            },
+            "floating": {
+              "width": 3270,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 7500
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 15690
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "meta": {
+          "title": "Overview & Contents"
         },
         "header": [
           {
@@ -32,21 +278,28 @@
               "alignment": "center"
             }
           }
-        ]
+        ],
+        "pageBreak": true
       },
       "children": [
         {
-          "name": "heading",
+          "name": "image",
           "props": {
-            "text": "Platform Integration Guide",
-            "level": 1
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"120\" viewBox=\"0 0 800 120\"><rect width=\"800\" height=\"120\" fill=\"#282829\"/><rect width=\"8\" height=\"120\" fill=\"#EF4130\"/><line x1=\"700\" y1=\"35\" x2=\"756\" y2=\"60\" stroke=\"#58595B\" stroke-width=\"1.5\"/><line x1=\"756\" y1=\"60\" x2=\"700\" y2=\"85\" stroke=\"#58595B\" stroke-width=\"1.5\"/><circle cx=\"700\" cy=\"35\" r=\"4\" fill=\"#282829\" stroke=\"#EF4130\" stroke-width=\"2\"/><circle cx=\"756\" cy=\"60\" r=\"5\" fill=\"#EF4130\"/><circle cx=\"700\" cy=\"85\" r=\"4\" fill=\"#282829\" stroke=\"#EF4130\" stroke-width=\"2\"/><text x=\"40\" y=\"56\" font-family=\"Arial, sans-serif\" font-size=\"32\" font-weight=\"bold\" fill=\"#FFFFFF\">ARCLINE</text><text x=\"40\" y=\"86\" font-family=\"Arial, sans-serif\" font-size=\"11\" letter-spacing=\"4\" fill=\"#EF4130\">ENTERPRISE DATA PLATFORM</text></svg>",
+            "width": "100%"
           }
         },
         {
           "name": "heading",
           "props": {
-            "text": "Arcline API v3.2 — Technical Reference",
-            "level": 2
+            "text": "About This Guide",
+            "level": 1
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "This guide covers the integration of external systems with the Arcline Platform API. It is intended for developers and system architects building custom integrations, data pipelines, and embedded analytics solutions. The API follows RESTful conventions, uses OAuth 2.0 for authentication, and returns JSON responses."
           }
         },
         {
@@ -60,29 +313,10 @@
           }
         },
         {
-          "name": "paragraph",
+          "name": "heading",
           "props": {
-            "text": ""
-          }
-        },
-        {
-          "name": "image",
-          "props": {
-            "path": "https://placehold.co/800x200/0F172A/0D9488?text=ARCLINE+PLATFORM&font=helvetica",
-            "width": "100%",
-            "caption": "Arcline — Enterprise Data Platform"
-          }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": ""
-          }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "This guide covers the integration of external systems with the Arcline Platform API. It is intended for developers and system architects building custom integrations, data pipelines, and embedded analytics solutions. The API follows RESTful conventions, uses OAuth 2.0 for authentication, and returns JSON responses."
+            "text": "Contents",
+            "level": 2
           }
         },
         {
@@ -150,7 +384,7 @@
         {
           "name": "image",
           "props": {
-            "path": "https://placehold.co/800x400/F8FAFC/0F172A?text=API+Gateway+%E2%86%92+Auth+Service+%E2%86%92+Microservices+%E2%86%92+Data+Layer&font=helvetica",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"400\" viewBox=\"0 0 800 400\"><rect width=\"800\" height=\"400\" fill=\"#FAF7F5\"/><rect x=\"0.5\" y=\"0.5\" width=\"799\" height=\"399\" fill=\"none\" stroke=\"#EFEAE4\"/><defs><marker id=\"tarw\" viewBox=\"0 0 10 10\" refX=\"9\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0,0 L10,5 L0,10 z\" fill=\"#EF4130\"/></marker></defs><rect x=\"30\" y=\"155\" width=\"130\" height=\"100\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"#58595B\" stroke-width=\"1.5\"/><text x=\"95.0\" y=\"179\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"12.5\" font-weight=\"bold\" fill=\"#282829\">Clients</text><text x=\"95.0\" y=\"197\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9.5\" fill=\"#58595B\">Web · Server · CLI</text><text x=\"95.0\" y=\"212\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9.5\" fill=\"#58595B\">SDKs: Node, Python</text><line x1=\"160\" y1=\"205\" x2=\"203\" y2=\"205\" stroke=\"#EF4130\" stroke-width=\"2\" marker-end=\"url(#tarw)\"/><text x=\"181\" y=\"192\" text-anchor=\"middle\" font-family=\"Consolas, monospace\" font-size=\"8.5\" fill=\"#58595B\">HTTPS</text><rect x=\"205\" y=\"145\" width=\"145\" height=\"120\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"#58595B\" stroke-width=\"1.5\"/><text x=\"277.5\" y=\"169\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"12.5\" font-weight=\"bold\" fill=\"#282829\">API Gateway</text><text x=\"277.5\" y=\"187\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9.5\" fill=\"#58595B\">TLS 1.3 · rate limiting</text><text x=\"277.5\" y=\"202\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9.5\" fill=\"#58595B\">request validation</text><text x=\"277.5\" y=\"253\" text-anchor=\"middle\" font-family=\"Consolas, monospace\" font-size=\"9\" fill=\"#EF4130\">api.arcline.io/v3</text><rect x=\"400\" y=\"32\" width=\"180\" height=\"72\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"#58595B\" stroke-width=\"1.5\"/><text x=\"490.0\" y=\"56\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"12.5\" font-weight=\"bold\" fill=\"#282829\">Auth Service</text><text x=\"490.0\" y=\"74\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9.5\" fill=\"#58595B\">OAuth 2.0 client credentials</text><text x=\"490.0\" y=\"92\" text-anchor=\"middle\" font-family=\"Consolas, monospace\" font-size=\"9\" fill=\"#EF4130\">auth.arcline.io</text><line x1=\"490\" y1=\"104\" x2=\"490\" y2=\"128\" stroke=\"#EF4130\" stroke-width=\"2\" stroke-dasharray=\"4 3\" marker-start=\"url(#tarw)\"/><text x=\"504\" y=\"120\" font-family=\"Calibri, sans-serif\" font-size=\"8.5\" fill=\"#58595B\">token introspection</text><line x1=\"350\" y1=\"205\" x2=\"398\" y2=\"205\" stroke=\"#EF4130\" stroke-width=\"2\" marker-end=\"url(#tarw)\"/><rect x=\"400\" y=\"130\" width=\"180\" height=\"160\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"#58595B\" stroke-width=\"1.5\" stroke-dasharray=\"5 4\"/><text x=\"490\" y=\"152\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"11\" font-weight=\"bold\" fill=\"#282829\">Microservices</text><rect x=\"415\" y=\"164\" width=\"150\" height=\"30\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"490.0\" y=\"183\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10\" fill=\"#282829\">Ingest API</text><rect x=\"415\" y=\"202\" width=\"150\" height=\"30\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"490.0\" y=\"221\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10\" fill=\"#282829\">Query API</text><rect x=\"415\" y=\"240\" width=\"150\" height=\"30\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"490.0\" y=\"259\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10\" fill=\"#282829\">Admin API</text><line x1=\"580\" y1=\"205\" x2=\"628\" y2=\"205\" stroke=\"#EF4130\" stroke-width=\"2\" marker-end=\"url(#tarw)\"/><rect x=\"630\" y=\"115\" width=\"145\" height=\"190\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"#58595B\" stroke-width=\"1.5\"/><text x=\"702\" y=\"137\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"11\" font-weight=\"bold\" fill=\"#282829\">Data Layer</text><rect x=\"643\" y=\"152\" width=\"119\" height=\"30\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"702.5\" y=\"171\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10\" fill=\"#282829\">PostgreSQL</text><rect x=\"643\" y=\"190\" width=\"119\" height=\"30\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"702.5\" y=\"209\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10\" fill=\"#282829\">S3 storage</text><rect x=\"643\" y=\"228\" width=\"119\" height=\"30\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"702.5\" y=\"247\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10\" fill=\"#282829\">Redis cache</text><text x=\"702\" y=\"288\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"8.5\" fill=\"#58595B\">encrypted at rest</text><line x1=\"490\" y1=\"290\" x2=\"490\" y2=\"330\" stroke=\"#EF4130\" stroke-width=\"2\" marker-end=\"url(#tarw)\"/><rect x=\"400\" y=\"332\" width=\"180\" height=\"44\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"#58595B\" stroke-width=\"1.5\"/><text x=\"490\" y=\"350\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#282829\">Webhook Dispatcher</text><text x=\"490\" y=\"366\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"8.5\" fill=\"#58595B\">HMAC-SHA256 signed events</text></svg>",
             "width": "100%",
             "caption": "Figure 1: High-level architecture — API gateway, authentication layer, microservices, and data stores"
           }
@@ -189,7 +423,7 @@
                 "size": 10
               }
             },
-            "borderColor": "E2E8F0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -431,7 +665,7 @@
                 "size": 10
               }
             },
-            "borderColor": "E2E8F0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -656,7 +890,7 @@
                 "size": 10
               }
             },
-            "borderColor": "E2E8F0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -876,7 +1110,7 @@
                 "size": 10
               }
             },
-            "borderColor": "E2E8F0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -1031,7 +1265,7 @@
                     "size": 9
                   }
                 },
-                "borderColor": "E2E8F0",
+                "borderColor": "EFEAE4",
                 "borderSize": 1,
                 "hideBorders": {
                   "insideVertical": true
@@ -1117,7 +1351,7 @@
                     "size": 9
                   }
                 },
-                "borderColor": "E2E8F0",
+                "borderColor": "EFEAE4",
                 "borderSize": 1,
                 "hideBorders": {
                   "insideVertical": true
@@ -1270,7 +1504,7 @@
                 "size": 10
               }
             },
-            "borderColor": "E2E8F0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -1428,7 +1662,7 @@
                 "size": 10
               }
             },
-            "borderColor": "E2E8F0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -1659,7 +1893,7 @@
                 "size": 10
               }
             },
-            "borderColor": "E2E8F0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true

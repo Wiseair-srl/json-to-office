@@ -71,9 +71,9 @@ export function getAvailableJsonExamples(): string[] {
  */
 export const EXAMPLE_DESCRIPTIONS: Record<string, string> = {
   'technical-guide':
-    'Arcline Platform integration guide with TOC, headers/footers, OAuth code samples, API reference tables, webhook docs, and troubleshooting',
+    'Arcline Platform integration guide in the vermilion editorial system — full-bleed SVG cover, architecture diagram, TOC, headers/footers, OAuth code samples, API reference tables, webhook docs, and troubleshooting',
   proposal:
-    'Apex Consulting cloud migration proposal with TOC, headers/footers, images, statistics, compliance tables, cost comparisons, and risk matrix',
+    'Apex Consulting cloud migration proposal in the vermilion editorial system — full-bleed SVG cover, architecture diagram, TOC, headers/footers, statistics, compliance tables, cost comparisons, and risk matrix',
 };
 
 /**

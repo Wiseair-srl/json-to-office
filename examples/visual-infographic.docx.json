@@ -6,7 +6,7 @@
       "author": "Meridian Industries",
       "description": "Report with an embedded pptx-rendered visual"
     },
-    "theme": "minimal"
+    "theme": "vermilion"
   },
   "children": [
     {
