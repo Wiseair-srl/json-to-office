@@ -49,6 +49,49 @@ const CUSTOM_COMPONENT_OBJECT_KEYS = new Set([
 const ROOT_OBJECT_KEYS = new Set([...COMPONENT_OBJECT_KEYS, '$schema']);
 ROOT_OBJECT_KEYS.add('renderer');
 
+// What each legal component-object key must hold, per the published schema.
+// `name`, `props` and `children` are typed by their own dedicated checks, and
+// `renderer` by the renderer collector (whose enum message beats a bare type
+// check). Without this, key PRESENCE passed the walk while the value's type
+// went unchecked — `enabled: "yes"` validated and rendered (#292 parity).
+const SIBLING_KEY_TYPES: Record<string, 'string' | 'boolean'> = {
+  id: 'string',
+  enabled: 'boolean',
+  $schema: 'string',
+  version: 'string',
+};
+
+/**
+ * Report component-object key faults at `path`: keys outside `allowedKeys`,
+ * and allowed keys holding a wrong-typed value.
+ */
+function collectSiblingKeyErrors(
+  node: Record<string, unknown>,
+  path: string,
+  allowedKeys: ReadonlySet<string>,
+  label: string,
+  errors: ValidationError[]
+): void {
+  for (const key of Object.keys(node)) {
+    if (!allowedKeys.has(key)) {
+      errors.push({
+        path: `${path}/${key}`,
+        message: `Unknown field "${key}" on ${label}`,
+        code: 'unknown_field',
+      });
+      continue;
+    }
+    const expected = SIBLING_KEY_TYPES[key];
+    if (expected && typeof node[key] !== expected) {
+      errors.push({
+        path: `${path}/${key}`,
+        message: `Field "${key}" on ${label} must be a ${expected}`,
+        code: 'invalid_type',
+      });
+    }
+  }
+}
+
 /**
  * Options that tune deep validation.
  *
@@ -100,15 +143,13 @@ export function deepValidatePresentation(
     });
   }
 
-  for (const key of Object.keys(data)) {
-    if (!ROOT_OBJECT_KEYS.has(key)) {
-      allErrors.push({
-        path: `/${key}`,
-        message: `Unknown field "${key}" on the root component`,
-        code: 'unknown_field',
-      });
-    }
-  }
+  collectSiblingKeyErrors(
+    data,
+    '',
+    ROOT_OBJECT_KEYS,
+    'the root component',
+    allErrors
+  );
 
   // Validate props when the key is present so explicit `null` (or any falsy
   // non-object) is checked against the component's schema instead of silently
@@ -200,15 +241,13 @@ function walkComponentTree(
       ? CUSTOM_COMPONENT_OBJECT_KEYS
       : COMPONENT_OBJECT_KEYS;
 
-    for (const key of Object.keys(child)) {
-      if (!allowedObjectKeys.has(key)) {
-        errors.push({
-          path: `${childPath}/${key}`,
-          message: `Unknown field "${key}" on component "${child.name}"`,
-          code: 'unknown_field',
-        });
-      }
-    }
+    collectSiblingKeyErrors(
+      child,
+      childPath,
+      allowedObjectKeys,
+      `component "${child.name}"`,
+      errors
+    );
 
     if (isCustomComponent) {
       // What the props *hold* is the plugin layer's call — it alone knows the
@@ -306,17 +345,24 @@ function walkComponentTree(
     }
   };
 
-  // A slide's `placeholders` record maps placeholder names to full components
-  // ({ "title": { "name": "text", ... } }). The static SlidePropsSchema does
-  // not include the field (it is injected with the recursive ref at schema
-  // generation time), so validateComponentProps strips it before checking the
-  // slide's own props — each value is validated here instead.
+  // A `placeholders` record maps placeholder names to full components
+  // ({ "title": { "name": "text", ... } }). The registry's `hasPlaceholders`
+  // flag is what injects the field into the published schema at generation
+  // time (createPptxComponentSchemaObject) — the static props schema does not
+  // include it, so validateComponentProps strips it before checking the
+  // component's own props and each value is validated here instead. Reading
+  // the same flag keeps this walk covering exactly the components whose
+  // published schema accepts placeholders; only `slide` carries it today.
   //
-  // A placeholder holds what the slide itself holds: filling one with a
+  // A placeholder holds what the container itself holds: filling one with a
   // `slide` or the `pptx` root is not a component with no position, it is a
   // container nested where no container can go. The published schema narrows
   // the record to the same union it narrows `children` to, so both refuse it.
-  if (node.name === 'slide' && node.props && typeof node.props === 'object') {
+  if (
+    parentDef?.hasPlaceholders &&
+    node.props &&
+    typeof node.props === 'object'
+  ) {
     const placeholders = node.props.placeholders;
     if (
       placeholders &&
@@ -381,12 +427,14 @@ function validateComponentProps(
     return errors;
   }
 
-  // A slide's `placeholders` field is injected at schema-generation time and
-  // absent from the static props schema; its values are walked separately, so
-  // strip it here to avoid a false additionalProperties rejection.
+  // A `placeholders` field on a `hasPlaceholders` component is injected at
+  // schema-generation time and absent from the static props schema; its
+  // values are walked separately, so strip it here to avoid a false
+  // additionalProperties rejection. Keyed on the registry flag, like the
+  // schema injection and the walk.
   let toCheck = props;
   if (
-    componentName === 'slide' &&
+    getPptxStandardComponent(componentName)?.hasPlaceholders &&
     props &&
     typeof props === 'object' &&
     'placeholders' in props
