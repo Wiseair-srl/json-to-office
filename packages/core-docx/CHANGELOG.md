@@ -1,5 +1,60 @@
 # @json-to-office/core-docx
 
+## 1.6.0
+
+### Minor Changes
+
+- 40ceaa4: Table border sides you name now always render, identically everywhere. A side
+  named in a per-side `borderColor`/`borderSize` object on a cell or its column
+  survives `hideBorders` (which now only silences inherited table-level borders)
+  and owns its shared edge: the compiler adjudicates every interior edge — a
+  named side beats an inherited one, equals fall to ECMA-376 §17.4.66's weight
+  rules — and writes the winner on both cells, so Word and LibreOffice stop
+  resolving the same file differently. Previously a cell's red divider could
+  render in Word but vanish from the LibreOffice-rendered PDF preview, and
+  templates had to state both halves of every internal edge to compensate.
+  Scalar `borderColor`/`borderSize` on a cell remain restyling knobs that claim
+  no side.
+
+  Also fixes `mergeWithDefaults` destroying an object-form table-level
+  `borderColor`/`borderSize` when the theme's `componentDefaults.table` states a
+  scalar for the same key — the string was spread into `{0:'#',1:'f',…}` and the
+  author's per-side object silently vanished.
+
+- 40ceaa4: New `docx/frame-collision` rule (`W_QUALITY_FRAME_COLLISION`): page-anchored
+  floating frames whose estimated text blocks land on the same page region are
+  reported as painting over each other — the text-on-text defect the text-fit
+  rule could not see, since it never compared two frames.
+
+  Frame rects come from authored offsets/width plus estimated wrapped height.
+  Consecutive paragraphs with identical frame properties collapse into one
+  flowing OOXML frame first (the stock stat-card idiom), overlaps inside one
+  line height are noise by construction, and slivers of shared width under
+  240 twips are ignored. Calibrated warning-clean on the stock reference
+  templates and the all-floating vermilion annual report; frame-text facts gain
+  resolved anchors, frame-chain identity, and page-flow grouping to carry it.
+
+- 40ceaa4: New `vermilion-annual-report` gallery template — a 16-page A4 annual report
+  (SVG page art, page-anchored floating text, real financial tables) with
+  bundled Clash Display fonts declared through `fontRegistry` file sources — and
+  a new bundled `vermilion` theme (poster-red / ink / creams). All runnable
+  `examples/` and the shipped `proposal` and `technical-guide` templates are
+  restyled onto it.
+
+  Table cells also gain `font.lineSpacing` (single / atLeast / exactly / double
+  / multiple), carried end to end — `exactly` pins the line height for dense rows —
+  with an agreement test pinning that validate and generate accept the same
+  documents.
+
+### Patch Changes
+
+- Updated dependencies [40ceaa4]
+- Updated dependencies [40ceaa4]
+- Updated dependencies [40ceaa4]
+  - @json-to-office/shared@1.6.0
+  - @json-to-office/shared-docx@1.6.0
+  - @json-to-office/quality@1.6.0
+
 ## 1.5.0
 
 ### Minor Changes
