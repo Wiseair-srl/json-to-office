@@ -39,8 +39,8 @@ const docWithRegistry = () => ({
         sources: [{ kind: 'data', data: fakeTtfBase64(), weight: 400 }],
       },
     ],
+    metadata: { title: 'registry-materialization' },
   },
-  metadata: { title: 'registry-materialization' },
   children: [
     { name: 'paragraph', props: { text: 'Body.', font: { family: FAMILY } } },
   ],
@@ -86,8 +86,7 @@ describe('props.fontRegistry materialization', () => {
     const result = await service.generate({
       jsonDefinition: {
         name: 'docx',
-        props: { theme: 'minimal' },
-        metadata: { title: 'safe-only' },
+        props: { theme: 'minimal', metadata: { title: 'safe-only' } },
         children: [
           {
             name: 'paragraph',

@@ -3,11 +3,16 @@
  * Single source of truth for all document validation
  */
 
-import type { Static } from '@sinclair/typebox';
+import { Type, type Static, type TSchema } from '@sinclair/typebox';
+import { Value } from '@sinclair/typebox/value';
 import {
   ComponentDefinitionSchema,
   StandardComponentDefinitionSchema,
 } from '../../schemas/components';
+import {
+  createComponentSchemaObject,
+  STANDARD_COMPONENTS_REGISTRY,
+} from '../../schemas/component-registry';
 import { extractStandardComponentNames } from '@json-to-office/shared';
 import {
   comprehensiveValidateDocument,
@@ -78,6 +83,145 @@ function collectSemanticConflicts(document: unknown): ValidationError[] {
   return SEMANTIC_COLLECTORS.flatMap(({ collect }) => collect(document));
 }
 
+/** True when any node anywhere in the tree is a registered plugin component. */
+function referencesCustomComponent(node: unknown, names: Set<string>): boolean {
+  if (Array.isArray(node)) {
+    return node.some((item) => referencesCustomComponent(item, names));
+  }
+  if (!node || typeof node !== 'object') return false;
+  const record = node as Record<string, unknown>;
+  if (typeof record.name === 'string' && names.has(record.name)) return true;
+  return Object.values(record).some((value) =>
+    referencesCustomComponent(value, names)
+  );
+}
+
+/**
+ * The whole-document schema with every container's children relaxed to the
+ * full component union — and ONLY the children.
+ *
+ * Stage 1 narrows each container to its registry `allowedChildren` (docx →
+ * section only, …) as authoring guidance, but the pipeline accepts and renders
+ * looser nesting — a heading directly under the root is a pinned behavior. A
+ * document that fails stage 1 but passes this schema failed on containment
+ * alone.
+ *
+ * The recursive ref is passed as BOTH the children union and the props
+ * factories' `selfRef`, so embedded regions (section header/footer, table
+ * cell content) keep their live component typing here. Passing it only as
+ * children once left those factories on the static schemas, whose regions are
+ * `Type.Any()` — the gate then also relaxed embedded-region typing and
+ * re-admitted a wrong-typed sibling key inside a header. Built lazily: only
+ * the empty-walk path below ever needs it.
+ */
+let containmentRelaxedSchema: TSchema | undefined;
+function getContainmentRelaxedSchema(): TSchema {
+  containmentRelaxedSchema ??= Type.Recursive((This) =>
+    Type.Union(
+      STANDARD_COMPONENTS_REGISTRY.map((component) =>
+        createComponentSchemaObject(component, This, This)
+      )
+    )
+  );
+  return containmentRelaxedSchema;
+}
+
+/**
+ * Decide a document that failed stage 1 (the whole-document TypeBox check)
+ * while the deep walk found nothing actionable.
+ *
+ * Stage 1 has exactly three known false-reject classes, each handled by one
+ * gate below:
+ *
+ *  - `allowUnknownFields` — the whole-document schema is
+ *    additionalProperties:false throughout, so the unknown keys the caller
+ *    asked to tolerate always fail it. The deep walk has already re-checked
+ *    every component with unknown props stripped, so its empty result is the
+ *    leniency working as designed. Residual risk, documented: under this
+ *    option a walk blind spot is still invisible — the caller opted into
+ *    unknown content being ignored.
+ *  - registered plugin components (`knownCustomNames`) — the static document
+ *    schema has no plugin branch, so a document that uses one always fails
+ *    stage 1. The walk skipped those nodes for the plugin layer to validate
+ *    version-aware. Applies only when the document actually uses a registered
+ *    name; registering plugins must not loosen validation of documents that
+ *    never mention them. Residual risk, documented: in a document that does
+ *    use one, leniency and a walk blind spot cannot be told apart.
+ *  - `allowedChildren` containment — stage 1 narrows container children as
+ *    authoring guidance, but the pipeline accepts looser nesting (a heading
+ *    directly under the root renders fine, and tests pin it). This gate is
+ *    precise: the document must pass the containment-relaxed whole-document
+ *    schema, so junk that stage 1 rejected for any other reason still fails.
+ *
+ * Otherwise the empty walk means a walk blind spot, and the document fails
+ * CLOSED, keeping stage 1's own generic error. Historically this flipped to
+ * valid instead (938bdda, when stage 1's false rejects were the rule), which
+ * silently accepted invalid documents — e.g. an unknown key next to
+ * `name`/`props`, a position no per-component props check ever sees (#292).
+ */
+function resolveEmptyWalk(
+  document: unknown,
+  stageOneErrors: ValidationError[],
+  options?: ValidationOptions
+): { valid: boolean; errors: ValidationError[] } {
+  if (
+    options?.allowUnknownFields === true ||
+    (options?.knownCustomNames !== undefined &&
+      options.knownCustomNames.size > 0 &&
+      referencesCustomComponent(document, options.knownCustomNames)) ||
+    Value.Check(getContainmentRelaxedSchema(), document)
+  ) {
+    return { valid: true, errors: [] };
+  }
+
+  const errors =
+    stageOneErrors.length > 0
+      ? stageOneErrors
+      : [
+          {
+            path: 'root',
+            message: "Document does not match the 'docx' document schema.",
+            code: 'invalid_document',
+          },
+        ];
+  return {
+    valid: false,
+    errors: [
+      ...errors,
+      {
+        path: 'root',
+        message:
+          'The document was rejected by the whole-document schema, but deep validation ' +
+          'could not localize the fault. Common causes: an unknown key next to "name", ' +
+          '"props" or "children" on some component, or a value at a position the ' +
+          'schema does not declare.',
+        code: 'unlocalized_schema_error',
+      },
+    ],
+  };
+}
+
+/**
+ * Stage 2 for a document stage 1 rejected: deep-walk it for path-addressed
+ * errors; when the walk comes back empty, let resolveEmptyWalk decide between
+ * the audited leniencies and failing closed. Shared by both entry points
+ * below so the two cannot drift.
+ */
+function deepValidateRejected(
+  document: unknown,
+  stageOneErrors: ValidationError[],
+  options?: ValidationOptions
+): { valid: boolean; errors: ValidationError[] } {
+  const errors = comprehensiveValidateDocument(document, stageOneErrors, {
+    allowUnknownFields: options?.allowUnknownFields,
+    knownCustomNames: options?.knownCustomNames,
+  });
+  if (errors.length === 0) {
+    return resolveEmptyWalk(document, stageOneErrors, options);
+  }
+  return { valid: false, errors };
+}
+
 /**
  * Validate a document/report component definition
  */
@@ -95,15 +239,11 @@ export function validateDocument(
   let finalErrors = result.errors || [];
   let finalValid = result.valid;
   if (!result.valid && data) {
-    finalErrors = comprehensiveValidateDocument(data, result.errors, {
-      allowUnknownFields: options?.allowUnknownFields,
-      knownCustomNames: options?.knownCustomNames,
-    });
-    // If TypeBox's union check produced only generic catch-all errors and the
-    // deep validator finds nothing actionable, treat the document as valid.
-    if (finalErrors.length === 0) {
-      finalValid = true;
-    }
+    ({ valid: finalValid, errors: finalErrors } = deepValidateRejected(
+      data,
+      result.errors || [],
+      options
+    ));
   }
 
   // Semantic rules run on every document, valid or not: they describe payloads
@@ -163,13 +303,11 @@ export function validateJsonDocument(
   let finalErrors = result.errors || [];
   let finalValid = result.valid;
   if (!result.valid && result.parsed) {
-    finalErrors = comprehensiveValidateDocument(result.parsed, result.errors, {
-      allowUnknownFields: options?.allowUnknownFields,
-      knownCustomNames: options?.knownCustomNames,
-    });
-    if (finalErrors.length === 0) {
-      finalValid = true;
-    }
+    ({ valid: finalValid, errors: finalErrors } = deepValidateRejected(
+      result.parsed,
+      result.errors || [],
+      options
+    ));
   }
 
   // Semantic rules run on every document, valid or not: they describe payloads

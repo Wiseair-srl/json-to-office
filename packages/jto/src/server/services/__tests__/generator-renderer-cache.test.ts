@@ -22,8 +22,7 @@ const UNREADABLE_POLICY = { maxDiagnostics: -1 };
 
 const DOCUMENT = {
   name: 'docx',
-  props: { theme: 'minimal' },
-  metadata: { title: 'renderer-cache' },
+  props: { theme: 'minimal', metadata: { title: 'renderer-cache' } },
   children: [{ name: 'paragraph', props: { text: 'Body.' } }],
 };
 

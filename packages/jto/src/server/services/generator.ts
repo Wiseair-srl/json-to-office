@@ -49,6 +49,22 @@ function toQualityWarnings(
 }
 
 /**
+ * The document's own title, for filenames and logs. docx spells it
+ * `props.metadata.title`, pptx `props.title`. The root-level `metadata.title`
+ * this used to read was never part of either document schema — it survived
+ * only through validation's flip-to-valid rescue, retired in #292 — and the
+ * playground has always written the props spelling, so the filename fell back
+ * to the adapter label for every real document.
+ */
+function documentTitle(config: unknown): string | undefined {
+  const props = (config as { props?: Record<string, unknown> } | undefined)
+    ?.props;
+  const metadata = props?.metadata as { title?: unknown } | undefined;
+  const title = metadata?.title ?? props?.title;
+  return typeof title === 'string' ? title : undefined;
+}
+
+/**
  * Playground-only convenience: scan the document for font names that match
  * a POPULAR_GOOGLE_FONTS family and auto-build `fonts.extraEntries` so the
  * LibreOffice preview stager can materialise the bytes for PDF conversion.
@@ -535,9 +551,9 @@ export class GeneratorService {
     if (!bypassCache && !hasDynamicContent) {
       const cached = this.cacheService.get(cacheKey);
       if (cached) {
-        logger.info('Served from cache', { title: config.metadata?.title });
+        logger.info('Served from cache', { title: documentTitle(config) });
         return {
-          filename: `${config.metadata?.title || this.adapter.label}${this.adapter.extension}`,
+          filename: `${documentTitle(config) || this.adapter.label}${this.adapter.extension}`,
           fileId: Date.now().toString(),
           buffer: cached.buffer,
           // Render warnings ride with bytes. Quality is request policy, so it
@@ -553,7 +569,7 @@ export class GeneratorService {
 
     // Generate — use plugin-aware generator when plugins are loaded
     logger.info(`Generating ${this.adapter.label}`, {
-      title: config.metadata?.title,
+      title: documentTitle(config),
     });
     let buffer: Buffer;
 
@@ -622,7 +638,7 @@ export class GeneratorService {
     );
 
     return {
-      filename: `${config.metadata?.title || this.adapter.label}${this.adapter.extension}`,
+      filename: `${documentTitle(config) || this.adapter.label}${this.adapter.extension}`,
       fileId: Date.now().toString(),
       buffer,
       cached: false,
