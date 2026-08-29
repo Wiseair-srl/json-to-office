@@ -48,9 +48,22 @@ describe('bundled playground templates', () => {
         : collectFontNamesFromPptx;
       const names = [...collect(json)];
       expect(names.length).toBeGreaterThan(0);
+      // Families the document itself registers (fontRegistry with real
+      // sources) are resolvable by definition — the registry is how a
+      // non-catalog font like Clash Display ships with its template.
+      const registered = new Set<string>(
+        (json?.props?.fontRegistry ?? [])
+          .filter(
+            (e: { sources?: unknown[] }) =>
+              Array.isArray(e.sources) && e.sources.length > 0
+          )
+          .map((e: { family: string }) => e.family.toLowerCase())
+      );
       const unresolvable = names.filter(
         (name) =>
-          !isSafeFont(name.trim()) && !CATALOG.has(name.trim().toLowerCase())
+          !isSafeFont(name.trim()) &&
+          !CATALOG.has(name.trim().toLowerCase()) &&
+          !registered.has(name.trim().toLowerCase())
       );
       expect(unresolvable).toEqual([]);
     }

@@ -1,25 +1,53 @@
 {
   "name": "docx",
   "props": {
-    "theme": "minimal",
-    "metadata": { "title": "Service Agreement", "author": "Wiseair" }
+    "theme": "vermilion",
+    "metadata": {
+      "title": "Service Agreement",
+      "author": "Wiseair"
+    }
   },
   "children": [
-    { "name": "heading", "props": { "text": "Service Agreement", "level": 1 } },
+    {
+      "name": "image",
+      "props": {
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"90\" viewBox=\"0 0 800 90\"><text x=\"0\" y=\"42\" font-family=\"Arial, sans-serif\" font-size=\"26\" font-weight=\"bold\" letter-spacing=\"8\" fill=\"#282829\">WISEAIR</text><text x=\"800\" y=\"42\" text-anchor=\"end\" font-family=\"Arial, sans-serif\" font-size=\"11\" letter-spacing=\"4\" fill=\"#939598\">SERVICE AGREEMENT</text><rect x=\"0\" y=\"64\" width=\"800\" height=\"1.5\" fill=\"#282829\"/><rect x=\"0\" y=\"60\" width=\"56\" height=\"8\" fill=\"#EF4130\"/></svg>",
+        "width": "100%"
+      }
+    },
+    {
+      "name": "heading",
+      "props": {
+        "text": "Service Agreement",
+        "level": 1
+      }
+    },
     {
       "name": "paragraph",
       "props": {
         "text": "This Service Agreement is entered into by Wiseair S.r.l. and the Client as of January 1, 2026."
       }
     },
-    { "name": "heading", "props": { "text": "1. Fees", "level": 2 } },
+    {
+      "name": "heading",
+      "props": {
+        "text": "1. Fees",
+        "level": 2
+      }
+    },
     {
       "name": "paragraph",
       "props": {
         "text": "The Client shall pay a fee equal to 10% of monthly revenue, invoiced quarterly with payment due within 60 days."
       }
     },
-    { "name": "heading", "props": { "text": "2. Deliverables", "level": 2 } },
+    {
+      "name": "heading",
+      "props": {
+        "text": "2. Deliverables",
+        "level": 2
+      }
+    },
     {
       "name": "list",
       "props": {
@@ -30,7 +58,13 @@
         ]
       }
     },
-    { "name": "heading", "props": { "text": "3. Termination", "level": 2 } },
+    {
+      "name": "heading",
+      "props": {
+        "text": "3. Termination",
+        "level": 2
+      }
+    },
     {
       "name": "paragraph",
       "props": {
@@ -41,6 +75,99 @@
       "name": "paragraph",
       "props": {
         "text": "Upon termination, all outstanding fees become immediately payable."
+      }
+    },
+    {
+      "name": "heading",
+      "props": {
+        "text": "Signatures",
+        "level": 2,
+        "spacing": {
+          "before": 36
+        }
+      }
+    },
+    {
+      "name": "table",
+      "props": {
+        "borderColor": "FFFFFF",
+        "borderSize": 1,
+        "cellDefaults": {
+          "padding": {
+            "top": 6,
+            "right": 0,
+            "bottom": 2,
+            "left": 0
+          }
+        },
+        "columns": [
+          {
+            "cells": [
+              {
+                "content": "",
+                "height": 50
+              },
+              {
+                "content": "For Wiseair S.r.l.",
+                "font": {
+                  "bold": true,
+                  "size": 10
+                },
+                "borderColor": {
+                  "top": "282829"
+                },
+                "borderSize": 2
+              },
+              {
+                "content": "Name · Title · Date",
+                "color": "#939598",
+                "font": {
+                  "size": 9
+                }
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "",
+                "height": 50
+              },
+              {
+                "content": ""
+              },
+              {
+                "content": ""
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "",
+                "height": 50
+              },
+              {
+                "content": "For the Client",
+                "font": {
+                  "bold": true,
+                  "size": 10
+                },
+                "borderColor": {
+                  "top": "282829"
+                },
+                "borderSize": 2
+              },
+              {
+                "content": "Name · Title · Date",
+                "color": "#939598",
+                "font": {
+                  "size": 9
+                }
+              }
+            ]
+          }
+        ]
       }
     }
   ]

@@ -7,7 +7,7 @@
       "author": "Meridian Industries",
       "description": "Report with a natively drawn Word drawing group"
     },
-    "theme": "minimal"
+    "theme": "vermilion"
   },
   "children": [
     {
@@ -42,7 +42,7 @@
               "width": 7.2,
               "height": 2.6,
               "background": {
-                "color": "#F4F8FF"
+                "color": "#FAF7F5"
               }
             },
             "elements": [
@@ -56,7 +56,7 @@
                   "h": 0.4,
                   "fontSize": 15,
                   "bold": true,
-                  "color": "#0B2E63"
+                  "color": "#282829"
                 }
               },
               {
@@ -68,7 +68,7 @@
                   "w": 2.0,
                   "h": 1.2,
                   "fill": {
-                    "color": "#BBD3FF"
+                    "color": "#FEE9DF"
                   }
                 }
               },
@@ -81,7 +81,7 @@
                   "w": 2.0,
                   "h": 1.2,
                   "fill": {
-                    "color": "#6FA1F2"
+                    "color": "#F8A084"
                   }
                 }
               },
@@ -94,7 +94,7 @@
                   "w": 2.0,
                   "h": 1.2,
                   "fill": {
-                    "color": "#2E6BD6"
+                    "color": "#EF4130"
                   }
                 }
               },
@@ -107,7 +107,7 @@
                   "w": 2.0,
                   "h": 1.2,
                   "fill": {
-                    "color": "#13367F"
+                    "color": "#EF4130"
                   }
                 }
               },
@@ -121,7 +121,7 @@
                   "h": 0.5,
                   "fontSize": 14,
                   "bold": true,
-                  "color": "#0B2E63",
+                  "color": "#282829",
                   "align": "center"
                 }
               },
@@ -135,7 +135,7 @@
                   "h": 0.5,
                   "fontSize": 14,
                   "bold": true,
-                  "color": "#0B2E63",
+                  "color": "#282829",
                   "align": "center"
                 }
               },
@@ -184,7 +184,7 @@
                   "w": 6.6,
                   "h": 0.3,
                   "fontSize": 10,
-                  "color": "#33507F"
+                  "color": "#58595B"
                 }
               }
             ]

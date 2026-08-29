@@ -167,6 +167,7 @@ than a confident-sounding guess.
 | `docx/table-width`       | `W_QUALITY_TABLE_WIDTH_OVERFLOW` | warning | deterministic | Explicit column widths exceed the usable width of their section, with a 10-twip rounding tolerance |
 | `docx/heading-hierarchy` | `W_QUALITY_HEADING_SKIP`         | info    | deterministic | A heading jumps down by more than one level                                                        |
 | `docx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`        | warning | estimated     | A word too wide for its floating frame, or a frame whose wrapped block runs off the sheet          |
+| `docx/frame-collision`   | `W_QUALITY_FRAME_COLLISION`      | warning | estimated     | Two page-anchored floating frames whose estimated text blocks land on the same region of a page    |
 | `docx/svg-text-bounds`   | `W_QUALITY_SVG_TEXT_CLIPPED`     | warning | deterministic | A `<text>` baseline in an inline SVG falls outside the viewBox, so the words are never painted     |
 
 Frame text fit only inspects paragraphs pinned into a floating frame, where
@@ -178,6 +179,18 @@ and it reports only past an 8% tolerance, the measured error of that model. An
 overrun smaller than one line height is likewise ignored. Marginal cases are
 therefore out of reach by construction, and belong to a rendered-certainty
 pass rather than a static estimate.
+
+Frame collision compares those same pinned frames against each other: each
+frame becomes a rect from its authored offsets and width plus its estimated
+wrapped-text height, and two rects on the same page that share more than a
+sliver of width and more than one line of height are reported as painting over
+each other. Consecutive paragraphs with identical frame properties are one
+flowing OOXML frame — the stock stat cards stack a number, caption and body
+this way — so a chain is measured as a single frame, never as members
+colliding with themselves. The one-line floor exists because the height
+estimate inherits the width model's error, and because tight editorial
+layouts deliberately tuck captions into the slack of a display digit's line
+box; an overlap has to cost real text before it is worth a warning.
 
 SVG text bounds needs no estimate: the baseline and the viewBox are both
 authored numbers, and text below the canvas is dropped from the PDF text layer

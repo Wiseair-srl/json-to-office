@@ -6,14 +6,271 @@
       "author": "Apex Consulting",
       "description": "Strategic proposal for Meridian Financial Group's cloud transformation initiative"
     },
-    "theme": "apex"
+    "theme": "vermilion"
   },
   "children": [
     {
       "name": "section",
       "props": {
         "meta": {
-          "title": "Cloud Migration Proposal"
+          "title": "Cover"
+        },
+        "page": {
+          "margins": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0,
+            "header": 0,
+            "footer": 0
+          }
+        },
+        "header": [],
+        "footer": []
+      },
+      "children": [
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8.39in\" height=\"11.81in\" viewBox=\"0 0 806 1134\"><rect width=\"806\" height=\"1134\" fill=\"#EF4130\"/><rect x=\"0\" y=\"522\" width=\"806\" height=\"92\" fill=\"#F68F71\"/><rect x=\"0\" y=\"614\" width=\"806\" height=\"520\" fill=\"#C7C8CA\"/><rect x=\"216\" y=\"231\" width=\"46\" height=\"1.6\" fill=\"#FFFFFF\"/><rect x=\"544\" y=\"231\" width=\"46\" height=\"1.6\" fill=\"#FFFFFF\"/><rect x=\"402.5\" y=\"468\" width=\"1\" height=\"44\" fill=\"#FFFFFF\"/><circle cx=\"403\" cy=\"540\" r=\"18\" fill=\"#FFFFFF\"/><path d=\"M403,532 L403,546 M397,541 L403,547 L409,541\" stroke=\"#EF4130\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
+            "width": 806,
+            "height": 1134,
+            "floating": {
+              "behindDocument": true,
+              "zIndex": 0,
+              "allowOverlap": true,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": -86
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": -86
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "APEX CONSULTING",
+            "noProof": true,
+            "alignment": "center",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 10.5,
+              "color": "#FFFFFF",
+              "family": "Calibri",
+              "bold": true,
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 50
+              }
+            },
+            "floating": {
+              "width": 11906,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 0
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 1120
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "CLOUD",
+            "noProof": true,
+            "alignment": "center",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 13,
+              "color": "#FFFFFF",
+              "family": "Calibri",
+              "bold": true,
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 90
+              }
+            },
+            "floating": {
+              "width": 11906,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 0
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 3260
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "MIGRATION",
+            "noProof": true,
+            "alignment": "center",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 58,
+              "color": "#FFFFFF",
+              "family": "Arial",
+              "bold": true,
+              "lineSpacing": {
+                "type": "exactly",
+                "value": 62
+              },
+              "characterSpacing": {
+                "type": "condensed",
+                "value": 10
+              }
+            },
+            "floating": {
+              "width": 11906,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 0
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 3700
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "PROPOSAL 2026",
+            "noProof": true,
+            "alignment": "center",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 30,
+              "color": "#FFFFFF",
+              "family": "Arial",
+              "bold": true,
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 20
+              }
+            },
+            "floating": {
+              "width": 11906,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 0
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 5000
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Prepared for Meridian Financial Group  ·  April 2026",
+            "noProof": true,
+            "alignment": "left",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 9.5,
+              "color": "#282829",
+              "family": "Calibri"
+            },
+            "floating": {
+              "width": 7000,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 1180
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 14980
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Confidential",
+            "noProof": true,
+            "alignment": "right",
+            "spacing": {
+              "before": 0,
+              "after": 0
+            },
+            "font": {
+              "size": 9.5,
+              "color": "#EF4130",
+              "family": "Calibri",
+              "bold": true
+            },
+            "floating": {
+              "width": 2230,
+              "horizontalPosition": {
+                "relative": "page",
+                "offset": 8500
+              },
+              "verticalPosition": {
+                "relative": "page",
+                "offset": 14980
+              },
+              "wrap": {
+                "type": "none"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "meta": {
+          "title": "Overview & Contents"
         },
         "header": [
           {
@@ -32,51 +289,22 @@
               "alignment": "left"
             }
           }
-        ]
+        ],
+        "pageBreak": true
       },
       "children": [
         {
-          "name": "heading",
-          "props": {
-            "text": "Cloud Migration Proposal",
-            "level": 1
-          }
-        },
-        {
-          "name": "heading",
-          "props": {
-            "text": "Strategic Infrastructure Transformation for Meridian Financial Group",
-            "level": 2
-          }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "Prepared by Apex Consulting — April 2026",
-            "font": {
-              "italic": true,
-              "color": "textSecondary"
-            }
-          }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": ""
-          }
-        },
-        {
           "name": "image",
           "props": {
-            "path": "https://placehold.co/800x200/0C2340/D4A843?text=APEX+CONSULTING&font=georgia",
-            "width": "100%",
-            "caption": "Figure: Apex Consulting — Enterprise Cloud Advisory"
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"120\" viewBox=\"0 0 800 120\"><rect width=\"800\" height=\"120\" fill=\"#EF4130\"/><rect width=\"8\" height=\"120\" fill=\"#282829\"/><rect x=\"712\" y=\"59.2\" width=\"1\" height=\"26\" fill=\"#FFFFFF\"/><circle cx=\"712.5\" cy=\"48\" r=\"12\" fill=\"#FFFFFF\"/><path d=\"M712.5,43 L712.5,52 M708.5,48.5 L712.5,52.5 L716.5,48.5\" stroke=\"#EF4130\" stroke-width=\"1.6\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><text x=\"40\" y=\"56\" font-family=\"Arial, sans-serif\" font-size=\"28\" font-weight=\"bold\" letter-spacing=\"3\" fill=\"#FFFFFF\">APEX CONSULTING</text><text x=\"40\" y=\"84\" font-family=\"Arial, sans-serif\" font-size=\"10\" letter-spacing=\"5\" fill=\"#FEE9DF\">ENTERPRISE CLOUD ADVISORY</text></svg>",
+            "width": "100%"
           }
         },
         {
-          "name": "paragraph",
+          "name": "heading",
           "props": {
-            "text": ""
+            "text": "About This Proposal",
+            "level": 1
           }
         },
         {
@@ -89,6 +317,13 @@
           "name": "paragraph",
           "props": {
             "text": "Apex Consulting brings 14 years of experience in financial services cloud transformations, having successfully migrated 23 regulated financial institutions to cloud-native architectures. Our team holds AWS Advanced Consulting Partner status and specializes in PCI-DSS and SOC 2 compliant migrations."
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Contents",
+            "level": 2
           }
         },
         {
@@ -271,7 +506,7 @@
                 "size": 10
               }
             },
-            "borderColor": "D6DAE0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -481,7 +716,7 @@
                 "size": 10
               }
             },
-            "borderColor": "D6DAE0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -607,9 +842,9 @@
         {
           "name": "image",
           "props": {
-            "path": "https://placehold.co/800x300/F4F5F8/0C2340?text=Migration+Architecture+Diagram&font=georgia",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"340\" viewBox=\"0 0 800 340\"><rect width=\"800\" height=\"340\" fill=\"#FAF7F5\"/><rect x=\"0.5\" y=\"0.5\" width=\"799\" height=\"339\" fill=\"none\" stroke=\"#EFEAE4\"/><defs><marker id=\"arw\" viewBox=\"0 0 10 10\" refX=\"9\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0,0 L10,5 L0,10 z\" fill=\"#EF4130\"/></marker></defs><rect x=\"30\" y=\"115\" width=\"150\" height=\"110\" rx=\"6\" fill=\"#FFFFFF\" stroke=\"#282829\" stroke-width=\"1.5\"/><text x=\"105\" y=\"145\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"13\" font-weight=\"bold\" fill=\"#282829\">Meridian DC</text><text x=\"105\" y=\"166\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10\" fill=\"#58595B\">Oracle RAC · VMware</text><text x=\"105\" y=\"182\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10\" fill=\"#58595B\">12 physical hosts</text><text x=\"105\" y=\"203\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9\" fill=\"#58595B\">decommissioned in Phase 3</text><line x1=\"180\" y1=\"170\" x2=\"253\" y2=\"170\" stroke=\"#EF4130\" stroke-width=\"2.5\" marker-end=\"url(#arw)\"/><text x=\"216\" y=\"150\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9.5\" fill=\"#58595B\">Direct Connect</text><text x=\"216\" y=\"192\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9.5\" fill=\"#58595B\">10 Gbps</text><rect x=\"258\" y=\"35\" width=\"512\" height=\"270\" rx=\"10\" fill=\"#FFFFFF\" stroke=\"#282829\" stroke-width=\"1.5\"/><text x=\"280\" y=\"62\" font-family=\"Calibri, sans-serif\" font-size=\"11\" font-weight=\"bold\" fill=\"#282829\">AWS</text><rect x=\"280\" y=\"75\" width=\"228\" height=\"205\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"#58595B\"/><text x=\"394\" y=\"99\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#282829\">us-east-1 — Production</text><rect x=\"299\" y=\"114\" width=\"190\" height=\"34\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"394.0\" y=\"135\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10.5\" fill=\"#282829\">ECS Fargate — app tier</text><rect x=\"299\" y=\"158\" width=\"190\" height=\"34\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"394.0\" y=\"179\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10.5\" fill=\"#282829\">Aurora PostgreSQL — Multi-AZ</text><rect x=\"299\" y=\"202\" width=\"190\" height=\"34\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"394.0\" y=\"223\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10.5\" fill=\"#282829\">S3 — object storage</text><text x=\"394\" y=\"264\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9\" fill=\"#58595B\">GuardDuty · Security Hub · Config</text><rect x=\"528\" y=\"75\" width=\"222\" height=\"205\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"#58595B\"/><text x=\"639\" y=\"99\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#282829\">eu-west-1 — DR</text><rect x=\"544\" y=\"114\" width=\"190\" height=\"34\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"639.0\" y=\"135\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10.5\" fill=\"#282829\">Aurora Global — replica</text><rect x=\"544\" y=\"158\" width=\"190\" height=\"34\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"639.0\" y=\"179\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10.5\" fill=\"#282829\">ECS — warm standby</text><rect x=\"544\" y=\"202\" width=\"190\" height=\"34\" rx=\"4\" fill=\"#FAF7F5\" stroke=\"#EFEAE4\"/><text x=\"639.0\" y=\"223\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"10.5\" fill=\"#282829\">S3 — cross-region replication</text><text x=\"639\" y=\"264\" text-anchor=\"middle\" font-family=\"Calibri, sans-serif\" font-size=\"9\" fill=\"#58595B\">RPO &lt; 1 min · RTO &lt; 15 min</text><line x1=\"508\" y1=\"170\" x2=\"528\" y2=\"170\" stroke=\"#EF4130\" stroke-width=\"2\" stroke-dasharray=\"4 3\" marker-end=\"url(#arw)\" marker-start=\"url(#arw)\"/></svg>",
             "width": "100%",
-            "caption": "Figure 2: Target cloud architecture — multi-AZ deployment across us-east-1 and eu-west-1"
+            "caption": "Figure 1: Target cloud architecture — multi-AZ deployment across us-east-1 and eu-west-1"
           }
         },
         {
@@ -678,7 +913,7 @@
                 "size": 10
               }
             },
-            "borderColor": "D6DAE0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -887,7 +1122,7 @@
                 "size": 10
               }
             },
-            "borderColor": "D6DAE0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true
@@ -1047,7 +1282,7 @@
                     "size": 9
                   }
                 },
-                "borderColor": "D6DAE0",
+                "borderColor": "EFEAE4",
                 "borderSize": 1,
                 "hideBorders": {
                   "insideVertical": true
@@ -1145,7 +1380,7 @@
                     "size": 9
                   }
                 },
-                "borderColor": "D6DAE0",
+                "borderColor": "EFEAE4",
                 "borderSize": 1,
                 "hideBorders": {
                   "insideVertical": true
@@ -1277,7 +1512,7 @@
                 "size": 10
               }
             },
-            "borderColor": "D6DAE0",
+            "borderColor": "EFEAE4",
             "borderSize": 1,
             "hideBorders": {
               "insideVertical": true

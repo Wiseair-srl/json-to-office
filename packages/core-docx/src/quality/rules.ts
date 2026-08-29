@@ -246,6 +246,155 @@ export const docxTextFitRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
   },
 };
 
+/**
+ * Below this much shared width, two frames are read as clear of each other.
+ * Authored x/width are exact twips, so a narrower intersection is a real
+ * sliver of frame — but text rarely reaches its own frame edge (ragged right,
+ * plus the width model's error runs both ways), and the stock corpus places
+ * frames whose boxes brush by up to ~130 twips while their text never
+ * touches. 240 twips (12pt) keeps a margin above the widest observed brush.
+ */
+const FRAME_COLLISION_MIN_WIDTH_TWIPS = 240;
+
+/** One estimated frame: an OOXML frame chain reduced to its page rect. */
+interface FrameRect {
+  /** The chain's anchor paragraph — the frame's authored identity. */
+  path: string;
+  offsetYAuthored: boolean;
+  x: number;
+  y: number;
+  widthTwips: number;
+  heightTwips: number;
+  /**
+   * The tallest member line in twips: one line of it is the height
+   * estimate's own error, so overlaps inside it are indistinguishable from a
+   * clean layout — and display type banks on exactly that slack, tucking a
+   * caption inside a stat digit's nominal line box.
+   */
+  lineTwips: number;
+  groupKey: string;
+}
+
+export const docxFrameCollisionRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/frame-collision',
+  code: QUALITY_CODES.FRAME_COLLISION,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'estimated',
+  formats: ['docx'],
+  defaultParameters: {
+    minOverlapWidthTwips: FRAME_COLLISION_MIN_WIDTH_TWIPS,
+    minOverlapLines: 1,
+  },
+  evaluate: ({ facts, configuration }) => {
+    const minOverlapWidthTwips = numberParameter(
+      configuration.parameters,
+      'minOverlapWidthTwips',
+      FRAME_COLLISION_MIN_WIDTH_TWIPS
+    );
+    const minOverlapLines = numberParameter(
+      configuration.parameters,
+      'minOverlapLines',
+      1
+    );
+
+    // Consecutive identical-geometry paragraphs are one OOXML frame: their
+    // texts flow and stack inside a shared box, so the chain collapses to a
+    // single rect whose height is the sum of its members. A member with no
+    // fact (no authored font size) contributes no height — an underestimate,
+    // which only ever keeps the rule quieter.
+    const chains = new Map<string, FrameRect>();
+    for (const fact of frameTextFacts(facts)) {
+      if (!fact.absoluteOffsetTwips) continue;
+      const lines = estimateWrappedLines(
+        fact.text,
+        fact.frameWidthTwips / TWIPS_PER_POINT,
+        fact.fontSizePt,
+        fact.characterSpacingPt
+      );
+      const heightTwips = lines * fact.lineHeightPt * TWIPS_PER_POINT;
+      const lineTwips = fact.lineHeightPt * TWIPS_PER_POINT;
+      const chain = chains.get(fact.frameChainId);
+      if (chain) {
+        chain.heightTwips += heightTwips;
+        chain.lineTwips = Math.max(chain.lineTwips, lineTwips);
+        continue;
+      }
+      chains.set(fact.frameChainId, {
+        path: fact.path,
+        offsetYAuthored: fact.offsetYTwips !== undefined,
+        x: fact.absoluteOffsetTwips.x,
+        y: fact.absoluteOffsetTwips.y,
+        widthTwips: fact.frameWidthTwips,
+        heightTwips,
+        lineTwips,
+        // Offsets only compare within one page flow and one anchor pair.
+        groupKey: `${fact.flowIndex}:${fact.anchorHorizontal}:${fact.anchorVertical}`,
+      });
+    }
+
+    const groups = new Map<string, FrameRect[]>();
+    for (const chain of chains.values()) {
+      const group = groups.get(chain.groupKey);
+      if (group) group.push(chain);
+      else groups.set(chain.groupKey, [chain]);
+    }
+
+    const findings = [];
+    for (const group of groups.values()) {
+      for (let i = 0; i < group.length; i += 1) {
+        for (let j = i + 1; j < group.length; j += 1) {
+          const a = group[i];
+          const b = group[j];
+          const overlapWidth =
+            Math.min(a.x + a.widthTwips, b.x + b.widthTwips) -
+            Math.max(a.x, b.x);
+          if (overlapWidth <= minOverlapWidthTwips) continue;
+          const overlapHeight =
+            Math.min(a.y + a.heightTwips, b.y + b.heightTwips) -
+            Math.max(a.y, b.y);
+          // The height estimates inherit the width model's error
+          // (WIDTH_MODEL_TOLERANCE): each rect's bottom is uncertain by about
+          // one of its own lines, so an overlap inside the taller line is
+          // noise — and legitimate layouts spend that slack, tucking captions
+          // into a display digit's nominal line box.
+          const floorTwips =
+            Math.max(a.lineTwips, b.lineTwips) * minOverlapLines;
+          if (overlapHeight <= floorTwips) continue;
+
+          const overlapHeightPt = Math.round(overlapHeight / TWIPS_PER_POINT);
+          const overlapWidthPt = Math.round(overlapWidth / TWIPS_PER_POINT);
+          findings.push({
+            message: `This floating frame and an earlier one on the same page overlap by an estimated ${overlapHeightPt}pt of text across ${overlapWidthPt}pt of width — the two blocks paint on top of each other.`,
+            path: b.offsetYAuthored
+              ? `${b.path}/props/floating/verticalPosition/offset`
+              : `${b.path}/props/floating`,
+            suggestion:
+              'Move one frame, shorten its text, or reduce fontSize until the blocks clear each other.',
+            context: {
+              partnerPath: a.path,
+              overlapWidthTwips: Math.round(overlapWidth),
+              overlapHeightTwips: Math.round(overlapHeight),
+              frameTopTwips: b.y,
+              partnerTopTwips: a.y,
+            },
+            relatedPaths: [a.path],
+            evidence: {
+              actual: Math.round(overlapHeight),
+              expected: Math.round(floorTwips),
+              unit: 'twips',
+            },
+          });
+        }
+      }
+    }
+    return findings;
+  },
+};
+
 export const docxSvgTextBoundsRule: QualityRule<
   DocxQualityModel,
   DocxQualityFact
@@ -296,6 +445,7 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxTableWidthRule,
     docxHeadingHierarchyRule,
     docxTextFitRule,
+    docxFrameCollisionRule,
     docxSvgTextBoundsRule,
   ],
 };

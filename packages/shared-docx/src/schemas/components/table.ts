@@ -5,6 +5,7 @@
 import { Type, Static, TSchema } from '@sinclair/typebox';
 import { HexColorSchema, HexColorOrTransparentSchema } from '../font';
 import { CommentSchema } from './comment';
+import { LineSpacingSchema } from './common';
 import { RevisionMarkSchema, RevisionSchema } from './revision';
 
 // Define Cell type - can be plain text or a component definition
@@ -56,6 +57,16 @@ const FontConfigSchema = Type.Object(
     ),
     italic: Type.Optional(Type.Boolean({ description: 'Italic text' })),
     underline: Type.Optional(Type.Boolean({ description: 'Underlined text' })),
+    lineSpacing: Type.Optional(
+      Type.Object(
+        { ...LineSpacingSchema.properties },
+        {
+          description:
+            "Line spacing of the cell's paragraph. Overrides the theme's tableCell style; `exactly` gives dense, fixed-height rows.",
+          additionalProperties: false,
+        }
+      )
+    ),
   },
   { additionalProperties: false }
 );
@@ -107,10 +118,12 @@ const BorderSizeSchema = Type.Union([
   ),
 ]);
 
-// Hide borders - can be a boolean or an object with sides
+// Hide borders - can be a boolean or an object with sides. A side named in a
+// cell's or column's per-side borderColor/borderSize keeps its border.
 const HideBordersSchema = Type.Union([
   Type.Boolean({
-    description: 'Hide all borders when true',
+    description:
+      'Hide all borders when true. A side named in a cell/column per-side borderColor or borderSize keeps its border',
   }),
   Type.Object(
     {

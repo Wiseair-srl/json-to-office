@@ -68,6 +68,33 @@ export interface DocxFrameTextFact extends QualityFact {
   pageBottomTwips: number;
   /** The longest whitespace-delimited token — the one with nowhere to wrap. */
   longestWord: string;
+  /**
+   * Resolved anchor when the frame is pinned by numeric offsets; an unstated
+   * axis pins at 0, exactly as the compiler resolves it. Absent for
+   * alignment-positioned frames and for percentage offsets, which this static
+   * pass does not resolve.
+   */
+  absoluteOffsetTwips?: { x: number; y: number };
+  /**
+   * What each axis's offset is measured from — `page` unless authored.
+   * Offsets are only comparable between frames sharing both references.
+   */
+  anchorHorizontal: string;
+  anchorVertical: string;
+  /**
+   * Shared by consecutive paragraphs whose frame properties are identical.
+   * OOXML merges those into one flowing frame (§17.3.1.11 — the stock stat
+   * cards stack number, caption and body this way), so their texts stack
+   * inside the box rather than painting over each other. Any rule comparing
+   * frame rects must treat a chain as a single frame.
+   */
+  frameChainId: string;
+  /**
+   * Top-level flow this frame renders in. Every top-level `section` starts a
+   * new page, so frames in different flows never share one; top-level content
+   * outside any section shares the flow it lands in.
+   */
+  flowIndex: number;
 }
 
 /**
@@ -236,10 +263,32 @@ function characterSpacingPt(spacing: unknown): number {
     : value / TWIPS_PER_POINT;
 }
 
+/**
+ * The frame properties that decide OOXML frame identity: consecutive
+ * paragraphs are one flowing frame exactly when all of these agree.
+ */
+function frameSignature(floating: Rec): string {
+  const horizontal = asRecord(floating.horizontalPosition);
+  const vertical = asRecord(floating.verticalPosition);
+  return JSON.stringify([
+    floating.width ?? null,
+    floating.height ?? null,
+    horizontal?.offset ?? null,
+    horizontal?.relative ?? null,
+    horizontal?.align ?? null,
+    vertical?.offset ?? null,
+    vertical?.relative ?? null,
+    vertical?.align ?? null,
+    asRecord(floating.wrap)?.type ?? null,
+  ]);
+}
+
 function frameTextFact(
   props: Rec,
   path: string,
-  page: PageBox
+  page: PageBox,
+  frameChainId: string,
+  flowIndex: number
 ): DocxFrameTextFact | undefined {
   const floating = asRecord(props.floating);
   const frameWidthTwips = finiteNumber(floating?.width);
@@ -260,7 +309,18 @@ function frameTextFact(
       (longest, word) => (word.length > longest.length ? word : longest),
       ''
     );
-  const offsetY = finiteNumber(asRecord(floating?.verticalPosition)?.offset);
+  const horizontal = asRecord(floating?.horizontalPosition);
+  const vertical = asRecord(floating?.verticalPosition);
+  const offsetX = finiteNumber(horizontal?.offset);
+  const offsetY = finiteNumber(vertical?.offset);
+  // The compiler switches to absolute placement when either axis states an
+  // offset, pinning the unstated axis at 0. A percentage offset would need
+  // the resolver, so the anchor stays unresolved rather than guessed.
+  const absolutelyPinned =
+    horizontal?.offset !== undefined || vertical?.offset !== undefined;
+  const resolvable =
+    (horizontal?.offset === undefined || offsetX !== undefined) &&
+    (vertical?.offset === undefined || offsetY !== undefined);
 
   return {
     id: `docx:frame-text:${path}`,
@@ -277,6 +337,16 @@ function frameTextFact(
     ...(offsetY !== undefined && { offsetYTwips: offsetY }),
     pageBottomTwips: page.pageBottomTwips,
     longestWord,
+    ...(absolutelyPinned &&
+      resolvable && {
+        absoluteOffsetTwips: { x: offsetX ?? 0, y: offsetY ?? 0 },
+      }),
+    anchorHorizontal:
+      typeof horizontal?.relative === 'string' ? horizontal.relative : 'page',
+    anchorVertical:
+      typeof vertical?.relative === 'string' ? vertical.relative : 'page',
+    frameChainId,
+    flowIndex,
   };
 }
 
@@ -371,6 +441,19 @@ export function prepareDocxQualityDocument(
     };
   };
 
+  // Frame-chain state. A chain extends only while nothing rendered between
+  // its members, so every visited node advances `previousVisitPath` — and a
+  // framed paragraph with no fact of its own (no authored font size) still
+  // has to carry the chain, or one silent member would split a stat card
+  // into two "overlapping" frames.
+  let previousVisitPath: string | undefined;
+  let lastFrame:
+    | { path: string; signature: string; chainId: string }
+    | undefined;
+  let flowIndex = 0;
+  const parentOf = (path: string): string =>
+    path.slice(0, path.lastIndexOf('/'));
+
   const visit = (node: Rec, path: string, page: PageBox): void => {
     const props = asRecord(node.props) ?? {};
     if (node.name === 'table') {
@@ -379,8 +462,20 @@ export function prepareDocxQualityDocument(
     }
 
     if (node.name === 'paragraph' || node.name === 'text-box') {
-      const fact = frameTextFact(props, path, page);
-      if (fact) addFact(fact);
+      const floating = asRecord(props.floating);
+      if (floating) {
+        const signature = frameSignature(floating);
+        const chainId =
+          lastFrame !== undefined &&
+          previousVisitPath === lastFrame.path &&
+          parentOf(lastFrame.path) === parentOf(path) &&
+          lastFrame.signature === signature
+            ? lastFrame.chainId
+            : `docx:frame-chain:${path}`;
+        lastFrame = { path, signature, chainId };
+        const fact = frameTextFact(props, path, page, chainId, flowIndex);
+        if (fact) addFact(fact);
+      }
     }
 
     if (node.name === 'image' || node.name === 'visual') {
@@ -403,12 +498,15 @@ export function prepareDocxQualityDocument(
       });
       previousHeadingLevel = level;
     }
+
+    previousVisitPath = path;
   };
 
   resolved.children.forEach((component, index) => {
     const rec = component as ComponentDefinition & {
       props?: Record<string, unknown>;
     };
+    if (rec.name === 'section') flowIndex += 1;
     const page =
       rec.name === 'section'
         ? pageBox(resolved.theme, context.themeName, rec.props?.page)

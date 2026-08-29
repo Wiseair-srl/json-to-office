@@ -22,6 +22,7 @@ import corporateThemeJson from './corporate.docx.theme.json';
 import modernThemeJson from './modern.docx.theme.json';
 import apexThemeJson from './apex.docx.theme.json';
 import devportalThemeJson from './devportal.docx.theme.json';
+import vermilionThemeJson from './vermilion.docx.theme.json';
 
 /**
  * Registry of available themes loaded from JSON files
@@ -40,6 +41,7 @@ function loadThemesFromJson(): Record<string, ThemeConfigJson> {
     modern: ensureThemeDefaults(modernThemeJson as ThemeConfigJson),
     apex: ensureThemeDefaults(apexThemeJson as ThemeConfigJson),
     devportal: ensureThemeDefaults(devportalThemeJson as ThemeConfigJson),
+    vermilion: ensureThemeDefaults(vermilionThemeJson as ThemeConfigJson),
   };
 
   // Also try to load from file system for runtime additions (if available)

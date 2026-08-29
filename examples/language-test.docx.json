@@ -1,7 +1,7 @@
 {
   "name": "docx",
   "props": {
-    "theme": "minimal",
+    "theme": "vermilion",
     "language": "en-US",
     "noProofWords": ["Wiseair", "json-to-office", "pptx"],
     "metadata": {
@@ -11,24 +11,31 @@
   },
   "children": [
     {
-      "name": "heading",
-      "props": { "text": "Language Test", "level": 1 }
+      "name": "image",
+      "props": {
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"100\" viewBox=\"0 0 800 100\"><text x=\"0\" y=\"52\" font-family=\"Georgia, serif\" font-size=\"44\" fill=\"#282829\">Aa</text><text x=\"66\" y=\"52\" font-family=\"Georgia, serif\" font-style=\"italic\" font-size=\"44\" fill=\"#939598\">&#196;&#228;</text><text x=\"140\" y=\"52\" font-family=\"Georgia, serif\" font-size=\"44\" fill=\"#282829\">&#199;&#231;</text><text x=\"800\" y=\"40\" text-anchor=\"end\" font-family=\"Arial, sans-serif\" font-size=\"11\" letter-spacing=\"4\" fill=\"#939598\">LANGUAGE &amp; PROOFING SPECIMEN</text><text x=\"800\" y=\"58\" text-anchor=\"end\" font-family=\"Arial, sans-serif\" font-size=\"10\" fill=\"#939598\">en-US &#183; fr-FR &#183; de-DE &#183; noProof</text><rect x=\"0\" y=\"76\" width=\"800\" height=\"1.5\" fill=\"#282829\"/><rect x=\"0\" y=\"72\" width=\"56\" height=\"8\" fill=\"#EF4130\"/></svg>",
+        "width": "100%"
+      }
     },
-
+    {
+      "name": "heading",
+      "props": {
+        "text": "Language Test",
+        "level": 1
+      }
+    },
     {
       "name": "paragraph",
       "props": {
         "text": "This paragraph inherits the document default language (en-US). Word will spell-check it as US English."
       }
     },
-
     {
       "name": "paragraph",
       "props": {
         "text": "Built with json-to-office at Wiseair; the rest of this sentence is still spell-checked, but pptx and Wiseair are not flagged."
       }
     },
-
     {
       "name": "paragraph",
       "props": {
@@ -36,7 +43,6 @@
         "noProofWords": ["Filaferro"]
       }
     },
-
     {
       "name": "paragraph",
       "props": {
@@ -44,7 +50,6 @@
         "language": "fr-FR"
       }
     },
-
     {
       "name": "heading",
       "props": {
@@ -53,16 +58,16 @@
         "language": "de-DE"
       }
     },
-
     {
       "name": "paragraph",
       "props": {
         "text": "const noProof = true; // technical snippet — exclude from spell/grammar check",
         "noProof": true,
-        "font": { "family": "Courier New" }
+        "font": {
+          "family": "Courier New"
+        }
       }
     },
-
     {
       "name": "paragraph",
       "props": {

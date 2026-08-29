@@ -339,7 +339,11 @@ describe('jto_generate', () => {
   // byte-identical to one nobody asked for.
   it.each([
     ['pptx', PPTX, ['dark', 'default', 'minimal']],
-    ['docx', DOCX, ['apex', 'corporate', 'devportal', 'minimal', 'modern']],
+    [
+      'docx',
+      DOCX,
+      ['apex', 'corporate', 'devportal', 'minimal', 'modern', 'vermilion'],
+    ],
   ] as const)(
     'warns that a %s theme option matched nothing, and names the ones that would',
     async (format, document, themes) => {

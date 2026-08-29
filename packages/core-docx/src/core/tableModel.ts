@@ -13,11 +13,24 @@
  * result into their own vocabulary. Two copies of these rules would drift, and
  * the drift would be invisible until a border quietly changed colour.
  *
+ * Two rules keep a stated border side authoritative:
+ *
+ * - A side named in a per-side `borderColor`/`borderSize` object on the cell
+ *   or its column is *explicit*. `hideBorders` silences only inherited
+ *   table-level borders; an explicit side keeps its border. A scalar
+ *   `borderColor`/`borderSize` restyles without claiming any side.
+ * - Every interior edge is adjudicated: when the two facing cell sides
+ *   disagree, one winner is chosen — an explicit side beats an inherited one,
+ *   equals fall to OOXML's own weight rules — and mirrored onto both cells.
+ *   The emitted package then never contains a contested edge, so Word and
+ *   LibreOffice (which resolve conflicts differently) draw the same table.
+ *
  * Everything returned is resolved: colours are 6-digit hex without `#`, border
  * sizes are points, padding and heights are points. Nothing here loads content
  * or touches the filesystem.
  */
 
+import type { LineSpacing } from '@json-to-office/shared-docx';
 import type { ComponentDefinition } from '../types';
 import type { ThemeConfig } from '../styles';
 import { resolveColor } from '../styles/utils/colorUtils';
@@ -40,6 +53,8 @@ export type TableFontConfig = {
   fontWeight?: number;
   italic?: boolean;
   underline?: boolean;
+  /** Line spacing of the cell's paragraph; overrides the theme's tableCell style. */
+  lineSpacing?: LineSpacing;
 };
 
 export type BorderColor =
@@ -130,6 +145,13 @@ export interface ResolvedBorder {
   color: string;
   /** True when `hideBorders` suppressed this side for this cell. */
   hidden: boolean;
+  /**
+   * True when the cell or its column named this side in a per-side
+   * `borderColor`/`borderSize` object. An explicit side keeps its border
+   * where `hideBorders` would have suppressed it, and wins its interior edge
+   * against a side that merely inherited — see `adjudicateInteriorEdges`.
+   */
+  explicit: boolean;
 }
 
 export interface ResolvedCell<TComment, TRevision> {
@@ -319,6 +341,39 @@ function mergeBorderSizePerSide(
 }
 
 /**
+ * Which sides are named in a per-side `borderColor`/`borderSize` object.
+ *
+ * The hide rules and the interior-edge adjudication both need to know whether
+ * a side's look was asked for or merely inherited, and only naming the side
+ * counts as asking: `borderColor: { right: … }` claims the right edge, while
+ * a scalar `borderColor`/`borderSize` restyles whatever draws without
+ * claiming any side. The callers pass only the cell and column layers —
+ * everything below those is table-wide, and a table-wide value is exactly
+ * what `hideBorders`, itself table-wide, is entitled to silence.
+ */
+function statedSides(
+  colors: (BorderColor | undefined)[],
+  sizes: (BorderSize | undefined)[]
+): ResolvedSides<boolean> {
+  const namedColors = colors
+    .filter((value) => typeof value === 'object')
+    .map(normalizeBorderColor);
+  const namedSizes = sizes
+    .filter((value) => typeof value === 'object')
+    .map(normalizeBorderSize);
+  const stated = (side: keyof ResolvedSides<string>): boolean =>
+    namedColors.some((c) => c !== undefined && c[side] !== UNSET_COLOR) ||
+    namedSizes.some((s) => s !== undefined && s[side] !== UNSET_SIZE);
+
+  return {
+    top: stated('top'),
+    right: stated('right'),
+    bottom: stated('bottom'),
+    left: stated('left'),
+  };
+}
+
+/**
  * Padding, or nothing.
  *
  * Unlike borders there is no built-in padding: if no layer asked for any, the
@@ -500,6 +555,8 @@ type MergedCell = Omit<
 > & {
   borderColor: ResolvedSides<string>;
   borderSize: ResolvedSides<number>;
+  /** Sides whose colour or size the cell or its column stated. */
+  borderExplicit: ResolvedSides<boolean>;
   height?: number;
 };
 
@@ -571,6 +628,10 @@ function mergeCellDefaults(
       outer.borderSize as BorderSize,
       tableDef?.borderSize,
       tableOuterBorder.borderSize
+    ),
+    borderExplicit: statedSides(
+      [cellDef?.borderColor, columnDef?.borderColor],
+      [cellDef?.borderSize, columnDef?.borderSize]
     ),
     padding: mergePaddingPerSide(
       cellDef?.padding,
@@ -665,6 +726,10 @@ function mergeHeaderCellDefaults(
       tableDef?.borderSize,
       tableOuterBorder.borderSize
     ),
+    borderExplicit: statedSides(
+      [headerDef?.borderColor, columnDef?.borderColor],
+      [headerDef?.borderSize, columnDef?.borderSize]
+    ),
     padding: mergePaddingPerSide(
       headerDef?.padding,
       headerTableDef?.padding,
@@ -727,6 +792,9 @@ export function resolveTableModel<TComment, TRevision, TRowRevision>(
     }
   };
 
+  // `hideBorders` yields to an explicit side: hiding is a table-level
+  // statement, and the cascade already lets the cell and column layers beat
+  // the table everywhere else.
   const borders = (
     merged: MergedCell,
     position: {
@@ -735,28 +803,20 @@ export function resolveTableModel<TComment, TRevision, TRowRevision>(
       isFirstCol?: boolean;
       isLastCol?: boolean;
     }
-  ): ResolvedSides<ResolvedBorder> => ({
-    top: {
-      size: merged.borderSize.top,
-      color: merged.borderColor.top,
-      hidden: isHidden('top', position),
-    },
-    right: {
-      size: merged.borderSize.right,
-      color: merged.borderColor.right,
-      hidden: isHidden('right', position),
-    },
-    bottom: {
-      size: merged.borderSize.bottom,
-      color: merged.borderColor.bottom,
-      hidden: isHidden('bottom', position),
-    },
-    left: {
-      size: merged.borderSize.left,
-      color: merged.borderColor.left,
-      hidden: isHidden('left', position),
-    },
-  });
+  ): ResolvedSides<ResolvedBorder> => {
+    const side = (name: keyof ResolvedSides<never>): ResolvedBorder => ({
+      size: merged.borderSize[name],
+      color: merged.borderColor[name],
+      hidden: isHidden(name, position) && !merged.borderExplicit[name],
+      explicit: merged.borderExplicit[name],
+    });
+    return {
+      top: side('top'),
+      right: side('right'),
+      bottom: side('bottom'),
+      left: side('left'),
+    };
+  };
 
   /** The tallest height any cell in a row asked for. */
   const tallest = (heights: (number | undefined)[]): number | undefined =>
@@ -898,12 +958,108 @@ export function resolveTableModel<TComment, TRevision, TRowRevision>(
     return row;
   });
 
+  adjudicateInteriorEdges([header, ...rows]);
+
   return {
     ...resolveWidths(source, columns, theme, themeName),
     header,
     rows,
     repeatHeader: source.repeatHeaderOnPageBreak ?? true,
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Interior edges
+ * ------------------------------------------------------------------ */
+
+/** A border that draws nothing, whichever way it got there. */
+function drawsNothing(border: ResolvedBorder): boolean {
+  return border.hidden || border.size <= 0;
+}
+
+function channels(hex: string): [number, number, number] {
+  const digits = hex.startsWith('#') ? hex.slice(1) : hex;
+  return [
+    parseInt(digits.slice(0, 2), 16) || 0,
+    parseInt(digits.slice(2, 4), 16) || 0,
+    parseInt(digits.slice(4, 6), 16) || 0,
+  ];
+}
+
+/**
+ * Whether `a` outweighs `b` under OOXML's own border-conflict rules.
+ *
+ * ECMA-376 §17.4.66 resolves a contested edge by weight — border width times
+ * a style number — then style precedence, then three colour-brightness
+ * comparisons (`R+B+2G`, `B+2G`, `G`), the darker border winning each. Every
+ * border this model produces is `single` or none, so the weight reduces to
+ * the width and the style steps drop out. A tie after all of it means the two
+ * borders look identical, and the caller keeps the first in reading order —
+ * also the standard's final step.
+ */
+function outweighs(a: ResolvedBorder, b: ResolvedBorder): boolean {
+  if (drawsNothing(a)) return false;
+  if (drawsNothing(b)) return true;
+  if (a.size !== b.size) return a.size > b.size;
+  const [redA, greenA, blueA] = channels(a.color);
+  const [redB, greenB, blueB] = channels(b.color);
+  const brightness: [number, number][] = [
+    [redA + blueA + 2 * greenA, redB + blueB + 2 * greenB],
+    [blueA + 2 * greenA, blueB + 2 * greenB],
+    [greenA, greenB],
+  ];
+  for (const [ours, theirs] of brightness) {
+    if (ours !== theirs) return ours < theirs;
+  }
+  return false;
+}
+
+/**
+ * Resolve every interior edge to one border, stated by both of its cells.
+ *
+ * Adjacent cells each carry half of a shared edge, and when the halves
+ * disagree the consumer is left to pick one — which Word does by the weight
+ * rules above and LibreOffice by its own approximation, so the same package
+ * can draw a stated red divider in Word and the inherited grey grid in a
+ * LibreOffice-rendered preview. No contested edge is allowed to leave the
+ * model instead: the winner — an explicit side beats an inherited one, equals
+ * fall to the weight rules — is mirrored onto both cells, and every consumer
+ * draws the same edge because no conflict is left to resolve.
+ */
+function adjudicateInteriorEdges<TComment, TRevision, TRowRevision>(
+  rows: ResolvedRow<TComment, TRevision, TRowRevision>[]
+): void {
+  const settle = (earlier: ResolvedBorder, later: ResolvedBorder): void => {
+    if (drawsNothing(earlier) && drawsNothing(later)) return;
+    if (
+      earlier.hidden === later.hidden &&
+      earlier.size === later.size &&
+      earlier.color === later.color
+    ) {
+      return;
+    }
+    const winner =
+      earlier.explicit !== later.explicit
+        ? earlier.explicit
+          ? earlier
+          : later
+        : outweighs(later, earlier)
+          ? later
+          : earlier;
+    const loser = winner === earlier ? later : earlier;
+    loser.size = winner.size;
+    loser.color = winner.color;
+    loser.hidden = winner.hidden;
+  };
+
+  rows.forEach((row, rowIndex) => {
+    row.cells.forEach((cell, colIndex) => {
+      const right = row.cells[colIndex + 1];
+      if (right) settle(cell.borders.right, right.borders.left);
+      const below = rows[rowIndex + 1]?.cells[colIndex];
+      if (below) settle(cell.borders.bottom, below.borders.top);
+    });
+  });
 }
 
 /**

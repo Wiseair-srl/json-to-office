@@ -326,6 +326,47 @@ export const CASES: CorpusCase[] = [
     }),
   },
 
+  {
+    name: 'tables/borders-edge-ownership',
+    // The vermilion-annual-report pattern without its both-sides workaround:
+    // a grey grid stated once on the table, the outer frame hidden except the
+    // bottom, and red accents named side by side on individual cells. A named
+    // side survives `hideBorders` and owns its interior edge — the model
+    // mirrors it onto the neighbouring cell, so the package never carries a
+    // contested edge for Word and LibreOffice to resolve differently. Scalar
+    // `borderColor`/`borderSize` on a cell restyle without claiming sides,
+    // and clashes between two named sides fall to ECMA-376's weight rules
+    // (equal widths: the darker colour wins).
+    document: tableDoc({
+      borderColor: 'C7C8CA',
+      borderSize: 0.5,
+      hideBorders: { left: true, right: true, top: true },
+      columns: [
+        {
+          header: { content: 'Metric', borderColor: { bottom: 'EF4130' } },
+          cells: [
+            { content: 'Revenue', borderColor: { right: 'EF4130' } },
+            { content: 'Costs', borderColor: 'A16207', borderSize: 1 },
+          ],
+        },
+        {
+          header: { content: 'FY24' },
+          cells: [
+            { content: '10', borderColor: { left: '336699' } },
+            { content: '20', borderSize: { bottom: 0 } },
+          ],
+        },
+        {
+          header: { content: 'FY25' },
+          cells: [
+            { content: '30' },
+            { content: '40', borderColor: { right: 'EF4130' } },
+          ],
+        },
+      ],
+    }),
+  },
+
   // --- shading ------------------------------------------------------------
   {
     name: 'tables/shading-levels',
