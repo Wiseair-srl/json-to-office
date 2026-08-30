@@ -65,13 +65,36 @@ claude mcp add json-to-office -s user \
 
 In Claude Desktop and Cursor the equivalent is an `"env"` object beside `"command"`.
 
+## Workspaces that survive a lost session
+
+A workspace holds a document server-side so the agent patches it instead of resending it. By default it lives in memory and belongs to one connection: whatever ends the connection — a client restart, a host session reset, a crash — takes the open documents with it, however many revisions of authoring they held.
+
+Give the server a workspace directory and every committed revision is mirrored there instead:
+
+```bash
+claude mcp add json-to-office -s user \
+  -e JTO_MCP_OUTPUT_DIR=$HOME/Documents/jto-out \
+  -e JTO_MCP_WORKSPACE_DIR=$HOME/Documents/jto-workspaces \
+  -- npx -y @json-to-office/mcp-server
+```
+
+| Setting                  | Effect                                                        |
+| ------------------------ | ------------------------------------------------------------- |
+| `--workspace-dir <path>` | Workspace revisions are mirrored here. Highest precedence.    |
+| `JTO_MCP_WORKSPACE_DIR`  | The same, when the flag is absent.                            |
+| _(neither)_              | Memory-only handles, ending with the connection. The default. |
+
+After a reconnect the agent calls `jto_workspace_list` and gets its handles back — including ones opened by the connection that died — then reads or patches them as usual. Memory stays the fast path; the disk copy only loads when a handle is actually used. Closing a workspace still destroys it, on disk as well, and a revision that could not be written comes back as a `W_WORKSPACE_NOT_PERSISTED` warning with the edit applied. `jto_info.workspaces.persistent` says which mode a connection is in.
+
+The directory holds document JSON in the clear (owner-only), so point it somewhere you would be comfortable leaving drafts. Give each client its own root: two connections sharing one share its handles, and `baseRevision` guards a write against the connection that made it, not against another one editing the same handle at the same time.
+
 ## What the agent gets
 
 Thirteen tools and nine `jto://` resources. The [package README](https://github.com/Wiseair-srl/json-to-office/tree/main/packages/mcp-server#tools) documents every input and output field; the shape of the loop is:
 
 **Discover.** `jto_info` reports versions, formats, renderer ids, the output root and whether preview can run here. `jto_discover` lists components, renderer profiles, themes and starter documents; `jto_describe_component` returns one component's exact schema, with nested components collapsed to names so nothing pulls a megabyte of schema through the model.
 
-**Author and repair.** `jto_validate` returns path-addressed diagnostics — RFC 6901 pointers into the document you sent, usable directly as patch targets. Beside structural errors it reports [design-quality findings](/guide/design-quality) (`W_QUALITY_*`) with category, certainty, and evidence. They advise by default; pass `quality.policy.gate` to make the selected severity block `ok`. Optional workspaces (`jto_workspace_create`, `_inspect`, `_patch`, `_snapshot`, `_list`, `_close`) hold a document server-side so an agent can send an RFC 6902 patch instead of resending the whole tree.
+**Author and repair.** `jto_validate` returns path-addressed diagnostics — RFC 6901 pointers into the document you sent, usable directly as patch targets. Beside structural errors it reports [design-quality findings](/guide/design-quality) (`W_QUALITY_*`) with category, certainty, and evidence. They advise by default; pass `quality.policy.gate` to make the selected severity block `ok`. Optional workspaces (`jto_workspace_create`, `_inspect`, `_patch`, `_snapshot`, `_list`, `_close`) hold a document server-side so an agent can send an RFC 6902 patch instead of resending the whole tree; with a [workspace directory](#workspaces-that-survive-a-lost-session) configured they outlive the connection.
 
 **Look.** `jto_preview` renders selected pages to PNG and hands them back as image blocks. This is the part that has no CLI equivalent worth the name: a model reasoning about whether a table overflowed is guessing, and a model looking at the page is not.
 

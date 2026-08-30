@@ -99,6 +99,25 @@ export {
 } from './lib/workspace-store.js';
 
 export {
+  createMemoryWorkspaceStore,
+  DEFAULT_WORKSPACE_LIMITS,
+  WORKSPACE_ERROR_CODES,
+  type MemoryWorkspaceStore,
+  type MemoryWorkspaceStoreOptions,
+  type WorkspaceLimits,
+} from './workspace/store.js';
+
+export {
+  createWorkspacePersistence,
+  createWorkspacePersistenceAt,
+  DEFAULT_PERSISTENCE_LIMITS,
+  WORKSPACE_DIR_ENV,
+  type PersistenceLimits,
+  type WorkspacePersistence,
+  type WorkspacePersistenceOptions,
+} from './workspace/persistence.js';
+
+export {
   getAdapter,
   resetAdapters,
   checkRenderer,

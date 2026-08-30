@@ -130,6 +130,8 @@ export interface StdioSession {
   client: Client;
   /** The `--output-dir` the server was started with. */
   outputRoot: string;
+  /** The `--workspace-dir` it was started with, when it was given one. */
+  workspaceRoot?: string;
   /** Everything the child has written to stderr so far. */
   stderr(): string;
   close(): Promise<void>;
@@ -143,6 +145,12 @@ export interface SessionOptions {
   versionNegotiation?: { mode: 'legacy' | 'auto' | { pin: string } };
   /** Reuse an existing output root instead of making one. */
   outputRoot?: string;
+  /**
+   * Start with `--workspace-dir`, so workspace revisions outlive the child
+   * process (#290). The caller owns the directory: pointing two sessions at
+   * the same one is how a reconnect is simulated.
+   */
+  workspaceRoot?: string;
 }
 
 /**
@@ -161,7 +169,14 @@ export async function openSession(
 
   const transport = new StdioClientTransport({
     command: process.execPath,
-    args: [cliPath, '--output-dir', outputRoot],
+    args: [
+      cliPath,
+      '--output-dir',
+      outputRoot,
+      ...(options.workspaceRoot
+        ? ['--workspace-dir', options.workspaceRoot]
+        : []),
+    ],
     stderr: 'pipe',
   });
 
@@ -181,6 +196,9 @@ export async function openSession(
   return {
     client,
     outputRoot,
+    ...(options.workspaceRoot !== undefined && {
+      workspaceRoot: options.workspaceRoot,
+    }),
     stderr: () => stderr,
     close: async () => {
       await client.close();
