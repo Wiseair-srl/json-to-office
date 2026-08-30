@@ -24,4 +24,10 @@ validate, validateStrict and generation agree on rejecting unknown keys.
 The jto server now reads the document title for filenames from
 `props.metadata.title` (docx) / `props.title` (pptx) instead of a root-level
 `metadata` that was never part of the schema — real playground documents had
-always fallen back to the generic filename.
+always fallen back to the generic filename. Because that is the first time
+user-authored text reaches the filename, the title is sanitized where the name
+is built: path separators and control characters are replaced and the length is
+capped, on both the generated and the cache-hit branch. The filename travels
+into the generate response and into the `Content-Disposition` of
+`/preview/*-from-json`, which interpolates it verbatim, so an unescaped CR/LF
+in a title would otherwise have split that header.

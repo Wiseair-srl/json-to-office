@@ -44,6 +44,13 @@ export function GlobalPreviewHeader({
       ? s.documents.find((d) => d.name === s.activeTab)?.text
       : undefined
   );
+  // The name owning that text. `name` above is the last output's, so without
+  // this the copy request pairs one document's JSON with another's provenance.
+  const editorDocumentName = useDocumentsStore((s) =>
+    s.activeTab && s.documentTypes[s.activeTab] !== 'application/json+theme'
+      ? s.activeTab
+      : undefined
+  );
 
   const chatOpen = __AI_ENABLED__ ? useChatStore((s) => s.chatOpen) : false;
 
@@ -82,6 +89,7 @@ export function GlobalPreviewHeader({
         onShowFonts={() => openFontPicker()}
         documentText={text}
         editorDocumentText={editorDocumentText}
+        editorDocumentName={editorDocumentName}
         warnings={warnings}
         onToggleChat={__AI_ENABLED__ ? toggleChat : undefined}
         chatOpen={__AI_ENABLED__ ? chatOpen : undefined}

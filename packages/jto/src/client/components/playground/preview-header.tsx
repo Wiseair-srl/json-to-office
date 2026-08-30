@@ -92,6 +92,7 @@ function PreviewHeader({
   onShowFonts,
   documentText,
   editorDocumentText,
+  editorDocumentName,
   warnings,
   onToggleChat,
   chatOpen,
@@ -113,6 +114,14 @@ function PreviewHeader({
    * before the first Run (#155).
    */
   editorDocumentText?: string;
+  /**
+   * The name that owns `editorDocumentText`. `name` identifies the last
+   * successful output, so on its own it pairs the active document's JSON with
+   * the previous document's provenance after a tab switch — and is a
+   * placeholder before the first Run. Undefined whenever `editorDocumentText`
+   * is, so the two always travel together.
+   */
+  editorDocumentName?: string;
   warnings?: GenerationWarning[] | null;
   onToggleChat?: () => void;
   chatOpen?: boolean;
@@ -378,8 +387,13 @@ function PreviewHeader({
           // sourceName lets the server inline a discovered document's bundled
           // media before safe-mode source validation — without it, templates
           // referencing relative media paths 400 here while rendering fine.
-          // Resolved from template provenance so renamed copies keep working.
-          options: { sourceName: resolveSourceName(name) },
+          // Resolved from template provenance so renamed copies keep working,
+          // and off the SAME document `copySourceText` came from — `name` is
+          // the last output's, which is stale after a tab switch and a
+          // placeholder before the first Run.
+          options: {
+            sourceName: resolveSourceName(editorDocumentName ?? name),
+          },
         }),
       });
 
@@ -453,7 +467,14 @@ function PreviewHeader({
         setIsCopyingStandardComponents(false);
       }
     })();
-  }, [copySourceText, name, resolveSourceName, getFreshThemeData, toast]);
+  }, [
+    copySourceText,
+    name,
+    editorDocumentName,
+    resolveSourceName,
+    getFreshThemeData,
+    toast,
+  ]);
 
   const handleCopyFromFallbackDialog = useCallback(async () => {
     if (standardComponentsFallbackJson == null) return;
