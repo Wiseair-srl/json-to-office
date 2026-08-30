@@ -19,10 +19,26 @@
  * failures (see `errors.ts`).
  */
 
-import { ERROR_CODES, failure, type Failure } from './errors.js';
+import {
+  ERROR_CODES,
+  failure,
+  type Diagnostic,
+  type Failure,
+} from './errors.js';
 import type { FormatName } from './adapters.js';
 
-export type WorkspaceResult<T> = ({ ok: true } & T) | Failure;
+/**
+ * A success may still have something to say.
+ *
+ * `warnings` is how a store reports what did not go wrong enough to fail the
+ * call — a revision that did not reach disk (#290) being the case that
+ * matters: the edit landed, the handle works, and the agent still needs to
+ * know it has stopped being recoverable. Tools fold these into the
+ * `diagnostics` of the result they were already returning.
+ */
+export type WorkspaceResult<T> =
+  | ({ ok: true; warnings?: Diagnostic[] } & T)
+  | Failure;
 
 /** RFC 6902 operation. Paths are RFC 6901 pointers — no private dialect (#271). */
 export interface JsonPatchOperation {
@@ -47,6 +63,11 @@ export interface WorkspaceRecord {
   title?: string;
   /** Revisions pinned by `snapshot`, still retrievable through `get`. */
   pinnedRevisions: number[];
+  /**
+   * Whether this revision is on disk and so survives the connection (#290).
+   * Absent when the store has no durable backing at all, which is the default.
+   */
+  persisted?: boolean;
 }
 
 export interface WorkspaceStore {
@@ -122,7 +143,9 @@ export interface WorkspaceStore {
    *
    * A connection's store is reachable only through its `ToolDeps`, so the
    * documents go when the connection's deps do; this is for a host that wants
-   * the memory back at a moment of its own choosing.
+   * the memory back at a moment of its own choosing. It releases memory only —
+   * a durable store keeps its copies, because an event that ends a connection
+   * is exactly what #290 stops being fatal.
    */
   closeAll(): Promise<void>;
 }

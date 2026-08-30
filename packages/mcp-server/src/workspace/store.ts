@@ -23,7 +23,13 @@
 
 import { randomBytes } from 'crypto';
 
-import { ERROR_CODES, failure, type Failure } from '../lib/errors.js';
+import {
+  ERROR_CODES,
+  diagnostic,
+  failure,
+  type Diagnostic,
+  type Failure,
+} from '../lib/errors.js';
 import type {
   JsonPatchOperation,
   WorkspaceRecord,
@@ -37,6 +43,14 @@ import {
   parsePointer,
   resolvePointer,
 } from './json-pointer.js';
+import {
+  isPersistableHandle,
+  type PersistedDocument,
+  type PersistedMeta,
+  type PersistenceLimits,
+  type RestoredWorkspace,
+  type WorkspacePersistence,
+} from './persistence.js';
 
 /**
  * Workspace-lifecycle codes.
@@ -51,6 +65,12 @@ export const WORKSPACE_ERROR_CODES = {
   LIMIT: 'E_WORKSPACE_LIMIT',
   DOCUMENT_TOO_LARGE: 'E_DOCUMENT_TOO_LARGE',
   INVALID_ROOT: 'E_INVALID_DOCUMENT_ROOT',
+  /**
+   * A revision could not be mirrored to disk (#290). A warning, never a
+   * failure: the edit landed and the workspace is usable, but this connection
+   * has stopped being survivable and saying so is the whole point.
+   */
+  NOT_PERSISTED: 'W_WORKSPACE_NOT_PERSISTED',
 } as const;
 
 export type EvictionReason = 'ttl' | 'closed';
@@ -95,12 +115,22 @@ export interface MemoryWorkspaceStoreOptions extends Partial<WorkspaceLimits> {
   now?: () => number;
   /** Injectable handle source, for tests that need predictable handles. */
   newHandle?: () => string;
+  /**
+   * Disk backing (#290). Absent is the historical behaviour: memory only, and
+   * everything goes when the connection does.
+   */
+  persistence?: WorkspacePersistence;
 }
 
 export interface MemoryWorkspaceStore extends WorkspaceStore {
   readonly limits: WorkspaceLimits;
   /** Live totals, for `jto_workspace_list` to show the agent its budget. */
   usage(): { workspaces: number; bytes: number };
+  /**
+   * Where revisions survive the connection, when a root was configured.
+   * Absent means handles are memory-only and end with this process (#290).
+   */
+  readonly persistence?: { root: string; limits: PersistenceLimits };
 }
 
 interface Pin {
@@ -120,6 +150,8 @@ interface Entry {
   touchedAt: number;
   title?: string;
   pins: Map<number, Pin>;
+  /** Whether the last write to this entry reached disk (#290). */
+  persisted: boolean;
 }
 
 interface Tombstone {
@@ -144,6 +176,7 @@ export function createMemoryWorkspaceStore(
   };
   const now = options.now ?? Date.now;
   const newHandle = options.newHandle ?? defaultHandle;
+  const persistence = options.persistence;
 
   /** Insertion-ordered, which is also the order `list` reports. */
   const entries = new Map<string, Entry>();
@@ -161,12 +194,12 @@ export function createMemoryWorkspaceStore(
     return total;
   }
 
-  function tombstone(entry: Entry, reason: EvictionReason): void {
-    tombstones.set(entry.handle, {
-      reason,
-      at: now(),
-      revision: entry.revision,
-    });
+  function tombstone(
+    handle: string,
+    reason: EvictionReason,
+    revision: number
+  ): void {
+    tombstones.set(handle, { reason, at: now(), revision });
     // Oldest first: `Map` preserves insertion order, and a re-set handle is
     // deleted before it is written, so the order stays honest.
     while (tombstones.size > MAX_TOMBSTONES) {
@@ -179,7 +212,7 @@ export function createMemoryWorkspaceStore(
   function evict(entry: Entry, reason: EvictionReason): void {
     entries.delete(entry.handle);
     tombstones.delete(entry.handle);
-    tombstone(entry, reason);
+    tombstone(entry.handle, reason, entry.revision);
   }
 
   /**
@@ -195,6 +228,163 @@ export function createMemoryWorkspaceStore(
     for (const entry of [...entries.values()]) {
       if (at - entry.touchedAt > limits.idleTtlMs) evict(entry, 'ttl');
     }
+  }
+
+  /**
+   * Mirror an entry to disk, and say so when that did not take.
+   *
+   * Durability is best-effort by construction. The edit is already committed
+   * in memory when this runs, and refusing an otherwise good patch because a
+   * directory turned read-only would trade a working authoring loop for a
+   * guarantee the agent never asked for. What is NOT optional is reporting
+   * it: a workspace the agent believes will survive a lost connection and
+   * will not is the exact failure this feature exists to remove, so the
+   * warning rides back on the same result as the edit.
+   */
+  async function persist(entry: Entry): Promise<Diagnostic | undefined> {
+    if (!persistence) return undefined;
+    try {
+      await persistence.save({
+        handle: entry.handle,
+        format: entry.format,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt,
+        ...(entry.title !== undefined && { title: entry.title }),
+        head: {
+          revision: entry.revision,
+          text: entry.text,
+          bytes: entry.bytes,
+        },
+        pins: [...entry.pins.entries()].map(([revision, pin]) => ({
+          revision,
+          text: pin.text,
+          bytes: pin.bytes,
+        })),
+      });
+      entry.persisted = true;
+      return undefined;
+    } catch (error) {
+      entry.persisted = false;
+      return diagnostic(
+        WORKSPACE_ERROR_CODES.NOT_PERSISTED,
+        `Revision ${entry.revision} of ${entry.handle} is held in memory but was not written to ${persistence.root}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        {
+          severity: 'warning',
+          suggestion:
+            'Export the JSON with jto_workspace_snapshot and keep it yourself; this handle will not survive a lost connection.',
+          context: {
+            handle: entry.handle,
+            revision: entry.revision,
+            workspaceRoot: persistence.root,
+          },
+        }
+      );
+    }
+  }
+
+  /** Wrap a record with whatever the write had to say. */
+  function committed(
+    record: WorkspaceRecord,
+    warning: Diagnostic | undefined
+  ): { ok: true; record: WorkspaceRecord; warnings?: Diagnostic[] } {
+    return { ok: true, record, ...(warning && { warnings: [warning] }) };
+  }
+
+  /**
+   * Bring a handle back from disk.
+   *
+   * This is the half of #290 an agent actually notices. After a host session
+   * reset the memory map is empty and the handle it is holding looks unknown,
+   * so every entry point that misses looks here before reporting it gone —
+   * the client resumes at the revision it left off at instead of re-authoring.
+   * The same path covers a handle the idle TTL swept, which is why eviction no
+   * longer has to mean loss.
+   *
+   * The memory budget applies exactly as it does to a create: a restore that
+   * does not fit is refused rather than allowed to push the connection past a
+   * limit it publishes. The document stays on disk, so freeing a workspace and
+   * asking again works.
+   */
+  async function rehydrate(
+    handle: string
+  ): Promise<{ ok: true; entry: Entry } | Failure | undefined> {
+    if (!persistence || !isPersistableHandle(handle)) return undefined;
+
+    let loaded: RestoredWorkspace | undefined;
+    try {
+      loaded = await persistence.load(handle);
+    } catch {
+      // An unreadable directory is indistinguishable from an absent one to the
+      // agent, and `missing` already says the useful thing about both.
+      return undefined;
+    }
+    if (!loaded) return undefined;
+    const restored = loaded;
+
+    // Disk may have been written by a connection with a roomier pin budget.
+    const pins: PersistedDocument[] = [...restored.pins]
+      .sort((a, b) => b.revision - a.revision)
+      .slice(0, limits.maxPinnedRevisions);
+
+    const needed = pins.reduce(
+      (total, pin) => total + pin.bytes,
+      restored.head.bytes
+    );
+    if (restored.head.bytes > limits.maxDocumentBytes) {
+      return tooLarge(restored.head.bytes, limits.maxDocumentBytes);
+    }
+    if (!hasRoom(needed, true)) {
+      return failure(
+        WORKSPACE_ERROR_CODES.LIMIT,
+        `Workspace ${handle} is on disk at revision ${restored.revision} but does not fit in this connection's ${limits.maxTotalBytes}-byte budget.`,
+        {
+          suggestion:
+            'Close a workspace you have finished with, then use this handle again.',
+          context: {
+            handle,
+            bytes: needed,
+            maxTotalBytes: limits.maxTotalBytes,
+            maxWorkspaces: limits.maxWorkspaces,
+          },
+        }
+      );
+    }
+
+    const entry: Entry = {
+      handle,
+      format: restored.format,
+      revision: restored.head.revision,
+      text: restored.head.text,
+      bytes: restored.head.bytes,
+      createdAt: restored.createdAt,
+      updatedAt: restored.updatedAt,
+      touchedAt: now(),
+      ...(restored.title !== undefined && { title: restored.title }),
+      pins: new Map(
+        pins.map((pin) => [pin.revision, { text: pin.text, bytes: pin.bytes }])
+      ),
+      persisted: true,
+    };
+    entries.set(handle, entry);
+    // The handle is live again, so whatever the tombstone said about it is
+    // no longer true.
+    tombstones.delete(handle);
+    return { ok: true, entry };
+  }
+
+  /**
+   * The entry behind a handle: resident, restored from disk, or a failure
+   * explaining which kind of gone it is.
+   */
+  async function resolve(handle: string): Promise<{ entry: Entry } | Failure> {
+    const entry = entries.get(handle);
+    if (entry) return { entry };
+    const restored = await rehydrate(handle);
+    if (restored === undefined) return missing(handle);
+    if (!restored.ok) return restored;
+    return { entry: restored.entry };
   }
 
   function missing(handle: string): Failure {
@@ -246,12 +436,38 @@ export function createMemoryWorkspaceStore(
       updatedAt: new Date(entry.updatedAt).toISOString(),
       ...(entry.title !== undefined && { title: entry.title }),
       pinnedRevisions: [...entry.pins.keys()].sort((a, b) => a - b),
+      ...(persistence && { persisted: entry.persisted }),
+    };
+  }
+
+  /**
+   * A record for a workspace that is on disk but not in memory (#290).
+   *
+   * Built from the metadata alone: `jto_workspace_list` after a reconnect is
+   * how an agent finds the handles it lost, and making it read every document
+   * back would charge that recovery the full price of the connection it is
+   * recovering from. The documents load when a handle is used.
+   */
+  function fromMeta(meta: PersistedMeta): WorkspaceRecord {
+    return {
+      handle: meta.handle,
+      format: meta.format,
+      revision: meta.revision,
+      bytes: meta.bytes,
+      createdAt: new Date(meta.createdAt).toISOString(),
+      updatedAt: new Date(meta.updatedAt).toISOString(),
+      ...(meta.title !== undefined && { title: meta.title }),
+      pinnedRevisions: [...meta.pinnedRevisions],
+      persisted: true,
     };
   }
 
   return {
     available: true,
     limits,
+    ...(persistence && {
+      persistence: { root: persistence.root, limits: persistence.limits },
+    }),
 
     usage() {
       sweep();
@@ -299,15 +515,20 @@ export function createMemoryWorkspaceStore(
         touchedAt: at,
         ...(input.title !== undefined && { title: input.title }),
         pins: new Map(),
+        persisted: false,
       };
       entries.set(entry.handle, entry);
-      return { ok: true, record: toRecord(entry) };
+      // Ordered: `toRecord` reports `persisted`, so the write has to have been
+      // attempted before the record describing it is built.
+      const warning = await persist(entry);
+      return committed(toRecord(entry), warning);
     },
 
     async get(handle, readOptions) {
       sweep();
-      const entry = entries.get(handle);
-      if (!entry) return missing(handle);
+      const found = await resolve(handle);
+      if (!('entry' in found)) return found;
+      const entry = found.entry;
       entry.touchedAt = now();
 
       let text = entry.text;
@@ -354,8 +575,9 @@ export function createMemoryWorkspaceStore(
 
     async patch(input) {
       sweep();
-      const entry = entries.get(input.handle);
-      if (!entry) return missing(input.handle);
+      const found = await resolve(input.handle);
+      if (!('entry' in found)) return found;
+      const entry = found.entry;
       entry.touchedAt = now();
 
       if (
@@ -436,13 +658,15 @@ export function createMemoryWorkspaceStore(
       entry.revision += 1;
       entry.updatedAt = now();
       entry.touchedAt = entry.updatedAt;
-      return { ok: true, record: toRecord(entry) };
+      const warning = await persist(entry);
+      return committed(toRecord(entry), warning);
     },
 
     async snapshot(handle) {
       sweep();
-      const entry = entries.get(handle);
-      if (!entry) return missing(handle);
+      const found = await resolve(handle);
+      if (!('entry' in found)) return found;
+      const entry = found.entry;
       entry.touchedAt = now();
 
       const revision = entry.revision;
@@ -461,25 +685,78 @@ export function createMemoryWorkspaceStore(
         }
       }
 
-      return { ok: true, record: toRecord(entry), document };
+      // The pin is part of what survives, so it is written before the agent
+      // is told it exists — and before `toRecord` reports `persisted`.
+      const warning = entry.pins.has(revision)
+        ? await persist(entry)
+        : undefined;
+
+      return {
+        ok: true,
+        record: toRecord(entry),
+        document,
+        ...(warning && { warnings: [warning] }),
+      };
     },
 
     async list() {
       sweep();
-      return {
-        ok: true,
-        records: [...entries.values()].map((entry) => toRecord(entry)),
-      };
+      const records = [...entries.values()].map((entry) => toRecord(entry));
+      if (!persistence) return { ok: true, records };
+
+      // Resident first, in the order they were opened, then whatever else the
+      // root still holds — which after a reconnect is everything, and is the
+      // only way back to a handle the client no longer has.
+      const resident = new Set(records.map((record) => record.handle));
+      let stored: PersistedMeta[] = [];
+      try {
+        stored = await persistence.list();
+      } catch {
+        /* an unreadable root simply contributes nothing */
+      }
+      for (const meta of stored) {
+        if (resident.has(meta.handle)) continue;
+        // A close is a decision, not a cache miss: a durable copy that
+        // outlived one is not offered back.
+        if (tombstones.get(meta.handle)?.reason === 'closed') continue;
+        records.push(fromMeta(meta));
+      }
+      return { ok: true, records };
     },
 
     async close(handle) {
       sweep();
       const entry = entries.get(handle);
-      if (!entry) return { ok: true, handle, closed: false };
-      evict(entry, 'closed');
-      return { ok: true, handle, closed: true };
+      if (entry) evict(entry, 'closed');
+
+      // Deliberately destructive on disk as well. `jto_workspace_close` is
+      // documented as unrecoverable, and a durable copy that outlived it would
+      // reappear on the next use of the handle — the opposite of what the
+      // agent asked for. Note this reads no document: closing has to work when
+      // the byte budget is too full to restore one.
+      let durable = false;
+      if (persistence) {
+        try {
+          durable = await persistence.remove(handle);
+        } catch {
+          /* reported below as "nothing to close", never as a failure */
+        }
+        // The revision is unknown here and unread: `missing` only surfaces one
+        // for a TTL eviction, which this is not.
+        if (durable && !entry) tombstone(handle, 'closed', 0);
+      }
+
+      return { ok: true, handle, closed: entry !== undefined || durable };
     },
 
+    /**
+     * Release memory, keep the disk.
+     *
+     * The asymmetry with `close` is the point: this exists for a host
+     * reclaiming memory at a moment of its own choosing, and #290 is precisely
+     * about an event that ends a connection not being allowed to destroy
+     * revisions. The handles come back from disk on next use.
+     */
     async closeAll() {
       for (const entry of [...entries.values()]) evict(entry, 'closed');
     },

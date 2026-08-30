@@ -80,13 +80,16 @@ Pin a version by asking for one — `npx -y @json-to-office/mcp-server@1.0.0` �
 
 ## Options
 
-| Flag / variable       | Meaning                                                          |
-| --------------------- | ---------------------------------------------------------------- |
-| `--output-dir <path>` | Where generated files are written. Highest precedence.           |
-| `JTO_MCP_OUTPUT_DIR`  | Same, when the flag is absent.                                   |
-| _(neither)_           | A per-connection directory under the system temp dir.            |
-| `LIBREOFFICE_PATH`    | LibreOffice binary, for preview and the docx `visual` component. |
-| `PDFTOPPM_PATH`       | poppler `pdftoppm` binary, for preview.                          |
+| Flag / variable          | Meaning                                                                           |
+| ------------------------ | --------------------------------------------------------------------------------- |
+| `--output-dir <path>`    | Where generated files are written. Highest precedence.                            |
+| `JTO_MCP_OUTPUT_DIR`     | Same, when the flag is absent.                                                    |
+| _(neither output flag)_  | A per-connection directory under the system temp dir.                             |
+| `--workspace-dir <path>` | Where workspace revisions are mirrored, so they outlive the connection.           |
+| `JTO_MCP_WORKSPACE_DIR`  | Same, when the flag is absent.                                                    |
+| _(neither ws flag)_      | Workspaces are memory-only: handles end with the connection. This is the default. |
+| `LIBREOFFICE_PATH`       | LibreOffice binary, for preview and the docx `visual` component.                  |
+| `PDFTOPPM_PATH`          | poppler `pdftoppm` binary, for preview.                                           |
 
 ## Contracts
 
@@ -102,7 +105,7 @@ Pin a version by asking for one — `npx -y @json-to-office/mcp-server@1.0.0` �
 
 ## The loop this server expects
 
-1. **`jto_info`** — what this host can actually do: versions, formats and their renderer ids, the output root, whether workspaces are on, and whether preview has its binaries.
+1. **`jto_info`** — what this host can actually do: versions, formats and their renderer ids, the output root, whether workspaces are on and whether they survive a lost connection, and whether preview has its binaries.
 2. **`jto_discover`** (or the `jto://catalog` resource) — components per format, renderer profiles, built-in themes, and starter documents to copy. **`jto_describe_component`** for the exact schema of the one component you are about to write.
 3. **Author** — start from a starter, or `jto_workspace_create` and patch content in.
 4. **`jto_validate`** after each edit, not once at the end. Diagnostics are path-addressed, so a pointer is a patch target.
@@ -140,7 +143,7 @@ Call this first.
 
 **In** — `includePreviewDependencies` (boolean, default true): probe the filesystem for LibreOffice and poppler.
 
-**Out** — `server` `{name, package, version, protocolTransport}`; `runtime` `{node, platform, arch}`; `packages` (installed versions of `jto-ops`, `shared*`, `core-docx`, `core-pptx` — a render is a function of the document plus these); `formats[]` `{name, extension, label, rendererIds}` with defaults first; `workspaces` `{available, open}`; `output` `{root, ephemeral, maxInlineArtifactBytes}`; `previewDependencies` `{libreoffice, pdftoppm}`, each `{available, path?, envVar, searched[]}`, absent when not probed.
+**Out** — `server` `{name, package, version, protocolTransport}`; `runtime` `{node, platform, arch}`; `packages` (installed versions of `jto-ops`, `shared*`, `core-docx`, `core-pptx` — a render is a function of the document plus these); `formats[]` `{name, extension, label, rendererIds}` with defaults first; `workspaces` `{available, open, persistent, root?}`; `output` `{root, ephemeral, maxInlineArtifactBytes}`; `previewDependencies` `{libreoffice, pdftoppm}`, each `{available, path?, envVar, searched[]}`, absent when not probed.
 
 The probe is a PATH walk, not a `--version` spawn: `jto_info` is a per-connection discovery call and a cold `soffice --version` costs about a second. It therefore reports a binary that exists, not a binary that works; a real preview settles the rest.
 
@@ -204,9 +207,19 @@ Both sides are validated before the walk, and their diagnostics are tagged with 
 
 ### Workspaces
 
-Optional, and an optimization rather than a second source of truth: the JSON stays authoritative, and every tool that takes a `handle` also takes inline `document`. The point is the round trip you do not make — open a document once, patch the two paths a diagnostic pointed at, validate or preview by handle, without putting the whole tree back through the model. Handles are memory-only and scoped to one stdio connection.
+Optional, and an optimization rather than a second source of truth: the JSON stays authoritative, and every tool that takes a `handle` also takes inline `document`. The point is the round trip you do not make — open a document once, patch the two paths a diagnostic pointed at, validate or preview by handle, without putting the whole tree back through the model. By default handles are memory-only and scoped to one stdio connection.
 
 Default budget per connection: 16 open documents, 16 MiB per document, 64 MiB in total, 8 pinned revisions each, and a 30-minute idle TTL that any use resets. Capacity overflow refuses with `E_WORKSPACE_LIMIT`; it never evicts another live workspace or an older pin. `jto_workspace_list` reports the live figures.
+
+**Surviving a lost session.** Start the server with `--workspace-dir` (or `JTO_MCP_WORKSPACE_DIR`) and every committed revision is mirrored there, so a client restart, a host session reset or a crash no longer takes the authoring with it. Memory stays the fast path; disk is durability. On a connection that has it:
+
+- Each `jto_workspace_create`, `jto_workspace_patch` and `jto_workspace_snapshot` writes before it answers, and the `workspace` record carries `persisted`.
+- `jto_workspace_list` reports every workspace under the root, including ones this connection never opened — that is how a reconnecting agent gets its handles back. `jto_workspace_inspect` (and any other handle-taking tool) then loads the document on demand.
+- The idle TTL still releases memory, but no longer loses anything: the handle comes back from disk on next use.
+- `jto_workspace_close` deletes the durable copy too. It is the one operation that is meant to destroy work, so it still does.
+- The root is bounded: 32 workspaces (least-recently-updated dropped first), 9 revision files per workspace — the head plus its pins — and 16 MiB per revision. A revision that cannot be written comes back with a `W_WORKSPACE_NOT_PERSISTED` warning and the edit still applies: durability degrades loudly, never silently, and never at the cost of the edit.
+
+Handles become cross-connection when this is on, so point it at a directory you would be comfortable leaving documents in — it holds the JSON in the clear, owner-only, until something closes the workspace or the workspace ceiling evicts it. Two connections sharing a root also share its handles, and each keeps its own memory copy: `baseRevision` still guards a write against the connection that made it, not against another one editing the same handle at the same time. One root per client is the arrangement this is built for.
 
 **`jto_workspace_create`** — in: `format` (required), `document` (omit to open an empty skeleton and patch into it), `title` (your own label). Out: `workspace`. Nothing is validated here.
 
@@ -216,11 +229,11 @@ Default budget per connection: 16 open documents, 16 MiB per document, 64 MiB in
 
 **`jto_workspace_snapshot`** — in: `handle` (required), `filename` (write the JSON under the output root instead of returning it inline). Out: `workspace`, `document` or `artifact`. Pins the revision so `jto_workspace_inspect` can still read that exact tree after later patches; a full pin budget downgrades to an export with a `W_SNAPSHOT_NOT_PINNED` warning.
 
-**`jto_workspace_list`** — no input. Out: `workspaces[]`, `available`, `limits`, `usage` `{workspaces, bytes}`. The cheapest way back after losing track of a handle.
+**`jto_workspace_list`** — no input. Out: `workspaces[]`, `available`, `limits`, `usage` `{workspaces, bytes}`, and `persistence` `{root, maxWorkspaces, maxRevisionsPerWorkspace, maxEntryBytes}` when the connection has a workspace directory. The cheapest way back after losing track of a handle — including across a reconnect.
 
-**`jto_workspace_close`** — in: `handle` (required). Out: `handle`, `closed`. Idempotent; closing something already gone reports `closed: false` rather than failing. Not recoverable — snapshot first.
+**`jto_workspace_close`** — in: `handle` (required). Out: `handle`, `closed`. Idempotent; closing something already gone reports `closed: false` rather than failing. Not recoverable — it removes the durable copy as well, so snapshot first.
 
-A `workspace` record is `{handle, format, revision, bytes, createdAt, updatedAt, title?, pinnedRevisions[]}`.
+A `workspace` record is `{handle, format, revision, bytes, createdAt, updatedAt, title?, pinnedRevisions[], persisted?}`.
 
 ## Resources
 
@@ -310,6 +323,7 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `W_BLANK_DOCUMENT`                 | A workspace was opened on an empty skeleton, with no content yet.                                           |
 | `W_PATH_NOT_FOUND`                 | A pointer a read asked for does not resolve in that revision.                                               |
 | `W_SNAPSHOT_NOT_PINNED`            | A snapshot was exported but not pinned: the workspace budget is full.                                       |
+| `W_WORKSPACE_NOT_PERSISTED`        | The edit applied, but the revision did not reach the workspace directory.                                   |
 | `W_GENERATION`                     | A generation warning with no code of its own.                                                               |
 | `W_<CORE_CODE>`                    | A generation warning the core named: `W_FONT_UNRESOLVED`, `W_CHART_NO_DATA`, `W_UNKNOWN_SHAPE` and friends. |
 
@@ -336,7 +350,7 @@ const server = createServer(createToolDeps({ outputDir: './out' }));
 await server.connect(myTransport);
 ```
 
-`setWorkspaceStore` before `createServer` installs your own store — with tighter limits, or `unavailableWorkspaceStore` to switch workspaces off entirely.
+`setWorkspaceStore` before `createServer` installs your own store — with tighter limits, or `unavailableWorkspaceStore` to switch workspaces off entirely. `createToolDeps({ workspaceDir })`, or a `workspacePersistence` you build with `createWorkspacePersistenceAt`, gives the connection's own store disk backing instead.
 
 ## License
 

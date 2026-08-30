@@ -143,7 +143,13 @@ describe('jto_info', () => {
       expect(format.rendererIds.length).toBeGreaterThan(0);
     }
 
-    expect(info.workspaces).toEqual({ available: true, open: 0 });
+    // `persistent: false` is the default: handles live in memory until a
+    // workspace directory is configured (#290).
+    expect(info.workspaces).toEqual({
+      available: true,
+      open: 0,
+      persistent: false,
+    });
     expect(info.output.root).toBe(path.join(scratch, 'out'));
     expect(info.output.maxInlineArtifactBytes).toBe(4 * 1024 * 1024);
   });

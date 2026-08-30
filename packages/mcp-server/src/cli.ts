@@ -15,10 +15,12 @@ import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { createServerFactory } from './server.js';
 import { createToolDeps } from './lib/deps.js';
 import { OUTPUT_DIR_ENV } from './lib/output-root.js';
+import { WORKSPACE_DIR_ENV } from './workspace/persistence.js';
 import { SERVER_VERSION } from './lib/version.js';
 
 interface ParsedArgs {
   outputDir?: string;
+  workspaceDir?: string;
   version: boolean;
   help: boolean;
   unknown: string[];
@@ -36,6 +38,10 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
       parsed.outputDir = argv[++index];
     } else if (arg.startsWith('--output-dir=')) {
       parsed.outputDir = arg.slice('--output-dir='.length);
+    } else if (arg === '--workspace-dir') {
+      parsed.workspaceDir = argv[++index];
+    } else if (arg.startsWith('--workspace-dir=')) {
+      parsed.workspaceDir = arg.slice('--workspace-dir='.length);
     } else {
       parsed.unknown.push(arg);
     }
@@ -54,11 +60,16 @@ Options:
   --output-dir <path>  Directory generated files are written to. Overrides
                        ${OUTPUT_DIR_ENV}. Defaults to a per-connection
                        directory under the system temp dir.
+  --workspace-dir <p>  Directory workspace revisions are mirrored to, so a lost
+                       client session does not destroy them. Overrides
+                       ${WORKSPACE_DIR_ENV}. Off by default:
+                       without it, handles live only in memory.
   -v, --version        Print the version and exit.
   -h, --help           Print this help and exit.
 
 Environment:
   ${OUTPUT_DIR_ENV}    Output root, when --output-dir is absent.
+  ${WORKSPACE_DIR_ENV} Workspace root, when --workspace-dir is absent.
   LIBREOFFICE_PATH      LibreOffice binary, for preview.
   PDFTOPPM_PATH         poppler pdftoppm binary, for preview.
 
@@ -89,6 +100,7 @@ function main(argv: readonly string[]): void {
 
   const deps = createToolDeps({
     ...(args.outputDir !== undefined && { outputDir: args.outputDir }),
+    ...(args.workspaceDir !== undefined && { workspaceDir: args.workspaceDir }),
   });
 
   // No diagnostic sink is installed here. `jto-ops` emits its warnings

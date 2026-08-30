@@ -308,7 +308,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Server info',
       description:
-        'Versions, supported formats with each renderer and whether its backend loads here, workspace availability, output-root and size limits, and whether the optional host dependencies (LibreOffice and poppler for jto_preview, a Highcharts export server for the DOCX `highcharts` component) are present on this host. Call this first.',
+        'Versions, supported formats with each renderer and whether its backend loads here, workspace availability and whether workspaces survive a lost connection, output-root and size limits, and whether the optional host dependencies (LibreOffice and poppler for jto_preview, a Highcharts export server for the DOCX `highcharts` component) are present on this host. Call this first.',
       annotations: { readOnlyHint: true, openWorldHint: false },
       inputSchema: S<{ includePreviewDependencies?: boolean }>({
         type: 'object',
@@ -398,8 +398,18 @@ export function register(server: McpServer, deps: ToolDeps): void {
               properties: {
                 available: { type: 'boolean' },
                 open: { type: 'integer' },
+                persistent: {
+                  type: 'boolean',
+                  description:
+                    'True when revisions are mirrored to disk and survive a lost connection; false when handles are memory-only, which is the default.',
+                },
+                root: {
+                  type: 'string',
+                  description:
+                    'Directory the revisions are mirrored to, when persistent.',
+                },
               },
-              required: ['available', 'open'],
+              required: ['available', 'open', 'persistent'],
               additionalProperties: false,
             },
             output: {
@@ -598,6 +608,10 @@ export function register(server: McpServer, deps: ToolDeps): void {
               workspaces: {
                 available: store.available,
                 open: listed.ok ? listed.records.length : 0,
+                persistent: deps.workspacePersistence !== undefined,
+                ...(deps.workspacePersistence && {
+                  root: deps.workspacePersistence.root,
+                }),
               },
               output: {
                 root: deps.outputRoot.path,

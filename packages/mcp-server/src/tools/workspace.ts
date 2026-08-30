@@ -55,6 +55,7 @@ import {
   type MemoryWorkspaceStore,
   type WorkspaceLimits,
 } from '../workspace/store.js';
+import type { PersistenceLimits } from '../workspace/persistence.js';
 
 const workspaceSchema = {
   type: 'object' as const,
@@ -83,6 +84,11 @@ const workspaceSchema = {
       description:
         'Revisions kept retrievable by jto_workspace_snapshot; read one back with `revision`.',
     },
+    persisted: {
+      type: 'boolean' as const,
+      description:
+        'True when this revision is mirrored to disk and so survives a lost connection. Absent when this connection has no workspace directory configured.',
+    },
   },
   required: [
     'handle',
@@ -92,6 +98,28 @@ const workspaceSchema = {
     'createdAt',
     'updatedAt',
     'pinnedRevisions',
+  ],
+  additionalProperties: false,
+};
+
+const persistenceSchema = {
+  type: 'object' as const,
+  description:
+    'Where revisions survive the connection. Absent when workspaces are memory-only, which is the default.',
+  properties: {
+    root: { type: 'string' as const },
+    maxWorkspaces: { type: 'integer' as const },
+    maxRevisionsPerWorkspace: {
+      type: 'integer' as const,
+      description: 'Revision files kept per handle: the head plus its pins.',
+    },
+    maxEntryBytes: { type: 'integer' as const },
+  },
+  required: [
+    'root',
+    'maxWorkspaces',
+    'maxRevisionsPerWorkspace',
+    'maxEntryBytes',
   ],
   additionalProperties: false,
 };
@@ -149,10 +177,16 @@ function isMemoryStore(store: WorkspaceStore): store is MemoryWorkspaceStore {
  * process-wide with `setWorkspaceStore` before `createServer` — including
  * `unavailableWorkspaceStore` to switch the feature off, which is why the
  * question asked here is "did the host install one", not "is it available".
+ *
+ * When the connection was given a workspace directory, the store it builds is
+ * disk-backed (#290): handles then outlive the connection, and a client that
+ * reconnects finds them again through `jto_workspace_list`.
  */
 function ensureStore(deps: ToolDeps): void {
   if (deps.workspaces().available || hasWorkspaceStore()) return;
-  const owned = createMemoryWorkspaceStore();
+  const owned = createMemoryWorkspaceStore(
+    deps.workspacePersistence ? { persistence: deps.workspacePersistence } : {}
+  );
   deps.workspaces = () => owned;
 }
 
@@ -206,9 +240,9 @@ export function register(server: McpServer, deps: ToolDeps): void {
           });
           if (!created.ok) return created;
 
-          return success(
-            { workspace: created.record },
-            seeded
+          return success({ workspace: created.record }, [
+            ...(created.warnings ?? []),
+            ...(seeded
               ? [
                   diagnostic(
                     'W_BLANK_DOCUMENT',
@@ -220,8 +254,8 @@ export function register(server: McpServer, deps: ToolDeps): void {
                     }
                   ),
                 ]
-              : []
-          );
+              : []),
+          ]);
         })
       )
   );
@@ -305,18 +339,21 @@ export function register(server: McpServer, deps: ToolDeps): void {
               )
             : [];
 
-          const diagnostics: Diagnostic[] = missingPaths.map((pointer) =>
-            diagnostic(
-              'W_PATH_NOT_FOUND',
-              `${pointer} does not resolve in revision ${read.record.revision}.`,
-              {
-                severity: 'warning',
-                path: pointer,
-                suggestion:
-                  'Read a shorter prefix of the pointer to see what is actually there.',
-              }
-            )
-          );
+          const diagnostics: Diagnostic[] = [
+            ...(read.warnings ?? []),
+            ...missingPaths.map((pointer) =>
+              diagnostic(
+                'W_PATH_NOT_FOUND',
+                `${pointer} does not resolve in revision ${read.record.revision}.`,
+                {
+                  severity: 'warning',
+                  path: pointer,
+                  suggestion:
+                    'Read a shorter prefix of the pointer to see what is actually there.',
+                }
+              )
+            ),
+          ];
 
           return success(
             {
@@ -395,7 +432,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
             }),
           });
           if (!patched.ok) return patched;
-          return success({ workspace: patched.record });
+          return success({ workspace: patched.record }, patched.warnings ?? []);
         })
       )
   );
@@ -446,7 +483,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
           const snapshot = await deps.workspaces().snapshot(args.handle);
           if (!snapshot.ok) return snapshot;
 
-          const diagnostics: Diagnostic[] = [];
+          const diagnostics: Diagnostic[] = [...(snapshot.warnings ?? [])];
           if (
             !snapshot.record.pinnedRevisions.includes(snapshot.record.revision)
           ) {
@@ -497,7 +534,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'List open workspaces',
       description:
-        'Every document open on this connection, with its revision and size. Call this to recover handles you no longer have — it is the cheapest way back after losing track of what you opened. An empty list means nothing is open, not that anything failed.',
+        'Every document open on this connection, with its revision and size. Call this to recover handles you no longer have — it is the cheapest way back after losing track of what you opened, including after a reconnect when the server has a workspace directory. An empty list means nothing is open, not that anything failed.',
       annotations: { readOnlyHint: true, openWorldHint: false },
       inputSchema: S<Record<string, never>>({
         type: 'object',
@@ -513,6 +550,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
               'False when this connection has workspaces switched off.',
           },
           limits: limitsSchema,
+          persistence: persistenceSchema,
           usage: {
             type: 'object',
             properties: {
@@ -535,15 +573,28 @@ export function register(server: McpServer, deps: ToolDeps): void {
           const budget: {
             limits?: WorkspaceLimits;
             usage?: ReturnType<MemoryWorkspaceStore['usage']>;
+            persistence?: PersistenceLimits & { root: string };
           } = isMemoryStore(store)
-            ? { limits: store.limits, usage: store.usage() }
+            ? {
+                limits: store.limits,
+                usage: store.usage(),
+                ...(store.persistence && {
+                  persistence: {
+                    root: store.persistence.root,
+                    ...store.persistence.limits,
+                  },
+                }),
+              }
             : {};
 
-          return success({
-            workspaces: listed.records as WorkspaceRecord[],
-            available: store.available,
-            ...budget,
-          });
+          return success(
+            {
+              workspaces: listed.records as WorkspaceRecord[],
+              available: store.available,
+              ...budget,
+            },
+            listed.warnings ?? []
+          );
         })
       )
   );
@@ -553,7 +604,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Close a workspace',
       description:
-        'Release a handle and the memory behind it, including its pinned snapshots. Idempotent: closing a handle that is already gone reports `closed: false` rather than failing. Snapshot anything you still want first — closing is not recoverable.',
+        'Release a handle and everything behind it — the document, its pinned snapshots, and the durable copy when this connection keeps one. Idempotent: closing a handle that is already gone reports `closed: false` rather than failing. Snapshot anything you still want first — closing is not recoverable.',
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
