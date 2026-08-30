@@ -6,12 +6,14 @@ import path from 'node:path';
  * URLs, so bundled templates survive safe-mode outbound-source validation and
  * remote rasterization (which runs on a host without the template's files).
  *
- * Only relative paths that canonicalize inside `baseDir` are inlined; anything
- * else (absolute paths, URLs, data URLs, `..` escapes, missing or oversized
- * files) is left untouched for the outbound-source policy to judge.
+ * Covers image paths and `fontRegistry` `kind:'file'` sources — together the
+ * shapes safe-mode validation rejects as local reads. Only relative paths that
+ * canonicalize inside `baseDir` are inlined; anything else (absolute paths,
+ * URLs, data URLs, `..` escapes, missing or oversized files) is left untouched
+ * for the outbound-source policy to judge.
  */
 
-const MIME_BY_EXTENSION: Record<string, string> = {
+const IMAGE_MIME_BY_EXTENSION: Record<string, string> = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
@@ -21,6 +23,16 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   '.bmp': 'image/bmp',
   '.tiff': 'image/tiff',
   '.tif': 'image/tiff',
+};
+
+// `loadDataFontSource` accepts a base64 data URL and magic-byte checks the
+// payload, so a mislabeled file fails font resolution with a warning instead
+// of slipping past the policy layer.
+const FONT_MIME_BY_EXTENSION: Record<string, string> = {
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -58,8 +70,14 @@ interface InlineState {
 async function toDataUrl(
   source: string,
   baseDir: string,
-  state: InlineState
+  state: InlineState,
+  mimeByExtension: Record<string, string>
 ): Promise<string | null> {
+  // Extension gate first, before the cache: the cached verdict for a path
+  // must not depend on which MIME table asked (an .otf referenced as an image
+  // is not inlineable, but the same file as a font source is).
+  const mime = mimeByExtension[path.extname(source).toLowerCase()];
+  if (!mime) return null;
   // Key the cache by canonical path so equivalent spellings of the same file
   // (`media/logo.png` vs `media/./logo.png`) share one budget charge.
   let cacheKey = source;
@@ -73,18 +91,15 @@ async function toDataUrl(
       resolved === state.baseDirReal ||
       resolved.startsWith(state.baseDirReal + path.sep);
     if (contained) {
-      const mime = MIME_BY_EXTENSION[path.extname(resolved).toLowerCase()];
-      if (mime) {
-        const stat = await fs.stat(resolved);
-        if (
-          stat.isFile() &&
-          stat.size <= state.maxFileBytes &&
-          stat.size <= state.totalBudget
-        ) {
-          const buffer = await fs.readFile(resolved);
-          state.totalBudget -= buffer.length;
-          result = `data:${mime};base64,${buffer.toString('base64')}`;
-        }
+      const stat = await fs.stat(resolved);
+      if (
+        stat.isFile() &&
+        stat.size <= state.maxFileBytes &&
+        stat.size <= state.totalBudget
+      ) {
+        const buffer = await fs.readFile(resolved);
+        state.totalBudget -= buffer.length;
+        result = `data:${mime};base64,${buffer.toString('base64')}`;
       }
     }
   } catch {
@@ -114,6 +129,30 @@ async function visit(
 
   const record = value as JsonRecord;
 
+  // Font sources: { kind: 'file', path } is exactly the shape safe-mode
+  // validation rejects wherever it appears (fontRegistry is the only schema
+  // that uses it). Rewriting to { kind: 'data' } keeps a bundled template
+  // generable over HTTP and carries its fonts to the remote rasterizer.
+  if (
+    record.kind === 'file' &&
+    typeof record.path === 'string' &&
+    isInlineCandidate(record.path)
+  ) {
+    const inlined = await toDataUrl(
+      record.path,
+      baseDir,
+      state,
+      FONT_MIME_BY_EXTENSION
+    );
+    if (inlined !== null) {
+      record.kind = 'data';
+      record.data = inlined;
+      // DataFontSourceSchema is additionalProperties:false — a leftover
+      // `path` would fail structural validation downstream.
+      delete record.path;
+    }
+  }
+
   // Image components: { name: 'image', props: { path } }.
   const componentName =
     typeof record.name === 'string' ? record.name.toLowerCase() : undefined;
@@ -124,7 +163,12 @@ async function visit(
     typeof props.path === 'string' &&
     isInlineCandidate(props.path)
   ) {
-    const inlined = await toDataUrl(props.path, baseDir, state);
+    const inlined = await toDataUrl(
+      props.path,
+      baseDir,
+      state,
+      IMAGE_MIME_BY_EXTENSION
+    );
     if (inlined !== null) props.path = inlined;
   }
 
@@ -134,7 +178,12 @@ async function visit(
     typeof record.path === 'string' &&
     isInlineCandidate(record.path)
   ) {
-    const inlined = await toDataUrl(record.path, baseDir, state);
+    const inlined = await toDataUrl(
+      record.path,
+      baseDir,
+      state,
+      IMAGE_MIME_BY_EXTENSION
+    );
     if (inlined !== null) record.path = inlined;
   }
 

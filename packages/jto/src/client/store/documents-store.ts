@@ -20,7 +20,11 @@ export type DocumentsState = {
 };
 
 export type DocumentsActions = {
-  createDocument: (name: string, text: string) => void;
+  createDocument: (
+    name: string,
+    text: string,
+    opts?: { templateSource?: string }
+  ) => void;
   deleteDocument: (name: string) => void;
   saveDocument: (name: string, text: string) => void;
   renameDocument: (oldName: string, newName: string) => void;
@@ -38,6 +42,23 @@ export type DocumentsActions = {
 };
 
 export type DocumentsStore = DocumentsState & DocumentsActions;
+
+/**
+ * The `options.sourceName` to send with generate/preview requests: the
+ * document's template provenance when it has one, else its display name.
+ * The server only matches sourceName against its own discovered documents,
+ * so provenance keeps a renamed copy of a bundled template resolving its
+ * relative media/fonts, while the display-name fallback preserves behaviour
+ * for documents created before templateSource existed.
+ */
+export function resolveSourceName(
+  documents: TextFile[],
+  docName: string
+): string {
+  return (
+    documents.find((doc) => doc.name === docName)?.templateSource ?? docName
+  );
+}
 
 export const initDocumentsStore = (): DocumentsState => {
   return {
@@ -63,7 +84,7 @@ export const createDocumentsStore = (
       persist(
         (set) => ({
           ...initState,
-          createDocument: (name, text) =>
+          createDocument: (name, text, opts) =>
             set((state) => {
               const docIndex = state.documents.findIndex(
                 (doc) => doc.name === name
@@ -96,6 +117,10 @@ export const createDocumentsStore = (
                   mtime: new Date(),
                   ctime: new Date(),
                   atime: new Date(),
+                  // Survives renames: renameDocument spreads the record.
+                  ...(opts?.templateSource
+                    ? { templateSource: opts.templateSource }
+                    : {}),
                 };
                 return {
                   documents: [...state.documents, newDoc],

@@ -3,6 +3,7 @@ import { FORMAT, FORMAT_LABEL } from '../lib/env';
 import { API_ENDPOINTS } from '../config/api';
 import type { QualityRequestOptions } from '../lib/quality-profiles';
 import { useSettingsStore } from '../store/settings-store-provider';
+import { useResolveSourceName } from '../store/documents-store-provider';
 
 export interface GenerationWarning {
   component: string;
@@ -142,6 +143,7 @@ export function usePresentationGenerator() {
   // selected backend, and a call site that forgot would silently render on the
   // default one while the UI said otherwise.
   const generationBackend = useSettingsStore((s) => s.generationBackend);
+  const resolveSourceName = useResolveSourceName();
 
   const generatePresentation = useCallback(
     async (
@@ -210,10 +212,11 @@ export function usePresentationGenerator() {
         } = {
           jsonDefinition,
           // sourceName lets the server resolve relative asset paths against
-          // the discovered document's own directory (#142).
+          // the discovered document's own directory (#142). Resolved from the
+          // document's template provenance, so a renamed copy keeps working.
           options: {
             ...options,
-            sourceName: name,
+            sourceName: resolveSourceName(name),
             // An explicit per-call renderer still wins, which is what lets a
             // comparison view ask for both without changing the setting.
             ...(effectiveRenderer ? { renderer: effectiveRenderer } : {}),
@@ -317,7 +320,7 @@ export function usePresentationGenerator() {
         }
       }
     },
-    [generationBackend]
+    [generationBackend, resolveSourceName]
   );
 
   const cancelGeneration = useCallback(() => {

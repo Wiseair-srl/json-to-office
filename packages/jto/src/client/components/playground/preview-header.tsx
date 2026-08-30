@@ -50,6 +50,7 @@ import { download } from '../../lib/download';
 import { KbdShortcut } from '../ui/kbd';
 import { apiClient } from '../../api/client';
 import { useToast } from '../ui/use-toast';
+import { useResolveSourceName } from '../../store/documents-store-provider';
 import { usePresentationGenerator } from '../../hooks/usePresentationGenerator';
 import { useRendererIds } from '../../hooks/useRendererIds';
 import { useSettingsStore } from '../../store/settings-store-provider';
@@ -129,6 +130,7 @@ function PreviewHeader({
   const [standardComponentsFallbackJson, setStandardComponentsFallbackJson] =
     useState<string | null>(null);
   const { toast } = useToast();
+  const resolveSourceName = useResolveSourceName();
   // The hook is format-agnostic (dispatches on FORMAT env); alias to a
   // neutral name so DOCX call sites don't read as if they're calling a
   // PPTX-specific generator.
@@ -376,7 +378,8 @@ function PreviewHeader({
           // sourceName lets the server inline a discovered document's bundled
           // media before safe-mode source validation — without it, templates
           // referencing relative media paths 400 here while rendering fine.
-          options: { sourceName: name },
+          // Resolved from template provenance so renamed copies keep working.
+          options: { sourceName: resolveSourceName(name) },
         }),
       });
 
@@ -450,7 +453,7 @@ function PreviewHeader({
         setIsCopyingStandardComponents(false);
       }
     })();
-  }, [copySourceText, name, getFreshThemeData, toast]);
+  }, [copySourceText, name, resolveSourceName, getFreshThemeData, toast]);
 
   const handleCopyFromFallbackDialog = useCallback(async () => {
     if (standardComponentsFallbackJson == null) return;

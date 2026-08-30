@@ -12,7 +12,8 @@ async function renderWithLibreOffice(
   blob: Blob,
   jsonText?: string,
   customThemes?: Record<string, unknown>,
-  renderer?: string
+  renderer?: string,
+  sourceName?: string
 ): Promise<RenderPayload> {
   // When we know the source JSON, hit the from-json endpoint. The server
   // generates + converts in one step and passes resolved fonts directly to
@@ -34,12 +35,16 @@ async function renderWithLibreOffice(
       customThemes: customThemes ?? {},
       // sourceName lets the server resolve relative asset paths against the
       // discovered document's own directory (#142). Names only — the server
-      // maps them to paths itself.
+      // maps them to paths itself. Callers pass the document's template
+      // provenance when they know it; the display name is only the fallback.
       //
       // `renderer` is what keeps the preview honest: the server regenerates
       // the document here, and without it the PDF on screen came from the
       // default backend while the download came from the selected one (#255).
-      options: { sourceName: name, ...(renderer ? { renderer } : {}) },
+      options: {
+        sourceName: sourceName ?? name,
+        ...(renderer ? { renderer } : {}),
+      },
     };
     response = await fetch(API_ENDPOINTS.preview.libreofficeFromJson, {
       method: 'POST',
@@ -99,7 +104,8 @@ export async function renderDocument(
   blob: Blob,
   jsonText?: string,
   customThemes?: Record<string, unknown>,
-  renderer?: string
+  renderer?: string,
+  sourceName?: string
 ) {
   try {
     if (!blob || blob.size === 0) {
@@ -111,7 +117,8 @@ export async function renderDocument(
       blob,
       jsonText,
       customThemes,
-      renderer
+      renderer,
+      sourceName
     );
 
     return { status: 'success' as const, name, payload };

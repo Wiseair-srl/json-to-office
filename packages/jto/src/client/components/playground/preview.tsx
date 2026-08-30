@@ -26,6 +26,7 @@ import { renderDocument } from '../../lib/render';
 import {
   DocumentsStoreContext,
   useDocumentsStore,
+  useResolveSourceName,
 } from '../../store/documents-store-provider';
 import { useEditorRefsStore } from '../../store/editor-refs-store';
 import { useThemesStore } from '../../store/themes-store-provider';
@@ -230,6 +231,7 @@ export function Preview() {
 
   const renderCleanupRef = useRef<(() => void) | null>(null);
   const pendingManualRenderRef = useRef(false);
+  const resolveSourceName = useResolveSourceName();
 
   const cleanupRenderedPreview = useCallback(() => {
     if (renderCleanupRef.current) {
@@ -259,7 +261,8 @@ export function Preview() {
           docBlob,
           docText,
           themes,
-          renderer
+          renderer,
+          resolveSourceName(docName)
         );
 
         if (status !== 'success') {
@@ -288,7 +291,7 @@ export function Preview() {
         setOutput({ isRendering: false });
       }
     },
-    [setOutput, cleanupRenderedPreview]
+    [setOutput, cleanupRenderedPreview, resolveSourceName]
   );
 
   // Ref to always hold latest manual-render deps so the event listener never goes stale

@@ -62,4 +62,21 @@ describe('renderDocument', () => {
     // from the field being missing.
     expect(request.body()?.options).not.toHaveProperty('renderer');
   });
+
+  it('prefers an explicit sourceName over the display name', async () => {
+    const request = captureRequest();
+
+    // A renamed copy of a bundled template: the display name means nothing to
+    // the server, the provenance is what resolves its media and fonts.
+    await renderDocument(
+      'my-report',
+      blob,
+      json,
+      {},
+      undefined,
+      'vermilion-annual-report'
+    );
+
+    expect(request.body()?.options?.sourceName).toBe('vermilion-annual-report');
+  });
 });
