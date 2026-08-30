@@ -123,10 +123,11 @@ export function createFormatRouter(adapter: FormatAdapter) {
     }
   };
 
-  // In safe mode, relative media of a server-discovered document is inlined
-  // as data URLs so bundled templates pass source validation and survive the
-  // trip to the remote rasterizer. Development mode keeps filesystem
-  // resolution (and the path-keyed visual cache) untouched.
+  // In safe mode, relative media and `kind:'file'` font sources of a
+  // server-discovered document are inlined as data so bundled templates pass
+  // source validation and survive the trip to the remote rasterizer.
+  // Development mode keeps filesystem resolution (and the path-keyed visual
+  // cache) untouched.
   const inlineDiscoveredMedia = async (
     jsonDefinition: unknown,
     baseDir: string | undefined

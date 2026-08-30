@@ -210,7 +210,11 @@ function DocumentSidebarComponent({
         if (!res.ok) throw new Error(res.statusText);
         const content = await res.text();
         const parsed = JSON.parse(content);
-        createDocument(name, JSON.stringify(parsed, null, 2));
+        // Record provenance so generate/preview keep resolving the template's
+        // bundled media/fonts (options.sourceName) after the user renames it.
+        createDocument(name, JSON.stringify(parsed, null, 2), {
+          templateSource: name,
+        });
         openDocument(name);
         toast({ title: `Added ${isTheme ? 'theme' : 'document'}: ${name}` });
       } catch {

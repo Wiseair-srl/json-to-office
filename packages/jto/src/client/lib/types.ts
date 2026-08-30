@@ -9,6 +9,13 @@ type BaseFile = {
 
 export type TextFile = BaseFile & {
   text: string;
+  /**
+   * Name of the server-discovered document this one was created from, if any.
+   * Sent as `options.sourceName` so the server can inline the template's
+   * bundled media/fonts — keyed on provenance rather than the display name,
+   * which the user is free to rename.
+   */
+  templateSource?: string;
 };
 
 export type BinaryFile = BaseFile & {
