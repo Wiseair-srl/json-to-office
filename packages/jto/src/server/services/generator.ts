@@ -64,6 +64,33 @@ function documentTitle(config: unknown): string | undefined {
   return typeof title === 'string' ? title : undefined;
 }
 
+// Long enough for a real title, short enough to stay under the filesystem and
+// header limits once the extension is appended.
+const MAX_FILENAME_BASE = 100;
+
+/**
+ * The title as a filename base. Reading the title from props (above) is what
+ * first put arbitrary user text into `filename` — before #292 the root-level
+ * spelling never matched, so every document fell back to the adapter label.
+ * That filename leaves the process: into the generate response, and into the
+ * `Content-Disposition` of `/preview/*-from-json`, which interpolates it
+ * verbatim. A CR/LF would split that header and a separator would reshape the
+ * path, so both are stripped here, at the point the name is built. The
+ * LibreOffice converter's own `sanitizeBaseName` only ever protected its temp
+ * path, never this value.
+ */
+function documentFilenameBase(config: unknown): string | undefined {
+  const title = documentTitle(config);
+  if (title === undefined) return undefined;
+  const base = title
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .slice(0, MAX_FILENAME_BASE);
+  // A title made only of separators or dots sanitizes down to padding — no
+  // name left to use, so fall back to the adapter label rather than emitting
+  // `...docx`.
+  return /^[._]*$/.test(base) ? undefined : base;
+}
+
 /**
  * Playground-only convenience: scan the document for font names that match
  * a POPULAR_GOOGLE_FONTS family and auto-build `fonts.extraEntries` so the
@@ -553,7 +580,7 @@ export class GeneratorService {
       if (cached) {
         logger.info('Served from cache', { title: documentTitle(config) });
         return {
-          filename: `${documentTitle(config) || this.adapter.label}${this.adapter.extension}`,
+          filename: `${documentFilenameBase(config) || this.adapter.label}${this.adapter.extension}`,
           fileId: Date.now().toString(),
           buffer: cached.buffer,
           // Render warnings ride with bytes. Quality is request policy, so it
@@ -638,7 +665,7 @@ export class GeneratorService {
     );
 
     return {
-      filename: `${documentTitle(config) || this.adapter.label}${this.adapter.extension}`,
+      filename: `${documentFilenameBase(config) || this.adapter.label}${this.adapter.extension}`,
       fileId: Date.now().toString(),
       buffer,
       cached: false,

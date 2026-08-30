@@ -69,6 +69,14 @@ export function Preview() {
       ? s.documents.find((d) => d.name === s.activeTab)?.text
       : undefined
   );
+  // Same condition as the text above, so the name and the JSON sent with it
+  // always describe one document — the output store's `name` trails a tab
+  // switch and is a placeholder before the first Run.
+  const editorDocumentName = useDocumentsStore((s) =>
+    s.activeTab && s.documentTypes[s.activeTab] !== 'application/json+theme'
+      ? s.activeTab
+      : undefined
+  );
   const documentsStore = useContext(DocumentsStoreContext)!;
   const { toast } = useToast();
   const applyQualityFix = useApplyQualityFix();
@@ -358,6 +366,7 @@ export function Preview() {
             onShowCacheMetrics={() => setShowCacheMetrics(true)}
             documentText={text}
             editorDocumentText={editorDocumentText}
+            editorDocumentName={editorDocumentName}
             warnings={warnings}
           />
         )}
