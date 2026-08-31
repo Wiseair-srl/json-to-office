@@ -21,6 +21,7 @@ import type {
   TablePropsSchema,
   ListPropsSchema,
   TocPropsSchema,
+  RulePropsSchema,
 } from '../schemas/components';
 
 import type { TextSpaceAfterPropsSchema } from '../schemas/custom-components';
@@ -203,6 +204,17 @@ export interface TocComponent {
   props: Static<typeof TocPropsSchema>;
 }
 
+/**
+ * Rule component with literal name discriminator
+ */
+export interface RuleComponent {
+  name: 'rule';
+  id?: string;
+  /** When false, this component is filtered out and not rendered. Defaults to true */
+  enabled?: boolean;
+  props?: Static<typeof RulePropsSchema>;
+}
+
 // ============================================================================
 // Specific Custom Component Types
 // ============================================================================
@@ -239,7 +251,8 @@ export type StandardComponentDefinition =
   | StatisticComponent
   | TableComponent
   | ListComponent
-  | TocComponent;
+  | TocComponent
+  | RuleComponent;
 
 /**
  * Array of all standard component names.
@@ -254,6 +267,7 @@ export const STANDARD_COMPONENTS = [
   'list',
   'paragraph',
   'docx',
+  'rule',
   'section',
   'statistic',
   'table',
@@ -370,6 +384,12 @@ export function isListComponent(
   component: ComponentDefinition
 ): component is ListComponent {
   return component.name === 'list';
+}
+
+export function isRuleComponent(
+  component: ComponentDefinition
+): component is RuleComponent {
+  return component.name === 'rule';
 }
 
 export function isTocComponent(

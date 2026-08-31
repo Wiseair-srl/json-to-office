@@ -499,7 +499,10 @@ export const docxLineBoxRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
           {
             message: `An exact ${tenths(fact.lineBoxPt)}pt line box holds ${tenths(fact.fontSizePt)}pt text${inherited} — shorter than the capitals it contains, so the lines overlap or lose their tops.`,
             path: fact.path,
-            suggestion: `Set the box to at least ${repairPt}pt — as tall as the type it holds — or use "atLeast" so the line grows to fit the text.${fact.patchable ? '' : ' This box is not stated on the component: it arrives through `componentDefaults` and has to be repaired there.'}`,
+            // The second sentence is the exit from the incentive that
+            // produced this geometry: the reported route to a 3pt rule was a
+            // collapsed line box on 8pt type, because nothing else drew one.
+            suggestion: `Set the box to at least ${repairPt}pt — as tall as the type it holds — or use "atLeast" so the line grows to fit the text. To draw a line rather than set leading, use the "rule" component.${fact.patchable ? '' : ' This box is not stated on the component: it arrives through `componentDefaults` and has to be repaired there.'}`,
             context: {
               lineBoxPt: tenths(fact.lineBoxPt),
               fontSizePt: tenths(fact.fontSizePt),

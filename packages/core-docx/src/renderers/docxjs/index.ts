@@ -85,6 +85,7 @@ const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
   'endnotes',
   'revisions',
   'breaks',
+  'borders',
   'tab-stops',
   'proofing-language',
   'custom-properties',

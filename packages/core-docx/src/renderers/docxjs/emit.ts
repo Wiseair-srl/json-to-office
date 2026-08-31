@@ -551,6 +551,17 @@ export function paragraphOptions(
   if (formatting.outlineLevel !== undefined) {
     options.outlineLevel = formatting.outlineLevel;
   }
+  if (formatting.borders) {
+    // `w:pBdr` has no inside edges — those belong to a table. Emitting only
+    // what a paragraph can wear keeps the option object something docx.js
+    // recognises rather than something it silently drops.
+    const borders: Record<string, unknown> = {};
+    for (const side of ['top', 'bottom', 'left', 'right', 'between'] as const) {
+      const emitted = emitBorder(formatting.borders[side]);
+      if (emitted) borders[side] = emitted;
+    }
+    if (Object.keys(borders).length > 0) options.border = borders;
+  }
 
   return options as Partial<IParagraphOptions>;
 }
@@ -893,5 +904,9 @@ function emitBorder(border: DocxIrBorder | undefined) {
     style: BORDER_STYLE[border.style] ?? BorderStyle.SINGLE,
     size: border.sizeEighthPoints ?? 0,
     color: border.color?.hex ?? '000000',
+    // Stated only when the IR states it, so every border that predates the
+    // rule component emits exactly the bytes it did before. office-open
+    // already carries `w:space`; this is what keeps the two agreeing.
+    ...(border.spacePoints !== undefined ? { space: border.spacePoints } : {}),
   };
 }

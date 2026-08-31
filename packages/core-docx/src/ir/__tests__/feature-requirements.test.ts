@@ -101,6 +101,8 @@ describe('feature requirements', () => {
    *
    * The list shrinking is the goal. It growing means a lowering landed without
    * recording what it needs, which is a capability check that cannot fire.
+   * `borders` left it when `rule` arrived: a paragraph border is what draws a
+   * horizontal rule, so both adapters now declare and test one.
    */
   it('leaves exactly the unlowered vocabulary unrequired', async () => {
     const compiler = await readFile(
@@ -124,13 +126,7 @@ describe('feature requirements', () => {
 
     expect(
       DOCX_FEATURES.filter((feature: DocxFeature) => !required.has(feature))
-    ).toEqual([
-      'table-merged-cells',
-      'cached-fields',
-      'shading',
-      'borders',
-      'rtl',
-    ]);
+    ).toEqual(['table-merged-cells', 'cached-fields', 'shading', 'rtl']);
   });
 
   it('requires every other feature from somewhere', async () => {
