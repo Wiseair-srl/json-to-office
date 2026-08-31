@@ -314,6 +314,43 @@ describe('escapes', () => {
     ]);
   });
 
+  it('leaves an authored private-use character alone', () => {
+    // The escape pass swaps each metacharacter for a private-use sentinel, so
+    // a document that legitimately contains one of those codepoints — an icon
+    // font puts its glyphs there — must not come back as the metacharacter.
+    expect(shape(parseInline('\uE000\uE001\uE006', { base }))).toEqual([
+      '\uE000\uE001\uE006',
+    ]);
+  });
+
+  it('keeps an authored private-use character next to a real escape', () => {
+    expect(shape(parseInline('\uE000 and grant\\_type', { base }))).toEqual([
+      '\uE000 and grant_type',
+    ]);
+  });
+
+  it('decodes an escape inside a link destination', () => {
+    const [link] = parseInline('[x](https://host/a\\_b)', {
+      base,
+      hyperlinks: true,
+    });
+
+    expect(link.kind).toBe('hyperlink');
+    if (link.kind !== 'hyperlink') return;
+    expect(link.target).toEqual({
+      kind: 'external',
+      url: 'https://host/a_b',
+    });
+  });
+
+  it('decodes an escape inside a bookmark anchor', () => {
+    const [link] = parseInline('[x](#a\\_b)', { base, hyperlinks: true });
+
+    expect(link.kind).toBe('hyperlink');
+    if (link.kind !== 'hyperlink') return;
+    expect(link.target).toEqual({ kind: 'bookmark', anchor: 'a_b' });
+  });
+
   it('does not unescape on the literal path, which promises verbatim text', () => {
     expect(shape(parseLiteral('grant\\_type', { base }))).toEqual([
       'grant\\_type',
