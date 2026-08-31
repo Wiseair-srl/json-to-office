@@ -1,5 +1,104 @@
 # @json-to-office/jto
 
+## 1.11.0
+
+### Minor Changes
+
+- 3bfa61f: Inline SVG no longer dominates the cost of rendering a DOCX, and the raster
+  fallback it produces can be turned off.
+
+  Every inline SVG ships twice: the vector, which Word 2016+ and LibreOffice
+  draw, and a PNG in the `fallback` slot for readers older than that. The
+  fallback was rasterized one image at a time, which cost about 250ms each and
+  went unnoticed while a document held a couple of dozen SVGs. Splitting the
+  stock templates' page decoration into a component per motif took several of
+  them past two hundred, and generation went from six seconds to seventy-seven.
+
+  Two changes, and the second is the one that matters:
+
+  - Rasters are produced through resvg's `renderAsync` and in a bounded batch
+    rather than a serial loop. `Resvg.render()` is synchronous native code, so
+    awaiting it never yields — a batch started concurrently still ran one at a
+    time on the main thread, which is why simply starting them together changed
+    nothing. `renderAsync` hands each raster to libuv's threadpool instead, worth
+    roughly 30% (`standard-annual-report` 76.5s → 54.6s). Concurrency is capped at
+    eight so the peak stays within the hosted container's memory, each raster
+    already being held to a megapixel.
+  - `svgRasterFallback: false` — `--no-svg-fallback` on the CLI — skips the raster
+    altogether. That is the difference between 76.5s and **2.1s**, and it halves
+    the package (1.10 MB → 0.57 MB), because the bulk of an artwork-heavy DOCX is
+    fallback PNGs nothing modern ever draws. Rendered output is byte-identical
+    through LibreOffice with the flag on or off; the vector is what gets drawn
+    either way. docx.js requires the slot to be filled, so the vector bytes go in
+    it — the same thing already shipped when a raster could not be produced — and
+    only readers old enough to need the raster lose the image. Default is
+    unchanged, so no existing output moves.
+
+  Both preview paths take the opt-out, because a preview's answer is a PDF or a
+  PNG and LibreOffice draws the vector to make it: the playground's
+  `/preview/libreoffice-from-json` and the MCP server's `jto_preview`. Measured
+  against the running playground, the stock templates went from 47-62s per
+  preview to 5-8s, byte-identical PDFs. Downloads keep the fallback, since those
+  bytes go to a reader that may be older than Word 2016.
+
+  Corpus goldens digest every byte and none moved, which is also the check that
+  `renderAsync` produces the same PNG as `render()`.
+
+- 3bfa61f: Every stock DOCX template now draws its page decoration as one component per
+  motif instead of one page-sized rendering.
+
+  Each page carried a single page-sized SVG — or, in the `modern-annual-report-2`
+  and `-3` covers, a single page-sized pptx slide rasterized to PNG — with every
+  unrelated mark baked into it: a background wash, a diagonal hatch field, a lens
+  motif, hairline rules. Those are now separate, individually placed components,
+  which is what makes them addressable as data rather than as one opaque asset.
+
+  Four things shaped how far the split could go:
+
+  - `zIndex: 0` is not "unset". docx.js reads it as absent and derives
+    `relativeHeight` from the image height, which put the full-page backdrop on
+    top of the artwork it backs. Every motif now states an equal, non-zero
+    `zIndex`: Word stacks by `relativeHeight`, LibreOffice ignores it and uses
+    document order, and equal values are the one arrangement both agree on.
+  - Each floating drawing costs an anchor paragraph and the schema exposes no line
+    height to zero it, so 269 of them pushed `standard-annual-report` from 20
+    pages to 25. Page decoration therefore lives in the section header, which
+    holds the same page-relative offsets and takes no part in the body flow. Every
+    section needs one — a section without a header inherits the previous
+    section's, which painted one page's decoration across the next.
+  - A `visual` rasterizes to opaque RGB, so its pieces may not overlap.
+    `modern-annual-report-3` splits into non-overlapping clusters.
+    `modern-annual-report-2`, whose every page sits on a full-canvas backdrop,
+    could not — so its `rect`/`roundRect`/`ellipse`/`line`/`pie` elements are
+    reauthored as inline SVG, which is transparent, and 23 of its 25 pages no
+    longer need the pptx rasterizer at all. The two visuals carrying text stay
+    visuals: SVG has no line wrapping.
+  - PPTX has a real shape vocabulary, so `minimalist-pitch-deck`'s laptop mockup
+    and chart gridlines are native shapes rather than pictures — editable in
+    PowerPoint instead of flattened.
+
+  Verified against a pre-change render of all nine templates: page counts
+  unchanged and nothing solid moves. Exact pixel equality is not reachable and was
+  not claimed — LibreOffice re-emits each embedded SVG through its own 1/100 mm
+  grid, so hairline anti-aliasing lands differently; the check is an eroded diff
+  mask, which keeps a mark that moved and discards a hairline that shifted a
+  fraction of a pixel.
+
+  Left alone deliberately: `management-plan`'s icons, since a six-path glyph is
+  one mark rather than six, and `data-report-presentation`'s funnel, whose five
+  polygons are irregular quadrilaterals tiling edge to edge where separate
+  rasterizations would seam.
+
+### Patch Changes
+
+- Updated dependencies [5757874]
+- Updated dependencies [64b7905]
+- Updated dependencies [dd0240c]
+- Updated dependencies [3bfa61f]
+- Updated dependencies [c6f97a0]
+  - @json-to-office/core-docx@1.11.0
+  - @json-to-office/jto-cli@1.11.0
+
 ## 1.7.0
 
 ### Patch Changes

@@ -1,5 +1,135 @@
 # @json-to-office/core-docx
 
+## 1.11.0
+
+### Minor Changes
+
+- 64b7905: Escape the inline mini-language with a backslash.
+
+  `\*`, `\_`, `\[`, `\]`, `\{`, `\}` and `\\` now render as themselves. Without
+  that, a code sample was unwritable: `grant_type=client_credentials` has two
+  underscores, so the parser read the span between them as emphasis and the
+  reader got _granttype=clientcredentials_ — visible in the shipped
+  `technical-guide` for as long as it had code in it.
+
+  A backslash before anything else is still a backslash, so `C:\temp` and `50\%`
+  are untouched, and `parseLiteral` does not unescape: the paths that promise
+  character-for-character output still give one.
+
+- 3bfa61f: Inline SVG no longer dominates the cost of rendering a DOCX, and the raster
+  fallback it produces can be turned off.
+
+  Every inline SVG ships twice: the vector, which Word 2016+ and LibreOffice
+  draw, and a PNG in the `fallback` slot for readers older than that. The
+  fallback was rasterized one image at a time, which cost about 250ms each and
+  went unnoticed while a document held a couple of dozen SVGs. Splitting the
+  stock templates' page decoration into a component per motif took several of
+  them past two hundred, and generation went from six seconds to seventy-seven.
+
+  Two changes, and the second is the one that matters:
+
+  - Rasters are produced through resvg's `renderAsync` and in a bounded batch
+    rather than a serial loop. `Resvg.render()` is synchronous native code, so
+    awaiting it never yields — a batch started concurrently still ran one at a
+    time on the main thread, which is why simply starting them together changed
+    nothing. `renderAsync` hands each raster to libuv's threadpool instead, worth
+    roughly 30% (`standard-annual-report` 76.5s → 54.6s). Concurrency is capped at
+    eight so the peak stays within the hosted container's memory, each raster
+    already being held to a megapixel.
+  - `svgRasterFallback: false` — `--no-svg-fallback` on the CLI — skips the raster
+    altogether. That is the difference between 76.5s and **2.1s**, and it halves
+    the package (1.10 MB → 0.57 MB), because the bulk of an artwork-heavy DOCX is
+    fallback PNGs nothing modern ever draws. Rendered output is byte-identical
+    through LibreOffice with the flag on or off; the vector is what gets drawn
+    either way. docx.js requires the slot to be filled, so the vector bytes go in
+    it — the same thing already shipped when a raster could not be produced — and
+    only readers old enough to need the raster lose the image. Default is
+    unchanged, so no existing output moves.
+
+  Both preview paths take the opt-out, because a preview's answer is a PDF or a
+  PNG and LibreOffice draws the vector to make it: the playground's
+  `/preview/libreoffice-from-json` and the MCP server's `jto_preview`. Measured
+  against the running playground, the stock templates went from 47-62s per
+  preview to 5-8s, byte-identical PDFs. Downloads keep the fallback, since those
+  bytes go to a reader that may be older than Word 2016.
+
+  Corpus goldens digest every byte and none moved, which is also the check that
+  `renderAsync` produces the same PNG as `render()`.
+
+- c6f97a0: Rebuild the two shipped DOCX templates, and split them across two themes.
+
+  `proposal` and `technical-guide` were re-authored from scratch with the
+  `vermilion-annual-report` stock template as the reference — its display-heading
+  scale, its hairline tables with a single accent rule and a flush-left first
+  column, its muted body colour and tinted emphasis rows, its KPI figures, and a
+  full-bleed cover and back cover. Both gained a running header and footer, a
+  designed contents page, and diagrams sized to render at readable type.
+
+  The two then split by house style, because a pair of examples that look alike
+  demonstrates half as much. `proposal` keeps `vermilion`; `technical-guide` moved
+  to the bundled `devportal` theme — cool slate, one teal accent, monospace where
+  the reader is expected to type — which until now no shipped document used. The
+  composition rules carried over unchanged; the dressing did not: a monospaced
+  section index, headings set solid over the theme's own accent rule, table
+  headers as a shaded band rather than a vertical rule, and code in a closed
+  fence. `devportal`'s margins give a 487.3pt measure against `vermilion`'s
+  477.3pt, so every fixed column width and page break was re-checked.
+
+  One structural change is worth copying: a numbered part of a document is no
+  longer its own Word `section`. A section exists to change page setup or chrome,
+  these parts change neither, and a section ends with the empty paragraph that
+  carries its break — which produced a blank page whenever a part happened to fill
+  its last page. Both documents now use three sections (cover, body, back cover)
+  and put `pageBreak` on each part's opening paragraph instead.
+
+### Patch Changes
+
+- 5757874: Two fixes to the inline escape pass, both found by review on #305.
+
+  An authored private-use character survives parsing. Each escape was swapped for
+  a bare character in U+E000–U+E006, and decoding mapped that whole range back
+  unconditionally — so text that already contained one of those codepoints came
+  back as a metacharacter, with no backslash anywhere in the input. An icon font
+  puts its glyphs in the private use area, which is how a document runs into
+  this. Substitutions are now a sentinel plus a marker, and the author's own
+  sentinels are guarded before the pass, so encoding is reversible.
+
+  An escape inside a link destination decodes. `parseInline` encodes before
+  `parseLinks` runs, and the captured target went into `target.url` untouched, so
+  `[x](https://host/a\_b)` put a private-use character in the URL that reached the
+  relationship. Destinations and cross-reference ids are now decoded at the link
+  boundary — the one place a target stops being parsed text.
+
+- dd0240c: A `{PAGE}` or `{TOTAL_PAGES}` field now keeps its formatting in LibreOffice, and
+  therefore in the PDF path and `jto_preview`. docx.js packs `begin`, `instrText`,
+  `separate` and `end` into a single `w:r`; Word reads that, LibreOffice does not
+  — it computes the number itself and paints it with the document default, so the
+  `Page {PAGE}` running header both shipped templates use rendered "Page" at 8pt
+  grey and the numeral at 11pt black. The `docxjs` adapter now writes one run per
+  field character, each repeating the same `rPr`, which is also the shape Word
+  itself writes.
+
+  Measured rather than reasoned: six XML shapes were rendered through
+  `soffice --convert-to pdf` and the glyphs' font, size and colour read back out.
+  Splitting the runs fixes it with or without a cached result; a cached result
+  inside the single run does **not**, nor does a `w:fldSimple` carrying a fully
+  formatted cached run — LibreOffice recomputes and discards that run's
+  properties. `<w:pgNum/>`, which would inherit `rPr` for free, renders as
+  nothing at all.
+
+  No cached result is written between `separate` and `end`. Nothing in this
+  pipeline paginates, so the only value available would be a fabricated one —
+  right on page 1 and wrong on every page after it in any reader that shows the
+  cached result instead of recomputing. That is the opposite call from the TOC
+  field, which does ship cached entries: there the cached text is the real
+  heading text, known at generation time. A page number is not.
+
+  Every corpus golden containing a page field moved, and only those — 11 cases,
+  including both shipped templates. A field still loses its formatting on the
+  experimental `office-open` backend, which writes every field as a bare
+  `<w:fldSimple/>` with no run properties at all; that gap is recorded in
+  `docs/architecture/office-renderer-ir.md` rather than fixed.
+
 ## 1.10.0
 
 ### Minor Changes
