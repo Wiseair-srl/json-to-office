@@ -56,6 +56,39 @@ export function buildNoProofWordsRegex(noProofWords?: string[]): RegExp | null {
 const DECORATOR =
   /(\*\*\*|___)([\s\S]*?)\1|(\*\*|__)([\s\S]*?)\3|(\*|_)([\s\S]*?)\5/g;
 
+/**
+ * `\*`, `\_`, `\[`, ... — one metacharacter, kept as itself.
+ *
+ * Without this a code sample is unwritable: `grant_type=client_credentials` has
+ * two underscores, so the parser reads the span between them as emphasis and
+ * the reader gets *granttype=clientcredentials* in italics.
+ *
+ * Each escape is swapped for a private-use sentinel before anything is parsed,
+ * so no later pass can mistake it for markup, and swapped back in `pushSegment`
+ * — the one place authored text becomes runs. `parseLiteral` never encodes, so
+ * a backslash stays a backslash on the paths that promise character-for-
+ * character output.
+ */
+const ESCAPABLE = '*_[]{}\\';
+const ESCAPE = /\\([*_[\]{}\\])/g;
+const SENTINEL_BASE = 0xe000;
+
+function encodeEscapes(text: string): string {
+  if (!text.includes('\\')) return text;
+  return text.replace(ESCAPE, (_whole, char: string) =>
+    String.fromCharCode(SENTINEL_BASE + ESCAPABLE.indexOf(char))
+  );
+}
+
+function decodeEscapes(text: string): string {
+  let out = text;
+  for (let i = 0; i < ESCAPABLE.length; i += 1) {
+    const sentinel = String.fromCharCode(SENTINEL_BASE + i);
+    if (out.includes(sentinel)) out = out.split(sentinel).join(ESCAPABLE[i]);
+  }
+  return out;
+}
+
 /** Markdown link syntax: `[text](target)`. */
 const LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
 
@@ -194,7 +227,7 @@ export function parseInline(
   text: string,
   options: ParseInlineOptions
 ): DocxIrInline[] {
-  const normalized = normalizeUnicodeText(text);
+  const normalized = encodeEscapes(normalizeUnicodeText(text));
   if (!normalized) {
     return [
       { kind: 'text', text: '', formatting: emptyToUndefined(options.base) },
@@ -464,7 +497,10 @@ function pushSegment(
   const italic = override.italic ?? options.base.italic;
   const formatting = runFormatting(options, { bold, italic });
 
-  const lines = text.split('\n');
+  // Escapes come back to their own characters here, after every pass that
+  // could have read them as markup and before no-proof words are matched
+  // against what the reader actually sees.
+  const lines = decodeEscapes(text).split('\n');
   for (const [lineIndex, line] of lines.entries()) {
     // A blank line is only worth a node when a break precedes it: a blank line
     // in the middle of a paragraph is a visible gap, whereas an empty segment

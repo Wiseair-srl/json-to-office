@@ -25,7 +25,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'text/decorators-emphasis':
     '8eb6ab6c2e9f59c2d40be652321b52508d22e48011999149b3fce1982bbbfc88',
   'text/decorators-edge-cases':
-    '440c21f804bf5e8dfe3bc3a2f434e217cdda9418b0dc750fcfcb0e311dbe4ead',
+    'ba18693d02ee4adbd90f81950cdea370e8e38d326f15c78e60e191e1b7e11352',
   'text/decorators-across-newlines':
     '0ebd5a199016526de49680cb3865bef21758866913aaf2595bfae594be537c8b',
   'text/bold-color':
