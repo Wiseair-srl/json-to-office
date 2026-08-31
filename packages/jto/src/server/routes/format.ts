@@ -569,6 +569,12 @@ export function createFormatRouter(adapter: FormatAdapter) {
             ...(options?.renderer !== undefined && {
               renderer: options.renderer,
             }),
+            // The answer to this request is a PDF. LibreOffice draws the
+            // vector, so the raster fallback each inline SVG carries for Word
+            // before 2016 is never read — and on a document whose artwork is
+            // hundreds of small SVGs, producing it was most of the wait
+            // (tech-report: 56s, against 2s without).
+            svgRasterFallback: false,
           },
         });
 
