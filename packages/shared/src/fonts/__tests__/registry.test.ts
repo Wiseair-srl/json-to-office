@@ -1,7 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { FontRegistry } from '../registry';
 import type { FontRegistryEntry } from '../../schemas/font-catalog';
 import { detectFontFormat } from '../sources/format';
+import {
+  readFontFamilyNames,
+  readNameRecords,
+  rewriteFontFamilyName,
+} from '../sources/ttf-name';
 
 // A small valid TTF header (0x00010000) padded — enough for format detection.
 const MINIMAL_TTF_BUF = Buffer.concat([
@@ -239,5 +246,121 @@ describe('detectFontFormat', () => {
     expect(detectFontFormat(Buffer.from([0xde, 0xad, 0xbe, 0xef]))).toBe(
       'unknown'
     );
+  });
+});
+
+/**
+ * Resolved bytes must declare the family they were resolved as — nothing
+ * downstream can find them otherwise. A host matches a run's `rFonts
+ * w:ascii="Inter"` against the font's own name table, never against the
+ * registry entry, so bytes calling themselves something else are invisible
+ * to every reference — silently, on any machine that happens to have the
+ * real family installed.
+ */
+describe('FontRegistry family stamping', () => {
+  const REAL_TTF = readFileSync(
+    path.resolve(
+      __dirname,
+      '../../../../core-docx/src/styles/fonts/life-sans/LifeSans-Medium.ttf'
+    )
+  );
+
+  /** A font that calls itself `declared`, registered under `family`. */
+  const registerAs = (
+    family: string,
+    declared: string,
+    sources: Array<{ weight: number; italic: boolean }>
+  ): FontRegistry => {
+    const entry: FontRegistryEntry = {
+      id: family,
+      family,
+      sources: sources.map((s) => ({
+        kind: 'data' as const,
+        data: rewriteFontFamilyName(REAL_TTF, declared).toString('base64'),
+        weight: s.weight,
+        italic: s.italic,
+      })),
+    };
+    return new FontRegistry({ opts: { extraEntries: [entry] } });
+  };
+
+  it('rewrites bytes that declare a different family (the InterVariable case)', async () => {
+    // Weight 400 is the case that broke: the preview stager only renames a
+    // face when the weight synthesizes a distinct family ("Inter Medium"),
+    // so Regular and Bold reach the host under whatever the file says.
+    const out = await registerAs('Inter', 'Inter Variable', [
+      { weight: 400, italic: false },
+    ]).resolve('Inter');
+
+    expect(readFontFamilyNames(out.sources[0].data)).toEqual(['Inter']);
+    // Repaired before validation runs, so it must not also warn. Matched on
+    // the bracketed code — "FAMILY_MISMATCH" is a substring of
+    // "SUBFAMILY_MISMATCH", which the fixture legitimately trips.
+    expect(
+      out.warnings.some((w) =>
+        w.includes('[FONT_METADATA_DEFECT:FAMILY_MISMATCH]')
+      )
+    ).toBe(false);
+  });
+
+  it('keeps the faces of one family individually addressable', async () => {
+    // All four RIBBI faces share the family name, so PostScript names have
+    // to differ — two fonts with the same PostScript name is malformed, and
+    // Core Text may refuse to register the second one.
+    const out = await registerAs('Inter', 'Inter Variable', [
+      { weight: 400, italic: false },
+      { weight: 400, italic: true },
+      { weight: 700, italic: false },
+      { weight: 700, italic: true },
+    ]).resolve('Inter');
+
+    const psNames = out.sources.map(
+      (s) => readNameRecords(s.data, new Set([6]))[0]?.value
+    );
+    expect(psNames).toEqual([
+      'Inter',
+      'Inter-Italic',
+      'Inter-Bold',
+      'Inter-BoldItalic',
+    ]);
+    expect(new Set(psNames).size).toBe(psNames.length);
+  });
+
+  it('leaves bytes that already answer to the family untouched', async () => {
+    // Costs a name-table rebuild, and a legitimately-named static has
+    // nothing to gain from one.
+    const out = await registerAs('Life Sans', 'Life Sans', [
+      { weight: 500, italic: false },
+    ]).resolve('Life Sans');
+
+    expect(
+      out.sources[0].data.equals(rewriteFontFamilyName(REAL_TTF, 'Life Sans'))
+    ).toBe(true);
+  });
+
+  it('accepts a match on the typographic family without rewriting', async () => {
+    // The fixture ships nameID 1 "Life Sans Medium" / nameID 16 "Life Sans".
+    // Registered as "Life Sans" it already resolves — rewriting would clobber
+    // a legitimate nameID 1.
+    const entry: FontRegistryEntry = {
+      id: 'Life Sans',
+      family: 'Life Sans',
+      sources: [
+        {
+          kind: 'data',
+          data: REAL_TTF.toString('base64'),
+          weight: 500,
+          italic: false,
+        },
+      ],
+    };
+    const out = await new FontRegistry({
+      opts: { extraEntries: [entry] },
+    }).resolve('Life Sans');
+
+    expect(readFontFamilyNames(out.sources[0].data)).toContain(
+      'Life Sans Medium'
+    );
+    expect(out.sources[0].data.equals(REAL_TTF)).toBe(true);
   });
 });

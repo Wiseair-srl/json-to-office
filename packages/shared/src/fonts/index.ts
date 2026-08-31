@@ -33,7 +33,11 @@ export {
   type SynthesizedFamily,
 } from './synthesize';
 
-export { rewriteFontFamilyName } from './sources/ttf-name';
+export {
+  rewriteFontFamilyName,
+  readFontFamilyNames,
+  legacySubfamilyName,
+} from './sources/ttf-name';
 
 // Pure (URL + array membership) and browser-safe, so the playground preview
 // can apply the same host policy as the Node fetchers.

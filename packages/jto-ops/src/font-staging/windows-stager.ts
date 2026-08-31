@@ -90,6 +90,11 @@ export class WindowsFontStager implements FontStager {
         const suffix = s.italic ? 'i' : 'r';
         // Rewrite the TTF's internal family name so GDI registers the
         // file under the synthetic sub-family the doc references.
+        //
+        // The unrewritten branch (RIBBI: the run rides bold/italic toggles
+        // on the base family) leans on the bytes already declaring
+        // `r.family`. That is FontRegistry's `stampResolvedFamily` — do not
+        // read the skip as "this file is fine by construction".
         const synth = synthesizeFamilyName(r.family, s.weight, s.italic);
         const data =
           synth.family === r.family

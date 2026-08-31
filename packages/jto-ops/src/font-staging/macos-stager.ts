@@ -217,6 +217,11 @@ export class MacOSCoreTextStager implements FontStager {
         // sub-family the doc references (e.g. "Inter Light"). Without
         // this, Core Text indexes the staged file as "Inter" and
         // LibreOffice can't resolve `rFonts w:ascii="Inter Light"`.
+        //
+        // The unrewritten branch (RIBBI: the run rides bold/italic toggles
+        // on the base family) leans on the bytes already declaring
+        // `r.family`. That is FontRegistry's `stampResolvedFamily` — do not
+        // read the skip as "this file is fine by construction".
         const synth = synthesizeFamilyName(r.family, s.weight, s.italic);
         const data =
           synth.family === r.family
