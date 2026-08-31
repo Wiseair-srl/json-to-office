@@ -364,3 +364,64 @@ describe('FontRegistry family stamping', () => {
     expect(out.sources[0].data.equals(REAL_TTF)).toBe(true);
   });
 });
+
+/**
+ * A truncated download keeps its sfnt magic, so `detectFontFormat` still
+ * calls it a TTF and it flows on as if it were a font. Nothing else notices:
+ * the family stamp finds no declared family to contradict, and the metadata
+ * checks have no records to read.
+ */
+describe('FontRegistry structural check', () => {
+  const REAL_TTF = readFileSync(
+    path.resolve(
+      __dirname,
+      '../../../../core-docx/src/styles/fonts/life-sans/LifeSans-Medium.ttf'
+    )
+  );
+
+  const resolveBytes = async (data: Buffer, family = 'Life Sans') => {
+    const entry: FontRegistryEntry = {
+      id: family,
+      family,
+      sources: [
+        {
+          kind: 'data',
+          data: data.toString('base64'),
+          weight: 500,
+          italic: false,
+        },
+      ],
+    };
+    return new FontRegistry({ opts: { extraEntries: [entry] } }).resolve(
+      family
+    );
+  };
+
+  it('warns FONT_UNREADABLE for a truncated font', async () => {
+    const out = await resolveBytes(REAL_TTF.subarray(0, 400));
+    expect(out.warnings.some((w) => w.startsWith('[FONT_UNREADABLE]'))).toBe(
+      true
+    );
+    expect(out.warnings.join('\n')).toContain('Life Sans');
+  });
+
+  it('does not also report metadata defects on bytes it cannot read', async () => {
+    // Past the structural failure every metadata check is reading rubble.
+    const out = await resolveBytes(REAL_TTF.subarray(0, 400));
+    expect(
+      out.warnings.some((w) => w.startsWith('[FONT_METADATA_DEFECT:'))
+    ).toBe(false);
+  });
+
+  it('still returns the source — it diagnoses the file, it does not drop it', async () => {
+    const out = await resolveBytes(REAL_TTF.subarray(0, 400));
+    expect(out.sources).toHaveLength(1);
+  });
+
+  it('stays quiet for a well-formed font', async () => {
+    const out = await resolveBytes(REAL_TTF);
+    expect(out.warnings.some((w) => w.startsWith('[FONT_UNREADABLE]'))).toBe(
+      false
+    );
+  });
+});

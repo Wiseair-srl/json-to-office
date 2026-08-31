@@ -20,6 +20,7 @@ import { loadDataFontSource } from './sources/data-loader';
 import { fetchGoogleFontSources } from './sources/google-fetcher';
 import { fetchUrlFontSource } from './sources/url-fetcher';
 import { validateFontMetadata } from './sources/ttf-validate';
+import { validateFontStructure } from './sources/ttf-structure';
 import {
   readFontFamilyNames,
   rewriteFontFamilyName,
@@ -207,8 +208,28 @@ export class FontRegistry {
       try {
         const materialized = await this.materializeSource(source, warnings);
         for (const raw of materialized) {
+          const sfnt = raw.format === 'ttf' || raw.format === 'otf';
+          // Can a font system load these bytes at all? Asked first, and on
+          // failure asked instead of everything below: the stamp has no name
+          // table to write into and the metadata checks no records to read,
+          // so both would quietly do nothing and report nothing. The source
+          // is still returned — this diagnoses the file, it doesn't decide
+          // for the caller whether to ship it.
+          const broken = sfnt
+            ? validateFontStructure(
+                raw.data,
+                raw.weight,
+                raw.italic,
+                entry.family
+              )
+            : null;
+          if (broken) {
+            warnings.push(`[${broken.code}] ${broken.message}`);
+            sources.push(raw);
+            continue;
+          }
           const s = stampResolvedFamily(raw, entry.family);
-          if (s.format === 'ttf' || s.format === 'otf') {
+          if (sfnt) {
             for (const d of validateFontMetadata(
               s.data,
               s.weight,
