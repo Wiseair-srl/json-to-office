@@ -63,7 +63,8 @@ const workspaceSchema = {
   properties: {
     handle: {
       type: 'string' as const,
-      description: 'Opaque, valid only on this connection.',
+      description:
+        'Opaque and server-generated. Valid only on this connection, unless the server has a workspace directory — then it survives a reconnect and jto_workspace_list hands it back.',
     },
     format: { type: 'string' as const, enum: [...FORMAT_NAMES] },
     revision: {

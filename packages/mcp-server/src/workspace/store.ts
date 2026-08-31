@@ -71,6 +71,12 @@ export const WORKSPACE_ERROR_CODES = {
    * has stopped being survivable and saying so is the whole point.
    */
   NOT_PERSISTED: 'W_WORKSPACE_NOT_PERSISTED',
+  /**
+   * A close could not delete the durable copy, so nothing was released (#290).
+   * An error rather than a warning: the agent asked for the document to be
+   * destroyed, and it is still there to be read by the next connection.
+   */
+  NOT_CLOSED: 'E_WORKSPACE_NOT_CLOSED',
 } as const;
 
 export type EvictionReason = 'ttl' | 'closed';
@@ -727,24 +733,40 @@ export function createMemoryWorkspaceStore(
     async close(handle) {
       sweep();
       const entry = entries.get(handle);
-      if (entry) evict(entry, 'closed');
 
       // Deliberately destructive on disk as well. `jto_workspace_close` is
       // documented as unrecoverable, and a durable copy that outlived it would
       // reappear on the next use of the handle — the opposite of what the
       // agent asked for. Note this reads no document: closing has to work when
       // the byte budget is too full to restore one.
+      //
+      // Disk goes FIRST, and nothing is released unless it succeeds. Reporting
+      // a close that left the JSON readable would be answering a request to
+      // destroy data with a claim the next connection disproves, so a failure
+      // here leaves the workspace exactly as it was — open, and retryable.
       let durable = false;
       if (persistence) {
         try {
           durable = await persistence.remove(handle);
-        } catch {
-          /* reported below as "nothing to close", never as a failure */
+        } catch (error) {
+          return failure(
+            WORKSPACE_ERROR_CODES.NOT_CLOSED,
+            `Workspace ${handle} could not be removed from ${persistence.root}: ${
+              error instanceof Error ? error.message : String(error)
+            }. It is still open and still on disk.`,
+            {
+              suggestion:
+                'Check the workspace directory is writable, then close again.',
+              context: { handle, workspaceRoot: persistence.root },
+            }
+          );
         }
-        // The revision is unknown here and unread: `missing` only surfaces one
-        // for a TTL eviction, which this is not.
-        if (durable && !entry) tombstone(handle, 'closed', 0);
       }
+
+      if (entry) evict(entry, 'closed');
+      // The revision is unknown for a handle this connection only ever saw on
+      // disk, and unread: `missing` only surfaces one for a TTL eviction.
+      else if (durable) tombstone(handle, 'closed', 0);
 
       return { ok: true, handle, closed: entry !== undefined || durable };
     },
@@ -758,7 +780,18 @@ export function createMemoryWorkspaceStore(
      * revisions. The handles come back from disk on next use.
      */
     async closeAll() {
-      for (const entry of [...entries.values()]) evict(entry, 'closed');
+      for (const entry of [...entries.values()]) {
+        if (!persistence) {
+          evict(entry, 'closed');
+          continue;
+        }
+        // No closed tombstone when there is a durable copy to come back to.
+        // `list` hides handles that were closed on purpose, and this is not
+        // that: the host wanted its memory back, and the root is still the way
+        // back to the work — which is the whole promise being kept here.
+        entries.delete(entry.handle);
+        tombstones.delete(entry.handle);
+      }
     },
   };
 

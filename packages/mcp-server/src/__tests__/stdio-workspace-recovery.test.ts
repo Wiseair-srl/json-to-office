@@ -52,44 +52,47 @@ describe('a workspace outliving the session that made it', () => {
     'authors five revisions, then loses the connection',
     async () => {
       const session = await connect();
-
-      const info = (await callTool(session, 'jto_info', {
-        includePreviewDependencies: false,
-      })) as any;
-      expect(info.workspaces).toMatchObject({
-        available: true,
-        persistent: true,
-        root: workspaceRoot,
-      });
-
-      const created = (await callTool(session, 'jto_workspace_create', {
-        format: 'docx',
-        title: 'Field report',
-        document: { name: 'docx', props: {}, children: [] },
-      })) as any;
-      expect(created.ok).toBe(true);
-      handle = created.workspace.handle;
-      expect(created.workspace.persisted).toBe(true);
-
-      for (const [index, text] of HEADINGS.entries()) {
-        const patched = (await callTool(session, 'jto_workspace_patch', {
-          handle,
-          baseRevision: index + 1,
-          operations: [
-            {
-              op: 'add',
-              path: '/children/-',
-              value: { name: 'heading', props: { text, level: 2 } },
-            },
-          ],
+      try {
+        const info = (await callTool(session, 'jto_info', {
+          includePreviewDependencies: false,
         })) as any;
-        expect(patched.ok).toBe(true);
-        expect(patched.workspace.revision).toBe(index + 2);
-      }
+        expect(info.workspaces).toMatchObject({
+          available: true,
+          persistent: true,
+          root: workspaceRoot,
+        });
 
-      // No close, no snapshot, no export — exactly what the report described.
-      // `close` here tears the child process down with the transport.
-      await session.close();
+        const created = (await callTool(session, 'jto_workspace_create', {
+          format: 'docx',
+          title: 'Field report',
+          document: { name: 'docx', props: {}, children: [] },
+        })) as any;
+        expect(created.ok).toBe(true);
+        handle = created.workspace.handle;
+        expect(created.workspace.persisted).toBe(true);
+
+        for (const [index, text] of HEADINGS.entries()) {
+          const patched = (await callTool(session, 'jto_workspace_patch', {
+            handle,
+            baseRevision: index + 1,
+            operations: [
+              {
+                op: 'add',
+                path: '/children/-',
+                value: { name: 'heading', props: { text, level: 2 } },
+              },
+            ],
+          })) as any;
+          expect(patched.ok).toBe(true);
+          expect(patched.workspace.revision).toBe(index + 2);
+        }
+      } finally {
+        // No close, no snapshot, no export — exactly what the report
+        // described. This tears the child process down with the transport,
+        // and has to run even when an assertion above did not, or the leaked
+        // server outlives the test that made it.
+        await session.close();
+      }
     },
     JOURNEY_TIMEOUT_MS
   );

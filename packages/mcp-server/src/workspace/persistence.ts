@@ -54,6 +54,17 @@ const SCHEMA_VERSION = 1;
 const META_FILE = 'meta.json';
 const REVISION_PREFIX = 'rev-';
 const REVISION_SUFFIX = '.json';
+const TEMP_SUFFIX = '.tmp';
+
+/**
+ * How old a `.tmp` has to be before it is treated as debris.
+ *
+ * A temporary revision only exists between `writeFile` and `rename`, which is
+ * milliseconds; an hour is far past any write still in flight, including one
+ * belonging to another process sharing the root. Below that they are left
+ * alone, because deleting a live one would fail somebody else's write.
+ */
+const STALE_TEMP_MS = 60 * 60 * 1000;
 
 /**
  * Handles that may become a directory name.
@@ -145,6 +156,11 @@ export interface WorkspacePersistence {
   /**
    * Forget a workspace durably. Idempotent; answers whether anything was
    * there, which is how `close` reports a handle it only ever saw on disk.
+   *
+   * Throws when the directory is there and could not be deleted. That has to
+   * reach the caller: `jto_workspace_close` promises the document is gone, and
+   * a swallowed failure would report it closed while the JSON stayed readable
+   * by the next connection to use the handle.
    */
   remove(handle: string): Promise<boolean>;
 }
@@ -192,6 +208,27 @@ export function createWorkspacePersistenceAt(
   let ensured: Promise<void> | undefined;
 
   /**
+   * Revision files THIS layer wrote, per handle.
+   *
+   * A revision number is only immutable within one lineage. Two connections
+   * sharing a root can both restore revision N and both commit N+1 with
+   * different content, so "the file is already there" does not mean "the file
+   * is the bytes I am about to write" — trusting that put one store's document
+   * on disk under the other store's metadata, which is a worse failure than
+   * either of them losing. What a file name does prove is that a revision this
+   * layer itself wrote has not changed since, so authorship is what the skip
+   * is keyed on: no redundant writes in the normal single-client case, and a
+   * genuine last-writer-wins when a root is shared.
+   */
+  const authored = new Map<string, Set<number>>();
+
+  function claim(handle: string, revision: number): void {
+    const owned = authored.get(handle) ?? new Set<number>();
+    owned.add(revision);
+    authored.set(handle, owned);
+  }
+
+  /**
    * Create the root once, lazily.
    *
    * Deferred like the output root's: a connection that never opens a
@@ -223,7 +260,7 @@ export function createWorkspacePersistenceAt(
    * because two connections may share a configured root.
    */
   async function writeAtomic(target: string, contents: string): Promise<void> {
-    const temp = `${target}.${randomBytes(6).toString('hex')}.tmp`;
+    const temp = `${target}.${randomBytes(6).toString('hex')}${TEMP_SUFFIX}`;
     try {
       await fs.writeFile(temp, contents, { encoding: 'utf8', mode: 0o600 });
       await fs.rename(temp, target);
@@ -317,17 +354,22 @@ export function createWorkspacePersistenceAt(
       await fs
         .rm(dirFor(victim.handle), { recursive: true, force: true })
         .catch(() => undefined);
+      // Its files are gone, so the claims on them are worthless — and left
+      // here they would be one small `Set` per handle this process has ever
+      // written, for the lifetime of the process.
+      authored.delete(victim.handle);
     }
   }
 
   /**
-   * Delete revision files the metadata no longer names.
+   * Delete revision files the metadata no longer names, and debris.
    *
-   * Half-written `.tmp` files are deliberately left: `revisionOf` does not
-   * match them, and one could belong to a write another connection sharing
-   * this root is in the middle of. A leaked one is reaped with its workspace,
-   * by `remove` or by the workspace ceiling, so it cannot accumulate without
-   * bound.
+   * A `.tmp` only exists between `writeFile` and `rename`, so one that has
+   * been sitting there for an hour belongs to a process that died mid-write.
+   * Left forever they would accumulate one document per interrupted write and
+   * quietly put the workspace over the size bound it advertises; deleted
+   * eagerly they would break a live write from another connection on a shared
+   * root. The age check is what separates the two.
    */
   async function pruneRevisions(
     handle: string,
@@ -339,12 +381,23 @@ export function createWorkspacePersistenceAt(
     } catch {
       return;
     }
+    const owned = authored.get(handle);
     for (const name of names) {
+      const target = path.join(dirFor(handle), name);
+
+      if (name.endsWith(TEMP_SUFFIX)) {
+        if (await isStale(target)) {
+          await fs.rm(target, { force: true }).catch(() => undefined);
+        }
+        continue;
+      }
+
       const revision = revisionOf(name);
       if (revision === undefined || retained.has(revision)) continue;
-      await fs
-        .rm(path.join(dirFor(handle), name), { force: true })
-        .catch(() => undefined);
+      await fs.rm(target, { force: true }).catch(() => undefined);
+      // The bytes are gone, so the claim on them has to go too: a later
+      // revision reusing this number must be written, not skipped.
+      owned?.delete(revision);
     }
   }
 
@@ -391,12 +444,18 @@ export function createWorkspacePersistenceAt(
         pinned.push(pin.revision);
       }
 
+      const owned = authored.get(snapshot.handle);
       for (const document of files) {
-        const target = revisionFile(snapshot.handle, document.revision);
-        // Revisions are immutable, so an existing file is already the right
-        // bytes: only the head is ever new, and re-pinning is metadata.
-        if (await exists(target)) continue;
-        await writeAtomic(target, document.text);
+        // Skipped only when this layer wrote that exact revision itself, which
+        // is the case that repeats: re-persisting on a snapshot, and carrying
+        // pins forward on every later patch. Anything else is written, so the
+        // document on disk always belongs to the metadata written beside it.
+        if (owned?.has(document.revision)) continue;
+        await writeAtomic(
+          revisionFile(snapshot.handle, document.revision),
+          document.text
+        );
+        claim(snapshot.handle, document.revision);
       }
 
       const meta: PersistedMeta & { schema: number } = {
@@ -462,8 +521,14 @@ export function createWorkspacePersistenceAt(
     async remove(handle) {
       if (!isPersistableHandle(handle)) return false;
       const dir = dirFor(handle);
-      if (!(await exists(dir))) return false;
-      await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+      if (!(await exists(dir))) {
+        authored.delete(handle);
+        return false;
+      }
+      // Deliberately unguarded: a failure here means the document is still
+      // readable, and the caller has promised the agent it would not be.
+      await fs.rm(dir, { recursive: true, force: true });
+      authored.delete(handle);
       return true;
     },
   };
@@ -474,6 +539,17 @@ async function exists(target: string): Promise<boolean> {
     await fs.stat(target);
     return true;
   } catch {
+    return false;
+  }
+}
+
+/** Older than a write could plausibly still be in flight for. */
+async function isStale(target: string): Promise<boolean> {
+  try {
+    const { mtimeMs } = await fs.stat(target);
+    return Date.now() - mtimeMs > STALE_TEMP_MS;
+  } catch {
+    // Already gone, or unreadable: either way not ours to delete.
     return false;
   }
 }
