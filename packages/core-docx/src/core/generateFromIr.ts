@@ -47,6 +47,14 @@ export interface IrDocxGenerationOptions {
   /** Backend to render with. Defaults to `docxjs`. */
   renderer?: DocxRendererId;
   /**
+   * Rasterize a PNG fallback for each inline SVG. Defaults to true.
+   *
+   * Only readers older than Word 2016 draw that raster; everything current
+   * draws the vector. Producing it is the dominant cost of a document whose
+   * artwork is many small SVGs, so it can be turned off.
+   */
+  svgRasterFallback?: boolean;
+  /**
    * A prologue already run by the caller.
    *
    * The plugin path has to resolve the theme before it expands custom
@@ -259,6 +267,9 @@ async function renderScoped(
       : {}),
     ...(options.generatedAt !== undefined
       ? { generatedAt: toDate(options.generatedAt) }
+      : {}),
+    ...(options.svgRasterFallback !== undefined
+      ? { svgRasterFallback: options.svgRasterFallback }
       : {}),
     warnings: compiled.warnings,
   });

@@ -258,6 +258,8 @@ interface GeneratorBuilder {
       validation?: { allowUnknownFields?: boolean };
       baseDir?: string;
       renderer?: string;
+      /** DOCX only; PPTX generators ignore it. */
+      svgRasterFallback?: boolean;
     }
   ): Promise<{ buffer: Buffer; warnings: any }>;
   /**
@@ -309,6 +311,14 @@ export interface GeneratorOptions {
    * Undefined means the format's default (`docxjs` / `pptxgenjs`).
    */
   renderer?: string;
+  /**
+   * Rasterize a PNG fallback for each inline SVG. Defaults to true.
+   *
+   * DOCX only — pptx embeds SVG without a raster twin. Only readers older than
+   * Word 2016 draw it, and producing it dominates the render of a document
+   * whose artwork is many small SVGs.
+   */
+  svgRasterFallback?: boolean;
   /**
    * Optional sink for structured generation warnings (FONT_UNRESOLVED and
    * friends). Mirrors core-docx's `JsonGenerationOptions.warnings`, and is the
@@ -484,6 +494,7 @@ export class DocxFormatAdapter implements FormatAdapter {
       generatedAt: options.generatedAt,
       baseDir: options.baseDir,
       renderer: options.renderer as DocxRendererId | undefined,
+      svgRasterFallback: options.svgRasterFallback,
       prepared,
       warnings,
     });
@@ -552,6 +563,7 @@ export class DocxFormatAdapter implements FormatAdapter {
               generatedAt: options.generatedAt,
               baseDir: options.baseDir,
               renderer: options.renderer as DocxRendererId | undefined,
+              svgRasterFallback: options.svgRasterFallback,
               prepared: usable,
               warnings,
             }
@@ -585,6 +597,7 @@ export class DocxFormatAdapter implements FormatAdapter {
       generatedAt: options.generatedAt,
       baseDir: options.baseDir,
       renderer: options.renderer as DocxRendererId | undefined,
+      svgRasterFallback: options.svgRasterFallback,
     });
 
     for (const plugin of plugins) {
@@ -608,6 +621,7 @@ export class DocxFormatAdapter implements FormatAdapter {
           generatedAt: options.generatedAt,
           baseDir: options.baseDir,
           renderer: options.renderer as DocxRendererId | undefined,
+          svgRasterFallback: options.svgRasterFallback,
         });
         emitGenerationWarnings(result.warnings ?? []);
         options.warnings?.push(...toGenerationWarnings(result.warnings));

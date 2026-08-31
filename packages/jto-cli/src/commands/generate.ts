@@ -47,6 +47,7 @@ interface GenerateOptions extends QualityCommandOptions {
   fontMode?: 'substitute' | 'custom';
   fontSubstitute?: string[];
   deterministic?: boolean;
+  svgFallback?: boolean;
   generatedAt?: string;
   renderer?: string;
 }
@@ -151,6 +152,11 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
     )
     .option('--generated-at <iso>', 'Generation timestamp (ISO 8601)')
     .option(
+      '--no-svg-fallback',
+      'Skip the PNG fallback rasterized for each inline SVG. Much faster on ' +
+        'artwork-heavy documents; only Word older than 2016 needs the raster'
+    )
+    .option(
       '--renderer <id>',
       `Rendering backend for ${adapter.label} (default: the format's own; run with an unknown id to list them)`
     )
@@ -249,6 +255,10 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
               deterministic: options.deterministic,
               generatedAt: parseGeneratedAt(options.generatedAt),
               renderer: options.renderer,
+              // commander turns `--no-svg-fallback` into svgFallback:false and
+              // leaves it undefined otherwise, so the default stays with the
+              // renderer rather than being restated here.
+              svgRasterFallback: options.svgFallback,
               quality,
               // Relative asset paths resolve against the document's own
               // directory, not the invocation cwd (#142).

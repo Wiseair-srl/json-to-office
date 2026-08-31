@@ -69,6 +69,14 @@ export interface DocumentGeneratorOptions {
    * and fails before rendering on anything outside it.
    */
   renderer?: DocxRendererId;
+  /**
+   * Rasterize a PNG fallback for each inline SVG. Defaults to true.
+   *
+   * Only readers older than Word 2016 draw that raster; everything current
+   * draws the vector. Producing it dominates the render of a document whose
+   * artwork is many small SVGs, so it can be turned off.
+   */
+  svgRasterFallback?: boolean;
 }
 
 /**
@@ -87,6 +95,14 @@ interface BuilderState {
   generatedAt?: string | Date;
   baseDir?: string;
   renderer?: DocxRendererId;
+  /**
+   * Rasterize a PNG fallback for each inline SVG. Defaults to true.
+   *
+   * Only readers older than Word 2016 draw that raster; everything current
+   * draws the vector. Producing it dominates the render of a document whose
+   * artwork is many small SVGs, so it can be turned off.
+   */
+  svgRasterFallback?: boolean;
 }
 
 /**
@@ -372,6 +388,7 @@ function createBuilderImpl<
       generatedAt: state.generatedAt,
       baseDir: state.baseDir,
       renderer: state.renderer,
+      svgRasterFallback: state.svgRasterFallback,
     };
 
     // Return NEW builder with expanded type
@@ -795,6 +812,7 @@ export function createDocumentGenerator(
     generatedAt: options.generatedAt,
     baseDir: options.baseDir,
     renderer: options.renderer,
+    svgRasterFallback: options.svgRasterFallback,
   };
 
   return createBuilderImpl<readonly []>(initialState);

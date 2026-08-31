@@ -23,7 +23,10 @@ import {
   type ISectionOptions,
 } from 'docx';
 import { emitStyles } from './styles';
-import { rasterizeSvgFallback } from '../../utils/imageUtils';
+import {
+  rasterizeSvgFallbacks,
+  type SvgFallbackJob,
+} from '../../utils/imageUtils';
 import type {
   DocxIR,
   DocxIrBlock,
@@ -100,7 +103,10 @@ export function createDocxJsRenderer(): DocxRenderer {
       ir: DocxIR,
       renderOptions?: DocxRenderOptions
     ): Promise<Uint8Array> {
-      const resources = await prepareImages(ir);
+      const resources = await prepareImages(
+        ir,
+        renderOptions?.svgRasterFallback
+      );
       const document = buildDocument(ir, resources);
       const packed = (await Packer.toBuffer(document)) as Buffer;
       const fixed = fixFloatingImageIdsInBuffer(packed);
@@ -234,23 +240,27 @@ function numberingConfig(numbering: DocxIrNumbering): {
  * drawn at, so every placement of a vector resource is rasterised up front and
  * the factory looks the right one up.
  */
-async function prepareImages(ir: DocxIR): Promise<EmitResources> {
+async function prepareImages(
+  ir: DocxIR,
+  svgRasterFallback?: boolean
+): Promise<EmitResources> {
   const placements = collectImagePlacements(ir);
-  const rasters = new Map<string, Buffer | undefined>();
+  const jobs: SvgFallbackJob[] = [];
 
   for (const resource of ir.resources) {
     if (resource.kind !== 'image' || resource.mediaType !== 'svg') continue;
     for (const size of placements.get(resource.id) ?? []) {
       const [width, height] = size.split('x').map(Number);
-      rasters.set(
-        `${resource.id}:${size}`,
-        await rasterizeSvgFallback(Buffer.from(resource.bytes), {
-          width,
-          height,
-        })
-      );
+      jobs.push({
+        key: `${resource.id}:${size}`,
+        svg: Buffer.from(resource.bytes),
+        width,
+        height,
+      });
     }
   }
+
+  const rasters = await rasterizeSvgFallbacks(jobs, svgRasterFallback);
 
   const resources = new Map<string, ImageRunFactory>();
   for (const resource of ir.resources) {

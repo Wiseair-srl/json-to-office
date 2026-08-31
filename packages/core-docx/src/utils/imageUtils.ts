@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs';
+import { availableParallelism } from 'os';
 import probe from 'probe-image-size';
 import { reportWarning, resolveFromBaseDir } from './generationContext';
 import { parsePercentageStringToFraction } from './widthUtils';
@@ -66,6 +67,72 @@ function capToPixelBudget(edge: number, aspect: number): number | undefined {
   return scaled >= SVG_MIN_EDGE_PX ? scaled : undefined;
 }
 
+/** One `fallback` raster to produce, keyed by resource and placement size. */
+export interface SvgFallbackJob {
+  key: string;
+  svg: Buffer;
+  width: number;
+  height: number;
+}
+
+/**
+ * Ceiling on fallback rasters rendered at once.
+ *
+ * Rasterizing is the slowest part of writing a document full of inline SVG and
+ * it is pure CPU per image, so it runs in parallel — one at a time cost ~250ms
+ * each, which is fifty seconds for a template whose page decoration is split
+ * into a couple of hundred motifs.
+ *
+ * The cap is what keeps that from trading time for memory. Each raster is held
+ * to {@link SVG_MAX_TOTAL_PX}, so a worker owns about 4 MB of RGBA plus the
+ * PNG it encodes; eight of those is tens of megabytes, which the 512 MB
+ * hosted container absorbs. Unbounded, a template with hundreds of page-sized
+ * SVGs would hold all of them live at once — the shape of the failure that
+ * budget was added for.
+ */
+function fallbackConcurrency(): number {
+  const cpus = availableParallelism?.() ?? 4;
+  return Math.max(1, Math.min(8, cpus));
+}
+
+/**
+ * Produce the `fallback` raster for every placement of every SVG resource.
+ *
+ * `enabled: false` returns an empty map, so each `ImageRun` falls back to the
+ * vector bytes exactly as it does when a raster cannot be produced. docx.js
+ * requires the slot to be filled, so there is nothing else to put in it: the
+ * document stays correct in Word 2016+ and in LibreOffice, and only readers
+ * old enough to need the raster lose the image. That is the trade the caller
+ * is making, and it is the difference between a one-second render and a
+ * one-minute one.
+ */
+export async function rasterizeSvgFallbacks(
+  jobs: readonly SvgFallbackJob[],
+  enabled = true
+): Promise<Map<string, Buffer | undefined>> {
+  const out = new Map<string, Buffer | undefined>();
+  if (!enabled || jobs.length === 0) return out;
+
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    for (let i = next++; i < jobs.length; i = next++) {
+      const job = jobs[i];
+      out.set(
+        job.key,
+        await rasterizeSvgFallback(job.svg, {
+          width: job.width,
+          height: job.height,
+        })
+      );
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(fallbackConcurrency(), jobs.length) }, worker)
+  );
+  return out;
+}
+
 /**
  * Rasterize inline SVG for the `fallback` slot of an SVG `ImageRun`.
  *
@@ -80,8 +147,9 @@ export async function rasterizeSvgFallback(
   transformation: { width: number; height: number }
 ): Promise<Buffer | undefined> {
   let Resvg: ResvgModule['Resvg'];
+  let renderAsync: ResvgModule['renderAsync'];
   try {
-    ({ Resvg } = await loadResvg());
+    ({ Resvg, renderAsync } = await loadResvg());
   } catch (error) {
     reportWarning(
       'image',
@@ -137,8 +205,12 @@ export async function rasterizeSvgFallback(
       return undefined;
     }
 
+    // `renderAsync` hands the raster to libuv's threadpool; `Resvg.render()`
+    // is synchronous native code, so awaiting it never yields and callers
+    // rasterizing a batch would run one at a time on the main thread however
+    // many they started at once.
     return Buffer.from(
-      new Resvg(markup, { fitTo: { mode, value } }).render().asPng()
+      (await renderAsync(markup, { fitTo: { mode, value } })).asPng()
     );
   } catch (error) {
     reportWarning(
