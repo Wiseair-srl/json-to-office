@@ -10,6 +10,8 @@
  * fallback. That is the whole feature, silently inert.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { DocxFormatAdapter } from '@json-to-office/jto-cli';
 import { GeneratorService } from '../generator';
 import { CacheService } from '../cache';
@@ -17,15 +19,25 @@ import { CacheService } from '../cache';
 const FAMILY = 'Acme Brand Sans';
 
 /**
- * A minimal but structurally real TTF: an sfnt header with zero tables. Enough
- * for the data loader's magic-byte sniff, and it keeps the fixture inline.
+ * A real font, registered under a family name of its own.
+ *
+ * An sfnt header with zero tables used to stand in here — enough for the data
+ * loader's magic-byte sniff, which was all the pipeline looked at. It isn't a
+ * font a font system could load, and `validateFontStructure` now says so, so
+ * the stand-in would have this suite asserting the absence of a warning the
+ * pipeline is right to emit. Real bytes also mean the resolution path under
+ * test runs end to end, family stamp included.
+ *
+ * Weight 500 because the fixture is a Medium: registering it as anything else
+ * trips the metadata checks on a question this suite isn't asking.
  */
-function fakeTtfBase64(): string {
-  const buf = Buffer.alloc(12);
-  buf.writeUInt32BE(0x00010000, 0); // sfnt version
-  buf.writeUInt16BE(0, 4); // numTables
-  return buf.toString('base64');
-}
+const REAL_TTF = readFileSync(
+  path.resolve(
+    __dirname,
+    '../../../../../core-docx/src/styles/fonts/life-sans/LifeSans-Medium.ttf'
+  )
+);
+const FIXTURE_WEIGHT = 500;
 
 const docWithRegistry = () => ({
   name: 'docx',
@@ -36,7 +48,13 @@ const docWithRegistry = () => ({
         id: 'acme',
         family: FAMILY,
         category: 'sans',
-        sources: [{ kind: 'data', data: fakeTtfBase64(), weight: 400 }],
+        sources: [
+          {
+            kind: 'data',
+            data: REAL_TTF.toString('base64'),
+            weight: FIXTURE_WEIGHT,
+          },
+        ],
       },
     ],
     metadata: { title: 'registry-materialization' },
