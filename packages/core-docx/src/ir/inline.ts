@@ -71,20 +71,62 @@ const DECORATOR =
  */
 const ESCAPABLE = '*_[]{}\\';
 const ESCAPE = /\\([*_[\]{}\\])/g;
-const SENTINEL_BASE = 0xe000;
+
+/**
+ * One private-use character marks a substitution and the character after it
+ * says what was substituted: a digit for the metacharacter at that index in
+ * `ESCAPABLE`, or `SENTINEL_SELF` for a sentinel the author wrote themselves.
+ *
+ * That second case is what makes the pass reversible. Mapping each escape to a
+ * bare private-use character instead meant decoding could not tell a sentinel
+ * this module wrote from one that was already in the text, so a document
+ * carrying those codepoints — an icon font puts its glyphs in the private use
+ * area — came back with metacharacters where its icons had been.
+ */
+const SENTINEL = '\uE000';
+const SENTINEL_SELF = 'x';
+const SENTINEL_DIGIT_BASE = 0x30;
 
 function encodeEscapes(text: string): string {
-  if (!text.includes('\\')) return text;
-  return text.replace(ESCAPE, (_whole, char: string) =>
-    String.fromCharCode(SENTINEL_BASE + ESCAPABLE.indexOf(char))
+  const authored = text.includes(SENTINEL);
+  if (!authored && !text.includes('\\')) return text;
+  // Guard the author's own sentinels first, so every sentinel left in the
+  // string afterwards is one this function wrote.
+  const guarded = authored
+    ? text.split(SENTINEL).join(SENTINEL + SENTINEL_SELF)
+    : text;
+  return guarded.replace(
+    ESCAPE,
+    (_whole, char: string) =>
+      SENTINEL +
+      String.fromCharCode(SENTINEL_DIGIT_BASE + ESCAPABLE.indexOf(char))
   );
 }
 
 function decodeEscapes(text: string): string {
-  let out = text;
-  for (let i = 0; i < ESCAPABLE.length; i += 1) {
-    const sentinel = String.fromCharCode(SENTINEL_BASE + i);
-    if (out.includes(sentinel)) out = out.split(sentinel).join(ESCAPABLE[i]);
+  if (!text.includes(SENTINEL)) return text;
+  let out = '';
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] !== SENTINEL) {
+      out += text[i];
+      continue;
+    }
+    const marker = text[i + 1];
+    if (marker === SENTINEL_SELF) {
+      out += SENTINEL;
+      i += 1;
+      continue;
+    }
+    const index =
+      marker === undefined ? -1 : marker.charCodeAt(0) - SENTINEL_DIGIT_BASE;
+    if (index >= 0 && index < ESCAPABLE.length) {
+      out += ESCAPABLE[index];
+      i += 1;
+      continue;
+    }
+    // Not a pair this module wrote — a caller decoding text that never went
+    // through `encodeEscapes`. Pass the character through untouched.
+    out += text[i];
   }
   return out;
 }
@@ -396,7 +438,7 @@ function parseLinks(
     // the alternation matched.
     if (match[1] === undefined) {
       const resolved = options.resolveCrossReference?.(
-        match[3],
+        decodeEscapes(match[3]),
         (match[4] as CrossReferenceFormat | undefined) ?? 'relative',
         match[0]
       );
@@ -405,7 +447,12 @@ function parseLinks(
       continue;
     }
 
-    const [, linkText, target] = match;
+    const [, linkText] = match;
+    // The destination is captured from the encoded string, so it still holds a
+    // sentinel wherever the author escaped a metacharacter inside the URL.
+    // Nothing downstream decodes a target — it goes to the relationship as-is —
+    // so it has to be decoded here.
+    const target = decodeEscapes(match[2]);
     out.push({
       kind: 'hyperlink',
       // A `#anchor` target names a bookmark in this document and needs no
