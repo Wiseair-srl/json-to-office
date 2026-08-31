@@ -464,7 +464,7 @@ Run `pnpm generate:renderer-docs` after changing a feature or capability set.
 | `revisions`          | Inserted and deleted content.                  | yes      | yes           |
 | `breaks`             | Page, column and line breaks.                  | yes      | yes           |
 | `shading`            | Paragraph and table shading.                   | —        | —             |
-| `borders`            | Paragraph, table and page borders.             | —        | —             |
+| `borders`            | Paragraph, table and page borders.             | yes      | yes           |
 | `tab-stops`          | Paragraph tab stops.                           | yes      | yes           |
 | `proofing-language`  | Per-run proofing language and no-proof.        | yes      | yes           |
 | `custom-properties`  | Custom document properties.                    | yes      | yes           |
