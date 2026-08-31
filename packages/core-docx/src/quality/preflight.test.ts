@@ -663,3 +663,140 @@ describe('svg text bounds', () => {
     ).toEqual([]);
   });
 });
+
+describe('exact line boxes', () => {
+  const collapsed = (props: Record<string, unknown>) =>
+    docxDiagnostics(doc([{ name: 'paragraph', props }]));
+
+  it('warns when an exact box is shorter than the capitals it holds', () => {
+    // The reported route: `font.size` is floored at 8pt, so an author after a
+    // ~3pt rule collapses the line box instead and 16 paragraphs come back
+    // clean while rendering as a stripe.
+    const findings = collapsed({
+      text: 'Financial highlights',
+      font: { size: 8, lineSpacing: { type: 'exactly', value: 1 } },
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.LINE_BOX_COLLAPSE,
+      severity: 'warning',
+      category: 'legibility',
+      path: '/children/0/props/font/lineSpacing',
+    });
+    expect(findings[0].context).toMatchObject({
+      lineBoxPt: 1,
+      fontSizePt: 8,
+      capHeightFloorPt: 5.6,
+    });
+    // The repair keeps the exact rule the author asked for and grows the box
+    // to one em — the floor says where the geometry is indefensible, but a
+    // box at the floor still collides with the line below it.
+    expect(findings[0].fixes).toEqual([
+      { op: 'add', path: '/children/0/props/font/lineSpacing/value', value: 8 },
+    ]);
+  });
+
+  it('leaves tight display leading alone', () => {
+    // 10pt on 12pt type is the tightest exact box in the reference corpus.
+    expect(
+      collapsed({
+        text: 'Annual report',
+        font: { size: 12, lineSpacing: { type: 'exactly', value: 10 } },
+      })
+    ).toEqual([]);
+    expect(
+      collapsed({
+        text: 'Global performance',
+        font: { size: 80, lineSpacing: { type: 'exactly', value: 76 } },
+      })
+    ).toEqual([]);
+  });
+
+  it('says nothing about a box that can grow', () => {
+    for (const lineSpacing of [
+      { type: 'atLeast', value: 1 },
+      { type: 'multiple', value: 0.1 },
+      { type: 'single' },
+    ]) {
+      expect(
+        collapsed({ text: 'Body copy', font: { size: 24, lineSpacing } })
+      ).toEqual([]);
+    }
+  });
+
+  it('leaves an empty spacer paragraph alone', () => {
+    // No glyphs, nothing to clip — this is how the stock templates draw a
+    // 2pt gap, and flagging it would only push authors somewhere worse.
+    expect(
+      collapsed({
+        text: '',
+        font: { size: 8, lineSpacing: { type: 'exactly', value: 2 } },
+      })
+    ).toEqual([]);
+  });
+
+  it('measures a heading against its own line spacing spelling', () => {
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'heading',
+          props: {
+            text: 'Outlook',
+            level: 2,
+            font: { size: 30 },
+            lineSpacing: { type: 'exactly', value: 6 },
+          },
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.LINE_BOX_COLLAPSE,
+      path: '/children/0/props/lineSpacing',
+    });
+    expect(findings[0].context).toMatchObject({ fontSizePt: 30 });
+  });
+
+  it('falls back to the size the paragraph style supplies', () => {
+    // Nothing states a size, so the run inherits `normal` (11pt) — which is
+    // the size Word lays out, and the only one worth comparing against.
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'paragraph',
+          props: {
+            text: 'Body copy',
+            font: { lineSpacing: { type: 'exactly', value: 2 } },
+          },
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0].context).toMatchObject({ fontSizePt: 11 });
+    expect(findings[0].message).toContain('inherited from the paragraph style');
+  });
+
+  it('offers no patch for a box that arrives through componentDefaults', () => {
+    const findings = docxDiagnostics({
+      name: 'docx',
+      props: {
+        componentDefaults: {
+          paragraph: {
+            font: { size: 24, lineSpacing: { type: 'exactly', value: 4 } },
+          },
+        },
+      },
+      children: [{ name: 'paragraph', props: { text: 'Body copy' } }],
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.LINE_BOX_COLLAPSE,
+      path: '/children/0/props/font/lineSpacing',
+    });
+    // The pointer names no member of the authored document; an RFC 6902 `add`
+    // under a missing parent would fail rather than repair, so the finding
+    // says where the box actually lives instead of offering a patch.
+    expect(findings[0].fixes).toBeUndefined();
+    expect(findings[0].suggestion).toContain('componentDefaults');
+  });
+});

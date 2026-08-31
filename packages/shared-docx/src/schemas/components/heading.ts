@@ -39,7 +39,10 @@ export const HeadingPropsSchema = Type.Object(
     // Paragraph indentation (w:ind) in twips
     indent: Type.Optional(ParagraphIndentSchema),
     lineSpacing: Type.Optional(
-      Type.Union([Type.Number({ minimum: 0 }), LineSpacingSchema])
+      Type.Union([Type.Number({ minimum: 0 }), LineSpacingSchema], {
+        description:
+          'A bare number is a multiple of single spacing. Takes precedence over `font.lineSpacing`. An `exactly` box smaller than the heading it holds is reported as W_QUALITY_LINE_BOX_COLLAPSE.',
+      })
     ),
     pageBreak: Type.Optional(
       Type.Boolean({

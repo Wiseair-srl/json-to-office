@@ -87,14 +87,26 @@ export const TextFormattingPropertiesSchema = Type.Object(
     lineSpacing: Type.Optional(
       Type.Object(
         {
-          type: Type.Union([
-            Type.Literal('single'),
-            Type.Literal('atLeast'),
-            Type.Literal('exactly'),
-            Type.Literal('double'),
-            Type.Literal('multiple'),
-          ]),
-          value: Type.Optional(Type.Number({ minimum: 0 })),
+          type: Type.Union(
+            [
+              Type.Literal('single'),
+              Type.Literal('atLeast'),
+              Type.Literal('exactly'),
+              Type.Literal('double'),
+              Type.Literal('multiple'),
+            ],
+            {
+              description:
+                '`single`/`double` ignore `value`; `multiple` scales single spacing by it; `atLeast` is a floor the line grows past; `exactly` pins an absolute box the glyphs are clipped to.',
+            }
+          ),
+          value: Type.Optional(
+            Type.Number({
+              minimum: 0,
+              description:
+                'Points for `exactly` and `atLeast`, a factor of single spacing for `multiple`. Unlike `size` this has no floor — an empty spacer paragraph legitimately pins a fraction of a point — so an `exactly` box too small for the text it holds is reported as W_QUALITY_LINE_BOX_COLLAPSE instead.',
+            })
+          ),
         },
         { additionalProperties: false }
       )

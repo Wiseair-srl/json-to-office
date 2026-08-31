@@ -169,6 +169,7 @@ than a confident-sounding guess.
 | `docx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`        | warning | estimated     | A word too wide for its floating frame, or a frame whose wrapped block runs off the sheet          |
 | `docx/frame-collision`   | `W_QUALITY_FRAME_COLLISION`      | warning | estimated     | Two page-anchored floating frames whose estimated text blocks land on the same region of a page    |
 | `docx/svg-text-bounds`   | `W_QUALITY_SVG_TEXT_CLIPPED`     | warning | deterministic | A `<text>` baseline in an inline SVG falls outside the viewBox, so the words are never painted     |
+| `docx/line-box`          | `W_QUALITY_LINE_BOX_COLLAPSE`    | warning | measured      | An `exactly` line box on text is shorter than the capitals it holds                                |
 
 Frame text fit only inspects paragraphs pinned into a floating frame, where
 the author rather than the layout engine decides the available room; flowed
@@ -195,6 +196,27 @@ box; an overlap has to cost real text before it is worth a warning.
 SVG text bounds needs no estimate: the baseline and the viewBox are both
 authored numbers, and text below the canvas is dropped from the PDF text layer
 as well as the page, so it escapes search, copy and screen readers.
+
+The line-box rule guards the other half of the legibility floor. `font.size`
+stops at 8pt because smaller type cannot be read; the box the glyphs sit in has
+no floor of its own, so `{ "type": "exactly", "value": 1 }` on 8pt text is a
+schema-valid 1pt line. It fires only on `exactly`, which pins an absolute
+height — `atLeast` and the multiples can only ever be as tall as the text needs
+— and only on a paragraph or heading that has text: an empty paragraph with a
+collapsed box is how a thin spacer is drawn, and the stock templates draw them
+that way.
+
+The floor is relative, at 0.7 em: cap height on the faces the stock templates
+use, and below every legitimate value in the reference corpus, whose tightest
+exact box is 10pt on 12pt type. Tight display leading is a real technique and
+stays silent. The repair grows the box to one em rather than to the floor,
+because a box at the floor still collides with the line below it: rendered at
+8pt, stacked lines touch at 0.7 and 0.8 em, clear at 0.9 and are clean at 1.0.
+The size compared against is the one Word will lay out — authored, from
+`componentDefaults`, or inherited from the paragraph style.
+
+Table cells are out of scope: a cell's row can grow past its line box, so the
+same geometry there is not the same defect.
 
 Table analysis accounts for the actual section width and margins. It reports a
 repair patch only when every column width is explicit, because proportional

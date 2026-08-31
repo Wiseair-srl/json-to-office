@@ -9,6 +9,7 @@ import {
 import type {
   DocxFrameTextFact,
   DocxHeadingFact,
+  DocxLineBoxFact,
   DocxQualityFact,
   DocxQualityModel,
   DocxSvgTextFact,
@@ -445,6 +446,86 @@ export const docxSvgTextBoundsRule: QualityRule<
       }),
 };
 
+/**
+ * Cap height as a fraction of the em — the point below which an exact line box
+ * starts eating the capitals of the line it holds.
+ *
+ * `font.size` is floored at 8pt because type below it cannot be read; the same
+ * reasoning applies to the box the glyphs sit in, except that the box has no
+ * absolute floor to give it. An empty spacer paragraph legitimately pins 2pt,
+ * and display type legitimately pins less than the font size: the tightest
+ * exact box in the reference corpus is 10pt on 12pt type (0.83), and 0.95 is
+ * routine. So the floor is relative, and it sits at cap height — 0.716 em on
+ * Arial and Helvetica, 0.727 on Inter, 0.70 on Poppins and DM Sans. Below it
+ * the ink of the very line the box holds is cut off, in any face.
+ */
+const LINE_BOX_MIN_RATIO = 0.7;
+
+/** Points, to one decimal — enough for a line box, and stable to print. */
+function tenths(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+export const docxLineBoxRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
+  id: 'docx/line-box',
+  code: QUALITY_CODES.LINE_BOX_COLLAPSE,
+  category: 'legibility',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'measured',
+  formats: ['docx'],
+  defaultParameters: { minimumLineBoxRatio: LINE_BOX_MIN_RATIO },
+  evaluate: ({ facts, configuration }) => {
+    const ratio = numberParameter(
+      configuration.parameters,
+      'minimumLineBoxRatio',
+      LINE_BOX_MIN_RATIO
+    );
+    return facts
+      .filter((fact): fact is DocxLineBoxFact => fact.kind === 'docx/line-box')
+      .flatMap((fact) => {
+        const floorPt = Math.ceil(fact.fontSizePt * ratio * 10) / 10;
+        if (fact.lineBoxPt >= floorPt) return [];
+        // The floor says where the geometry is indefensible; the repair has to
+        // land somewhere that renders. One em is the first box holding the
+        // type's full nominal extent, and rendered 8pt body copy agrees:
+        // stacked lines still touch at 0.7 and 0.8 em, clear at 0.9, and are
+        // clean at 1.0.
+        const repairPt = tenths(fact.fontSizePt);
+        const inherited = fact.fontSizeAuthored
+          ? ''
+          : ' inherited from the paragraph style';
+        return [
+          {
+            message: `An exact ${tenths(fact.lineBoxPt)}pt line box holds ${tenths(fact.fontSizePt)}pt text${inherited} — shorter than the capitals it contains, so the lines overlap or lose their tops.`,
+            path: fact.path,
+            suggestion: `Set the box to at least ${repairPt}pt — as tall as the type it holds — or use "atLeast" so the line grows to fit the text.${fact.patchable ? '' : ' This box is not stated on the component: it arrives through `componentDefaults` and has to be repaired there.'}`,
+            context: {
+              lineBoxPt: tenths(fact.lineBoxPt),
+              fontSizePt: tenths(fact.fontSizePt),
+              capHeightFloorPt: floorPt,
+            },
+            evidence: {
+              actual: tenths(fact.lineBoxPt),
+              expected: floorPt,
+              unit: 'pt',
+            },
+            // Only when the pointer exists in the authored document: a box
+            // arriving through `componentDefaults` has to be repaired there.
+            ...(fact.patchable && {
+              fixes: [
+                {
+                  op: 'add' as const,
+                  path: `${fact.path}/value`,
+                  value: repairPt,
+                },
+              ],
+            }),
+          },
+        ];
+      });
+  },
+};
+
 export const DOCX_QUALITY_RULES: QualityRulePack<
   DocxQualityModel,
   DocxQualityFact
@@ -456,6 +537,7 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxTextFitRule,
     docxFrameCollisionRule,
     docxSvgTextBoundsRule,
+    docxLineBoxRule,
   ],
 };
 

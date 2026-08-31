@@ -84,7 +84,9 @@ Two caveats:
 - **The number is cached at generation time.** Word recomputes every field on open (the document sets `updateFields`), but headless LibreOffice — and therefore the PDF export — shows the cached value, so a `[@id]` in a PDF reflects the document as generated. `[@id]` (relative) is the approximation: its true value depends on where the reference sits, which only Word resolves.
 - **A reference the pre-pass cannot resolve degrades rather than breaking.** An unknown id renders as the literal `[@id]` text with a warning — never as Word's "Error! Reference source not found". A target that exists but carries no number (a bullet-list item, an unnumbered heading) gets a real field with no cached value: blank until the reader updates fields, and a warning suggesting `:none`.
 
-The `font` prop, where present, is a partial font override with the same fields as a theme font definition: `family`, `size` (8–72), `color`, `bold`, `fontWeight` (100–900, wins over `bold`), `italic`, `underline`, `lineSpacing`, `spacing`, `characterSpacing` (`{ type: 'condensed' | 'expanded', value }`).
+The `font` prop, where present, is a partial font override with the same fields as a theme font definition: `family`, `size` (8–120), `color`, `bold`, `fontWeight` (100–900, wins over `bold`), `italic`, `underline`, `lineSpacing`, `spacing`, `characterSpacing` (`{ type: 'condensed' | 'expanded', value }`).
+
+In `lineSpacing`, `value` is points for `exactly` and `atLeast` and a multiple of single spacing for `multiple`. `exactly` pins an absolute line box and clips the glyphs to it, and unlike `size` it has no floor — an empty spacer paragraph legitimately pins a fraction of a point. On a paragraph or heading that has text, a box smaller than the type it holds is reported as [`W_QUALITY_LINE_BOX_COLLAPSE`](/guide/design-quality#built-in-docx-rules).
 
 ---
 
