@@ -9,6 +9,7 @@ import JSZip from 'jszip';
 import probe from 'probe-image-size';
 import type { GenerationWarning } from '@json-to-office/shared';
 import { generateBufferFromJson } from '../../core/generator';
+import { rasterizeSvgFallbacks } from '../imageUtils';
 import type { ReportComponentDefinition } from '../../types';
 
 const SVG =
@@ -180,5 +181,51 @@ describe('inline SVG raster fallback', () => {
     expect(media).toHaveLength(1);
     expect(probe.sync(media[0].data)?.width).toBe(1);
     expect(warnings).toEqual([]);
+  });
+
+  it('skips the raster entirely when the caller opts out', async () => {
+    const warnings: GenerationWarning[] = [];
+    const buffer = await generateBufferFromJson(
+      doc({ base64: toDataUri(SVG), width: 200 }),
+      { warnings, svgRasterFallback: false }
+    );
+
+    // docx.js requires the `fallback` slot to be filled, so the vector bytes
+    // go in it — the same thing that ships when a raster cannot be produced.
+    // Word 2016+ and LibreOffice draw the vector either way; only readers old
+    // enough to need the raster lose the image, which is the trade.
+    const media = await mediaOf(buffer);
+    expect(media.every((part) => isSvgBytes(part.data))).toBe(true);
+    expect(
+      media.some((part) => probe.sync(part.data)?.mime === 'image/png')
+    ).toBe(false);
+
+    // Opting out is not a failure, so it must not warn about one.
+    expect(
+      warnings.filter((entry) =>
+        String(entry.context?.code ?? '').startsWith('IMAGE_SVG_RASTER')
+      )
+    ).toEqual([]);
+  });
+
+  it('rasterizes a batch off the main thread', async () => {
+    // `Resvg.render()` is synchronous native code: awaiting it never yields,
+    // so a batch started concurrently would still run one at a time. Going
+    // through `renderAsync` puts each raster on libuv's threadpool, which is
+    // what makes a document of many small SVGs finish in reasonable time.
+    const jobs = Array.from({ length: 8 }, (_, i) => ({
+      key: `job-${i}`,
+      svg: Buffer.from(SVG, 'utf-8'),
+      width: 64,
+      height: 64,
+    }));
+
+    const rasters = await rasterizeSvgFallbacks(jobs);
+    expect(rasters.size).toBe(jobs.length);
+    for (const job of jobs) {
+      expect(probe.sync(rasters.get(job.key)!)?.mime).toBe('image/png');
+    }
+
+    expect((await rasterizeSvgFallbacks(jobs, false)).size).toBe(0);
   });
 });

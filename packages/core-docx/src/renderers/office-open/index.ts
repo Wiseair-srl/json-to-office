@@ -22,7 +22,10 @@ import type {
   DocxIrNote,
 } from '../../ir/types';
 import { spliceChartParts } from './chartParts';
-import { rasterizeSvgFallback } from '../../utils/imageUtils';
+import {
+  rasterizeSvgFallbacks,
+  type SvgFallbackJob,
+} from '../../utils/imageUtils';
 import {
   canonicalizeDocxBuffer,
   resolveGenerationDate,
@@ -122,7 +125,11 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
     capabilities: OFFICE_OPEN_CAPABILITIES,
     async render(ir: DocxIR, options?: DocxRenderOptions): Promise<Uint8Array> {
       const charts: DocxIrChartRun[] = [];
-      const document = await buildDocumentOptions(ir, charts);
+      const document = await buildDocumentOptions(
+        ir,
+        charts,
+        options?.svgRasterFallback
+      );
       const bytes = await backend.generateDocument(document, {
         type: 'uint8array',
       });
@@ -166,14 +173,15 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
  */
 export async function buildDocumentOptions(
   ir: DocxIR,
-  charts: DocxIrChartRun[] = []
+  charts: DocxIrChartRun[] = [],
+  svgRasterFallback?: boolean
 ): Promise<Record<string, unknown>> {
   // One counter for the whole document. `wp:docPr` ids only have to be unique
   // within their part, and numbering across every part is both simpler and
   // strictly stronger — see `EmitContext`.
   let nextDrawingId = 1;
   const ctx: EmitContext = {
-    pictures: await prepareImages(ir),
+    pictures: await prepareImages(ir, svgRasterFallback),
     nextDrawingId: () => nextDrawingId++,
     charts,
   };
@@ -256,24 +264,26 @@ function noteBodies(
  * vector resource is rasterised up front and the factory looks the right one up.
  */
 async function prepareImages(
-  ir: DocxIR
+  ir: DocxIR,
+  svgRasterFallback?: boolean
 ): Promise<ReadonlyMap<string, ImageMediaFactory>> {
   const placements = collectImagePlacements(ir);
-  const rasters = new Map<string, Buffer | undefined>();
+  const jobs: SvgFallbackJob[] = [];
 
   for (const resource of ir.resources) {
     if (resource.kind !== 'image' || resource.mediaType !== 'svg') continue;
     for (const size of placements.get(resource.id) ?? []) {
       const [width, height] = size.split('x').map(Number);
-      rasters.set(
-        `${resource.id}:${size}`,
-        await rasterizeSvgFallback(Buffer.from(resource.bytes), {
-          width,
-          height,
-        })
-      );
+      jobs.push({
+        key: `${resource.id}:${size}`,
+        svg: Buffer.from(resource.bytes),
+        width,
+        height,
+      });
     }
   }
+
+  const rasters = await rasterizeSvgFallbacks(jobs, svgRasterFallback);
 
   const resources = new Map<string, ImageMediaFactory>();
   for (const resource of ir.resources) {

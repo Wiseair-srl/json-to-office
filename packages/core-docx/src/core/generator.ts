@@ -84,6 +84,14 @@ export interface JsonGenerationOptions {
    * produced; anything else is opt-in and may not.
    */
   renderer?: DocxRendererId;
+  /**
+   * Rasterize a PNG fallback for each inline SVG. Defaults to true.
+   *
+   * Only readers older than Word 2016 draw that raster; everything current
+   * draws the vector. Producing it dominates the render of a document whose
+   * artwork is many small SVGs, so it can be turned off.
+   */
+  svgRasterFallback?: boolean;
   /** Canonical prepared model; internal hosts use it to avoid a second prologue. */
   prepared?: PreparedDocument<DocxQualityModel, DocxQualityFact>;
 }
@@ -156,6 +164,9 @@ export async function generateBufferWithWarnings(
       ? { generatedAt: options.generatedAt }
       : {}),
     ...(renderer ? { renderer } : {}),
+    ...(options?.svgRasterFallback !== undefined
+      ? { svgRasterFallback: options.svgRasterFallback }
+      : {}),
     ...(options?.prepared ? { prepared: options.prepared } : {}),
   });
 }

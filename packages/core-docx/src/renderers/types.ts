@@ -36,6 +36,15 @@ export type { DocxRendererId };
  */
 export interface DocxRenderOptions extends RenderOptions {
   warnings?: GenerationWarning[];
+  /**
+   * Rasterize a PNG fallback for each inline SVG. Defaults to true.
+   *
+   * Word 2016+ and LibreOffice draw the vector; the raster is only for readers
+   * older than that. It is also the slowest part of writing a document whose
+   * artwork is many small SVGs, so a caller that does not need those readers
+   * can turn it off and get the render back.
+   */
+  svgRasterFallback?: boolean;
 }
 
 export interface DocxRenderer
