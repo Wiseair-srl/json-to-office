@@ -4,24 +4,24 @@ The complete catalog of DOCX components: what each one does, every prop it accep
 
 ## Overview
 
-| Component                                     | Category                | Children allowed                                                                                           |
-| --------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [`docx`](/reference/docx/document#docx-root)  | container               | `section` only                                                                                             |
-| [`section`](/reference/docx/document#section) | container               | heading, paragraph, image, statistic, table, list, toc, rule, highcharts, chart, visual, columns, text-box |
-| [`columns`](#columns)                         | layout                  | same as section, minus `columns` (no nesting)                                                              |
-| [`text-box`](#text-box)                       | layout                  | heading, paragraph, image, rule                                                                            |
-| [`heading`](#heading)                         | content                 | —                                                                                                          |
-| [`paragraph`](#paragraph)                     | content                 | —                                                                                                          |
-| [`image`](#image)                             | content                 | —                                                                                                          |
-| [`statistic`](#statistic)                     | content                 | —                                                                                                          |
-| [`table`](#table)                             | content                 | — (cells nest components via `content`)                                                                    |
-| [`list`](#list)                               | content                 | —                                                                                                          |
-| [`toc`](#toc)                                 | content                 | —                                                                                                          |
-| [`rule`](#rule)                               | content                 | —                                                                                                          |
-| [`highcharts`](#highcharts)                   | content                 | —                                                                                                          |
-| [`chart`](#chart)                             | content (`office-open`) | —                                                                                                          |
-| [`visual`](#visual)                           | content                 | —                                                                                                          |
-| [`text-space-after`](#text-space-after)       | plugin example (opt-in) | —                                                                                                          |
+| Component                                     | Category                | Children allowed                                                                                              |
+| --------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [`docx`](/reference/docx/document#docx-root)  | container               | `section` only                                                                                                |
+| [`section`](/reference/docx/document#section) | container               | heading, paragraph, image, statistic, table, list, toc, divider, highcharts, chart, visual, columns, text-box |
+| [`columns`](#columns)                         | layout                  | same as section, minus `columns` (no nesting)                                                                 |
+| [`text-box`](#text-box)                       | layout                  | heading, paragraph, image, divider                                                                            |
+| [`heading`](#heading)                         | content                 | —                                                                                                             |
+| [`paragraph`](#paragraph)                     | content                 | —                                                                                                             |
+| [`image`](#image)                             | content                 | —                                                                                                             |
+| [`statistic`](#statistic)                     | content                 | —                                                                                                             |
+| [`table`](#table)                             | content                 | — (cells nest components via `content`)                                                                       |
+| [`list`](#list)                               | content                 | —                                                                                                             |
+| [`toc`](#toc)                                 | content                 | —                                                                                                             |
+| [`divider`](#divider)                         | content                 | —                                                                                                             |
+| [`highcharts`](#highcharts)                   | content                 | —                                                                                                             |
+| [`chart`](#chart)                             | content (`office-open`) | —                                                                                                             |
+| [`visual`](#visual)                           | content                 | —                                                                                                             |
+| [`text-space-after`](#text-space-after)       | plugin example (opt-in) | —                                                                                                             |
 
 Every node is `{ name, props, children? }` plus optional `id` and `enabled` fields; `enabled: false` removes the node from the render. Custom plugin components (see [API reference](/reference/api)) are allowed as children of any container.
 
@@ -251,14 +251,17 @@ A KPI card: a large number with unit, description, and an optional trend indicat
 }
 ```
 
-## `rule`
+## `divider`
 
-A horizontal rule: the thin line a brand system draws between sections.
+A horizontal divider: the thin line a brand system draws between sections.
+Named `divider` rather than `rule`, the typographic term, because "rule" is
+already spent here on the [quality lint](/guide/design-quality) and on OOXML's
+own `lineRule`.
 
-Word has no rule element. It draws one as a paragraph border on an empty
+Word has no divider element. It draws one as a paragraph border on an empty
 paragraph, and that is what this compiles to — a real Word object a reader can
 select and restyle, not a picture of a line. The component also collapses the
-paragraph's own line box, so the rule costs its thickness and its spacing
+paragraph's own line box, so the divider costs its thickness and its spacing
 rather than a full line of invisible type. Hand-rolling that collapse on a
 paragraph that _does_ carry text is what
 [`W_QUALITY_LINE_BOX_COLLAPSE`](/guide/design-quality#built-in-docx-rules)
@@ -269,25 +272,25 @@ reports; this component is the way to draw a line without it.
 | `thickness` | `number` (points, 0.25–12)                          | no       | `1`            | Line weight. OOXML measures borders in eighths of a point     |
 | `color`     | hex or theme token                                  | no       | theme `border` | e.g. `"#E6620C"`, `"accent"`                                  |
 | `style`     | `'solid'` \| `'dashed'` \| `'dotted'` \| `'double'` | no       | `'solid'`      | `double` draws two lines, so it reads about twice as tall     |
-| `width`     | `number` (points) \| `"NN%"`                        | no       | full measure   | How far the rule runs                                         |
-| `alignment` | `'left'` \| `'center'` \| `'right'`                 | no       | `'left'`       | Which end a partial rule sits at; ignored at full width       |
+| `width`     | `number` (points) \| `"NN%"`                        | no       | full measure   | How far the line runs                                         |
+| `alignment` | `'left'` \| `'center'` \| `'right'`                 | no       | `'left'`       | Which end a partial divider sits at; ignored at full width    |
 | `spacing`   | `{ before?, after? }` (points)                      | no       | `6` / `6`      | Room above and below. A separator with no room reads as noise |
 
 ```json
 {
-  "name": "rule",
+  "name": "divider",
   "props": { "thickness": 3, "color": "accent", "width": "40%" }
 }
 ```
 
 A partial `width` becomes paragraph indents — a paragraph border spans the
 measure between the left and right indents, and `alignment` decides which side
-keeps the rule. Resolving a percentage or a point width needs a measure, and
+keeps the line. Resolving a percentage or a point width needs a measure, and
 the only one available at compile time is the theme's page setup, the same
 approximation [`image`](#image) makes for its own percentage widths: inside a
-`columns` block or a re-margined section a partial rule is still measured
-against the page. The default full-measure rule states no indent at all, so it
-is exact wherever it lands. A `width` wider than the measure runs the full
+`columns` block or a re-margined section a partial divider is still measured
+against the page. The default full-measure divider states no indent at all, so
+it is exact wherever it lands. A `width` wider than the measure runs the full
 measure and warns.
 
 To draw a _gap_ rather than a line, use an empty paragraph — that idiom is

@@ -101,8 +101,8 @@ describe('feature requirements', () => {
    *
    * The list shrinking is the goal. It growing means a lowering landed without
    * recording what it needs, which is a capability check that cannot fire.
-   * `borders` left it when `rule` arrived: a paragraph border is what draws a
-   * horizontal rule, so both adapters now declare and test one.
+   * `borders` left it when `divider` arrived: a paragraph border is what
+   * draws a horizontal line, so both adapters now declare and test one.
    */
   it('leaves exactly the unlowered vocabulary unrequired', async () => {
     const compiler = await readFile(

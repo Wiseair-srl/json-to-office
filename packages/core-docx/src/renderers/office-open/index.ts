@@ -59,9 +59,9 @@ const OFFICE_OPEN_DOCX = '@office-open/docx';
  *   reply would flatten into an unrelated top-level comment.
  * - `table-merged-cells`, `shading`, `rtl` — vocabulary the compiler does not
  *   require of any backend yet. Both adapters leave them out so the declared
- *   sets keep meaning "proven by a test". `borders` left that list when `rule`
- *   started requiring it: a paragraph border is what draws a horizontal rule,
- *   and both adapters now emit and test one.
+ *   sets keep meaning "proven by a test". `borders` left that list when
+ *   `divider` started requiring it: a paragraph border is what draws a
+ *   horizontal line, and both adapters now emit and test one.
  */
 const OFFICE_OPEN_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
   'paragraphs',

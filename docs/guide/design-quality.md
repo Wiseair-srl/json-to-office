@@ -218,9 +218,9 @@ a size or names the theme font that carries one.
 
 The finding also names the way out. A collapsed line box is usually not a
 leading mistake but someone drawing a line, because until the
-[`rule`](/reference/docx/components#rule) component there was nothing else to
-draw one with: `font.size` floors at 8pt, so an author after a 3pt rule
-collapsed the box instead. `rule` owns that construction — the same empty
+[`divider`](/reference/docx/components#divider) component there was nothing
+else to draw one with: `font.size` floors at 8pt, so an author after a 3pt line
+collapsed the box instead. `divider` owns that construction — the same empty
 paragraph, the same border, the same collapsed box — on a paragraph with no
 glyphs to clip.
 

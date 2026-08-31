@@ -25,7 +25,7 @@ export * from './statistic';
 export * from './table';
 export * from './list';
 export * from './toc';
-export * from './rule';
+export * from './divider';
 
 // Re-export from the main components file
 export {

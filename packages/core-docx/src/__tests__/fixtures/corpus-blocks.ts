@@ -78,8 +78,8 @@ const columns = (
   children: unknown[]
 ): unknown => ({ name: 'columns', props, children });
 
-const rule = (props?: Record<string, unknown>): unknown =>
-  props === undefined ? { name: 'rule' } : { name: 'rule', props };
+const divider = (props?: Record<string, unknown>): unknown =>
+  props === undefined ? { name: 'divider' } : { name: 'divider', props };
 
 export const CASES: CorpusCase[] = [
   // ==========================================================================
@@ -749,28 +749,28 @@ export const CASES: CorpusCase[] = [
   },
 
   // ==========================================================================
-  // rule
+  // divider
   // ==========================================================================
   {
     // Every prop at its default: the empty paragraph, the collapsed line box
     // and the theme's border colour.
-    name: 'blocks/rule-default',
+    name: 'blocks/divider-default',
     document: doc([
-      section([paragraph('Above.'), rule(), paragraph('Below.')]),
+      section([paragraph('Above.'), divider(), paragraph('Below.')]),
     ]),
   },
   {
     // The whole surface: thickness in eighths of a point, both colour forms,
     // every style, and the indents a partial width resolves to.
-    name: 'blocks/rule-styled',
+    name: 'blocks/divider-styled',
     document: doc([
       section([
-        rule({ thickness: 3, color: 'accent', style: 'solid' }),
-        rule({ thickness: 0.25, color: '#E6620C', style: 'dashed' }),
-        rule({ style: 'dotted', width: '40%' }),
-        rule({ style: 'double', width: '40%', alignment: 'center' }),
-        rule({ width: 144, alignment: 'right', spacing: { before: 0 } }),
-        rule({ spacing: { before: 24, after: 0 } }),
+        divider({ thickness: 3, color: 'accent', style: 'solid' }),
+        divider({ thickness: 0.25, color: '#E6620C', style: 'dashed' }),
+        divider({ style: 'dotted', width: '40%' }),
+        divider({ style: 'double', width: '40%', alignment: 'center' }),
+        divider({ width: 144, alignment: 'right', spacing: { before: 0 } }),
+        divider({ spacing: { before: 24, after: 0 } }),
       ]),
     ]),
   },
