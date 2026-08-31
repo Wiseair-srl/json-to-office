@@ -25,10 +25,10 @@ import {
   EndnoteReferenceRun,
   ExternalHyperlink,
   FootnoteReferenceRun,
+  ImportedXmlComponent,
   InsertedTextRun,
   InternalHyperlink,
   OverlapType,
-  PageNumber,
   Paragraph,
   RelativeHorizontalPosition,
   RelativeVerticalPosition,
@@ -97,17 +97,63 @@ export type EmitResources = ReadonlyMap<string, ImageRunFactory>;
 export type ImageRunFactory = (image: DocxIrImageRun) => ParagraphChild;
 
 /**
- * The field instructions docx.js has a run child for.
+ * The page-number field instructions this adapter writes as a complex field.
  *
- * Anything else would need the begin/instrText/end triple written by hand,
- * which is why an unknown instruction is refused rather than approximated.
+ * Anything else is refused rather than approximated: the set is an allowlist,
+ * not a lookup, so a new instruction has to be added and tested deliberately.
  */
-const PAGE_FIELD: Readonly<
-  Record<string, (typeof PageNumber)[keyof typeof PageNumber]>
-> = {
-  PAGE: PageNumber.CURRENT,
-  NUMPAGES: PageNumber.TOTAL_PAGES,
-};
+const PAGE_FIELDS: ReadonlySet<string> = new Set(['PAGE', 'NUMPAGES']);
+
+/**
+ * One complex field, as one run per field character.
+ *
+ * docx.js has a run child for these (`PageNumber.CURRENT`), but it packs
+ * `begin`, `instrText`, `separate` and `end` into a *single* `w:r`. Word reads
+ * that fine; LibreOffice does not — it computes the page number itself and
+ * paints it with the document default instead of the run's own properties, so
+ * an 8pt grey `Page {PAGE}` footer came out with an 11pt black numeral in
+ * every PDF the preview path produces. Splitting the field characters across
+ * runs that each carry `rPr` is what LibreOffice honours, and it is also the
+ * shape Word itself writes.
+ *
+ * No cached result is written between `separate` and `end`. Nothing in this
+ * pipeline paginates, so the only value we could put there is a fabricated
+ * one — wrong on every page but the first in any reader that shows the cached
+ * result rather than recomputing. An empty result is what docx.js already
+ * emitted, and it is what both Word and LibreOffice recompute on their own.
+ * A cached result is not the fix either way: the single-run shape stays wrong
+ * in LibreOffice even with one present.
+ */
+function complexField(
+  instruction: string,
+  formatting: DocxIrRunFormatting | undefined,
+  leading: IRunOptions
+): ParagraphChild[] {
+  const options = runOptions(formatting);
+  const fieldChar = (
+    type: 'begin' | 'separate' | 'end',
+    extra: IRunOptions = {}
+  ): ParagraphChild =>
+    new TextRun({
+      children: [
+        new ImportedXmlComponent('w:fldChar', { 'w:fldCharType': type }),
+      ],
+      ...options,
+      ...extra,
+    });
+  const instrText = new ImportedXmlComponent('w:instrText', {
+    'xml:space': 'preserve',
+  });
+  instrText.push(instruction);
+  return [
+    // A pending line break rides on the first run of the field, the same way
+    // it rides on the single run every other inline node emits.
+    fieldChar('begin', leading),
+    new TextRun({ children: [instrText], ...options }),
+    fieldChar('separate'),
+    fieldChar('end'),
+  ];
+}
 
 /* ------------------------------------------------------------------ *
  * Runs
@@ -248,18 +294,13 @@ export function inlineChildren(
           out.push(new SimpleField(child.instruction, child.cachedText));
           break;
         }
-        const page = PAGE_FIELD[child.instruction];
-        if (!page) {
+        if (!PAGE_FIELDS.has(child.instruction)) {
           throw new Error(
             `the docxjs renderer has no emitter for the field "${child.instruction}"`
           );
         }
         out.push(
-          new TextRun({
-            children: [page],
-            ...runOptions(child.formatting),
-            ...breakOption(),
-          })
+          ...complexField(child.instruction, child.formatting, breakOption())
         );
         break;
       }
