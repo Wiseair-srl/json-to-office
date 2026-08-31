@@ -1,5 +1,68 @@
 # @json-to-office/shared-docx
 
+## 1.9.0
+
+### Minor Changes
+
+- aaab6ee: New `docx/line-box` rule (`W_QUALITY_LINE_BOX_COLLAPSE`): an `exactly` line box
+  shorter than the capitals of the text it holds. `font.size` is floored at 8pt
+  because smaller type cannot be read, but the box the glyphs sit in had no guard
+  at all, so `{ "type": "exactly", "value": 1 }` on 8pt type validated clean and
+  rendered as a smear of overlapping lines (#291).
+
+  The guard is relative rather than a schema floor, because an absolute floor
+  would be wrong: an empty spacer paragraph legitimately pins 2pt, and the stock
+  templates draw thin gaps that way. It fires only on `exactly` — `atLeast` and
+  the multiples can never be shorter than the text needs — only where there is
+  text to clip, and only below 0.7 em, which is cap height on the faces the stock
+  templates use and below every legitimate value in the reference corpus (whose
+  tightest exact box is 10pt on 12pt type). The repair grows the box to one em,
+  not to the floor: rendered at 8pt, stacked lines still touch at the floor and
+  are clean at one em. Sizes resolve through `componentDefaults` and the
+  paragraph style — its own size, else the theme font it names — so a collapsed
+  box is caught whether or not the component states its own size.
+
+  `lineSpacing.type` and `lineSpacing.value` also gained the descriptions they
+  never had — which unit each rule reads, and why `value` has no floor.
+
+- 6bfe784: New `rule` component: a horizontal rule, the thin line a brand system draws
+  between sections. Follow-up to #291, whose closing note this implements — the
+  route that issue caught (an 8pt paragraph with a 1pt exact line box, wanted as
+  a 3pt rule) existed because nothing else drew a line: `font.size` floors at
+  8pt, `paragraph` has no border, and the alternatives were a `visual`, a
+  bordered `text-box` or a one-row table.
+
+  ```json
+  {
+    "name": "rule",
+    "props": { "thickness": 3, "color": "accent", "width": "40%" }
+  }
+  ```
+
+  `thickness` (points, 0.25–12), `color` (hex or theme token, default the theme's
+  `border`), `style` (solid/dashed/dotted/double), `width` (points or `"NN%"`,
+  default the full measure), `alignment`, `spacing` (default 6pt either side).
+
+  It compiles to what Word itself draws: an empty paragraph wearing a `w:pBdr`
+  bottom border, so the result stays a real Word object rather than a picture of
+  a line. The paragraph's own line box is collapsed to 1pt — the same
+  construction #291 reports when it is hand-rolled on a paragraph carrying text,
+  correct here because there are no glyphs to clip, and done once in the compiler
+  so nobody has to reach for it. A partial `width` becomes paragraph indents,
+  resolved against the theme page like `image`'s percentage widths; the default
+  full-measure rule states no indent at all and is therefore exact wherever it
+  lands.
+
+  `W_QUALITY_LINE_BOX_COLLAPSE` now names the component in its suggestion, which
+  is the point: that finding is usually someone drawing a line, not setting
+  leading.
+
+  Both renderers emit it, from the same IR, byte-identically — `borders` leaves
+  the list of features the compiler could only declare and joins the capability
+  set both adapters prove with a test. `docxjs` gained paragraph-border emission
+  to get there; it had the IR field and dropped it. The empty-paragraph spacer
+  idiom is untouched: that draws a gap, not a rule.
+
 ## 1.7.0
 
 ### Minor Changes
