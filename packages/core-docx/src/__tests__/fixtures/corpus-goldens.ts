@@ -69,9 +69,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'text/no-proof':
     '381fd658ce5787a7cb536bcebb55dfdb6dc691ab88fcb719ef15fc8dbd8a628d',
   'text/link-syntax-literal':
-    'ba5675bd9a948011c0162259e096d791ccb880a5d785cdfc246ff943637b6099',
+    'b7c9076e28b0c8d5b4a17f0cfcd3cdbc250999d9f1acbfe2b95df15aec0e8ff4',
   'text/placeholders':
-    '1f9283c284033d1d7b10aeb1951df329486037d5271233914f1d700a101f2f45',
+    '2a53adf705ebd38a14e24b5328a3803937b35cbbf6a67c29ce39a15c5f17e2cb',
   'text/bookmark-ids':
     '06176b2deabe5a43c2ed4310b7070f34f7c62ca65f9d0b1a597f3452c42a7ca9',
   'text/markdown-lists':
@@ -81,7 +81,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'text/floating-frame':
     '8a7141a34b1b240983eee26609e6863a2200fdd2c038b7edbfa7f822b446168c',
   'text/all-features-combined':
-    '60671d7c17a5e40a1a30c6171b267a1d00014587adbdc608dfba96cd64d0c77f',
+    'e31e4017b48a04718d667315dcd8f6fcb945e81f2223e25f06287b66456f3baa',
   'structure/minimal':
     'be0ad63c44fb932e9af1c0fbcdf540849ef017311076217fd843d77b297a3713',
   'structure/metadata-full':
@@ -125,13 +125,13 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/header-footer-styled':
     '7ce2fe750f42acd9697a08225252bda5c210a54eb2293f1d426ce92f311c123c',
   'structure/footer-page-numbers':
-    '5d06f98e55ca96ef5293c011b807ed08aeb4942847a455255b4f3f35ba9a9c8b',
+    'a61dab2e808b30004d0b12ebdc62fdf2026f734f474b0b94de5320c530bef744',
   'structure/header-footer-date-placeholders':
     '0f395f65e59267c6dcaabb3cbf3e8af08f366d84df862cba6f3d7121090e0bc3',
   'structure/header-image':
     '922ee1948dae7a308c1d3237f9eeaeb7a30861c92854df03175742838b94a0b3',
   'structure/footer-table':
-    'c0f721374726cac7bcfe0812b1a790de231acaa0711baf494572039cb26d86d4',
+    'abfdd7a32d0a3fc6005c1ba3632002f8b925476fe4e16ca41b45941970b51325',
   'structure/columns-count':
     '73adf937de0856c793c06d572dfd0e488284135f293bd9fd5f2bf8c991ed2956',
   'structure/columns-single':
@@ -143,7 +143,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/columns-auto-width':
     '8b333ba40a0ea74e4a379620ee16dd515059fa1416804950177c48561578bb66',
   'structure/columns-between-body':
-    '4d28b0f2e73cefe712cb100327c4d34844ffd1f6187b590e64a0b088d75503cc',
+    'e274607ef8341b59b7d83063532fb929719875d8b4bf1d5e65703ab57c1816b1',
   'headings/levels-all':
     '7e3d72305cf9f3d94059c1160fc10a0796d9751aa21e25c73768ae512848d3b7',
   'headings/level-default-and-empty-text':
@@ -205,9 +205,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'headings/toc-in-columns':
     '02b0b1a1b53a1d2df12f976d927e4479a4e13517102d6f14dc5ad214122bc395',
   'headings/fields-page-numbers':
-    'e8b8bc0dbaa2d9b4a671118981d77ca1304703d6daad9ac06416a22f7a4eb187',
+    '50f82538185e88250aca1c7e6894dd8b2ac969fc33a125490982aae046f6bb30',
   'headings/header-footer-link-to-previous':
-    '33eaff3b4a69c28377952294e09dac09832a4166e04545546162b1dd76857d19',
+    '6653c6f37de21fb99b5e82cceab3f4fd5e130cfc3f15694f57ccd76884989978',
   'lists/bulleted-default':
     'a017d65efb4a5d6eec106fb74065d247a3c36f2ae1b91b75f3ffc6fa5a6a1dca',
   'lists/single-item':
@@ -497,7 +497,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/revision-line-breaks':
     'bd25737a682074a035c4e9d879b4aebfc8c5b905fea45baa67633c32be3de568',
   'annotations/revision-literal-markdown-and-placeholder':
-    'f73b20880007d99afa69916a9848a380bc87991b49dc7663819ca10542093d8e',
+    '830842aa1cc7f3ccca438f4fd794801d10c72748483f4124b831857a58f5346a',
   'annotations/revision-heading':
     'cfa4bdc249e10dfe66d54d3820357a2b6efdfa04d8b1ab1b10fd3a97d7c5fcc4',
   'annotations/revision-list-items':
@@ -565,7 +565,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/no-proof-words':
     'da5ed13283ad1fb39dbbf421ec24ca773240b6a3e50fa0e384e492bac1debf1c',
   'theme/example-proposal':
-    'd45f6362848844db4a9254cd65c5aedc1a0b144aa2fcda0738c324d879eecc71',
+    'ecde6cbbad39806c1e09a17e9b437a35cba2473e7cb36e602b53c9b8fb070f4a',
   'theme/example-technical-guide':
-    'c5694a49810f88dcb32040f49ed384b0e2c03be432b862c2501ae26ec111dc23',
+    '7091bee9361cccf326bacbc8e39f9692d30875c654051e28f52f3d5c3595225a',
 };
