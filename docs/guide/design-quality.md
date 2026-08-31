@@ -216,6 +216,14 @@ The size compared against is the one Word will lay out — authored, from
 `componentDefaults`, or inherited from the paragraph style, which either states
 a size or names the theme font that carries one.
 
+The finding also names the way out. A collapsed line box is usually not a
+leading mistake but someone drawing a line, because until the
+[`rule`](/reference/docx/components#rule) component there was nothing else to
+draw one with: `font.size` floors at 8pt, so an author after a 3pt rule
+collapsed the box instead. `rule` owns that construction — the same empty
+paragraph, the same border, the same collapsed box — on a paragraph with no
+glyphs to clip.
+
 Table cells are out of scope: a cell's row can grow past its line box, so the
 same geometry there is not the same defect.
 

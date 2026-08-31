@@ -78,6 +78,9 @@ const columns = (
   children: unknown[]
 ): unknown => ({ name: 'columns', props, children });
 
+const rule = (props?: Record<string, unknown>): unknown =>
+  props === undefined ? { name: 'rule' } : { name: 'rule', props };
+
 export const CASES: CorpusCase[] = [
   // ==========================================================================
   // image — inline
@@ -741,6 +744,33 @@ export const CASES: CorpusCase[] = [
             width: 300,
           }
         ),
+      ]),
+    ]),
+  },
+
+  // ==========================================================================
+  // rule
+  // ==========================================================================
+  {
+    // Every prop at its default: the empty paragraph, the collapsed line box
+    // and the theme's border colour.
+    name: 'blocks/rule-default',
+    document: doc([
+      section([paragraph('Above.'), rule(), paragraph('Below.')]),
+    ]),
+  },
+  {
+    // The whole surface: thickness in eighths of a point, both colour forms,
+    // every style, and the indents a partial width resolves to.
+    name: 'blocks/rule-styled',
+    document: doc([
+      section([
+        rule({ thickness: 3, color: 'accent', style: 'solid' }),
+        rule({ thickness: 0.25, color: '#E6620C', style: 'dashed' }),
+        rule({ style: 'dotted', width: '40%' }),
+        rule({ style: 'double', width: '40%', alignment: 'center' }),
+        rule({ width: 144, alignment: 'right', spacing: { before: 0 } }),
+        rule({ spacing: { before: 24, after: 0 } }),
       ]),
     ]),
   },

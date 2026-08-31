@@ -30,6 +30,7 @@ import { StatisticPropsSchema } from './components/statistic';
 import { TablePropsSchema, createTablePropsSchema } from './components/table';
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
+import { RulePropsSchema } from './components/rule';
 import { HighchartsPropsSchema } from './components/highcharts';
 import { ChartPropsSchema } from './components/chart';
 import { VisualPropsSchema } from './components/visual';
@@ -168,6 +169,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'table',
         'list',
         'toc',
+        'rule',
         'highcharts',
         'chart',
         'visual',
@@ -190,6 +192,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'table',
         'list',
         'toc',
+        'rule',
         'highcharts',
         'chart',
         'visual',
@@ -203,7 +206,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       name: 'text-box',
       propsSchema: TextBoxPropsSchema,
       hasChildren: true,
-      allowedChildren: ['heading', 'paragraph', 'image'],
+      allowedChildren: ['heading', 'paragraph', 'image', 'rule'],
       category: 'layout',
       description:
         'Floating text container - allows positioning text anywhere on the page with absolute or relative positioning.',
@@ -284,6 +287,14 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       category: 'content',
       description:
         'Table of contents - automatically generates TOC from document headings. Supports depth ranges and custom styles.',
+    },
+    {
+      name: 'rule',
+      propsSchema: RulePropsSchema,
+      hasChildren: false,
+      category: 'content',
+      description:
+        "Horizontal rule - a thin line across the measure, for separating sections. Drawn as a Word paragraph border, so it stays a real Word object. Use this rather than collapsing a paragraph's line spacing to fake one.",
     },
     {
       name: 'highcharts',

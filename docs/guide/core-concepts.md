@@ -56,14 +56,14 @@ Components fall into two categories:
 
 Allowed children per container:
 
-| Format | Container  | Allowed children                                                                                                    |
-| ------ | ---------- | ------------------------------------------------------------------------------------------------------------------- |
-| DOCX   | `docx`     | `section` only                                                                                                      |
-| DOCX   | `section`  | `heading`, `paragraph`, `image`, `statistic`, `table`, `list`, `toc`, `highcharts`, `visual`, `columns`, `text-box` |
-| DOCX   | `columns`  | Same as `section`, minus `columns` (no nested column layouts)                                                       |
-| DOCX   | `text-box` | `heading`, `paragraph`, `image`                                                                                     |
-| PPTX   | `pptx`     | `slide` only                                                                                                        |
-| PPTX   | `slide`    | `text`, `image`, `shape`, `table`, `highcharts`, `chart`                                                            |
+| Format | Container  | Allowed children                                                                                                            |
+| ------ | ---------- | --------------------------------------------------------------------------------------------------------------------------- |
+| DOCX   | `docx`     | `section` only                                                                                                              |
+| DOCX   | `section`  | `heading`, `paragraph`, `image`, `statistic`, `table`, `list`, `toc`, `rule`, `highcharts`, `visual`, `columns`, `text-box` |
+| DOCX   | `columns`  | Same as `section`, minus `columns` (no nested column layouts)                                                               |
+| DOCX   | `text-box` | `heading`, `paragraph`, `image`                                                                                             |
+| PPTX   | `pptx`     | `slide` only                                                                                                                |
+| PPTX   | `slide`    | `text`, `image`, `shape`, `table`, `highcharts`, `chart`                                                                    |
 
 Plugin-defined custom components are additionally allowed as children of any container — the processor expands them into standard components before rendering (see [Architecture](/guide/architecture)).
 
