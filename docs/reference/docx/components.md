@@ -28,13 +28,14 @@ Every node is `{ name, props, children? }` plus optional `id` and `enabled` fiel
 
 Different Word constructs use different native units; json-to-office keeps each prop in its natural unit rather than converting behind your back.
 
-| Where                                                         | Unit                                 |
-| ------------------------------------------------------------- | ------------------------------------ |
-| `spacing` (`before`/`after`), line spacing values             | points                               |
-| Column widths and gaps, table cell padding/height/border size | points (or `"%"` strings)            |
-| Image and text-box `width`/`height`                           | pixels (or `"%"` strings)            |
-| Floating offsets, frame width/height, page margins            | twips (1/20 pt; 1440 twips = 1 inch) |
-| Visual canvas                                                 | inches                               |
+| Where                                                           | Unit                                 |
+| --------------------------------------------------------------- | ------------------------------------ |
+| `spacing` (`before`/`after`), `lineSpacing` `exactly`/`atLeast` | points                               |
+| `lineSpacing` `multiple`, and a bare-number line spacing        | multiples of single spacing          |
+| Column widths and gaps, table cell padding/height/border size   | points (or `"%"` strings)            |
+| Image and text-box `width`/`height`                             | pixels (or `"%"` strings)            |
+| Floating offsets, frame width/height, page margins              | twips (1/20 pt; 1440 twips = 1 inch) |
+| Visual canvas                                                   | inches                               |
 
 `Spacing` is always `{ before?, after? }` with values ≥ 0 in points (lists add an `item` field).
 

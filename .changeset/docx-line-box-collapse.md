@@ -19,8 +19,8 @@ templates use and below every legitimate value in the reference corpus (whose
 tightest exact box is 10pt on 12pt type). The repair grows the box to one em,
 not to the floor: rendered at 8pt, stacked lines still touch at the floor and
 are clean at one em. Sizes resolve through `componentDefaults` and the
-paragraph style, so a collapsed box is caught whether or not the component
-states its own size.
+paragraph style — its own size, else the theme font it names — so a collapsed
+box is caught whether or not the component states its own size.
 
 `lineSpacing.type` and `lineSpacing.value` also gained the descriptions they
 never had — which unit each rule reads, and why `value` has no floor.
