@@ -213,7 +213,8 @@ stays silent. The repair grows the box to one em rather than to the floor,
 because a box at the floor still collides with the line below it: rendered at
 8pt, stacked lines touch at 0.7 and 0.8 em, clear at 0.9 and are clean at 1.0.
 The size compared against is the one Word will lay out — authored, from
-`componentDefaults`, or inherited from the paragraph style.
+`componentDefaults`, or inherited from the paragraph style, which either states
+a size or names the theme font that carries one.
 
 Table cells are out of scope: a cell's row can grow past its line box, so the
 same geometry there is not the same defect.

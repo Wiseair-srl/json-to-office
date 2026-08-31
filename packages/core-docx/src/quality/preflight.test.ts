@@ -800,3 +800,37 @@ describe('exact line boxes', () => {
     expect(findings[0].suggestion).toContain('componentDefaults');
   });
 });
+
+describe('exact line box floor above one em', () => {
+  it('repairs to the configured floor, not to the type size', () => {
+    // A profile may floor above one em. The repair has to clear the floor it
+    // is measured against, or applying it fires the same finding again.
+    const analysis = analyzeDocxQuality(
+      doc([
+        {
+          name: 'paragraph',
+          props: {
+            text: 'Body copy',
+            font: { size: 10, lineSpacing: { type: 'exactly', value: 4 } },
+          },
+        },
+      ]),
+      {
+        profile: {
+          id: 'airy-report',
+          formats: ['docx'],
+          rules: {
+            'docx/line-box': { parameters: { minimumLineBoxRatio: 1.2 } },
+          },
+        },
+      }
+    );
+    expect(analysis.diagnostics[0].fixes).toEqual([
+      {
+        op: 'add',
+        path: '/children/0/props/font/lineSpacing/value',
+        value: 12,
+      },
+    ]);
+  });
+});

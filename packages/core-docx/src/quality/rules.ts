@@ -489,8 +489,9 @@ export const docxLineBoxRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
         // land somewhere that renders. One em is the first box holding the
         // type's full nominal extent, and rendered 8pt body copy agrees:
         // stacked lines still touch at 0.7 and 0.8 em, clear at 0.9, and are
-        // clean at 1.0.
-        const repairPt = tenths(fact.fontSizePt);
+        // clean at 1.0. A profile is free to set a floor above one em, and a
+        // repair that lands under its own floor would just fire again.
+        const repairPt = Math.max(tenths(fact.fontSizePt), floorPt);
         const inherited = fact.fontSizeAuthored
           ? ''
           : ' inherited from the paragraph style';
