@@ -13,7 +13,7 @@
  * which a real clock would make order-dependent on how fast the machine is.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
@@ -307,6 +307,43 @@ describe('closing', () => {
     const read = unwrap(await store.get(handle));
     expect((read.document as any).props.title).toBe('Kept');
   });
+
+  it('still lists the handle after closeAll, which is the way back to it', async () => {
+    const store = build();
+    const { handle } = await open(store);
+    await store.closeAll();
+
+    // `list` hides handles that were closed on purpose. A host reclaiming
+    // memory is not that, and hiding these would leave the recovery path
+    // pointing at nothing.
+    const listed = unwrap(await store.list());
+    expect(listed.records.map((record) => record.handle)).toEqual([handle]);
+  });
+
+  it('reports nothing closed, and keeps the workspace, when the disk refuses', async () => {
+    const store = build();
+    const { handle } = await open(store);
+
+    // A directory that cannot be removed, which is what a permission problem
+    // or a Windows file lock looks like from here.
+    const persistence = createWorkspacePersistenceAt(root);
+    const removal = vi
+      .spyOn(persistence, 'remove')
+      .mockRejectedValue(new Error('EPERM: operation not permitted'));
+    const guarded = createMemoryWorkspaceStore({
+      now: () => clock,
+      persistence,
+    });
+
+    const problem = failed(await guarded.close(handle));
+    expect(problem.code).toBe(WORKSPACE_ERROR_CODES.NOT_CLOSED);
+    expect(problem.message).toMatch(/still open and still on disk/);
+    removal.mockRestore();
+
+    // Nothing was released on the strength of a delete that did not happen.
+    expect(unwrap(await store.get(handle)).record.handle).toBe(handle);
+    expect(await handles()).toEqual([handle]);
+  });
 });
 
 describe('bounds', () => {
@@ -457,6 +494,52 @@ describe('a directory it did not write', () => {
       WORKSPACE_ERROR_CODES.NOT_PERSISTED
     );
     expect(await fs.readdir(scratch)).not.toContain('escaped');
+  });
+
+  it('writes its own document rather than trusting a revision number', async () => {
+    // Two connections on one root, both resuming revision 1 and both
+    // committing revision 2. The file name collides; the content does not.
+    // Trusting the name put one store's document under the other's metadata,
+    // which is worse than either of them simply losing.
+    const first = build();
+    const { handle } = await open(first);
+
+    const second = build();
+    await setTitle(second, handle, 'from second');
+    await setTitle(first, handle, 'from first');
+
+    const reconnected = build();
+    const read = unwrap(await reconnected.get(handle));
+    expect(read.record.revision).toBe(2);
+    // Last writer wins, whole: the document belongs to the metadata beside it.
+    expect((read.document as any).props.title).toBe('from first');
+    expect(read.record.bytes).toBe(
+      Buffer.byteLength(JSON.stringify(read.document))
+    );
+  });
+
+  it('reaps a temporary file an interrupted write left behind', async () => {
+    const store = build();
+    const { handle } = await open(store);
+    const dir = path.join(root, handle);
+
+    const debris = path.join(dir, 'rev-9.json.deadbeef.tmp');
+    await fs.writeFile(debris, '{"name":"docx"}', 'utf8');
+    const live = path.join(dir, 'rev-9.json.feedface.tmp');
+    await fs.writeFile(live, '{"name":"docx"}', 'utf8');
+
+    // Only one of them looks like a write that died: a `.tmp` exists for
+    // milliseconds, so an hour old is debris and anything newer may still
+    // belong to a write in flight on a shared root.
+    const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    await fs.utimes(debris, old, old);
+
+    await setTitle(store, handle, 'sweeps on write');
+
+    const left = (await fs.readdir(dir)).filter((name) =>
+      name.endsWith('.tmp')
+    );
+    expect(left).toEqual([path.basename(live)]);
   });
 
   it('never names a revision file the metadata does not have', async () => {

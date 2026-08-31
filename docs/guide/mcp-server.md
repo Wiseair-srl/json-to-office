@@ -86,7 +86,7 @@ claude mcp add json-to-office -s user \
 
 After a reconnect the agent calls `jto_workspace_list` and gets its handles back — including ones opened by the connection that died — then reads or patches them as usual. Memory stays the fast path; the disk copy only loads when a handle is actually used. Closing a workspace still destroys it, on disk as well, and a revision that could not be written comes back as a `W_WORKSPACE_NOT_PERSISTED` warning with the edit applied. `jto_info.workspaces.persistent` says which mode a connection is in.
 
-The directory holds document JSON in the clear (owner-only), so point it somewhere you would be comfortable leaving drafts. Give each client its own root: two connections sharing one share its handles, and `baseRevision` guards a write against the connection that made it, not against another one editing the same handle at the same time.
+The directory holds document JSON in the clear, so point it somewhere private and check its permissions yourself: the server creates a new root `0o700` and writes files `0o600`, but it leaves an existing directory's permissions alone, and Windows does not enforce those bits. Give each client its own root: two connections sharing one share its handles, and `baseRevision` guards a write against the connection that made it, not against another one editing the same handle at the same time.
 
 ## What the agent gets
 

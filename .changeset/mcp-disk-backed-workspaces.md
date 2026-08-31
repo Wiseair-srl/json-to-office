@@ -25,6 +25,8 @@ revision files each (the head plus its pins), 16 MiB per revision — and a
 revision that cannot be written comes back as a `W_WORKSPACE_NOT_PERSISTED`
 warning with the edit applied, so durability degrades loudly rather than
 silently. Writes are atomic and ordered so the metadata never names a revision
-file that is not there. A `workspace` record gains `persisted`,
+file that is not there, and a close that cannot delete the durable copy fails
+with `E_WORKSPACE_NOT_CLOSED` and releases nothing, rather than reporting a
+destruction that did not happen. A `workspace` record gains `persisted`,
 `jto_workspace_list` gains `persistence`, and `jto_info.workspaces` gains
 `persistent` and `root`.

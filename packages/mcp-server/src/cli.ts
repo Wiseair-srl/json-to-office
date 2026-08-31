@@ -24,22 +24,56 @@ interface ParsedArgs {
   version: boolean;
   help: boolean;
   unknown: string[];
+  /** Flags that were given without a usable value. */
+  missingValue: string[];
+}
+
+/**
+ * A directory-valued flag, or a complaint.
+ *
+ * The naive `argv[++index]` swallows whatever comes next, so
+ * `--workspace-dir --version` silently starts a server whose workspace root is
+ * named "--version" and never prints the version — a path the user did not
+ * choose, made out of an option they did. The end of the argument list is the
+ * same defect with a quieter ending: an `undefined` value falls through to the
+ * environment, so a flag that was meant to be authoritative is simply ignored.
+ * Both are refusals here.
+ */
+function takeValue(
+  argv: readonly string[],
+  index: number
+): { value: string } | undefined {
+  const next = argv[index];
+  if (next === undefined || next.startsWith('-') || next.trim() === '') {
+    return undefined;
+  }
+  return { value: next };
 }
 
 export function parseArgs(argv: readonly string[]): ParsedArgs {
-  const parsed: ParsedArgs = { version: false, help: false, unknown: [] };
+  const parsed: ParsedArgs = {
+    version: false,
+    help: false,
+    unknown: [],
+    missingValue: [],
+  };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--version' || arg === '-v') {
       parsed.version = true;
     } else if (arg === '--help' || arg === '-h') {
       parsed.help = true;
-    } else if (arg === '--output-dir') {
-      parsed.outputDir = argv[++index];
+    } else if (arg === '--output-dir' || arg === '--workspace-dir') {
+      const taken = takeValue(argv, index + 1);
+      if (!taken) {
+        parsed.missingValue.push(arg);
+        continue;
+      }
+      index += 1;
+      if (arg === '--output-dir') parsed.outputDir = taken.value;
+      else parsed.workspaceDir = taken.value;
     } else if (arg.startsWith('--output-dir=')) {
       parsed.outputDir = arg.slice('--output-dir='.length);
-    } else if (arg === '--workspace-dir') {
-      parsed.workspaceDir = argv[++index];
     } else if (arg.startsWith('--workspace-dir=')) {
       parsed.workspaceDir = arg.slice('--workspace-dir='.length);
     } else {
@@ -93,6 +127,13 @@ function main(argv: readonly string[]): void {
   if (args.unknown.length > 0) {
     process.stderr.write(
       `jto-mcp: unknown argument ${args.unknown[0]}\nRun jto-mcp --help.\n`
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (args.missingValue.length > 0) {
+    process.stderr.write(
+      `jto-mcp: ${args.missingValue[0]} needs a directory path.\nRun jto-mcp --help.\n`
     );
     process.exitCode = 1;
     return;

@@ -165,4 +165,47 @@ describe.skipIf(!built)('stdout hygiene', () => {
       stderr: expect.stringContaining('unknown argument'),
     });
   });
+
+  it.each(['--workspace-dir', '--output-dir'])(
+    'does not let %s swallow the option after it',
+    async (flag) => {
+      // Consuming the next token blindly named a directory after an option
+      // the user meant to RUN, and started a server that never exits instead
+      // of printing the version and stopping.
+      const { stdout } = await run(process.execPath, [
+        cliPath,
+        flag,
+        '--version',
+      ]);
+      expect(stdout.trim()).toMatch(/^\d+\.\d+\.\d+|^dev-mode$/);
+    }
+  );
+
+  it.each(['--workspace-dir', '--output-dir'])(
+    'refuses %s when its value is another flag',
+    async (flag) => {
+      await expect(
+        run(process.execPath, [cliPath, flag, '--output-dir=/tmp/jto-x'])
+      ).rejects.toMatchObject({
+        code: 1,
+        stdout: '',
+        stderr: expect.stringContaining(`${flag} needs a directory path`),
+      });
+    }
+  );
+
+  it.each(['--workspace-dir', '--output-dir'])(
+    'refuses a trailing %s with no value',
+    async (flag) => {
+      // Silently falling back to the environment would ignore a flag the user
+      // passed precisely to override it.
+      await expect(
+        run(process.execPath, [cliPath, flag])
+      ).rejects.toMatchObject({
+        code: 1,
+        stdout: '',
+        stderr: expect.stringContaining('needs a directory path'),
+      });
+    }
+  );
 });

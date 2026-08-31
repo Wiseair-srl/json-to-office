@@ -219,7 +219,7 @@ Default budget per connection: 16 open documents, 16 MiB per document, 64 MiB in
 - `jto_workspace_close` deletes the durable copy too. It is the one operation that is meant to destroy work, so it still does.
 - The root is bounded: 32 workspaces (least-recently-updated dropped first), 9 revision files per workspace — the head plus its pins — and 16 MiB per revision. A revision that cannot be written comes back with a `W_WORKSPACE_NOT_PERSISTED` warning and the edit still applies: durability degrades loudly, never silently, and never at the cost of the edit.
 
-Handles become cross-connection when this is on, so point it at a directory you would be comfortable leaving documents in — it holds the JSON in the clear, owner-only, until something closes the workspace or the workspace ceiling evicts it. Two connections sharing a root also share its handles, and each keeps its own memory copy: `baseRevision` still guards a write against the connection that made it, not against another one editing the same handle at the same time. One root per client is the arrangement this is built for.
+Handles become cross-connection when this is on, so point it at a directory you would be comfortable leaving documents in: it holds the JSON in the clear until something closes the workspace or the workspace ceiling evicts it. The server creates the root `0o700` and writes files `0o600`, but it does not touch the permissions of a directory that already exists, and Windows does not honour those bits at all — so pick a private location and check its ACLs rather than relying on the server for that. Two connections sharing a root also share its handles, and each keeps its own memory copy: `baseRevision` still guards a write against the connection that made it, not against another one editing the same handle at the same time. One root per client is the arrangement this is built for.
 
 **`jto_workspace_create`** — in: `format` (required), `document` (omit to open an empty skeleton and patch into it), `title` (your own label). Out: `workspace`. Nothing is validated here.
 
@@ -299,6 +299,7 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `E_WORKSPACES_UNAVAILABLE`         | Workspaces are switched off for this connection.                                                            |
 | `E_WORKSPACE_EVICTED`              | The handle was released by the idle TTL.                                                                    |
 | `E_WORKSPACE_LIMIT`                | The connection's workspace or byte budget is full.                                                          |
+| `E_WORKSPACE_NOT_CLOSED`           | The durable copy could not be deleted, so nothing was closed. The workspace is still open.                  |
 | `E_DOCUMENT_TOO_LARGE`             | One document is over `maxDocumentBytes`.                                                                    |
 | `E_PATCH_SYNTAX`                   | An operation is malformed.                                                                                  |
 | `E_INVALID_POINTER`                | A JSON Pointer is not RFC 6901.                                                                             |
