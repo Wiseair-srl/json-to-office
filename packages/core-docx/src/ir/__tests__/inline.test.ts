@@ -261,6 +261,66 @@ describe('bracket syntaxes', () => {
   });
 });
 
+describe('escapes', () => {
+  it.each([
+    ['\\*', '*'],
+    ['\\_', '_'],
+    ['\\[', '['],
+    ['\\]', ']'],
+    ['\\{', '{'],
+    ['\\}', '}'],
+    ['\\\\', '\\'],
+  ])('reads %s as the character itself', (written, rendered) => {
+    expect(shape(parseInline(`a ${written} b`, { base }))).toEqual([
+      `a ${rendered} b`,
+    ]);
+  });
+
+  it('keeps an escaped identifier out of the decorator grammar', () => {
+    // The reason escapes exist: two underscores in a code sample used to read
+    // as an emphasis pair and swallow their own delimiters.
+    const nodes = parseInline('grant\\_type=client\\_credentials', { base });
+    expect(shape(nodes)).toEqual(['grant_type=client_credentials']);
+    expect(emphasis(nodes)).toEqual(['-']);
+  });
+
+  it('leaves the decorators around an escape working', () => {
+    const nodes = parseInline('**a\\_b** and *c*', { base });
+    expect(shape(nodes)).toEqual(['a_b', ' and ', 'c']);
+    expect(emphasis(nodes)).toEqual(['b', '-', 'i']);
+  });
+
+  it('escapes a link and a placeholder out of their syntaxes', () => {
+    expect(
+      shape(
+        parseInline('\\[not a link\\](x) and \\{PAGE\\}', {
+          base,
+          hyperlinks: true,
+          resolvePlaceholder: () => ({ kind: 'text', text: 'resolved' }),
+        })
+      )
+    ).toEqual(['[not a link](x) and {PAGE}']);
+  });
+
+  it('ends an escape at one character, so \\\\_ still opens emphasis', () => {
+    const nodes = parseInline('a \\\\_b_ c', { base });
+    expect(shape(nodes)).toEqual(['a \\', 'b', ' c']);
+    expect(emphasis(nodes)).toEqual(['-', 'i', '-']);
+  });
+
+  it('leaves a backslash before anything else alone', () => {
+    expect(shape(parseInline('C:\\temp and 50\\% done', { base }))).toEqual([
+      'C:\\temp and 50\\% done',
+    ]);
+  });
+
+  it('does not unescape on the literal path, which promises verbatim text', () => {
+    expect(shape(parseLiteral('grant\\_type', { base }))).toEqual([
+      'grant\\_type',
+    ]);
+  });
+});
+
 describe('literal text', () => {
   it('renders every character as written, brackets and all', () => {
     expect(

@@ -44,6 +44,14 @@ Different Word constructs use different native units; json-to-office keeps each 
 
 `heading` and `paragraph` text supports inline markdown (`**bold**`, `*italic*`, `***bold italic***`, `_underscore variants_`), `\n` line breaks, `[text](url)` hyperlinks (internal bookmark links when the URL starts with `#`), `[@id]` cross-references (below), and the placeholders `{PAGE}`, `{TOTAL_PAGES}`, `{DATE}`, `{DATETIME}`, `{YEAR}`. Unknown placeholders are kept as literal text. All text is Unicode NFC-normalized. Image and visual captions support the bold/italic subset.
 
+#### Escaping
+
+A backslash before `*`, `_`, `[`, `]`, `{`, `}` or `\` keeps that character as itself instead of opening syntax. Everything else — `C:\temp`, `50\%` — leaves the backslash alone, so existing text is unaffected.
+
+This matters most for code samples, where the delimiters are ordinary identifier characters: `grant_type=client_credentials` has two underscores, so the span between them reads as emphasis and renders as _granttype=clientcredentials_. Written `grant\_type=client\_credentials`, it renders as typed. In JSON, remember the string escape too — `"grant\\_type"`.
+
+An escape covers exactly one character: `\\_x_` is a literal backslash followed by an emphasized `x`. Escapes are a feature of the inline mini-language, so the paths that render text character for character (image and visual captions) keep the backslash.
+
 #### Cross-references
 
 `[@id]` inserts a Word `REF` field pointing at a [numbered heading](#heading-numbering) or a [list item](#list) that declares an `id`. It renders as the target's number and hyperlinks to it, so the number follows the target when sections are reordered.

@@ -99,8 +99,12 @@ export const CASES: CorpusCase[] = [
       p({ text: 'Identifier snake_case_name and file_name_here.txt.' }),
       // Markers hugging the edges of the paragraph.
       p({ text: '*edge* middle *edge*' }),
-      // Escape-looking backslashes are not escapes here.
-      p({ text: 'Backslash \\*not escaped\\* stays literal.' }),
+      // A backslash escapes the marker that follows it.
+      p({ text: 'Escaped \\*not italic\\* stays literal.' }),
+      // A backslash before anything else is just a backslash.
+      p({ text: 'Path C:\\temp and 50\\% are untouched.' }),
+      // Code, the reason escapes exist: two underscores would pair.
+      p({ text: 'Escaped grant\\_type=client\\_credentials reads as typed.' }),
     ]),
   },
   {
