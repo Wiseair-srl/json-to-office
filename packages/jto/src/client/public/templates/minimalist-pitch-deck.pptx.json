@@ -968,13 +968,327 @@
           }
         },
         {
-          "name": "image",
+          "name": "shape",
           "props": {
-            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 347 184\"><line x1=\"0\" y1=\"0.0\" x2=\"347\" y2=\"0.0\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"18.44\" x2=\"347\" y2=\"18.44\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"36.88\" x2=\"347\" y2=\"36.88\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"55.32\" x2=\"347\" y2=\"55.32\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"73.76\" x2=\"347\" y2=\"73.76\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"92.2\" x2=\"347\" y2=\"92.2\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"110.64\" x2=\"347\" y2=\"110.64\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"129.08\" x2=\"347\" y2=\"129.08\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"147.52\" x2=\"347\" y2=\"147.52\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"165.96\" x2=\"347\" y2=\"165.96\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"184.4\" x2=\"347\" y2=\"184.4\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><line x1=\"0\" y1=\"0\" x2=\"0\" y2=\"184\" stroke=\"#F0F0F0\" stroke-width=\"1.4\"/><polyline points=\"42,6 140,123 231,150 332,73\" fill=\"none\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><polyline points=\"42,77 137,29 234,92 331,150\" fill=\"none\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/><circle cx=\"42\" cy=\"6\" r=\"3\" fill=\"#E7AFA1\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><circle cx=\"140\" cy=\"123\" r=\"3\" fill=\"#E7AFA1\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><circle cx=\"231\" cy=\"150\" r=\"3\" fill=\"#E7AFA1\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><circle cx=\"332\" cy=\"73\" r=\"3\" fill=\"#E7AFA1\" stroke=\"#F0CDC4\" stroke-width=\"2.1\"/><circle cx=\"42\" cy=\"77\" r=\"3\" fill=\"#3C44E3\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/><circle cx=\"137\" cy=\"29\" r=\"3\" fill=\"#3C44E3\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/><circle cx=\"234\" cy=\"92\" r=\"3\" fill=\"#3C44E3\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/><circle cx=\"331\" cy=\"150\" r=\"3\" fill=\"#3C44E3\" stroke=\"#3C44E3\" stroke-width=\"2.1\"/></svg>",
+            "type": "line",
             "x": 6.01,
             "y": 0.75,
             "w": 3.471,
-            "h": 1.844
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 0.9348,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 1.1196,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 1.3044,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 1.4892,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 1.674,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 1.8588,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 2.0436,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 2.2284,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 2.4132,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 2.598,
+            "w": 3.471,
+            "h": 0,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 6.01,
+            "y": 0.75,
+            "w": 0,
+            "h": 1.844,
+            "line": {
+              "color": "F0F0F0",
+              "width": 1.01
+            }
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"40.95 4.95 292.1 146.1\"><polyline points=\"42,6 140,123 231,150 332,73\" fill=\"none\" stroke=\"#F0CDC4\" stroke-width=\"2.1\" /></svg>",
+            "x": 6.4196,
+            "y": 0.7996,
+            "w": 2.9218,
+            "h": 1.4642
+          }
+        },
+        {
+          "name": "image",
+          "props": {
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"40.95 27.95 291.1 123.1\"><polyline points=\"42,77 137,29 234,92 331,150\" fill=\"none\" stroke=\"#3C44E3\" stroke-width=\"2.1\" /></svg>",
+            "x": 6.4196,
+            "y": 1.0301,
+            "w": 2.9118,
+            "h": 1.2337
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 6.4001,
+            "y": 0.7801,
+            "w": 0.06,
+            "h": 0.0601,
+            "fill": {
+              "color": "E7AFA1"
+            },
+            "line": {
+              "color": "F0CDC4",
+              "width": 1.51
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 7.3804,
+            "y": 1.9526,
+            "w": 0.06,
+            "h": 0.0601,
+            "fill": {
+              "color": "E7AFA1"
+            },
+            "line": {
+              "color": "F0CDC4",
+              "width": 1.51
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 8.2907,
+            "y": 2.2232,
+            "w": 0.06,
+            "h": 0.0601,
+            "fill": {
+              "color": "E7AFA1"
+            },
+            "line": {
+              "color": "F0CDC4",
+              "width": 1.51
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 9.3009,
+            "y": 1.4515,
+            "w": 0.06,
+            "h": 0.0601,
+            "fill": {
+              "color": "E7AFA1"
+            },
+            "line": {
+              "color": "F0CDC4",
+              "width": 1.51
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 6.4001,
+            "y": 1.4916,
+            "w": 0.06,
+            "h": 0.0601,
+            "fill": {
+              "color": "3C44E3"
+            },
+            "line": {
+              "color": "3C44E3",
+              "width": 1.51
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 7.3504,
+            "y": 1.0106,
+            "w": 0.06,
+            "h": 0.0601,
+            "fill": {
+              "color": "3C44E3"
+            },
+            "line": {
+              "color": "3C44E3",
+              "width": 1.51
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 8.3207,
+            "y": 1.6419,
+            "w": 0.06,
+            "h": 0.0601,
+            "fill": {
+              "color": "3C44E3"
+            },
+            "line": {
+              "color": "3C44E3",
+              "width": 1.51
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "ellipse",
+            "x": 9.2909,
+            "y": 2.2232,
+            "w": 0.06,
+            "h": 0.0601,
+            "fill": {
+              "color": "3C44E3"
+            },
+            "line": {
+              "color": "3C44E3",
+              "width": 1.51
+            }
           }
         },
         {
@@ -2712,13 +3026,123 @@
       },
       "children": [
         {
-          "name": "image",
+          "name": "shape",
           "props": {
-            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 501 262\"><rect x=\"46\" y=\"0\" width=\"410\" height=\"16\" rx=\"7\" fill=\"#3C44E3\"/><rect x=\"46\" y=\"2\" width=\"410\" height=\"249\" rx=\"7\" fill=\"#F0CDC4\"/><rect x=\"48\" y=\"4\" width=\"406\" height=\"239\" fill=\"#000000\"/><rect x=\"48\" y=\"243\" width=\"406\" height=\"7\" fill=\"#212121\"/><rect x=\"46\" y=\"250\" width=\"410\" height=\"1\" fill=\"#131313\"/><rect x=\"0\" y=\"251\" width=\"209\" height=\"3.5\" fill=\"#A7A7A7\"/><rect x=\"208\" y=\"251\" width=\"84\" height=\"3.5\" fill=\"#838180\"/><rect x=\"292\" y=\"251\" width=\"209\" height=\"3.5\" fill=\"#818181\"/><rect x=\"0\" y=\"254\" width=\"501\" height=\"8\" rx=\"4\" fill=\"#575554\"/></svg>",
-            "x": 5.0,
+            "type": "roundRect",
+            "x": 5.4603,
             "y": 2.71,
+            "w": 4.1025,
+            "h": 0.1597,
+            "rectRadius": 0.07,
+            "fill": {
+              "color": "3C44E3"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "x": 5.4603,
+            "y": 2.73,
+            "w": 4.1025,
+            "h": 2.4852,
+            "rectRadius": 0.07,
+            "fill": {
+              "color": "F0CDC4"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.4803,
+            "y": 2.7499,
+            "w": 4.0624,
+            "h": 2.3854,
+            "fill": {
+              "color": "000000"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.4803,
+            "y": 5.1354,
+            "w": 4.0624,
+            "h": 0.0699,
+            "fill": {
+              "color": "212121"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5.4603,
+            "y": 5.2052,
+            "w": 4.1025,
+            "h": 0.01,
+            "fill": {
+              "color": "131313"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 5,
+            "y": 5.2152,
+            "w": 2.0913,
+            "h": 0.0349,
+            "fill": {
+              "color": "A7A7A7"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.0812,
+            "y": 5.2152,
+            "w": 0.8405,
+            "h": 0.0349,
+            "fill": {
+              "color": "838180"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "rect",
+            "x": 7.9217,
+            "y": 5.2152,
+            "w": 2.0913,
+            "h": 0.0349,
+            "fill": {
+              "color": "818181"
+            }
+          }
+        },
+        {
+          "name": "shape",
+          "props": {
+            "type": "roundRect",
+            "x": 5,
+            "y": 5.2452,
             "w": 5.013,
-            "h": 2.615
+            "h": 0.0798,
+            "rectRadius": 0.04,
+            "fill": {
+              "color": "575554"
+            }
           }
         },
         {

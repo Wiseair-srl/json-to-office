@@ -59,8 +59,10 @@ const KNOWN_TRUE_FINDINGS: Readonly<Record<string, readonly string[]>> = {
     'W_QUALITY_TEXT_CONTRAST at /children/9/children/21',
     'W_QUALITY_TEXT_CONTRAST at /children/12/children/6',
     'W_QUALITY_TEXT_CONTRAST at /children/12/children/7',
-    'W_QUALITY_TEXT_CONTRAST at /children/13/children/6',
-    'W_QUALITY_TEXT_CONTRAST at /children/13/children/7',
+    // Same two boxes as ever on the laptop-mockup slide; the mockup itself
+    // became nine native shapes, which moved every later index along by eight.
+    'W_QUALITY_TEXT_CONTRAST at /children/13/children/14',
+    'W_QUALITY_TEXT_CONTRAST at /children/13/children/15',
     'W_QUALITY_TEXT_CONTRAST at /children/14/children/11',
     'W_QUALITY_TEXT_CONTRAST at /children/17/children/6',
     'W_QUALITY_TEXT_CONTRAST at /children/17/children/8',
