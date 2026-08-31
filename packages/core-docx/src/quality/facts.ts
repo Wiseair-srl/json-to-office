@@ -20,6 +20,8 @@ import {
   type ResolvedDocumentTree,
 } from '../core/structure';
 import { normalizeDocument } from '../json/normalizer';
+import { resolveFontSize } from '../styles/utils/styleHelpers';
+import { getThemeStyles } from '../themes/defaults';
 import { relativeLengthToTwips } from '../utils/widthUtils';
 
 type Rec = Record<string, unknown>;
@@ -112,11 +114,34 @@ export interface DocxSvgTextFact extends QualityFact {
   viewBoxHeight: number;
 }
 
+/**
+ * A paragraph or heading whose line box is pinned with `exactly` — the one
+ * line-spacing form that is an absolute height rather than a floor the line may
+ * grow past. `atLeast` and the multiples can only ever be as tall as the text
+ * needs; an exact box keeps its stated height and the glyphs are clipped to it.
+ */
+export interface DocxLineBoxFact extends QualityFact {
+  kind: 'docx/line-box';
+  /** The pinned box, in points. */
+  lineBoxPt: number;
+  /** Size of the text inside it: authored, defaulted, or from the style. */
+  fontSizePt: number;
+  /** Whether the size came from the component rather than the paragraph style. */
+  fontSizeAuthored: boolean;
+  /**
+   * Whether `path` addresses a member of the authored document. A line box
+   * arriving through `componentDefaults` has no such member, and an RFC 6902
+   * `add` under a parent that does not exist fails instead of repairing.
+   */
+  patchable: boolean;
+}
+
 export type DocxQualityFact =
   | DocxTableWidthFact
   | DocxHeadingFact
   | DocxFrameTextFact
-  | DocxSvgTextFact;
+  | DocxSvgTextFact
+  | DocxLineBoxFact;
 
 export interface DocxQualityModel {
   authored: ReportComponentDefinition;
@@ -261,6 +286,130 @@ function characterSpacingPt(spacing: unknown): number {
   return rule.type === 'condensed'
     ? -value / TWIPS_PER_POINT
     : value / TWIPS_PER_POINT;
+}
+
+/**
+ * Whether `pointer` addresses a member of `root`. Tokens here are the fixed
+ * names and array indices this walk builds, so RFC 6901 escaping never arises.
+ */
+function pointerExists(root: unknown, pointer: string): boolean {
+  let current: unknown = root;
+  for (const token of pointer.split('/').slice(1)) {
+    if (Array.isArray(current)) {
+      const index = Number(token);
+      if (!Number.isInteger(index)) return false;
+      current = current[index];
+      continue;
+    }
+    const record = asRecord(current);
+    if (!record) return false;
+    current = record[token];
+  }
+  return current !== undefined;
+}
+
+/**
+ * The theme style a component inherits its run size from when it states none.
+ * Mirrors the compiler: a heading takes `heading{level}`, a paragraph takes its
+ * `themeStyle` — including the display-only heading clones, which are built
+ * from the same style — and everything else falls back to `normal`.
+ */
+function styleKey(node: Rec, props: Rec): string {
+  if (node.name === 'heading') {
+    return `heading${finiteNumber(props.level) ?? 1}`;
+  }
+  return typeof props.themeStyle === 'string' && props.themeStyle !== ''
+    ? props.themeStyle
+    : 'normal';
+}
+
+/** The theme's styles and font table, resolved once for the whole walk. */
+interface Typography {
+  styles: Rec;
+  theme: ThemeConfig;
+}
+
+/**
+ * Size of the text a line box has to hold. An unstated size is not unknown
+ * here the way it is for frame geometry: the run inherits the paragraph style,
+ * which is the size Word will lay out, and the collapsed-box question cannot
+ * be asked without it. The style states a size or names a theme font that
+ * carries one — the same two steps the compiler takes.
+ */
+function effectiveFontSize(
+  node: Rec,
+  props: Rec,
+  typography: Typography
+): { fontSizePt: number; authored: boolean } | undefined {
+  const authored = finiteNumber(asRecord(props.font)?.size);
+  if (authored !== undefined) return { fontSizePt: authored, authored: true };
+  const { styles, theme } = typography;
+  const style =
+    asRecord(styles[styleKey(node, props)]) ?? asRecord(styles.normal);
+  const stated = finiteNumber(style?.size);
+  if (stated !== undefined) return { fontSizePt: stated, authored: false };
+  const reference =
+    style?.font === 'heading' ||
+    style?.font === 'body' ||
+    style?.font === 'mono' ||
+    style?.font === 'light'
+      ? style.font
+      : undefined;
+  const inherited = resolveFontSize(theme, reference);
+  return inherited === undefined
+    ? undefined
+    : { fontSizePt: inherited, authored: false };
+}
+
+/**
+ * The absolute line box a component pins, with the pointer that states it.
+ * `compileSpacing` reads the top-level spelling before the one under `font`,
+ * so a top-level rule that is not `exactly` hides an exact box below it.
+ */
+function pinnedLineBox(
+  props: Rec,
+  path: string
+): { lineBoxPt: number; pointer: string } | undefined {
+  const candidates: ReadonlyArray<[unknown, string]> = [
+    [props.lineSpacing, `${path}/props/lineSpacing`],
+    [asRecord(props.font)?.lineSpacing, `${path}/props/font/lineSpacing`],
+  ];
+  for (const [spacing, pointer] of candidates) {
+    if (spacing === undefined) continue;
+    // A bare number is a multiple of single spacing, never an absolute box.
+    const rule = asRecord(spacing);
+    if (rule?.type !== 'exactly') return undefined;
+    const lineBoxPt = finiteNumber(rule.value);
+    return lineBoxPt === undefined ? undefined : { lineBoxPt, pointer };
+  }
+  return undefined;
+}
+
+function lineBoxFact(
+  node: Rec,
+  props: Rec,
+  path: string,
+  typography: Typography,
+  authored: unknown
+): DocxLineBoxFact | undefined {
+  // No glyphs, nothing to clip: an empty paragraph with a collapsed box is how
+  // a thin spacer rule is drawn, and the stock templates draw them that way.
+  if (typeof props.text !== 'string' || props.text.trim() === '') {
+    return undefined;
+  }
+  const pinned = pinnedLineBox(props, path);
+  if (!pinned) return undefined;
+  const size = effectiveFontSize(node, props, typography);
+  if (size === undefined) return undefined;
+  return {
+    id: `docx:line-box:${path}`,
+    kind: 'docx/line-box',
+    path: pinned.pointer,
+    lineBoxPt: pinned.lineBoxPt,
+    fontSizePt: size.fontSizePt,
+    fontSizeAuthored: size.authored,
+    patchable: pointerExists(authored, pinned.pointer),
+  };
 }
 
 /**
@@ -429,6 +578,10 @@ export function prepareDocxQualityDocument(
     });
   const resolved = resolveDocumentTree(context.document, context.theme);
   const basePage = pageBox(resolved.theme, context.themeName);
+  const typography: Typography = {
+    styles: getThemeStyles(resolved.theme) as Rec,
+    theme: resolved.theme,
+  };
   const facts: DocxQualityFact[] = [];
   const provenance: Record<string, ProvenanceMap[string]> = {};
   let previousHeadingLevel: number | undefined;
@@ -476,6 +629,11 @@ export function prepareDocxQualityDocument(
         const fact = frameTextFact(props, path, page, chainId, flowIndex);
         if (fact) addFact(fact);
       }
+    }
+
+    if (node.name === 'paragraph' || node.name === 'heading') {
+      const fact = lineBoxFact(node, props, path, typography, context.document);
+      if (fact) addFact(fact);
     }
 
     if (node.name === 'image' || node.name === 'visual') {

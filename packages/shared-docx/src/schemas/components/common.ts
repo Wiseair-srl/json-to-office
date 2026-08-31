@@ -115,14 +115,26 @@ export const BorderSchema = Type.Object(
 
 export const LineSpacingSchema = Type.Object(
   {
-    type: Type.Union([
-      Type.Literal('single'),
-      Type.Literal('atLeast'),
-      Type.Literal('exactly'),
-      Type.Literal('double'),
-      Type.Literal('multiple'),
-    ]),
-    value: Type.Optional(Type.Number({ minimum: 0 })),
+    type: Type.Union(
+      [
+        Type.Literal('single'),
+        Type.Literal('atLeast'),
+        Type.Literal('exactly'),
+        Type.Literal('double'),
+        Type.Literal('multiple'),
+      ],
+      {
+        description:
+          '`single`/`double` ignore `value`; `multiple` scales single spacing by it; `atLeast` is a floor the line grows past; `exactly` pins an absolute box the glyphs are clipped to.',
+      }
+    ),
+    value: Type.Optional(
+      Type.Number({
+        minimum: 0,
+        description:
+          'Points for `exactly` and `atLeast`, a factor of single spacing for `multiple`. `exactly` has no floor of its own — an empty spacer paragraph legitimately pins a fraction of a point — so a box smaller than the text it holds is accepted here and clips it.',
+      })
+    ),
   },
   { description: 'Line spacing configuration', additionalProperties: false }
 );
