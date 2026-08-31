@@ -6,6 +6,10 @@ function makeFont(opts: {
   usWeightClass: number;
   name17?: string;
   name2?: string;
+  /** nameID 1 — the family the bytes claim. */
+  name1?: string;
+  /** nameID 16 — typographic family, when the face ships one. */
+  name16?: string;
   /** OS/2.fsType at offset +8 (default 0 = installable/no restriction). */
   fsType?: number;
 }): Buffer {
@@ -16,6 +20,10 @@ function makeFont(opts: {
   };
 
   const records: Array<{ nameID: number; bytes: Buffer }> = [];
+  if (opts.name1 !== undefined)
+    records.push({ nameID: 1, bytes: encode16(opts.name1) });
+  if (opts.name16 !== undefined)
+    records.push({ nameID: 16, bytes: encode16(opts.name16) });
   if (opts.name17 !== undefined)
     records.push({ nameID: 17, bytes: encode16(opts.name17) });
   if (opts.name2 !== undefined)
@@ -191,5 +199,47 @@ describe('validateFontMetadata', () => {
     // usWeightClass matches requested → no weight mismatch. No subfamily
     // expectation for non-standard weights.
     expect(diags).toEqual([]);
+  });
+});
+
+describe('validateFontMetadata — family name', () => {
+  it('flags bytes that answer to a different family than they were resolved as', () => {
+    // The Inter case: an instance of InterVariable.ttf still calls itself
+    // "Inter Variable", so a run saying `rFonts w:ascii="Inter"` finds
+    // nothing. FontRegistry repairs this before validating; a diagnostic
+    // here means the repair could not run.
+    const font = makeFont({
+      usWeightClass: 400,
+      name1: 'Inter Variable',
+      name2: 'Regular',
+      name17: 'Regular',
+    });
+    const diags = validateFontMetadata(font, 400, false, 'Inter');
+    expect(diags.map((d) => d.code)).toContain('FAMILY_MISMATCH');
+    expect(diags.find((d) => d.code === 'FAMILY_MISMATCH')?.message).toContain(
+      'Inter Variable'
+    );
+  });
+
+  it('accepts a match on the typographic family (nameID 16)', () => {
+    // A weight shipped as its own family names itself "Life Sans Medium" in
+    // nameID 1 while nameID 16 still says "Life Sans". Registered under the
+    // typographic name it is perfectly reachable — not a defect.
+    const font = makeFont({
+      usWeightClass: 500,
+      name1: 'Life Sans Medium',
+      name16: 'Life Sans',
+      name2: 'Regular',
+      name17: 'Medium',
+    });
+    const diags = validateFontMetadata(font, 500, false, 'Life Sans');
+    expect(diags.map((d) => d.code)).not.toContain('FAMILY_MISMATCH');
+  });
+
+  it('stays quiet when the font declares no family at all', () => {
+    // Nothing to contradict, and nothing the repair could have fixed.
+    const font = makeFont({ usWeightClass: 400, name2: 'Regular' });
+    const diags = validateFontMetadata(font, 400, false, 'Anything');
+    expect(diags.map((d) => d.code)).not.toContain('FAMILY_MISMATCH');
   });
 });

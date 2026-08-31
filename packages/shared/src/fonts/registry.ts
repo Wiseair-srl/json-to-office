@@ -20,6 +20,11 @@ import { loadDataFontSource } from './sources/data-loader';
 import { fetchGoogleFontSources } from './sources/google-fetcher';
 import { fetchUrlFontSource } from './sources/url-fetcher';
 import { validateFontMetadata } from './sources/ttf-validate';
+import {
+  readFontFamilyNames,
+  rewriteFontFamilyName,
+  standardSubfamilyNames,
+} from './sources/ttf-name';
 import { FontMemoryCache } from './cache/memory-cache';
 
 /**
@@ -86,6 +91,52 @@ export interface FontRegistryInput {
    * its `fs.promises.readFile` bootstrap) into client bundles.
    */
   variableLoader?: FontVariableLoader;
+}
+
+/**
+ * Make the bytes declare the family they were resolved as.
+ *
+ * `ResolvedFont.family` is a claim about the bytes that every consumer
+ * relies on and that nothing used to enforce. A host — Core Text,
+ * fontconfig, GDI — finds a face by the family in its `name` table, never
+ * by the registry entry or the filename, so a source whose name table says
+ * something else is unreachable from the runs that reference it. It fails
+ * silently: on a machine that happens to have the real family installed the
+ * reference lands there instead, and only a host without it (a container,
+ * a colleague's laptop) shows the fallback.
+ *
+ * The case that forced this: Inter resolves through an upstream override
+ * that instances `InterVariable.ttf` per weight, and harfbuzz keeps the
+ * master's name table — so every instance called itself "Inter Variable".
+ * The weighted faces were saved by the preview stager renaming them to
+ * "Inter Medium" / "Inter SemiBold" on the way out; weights 400 and 700
+ * kept the family name unchanged (they ride the run's bold/italic toggles
+ * instead), so those alone were staged under a name no run asks for.
+ *
+ * Matching on ANY declared name (family or typographic family) keeps a
+ * legitimately-named static untouched: LifeSans-Medium.ttf registered as
+ * "Life Sans" already answers to it via nameID 16, even though nameID 1
+ * says "Life Sans Medium". Only bytes that answer to nothing get rewritten.
+ */
+function stampResolvedFamily(
+  source: ResolvedFontSource,
+  family: string
+): ResolvedFontSource {
+  if (source.format !== 'ttf' && source.format !== 'otf') return source;
+  const declared = readFontFamilyNames(source.data);
+  // Nothing declared: no claim to contradict, and nothing to repair against.
+  if (declared.length === 0 || declared.includes(family)) return source;
+  // The style this face occupies within `family`. The family IDs become
+  // `family` for all four RIBBI faces, so full/PostScript names have to
+  // carry the style or roman and italic collide on both.
+  const subfamily = standardSubfamilyNames(
+    source.weight,
+    source.italic
+  )?.legacy;
+  return {
+    ...source,
+    data: rewriteFontFamilyName(source.data, family, subfamily),
+  };
 }
 
 export class FontRegistry {
@@ -155,7 +206,8 @@ export class FontRegistry {
     for (const source of entry.sources) {
       try {
         const materialized = await this.materializeSource(source, warnings);
-        for (const s of materialized) {
+        for (const raw of materialized) {
+          const s = stampResolvedFamily(raw, entry.family);
           if (s.format === 'ttf' || s.format === 'otf') {
             for (const d of validateFontMetadata(
               s.data,

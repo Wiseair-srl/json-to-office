@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import {
+  legacySubfamilyName,
+  readFontFamilyNames,
   rewriteFontFamilyName,
   rewriteFontSubfamilyNames,
   standardSubfamilyNames,
@@ -85,6 +87,46 @@ describe('rewriteFontFamilyName', () => {
     for (const s of psNames) expect(s).toBe('SynthLight');
   });
 
+  it('keeps full + PostScript names distinct across a family when given a subfamily', () => {
+    // The four RIBBI faces share one family name and are told apart by the
+    // style bits, so nameID 4/6 have to carry the style or roman and italic
+    // become indistinguishable — Core Text may then refuse to register the
+    // second of the pair at all.
+    const roman = readNameStrings(rewriteFontFamilyName(original, 'Inter'));
+    const italic = readNameStrings(
+      rewriteFontFamilyName(original, 'Inter', 'Italic')
+    );
+    const boldItalic = readNameStrings(
+      rewriteFontFamilyName(original, 'Inter', 'Bold Italic')
+    );
+
+    // Family IDs are the family alone, in every face.
+    for (const names of [roman, italic, boldItalic]) {
+      for (const id of [1, 16]) {
+        for (const s of names.get(id) ?? []) expect(s).toBe('Inter');
+      }
+    }
+    for (const s of roman.get(4) ?? []) expect(s).toBe('Inter');
+    for (const s of italic.get(4) ?? []) expect(s).toBe('Inter Italic');
+    for (const s of boldItalic.get(4) ?? [])
+      expect(s).toBe('Inter Bold Italic');
+    for (const s of roman.get(6) ?? []) expect(s).toBe('Inter');
+    for (const s of italic.get(6) ?? []) expect(s).toBe('Inter-Italic');
+    for (const s of boldItalic.get(6) ?? []) {
+      expect(s).toBe('Inter-BoldItalic');
+    }
+  });
+
+  it('treats an explicit "Regular" subfamily as no suffix at all', () => {
+    // A family's default face is named after the family, not "X Regular" —
+    // and this is the path every weight-synthesized alias takes ("Inter
+    // Medium" is the Regular member of its own family), so it must stay
+    // byte-identical to the no-subfamily call.
+    const bare = rewriteFontFamilyName(original, 'Inter Medium');
+    const regular = rewriteFontFamilyName(original, 'Inter Medium', 'Regular');
+    expect(regular.equals(bare)).toBe(true);
+  });
+
   it('leaves other name records untouched', () => {
     const out = rewriteFontFamilyName(original, 'Whatever');
     const before = readNameStrings(original);
@@ -110,10 +152,12 @@ describe('rewriteFontFamilyName', () => {
   it('produces bytes that validateFontMetadata can still parse', () => {
     // Original fixture passes validation for weight 500 (Medium, non-italic).
     // Rewriting the family name must not perturb OS/2 or name records other
-    // than the targeted family IDs, so diagnostics should be identical.
-    const before = validateFontMetadata(original, 500, false, 'LifeSans');
+    // than the targeted family IDs, so diagnostics should be identical. Each
+    // side is validated under the family its bytes actually declare, so the
+    // comparison isn't smuggling a FAMILY_MISMATCH through both.
+    const before = validateFontMetadata(original, 500, false, 'Life Sans');
     const out = rewriteFontFamilyName(original, 'Synth Medium');
-    const after = validateFontMetadata(out, 500, false, 'SynthMedium');
+    const after = validateFontMetadata(out, 500, false, 'Synth Medium');
     // Same set of diagnostic codes — name rewrite is orthogonal to OS/2
     // and subfamily (nameID 2/17) checks.
     expect(after.map((d) => d.code).sort()).toEqual(
@@ -253,5 +297,38 @@ describe('format-1 name tables', () => {
   it('still rewrites an ordinary format-0 table', () => {
     const input = Buffer.from(readFileSync(FIXTURE));
     expect(rewriteFontFamilyName(input, 'Renamed')).not.toEqual(input);
+  });
+});
+
+describe('readFontFamilyNames', () => {
+  const original = readFileSync(FIXTURE);
+
+  it('reports every distinct family name the font declares', () => {
+    // The fixture is a Medium shipped as its own family: nameID 1 says
+    // "Life Sans Medium" while nameID 16 still says "Life Sans". Both are
+    // legitimate ways to reach it, so both have to come back.
+    const declared = readFontFamilyNames(original);
+    expect(declared).toContain('Life Sans Medium');
+    expect(declared).toContain('Life Sans');
+    // Deduped across the platform records that repeat each string.
+    expect(new Set(declared).size).toBe(declared.length);
+  });
+
+  it('reads back whatever rewriteFontFamilyName just stamped', () => {
+    const out = rewriteFontFamilyName(original, 'Inter', 'Italic');
+    expect(readFontFamilyNames(out)).toEqual(['Inter']);
+  });
+
+  it('returns nothing for bytes with no readable name table', () => {
+    expect(readFontFamilyNames(Buffer.from('not a font'))).toEqual([]);
+  });
+});
+
+describe('legacySubfamilyName', () => {
+  it('maps the bold/italic pair onto the four-style vocabulary', () => {
+    expect(legacySubfamilyName(false, false)).toBe('Regular');
+    expect(legacySubfamilyName(false, true)).toBe('Italic');
+    expect(legacySubfamilyName(true, false)).toBe('Bold');
+    expect(legacySubfamilyName(true, true)).toBe('Bold Italic');
   });
 });

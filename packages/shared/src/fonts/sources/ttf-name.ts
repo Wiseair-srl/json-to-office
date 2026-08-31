@@ -1,13 +1,13 @@
 /**
- * Name-table rewriting for TTF/OTF sfnt fonts. Two public transforms share
- * the rebuild machinery:
+ * Name-table reading and rewriting for TTF/OTF sfnt fonts. Two public
+ * transforms share the rebuild machinery, plus one reader:
  *
  * - `rewriteFontFamilyName` — rewrite `nameID` 1 / 4 / 6 / 16 to a
- *   synthetic family name. Used by the preview-side font stagers so that
- *   running-text references like `"Inter Light"` resolve to the correct
- *   face when the stager registers it with Core Text / fontconfig / GDI
- *   (all of which index by the font's internal `name` table rather than
- *   the filename).
+ *   synthetic family name. Used by `FontRegistry` (so resolved bytes
+ *   declare the family they were resolved as) and by the preview-side
+ *   font stagers (so running-text references like `"Inter Light"` resolve
+ *   to the correct face). Core Text / fontconfig / GDI all index by the
+ *   font's internal `name` table rather than the filename.
  *
  * - `rewriteFontSubfamilyNames` — rewrite `nameID` 2 / 17 to the standard
  *   subfamily strings for a (weight, italic) pair. Used by the variable-
@@ -15,6 +15,10 @@
  *   verbatim, so an instanced Bold would otherwise keep the variable
  *   font's default-instance "Regular" subfamily and trip
  *   `validateFontMetadata`.
+ *
+ * - `readNameRecords` / `readFontFamilyNames` — the reading half, shared
+ *   with `validateFontMetadata` so the checker and the writer cannot
+ *   drift on how a name record is located or decoded.
  *
  * Each transform rebuilds the whole font: new `name` table bytes, new
  * table directory with shifted offsets, recomputed per-table checksums,
@@ -265,26 +269,154 @@ function rewriteNameTable(
   return out;
 }
 
+/** One decoded `name` record: where it came from and what it says. */
+export interface DecodedNameRecord {
+  platformID: number;
+  nameID: number;
+  value: string;
+}
+
+/** Byte range of `tag`'s table within `input`, or null. */
+function findTable(
+  input: Buffer,
+  tag: string
+): { offset: number; length: number } | null {
+  if (input.length < 12) return null;
+  const numTables = input.readUInt16BE(4);
+  for (let i = 0; i < numTables; i += 1) {
+    const eo = 12 + i * 16;
+    if (eo + 16 > input.length) return null;
+    if (input.toString('ascii', eo, eo + 4) === tag) {
+      return {
+        offset: input.readUInt32BE(eo + 8),
+        length: input.readUInt32BE(eo + 12),
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Read the `name` records a font carries, optionally narrowed to `wanted`
+ * nameIDs. Tolerant of malformed tables — a record that would read past the
+ * buffer ends the scan rather than throwing, because these bytes come off
+ * the network.
+ *
+ * Shared with `validateFontMetadata` so the checker and the rewriters above
+ * cannot disagree about what a font declares.
+ */
+export function readNameRecords(
+  input: Buffer,
+  wanted?: Set<number>
+): DecodedNameRecord[] {
+  const nt = findTable(input, 'name');
+  if (!nt) return [];
+  const tableOff = nt.offset;
+  if (tableOff + 6 > input.length) return [];
+  const count = input.readUInt16BE(tableOff + 2);
+  const storage = tableOff + input.readUInt16BE(tableOff + 4);
+  const out: DecodedNameRecord[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const ro = tableOff + 6 + i * 12;
+    if (ro + 12 > input.length) break;
+    const platformID = input.readUInt16BE(ro);
+    const nameID = input.readUInt16BE(ro + 6);
+    if (wanted && !wanted.has(nameID)) continue;
+    const length = input.readUInt16BE(ro + 8);
+    const offset = input.readUInt16BE(ro + 10);
+    const raw = input.slice(storage + offset, storage + offset + length);
+    let value: string;
+    if (platformID === 1) {
+      value = raw.toString('ascii');
+    } else {
+      // UTF-16BE. Buffer has no utf16be decoder — swap to LE and decode.
+      const swapped = Buffer.from(raw);
+      if (swapped.length % 2 === 0) swapped.swap16();
+      value = swapped.toString('utf16le');
+    }
+    out.push({ platformID, nameID, value });
+  }
+  return out;
+}
+
+/**
+ * Every distinct family name a font declares — `nameID` 1 (family) and 16
+ * (typographic/preferred family), deduped, in record order.
+ *
+ * Both count: a weight shipped as its own family names itself "Life Sans
+ * Medium" in nameID 1 while nameID 16 still says "Life Sans", and either
+ * is a legitimate way for a consumer to find it. Callers asking "do these
+ * bytes answer to family X?" must therefore accept a match on either.
+ */
+export function readFontFamilyNames(input: Buffer): string[] {
+  const out: string[] = [];
+  for (const r of readNameRecords(input, FAMILY_LOOKUP_IDS)) {
+    const value = r.value.trim();
+    if (value.length > 0 && !out.includes(value)) out.push(value);
+  }
+  return out;
+}
+
+const FAMILY_LOOKUP_IDS = new Set<number>([1, 16]);
+
+/**
+ * The RIBBI style label a face carries alongside its family name — the
+ * four-style vocabulary `nameID` 2 is restricted to. Used to build the
+ * full (`nameID` 4) and PostScript (`nameID` 6) names, which must stay
+ * distinct across the faces of one family.
+ */
+export function legacySubfamilyName(
+  bold: boolean,
+  italic: boolean
+): 'Regular' | 'Italic' | 'Bold' | 'Bold Italic' {
+  if (bold) return italic ? 'Bold Italic' : 'Bold';
+  return italic ? 'Italic' : 'Regular';
+}
+
 /**
  * Return a copy of `input` whose name table has `nameID` 1/4/6/16 rewritten
  * to `newFamily`. Returns the original buffer unchanged if the font has no
  * `name` table or the sfnt header is invalid.
+ *
+ * `subfamily` is the RIBBI style this face occupies *within* `newFamily`.
+ * The family IDs (1/16) always become `newFamily` alone, but the full name
+ * (4) and PostScript name (6) take the style as a suffix, so the four faces
+ * of one family stay individually addressable — "Inter" / "Inter Italic" /
+ * "Inter Bold" / "Inter Bold Italic", PostScript "Inter" / "Inter-Italic" /
+ * … Two faces sharing a PostScript name is malformed, and Core Text may
+ * refuse the second registration outright.
+ *
+ * Omitted (or "Regular") reproduces the historical behaviour — every
+ * targeted ID becomes `newFamily` — which is correct for a face staged
+ * under a weight-synthesized family of its own ("Inter Medium"), where the
+ * face IS that family's Regular member.
  */
 export function rewriteFontFamilyName(
   input: Buffer,
-  newFamily: string
+  newFamily: string,
+  subfamily?: string
 ): Buffer {
+  // "Regular" is the absence of a style suffix, not a suffix reading
+  // "Regular" — a family's default face is named after the family alone.
+  const style = subfamily && subfamily !== 'Regular' ? subfamily : '';
+  const fullName = style ? `${newFamily} ${style}` : newFamily;
   // PostScript names (nameID 6) are restricted to printable ASCII 33-126
   // minus `[](){}<>/%` per the OpenType spec — fold spaces out and strip
-  // any forbidden chars so Word doesn't silently reject the font.
+  // any forbidden chars so Word doesn't silently reject the font. The
+  // style rides as a hyphenated suffix, the convention every shipped
+  // family uses ("Inter-BoldItalic").
   const psForbidden = /[[\](){}<>/%]/g;
   // eslint-disable-next-line no-control-regex
-  const isAscii = /^[\x00-\x7f]*$/.test(newFamily);
-  const psName = newFamily
-    .replace(/\s+/g, '')
-    .replace(psForbidden, '')
-    // eslint-disable-next-line no-control-regex
-    .replace(/[^\x21-\x7e]/g, '');
+  const isAscii = /^[\x00-\x7f]*$/.test(fullName);
+  const psSafe = (s: string): string =>
+    s
+      .replace(/\s+/g, '')
+      .replace(psForbidden, '')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[^\x21-\x7e]/g, '');
+  const psName = style
+    ? `${psSafe(newFamily)}-${psSafe(style)}`
+    : psSafe(newFamily);
   return rewriteNameTable(input, (r) => {
     if (!FAMILY_NAME_IDS.has(r.nameID)) return { action: 'keep' };
     // Platform 1 (Macintosh Roman) only round-trips ASCII. For non-ASCII
@@ -294,7 +426,9 @@ export function rewriteFontFamilyName(
     // platforms 0 (Unicode) and 3 (Microsoft) carry the UTF-16 form and
     // are what modern consumers prefer anyway.
     if (r.platformID === 1 && !isAscii) return { action: 'drop' };
-    return { action: 'set', value: r.nameID === 6 ? psName : newFamily };
+    if (r.nameID === 6) return { action: 'set', value: psName };
+    if (r.nameID === 4) return { action: 'set', value: fullName };
+    return { action: 'set', value: newFamily };
   });
 }
 
@@ -326,14 +460,7 @@ export function standardSubfamilyNames(
   if (!base) return null;
   return {
     typographic: italic ? `${base} Italic` : base,
-    legacy:
-      weight >= 600
-        ? italic
-          ? 'Bold Italic'
-          : 'Bold'
-        : italic
-          ? 'Italic'
-          : 'Regular',
+    legacy: legacySubfamilyName(weight >= 600, italic),
   };
 }
 

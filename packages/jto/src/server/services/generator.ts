@@ -118,10 +118,28 @@ export function collectReferencedNames(
   return names;
 }
 
+/** A weight the walker will honour: canonical range, numeric. */
+function isReferenceableWeight(v: unknown): v is number {
+  return typeof v === 'number' && v >= 100 && v <= 900;
+}
+
 /**
- * Walk the doc tree + custom themes for `fontWeight` numeric values. Used
+ * Walk the doc tree + custom themes for the weights it references. Used
  * to narrow `autoGoogleFontEntries` so cold-cache runs fetch only the
  * weights the doc actually needs instead of 18 faces per Google family.
+ *
+ * `bold: true` counts as a reference to 700. It is shorthand for exactly
+ * that (see the `fontWeight` schema description), and the compiler resolves
+ * it that way — `applyFontWeightAlias` takes `fontWeight ?? (bold ? 700 :
+ * undefined)`. Collecting only the numeric form made the narrowing lie about
+ * a document that mixes the two: it referenced 500, so the "no explicit
+ * weights" fallback of {400, 700} no longer applied, and the bold runs asked
+ * a host for a face nothing had fetched. Only visible where the family isn't
+ * installed — a container, a colleague's laptop.
+ *
+ * Precedence is per-object, mirroring the compiler: a font that sets both
+ * takes the numeric weight and its `bold` says nothing about which face is
+ * wanted.
  */
 export function collectReferencedWeights(
   config: unknown,
@@ -135,13 +153,12 @@ export function collectReferencedWeights(
       return;
     }
     if (typeof node === 'object') {
-      for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
-        if (
-          k === 'fontWeight' &&
-          typeof v === 'number' &&
-          v >= 100 &&
-          v <= 900
-        ) {
+      const obj = node as Record<string, unknown>;
+      if (obj.bold === true && !isReferenceableWeight(obj.fontWeight)) {
+        weights.add(700);
+      }
+      for (const [k, v] of Object.entries(obj)) {
+        if (k === 'fontWeight' && isReferenceableWeight(v)) {
           weights.add(v);
         } else {
           visit(v);
@@ -241,9 +258,12 @@ export function autoGoogleFontEntries(
     // Narrow the fetched weight set to what the doc actually references.
     // Cold-cache fetches 1 file per (weight × italic) serially — Inter has
     // 18 faces advertised — so docs that only use 400/700 shouldn't pay
-    // for all nine. When the doc references no explicit weights, fall
-    // back to 400/700 (Regular + Bold). When it does, fetch those
-    // weights (intersected with what the family advertises).
+    // for all nine. When the doc references no weight at all — neither a
+    // numeric `fontWeight` nor a `bold: true`, both of which
+    // `collectReferencedWeights` reports — fall back to 400/700 (Regular +
+    // Bold), which also covers weights a bundled theme asks for out of this
+    // walk's sight. When it does, fetch those weights (intersected with
+    // what the family advertises).
     const wanted = (() => {
       if (!referencedWeights || referencedWeights.size === 0) {
         const filtered = match.weights.filter((w) => w === 400 || w === 700);
