@@ -47,7 +47,7 @@ function variantRequired(name: string): string[] {
 }
 
 // Props schemas with no required field: a bare `{ name }` is a valid node.
-const PROPLESS_OK = ['section', 'toc', 'image', 'text-box', 'rule'] as const;
+const PROPLESS_OK = ['section', 'toc', 'image', 'text-box', 'divider'] as const;
 // Props schemas that demand a field: omitting `props` omits that field too.
 const PROPS_REQUIRED = [
   'heading',

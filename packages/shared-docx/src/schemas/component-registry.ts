@@ -30,7 +30,7 @@ import { StatisticPropsSchema } from './components/statistic';
 import { TablePropsSchema, createTablePropsSchema } from './components/table';
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
-import { RulePropsSchema } from './components/rule';
+import { DividerPropsSchema } from './components/divider';
 import { HighchartsPropsSchema } from './components/highcharts';
 import { ChartPropsSchema } from './components/chart';
 import { VisualPropsSchema } from './components/visual';
@@ -169,7 +169,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'table',
         'list',
         'toc',
-        'rule',
+        'divider',
         'highcharts',
         'chart',
         'visual',
@@ -192,7 +192,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'table',
         'list',
         'toc',
-        'rule',
+        'divider',
         'highcharts',
         'chart',
         'visual',
@@ -206,7 +206,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       name: 'text-box',
       propsSchema: TextBoxPropsSchema,
       hasChildren: true,
-      allowedChildren: ['heading', 'paragraph', 'image', 'rule'],
+      allowedChildren: ['heading', 'paragraph', 'image', 'divider'],
       category: 'layout',
       description:
         'Floating text container - allows positioning text anywhere on the page with absolute or relative positioning.',
@@ -289,12 +289,12 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'Table of contents - automatically generates TOC from document headings. Supports depth ranges and custom styles.',
     },
     {
-      name: 'rule',
-      propsSchema: RulePropsSchema,
+      name: 'divider',
+      propsSchema: DividerPropsSchema,
       hasChildren: false,
       category: 'content',
       description:
-        "Horizontal rule - a thin line across the measure, for separating sections. Drawn as a Word paragraph border, so it stays a real Word object. Use this rather than collapsing a paragraph's line spacing to fake one.",
+        "Horizontal divider - a thin line across the measure, for separating sections. Drawn as a Word paragraph border, so it stays a real Word object. Use this rather than collapsing a paragraph's line spacing to fake one.",
     },
     {
       name: 'highcharts',

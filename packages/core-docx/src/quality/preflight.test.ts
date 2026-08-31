@@ -689,7 +689,7 @@ describe('exact line boxes', () => {
       capHeightFloorPt: 5.6,
     });
     // The way out of the incentive, not just the way out of this document.
-    expect(findings[0].suggestion).toContain('"rule" component');
+    expect(findings[0].suggestion).toContain('"divider" component');
     // The repair keeps the exact rule the author asked for and grows the box
     // to one em — the floor says where the geometry is indefensible, but a
     // box at the floor still collides with the line below it.

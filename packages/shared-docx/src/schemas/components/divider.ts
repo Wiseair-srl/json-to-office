@@ -1,22 +1,27 @@
 /**
- * Rule Component Schema
+ * Divider Component Schema
  *
- * A horizontal rule: the thin line a brand system draws between sections.
+ * A horizontal divider: the thin line a brand system draws between sections.
  *
- * Word has no rule element — it draws one as a paragraph border (`w:pBdr`) on
- * an empty paragraph whose line box is collapsed so the paragraph costs no
+ * Word has no divider element — it draws one as a paragraph border (`w:pBdr`)
+ * on an empty paragraph whose line box is collapsed so the paragraph costs no
  * more height than the line itself. That is degenerate text geometry, and
  * authoring it by hand is what `W_QUALITY_LINE_BOX_COLLAPSE` reports: the
- * observed route to a 3pt rule was an 8pt paragraph with a 1pt exact line box,
+ * observed route to a 3pt line was an 8pt paragraph with a 1pt exact line box,
  * which renders as a smear the moment anyone puts text in it. This component
  * owns that construction so nobody has to reach for it.
+ *
+ * Named `divider` rather than `rule`, the typographic term, because this
+ * codebase already spends "rule" on the quality lint — `QualityRule`, rule
+ * packs, rule ids — and on OOXML's own `lineRule`. Component libraries settle
+ * on the same word for the same reason.
  */
 
 import { Type, Static } from '@sinclair/typebox';
 import { SpacingSchema } from './common';
 import { HexColorSchema } from '../font';
 
-export const RulePropsSchema = Type.Object(
+export const DividerPropsSchema = Type.Object(
   {
     thickness: Type.Optional(
       Type.Number({
@@ -46,17 +51,17 @@ export const RulePropsSchema = Type.Object(
         [
           Type.Number({
             minimum: 1,
-            description: 'Rule width in points',
+            description: 'Divider width in points',
           }),
           Type.String({
             pattern: '^\\d+(\\.\\d+)?%$',
             description:
-              'Rule width as a percentage of the text measure (e.g. "40%")',
+              'Divider width as a percentage of the text measure (e.g. "40%")',
           }),
         ],
         {
           description:
-            'How far the rule runs (default: the full text measure). A percentage or a point width is turned into paragraph indents, resolved against the theme page — so a partial rule inside a column or a re-margined section is measured against the page, while the default full-measure rule is exact everywhere.',
+            'How far the line runs (default: the full text measure). A percentage or a point width is turned into paragraph indents, resolved against the theme page — so a partial divider inside a column or a re-margined section is measured against the page, while the default full-measure divider is exact everywhere.',
         }
       )
     ),
@@ -65,7 +70,7 @@ export const RulePropsSchema = Type.Object(
         [Type.Literal('left'), Type.Literal('center'), Type.Literal('right')],
         {
           description:
-            'Which end of the measure a partial rule sits at (default "left"). Ignored at full width.',
+            'Which end of the measure a partial divider sits at (default "left"). Ignored at full width.',
         }
       )
     ),
@@ -73,9 +78,9 @@ export const RulePropsSchema = Type.Object(
   },
   {
     description:
-      'Horizontal rule — a thin line across the measure, drawn as a Word paragraph border so it stays editable in Word.',
+      'Horizontal divider — a thin line across the measure, drawn as a Word paragraph border so it stays editable in Word.',
     additionalProperties: false,
   }
 );
 
-export type RuleProps = Static<typeof RulePropsSchema>;
+export type DividerProps = Static<typeof DividerPropsSchema>;

@@ -21,7 +21,7 @@ import type {
   TablePropsSchema,
   ListPropsSchema,
   TocPropsSchema,
-  RulePropsSchema,
+  DividerPropsSchema,
 } from '../schemas/components';
 
 import type { TextSpaceAfterPropsSchema } from '../schemas/custom-components';
@@ -205,14 +205,14 @@ export interface TocComponent {
 }
 
 /**
- * Rule component with literal name discriminator
+ * Divider component with literal name discriminator
  */
-export interface RuleComponent {
-  name: 'rule';
+export interface DividerComponent {
+  name: 'divider';
   id?: string;
   /** When false, this component is filtered out and not rendered. Defaults to true */
   enabled?: boolean;
-  props?: Static<typeof RulePropsSchema>;
+  props?: Static<typeof DividerPropsSchema>;
 }
 
 // ============================================================================
@@ -252,7 +252,7 @@ export type StandardComponentDefinition =
   | TableComponent
   | ListComponent
   | TocComponent
-  | RuleComponent;
+  | DividerComponent;
 
 /**
  * Array of all standard component names.
@@ -261,13 +261,13 @@ export type StandardComponentDefinition =
 export const STANDARD_COMPONENTS = [
   'chart',
   'columns',
+  'divider',
   'heading',
   'highcharts',
   'image',
   'list',
   'paragraph',
   'docx',
-  'rule',
   'section',
   'statistic',
   'table',
@@ -386,10 +386,10 @@ export function isListComponent(
   return component.name === 'list';
 }
 
-export function isRuleComponent(
+export function isDividerComponent(
   component: ComponentDefinition
-): component is RuleComponent {
-  return component.name === 'rule';
+): component is DividerComponent {
+  return component.name === 'divider';
 }
 
 export function isTocComponent(

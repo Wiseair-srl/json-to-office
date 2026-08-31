@@ -935,8 +935,8 @@ function compileComponent(
       return compileStatistic(component, scope);
     case 'toc':
       return compileToc(component, scope);
-    case 'rule':
-      return compileRule(component, scope);
+    case 'divider':
+      return compileDivider(component, scope);
     case 'text-box':
       return compileTextBox(component, scope);
     case 'columns':
@@ -1847,15 +1847,15 @@ function compileToc(
 }
 
 /* ------------------------------------------------------------------ *
- * Rules
+ * Dividers
  * ------------------------------------------------------------------ */
 
-/** Points. A rule is a separator; with no room around it, it reads as noise. */
-const DEFAULT_RULE_SPACING_PT = 6;
-/** Points. Heavy enough to be a deliberate line, light enough to be a rule. */
-const DEFAULT_RULE_THICKNESS_PT = 1;
+/** Points. A divider separates; with no room around it, it reads as noise. */
+const DEFAULT_DIVIDER_SPACING_PT = 6;
+/** Points. Heavy enough to be deliberate, light enough to be a hairline. */
+const DEFAULT_DIVIDER_THICKNESS_PT = 1;
 /**
- * Twips. The rule's own line box, collapsed.
+ * Twips. The divider's own line box, collapsed.
  *
  * A paragraph border is drawn at the edge of the paragraph, so an empty
  * paragraph carrying one still costs a full line of the style's type — about
@@ -1865,10 +1865,10 @@ const DEFAULT_RULE_THICKNESS_PT = 1;
  * leaves alone. Doing it in the compiler is what keeps authors from doing it
  * by hand on paragraphs that do have text.
  */
-const RULE_LINE_TWIPS = 20;
+const DIVIDER_LINE_TWIPS = 20;
 
 /** The authoring vocabulary is CSS-shaped; `w:val` is not. */
-const RULE_BORDER_STYLE: Readonly<Record<string, string>> = {
+const DIVIDER_BORDER_STYLE: Readonly<Record<string, string>> = {
   solid: 'single',
   dashed: 'dashed',
   dotted: 'dotted',
@@ -1876,21 +1876,21 @@ const RULE_BORDER_STYLE: Readonly<Record<string, string>> = {
 };
 
 /**
- * A horizontal rule: an empty paragraph wearing a bottom border.
+ * A horizontal divider: an empty paragraph wearing a bottom border.
  *
- * Word has no rule element — `w:pBdr` is how Word itself draws one, which is
- * what keeps the result a real Word object a reader can select and restyle
+ * Word has no divider element — `w:pBdr` is how Word itself draws one, which
+ * is what keeps the result a real Word object a reader can select and restyle
  * rather than a picture of a line.
  *
  * Width is indents. A paragraph border spans the measure between the left and
- * right indents, so a partial rule is one with the remainder indented away;
+ * right indents, so a partial divider is one with the remainder indented away;
  * `alignment` decides which side keeps it. Resolving a percentage needs a
  * measure, and the only one available this early is the theme's page setup —
  * the same approximation `image` already makes for its own percentage widths.
- * The default full-measure rule states no indent at all, so it is exact
+ * The default full-measure divider states no indent at all, so it is exact
  * wherever it lands: in a column, in a re-margined section, in a table cell.
  */
-function compileRule(
+function compileDivider(
   component: ComponentDefinition,
   scope: ComponentScope
 ): DocxIrBlock[] {
@@ -1904,7 +1904,7 @@ function compileRule(
       0.25,
       typeof props.thickness === 'number' && Number.isFinite(props.thickness)
         ? props.thickness
-        : DEFAULT_RULE_THICKNESS_PT
+        : DEFAULT_DIVIDER_THICKNESS_PT
     )
   );
 
@@ -1912,11 +1912,11 @@ function compileRule(
   const beforePt =
     typeof spacing.before === 'number' && Number.isFinite(spacing.before)
       ? spacing.before
-      : DEFAULT_RULE_SPACING_PT;
+      : DEFAULT_DIVIDER_SPACING_PT;
   const afterPt =
     typeof spacing.after === 'number' && Number.isFinite(spacing.after)
       ? spacing.after
-      : DEFAULT_RULE_SPACING_PT;
+      : DEFAULT_DIVIDER_SPACING_PT;
 
   return [
     {
@@ -1929,13 +1929,13 @@ function compileRule(
         spacing: {
           beforeTwips: pointsToTwips(beforePt),
           afterTwips: pointsToTwips(afterPt),
-          lineTwips: RULE_LINE_TWIPS,
+          lineTwips: DIVIDER_LINE_TWIPS,
           lineRule: 'exact',
         },
-        ...ruleIndent(props, ctx, path),
+        ...dividerIndent(props, ctx, path),
         borders: {
           bottom: {
-            style: RULE_BORDER_STYLE[String(props.style)] ?? 'single',
+            style: DIVIDER_BORDER_STYLE[String(props.style)] ?? 'single',
             sizeEighthPoints: pointsToEighthPoints(thicknessPt),
             color: irColor(
               resolveColor(String(props.color ?? 'border'), ctx.theme)
@@ -1950,8 +1950,8 @@ function compileRule(
   ];
 }
 
-/** The indents that shorten a rule to `width`, or nothing at full measure. */
-function ruleIndent(
+/** The indents that shorten a divider to `width`, or nothing at full width. */
+function dividerIndent(
   props: Record<string, any>,
   ctx: CompileContext,
   path: string
@@ -1981,8 +1981,8 @@ function ruleIndent(
     if (remainder < 0) {
       warnOnce(
         ctx,
-        'rule',
-        `Rule width ${JSON.stringify(width)} at ${path} is wider than the ${Math.round(measureTwips / 20)}pt text measure; it runs the full measure instead.`
+        'divider',
+        `Divider width ${JSON.stringify(width)} at ${path} is wider than the ${Math.round(measureTwips / 20)}pt text measure; it runs the full measure instead.`
       );
     }
     return {};

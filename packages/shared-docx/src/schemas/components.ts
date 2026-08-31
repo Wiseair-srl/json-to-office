@@ -32,7 +32,7 @@ export * from './components/statistic';
 export * from './components/table';
 export * from './components/list';
 export * from './components/toc';
-export * from './components/rule';
+export * from './components/divider';
 export * from './components/text-box';
 
 // ============================================================================

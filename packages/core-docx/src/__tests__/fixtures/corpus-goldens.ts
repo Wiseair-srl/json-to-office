@@ -444,9 +444,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     '299e544a371648527a5288d0408b0421606acf23421b0e239d8030cf8860df76',
   'blocks/text-box-nested-columns-floating':
     'eea862b91f983644bd196ac2fd3d45e7ea8bbc4f140ddb51e2b60989a81df23e',
-  'blocks/rule-default':
+  'blocks/divider-default':
     'e6fa1260cd072321763707bc39d00218b747a488bce4fa3e14aaa1c743984fd7',
-  'blocks/rule-styled':
+  'blocks/divider-styled':
     '37e8f045d810dbb00b82f15e999ae8fd1c828fc4b6ba870ef9fec50566460d9d',
   'annotations/comment-defaults':
     'd5e5583b860f2fa590cffcf0d5ff166f41d50b8fedb151841143c102df6308bf',
