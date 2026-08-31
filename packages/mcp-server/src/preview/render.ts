@@ -650,6 +650,11 @@ export async function renderPreview(
     const [buffer, versions] = await Promise.all([
       options.getAdapter(format).generateBuffer(document, {
         ...render,
+        // The bytes are on their way to LibreOffice and then to a PNG, and
+        // LibreOffice draws the vector — so the raster fallback every inline
+        // SVG carries for Word before 2016 is never read here. Producing it
+        // dominates a preview whose artwork is many small SVGs.
+        svgRasterFallback: false,
         warnings,
         fonts: {
           onResolved: (fonts) => resolvedFonts.push(...fonts),

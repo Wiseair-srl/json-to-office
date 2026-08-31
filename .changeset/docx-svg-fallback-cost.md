@@ -2,6 +2,8 @@
 '@json-to-office/core-docx': minor
 '@json-to-office/jto-ops': minor
 '@json-to-office/jto-cli': minor
+'@json-to-office/jto': minor
+'@json-to-office/mcp-server': minor
 ---
 
 Inline SVG no longer dominates the cost of rendering a DOCX, and the raster
@@ -33,6 +35,13 @@ Two changes, and the second is the one that matters:
   it — the same thing already shipped when a raster could not be produced — and
   only readers old enough to need the raster lose the image. Default is
   unchanged, so no existing output moves.
+
+Both preview paths take the opt-out, because a preview's answer is a PDF or a
+PNG and LibreOffice draws the vector to make it: the playground's
+`/preview/libreoffice-from-json` and the MCP server's `jto_preview`. Measured
+against the running playground, the stock templates went from 47-62s per
+preview to 5-8s, byte-identical PDFs. Downloads keep the fallback, since those
+bytes go to a reader that may be older than Word 2016.
 
 Corpus goldens digest every byte and none moved, which is also the check that
 `renderAsync` produces the same PNG as `render()`.

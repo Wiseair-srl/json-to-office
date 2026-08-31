@@ -487,6 +487,15 @@ export class GeneratorService {
       'string'
         ? (options as { renderer: string }).renderer
         : undefined;
+    // A preview is rasterized by LibreOffice, which draws the vector — the PNG
+    // fallback that rides along for Word before 2016 is never looked at, and
+    // producing one per inline SVG is the slowest part of the request. Callers
+    // that hand the bytes to a reader instead leave this alone.
+    const svgRasterFallback =
+      typeof (options as { svgRasterFallback?: unknown } | undefined)
+        ?.svgRasterFallback === 'boolean'
+        ? (options as { svgRasterFallback: boolean }).svgRasterFallback
+        : undefined;
     const resolvedFonts: ResolvedFont[] = [];
     const coreWarnings: GenerationWarning[] = [];
     const needsFontOpts =
@@ -570,6 +579,8 @@ export class GeneratorService {
       // Same document, different backend → different bytes. Without this,
       // switching backends would serve the other one's cached buffer.
       renderer: renderer ?? null,
+      // Skipping the fallback changes the bytes, so it has to change the key.
+      svgRasterFallback: svgRasterFallback ?? null,
     };
     const cacheKey = this.cacheService.generateCacheKey(cacheKeyData);
     const hasDynamicContent = this.cacheService.hasDynamicContent(config);
@@ -607,6 +618,7 @@ export class GeneratorService {
         fonts: fontOpts,
         baseDir,
         renderer,
+        ...(svgRasterFallback !== undefined && { svgRasterFallback }),
         warnings: coreWarnings,
         quality,
       });
@@ -617,6 +629,7 @@ export class GeneratorService {
         fonts: fontOpts,
         baseDir,
         renderer,
+        ...(svgRasterFallback !== undefined && { svgRasterFallback }),
         warnings: coreWarnings,
         quality,
         prepared,
