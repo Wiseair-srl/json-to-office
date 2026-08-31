@@ -298,9 +298,18 @@ function findTable(
 
 /**
  * Read the `name` records a font carries, optionally narrowed to `wanted`
- * nameIDs. Tolerant of malformed tables — a record that would read past the
- * buffer ends the scan rather than throwing, because these bytes come off
- * the network.
+ * nameIDs. Tolerant of malformed tables, because these bytes come off the
+ * network: everything is bounded by the `name` table's own extent, not by
+ * the buffer. `Buffer.slice` clamps an out-of-range window silently rather
+ * than throwing, so without that bound a table claiming more records than it
+ * holds decodes the bytes of whatever table follows it, and a record with a
+ * bogus string offset returns a truncated or foreign name.
+ *
+ * A header that would run past the table ends the scan; a single record
+ * whose string does is skipped, since the other records are still readable
+ * and each one stands alone. Either way the name is not reported, which is
+ * the safe direction — a caller asking "do these bytes answer to family X?"
+ * gets no for an unreadable record instead of a coincidental yes.
  *
  * Shared with `validateFontMetadata` so the checker and the rewriters above
  * cannot disagree about what a font declares.
@@ -313,18 +322,27 @@ export function readNameRecords(
   if (!nt) return [];
   const tableOff = nt.offset;
   if (tableOff + 6 > input.length) return [];
+  // The directory may claim a length past the end of a truncated download.
+  const tableEnd = Math.min(tableOff + nt.length, input.length);
   const count = input.readUInt16BE(tableOff + 2);
   const storage = tableOff + input.readUInt16BE(tableOff + 4);
+  // Records occupy exactly the span between the 6-byte header and the string
+  // storage. Bounding them by the table alone is not enough: an inflated
+  // `count` would keep reading 12-byte "records" out of the string heap,
+  // which is inside the table and decodes to plausible-looking garbage.
+  const recordsEnd = Math.min(storage, tableEnd);
   const out: DecodedNameRecord[] = [];
   for (let i = 0; i < count; i += 1) {
     const ro = tableOff + 6 + i * 12;
-    if (ro + 12 > input.length) break;
+    if (ro + 12 > recordsEnd) break;
     const platformID = input.readUInt16BE(ro);
     const nameID = input.readUInt16BE(ro + 6);
     if (wanted && !wanted.has(nameID)) continue;
     const length = input.readUInt16BE(ro + 8);
     const offset = input.readUInt16BE(ro + 10);
-    const raw = input.slice(storage + offset, storage + offset + length);
+    const start = storage + offset;
+    if (start + length > tableEnd) continue;
+    const raw = input.slice(start, start + length);
     let value: string;
     if (platformID === 1) {
       value = raw.toString('ascii');

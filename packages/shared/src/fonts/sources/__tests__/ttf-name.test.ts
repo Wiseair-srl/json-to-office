@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   legacySubfamilyName,
   readFontFamilyNames,
+  readNameRecords,
   rewriteFontFamilyName,
   rewriteFontSubfamilyNames,
   standardSubfamilyNames,
@@ -330,5 +331,51 @@ describe('legacySubfamilyName', () => {
     expect(legacySubfamilyName(false, true)).toBe('Italic');
     expect(legacySubfamilyName(true, false)).toBe('Bold');
     expect(legacySubfamilyName(true, true)).toBe('Bold Italic');
+  });
+});
+
+describe('readNameRecords bounds', () => {
+  const original = readFileSync(FIXTURE);
+
+  it('does not decode records past the end of the name table', () => {
+    // `Buffer.slice` clamps instead of throwing, so a count larger than the
+    // table holds used to walk into whatever table follows and decode its
+    // bytes as name records.
+    const buf = Buffer.from(original);
+    const { offset } = nameTableSpan(buf);
+    const realCount = buf.readUInt16BE(offset + 2);
+    buf.writeUInt16BE(realCount + 40, offset + 2);
+
+    expect(readNameRecords(buf)).toHaveLength(readNameRecords(original).length);
+    expect(readFontFamilyNames(buf)).toEqual(readFontFamilyNames(original));
+  });
+
+  it('skips a record whose string runs past the table, keeping the rest', () => {
+    // One bad record shouldn't cost the font every other name it declares.
+    const buf = Buffer.from(original);
+    const { offset, length } = nameTableSpan(buf);
+    // First record: point its string at the table's last byte and claim the
+    // string is longer than the table.
+    buf.writeUInt16BE(length, offset + 6 + 8);
+    buf.writeUInt16BE(0xfff0, offset + 6 + 10);
+
+    const records = readNameRecords(buf);
+    expect(records).toHaveLength(readNameRecords(original).length - 1);
+    // Nothing decoded from beyond the table — the skipped record's id is
+    // simply absent rather than carrying foreign bytes.
+    const firstId = original.readUInt16BE(offset + 6 + 6);
+    const before = readNameRecords(original).filter(
+      (r) => r.nameID === firstId
+    );
+    const after = records.filter((r) => r.nameID === firstId);
+    expect(after).toHaveLength(before.length - 1);
+  });
+
+  it('reports nothing for a table whose string offset is out of range', () => {
+    const buf = Buffer.from(original);
+    const { offset } = nameTableSpan(buf);
+    buf.writeUInt16BE(0xfff0, offset + 4); // storage offset past the table
+    expect(readNameRecords(buf)).toEqual([]);
+    expect(readFontFamilyNames(buf)).toEqual([]);
   });
 });
