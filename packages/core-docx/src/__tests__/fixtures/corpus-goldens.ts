@@ -565,7 +565,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/no-proof-words':
     'da5ed13283ad1fb39dbbf421ec24ca773240b6a3e50fa0e384e492bac1debf1c',
   'theme/example-proposal':
-    '4135fccbadec12404b828701d19d29ad0b38efa595bf04c6d4fa03015c2e3424',
+    'd45f6362848844db4a9254cd65c5aedc1a0b144aa2fcda0738c324d879eecc71',
   'theme/example-technical-guide':
-    'a6175e3fe8c9d79738334a8559cf651b269746e608b87b75133a10f239598218',
+    'c5694a49810f88dcb32040f49ed384b0e2c03be432b862c2501ae26ec111dc23',
 };
