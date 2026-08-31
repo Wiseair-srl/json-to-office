@@ -321,28 +321,130 @@ describe('closing', () => {
   });
 
   it('reports nothing closed, and keeps the workspace, when the disk refuses', async () => {
-    const store = build();
+    // The store under test has to be the one whose close fails, or "the entry
+    // survived" is a claim about some other store's memory.
+    const persistence = createWorkspacePersistenceAt(root);
+    const store = createMemoryWorkspaceStore({ now: () => clock, persistence });
     const { handle } = await open(store);
 
     // A directory that cannot be removed, which is what a permission problem
     // or a Windows file lock looks like from here.
-    const persistence = createWorkspacePersistenceAt(root);
     const removal = vi
       .spyOn(persistence, 'remove')
       .mockRejectedValue(new Error('EPERM: operation not permitted'));
-    const guarded = createMemoryWorkspaceStore({
-      now: () => clock,
-      persistence,
-    });
 
-    const problem = failed(await guarded.close(handle));
+    const problem = failed(await store.close(handle));
     expect(problem.code).toBe(WORKSPACE_ERROR_CODES.NOT_CLOSED);
     expect(problem.message).toMatch(/still open and still on disk/);
-    removal.mockRestore();
 
-    // Nothing was released on the strength of a delete that did not happen.
-    expect(unwrap(await store.get(handle)).record.handle).toBe(handle);
+    // Still resident, not merely still on disk: a read that had to go to the
+    // disk would mean the entry was released on the strength of a delete that
+    // never happened.
+    const load = vi.spyOn(persistence, 'load');
+    expect(unwrap(await store.get(handle)).record.revision).toBe(1);
+    expect(load).not.toHaveBeenCalled();
+    load.mockRestore();
     expect(await handles()).toEqual([handle]);
+
+    // And the failure is what it says it is: retryable.
+    removal.mockRestore();
+    expect(unwrap(await store.close(handle)).closed).toBe(true);
+    expect(await handles()).toEqual([]);
+  });
+});
+
+describe('overlapping calls', () => {
+  it('does not let a patch in flight resurrect a closed workspace', async () => {
+    const persistence = createWorkspacePersistenceAt(root);
+    const store = createMemoryWorkspaceStore({ now: () => clock, persistence });
+    const { handle } = await open(store);
+
+    // The interleaving is forced rather than hoped for: the patch's write is
+    // held open, so the close is guaranteed to arrive while it is in flight —
+    // the arrangement in which an unserialized save recreates the directory
+    // the close just deleted.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const write = persistence.save.bind(persistence);
+    vi.spyOn(persistence, 'save').mockImplementationOnce(async (snapshot) => {
+      await held;
+      return write(snapshot);
+    });
+
+    const patching = store.patch({
+      handle,
+      operations: [{ op: 'add', path: '/props/title', value: 'racing' }],
+    });
+    const closing = store.close(handle);
+    release();
+    const [patched, closed] = await Promise.all([patching, closing]);
+
+    expect(unwrap(closed).closed).toBe(true);
+    // Whichever order they landed in, the close is the last word on disk.
+    expect(await handles()).toEqual([]);
+    expect(unwrap(await store.list()).records).toEqual([]);
+    expect(failed(await build().get(handle)).code).toBe(
+      ERROR_CODES.UNKNOWN_HANDLE
+    );
+    // The patch either committed before the close or reported the handle
+    // gone; what it may not do is leave the document behind.
+    if (patched.ok) expect(patched.record.revision).toBe(2);
+  });
+
+  it('drops a write that was queued behind the close of its own workspace', async () => {
+    // The other ordering. Here the close reaches the disk first, so the
+    // queue alone cannot help: the write that comes after has to notice the
+    // workspace it belongs to is gone and decline to recreate it.
+    const persistence = createWorkspacePersistenceAt(root);
+    const store = createMemoryWorkspaceStore({ now: () => clock, persistence });
+    const { handle } = await open(store);
+
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const erase = persistence.remove.bind(persistence);
+    vi.spyOn(persistence, 'remove').mockImplementationOnce(async (target) => {
+      await held;
+      return erase(target);
+    });
+
+    const closing = store.close(handle);
+    const patching = store.patch({
+      handle,
+      operations: [{ op: 'add', path: '/props/title', value: 'too late' }],
+    });
+    release();
+    const [closed, patched] = await Promise.all([closing, patching]);
+
+    expect(unwrap(closed).closed).toBe(true);
+    expect(await handles()).toEqual([]);
+    // The patch may well have committed in memory — it was applied before the
+    // close landed — but it must not have put the workspace back on disk.
+    if (patched.ok) expect(patched.record.persisted).toBe(false);
+  });
+
+  it('holds the workspace ceiling when several are opened at once', async () => {
+    const store = build({ limits: { maxWorkspaces: 2 } });
+
+    // Concurrent first saves each count the root before any of them has
+    // created its directory, so unserialized they all see room.
+    const created = await Promise.all([
+      store.create({ format: 'docx', document: document() }),
+      store.create({ format: 'docx', document: document() }),
+      store.create({ format: 'docx', document: document() }),
+    ]);
+    for (const result of created) expect(result.ok).toBe(true);
+
+    expect(await handles()).toHaveLength(2);
+    // Every surviving directory is whole — none was deleted mid-write by a
+    // sibling that thought it was pruning something stale.
+    for (const handle of await handles()) {
+      const restored = await createWorkspacePersistenceAt(root).load(handle);
+      expect(restored?.head.revision).toBe(1);
+    }
   });
 });
 

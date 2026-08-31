@@ -237,6 +237,34 @@ export function createMemoryWorkspaceStore(
   }
 
   /**
+   * One durable operation at a time.
+   *
+   * Every tool call is its own async task, so a client that pipelines — and
+   * agents do, they fan tool calls out — can have `jto_workspace_patch`
+   * awaiting a write while `jto_workspace_close` starts deleting the same
+   * directory. Two orderings go wrong without this: a save can recreate a
+   * directory a close has already removed, resurrecting a workspace the agent
+   * was told was destroyed; and two first saves can each read the workspace
+   * count, both decide there is room, and one can then delete the other's
+   * half-written directory. Both are the same defect as the swallowed `rm`
+   * error — a promise about durability that the next call disproves.
+   *
+   * A single chain rather than one per handle: the operations being ordered
+   * are a few milliseconds of filesystem work, they contend on one disk
+   * anyway, and the count-then-prune sequence is about the ROOT, so a
+   * per-handle lock would not have covered it.
+   */
+  let durable: Promise<unknown> = Promise.resolve();
+
+  function queued<T>(work: () => Promise<T>): Promise<T> {
+    const running = durable.then(work);
+    // The chain must survive a failed operation, so what the next one waits on
+    // is the settled shape of this one, not its rejection.
+    durable = running.catch(() => undefined);
+    return running;
+  }
+
+  /**
    * Mirror an entry to disk, and say so when that did not take.
    *
    * Durability is best-effort by construction. The edit is already committed
@@ -250,44 +278,70 @@ export function createMemoryWorkspaceStore(
   async function persist(entry: Entry): Promise<Diagnostic | undefined> {
     if (!persistence) return undefined;
     try {
-      await persistence.save({
-        handle: entry.handle,
-        format: entry.format,
-        createdAt: entry.createdAt,
-        updatedAt: entry.updatedAt,
-        ...(entry.title !== undefined && { title: entry.title }),
-        head: {
-          revision: entry.revision,
-          text: entry.text,
-          bytes: entry.bytes,
-        },
-        pins: [...entry.pins.entries()].map(([revision, pin]) => ({
-          revision,
-          text: pin.text,
-          bytes: pin.bytes,
-        })),
+      const written = await queued(async () => {
+        // Checked here, inside the queue, rather than before joining it: a
+        // close that ran while this was waiting has already taken the
+        // directory away, and writing now would put it back.
+        if (entries.get(entry.handle) !== entry) return false;
+        await saveEntry(entry);
+        return true;
       });
+      if (!written) {
+        // Skipped because the workspace was closed while this waited. No
+        // warning — the agent asked for that close and was told it happened —
+        // but the record must not claim durability for a revision that was
+        // never written.
+        entry.persisted = false;
+        return undefined;
+      }
       entry.persisted = true;
       return undefined;
     } catch (error) {
       entry.persisted = false;
-      return diagnostic(
-        WORKSPACE_ERROR_CODES.NOT_PERSISTED,
-        `Revision ${entry.revision} of ${entry.handle} is held in memory but was not written to ${persistence.root}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-        {
-          severity: 'warning',
-          suggestion:
-            'Export the JSON with jto_workspace_snapshot and keep it yourself; this handle will not survive a lost connection.',
-          context: {
-            handle: entry.handle,
-            revision: entry.revision,
-            workspaceRoot: persistence.root,
-          },
-        }
-      );
+      return notPersisted(entry, error);
     }
+  }
+
+  /** The write itself, always called from inside the queue. */
+  async function saveEntry(entry: Entry): Promise<void> {
+    if (!persistence) return;
+    await persistence.save({
+      handle: entry.handle,
+      format: entry.format,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+      ...(entry.title !== undefined && { title: entry.title }),
+      head: {
+        revision: entry.revision,
+        text: entry.text,
+        bytes: entry.bytes,
+      },
+      pins: [...entry.pins.entries()].map(([revision, pin]) => ({
+        revision,
+        text: pin.text,
+        bytes: pin.bytes,
+      })),
+    });
+  }
+
+  function notPersisted(entry: Entry, error: unknown): Diagnostic {
+    const root = persistence?.root ?? '';
+    return diagnostic(
+      WORKSPACE_ERROR_CODES.NOT_PERSISTED,
+      `Revision ${entry.revision} of ${entry.handle} is held in memory but was not written to ${root}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      {
+        severity: 'warning',
+        suggestion:
+          'Export the JSON with jto_workspace_snapshot and keep it yourself; this handle will not survive a lost connection.',
+        context: {
+          handle: entry.handle,
+          revision: entry.revision,
+          workspaceRoot: root,
+        },
+      }
+    );
   }
 
   /** Wrap a record with whatever the write had to say. */
@@ -744,31 +798,45 @@ export function createMemoryWorkspaceStore(
       // a close that left the JSON readable would be answering a request to
       // destroy data with a claim the next connection disproves, so a failure
       // here leaves the workspace exactly as it was — open, and retryable.
-      let durable = false;
-      if (persistence) {
-        try {
-          durable = await persistence.remove(handle);
-        } catch (error) {
-          return failure(
-            WORKSPACE_ERROR_CODES.NOT_CLOSED,
-            `Workspace ${handle} could not be removed from ${persistence.root}: ${
-              error instanceof Error ? error.message : String(error)
-            }. It is still open and still on disk.`,
-            {
-              suggestion:
-                'Check the workspace directory is writable, then close again.',
-              context: { handle, workspaceRoot: persistence.root },
-            }
-          );
-        }
+      if (!persistence) {
+        if (entry) evict(entry, 'closed');
+        return { ok: true, handle, closed: entry !== undefined };
       }
 
-      if (entry) evict(entry, 'closed');
-      // The revision is unknown for a handle this connection only ever saw on
-      // disk, and unread: `missing` only surfaces one for a TTL eviction.
-      else if (durable) tombstone(handle, 'closed', 0);
-
-      return { ok: true, handle, closed: entry !== undefined || durable };
+      // The delete and the eviction share one critical section. Splitting them
+      // would let a patch's write, queued behind the delete, run in the gap
+      // and recreate the directory — the entry would still be in the map, so
+      // its own liveness check would wave it through, and a workspace the
+      // agent was told was destroyed would be back.
+      const root = persistence.root;
+      try {
+        return await queued(async () => {
+          const removed = await persistence.remove(handle);
+          const resident = entries.get(handle);
+          if (resident) evict(resident, 'closed');
+          // The revision is unknown for a handle this connection only ever saw
+          // on disk, and unread: `missing` only surfaces one for a TTL
+          // eviction.
+          else if (removed) tombstone(handle, 'closed', 0);
+          return {
+            ok: true as const,
+            handle,
+            closed: resident !== undefined || removed,
+          };
+        });
+      } catch (error) {
+        return failure(
+          WORKSPACE_ERROR_CODES.NOT_CLOSED,
+          `Workspace ${handle} could not be removed from ${root}: ${
+            error instanceof Error ? error.message : String(error)
+          }. It is still open and still on disk.`,
+          {
+            suggestion:
+              'Check the workspace directory is writable, then close again.',
+            context: { handle, workspaceRoot: root },
+          }
+        );
+      }
     },
 
     /**

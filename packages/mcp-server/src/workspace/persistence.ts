@@ -143,6 +143,19 @@ export interface RestoredWorkspace extends PersistedMeta {
   pins: PersistedDocument[];
 }
 
+/**
+ * The durable half of a workspace store.
+ *
+ * Not internally synchronized: `save` and `remove` each read the root, decide
+ * what to prune and then act, so two of them running at once can both decide
+ * there is room, or one can delete a directory the other is half way through
+ * writing. Callers serialize — `createMemoryWorkspaceStore` runs every durable
+ * operation through one queue, which is also where the ordering against a
+ * close is settled. Reads (`list`, `load`) need no such treatment: metadata is
+ * renamed into place after the revision it names, so a concurrent read sees
+ * one committed state or the other, and `load` re-reads before it treats a
+ * missing document as a torn directory.
+ */
 export interface WorkspacePersistence {
   /** Absolute path of the root. May not exist on disk until first write. */
   readonly root: string;
@@ -488,10 +501,24 @@ export function createWorkspacePersistenceAt(
 
     async load(handle) {
       if (!isPersistableHandle(handle)) return undefined;
-      const meta = await readMeta(handle);
-      if (!meta) return undefined;
 
-      const head = await readRevision(handle, meta.revision);
+      // Read twice before condemning anything. A read is not serialized
+      // against a write, so a `load` that picked up revision N's metadata a
+      // moment before a save committed N+1 and pruned N finds the document it
+      // was promised gone — through no fault of the directory. The retry sees
+      // the newer metadata and succeeds; only a directory that is still
+      // missing its own head on the second look is genuinely torn.
+      let meta = await readMeta(handle);
+      if (!meta) return undefined;
+      let head = await readRevision(handle, meta.revision);
+      if (!head) {
+        const second = await readMeta(handle);
+        if (second) {
+          meta = second;
+          head = await readRevision(handle, second.revision);
+        }
+      }
+
       // Metadata without its document is a torn or hand-edited directory. It
       // is not recoverable, and leaving it would keep answering `list` with a
       // handle that fails on use, so it goes.
