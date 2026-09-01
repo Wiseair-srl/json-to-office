@@ -28,7 +28,7 @@
       "size": 10.5
     },
     "mono": {
-      "family": "Consolas",
+      "family": "Courier New",
       "size": 10
     },
     "light": {
@@ -105,6 +105,47 @@
       "keepNext": true,
       "alignment": "left"
     },
+    "heading4": {
+      "font": "body",
+      "size": 10.5,
+      "bold": true,
+      "color": "textSecondary",
+      "spacing": {
+        "before": 10,
+        "after": 4
+      },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading5": {
+      "font": "body",
+      "size": 10.5,
+      "bold": false,
+      "italic": true,
+      "color": "textSecondary",
+      "spacing": {
+        "before": 9,
+        "after": 4
+      },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading6": {
+      "font": "body",
+      "size": 10,
+      "bold": true,
+      "color": "textMuted",
+      "characterSpacing": {
+        "type": "expanded",
+        "value": 30
+      },
+      "spacing": {
+        "before": 9,
+        "after": 4
+      },
+      "keepNext": true,
+      "alignment": "left"
+    },
     "title": {
       "font": "heading",
       "size": 38,
@@ -125,6 +166,46 @@
         "before": 0,
         "after": 10
       }
+    }
+  },
+  "componentDefaults": {
+    "table": {
+      "width": 100,
+      "borderColor": "#C7C8CA",
+      "borderSize": 0.5,
+      "hideBorders": {
+        "top": true,
+        "left": true,
+        "right": true,
+        "insideVertical": true
+      },
+      "cellDefaults": {
+        "font": { "size": 9.5 },
+        "padding": { "top": 7, "bottom": 7 },
+        "verticalAlignment": "middle"
+      },
+      "headerCellDefaults": {
+        "color": "#EF4130",
+        "font": { "size": 9.5, "bold": true },
+        "padding": { "top": 0, "bottom": 8 },
+        "verticalAlignment": "bottom",
+        "borderColor": { "bottom": "#EF4130" },
+        "borderSize": { "bottom": 0.5 }
+      }
+    },
+    "list": {
+      "format": "bullet",
+      "bullet": "—",
+      "spacing": { "item": 2 }
+    },
+    "image": {
+      "alignment": "center"
+    },
+    "statistic": {
+      "alignment": "center"
+    },
+    "section": {
+      "pageBreak": false
     }
   }
 }

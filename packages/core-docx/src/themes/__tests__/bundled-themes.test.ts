@@ -49,7 +49,7 @@ describe('built-in theme registry', () => {
 
   it('registers the statically imported themes', () => {
     expect(registeredNames).toEqual(
-      expect.arrayContaining(['minimal', 'corporate', 'modern'])
+      expect.arrayContaining(['minimal', 'devportal', 'vermilion'])
     );
   });
 

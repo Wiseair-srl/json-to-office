@@ -82,9 +82,9 @@ describe('divider rendering', () => {
   it.each(DOCX_RENDERER_IDS)(
     '%s indents a partial divider',
     async (renderer) => {
-      // 40% of the minimal theme's 9746-twip measure leaves 5848 to indent away.
+      // 40% of the minimal theme's 8506-twip measure leaves 5104 to indent away.
       expect(dividerPropertiesOf(await documentXml(renderer))).toMatch(
-        /<w:ind [^>]*w:right="5848"/
+        /<w:ind [^>]*w:right="5104"/
       );
     }
   );

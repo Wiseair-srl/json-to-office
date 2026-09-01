@@ -45,7 +45,11 @@ export {
 } from './utils/layoutUtils';
 
 // Theme configurations
-export { minimalTheme, corporateTheme, modernTheme } from '../templates/themes';
+export {
+  minimalTheme,
+  devportalTheme,
+  vermilionTheme,
+} from '../templates/themes';
 
 // JSON Theme System (Phase 1 - Foundation complete)
 export {

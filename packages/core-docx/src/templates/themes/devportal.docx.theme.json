@@ -1,28 +1,31 @@
 {
   "name": "devportal",
-  "displayName": "Developer Portal",
-  "description": "A modern developer-focused theme with cool grays, teal accents, and monospace code styling",
-  "version": "2.0.0",
+  "displayName": "Field Editorial",
+  "description": "A compact editorial theme — Helvetica in near-black ink with a burnt-orange accent, tight condensed titles, letterspaced labels, warm tinted fills and hairline rules",
+  "version": "4.0.0",
   "colors": {
-    "primary": "#0F172A",
-    "secondary": "#334155",
-    "accent": "#0D9488",
-    "text": "#0F172A",
+    "primary": "#12191F",
+    "secondary": "#172028",
+    "accent": "#E35B3F",
+    "text": "#232323",
     "background": "#FFFFFF",
-    "border": "#E2E8F0",
-    "textPrimary": "#0F172A",
-    "textSecondary": "#475569",
-    "textMuted": "#94A3B8",
-    "borderPrimary": "#CBD5E1",
-    "borderSecondary": "#F1F5F9",
+    "border": "#E2E0DD",
+    "textPrimary": "#232323",
+    "textSecondary": "#46494C",
+    "textMuted": "#737373",
+    "borderPrimary": "#D8D5D1",
+    "borderSecondary": "#F2F3F3",
     "backgroundPrimary": "#FFFFFF",
-    "backgroundSecondary": "#F8FAFC"
+    "backgroundSecondary": "#F7ECE7",
+    "accent4": "#46494C",
+    "accent5": "#8A9299",
+    "accent6": "#E8A18D"
   },
   "fonts": {
-    "heading": { "family": "Helvetica", "size": 24 },
-    "body": { "family": "Calibri", "size": 11 },
-    "mono": { "family": "Consolas", "size": 10 },
-    "light": { "family": "Helvetica", "size": 24 }
+    "heading": { "family": "Helvetica", "size": 23 },
+    "body": { "family": "Helvetica", "size": 9.5 },
+    "mono": { "family": "Courier New", "size": 10 },
+    "light": { "family": "Helvetica", "size": 23 }
   },
   "page": {
     "size": "A4",
@@ -40,22 +43,42 @@
     "normal": {
       "font": "body",
       "color": "textPrimary",
-      "lineSpacing": { "type": "multiple", "value": 1.5 },
+      "lineSpacing": { "type": "multiple", "value": 1.3 },
       "alignment": "left",
-      "spacing": { "after": 8 }
+      "spacing": { "after": 7 }
+    },
+    "title": {
+      "font": "heading",
+      "size": 29,
+      "bold": true,
+      "color": "primary",
+      "alignment": "left",
+      "lineSpacing": { "type": "multiple", "value": 1.02 },
+      "characterSpacing": { "type": "condensed", "value": 8 },
+      "spacing": { "before": 0, "after": 10 }
+    },
+    "subtitle": {
+      "font": "body",
+      "size": 10.5,
+      "italic": false,
+      "color": "textSecondary",
+      "alignment": "left",
+      "lineSpacing": { "type": "multiple", "value": 1.25 },
+      "spacing": { "before": 0, "after": 12 }
     },
     "heading1": {
       "font": "heading",
-      "size": 24,
+      "size": 21,
       "bold": true,
       "color": "primary",
-      "spacing": { "before": 24, "after": 12 },
+      "lineSpacing": { "type": "multiple", "value": 1.15 },
+      "spacing": { "before": 26, "after": 12 },
       "keepNext": true,
       "alignment": "left",
       "borders": {
         "bottom": {
           "style": "single",
-          "size": 1,
+          "size": 4,
           "color": "accent",
           "space": 6
         }
@@ -63,54 +86,97 @@
     },
     "heading2": {
       "font": "heading",
-      "size": 18,
+      "size": 15.5,
       "bold": true,
       "color": "secondary",
-      "spacing": { "before": 18, "after": 8 },
+      "lineSpacing": { "type": "multiple", "value": 1.15 },
+      "spacing": { "before": 20, "after": 8 },
       "keepNext": true,
       "alignment": "left"
     },
     "heading3": {
       "font": "body",
-      "size": 13,
+      "size": 12.5,
       "bold": true,
-      "color": "accent",
-      "spacing": { "before": 12, "after": 6 },
+      "color": "secondary",
+      "spacing": { "before": 14, "after": 6 },
       "keepNext": true,
       "alignment": "left"
     },
     "heading4": {
       "font": "body",
-      "size": 12,
+      "size": 11.5,
       "bold": true,
-      "color": "textSecondary",
-      "spacing": { "before": 8, "after": 4 },
-      "keepNext": true
+      "color": "textPrimary",
+      "spacing": { "before": 12, "after": 4 },
+      "keepNext": true,
+      "alignment": "left"
     },
-    "title": {
-      "font": "heading",
-      "size": 32,
+    "heading5": {
+      "font": "mono",
+      "size": 10.5,
+      "bold": true,
+      "color": "secondary",
+      "spacing": { "before": 10, "after": 4 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading6": {
+      "font": "body",
+      "size": 10.5,
+      "bold": false,
+      "color": "textSecondary",
+      "characterSpacing": { "type": "expanded", "value": 20 },
+      "spacing": { "before": 10, "after": 4 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "TOC1": {
+      "font": "body",
+      "size": 11,
       "bold": true,
       "color": "primary",
-      "alignment": "left",
-      "spacing": { "before": 0, "after": 12 }
+      "spacing": { "before": 5, "after": 3 },
+      "tabStops": [{ "type": "right", "position": 9746, "leader": "dot" }]
     },
-    "subtitle": {
-      "font": "light",
-      "size": 16,
-      "italic": false,
+    "TOC2": {
+      "font": "body",
+      "size": 10.5,
+      "color": "textPrimary",
+      "indent": { "left": 240 },
+      "spacing": { "after": 2 },
+      "tabStops": [{ "type": "right", "position": 9746, "leader": "dot" }]
+    },
+    "TOC3": {
+      "font": "body",
+      "size": 10,
       "color": "textSecondary",
-      "alignment": "left",
-      "spacing": { "before": 0, "after": 24 }
+      "indent": { "left": 480 },
+      "spacing": { "after": 2 },
+      "tabStops": [{ "type": "right", "position": 9746, "leader": "dot" }]
     }
   },
   "componentDefaults": {
     "table": {
-      "borderColor": "#E2E8F0"
+      "width": 100,
+      "borderColor": "#E2E0DD",
+      "borderSize": 0.5,
+      "hideBorders": { "left": true, "right": true, "insideVertical": true },
+      "cellDefaults": {
+        "padding": { "top": 3, "bottom": 3 }
+      },
+      "headerCellDefaults": {
+        "font": { "bold": true },
+        "color": "#172028",
+        "backgroundColor": "#F7ECE7",
+        "borderColor": { "bottom": "#D8D5D1" },
+        "borderSize": { "bottom": 1 }
+      }
     },
     "list": {
       "format": "bullet",
-      "bullet": "\u2013"
+      "bullet": "—",
+      "spacing": { "item": 2 }
     },
     "image": {
       "alignment": "center"

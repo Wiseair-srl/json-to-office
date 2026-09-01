@@ -109,8 +109,8 @@ export {
 export {
   themes,
   minimalTheme,
-  corporateTheme,
-  modernTheme,
+  devportalTheme,
+  vermilionTheme,
 } from './styles/index';
 export type { ThemeName } from './styles/index';
 

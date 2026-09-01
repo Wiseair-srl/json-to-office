@@ -8,9 +8,9 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import JSZip from 'jszip';
 import { generateBufferFromJson } from '../generator';
 
-// minimal theme: accent #2c3e50, secondary #666666
-const ACCENT = '2C3E50';
-const SECONDARY = '666666';
+// minimal theme: accent #6E7F71, secondary #4A5B4E
+const ACCENT = '6E7F71';
+const SECONDARY = '4A5B4E';
 
 async function readDocumentXml(buf: Buffer): Promise<string> {
   const zip = await JSZip.loadAsync(buf);
@@ -45,7 +45,7 @@ describe('table cell colors', () => {
 
     expect(xml).toContain(`w:fill="${ACCENT}"`);
     expect(xml).toContain(`w:val="${SECONDARY}"`);
-    expect(xml).toContain('w:fill="FAFAFA"'); // backgroundSecondary
+    expect(xml).toContain('w:fill="F1EFE9"'); // backgroundSecondary
     expect(xml).not.toContain('w:fill="accent"');
   });
 

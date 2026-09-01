@@ -18,9 +18,6 @@ import { ensureThemeDefaults } from '../../themes/defaults';
 // the filesystem scan below, which meant a stale build silently served the old
 // copy and a missing one degraded to `minimal`.
 import minimalThemeJson from './minimal.docx.theme.json';
-import corporateThemeJson from './corporate.docx.theme.json';
-import modernThemeJson from './modern.docx.theme.json';
-import apexThemeJson from './apex.docx.theme.json';
 import devportalThemeJson from './devportal.docx.theme.json';
 import vermilionThemeJson from './vermilion.docx.theme.json';
 
@@ -37,9 +34,6 @@ function loadThemesFromJson(): Record<string, ThemeConfigJson> {
   // Build themes from imported JSON files
   const themes: Record<string, ThemeConfigJson> = {
     minimal: ensureThemeDefaults(minimalThemeJson as ThemeConfigJson),
-    corporate: ensureThemeDefaults(corporateThemeJson as ThemeConfigJson),
-    modern: ensureThemeDefaults(modernThemeJson as ThemeConfigJson),
-    apex: ensureThemeDefaults(apexThemeJson as ThemeConfigJson),
     devportal: ensureThemeDefaults(devportalThemeJson as ThemeConfigJson),
     vermilion: ensureThemeDefaults(vermilionThemeJson as ThemeConfigJson),
   };
@@ -161,5 +155,5 @@ export const getThemeNames = (): string[] => {
 
 // Export individual theme configs for direct access
 export const minimalTheme = themes['minimal'];
-export const corporateTheme = themes['corporate'];
-export const modernTheme = themes['modern'];
+export const devportalTheme = themes['devportal'];
+export const vermilionTheme = themes['vermilion'];

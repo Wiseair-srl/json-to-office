@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import type { GenerationWarning, ResolvedFont } from '@json-to-office/shared';
 import { generateBufferFromJson } from '../core/generator';
-import { corporateTheme } from '../templates/themes';
+import { devportalTheme } from '../templates/themes';
 
 const REGISTRY = [
   {
@@ -37,7 +37,7 @@ const markedSource = (marker: string) => ({
 /** A built-in theme that additionally declares the brand family. */
 const brandedTheme = () =>
   ({
-    ...structuredClone(corporateTheme),
+    ...structuredClone(devportalTheme),
     fontRegistry: REGISTRY,
   }) as never;
 
@@ -131,7 +131,7 @@ describe('props.fontRegistry satisfies font validation', () => {
     const warnings: GenerationWarning[] = [];
     const resolved: ResolvedFont[] = [];
     const themed = {
-      ...structuredClone(corporateTheme),
+      ...structuredClone(devportalTheme),
       fontRegistry: [
         {
           id: 'brand-sans',

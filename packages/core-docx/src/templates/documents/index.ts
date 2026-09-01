@@ -70,10 +70,10 @@ export function getAvailableJsonExamples(): string[] {
  * Example descriptions for documentation
  */
 export const EXAMPLE_DESCRIPTIONS: Record<string, string> = {
-  'technical-guide':
-    'Arcline Platform integration guide on the devportal theme — slate and teal, monospace chrome, full-bleed SVG cover and back cover, architecture and sequence diagrams, designed contents plus a document-wide TOC, escaped OAuth code samples in closed fences, API reference tables with shaded header bands, webhook docs, error and troubleshooting matrices',
-  proposal:
-    'Apex Consulting cloud migration proposal in the vermilion editorial system — full-bleed SVG cover and back cover, architecture diagram and phase roadmap, designed contents, running header and footer, KPI rows, compliance and cost tables with tinted totals, and a risk matrix',
+  'practice-note':
+    'Atelier Still practice note on the minimal theme — its warm sage-and-ivory palette, hairline page frame, letterspaced kickers, two-line display titles, a ruled callout and left-bar note boxes, a numbered five-line method with hairline rules, and a colophon; no theme overrides',
+  'field-review':
+    'Northstar field review on the devportal theme — its ink-and-burnt-orange palette in a two-column editorial layout with an orange page frame, tight display titles, letterspaced section labels, left-bar pull quotes, inline-numbered signals and a dark-and-orange scorecard table; no theme overrides',
 };
 
 /**
@@ -120,8 +120,8 @@ export const getExampleNames = (): string[] => {
 };
 
 // Use loadJsonExample() directly or access via the examples proxy
-export const technicalGuideExample = () => loadJsonExample('technical-guide');
-export const proposalExample = () => loadJsonExample('proposal');
+export const practiceNoteExample = () => loadJsonExample('practice-note');
+export const fieldReviewExample = () => loadJsonExample('field-review');
 
 /**
  * Print usage information

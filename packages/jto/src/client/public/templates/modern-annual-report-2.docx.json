@@ -8,8 +8,7 @@
     "theme": "minimal",
     "themeOverrides": {
       "colors": {
-        "primary": "#231F20",
-        "background": "#FFFFFF"
+        "primary": "#231F20"
       }
     },
     "componentDefaults": {
@@ -601,8 +600,7 @@
             }
           }
         ],
-        "footer": [],
-        "pageBreak": false
+        "footer": []
       },
       "children": [
         {

@@ -339,11 +339,7 @@ describe('jto_generate', () => {
   // byte-identical to one nobody asked for.
   it.each([
     ['pptx', PPTX, ['dark', 'default', 'minimal']],
-    [
-      'docx',
-      DOCX,
-      ['apex', 'corporate', 'devportal', 'minimal', 'modern', 'vermilion'],
-    ],
+    ['docx', DOCX, ['devportal', 'minimal', 'vermilion']],
   ] as const)(
     'warns that a %s theme option matched nothing, and names the ones that would',
     async (format, document, themes) => {
@@ -375,9 +371,9 @@ describe('jto_generate', () => {
       const result = await generate({
         format: 'docx',
         document: DOCX,
-        theme: 'modern',
+        theme: 'vermilion',
       });
-      expect(result.theme).toBe('modern');
+      expect(result.theme).toBe('vermilion');
       expect(
         result.diagnostics.some((d: any) => d.code === 'W_UNKNOWN_THEME')
       ).toBe(false);

@@ -46,7 +46,7 @@ describe('divider geometry', () => {
       bottom: {
         style: 'single',
         sizeEighthPoints: 8,
-        color: { hex: 'F0F0F0' },
+        color: { hex: 'D8D3C8' },
         spacePoints: 0,
       },
     });
@@ -115,7 +115,7 @@ describe('divider geometry', () => {
   it('resolves a theme colour token', async () => {
     expect(
       (await divider({ color: 'accent' })).formatting?.borders?.bottom
-    ).toMatchObject({ color: { hex: '2C3E50' } });
+    ).toMatchObject({ color: { hex: '6E7F71' } });
     expect(
       (await divider({ color: '#E6620C' })).formatting?.borders?.bottom
     ).toMatchObject({ color: { hex: 'E6620C' } });
@@ -123,10 +123,10 @@ describe('divider geometry', () => {
 });
 
 describe('divider width', () => {
-  // A4 (11906 twips) less the minimal theme's 1080-twip side margins. Pinned
+  // A4 (11906 twips) less the minimal theme's 1700-twip side margins. Pinned
   // rather than re-derived: the point of the number is that the compiler
   // measures the real page, not that it can repeat its own arithmetic.
-  const MEASURE_TWIPS = 9746;
+  const MEASURE_TWIPS = 8506;
 
   it('runs the full measure with no indent at all', async () => {
     // Stating no indent is what makes the default exact wherever it lands —

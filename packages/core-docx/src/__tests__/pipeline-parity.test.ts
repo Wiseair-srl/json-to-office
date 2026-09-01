@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { generateBufferFromJson } from '../core/generator';
 import { createDocumentGenerator } from './../plugin/createDocumentGenerator';
-import { corporateTheme } from '../templates/themes';
+import { devportalTheme } from '../templates/themes';
 
 /**
  * Both parts matter: run/paragraph colors land in document.xml, while theme
@@ -75,8 +75,9 @@ function docWith(props: Record<string, unknown>, color: string) {
 
 describe('generateBufferFromJson vs createDocumentGenerator', () => {
   it('resolves a themeOverrides slot that the base theme does not define', async () => {
-    // accent4 is unset in `minimal`, so a pipeline that drops themeOverrides
-    // throws "Invalid color value" rather than rendering the wrong color.
+    // The bundled themes now fill accent4, so a pipeline that drops
+    // themeOverrides renders minimal's own slot value instead of the
+    // override — same silent-wrong-color failure the shadowing test pins.
     const doc = docWith(
       { themeOverrides: { colors: { accent4: '#231F20' } } },
       'accent4'
@@ -147,10 +148,11 @@ describe('constructor theme precedence (#141)', () => {
   // names nothing or names something nothing recognizes. Mirrors the PPTX
   // pins in core-pptx/src/__tests__/pipeline-parity.test.ts.
   //
-  // Signal: corporate's heading font is Georgia; minimal has no Georgia
-  // anywhere, so its presence in styles.xml marks which theme rendered.
+  // Signal: devportal's fonts are Helvetica; minimal is Calibri and
+  // Courier New throughout, so Helvetica in styles.xml marks which theme
+  // rendered.
   const ctorTheme = () =>
-    structuredClone(corporateTheme) as unknown as Parameters<
+    structuredClone(devportalTheme) as unknown as Parameters<
       typeof createDocumentGenerator
     >[0]['theme'];
 
@@ -171,12 +173,12 @@ describe('constructor theme precedence (#141)', () => {
     const styles = await stylesXml(headingDoc('minimal'), {
       theme: ctorTheme(),
     });
-    expect(styles).not.toContain('Georgia');
+    expect(styles).not.toContain('Helvetica');
   });
 
   it('constructor theme object applies when the doc names no theme', async () => {
     const styles = await stylesXml(headingDoc(), { theme: ctorTheme() });
-    expect(styles).toContain('Georgia');
+    expect(styles).toContain('Helvetica');
   });
 
   it('constructor theme object fills in for a doc-named unknown theme', async () => {
@@ -186,13 +188,13 @@ describe('constructor theme precedence (#141)', () => {
     const styles = await stylesXml(headingDoc('wiseair'), {
       theme: ctorTheme(),
     });
-    expect(styles).toContain('Georgia');
+    expect(styles).toContain('Helvetica');
   });
 
   it('a customThemes entry sharing a built-in name still wins', async () => {
     const styles = await stylesXml(headingDoc('minimal'), {
       customThemes: { minimal: ctorTheme() },
     });
-    expect(styles).toContain('Georgia');
+    expect(styles).toContain('Helvetica');
   });
 });

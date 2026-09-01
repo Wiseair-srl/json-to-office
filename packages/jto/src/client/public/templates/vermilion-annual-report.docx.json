@@ -4745,10 +4745,7 @@
           "props": {
             "width": 100,
             "borderColor": "C7C8CA",
-            "borderSize": 0.5,
             "hideBorders": {
-              "left": true,
-              "right": true,
               "top": true
             },
             "columns": [
@@ -6063,10 +6060,7 @@
           "props": {
             "width": 100,
             "borderColor": "C7C8CA",
-            "borderSize": 0.5,
             "hideBorders": {
-              "left": true,
-              "right": true,
               "top": true
             },
             "columns": [
@@ -7583,10 +7577,7 @@
           "props": {
             "width": 100,
             "borderColor": "C7C8CA",
-            "borderSize": 0.5,
             "hideBorders": {
-              "left": true,
-              "right": true,
               "top": true
             },
             "columns": [

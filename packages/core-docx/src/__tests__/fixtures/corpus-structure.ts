@@ -95,8 +95,8 @@ export const CASES: CorpusCase[] = [
     // A named theme is the only source of document-level page size and margins:
     // `themeOverrides` cannot reach the page block.
     name: 'structure/theme-page-source',
-    document: doc([section([p('Corporate page block.')])], {
-      theme: 'corporate',
+    document: doc([section([p('Devportal page block.')])], {
+      theme: 'devportal',
     }),
   },
 
@@ -276,7 +276,7 @@ export const CASES: CorpusCase[] = [
         }),
         section([p('Empty page object.')], { page: {} }),
       ],
-      { theme: 'modern' }
+      { theme: 'vermilion' }
     ),
   },
 
@@ -463,16 +463,18 @@ export const CASES: CorpusCase[] = [
   },
   {
     // Explicit widths and gaps in points, including a final column with no gap
-    // after it.
+    // after it. The totals are sized against the fallback theme's text measure
+    // (A4 minus `minimal`'s margins), which layout.ts validates against — keep
+    // them comfortably inside it.
     name: 'structure/columns-explicit-widths',
     document: doc([
       section([
         columns(
           {
             columns: [
-              { width: 180, gap: 18 },
-              { width: 120, gap: 18 },
-              { width: 120 },
+              { width: 150, gap: 16 },
+              { width: 110, gap: 16 },
+              { width: 110 },
             ],
           },
           [p(FILLER), p(FILLER), p(FILLER)]

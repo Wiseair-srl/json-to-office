@@ -8,7 +8,7 @@ import { FORMAT } from '../../lib/env';
 // reference these even without a matching customThemes entry.
 const BUILTIN_THEMES: Record<string, readonly string[]> = {
   pptx: ['default', 'dark', 'minimal'],
-  docx: ['minimal', 'corporate', 'modern'],
+  docx: ['minimal', 'devportal', 'vermilion'],
 };
 
 export function UnavailableThemeWarning({ className }: { className?: string }) {

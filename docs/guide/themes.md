@@ -20,7 +20,7 @@ Word themes define thirteen required color keys, plus three optional chart-serie
 | Border     | `border`, `borderPrimary`, `borderSecondary`             | yes      |
 | Chart      | `accent4`, `accent5`, `accent6`                          | no       |
 
-`accent4`–`accent6` carry the same names as the PPTX slots below. They exist for the chart palette, but once a theme defines one it is an ordinary token: any component color prop can name it. None of the built-in DOCX themes define them, so referencing `"accent4"` under a built-in theme throws like any other unknown name.
+`accent4`–`accent6` carry the same names as the PPTX slots below. They exist for the chart palette, but once a theme defines one it is an ordinary token: any component color prop can name it. Every built-in DOCX theme fills all three (each with chart-series colors in its own palette), so `"accent4"` resolves under any bundled theme; under a custom theme that leaves them unset, referencing one throws like any other unknown name.
 
 Resolution rules:
 
@@ -53,27 +53,24 @@ Resolution is more forgiving than DOCX:
 ::: info Charts inherit the palette
 The pptx `chart` and the `highcharts` component in **both** formats default their series colors to the same six tokens in the same order — `['primary', 'secondary', 'accent', 'accent4', 'accent5', 'accent6']` — so a theme that fills every slot gives you one on-brand chart palette across a deck and a document.
 
-A theme that fills only some of them behaves identically in both formats too: the unset slot is dropped, the palette is only as long as the theme has tokens defined, and the chart library reuses that shorter list. No warning is emitted — the fallback rule above governs a token named _explicitly_, not the implicit chart palette. Since no built-in DOCX theme defines `accent4`–`accent6`, a docx chart wraps three colors today. See [Charts](/guide/charts#theme-palette).
+A theme that fills only some of them behaves identically in both formats too: the unset slot is dropped, the palette is only as long as the theme has tokens defined, and the chart library reuses that shorter list. No warning is emitted — the fallback rule above governs a token named _explicitly_, not the implicit chart palette. Every built-in DOCX theme fills `accent4`–`accent6`, so a docx chart on a bundled theme draws from six curated series colors. See [Charts](/guide/charts#theme-palette).
 :::
 
 ## Built-in themes
 
 ### DOCX themes
 
-Three themes are always registered; **`minimal`** is the default and the fallback for unknown names.
+Three themes are always registered (statically imported, so they exist independent of any `dist` build); **`minimal`** is the default and the fallback for unknown names.
 
-| Theme       | Display name           | primary   | secondary | accent    | Heading font | Body font    | Mono font   |
-| ----------- | ---------------------- | --------- | --------- | --------- | ------------ | ------------ | ----------- |
-| `minimal`   | Minimal Clean          | `#000000` | `#666666` | `#2c3e50` | Arial 24     | Arial 11     | Menlo 10    |
-| `corporate` | Corporate Professional | `#1a365d` | `#2D3748` | `#3182CE` | Georgia 26   | Calibri 11   | Consolas 10 |
-| `modern`    | Modern Clean           | `#6D28D9` | `#1E293B` | `#0891B2` | Helvetica 28 | Helvetica 11 | Menlo 10    |
+| Theme       | Display name        | primary   | secondary | accent    | Heading font | Body font     | Mono font      | Voice                                                                                    |
+| ----------- | ------------------- | --------- | --------- | --------- | ------------ | ------------- | -------------- | ---------------------------------------------------------------------------------------- |
+| `minimal`   | Minimal Clean       | `#2B302B` | `#4A5B4E` | `#6E7F71` | Calibri 21   | Calibri 10    | Courier New 10 | Quiet and warm: sage-green ink on ivory neutrals, tracked-tight bold title, wide margins |
+| `devportal` | Field Editorial     | `#12191F` | `#172028` | `#E35B3F` | Helvetica 23 | Helvetica 9.5 | Courier New 10 | Compact editorial: near-black ink, burnt-orange accent, condensed titles, warm tints     |
+| `vermilion` | Vermilion Editorial | `#282829` | `#58595B` | `#EF4130` | Arial 24     | Calibri 10.5  | Courier New 10 | Poster-red display headings with wide tracking, ink text, warm creams                    |
 
-Built packages ship two additional theme files that the runtime loader picks up from `dist`, so they are loadable by name as well:
+Every bundled theme defines the full `heading1`–`heading6` ladder, `title`/`subtitle`, and `componentDefaults` for tables, lists, images and statistics — so a document that uses any component gets the theme's treatment without stating anything. `minimal` and `devportal` carry the palettes and type of the shipped `practice-note` and `field-review` examples, which state no `themeOverrides` at all; `vermilion`'s table default is the `vermilion-annual-report` recipe: gray hairline rows, open sides, red bold headers over a red hairline rule. `minimal` and `devportal` also define `TOC1`–`TOC3` entry styles.
 
-| Theme       | Display name     | primary   | secondary | accent    | Fonts (heading / body / mono)  |
-| ----------- | ---------------- | --------- | --------- | --------- | ------------------------------ |
-| `apex`      | Apex Consulting  | `#0C2340` | `#1B3A5C` | `#D4A843` | Georgia / Calibri / Consolas   |
-| `devportal` | Developer Portal | `#0F172A` | `#334155` | `#0D9488` | Helvetica / Calibri / Consolas |
+Every family the bundled themes name has a metric-compatible substitute in the hosted playground's LibreOffice preview image (Helvetica/Arial → Liberation Sans, Calibri → Carlito, Courier New → Liberation Mono), so the PDF preview breaks lines where Word does. When picking fonts for a custom theme, prefer those families — or Times New Roman and Cambria, which are covered too; Georgia, Verdana, Menlo, Monaco and Consolas fall back to DejaVu faces with different metrics, and Segoe UI to Carlito.
 
 ### PPTX themes
 
@@ -113,7 +110,7 @@ Set `props.theme` on the root component. For DOCX (default `"minimal"`):
 ```json
 {
   "name": "docx",
-  "props": { "theme": "corporate" },
+  "props": { "theme": "devportal" },
   "children": [
     {
       "name": "section",
