@@ -1,5 +1,13 @@
 # @json-to-office/mcp-server
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [2d1a10b]
+  - @json-to-office/shared-docx@2.0.0
+  - @json-to-office/jto-ops@2.0.0
+
 ## 1.11.0
 
 ### Minor Changes
