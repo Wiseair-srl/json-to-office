@@ -54,7 +54,7 @@ await docx(
 await pptx(
   {
     name: 'pptx',
-    props: { theme: 'corporate', grid: { columns: 12, rows: 6 } },
+    props: { theme: 'minimal', grid: { columns: 12, rows: 6 } },
     children: [
       {
         name: 'slide',
@@ -307,7 +307,7 @@ Every text edit becomes a real Word revision (accept/reject, author, timestamp) 
 
 ### Cross-format
 
-- **Theme system**: colors, fonts, spacing, component defaults. 5 built-in DOCX themes (minimal, corporate, modern, apex, devportal) and 3 PPTX themes (default, dark, minimal), or define your own.
+- **Theme system**: colors, fonts, spacing, component defaults. 3 built-in DOCX themes (minimal, devportal, vermilion) and 3 PPTX themes (default, dark, minimal), or define your own.
 - **Font system**: curated Office-safe font list plus code-side `fonts.extraEntries` option for embedding Google Fonts and custom TTF/OTF across DOCX and PPTX. Themes name fonts; code registers them. See [docs/fonts.md](docs/fonts.md).
 - **Schema validation**: full TypeBox schemas that serve as TypeScript types _and_ runtime validators. Catch errors before rendering.
 - **Plugin architecture**: create versioned custom components with `createComponent()`. Full TypeScript support, chainable API, schema generation.
@@ -370,7 +370,7 @@ await pptx(
     name: 'pptx',
     props: {
       title: 'Q1 Review',
-      theme: 'corporate',
+      theme: 'minimal',
       grid: { columns: 12, rows: 6 },
     },
     children: [

@@ -226,21 +226,21 @@ describe('prepared document reuse', () => {
   it('still applies the requested theme to the document it is handed', async () => {
     const adapter = new DocxFormatAdapter();
     // Prepared from one object, rendered from an equal but distinct one.
-    const prepared = await adapter.prepareDocument(report('corporate'), {
-      theme: 'modern',
+    const prepared = await adapter.prepareDocument(report('devportal'), {
+      theme: 'vermilion',
     });
     const generator = await adapter.createGenerator([], {
-      theme: 'modern',
+      theme: 'vermilion',
       deterministic: true,
       prepared,
     });
 
-    const rendered = await generator.generateBuffer(report('corporate'));
-    const modern = await adapter.generateBuffer(report('modern'), {
+    const rendered = await generator.generateBuffer(report('devportal'));
+    const vermilion = await adapter.generateBuffer(report('vermilion'), {
       deterministic: true,
     });
 
-    expect(rendered.equals(modern)).toBe(true);
+    expect(rendered.equals(vermilion)).toBe(true);
   });
 });
 
@@ -358,14 +358,14 @@ function themedDeck(theme?: string) {
 describe('requested theme wins over props.theme', () => {
   it('applies the theme on the docx path without plugins', async () => {
     const adapter = new DocxFormatAdapter();
-    const generator = await adapter.createGenerator([], { theme: 'modern' });
+    const generator = await adapter.createGenerator([], { theme: 'vermilion' });
 
-    const requested = await generator.generateBuffer(report('corporate'));
-    const modern = await adapter.generateBuffer(report('modern'), {});
-    const corporate = await adapter.generateBuffer(report('corporate'), {});
+    const requested = await generator.generateBuffer(report('devportal'));
+    const vermilion = await adapter.generateBuffer(report('vermilion'), {});
+    const devportal = await adapter.generateBuffer(report('devportal'), {});
 
-    expect(requested.equals(modern)).toBe(true);
-    expect(requested.equals(corporate)).toBe(false);
+    expect(requested.equals(vermilion)).toBe(true);
+    expect(requested.equals(devportal)).toBe(false);
   });
 
   it('applies the theme on the pptx path without plugins', async () => {
@@ -400,9 +400,9 @@ describe('requested theme wins over props.theme', () => {
         const generator = await adapter.createGenerator([], {
           theme: 'no-such-theme',
         });
-        await generator.generateBuffer(report('corporate'));
-        await generator.generateBuffer(report('corporate'));
-        await generator.generateBuffer(report('corporate'));
+        await generator.generateBuffer(report('devportal'));
+        await generator.generateBuffer(report('devportal'));
+        await generator.generateBuffer(report('devportal'));
       }
     );
 
@@ -436,12 +436,12 @@ describe('requested theme wins over props.theme', () => {
     const adapter = new DocxFormatAdapter();
     const generator = await adapter.createGenerator([], {});
 
-    const untouched = await generator.generateBuffer(report('corporate'));
-    const corporate = await adapter.generateBuffer(report('corporate'), {});
-    const modern = await adapter.generateBuffer(report('modern'), {});
+    const untouched = await generator.generateBuffer(report('devportal'));
+    const devportal = await adapter.generateBuffer(report('devportal'), {});
+    const vermilion = await adapter.generateBuffer(report('vermilion'), {});
 
-    expect(untouched.equals(corporate)).toBe(true);
-    expect(untouched.equals(modern)).toBe(false);
+    expect(untouched.equals(devportal)).toBe(true);
+    expect(untouched.equals(vermilion)).toBe(false);
   });
 
   it('reads a themePath once, so a bad path warns once per generator', async () => {
@@ -491,14 +491,14 @@ describe('plugins do not restyle the document', () => {
     const adapter = new DocxFormatAdapter();
     const generator = await adapter.createGenerator([docxPlugin], {});
 
-    const corporate = await generator.generateBuffer(report('corporate'));
-    const modern = await generator.generateBuffer(report('modern'));
+    const devportal = await generator.generateBuffer(report('devportal'));
+    const vermilion = await generator.generateBuffer(report('vermilion'));
     const withoutPlugins = await (
       await adapter.createGenerator([], {})
-    ).generateBuffer(report('corporate'));
+    ).generateBuffer(report('devportal'));
 
-    expect(corporate.equals(modern)).toBe(false);
-    expect(corporate.equals(withoutPlugins)).toBe(true);
+    expect(devportal.equals(vermilion)).toBe(false);
+    expect(devportal.equals(withoutPlugins)).toBe(true);
   });
 
   it('keeps props.theme in charge on the pptx plugin path', async () => {
@@ -518,13 +518,13 @@ describe('plugins do not restyle the document', () => {
   it('still lets an explicit docx theme win over props.theme', async () => {
     const adapter = new DocxFormatAdapter();
     const generator = await adapter.createGenerator([docxPlugin], {
-      theme: 'corporate',
+      theme: 'devportal',
     });
 
-    const requested = await generator.generateBuffer(report('modern'));
+    const requested = await generator.generateBuffer(report('vermilion'));
     const own = await (
       await adapter.createGenerator([docxPlugin], {})
-    ).generateBuffer(report('corporate'));
+    ).generateBuffer(report('devportal'));
 
     expect(requested.equals(own)).toBe(true);
   });

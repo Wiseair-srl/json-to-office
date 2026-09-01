@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isValidThemeConfig } from '@json-to-office/shared-docx';
 import { createMockTheme } from './helpers';
-import { corporateTheme } from '../../templates/themes';
+import { devportalTheme } from '../../templates/themes';
 import type { ThemeConfig } from '../../styles';
 
 // Force a Node environment: chart export refuses to run in a browser.
@@ -659,9 +659,9 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       // Built on a bundled theme so the input is one an author could actually
       // load: accent4-6 are optional keys of the theme schema, not a cast.
       const theme: ThemeConfig = {
-        ...corporateTheme,
+        ...devportalTheme,
         colors: {
-          ...corporateTheme.colors,
+          ...devportalTheme.colors,
           accent4: '#AA1111',
           accent5: '#22BB22',
           accent6: '#3333CC',
@@ -674,9 +674,9 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       // Same token order as PPTX: primary, secondary, accent, accent4-6.
       expect(body.infile.colors).toEqual([
-        '#1a365d',
-        '#2D3748',
-        '#3182CE',
+        '#12191F',
+        '#172028',
+        '#E35B3F',
         '#AA1111',
         '#22BB22',
         '#3333CC',
@@ -770,20 +770,30 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       expect(body.infile.colors).toEqual(['#111111', '#222222', '#CC785C']);
     });
 
-    it('emits a three-color palette for a bundled theme, which defines no accent4-6', async () => {
+    it('emits the full six-color palette for a bundled theme, which defines accent4-6', async () => {
       await renderChartToImageProps(
         chartComponent.props as never,
-        corporateTheme
+        devportalTheme
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.infile.colors).toEqual([
-        corporateTheme.colors.primary,
-        corporateTheme.colors.secondary,
-        corporateTheme.colors.accent,
+        devportalTheme.colors.primary,
+        devportalTheme.colors.secondary,
+        devportalTheme.colors.accent,
+        devportalTheme.colors.accent4,
+        devportalTheme.colors.accent5,
+        devportalTheme.colors.accent6,
       ]);
       // Pinned so a palette change in the theme JSON is a visible diff here.
-      expect(body.infile.colors).toEqual(['#1a365d', '#2D3748', '#3182CE']);
+      expect(body.infile.colors).toEqual([
+        '#12191F',
+        '#172028',
+        '#E35B3F',
+        '#46494C',
+        '#8A9299',
+        '#E8A18D',
+      ]);
     });
 
     it('normalizes theme colors stored without a leading #', async () => {

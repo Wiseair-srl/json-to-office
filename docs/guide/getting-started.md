@@ -31,7 +31,7 @@ await docx(
 );
 ```
 
-Open `report.docx` in Word: a themed heading and a paragraph with real bold text (`**32%**` is markdown-style emphasis, parsed by the paragraph component). The `theme: 'minimal'` prop applies one of the built-in themes — swap it for `corporate` or `modern` and regenerate to restyle the whole document without touching content. See [Themes & styling](/guide/themes).
+Open `report.docx` in Word: a themed heading and a paragraph with real bold text (`**32%**` is markdown-style emphasis, parsed by the paragraph component). The `theme: 'minimal'` prop applies one of the built-in themes — swap it for `devportal` or `vermilion` and regenerate to restyle the whole document without touching content. See [Themes & styling](/guide/themes).
 
 ## Your first PPTX
 

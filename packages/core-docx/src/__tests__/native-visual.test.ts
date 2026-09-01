@@ -690,7 +690,7 @@ describe('native mode refuses what it cannot draw', () => {
         elements: [
           {
             name: 'shape',
-            props: { type: 'rect', fill: { color: 'accent4' } },
+            props: { type: 'rect', fill: { color: 'accentNine' } },
           },
         ],
       })
@@ -700,7 +700,7 @@ describe('native mode refuses what it cannot draw', () => {
       expect.objectContaining({
         name: 'visual',
         path: 'sections[0].children[0]',
-        detail: 'elements[0].fill.color "accent4"',
+        detail: 'elements[0].fill.color "accentNine"',
       })
     );
   });
@@ -713,7 +713,7 @@ describe('native mode refuses what it cannot draw', () => {
         elements: [
           {
             name: 'text',
-            props: { text: 'x', underline: { color: 'accent4' } },
+            props: { text: 'x', underline: { color: 'accentNine' } },
           },
         ],
       })
@@ -721,7 +721,7 @@ describe('native mode refuses what it cannot draw', () => {
 
     expect(compiled.unsupported).toContainEqual(
       expect.objectContaining({
-        detail: 'elements[0].underline.color "accent4"',
+        detail: 'elements[0].underline.color "accentNine"',
       })
     );
   });

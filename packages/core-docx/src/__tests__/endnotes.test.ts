@@ -199,7 +199,7 @@ describe('endnotes', () => {
     const size = (xml: string) =>
       Number(xml.match(/<w:sz w:val="(\d+)"\/>/)![1]);
     expect(size(endnoteText)).toBeLessThan(size(normal));
-    expect(endnoteText).toMatch(/w:ascii="Arial"/);
+    expect(endnoteText).toMatch(/w:ascii="Calibri"/);
     expect(styles.match(/w:styleId="EndnoteText"/g)).toHaveLength(1);
     expect(styles.match(/w:styleId="EndnoteReference"/g)).toHaveLength(1);
   });

@@ -239,12 +239,12 @@ describe('generate command contract', () => {
   it('forwards --theme to the generator', async () => {
     const createGenerator = await runWithFlags('jto-theme-flag-', [
       '--theme',
-      'modern',
+      'devportal',
     ]);
 
     expect(createGenerator).toHaveBeenCalledWith(
       [],
-      expect.objectContaining({ theme: 'modern' })
+      expect.objectContaining({ theme: 'devportal' })
     );
   });
 
@@ -278,24 +278,24 @@ describe('generate command contract', () => {
     const themeFile = join(directory, 'filetheme.json');
     writeFileSync(
       themeFile,
-      JSON.stringify({ ...(themes as any).corporate, name: 'from-file' })
+      JSON.stringify({ ...(themes as any).vermilion, name: 'from-file' })
     );
 
     const line = await summarizedTheme('jto-theme-summary-', report(), [
       '--theme',
-      'modern',
+      'devportal',
       '--theme-path',
       themeFile,
     ]);
 
     expect(line).toContain(themeFile);
-    expect(line).not.toContain('modern');
+    expect(line).not.toContain('devportal');
   });
 
   it("reports the document's own theme when none is requested", async () => {
-    const line = await summarizedTheme('jto-theme-own-', report('corporate'));
+    const line = await summarizedTheme('jto-theme-own-', report('vermilion'));
 
-    expect(line).toContain('corporate');
+    expect(line).toContain('vermilion');
     expect(line).not.toContain('default');
   });
 });

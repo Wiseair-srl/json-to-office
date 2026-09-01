@@ -42,6 +42,11 @@ function createLevelsFromSimplifiedProps(
       text = '';
     } else {
       format = props.format;
+      // `bullet` must apply to an explicit `format: 'bullet'` too, or a theme
+      // default that states both ships a marker character nothing reads.
+      if (format === 'bullet') {
+        text = props.bullet || '•';
+      }
     }
   } else {
     // Default to bullet

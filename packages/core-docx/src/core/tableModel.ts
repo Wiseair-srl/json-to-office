@@ -206,7 +206,7 @@ export interface ResolvedColumnGrid {
 export interface ResolvedTable<TComment, TRevision, TRowRevision> {
   columnGrid: ResolvedColumnGrid;
   width: { size: number; unit: 'twips' | 'percent' };
-  header: ResolvedRow<TComment, TRevision, TRowRevision>;
+  header?: ResolvedRow<TComment, TRevision, TRowRevision>;
   rows: ResolvedRow<TComment, TRevision, TRowRevision>[];
   /** Headers repeat across page breaks unless the source disabled it. */
   repeatHeader: boolean;
@@ -407,6 +407,7 @@ function mergePaddingPerSide(
 function outerBorderOverride(
   position: {
     isHeader?: boolean;
+    isFirstRow?: boolean;
     isFirstCol?: boolean;
     isLastCol?: boolean;
     isLastRow?: boolean;
@@ -425,7 +426,10 @@ function outerBorderOverride(
   const color = normalizeBorderColor(tableBorderColor);
   if (tableBorderColor && color) {
     result.borderColor = {};
-    if (position.isHeader && color.top !== UNSET_COLOR) {
+    if (
+      (position.isHeader || position.isFirstRow) &&
+      color.top !== UNSET_COLOR
+    ) {
       result.borderColor.top = color.top;
     }
     if (position.isFirstCol && color.left !== UNSET_COLOR) {
@@ -442,7 +446,7 @@ function outerBorderOverride(
   const size = normalizeBorderSize(tableBorderSize);
   if (tableBorderSize && size) {
     result.borderSize = {};
-    if (position.isHeader && size.top !== UNSET_SIZE) {
+    if ((position.isHeader || position.isFirstRow) && size.top !== UNSET_SIZE) {
       result.borderSize.top = size.top;
     }
     if (position.isFirstCol && size.left !== UNSET_SIZE) {
@@ -571,7 +575,12 @@ function mergeCellDefaults(
   tableDef: CellDefaults | undefined,
   columnDef: CellDefaults | undefined,
   cellDef: CellDefaults | undefined,
-  position: { isFirstCol?: boolean; isLastCol?: boolean; isLastRow?: boolean },
+  position: {
+    isFirstRow?: boolean;
+    isFirstCol?: boolean;
+    isLastCol?: boolean;
+    isLastRow?: boolean;
+  },
   tableOuterBorder: { borderColor?: BorderColor; borderSize?: BorderSize },
   theme: ThemeConfig,
   options: TableModelOptions
@@ -831,6 +840,11 @@ export function resolveTableModel<TComment, TRevision, TRowRevision>(
     );
 
   // -- header row ---------------------------------------------------
+  // A table where no column declares a `header` gets no header row at all.
+  // One used to be emitted anyway — an empty row wearing `headerCellDefaults`,
+  // invisible while nothing styled it and a phantom band the moment a theme's
+  // header fill arrived.
+  const hasHeader = columns.some((column) => column.header !== undefined);
   const headerMerges = columns.map((column, colIndex) =>
     mergeHeaderCellDefaults(
       source.cellDefaults,
@@ -881,6 +895,8 @@ export function resolveTableModel<TComment, TRevision, TRowRevision>(
   // -- body rows ----------------------------------------------------
   const rows = Array.from({ length: rowCount }, (_, rowIndex) => {
     const isLastRow = rowIndex === rowCount - 1;
+    // With no header row, the first body row is the table's top edge.
+    const isFirstRow = !hasHeader && rowIndex === 0;
     const rowProps = source.rows?.[rowIndex];
 
     const merges = columns.map((column, colIndex) =>
@@ -889,6 +905,7 @@ export function resolveTableModel<TComment, TRevision, TRowRevision>(
         column.cellDefaults,
         column.cells?.[rowIndex],
         {
+          isFirstRow,
           isFirstCol: colIndex === 0,
           isLastCol: colIndex === columnCount - 1,
           isLastRow,
@@ -924,8 +941,7 @@ export function resolveTableModel<TComment, TRevision, TRowRevision>(
         const cell = column.cells?.[rowIndex];
         const merged = merges[colIndex];
         const position = {
-          // Data rows are never the first row; the header is.
-          isFirstRow: false,
+          isFirstRow,
           isFirstCol: colIndex === 0,
           isLastCol: colIndex === columnCount - 1,
           isLastRow,
@@ -958,11 +974,11 @@ export function resolveTableModel<TComment, TRevision, TRowRevision>(
     return row;
   });
 
-  adjudicateInteriorEdges([header, ...rows]);
+  adjudicateInteriorEdges([...(hasHeader ? [header] : []), ...rows]);
 
   return {
     ...resolveWidths(source, columns, theme, themeName),
-    header,
+    ...(hasHeader ? { header } : {}),
     rows,
     repeatHeader: source.repeatHeaderOnPageBreak ?? true,
   };

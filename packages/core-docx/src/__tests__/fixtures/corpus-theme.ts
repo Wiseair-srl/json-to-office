@@ -2,16 +2,16 @@
  * DOCX parity corpus — theme.
  *
  * Everything that decides how a document *looks* before a single component
- * prop is read: the five bundled themes, the in-document theme object
+ * prop is read: the three bundled themes, the in-document theme object
  * (`themeOverrides`), the colour-token vocabulary components resolve against,
  * document-level `componentDefaults`, the font surface (roles, families, the
  * registry, numeric weights) and the proofing surface (`language`, `noProof`,
  * `noProofWords`).
  *
- * The five `theme/builtin-*` cases share one body (`SAMPLER`) on purpose: the
+ * The three `theme/builtin-*` cases share one body (`SAMPLER`) on purpose: the
  * only difference between their hashes is the theme name, so a hash that moves
  * for exactly one of them names a single theme file, and one that moves for all
- * five names the theme→docx adapter.
+ * three names the theme→docx adapter.
  *
  * Two corners are deliberately absent:
  *
@@ -25,15 +25,15 @@
  *   covers the one family of non-predefined styles that does — TOC1..TOC6.
  *
  * The two shipped example documents are imported rather than copied, so they
- * keep tracking `templates/documents/` as it changes. Their remote
- * `placehold.co` image URLs are the one edit: a corpus case may not reach the
- * network, so `inlineImages` swaps each `path` for an inline data URI and
- * leaves every other prop alone.
+ * keep tracking `templates/documents/` as it changes. `inlineImages` swaps any
+ * `image.path` for an inline data URI — a corpus case may not reach the
+ * network. The current examples carry only inline SVG images, so the pass is
+ * a no-op that stays as a guard for future edits.
  */
 
 import type { CorpusCase } from './corpus-types';
-import proposalExample from '../../templates/documents/proposal.docx.json';
-import technicalGuideExample from '../../templates/documents/technical-guide.docx.json';
+import practiceNoteExample from '../../templates/documents/practice-note.docx.json';
+import fieldReviewExample from '../../templates/documents/field-review.docx.json';
 
 /** A 4x2 PNG, so aspect-ratio maths has something to work with. */
 const PNG_4X2 =
@@ -197,27 +197,19 @@ function inlineImages<T>(node: T): T {
 
 export const CASES: CorpusCase[] = [
   // --------------------------------------------------------------------------
-  // The bundled themes — one body, five palettes
+  // The bundled themes — one body, one case per theme
   // --------------------------------------------------------------------------
   {
     name: 'theme/builtin-minimal',
     document: page(SAMPLER, { theme: 'minimal' }),
   },
   {
-    name: 'theme/builtin-corporate',
-    document: page(SAMPLER, { theme: 'corporate' }),
-  },
-  {
-    name: 'theme/builtin-modern',
-    document: page(SAMPLER, { theme: 'modern' }),
-  },
-  {
-    name: 'theme/builtin-apex',
-    document: page(SAMPLER, { theme: 'apex' }),
-  },
-  {
     name: 'theme/builtin-devportal',
     document: page(SAMPLER, { theme: 'devportal' }),
+  },
+  {
+    name: 'theme/builtin-vermilion',
+    document: page(SAMPLER, { theme: 'vermilion' }),
   },
 
   // --------------------------------------------------------------------------
@@ -464,7 +456,7 @@ export const CASES: CorpusCase[] = [
     // proved to read the named theme rather than the default one.
     name: 'theme/overrides-over-named-theme',
     document: page(SAMPLER, {
-      theme: 'corporate',
+      theme: 'devportal',
       themeOverrides: {
         colors: { primary: '#8A1538', accent: '#B08D57' },
         fonts: { heading: { family: 'Georgia' } },
@@ -488,18 +480,19 @@ export const CASES: CorpusCase[] = [
     name: 'theme/color-hex-literals',
     document: page(
       colorBody({
-        primary: '#000000',
-        secondary: '#666666',
-        accent: '#2C3E50',
-        textMuted: '#999999',
-        backgroundSecondary: '#FAFAFA',
+        primary: '#2B302B',
+        secondary: '#4A5B4E',
+        accent: '#6E7F71',
+        textMuted: '#75726A',
+        backgroundSecondary: '#F1EFE9',
       }),
       { theme: 'minimal' }
     ),
   },
   {
-    // accent4/5/6 exist only to match the PPTX palette vocabulary and are
-    // unset in every bundled theme, so they can only arrive via overrides.
+    // accent4/5/6 exist to match the PPTX palette vocabulary. The bundled
+    // themes fill them (as chart-series colours), so this pins the other
+    // half: overrides replacing the bundled values.
     name: 'theme/color-extra-accent-slots',
     document: page(
       [
@@ -884,15 +877,15 @@ export const CASES: CorpusCase[] = [
   // The shipped example documents, end to end
   // --------------------------------------------------------------------------
   {
-    // `apex` theme, seven sections, TOC, headers/footers, statistics,
-    // compliance tables and a risk matrix.
-    name: 'theme/example-proposal',
-    document: inlineImages(proposalExample),
+    // `minimal` theme, no overrides: single column, hairline page frame from
+    // a header-anchored SVG, ruled callout and note boxes.
+    name: 'theme/example-practice-note',
+    document: inlineImages(practiceNoteExample),
   },
   {
-    // `devportal` theme, code-heavy: API reference tables, OAuth samples,
-    // webhook docs and a troubleshooting section.
-    name: 'theme/example-technical-guide',
-    document: inlineImages(technicalGuideExample),
+    // `devportal` theme, no overrides: two-column editorial layout, column
+    // breaks, pull quotes and a headerless scorecard table.
+    name: 'theme/example-field-review',
+    document: inlineImages(fieldReviewExample),
   },
 ];

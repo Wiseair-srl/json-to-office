@@ -109,6 +109,62 @@ describe('a block directly under a table', () => {
   });
 });
 
+describe('a block directly above a table', () => {
+  // The floor is 240 twips; `minimal` body space-after is 8pt = 160, so the
+  // top-up wins. A theme whose body space-after exceeds the floor would keep
+  // its own value — Math.max, not assignment.
+  it('separates a body paragraph from the rule below it', async () => {
+    const all = await blocks([
+      { name: 'paragraph', props: { text: 'Straight before.' } },
+      TABLE,
+    ]);
+
+    expect(paragraphAt(all, 0).formatting?.spacing?.afterTwips).toBe(240);
+  });
+
+  it('separates the last item of a list', async () => {
+    const all = await blocks([
+      { name: 'list', props: { items: ['First', 'Second'] } },
+      TABLE,
+    ]);
+
+    // Only the last: the rest sit above list items, not the table, and keep
+    // the theme's own inter-item gap (`minimal` states `item: 2` → 40 twips).
+    expect(paragraphAt(all, 0).formatting?.spacing?.afterTwips).toBe(40);
+    expect(paragraphAt(all, 1).formatting?.spacing?.afterTwips).toBe(240);
+  });
+
+  it('leaves a heading to the space its own style carries', async () => {
+    const all = await blocks([
+      { name: 'heading', props: { text: 'Caption', level: 3 } },
+      TABLE,
+    ]);
+
+    expect(paragraphAt(all, 0).formatting?.spacing?.afterTwips).toBeUndefined();
+  });
+
+  it('leaves an author who stated their own space alone', async () => {
+    const all = await blocks([
+      { name: 'paragraph', props: { text: 'Mine.', spacing: { after: 2 } } },
+      TABLE,
+    ]);
+
+    // Even a value below the floor: a stated space-after is the answer.
+    expect(paragraphAt(all, 0).formatting?.spacing?.afterTwips).toBe(40);
+  });
+
+  it('spaces a paragraph pinched between two tables on both sides', async () => {
+    const all = await blocks([
+      TABLE,
+      { name: 'paragraph', props: { text: 'Between.' } },
+      TABLE,
+    ]);
+
+    expect(paragraphAt(all, 1).formatting?.spacing?.beforeTwips).toBe(120);
+    expect(paragraphAt(all, 1).formatting?.spacing?.afterTwips).toBe(240);
+  });
+});
+
 describe('a list marker stays inside the text margin', () => {
   it('indents level 0 to Word’s own 720/360', async () => {
     const compiled = await compileDocumentToIr({

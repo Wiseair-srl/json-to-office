@@ -1,0 +1,917 @@
+{
+  "name": "docx",
+  "props": {
+    "theme": "minimal",
+    "metadata": {
+      "title": "The Quiet Brief — Atelier Still Practice Note 04",
+      "author": "Atelier Still"
+    },
+    "language": "en-GB",
+    "noProofWords": ["Atelier", "moodboards"]
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 1361,
+            "bottom": 1134,
+            "left": 1531,
+            "right": 1531,
+            "header": 567,
+            "footer": 700,
+            "gutter": 0
+          }
+        },
+        "header": [
+          {
+            "name": "paragraph",
+            "props": {
+              "text": "ATELIER STILL  ·  04",
+              "alignment": "right",
+              "font": {
+                "size": 8,
+                "bold": true,
+                "color": "secondary",
+                "characterSpacing": {
+                  "type": "expanded",
+                  "value": 20
+                }
+              },
+              "spacing": {
+                "after": 0
+              }
+            }
+          },
+          {
+            "name": "image",
+            "props": {
+              "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 595.3 841.9\"><rect x=\"22\" y=\"22\" width=\"551.3\" height=\"797.9\" fill=\"none\" stroke=\"#D8D3C8\" stroke-width=\"0.75\"/></svg>",
+              "width": 794,
+              "height": 1123,
+              "alt": "Page frame",
+              "floating": {
+                "horizontalPosition": {
+                  "relative": "page",
+                  "offset": 0
+                },
+                "verticalPosition": {
+                  "relative": "page",
+                  "offset": 0
+                },
+                "wrap": {
+                  "type": "none"
+                },
+                "behindDocument": true,
+                "allowOverlap": true,
+                "zIndex": 1
+              }
+            }
+          }
+        ],
+        "footer": [
+          {
+            "name": "table",
+            "props": {
+              "width": 100,
+              "hideBorders": true,
+              "columns": [
+                {
+                  "header": {
+                    "font": {
+                      "size": 8,
+                      "bold": true
+                    },
+                    "color": "textMuted",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "borderSize": {
+                      "bottom": 0
+                    },
+                    "content": "ATELIER STILL / PRACTICE NOTE"
+                  },
+                  "cells": []
+                },
+                {
+                  "header": {
+                    "font": {
+                      "size": 8,
+                      "bold": true
+                    },
+                    "color": "textMuted",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "borderSize": {
+                      "bottom": 0
+                    },
+                    "content": "September 2026",
+                    "horizontalAlignment": "right"
+                  },
+                  "cells": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "PRACTICE NOTE",
+            "font": {
+              "size": 8,
+              "bold": true,
+              "color": "secondary",
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 24
+              }
+            },
+            "spacing": {
+              "before": 0,
+              "after": 16
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The quiet\nbrief",
+            "themeStyle": "title"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "How to make a project feel calmer, clearer and more intentional before a single visual decision is made.",
+            "themeStyle": "subtitle"
+          }
+        },
+        {
+          "name": "text-box",
+          "props": {
+            "width": "100%",
+            "style": {
+              "padding": {
+                "top": 12,
+                "right": 16,
+                "bottom": 12,
+                "left": 16
+              },
+              "border": {
+                "top": {
+                  "style": "solid",
+                  "width": 1.25,
+                  "color": "primary"
+                },
+                "bottom": {
+                  "style": "none"
+                },
+                "left": {
+                  "style": "none"
+                },
+                "right": {
+                  "style": "none"
+                }
+              },
+              "shading": {
+                "fill": "backgroundSecondary"
+              }
+            }
+          },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "A good brief removes noise.",
+                "font": {
+                  "size": 17,
+                  "bold": true,
+                  "color": "primary",
+                  "lineSpacing": {
+                    "type": "multiple",
+                    "value": 1.05
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 4
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "It tells the team what must be true, what may remain open, and what should never compete for attention.",
+                "font": {
+                  "size": 10.5,
+                  "color": "#54544E",
+                  "lineSpacing": {
+                    "type": "multiple",
+                    "value": 1.3
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The temptation at the beginning of a project is to collect references. A stronger move is to define the experience in plain language first. When the brief is precise, aesthetic choices become easier because they have a job to do.",
+            "spacing": {
+              "before": 13,
+              "after": 13
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "01  ·  START WITH TENSION",
+            "font": {
+              "size": 8,
+              "bold": true,
+              "color": "secondary",
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 20
+              }
+            },
+            "spacing": {
+              "before": 6,
+              "after": 5
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Every worthwhile project contains a productive contradiction: warm but disciplined; premium but not precious; dense with information but easy to scan. Naming that tension creates a useful design filter.",
+            "spacing": {
+              "after": 10
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "02  ·  DEFINE THE AFTERTASTE",
+            "font": {
+              "size": 8,
+              "bold": true,
+              "color": "secondary",
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 20
+              }
+            },
+            "spacing": {
+              "before": 6,
+              "after": 5
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Ask what someone should remember ten minutes after closing the document or leaving the room. One feeling and one idea are enough.",
+            "spacing": {
+              "after": 0
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "A SMALL METHOD",
+            "pageBreak": true,
+            "font": {
+              "size": 8,
+              "bold": true,
+              "color": "secondary",
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 24
+              }
+            },
+            "spacing": {
+              "before": 0,
+              "after": 16
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Five lines\nbefore moodboards",
+            "themeStyle": "title",
+            "font": {
+              "size": 27
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Write these sentences before selecting type, colour, imagery or materials. They make subjective review much easier.",
+            "themeStyle": "subtitle",
+            "font": {
+              "size": 11
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "01\t**Purpose**",
+            "font": {
+              "size": 11.5,
+              "color": "secondary"
+            },
+            "boldColor": "primary",
+            "tabStops": [
+              {
+                "type": "left",
+                "position": 720
+              }
+            ],
+            "spacing": {
+              "before": 0,
+              "after": 3
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "This exists to help a busy reader understand the decision and feel confident acting on it.",
+            "font": {
+              "size": 9.5,
+              "color": "#434440"
+            },
+            "indent": {
+              "left": 720
+            },
+            "spacing": {
+              "before": 0,
+              "after": 0
+            }
+          }
+        },
+        {
+          "name": "divider",
+          "props": {
+            "color": "borderPrimary",
+            "thickness": 0.5,
+            "spacing": {
+              "before": 8,
+              "after": 8
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "02\t**Priority**",
+            "font": {
+              "size": 11.5,
+              "color": "secondary"
+            },
+            "boldColor": "primary",
+            "tabStops": [
+              {
+                "type": "left",
+                "position": 720
+              }
+            ],
+            "spacing": {
+              "before": 0,
+              "after": 3
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The core idea should be visible in under ten seconds; detail can reward a second pass.",
+            "font": {
+              "size": 9.5,
+              "color": "#434440"
+            },
+            "indent": {
+              "left": 720
+            },
+            "spacing": {
+              "before": 0,
+              "after": 0
+            }
+          }
+        },
+        {
+          "name": "divider",
+          "props": {
+            "color": "borderPrimary",
+            "thickness": 0.5,
+            "spacing": {
+              "before": 8,
+              "after": 8
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "03\t**Voice**",
+            "font": {
+              "size": 11.5,
+              "color": "secondary"
+            },
+            "boldColor": "primary",
+            "tabStops": [
+              {
+                "type": "left",
+                "position": 720
+              }
+            ],
+            "spacing": {
+              "before": 0,
+              "after": 3
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Calm, exact and generous. Never decorative for its own sake.",
+            "font": {
+              "size": 9.5,
+              "color": "#434440"
+            },
+            "indent": {
+              "left": 720
+            },
+            "spacing": {
+              "before": 0,
+              "after": 0
+            }
+          }
+        },
+        {
+          "name": "divider",
+          "props": {
+            "color": "borderPrimary",
+            "thickness": 0.5,
+            "spacing": {
+              "before": 8,
+              "after": 8
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "04\t**Contrast**",
+            "font": {
+              "size": 11.5,
+              "color": "secondary"
+            },
+            "boldColor": "primary",
+            "tabStops": [
+              {
+                "type": "left",
+                "position": 720
+              }
+            ],
+            "spacing": {
+              "before": 0,
+              "after": 3
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Use one strong contrast at a time: scale, weight, spacing or colour — not all four.",
+            "font": {
+              "size": 9.5,
+              "color": "#434440"
+            },
+            "indent": {
+              "left": 720
+            },
+            "spacing": {
+              "before": 0,
+              "after": 0
+            }
+          }
+        },
+        {
+          "name": "divider",
+          "props": {
+            "color": "borderPrimary",
+            "thickness": 0.5,
+            "spacing": {
+              "before": 8,
+              "after": 8
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "05\t**Restraint**",
+            "font": {
+              "size": 11.5,
+              "color": "secondary"
+            },
+            "boldColor": "primary",
+            "tabStops": [
+              {
+                "type": "left",
+                "position": 720
+              }
+            ],
+            "spacing": {
+              "before": 0,
+              "after": 3
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Leave enough unclaimed space that the important material can breathe.",
+            "font": {
+              "size": 9.5,
+              "color": "#434440"
+            },
+            "indent": {
+              "left": 720
+            },
+            "spacing": {
+              "before": 0,
+              "after": 0
+            }
+          }
+        },
+        {
+          "name": "divider",
+          "props": {
+            "color": "borderPrimary",
+            "thickness": 0.5,
+            "spacing": {
+              "before": 8,
+              "after": 8
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The point is not to eliminate taste. It is to give taste a structure. A team can disagree productively when the brief names the trade-offs in advance.",
+            "font": {
+              "italic": true
+            },
+            "spacing": {
+              "before": 12,
+              "after": 0
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "EDITING PASS",
+            "pageBreak": true,
+            "font": {
+              "size": 8,
+              "bold": true,
+              "color": "secondary",
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 24
+              }
+            },
+            "spacing": {
+              "before": 0,
+              "after": 16
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Remove until\nmeaning gets louder",
+            "themeStyle": "title",
+            "font": {
+              "size": 27
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "A polished result often comes from subtraction, but not arbitrary minimalism. Remove elements only when their absence increases hierarchy, comprehension or mood.",
+            "themeStyle": "subtitle",
+            "font": {
+              "size": 11
+            }
+          }
+        },
+        {
+          "name": "text-box",
+          "props": {
+            "width": "100%",
+            "style": {
+              "padding": {
+                "top": 10,
+                "right": 14,
+                "bottom": 10,
+                "left": 14
+              },
+              "border": {
+                "left": {
+                  "style": "solid",
+                  "width": 2.5,
+                  "color": "primary"
+                },
+                "top": {
+                  "style": "none"
+                },
+                "bottom": {
+                  "style": "none"
+                },
+                "right": {
+                  "style": "none"
+                }
+              },
+              "shading": {
+                "fill": "#F7F5F0"
+              }
+            }
+          },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Keep one hero",
+                "font": {
+                  "size": 13,
+                  "bold": true,
+                  "color": "primary"
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Every page needs one dominant element. If two things ask for first attention, decide which one wins.",
+                "font": {
+                  "size": 9.5,
+                  "color": "#434440"
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "",
+            "spacing": {
+              "before": 0,
+              "after": 9
+            },
+            "font": {
+              "lineSpacing": {
+                "type": "exactly",
+                "value": 2
+              }
+            }
+          }
+        },
+        {
+          "name": "text-box",
+          "props": {
+            "width": "100%",
+            "style": {
+              "padding": {
+                "top": 10,
+                "right": 14,
+                "bottom": 10,
+                "left": 14
+              },
+              "border": {
+                "left": {
+                  "style": "solid",
+                  "width": 2.5,
+                  "color": "primary"
+                },
+                "top": {
+                  "style": "none"
+                },
+                "bottom": {
+                  "style": "none"
+                },
+                "right": {
+                  "style": "none"
+                }
+              },
+              "shading": {
+                "fill": "#F7F5F0"
+              }
+            }
+          },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Repeat quietly",
+                "font": {
+                  "size": 13,
+                  "bold": true,
+                  "color": "primary"
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Consistency should be felt before it is noticed. Reuse spacing, alignment and text roles with discipline.",
+                "font": {
+                  "size": 9.5,
+                  "color": "#434440"
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "",
+            "spacing": {
+              "before": 0,
+              "after": 9
+            },
+            "font": {
+              "lineSpacing": {
+                "type": "exactly",
+                "value": 2
+              }
+            }
+          }
+        },
+        {
+          "name": "text-box",
+          "props": {
+            "width": "100%",
+            "style": {
+              "padding": {
+                "top": 10,
+                "right": 14,
+                "bottom": 10,
+                "left": 14
+              },
+              "border": {
+                "left": {
+                  "style": "solid",
+                  "width": 2.5,
+                  "color": "primary"
+                },
+                "top": {
+                  "style": "none"
+                },
+                "bottom": {
+                  "style": "none"
+                },
+                "right": {
+                  "style": "none"
+                }
+              },
+              "shading": {
+                "fill": "#F7F5F0"
+              }
+            }
+          },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "End early",
+                "font": {
+                  "size": 13,
+                  "bold": true,
+                  "color": "primary"
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Stop adding once the intended feeling is present. Extra proof often dilutes confidence rather than increasing it.",
+                "font": {
+                  "size": 9.5,
+                  "color": "#434440"
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "FINAL CHECK",
+            "font": {
+              "size": 8,
+              "bold": true,
+              "color": "secondary",
+              "characterSpacing": {
+                "type": "expanded",
+                "value": 20
+              }
+            },
+            "spacing": {
+              "before": 14,
+              "after": 5
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Can the reader see the point? Can they feel the intended tone? Can they tell what to do next? If all three answers are yes, the document is finished.",
+            "font": {
+              "size": 10.5
+            },
+            "spacing": {
+              "after": 14
+            }
+          }
+        },
+        {
+          "name": "divider",
+          "props": {
+            "color": "secondary",
+            "thickness": 0.75
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Atelier Still is a fictional sample created to demonstrate a single-column, spacious Word layout with a restrained editorial character.",
+            "font": {
+              "size": 8,
+              "italic": true,
+              "color": "textMuted"
+            },
+            "spacing": {
+              "before": 4,
+              "after": 0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

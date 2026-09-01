@@ -413,34 +413,75 @@ export function compileDocument(
 const AFTER_TABLE_TWIPS = 120;
 
 /**
+ * The least space between a body block and the top rule of the table under it.
+ *
+ * Twips. A table has no space-before either, so the gap above one is whatever
+ * the previous paragraph's style leaves — 160–180 twips of body space-after in
+ * the bundled themes, which reads as text sitting on the table's top rule. The
+ * gap is topped up to the larger of this and the theme's own body space-after,
+ * so a theme roomier than this floor is never tightened.
+ */
+const BEFORE_TABLE_TWIPS = 240;
+
+/**
  * Body styles, which is to say the ones whose style contributes no space above.
  *
  * A `Heading2` after a table is already spaced by `Heading2`, and giving it
  * this instead would make it *less* spaced, not more. Only the styles that
- * bring nothing of their own are topped up.
+ * bring nothing of their own are topped up. The same set gates the space
+ * *above* a table: a heading right before one is a caption, and its style's
+ * space-after is a deliberate statement.
  */
 const BODY_STYLE_IDS = new Set([undefined, 'Normal']);
 
 /**
- * Give a body block above-space when a table sits directly above it.
+ * Separate body blocks from the tables they touch.
  *
- * In place, on a block list that is otherwise final. Deliberately not a layout
- * pass: it looks one block back, changes one number, and never moves anything
- * — the alternative is either an empty spacer paragraph, which is content
- * nobody wrote, or living with text drawn on a table border.
+ * Below a table, a body block gains space-before; above one, it gains
+ * space-after (`bodyAfterTwips` is the theme's own body space-after, the floor
+ * {@link BEFORE_TABLE_TWIPS} is measured against). In place, on a block list
+ * that is otherwise final. Deliberately not a layout pass: it looks one block
+ * around, changes one number, and never moves anything — the alternative is
+ * either an empty spacer paragraph, which is content nobody wrote, or living
+ * with text drawn on a table border.
  */
-function separateFromTables(blocks: DocxIrBlock[]): void {
+function separateFromTables(
+  blocks: DocxIrBlock[],
+  bodyAfterTwips: number
+): void {
   for (let i = 1; i < blocks.length; i += 1) {
     const block = blocks[i];
-    if (blocks[i - 1].kind !== 'table') continue;
-    if (block.kind !== 'paragraph') continue;
-    if (!BODY_STYLE_IDS.has(block.styleId)) continue;
-    // An author who stated their own space-before has already answered this.
-    if (block.formatting?.spacing?.beforeTwips !== undefined) continue;
-    block.formatting = {
-      ...block.formatting,
-      spacing: { ...block.formatting?.spacing, beforeTwips: AFTER_TABLE_TWIPS },
-    };
+    const previous = blocks[i - 1];
+    if (
+      previous.kind === 'table' &&
+      block.kind === 'paragraph' &&
+      BODY_STYLE_IDS.has(block.styleId) &&
+      // An author who stated their own space-before has already answered this.
+      block.formatting?.spacing?.beforeTwips === undefined
+    ) {
+      block.formatting = {
+        ...block.formatting,
+        spacing: {
+          ...block.formatting?.spacing,
+          beforeTwips: AFTER_TABLE_TWIPS,
+        },
+      };
+    }
+    if (
+      block.kind === 'table' &&
+      previous.kind === 'paragraph' &&
+      BODY_STYLE_IDS.has(previous.styleId) &&
+      // Same rule as below: a stated space-after is the author's answer.
+      previous.formatting?.spacing?.afterTwips === undefined
+    ) {
+      previous.formatting = {
+        ...previous.formatting,
+        spacing: {
+          ...previous.formatting?.spacing,
+          afterTwips: Math.max(bodyAfterTwips, BEFORE_TABLE_TWIPS),
+        },
+      };
+    }
   }
 }
 
@@ -607,7 +648,10 @@ function compileSection(
     );
   });
 
-  separateFromTables(children);
+  separateFromTables(
+    children,
+    pointsToTwips(getNormalStyle(ctx.theme).spacing?.after ?? 0)
+  );
 
   const compiled: DocxIrSection = {
     id: `s${index}`,
@@ -2297,8 +2341,13 @@ function itemSpacing(
   if (index === 0 && spacing?.before !== undefined) {
     out.beforeTwips = pointsToTwips(spacing.before);
   }
-  if (index === count - 1 && spacing?.after !== undefined) {
-    out.afterTwips = pointsToTwips(spacing.after);
+  if (index === count - 1) {
+    // The item gap is *between* items, so the last item does not get it: with
+    // no stated `after` it falls back to the body style's own space-after
+    // instead of ending the list a couple of points before whatever follows.
+    if (spacing?.after !== undefined) {
+      out.afterTwips = pointsToTwips(spacing.after);
+    }
   } else if (spacing?.item !== undefined) {
     out.afterTwips = pointsToTwips(spacing.item);
   }
@@ -4207,13 +4256,22 @@ function compileTable(
   }
 
   const rows: DocxIrTableRow[] = [
-    compileTableRow(model.header, style.headerParagraph, style.tableHeader, {
-      ctx,
-      path: `${path}.header`,
-      id: `${scope.id}:h`,
-      // Headers repeat across page breaks unless the source disabled it.
-      isHeader: model.repeatHeader,
-    }),
+    ...(model.header
+      ? [
+          compileTableRow(
+            model.header,
+            style.headerParagraph,
+            style.tableHeader,
+            {
+              ctx,
+              path: `${path}.header`,
+              id: `${scope.id}:h`,
+              // Headers repeat across page breaks unless the source disabled it.
+              isHeader: model.repeatHeader,
+            }
+          ),
+        ]
+      : []),
     ...model.rows.map((row, index) =>
       compileTableRow(row, style.cellParagraph, style.tableCell, {
         ctx,
@@ -4301,11 +4359,12 @@ function tableBlocker(
   model: ResolvedTable<unknown, unknown, unknown>,
   path: string
 ): { path: string; detail: string } | undefined {
-  const rows = [model.header, ...model.rows];
+  const headerRows = model.header ? [model.header] : [];
+  const rows = [...headerRows, ...model.rows];
   for (const [rowIndex, row] of rows.entries()) {
     const rowPath = row.isHeader
       ? `${path}.header`
-      : `${path}.rows[${rowIndex - 1}]`;
+      : `${path}.rows[${rowIndex - headerRows.length}]`;
     for (const [colIndex, cell] of row.cells.entries()) {
       const cellPath = `${rowPath}.cells[${colIndex}]`;
       const content = cell.content;

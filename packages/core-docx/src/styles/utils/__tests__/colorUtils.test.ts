@@ -5,23 +5,33 @@ import {
   getAvailableColorNames,
 } from '../colorUtils';
 import type { ThemeConfig } from '../../index';
-import { corporateTheme } from '../../../templates/themes';
+import { devportalTheme } from '../../../templates/themes';
+
+// The bundled themes fill accent4-6 (as chart-series colours), so absence has
+// to be constructed by stripping the keys.
+const colorsWithoutAccentSlots = { ...devportalTheme.colors };
+delete colorsWithoutAccentSlots.accent4;
+delete colorsWithoutAccentSlots.accent5;
+delete colorsWithoutAccentSlots.accent6;
 
 // A JS-object theme (customThemes / inline props.theme) can carry an optional
 // slot that is present but undefined; schema validation never sees it.
 const themeWithUndefinedAccent4 = {
-  ...corporateTheme,
-  colors: { ...corporateTheme.colors, accent4: undefined },
+  ...devportalTheme,
+  colors: { ...colorsWithoutAccentSlots, accent4: undefined },
 } as ThemeConfig;
 
 // Same theme without the key at all.
-const themeWithoutAccent4 = corporateTheme as ThemeConfig;
+const themeWithoutAccent4 = {
+  ...devportalTheme,
+  colors: colorsWithoutAccentSlots,
+} as ThemeConfig;
 
 // A token whose value names a slot the theme never sets: the direct lookup
 // finds a string, but following the reference leads nowhere.
 const themeWithDanglingAlias = {
-  ...corporateTheme,
-  colors: { ...corporateTheme.colors, accent5: 'accent4' },
+  ...devportalTheme,
+  colors: { ...colorsWithoutAccentSlots, accent5: 'accent4' },
 } as ThemeConfig;
 
 function captureError(fn: () => unknown): unknown {
@@ -40,7 +50,7 @@ describe('styles/utils/colorUtils', () => {
     });
 
     it('should resolve a theme color name', () => {
-      expect(resolveColor('primary', themeWithoutAccent4)).toBe('1A365D');
+      expect(resolveColor('primary', themeWithoutAccent4)).toBe('12191F');
     });
 
     it('should throw a clean error for a present-but-undefined color slot', () => {
@@ -72,8 +82,8 @@ describe('styles/utils/colorUtils', () => {
 
     it('should throw a clean error when a default slot is explicitly undefined', () => {
       const theme = {
-        ...corporateTheme,
-        colors: { ...corporateTheme.colors, secondary: undefined },
+        ...devportalTheme,
+        colors: { ...devportalTheme.colors, secondary: undefined },
       } as unknown as ThemeConfig;
 
       const error = captureError(() => resolveColor('secondary', theme));

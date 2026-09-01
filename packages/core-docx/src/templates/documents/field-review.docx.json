@@ -1,0 +1,1148 @@
+{
+  "name": "docx",
+  "props": {
+    "theme": "devportal",
+    "metadata": {
+      "title": "Cities After the Commute — Northstar Field Review, Issue 07",
+      "author": "Northstar"
+    },
+    "language": "en-GB",
+    "noProofWords": ["Northstar"]
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 964,
+            "bottom": 964,
+            "left": 1020,
+            "right": 1020,
+            "header": 454,
+            "footer": 640,
+            "gutter": 0
+          }
+        },
+        "header": [
+          {
+            "name": "image",
+            "props": {
+              "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 595.3 841.9\"><rect x=\"18\" y=\"18\" width=\"559.3\" height=\"805.9\" fill=\"none\" stroke=\"#E35B3F\" stroke-width=\"1\"/></svg>",
+              "width": 794,
+              "height": 1123,
+              "alt": "Page frame",
+              "floating": {
+                "horizontalPosition": {
+                  "relative": "page",
+                  "offset": 0
+                },
+                "verticalPosition": {
+                  "relative": "page",
+                  "offset": 0
+                },
+                "wrap": {
+                  "type": "none"
+                },
+                "behindDocument": true,
+                "allowOverlap": true,
+                "zIndex": 1
+              }
+            }
+          }
+        ],
+        "footer": [
+          {
+            "name": "table",
+            "props": {
+              "hideBorders": true,
+              "columns": [
+                {
+                  "header": {
+                    "content": "NORTHSTAR / FIELD REVIEW",
+                    "color": "textMuted",
+                    "font": {
+                      "size": 8,
+                      "bold": true
+                    },
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "borderSize": {
+                      "bottom": 0
+                    }
+                  },
+                  "cells": []
+                },
+                {
+                  "header": {
+                    "content": "01  •  September 2026",
+                    "color": "textMuted",
+                    "font": {
+                      "size": 8,
+                      "bold": true
+                    },
+                    "horizontalAlignment": "right",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "borderSize": {
+                      "bottom": 0
+                    }
+                  },
+                  "cells": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "name": "columns",
+          "props": {
+            "columns": 2,
+            "gap": 21
+          },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "FIELD REVIEW  /  ISSUE 07",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 12
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Cities after\nthe commute",
+                "themeStyle": "title"
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "A compact briefing on how hybrid work is reshaping neighbourhoods, retail and the design of everyday urban life.",
+                "themeStyle": "subtitle"
+              }
+            },
+            {
+              "name": "divider",
+              "props": {
+                "color": "accent",
+                "thickness": 1.5,
+                "spacing": {
+                  "before": 2,
+                  "after": 12
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "THE SHIFT",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "The office did not disappear; it became episodic. That small change has large spatial consequences. Footfall now arrives in pulses, lunch peaks are shorter, and residential districts carry more weekday energy than they did five years ago."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "For landlords and operators, the useful question is no longer “where are people working?” but “what rhythm does this place need to support?” The answer increasingly combines focus, hospitality, errands and social contact within a much tighter radius.",
+                "spacing": {
+                  "after": 10
+                }
+              }
+            },
+            {
+              "name": "text-box",
+              "props": {
+                "width": "100%",
+                "style": {
+                  "padding": {
+                    "top": 8,
+                    "right": 12,
+                    "bottom": 8,
+                    "left": 12
+                  },
+                  "border": {
+                    "left": {
+                      "style": "solid",
+                      "width": 2.25,
+                      "color": "accent"
+                    },
+                    "top": {
+                      "style": "none"
+                    },
+                    "bottom": {
+                      "style": "none"
+                    },
+                    "right": {
+                      "style": "none"
+                    }
+                  },
+                  "shading": {
+                    "fill": "backgroundSecondary"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "name": "paragraph",
+                  "props": {
+                    "text": "“The winning district is not the busiest one. It is the one that remains useful across the whole day.”",
+                    "font": {
+                      "size": 10.5,
+                      "bold": true,
+                      "color": "textPrimary",
+                      "lineSpacing": {
+                        "type": "multiple",
+                        "value": 1.25
+                      }
+                    },
+                    "spacing": {
+                      "before": 0,
+                      "after": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "DESIGN PRINCIPLE",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 12,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "That reframes mixed-use planning as an operating model rather than a zoning label.",
+                "spacing": {
+                  "after": 0
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "THREE SIGNALS",
+                "columnBreak": true,
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 8
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "01   **Midweek density**",
+                "font": {
+                  "size": 12.5,
+                  "color": "accent"
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "before": 4,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Tuesday to Thursday still concentrate office demand, but the strongest districts smooth the curve with culture, services and evening programming.",
+                "font": {
+                  "size": 8.5
+                },
+                "spacing": {
+                  "after": 9
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "02   **Smaller radii**",
+                "font": {
+                  "size": 12.5,
+                  "color": "accent"
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "before": 4,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "People are making more local decisions: coffee, fitness, healthcare and informal meetings compete within a fifteen-minute catchment.",
+                "font": {
+                  "size": 8.5
+                },
+                "spacing": {
+                  "after": 9
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "03   **Third-space quality**",
+                "font": {
+                  "size": 12.5,
+                  "color": "accent"
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "before": 4,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Lobbies, cafés and libraries now absorb tasks once reserved for desks. Comfort, power, acoustics and permission to linger matter more.",
+                "font": {
+                  "size": 8.5
+                },
+                "spacing": {
+                  "after": 0
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "pageBreak": true,
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 964,
+            "bottom": 964,
+            "left": 1020,
+            "right": 1020,
+            "header": 454,
+            "footer": 640,
+            "gutter": 0
+          }
+        },
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
+      "children": [
+        {
+          "name": "columns",
+          "props": {
+            "columns": 2,
+            "gap": 21
+          },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "PATTERN 01  /  THE ALL-DAY BLOCK",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 10
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "From occupancy\nto usefulness",
+                "themeStyle": "title",
+                "font": {
+                  "size": 23
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "A building can be full and still underperform. The more revealing measure is the number of distinct reasons people have to enter, stay and return.",
+                "themeStyle": "subtitle"
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "MORNING",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 2,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Fast coffee, school drop-off, focused work and short appointments reward visible entrances, frictionless service and strong daylight."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "MIDDAY",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 6,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "The dominant need shifts to convenience: lunch, quick retail, informal meetings and places that allow a 30-minute reset without a reservation."
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "EVENING",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 6,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "A district earns resilience when it converts naturally into leisure. Lighting, food, fitness and cultural programming should feel intentional rather than residual.",
+                "spacing": {
+                  "after": 10
+                }
+              }
+            },
+            {
+              "name": "text-box",
+              "props": {
+                "width": "100%",
+                "style": {
+                  "padding": {
+                    "top": 8,
+                    "right": 12,
+                    "bottom": 8,
+                    "left": 12
+                  },
+                  "border": {
+                    "left": {
+                      "style": "solid",
+                      "width": 2.25,
+                      "color": "secondary"
+                    },
+                    "top": {
+                      "style": "none"
+                    },
+                    "bottom": {
+                      "style": "none"
+                    },
+                    "right": {
+                      "style": "none"
+                    }
+                  },
+                  "shading": {
+                    "fill": "#F2F3F3"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "name": "paragraph",
+                  "props": {
+                    "text": "Design the handoff between uses, not only the uses themselves.",
+                    "font": {
+                      "size": 10.5,
+                      "bold": true,
+                      "color": "textPrimary",
+                      "lineSpacing": {
+                        "type": "multiple",
+                        "value": 1.25
+                      }
+                    },
+                    "spacing": {
+                      "before": 0,
+                      "after": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "OPERATING NOTE",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "secondary",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 12,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "The transition moments — 8:30, 12:30, 18:00 — often expose the weak points in circulation, staffing and atmosphere.",
+                "spacing": {
+                  "after": 0
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "A SIMPLE SCORECARD",
+                "columnBreak": true,
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 8
+                }
+              }
+            },
+            {
+              "name": "table",
+              "props": {
+                "hideBorders": true,
+                "cellDefaults": {
+                  "borderSize": 0
+                },
+                "columns": [
+                  {
+                    "width": 62,
+                    "cellDefaults": {
+                      "backgroundColor": "secondary",
+                      "color": "#FFFFFF",
+                      "font": {
+                        "size": 8,
+                        "bold": true
+                      },
+                      "verticalAlignment": "middle",
+                      "padding": {
+                        "top": 10,
+                        "bottom": 10,
+                        "left": 8,
+                        "right": 6
+                      }
+                    },
+                    "cells": [
+                      {
+                        "content": "ACCESS"
+                      },
+                      {
+                        "content": "DWELL"
+                      },
+                      {
+                        "content": "MIX"
+                      },
+                      {
+                        "content": "ADAPT"
+                      }
+                    ]
+                  },
+                  {
+                    "width": 42,
+                    "cellDefaults": {
+                      "backgroundColor": "accent",
+                      "color": "#FFFFFF",
+                      "font": {
+                        "size": 9,
+                        "bold": true
+                      },
+                      "horizontalAlignment": "center",
+                      "verticalAlignment": "middle",
+                      "padding": {
+                        "top": 10,
+                        "bottom": 10,
+                        "left": 4,
+                        "right": 4
+                      }
+                    },
+                    "cells": [
+                      {
+                        "content": "9/10"
+                      },
+                      {
+                        "content": "7/10"
+                      },
+                      {
+                        "content": "8/10"
+                      },
+                      {
+                        "content": "9/10"
+                      }
+                    ]
+                  },
+                  {
+                    "cellDefaults": {
+                      "color": "textPrimary",
+                      "font": {
+                        "size": 8
+                      },
+                      "verticalAlignment": "middle",
+                      "padding": {
+                        "top": 6,
+                        "bottom": 6,
+                        "left": 9,
+                        "right": 0
+                      }
+                    },
+                    "cells": [
+                      {
+                        "content": "Multiple arrival modes and clear thresholds."
+                      },
+                      {
+                        "content": "Comfortable, but limited choice after 17:00."
+                      },
+                      {
+                        "content": "Good daily variety with room for more culture."
+                      },
+                      {
+                        "content": "Spaces switch use with minimal reset."
+                      }
+                    ],
+                    "width": 128
+                  }
+                ]
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "READING THE SCORES",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 12,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "High adaptability compensates for uneven dwell time. The next intervention should focus on the late-afternoon gap rather than adding more daytime capacity.",
+                "font": {
+                  "size": 8.5
+                },
+                "spacing": {
+                  "after": 10
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "DESIGN IMPLICATION",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Prioritise reversible changes: lighting scenes, movable furniture, shared counters and services that can scale up only when demand appears.",
+                "font": {
+                  "size": 8.5
+                },
+                "spacing": {
+                  "after": 0
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "pageBreak": true,
+        "page": {
+          "size": "A4",
+          "margins": {
+            "top": 964,
+            "bottom": 964,
+            "left": 1020,
+            "right": 1020,
+            "header": 454,
+            "footer": 640,
+            "gutter": 0
+          }
+        },
+        "header": "linkToPrevious",
+        "footer": "linkToPrevious"
+      },
+      "children": [
+        {
+          "name": "columns",
+          "props": {
+            "columns": 2,
+            "gap": 21
+          },
+          "children": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "PLAYBOOK  /  90 DAYS",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 10
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Test the district\nbefore redesigning it",
+                "themeStyle": "title",
+                "font": {
+                  "size": 23
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Small operational experiments reveal more than large speculative plans. Use a quarter to test demand, then lock the winning behaviours into the permanent brief.",
+                "themeStyle": "subtitle",
+                "spacing": {
+                  "after": 14
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "W01–02   **Observe**",
+                "font": {
+                  "size": 12.5,
+                  "color": "accent"
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "before": 0,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Map footfall by hour, note dwell points, record queues and identify “dead” transitions between uses.",
+                "font": {
+                  "size": 8.5
+                },
+                "spacing": {
+                  "after": 10
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "W03–05   **Prototype**",
+                "font": {
+                  "size": 12.5,
+                  "color": "accent"
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "before": 0,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Add movable seating, power, shade, pop-up retail or a programmed event. Change one variable at a time.",
+                "font": {
+                  "size": 8.5
+                },
+                "spacing": {
+                  "after": 10
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "W06–09   **Measure**",
+                "font": {
+                  "size": 12.5,
+                  "color": "accent"
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "before": 0,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Track repeat visits, duration and conversion. Pair counts with short intercept interviews to explain behaviour.",
+                "font": {
+                  "size": 8.5
+                },
+                "spacing": {
+                  "after": 10
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "W10–12   **Codify**",
+                "font": {
+                  "size": 12.5,
+                  "color": "accent"
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "before": 0,
+                  "after": 3
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Translate the strongest tests into design requirements, service standards and a simple weekly operating calendar.",
+                "font": {
+                  "size": 8.5
+                },
+                "spacing": {
+                  "after": 0
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "WHAT TO PROTECT",
+                "columnBreak": true,
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Do not over-program every square metre. The most valued urban spaces retain a degree of ambiguity: they invite people to appropriate them without asking permission.",
+                "spacing": {
+                  "after": 10
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "CLOSING THOUGHT",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "text-box",
+              "props": {
+                "width": "100%",
+                "style": {
+                  "padding": {
+                    "top": 8,
+                    "right": 12,
+                    "bottom": 8,
+                    "left": 12
+                  },
+                  "border": {
+                    "left": {
+                      "style": "solid",
+                      "width": 2.25,
+                      "color": "accent"
+                    },
+                    "top": {
+                      "style": "none"
+                    },
+                    "bottom": {
+                      "style": "none"
+                    },
+                    "right": {
+                      "style": "none"
+                    }
+                  },
+                  "shading": {
+                    "fill": "backgroundSecondary"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "name": "paragraph",
+                  "props": {
+                    "text": "Useful places feel specific in character and flexible in use.",
+                    "font": {
+                      "size": 10.5,
+                      "bold": true,
+                      "color": "textPrimary",
+                      "lineSpacing": {
+                        "type": "multiple",
+                        "value": 1.25
+                      }
+                    },
+                    "spacing": {
+                      "before": 0,
+                      "after": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "DECISION FILTER",
+                "font": {
+                  "size": 8,
+                  "bold": true,
+                  "color": "accent",
+                  "characterSpacing": {
+                    "type": "expanded",
+                    "value": 20
+                  }
+                },
+                "spacing": {
+                  "before": 12,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "**KEEP** — anything that improves choice without increasing friction.",
+                "font": {
+                  "size": 8.5
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "after": 5
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "**TEST** — ideas that depend on new behaviour or staffing.",
+                "font": {
+                  "size": 8.5
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "after": 5
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "**DROP** — features that look distinctive but have no clear daily use.",
+                "font": {
+                  "size": 8.5
+                },
+                "boldColor": "primary",
+                "spacing": {
+                  "after": 12
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "Northstar Field Review is a fictional editorial sample created to demonstrate a two-column Word layout.",
+                "font": {
+                  "size": 8,
+                  "italic": true,
+                  "color": "textMuted"
+                },
+                "spacing": {
+                  "after": 0
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

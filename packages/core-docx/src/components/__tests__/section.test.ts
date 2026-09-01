@@ -154,7 +154,7 @@ describe('components/section', () => {
     const { page } = ir.sections[0].properties;
     expect(page.widthTwips).toBe(16838);
     expect(page.heightTwips).toBe(23811);
-    expect(page.margins.topTwips).toBe(1440);
+    expect(page.margins.topTwips).toBe(1700);
   });
 
   it('takes custom dimensions, and gives them no paper code', async () => {

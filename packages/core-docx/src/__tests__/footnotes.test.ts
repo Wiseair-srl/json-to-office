@@ -256,7 +256,7 @@ describe('footnotes', () => {
     const size = (xml: string) =>
       Number(xml.match(/<w:sz w:val="(\d+)"\/>/)![1]);
     expect(size(footnoteText)).toBeLessThan(size(normal));
-    expect(footnoteText).toMatch(/w:ascii="Arial"/);
+    expect(footnoteText).toMatch(/w:ascii="Calibri"/);
 
     // Exactly one definition per id — a duplicate w:styleId is resolved
     // differently by different readers.

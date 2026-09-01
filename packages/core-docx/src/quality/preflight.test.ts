@@ -760,7 +760,7 @@ describe('exact line boxes', () => {
   });
 
   it('falls back to the size the paragraph style supplies', () => {
-    // Nothing states a size, so the run inherits `normal` (11pt) — which is
+    // Nothing states a size, so the run inherits `normal` (10pt) — which is
     // the size Word lays out, and the only one worth comparing against.
     const findings = docxDiagnostics(
       doc([
@@ -774,7 +774,7 @@ describe('exact line boxes', () => {
       ])
     );
     expect(findings).toHaveLength(1);
-    expect(findings[0].context).toMatchObject({ fontSizePt: 11 });
+    expect(findings[0].context).toMatchObject({ fontSizePt: 10 });
     expect(findings[0].message).toContain('inherited from the paragraph style');
   });
 

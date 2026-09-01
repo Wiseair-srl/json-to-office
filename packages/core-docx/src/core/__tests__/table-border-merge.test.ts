@@ -17,6 +17,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
+import { createMinimalTheme } from '@json-to-office/shared-docx';
 import { generateBufferFromJson } from '../generator';
 
 type Side = { val: string; color: string; sz: string };
@@ -25,11 +26,18 @@ type CellBorders = Record<'top' | 'left' | 'bottom' | 'right', Side>;
 async function cellBorders(
   props: Record<string, unknown>
 ): Promise<CellBorders[]> {
-  const buffer = await generateBufferFromJson({
-    name: 'docx',
-    props: { theme: 'minimal' },
-    children: [{ name: 'table', props }],
-  } as never);
+  // A scaffold theme with no `componentDefaults`, so nothing but the props
+  // stated here reaches the table — every bundled theme now ships a header
+  // bottom rule that would sit under every unstated header side and muddy the
+  // adjudication being pinned.
+  const buffer = await generateBufferFromJson(
+    {
+      name: 'docx',
+      props: { theme: 'bare' },
+      children: [{ name: 'table', props }],
+    } as never,
+    { customThemes: { bare: createMinimalTheme('bare') } }
+  );
   const zip = await JSZip.loadAsync(buffer);
   const xml = await zip.file('word/document.xml')!.async('string');
 
