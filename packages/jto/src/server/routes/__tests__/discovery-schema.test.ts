@@ -181,6 +181,47 @@ describe('/api/discovery/schemas/document', () => {
     }
   });
 
+  it('checks the key rather than trusting the header', async () => {
+    // The global auth middleware is not the backstop here: both hosted
+    // playgrounds run `API_AUTH_MODE=disabled`, which never mounts it, and
+    // `auto` with no key configured lets anonymous callers through. A header
+    // carrying any value at all must not be enough to reach discovery.
+    const previousEnv = process.env.NODE_ENV;
+    const previousKey = process.env.API_KEY;
+    process.env.NODE_ENV = 'production';
+    try {
+      delete process.env.API_KEY;
+      const noKeyConfigured = await app.request('/discovery/load-plugins', {
+        method: 'POST',
+        headers: { 'X-API-Key': 'anything-at-all' },
+      });
+      expect(noKeyConfigured.status).toBe(401);
+
+      process.env.API_KEY = 'the-real-key';
+      const wrongKey = await app.request('/discovery/load-plugins', {
+        method: 'POST',
+        headers: { 'X-API-Key': 'not-the-real-key' },
+      });
+      expect(wrongKey.status).toBe(401);
+
+      const rightKey = await app.request('/discovery/load-plugins', {
+        method: 'POST',
+        headers: { 'X-API-Key': 'the-real-key' },
+      });
+      expect(rightKey.status).toBe(200);
+
+      const bearer = await app.request('/discovery/load-plugins', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer the-real-key' },
+      });
+      expect(bearer.status).toBe(200);
+    } finally {
+      process.env.NODE_ENV = previousEnv;
+      if (previousKey === undefined) delete process.env.API_KEY;
+      else process.env.API_KEY = previousKey;
+    }
+  });
+
   it('tells the client which of the two it is', async () => {
     // The rail reads this to decide whether a disk plugin gets a live switch
     // or a line saying the server will not load it.

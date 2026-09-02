@@ -13,6 +13,7 @@ import { AppEnv } from '../types/hono.js';
 import { Container } from '../container/index.js';
 import { tbValidator, getValidated } from '../lib/typebox-validator.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
+import { hasValidApiKey } from '../middleware/hono/auth.js';
 import {
   config,
   pluginAutoloadEnabled,
@@ -482,13 +483,21 @@ discoveryRouter.get('/plugin/:name', async (c) => {
 });
 
 discoveryRouter.post('/load-plugins', async (c) => {
-  // A key is required regardless of the global auth setting, except on a
-  // developer's own machine, where a keyless caller may still ask, as it
+  // A valid key is required regardless of the global auth setting, except on
+  // a developer's own machine, where a keyless caller may still ask, as it
   // always could. `PLUGIN_AUTOLOAD` does not open this route: it authorizes
   // the boot preload, not the caller, and a deployment that opted in already
   // has these plugins registered before the first request arrives.
-  const apiKey = c.req.header('X-API-Key') || c.req.header('Authorization');
-  if (!apiKey && !requestTriggeredPluginLoadAllowed()) {
+  //
+  // Checked here rather than left to the global middleware, which a
+  // deployment can switch off (`API_AUTH_MODE=disabled`, what both hosted
+  // playgrounds run) or configure into waving anonymous callers through
+  // (`auto` with no key). Under either, a header with any value at all used
+  // to be enough to reach `discoverAndLoad()`.
+  if (
+    !requestTriggeredPluginLoadAllowed() &&
+    !hasValidApiKey(c.req.raw.headers)
+  ) {
     return c.json({ success: false, error: 'Authentication required' }, 401);
   }
 
