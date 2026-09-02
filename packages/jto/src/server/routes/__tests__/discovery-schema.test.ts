@@ -50,18 +50,18 @@ describe('/api/discovery/schemas/document', () => {
   it('includes requested plugins with an empty registry (no prior load-plugins)', async () => {
     expect(PluginRegistry.getInstance().hasPlugins()).toBe(false);
 
+    // `weather` is the only example plugin on disk; a name that matches
+    // nothing stands in for "requested but not discovered".
     const res = await app.request(
-      '/discovery/schemas/document?plugins=columnsLayout,weather'
+      '/discovery/schemas/document?plugins=weather,not-a-plugin'
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     const names = componentNames(body.data);
 
     expect(names).toContain('weather');
-    expect(names).toContain('columnsLayout');
     expect(names).toContain('heading');
-    // only the requested plugins, not everything discovered
-    expect(names).not.toContain('eldermoor-census');
+    expect(names).not.toContain('not-a-plugin');
   });
 
   it('keeps an explicit empty selection plugin-free', async () => {
@@ -73,7 +73,6 @@ describe('/api/discovery/schemas/document', () => {
 
     expect(names).toContain('heading');
     expect(names).not.toContain('weather');
-    expect(names).not.toContain('columnsLayout');
   });
 
   it('does not trigger plugin loading in production', async () => {

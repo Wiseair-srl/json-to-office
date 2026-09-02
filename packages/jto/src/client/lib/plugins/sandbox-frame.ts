@@ -7,17 +7,21 @@
  * Content-Security-Policy, and the worker it spawns from a blob: URL inherits
  * that policy — so `import()` of a remote script, `fetch`, WebSockets and
  * WebTransport are refused by the browser itself, not by a list of globals
- * the runtime tried to delete. `connect-src` is the one knob: `'none'` unless
- * the plugin's Network switch is on.
+ * the runtime tried to delete. `connect-src` is the one knob, and it names
+ * the plugin's own origins: `'none'` until its Network switch is on and its
+ * allowlist has something in it (network-policy.ts).
  *
  * The page talks to the frame with `postMessage`; the frame relays to the
  * worker. Only messages from this frame's window are accepted back.
  */
+import { connectSrcValue } from './network-policy';
 
 export interface SandboxFrameOptions {
   /** The bundled runtime script (virtual:jto-sandbox-runtime). */
   runtime: string;
   allowNetwork: boolean;
+  /** Origins the switch grants; empty reaches nothing. */
+  networkOrigins?: readonly string[];
   onMessage: (data: unknown) => void;
   onError: (message: string) => void;
 }
@@ -34,7 +38,8 @@ function nonce(): string {
  */
 export function sandboxDocument(
   scriptNonce: string,
-  allowNetwork: boolean
+  allowNetwork: boolean,
+  networkOrigins?: readonly string[]
 ): string {
   const csp = [
     "default-src 'none'",
@@ -43,7 +48,9 @@ export function sandboxDocument(
     // worker cannot import() code from anywhere.
     `script-src 'nonce-${scriptNonce}' blob: 'unsafe-eval'`,
     'worker-src blob:',
-    `connect-src ${allowNetwork ? '*' : "'none'"}`,
+    // Built by network-policy.ts, which re-validates every origin: the value
+    // lands inside the policy, so nothing reaches it unparsed.
+    `connect-src ${connectSrcValue(allowNetwork, networkOrigins)}`,
     "base-uri 'none'",
     "form-action 'none'",
   ].join('; ');
@@ -124,7 +131,11 @@ export class SandboxFrame {
         '*'
       );
     });
-    iframe.srcdoc = sandboxDocument(scriptNonce, options.allowNetwork);
+    iframe.srcdoc = sandboxDocument(
+      scriptNonce,
+      options.allowNetwork,
+      options.networkOrigins
+    );
     document.body.appendChild(iframe);
     // Nobody awaits `ready` before the first post; surface a start failure
     // there rather than as an unhandled rejection here.

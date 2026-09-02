@@ -1,8 +1,6 @@
 import { createDocumentGenerator } from '../createDocumentGenerator';
 import { exportPluginSchema } from '../schema';
 import { weatherComponent } from './weather.component';
-import { columnsLayoutComponent } from './columns-layout.component';
-import { nestedSectionsComponent } from './nested-section.component';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -31,10 +29,7 @@ async function runPluginDemo() {
   const generator = createDocumentGenerator({
     theme: minimalTheme,
     debug: true, // Enable debug logging
-  })
-    .addComponent(weatherComponent)
-    .addComponent(columnsLayoutComponent)
-    .addComponent(nestedSectionsComponent);
+  }).addComponent(weatherComponent);
 
   console.log(
     '✅ Registered components:',
@@ -94,10 +89,7 @@ async function runPluginDemo() {
 
     // Also save the JSON schema
     const schemaPath = path.join(outputDir, 'plugin-demo-schema.json');
-    await exportPluginSchema(
-      [weatherComponent, columnsLayoutComponent, nestedSectionsComponent],
-      schemaPath
-    );
+    await exportPluginSchema([weatherComponent], schemaPath);
     console.log(`✅ Schema saved to: ${schemaPath}`);
   } catch (error) {
     console.error('❌ Error generating document:', error);

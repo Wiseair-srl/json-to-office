@@ -24,7 +24,33 @@ export interface LoadSpec {
   js: string;
   format: PluginFormat;
   allowNetwork: boolean;
+  /** Origins the frame's CSP will name; order-insensitive for `sameSpec`. */
+  networkOrigins?: string[];
   examples: PluginExample[];
+}
+
+/** The part of a spec baked into the frame's policy and unchangeable after. */
+interface FramePolicy {
+  allowNetwork: boolean;
+  networkOrigins: string[];
+}
+
+function framePolicy(spec: {
+  allowNetwork: boolean;
+  networkOrigins?: readonly string[];
+}): FramePolicy {
+  return {
+    allowNetwork: spec.allowNetwork,
+    networkOrigins: [...(spec.networkOrigins ?? [])].sort(),
+  };
+}
+
+function samePolicy(a: FramePolicy, b: FramePolicy): boolean {
+  return (
+    a.allowNetwork === b.allowNetwork &&
+    a.networkOrigins.length === b.networkOrigins.length &&
+    a.networkOrigins.every((origin, i) => origin === b.networkOrigins[i])
+  );
 }
 
 const LOAD_TIMEOUT_MS = 8_000;
@@ -43,6 +69,11 @@ interface Pending {
 
 interface Entry {
   frame: SandboxFrame;
+  /**
+   * The policy this frame's CSP was built from. A frame cannot be re-policed
+   * after `srcdoc`, so a request under a different one needs a new frame.
+   */
+  policy: FramePolicy;
   /** The spec the worker was loaded with; null until `loaded` arrives. */
   loaded: LoadSpec | null;
   pending: Map<number, Pending>;
@@ -84,7 +115,7 @@ function sameSpec(a: LoadSpec, b: LoadSpec): boolean {
   return (
     a.js === b.js &&
     a.format === b.format &&
-    a.allowNetwork === b.allowNetwork &&
+    samePolicy(framePolicy(a), framePolicy(b)) &&
     JSON.stringify(a.examples) === JSON.stringify(b.examples)
   );
 }
@@ -93,22 +124,34 @@ class PluginHost {
   private entries = new Map<string, Entry>();
   private nextId = 1;
 
-  private async entry(docName: string, allowNetwork: boolean): Promise<Entry> {
+  private async entry(docName: string, policy: FramePolicy): Promise<Entry> {
     const existing = this.entries.get(docName);
-    if (existing) return existing;
+    if (existing) {
+      // The CSP is fixed when the frame is written. Reusing one built under a
+      // wider policy would keep granting what the switch has since taken
+      // away, so the mismatch is what forces a new frame — not the caller
+      // remembering to dispose.
+      if (samePolicy(existing.policy, policy)) return existing;
+      this.dispose(
+        docName,
+        new Error(`Plugin "${docName}" network policy changed`)
+      );
+    }
     const runtime = await loadRuntime();
     // Two callers racing to create the same frame: the second wins nothing.
     const raced = this.entries.get(docName);
     if (raced) return raced;
     const entry: Entry = {
       frame: null as unknown as SandboxFrame,
+      policy,
       loaded: null,
       pending: new Map(),
       idleTimer: null,
     };
     entry.frame = new SandboxFrame({
       runtime,
-      allowNetwork,
+      allowNetwork: policy.allowNetwork,
+      networkOrigins: policy.networkOrigins,
       onMessage: (data) => {
         const response = data as SandboxResponse;
         if (!response || typeof response.id !== 'number') return;
@@ -142,14 +185,14 @@ class PluginHost {
 
   private async request(
     docName: string,
-    allowNetwork: boolean,
+    policy: FramePolicy,
     payload: SandboxRequestPayload,
     timeoutMs: number,
     what: string,
     signal?: AbortSignal
   ): Promise<SandboxResponse> {
     if (signal?.aborted) throw new PluginAbortedError(docName);
-    const entry = await this.entry(docName, allowNetwork);
+    const entry = await this.entry(docName, policy);
     if (entry.idleTimer) clearTimeout(entry.idleTimer);
     const id = this.nextId++;
     const result = new Promise<SandboxResponse>((resolve, reject) => {
@@ -204,8 +247,15 @@ class PluginHost {
     }
     const response = await this.request(
       docName,
-      spec.allowNetwork,
-      { type: 'load', ...spec },
+      framePolicy(spec),
+      {
+        type: 'load',
+        js: spec.js,
+        format: spec.format,
+        allowNetwork: spec.allowNetwork,
+        networkOrigins: spec.networkOrigins ?? [],
+        examples: spec.examples,
+      },
       LOAD_TIMEOUT_MS,
       'loading'
     );
@@ -231,8 +281,12 @@ class PluginHost {
     signal?: AbortSignal
   ): Promise<PluginRenderResult> {
     const record = useBrowserPluginsStore.getState().records[docName];
+    const policy = framePolicy({
+      allowNetwork: record?.allowNetwork ?? false,
+      networkOrigins: record?.networkOrigins,
+    });
     const entry = this.entries.get(docName);
-    if (!entry || !entry.loaded) {
+    if (!entry || !entry.loaded || !samePolicy(entry.policy, policy)) {
       if (!record?.js || !record.metadata) {
         throw new Error(`Plugin "${docName}" is not compiled`);
       }
@@ -240,12 +294,13 @@ class PluginHost {
         js: record.js,
         format: record.metadata.format,
         allowNetwork: record.allowNetwork,
+        networkOrigins: record.networkOrigins,
         examples: record.metadata.examples,
       });
     }
     const response = await this.request(
       docName,
-      record?.allowNetwork ?? false,
+      policy,
       {
         type: 'render',
         version: request.version,

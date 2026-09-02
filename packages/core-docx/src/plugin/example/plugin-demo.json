@@ -2,48 +2,43 @@
   "$schema": "../../../../../output/examples/plugin-demo-schema.json",
   "name": "docx",
   "props": {
-    "title": "Plugin Demo"
+    "title": "Weather Plugin Demo"
   },
   "children": [
-    {
-      "name": "nestedSections",
-      "props": {}
-    },
     {
       "name": "section",
       "props": {
         "meta": {
-          "title": "Weather Information"
+          "title": "Today"
         }
       },
       "children": [
         {
           "name": "heading",
           "props": {
-            "text": "Weather Information",
+            "text": "Today",
             "level": 1,
-            "spacing": {
-              "before": 0,
-              "after": 0
-            }
+            "spacing": { "before": 0, "after": 0 }
           }
         },
         {
           "name": "paragraph",
           "props": {
-            "content": "Here's the current weather for major cities:"
+            "content": "Each block below is rendered by the weather plugin, which calls Open-Meteo while the document is generated."
           }
         },
         {
           "name": "weather",
+          "version": "1.0.0",
           "props": {
-            "city": "London",
+            "city": "Milan",
             "units": "metric",
             "showDetails": true
           }
         },
         {
           "name": "weather",
+          "version": "1.0.0",
           "props": {
             "city": "New York",
             "units": "imperial",
@@ -56,97 +51,25 @@
       "name": "section",
       "props": {
         "meta": {
-          "title": "Sales Data"
+          "title": "The week ahead"
         }
       },
       "children": [
         {
           "name": "heading",
           "props": {
-            "text": "Sales Data",
+            "text": "The week ahead",
             "level": 1,
-            "spacing": {
-              "before": 0,
-              "after": 0
-            }
+            "spacing": { "before": 0, "after": 0 }
           }
         },
         {
-          "name": "paragraph",
+          "name": "weather",
+          "version": "2.0.0",
           "props": {
-            "content": "Recent sales performance:"
-          }
-        },
-        {
-          "name": "dataTable",
-          "props": {
-            "query": "SELECT * FROM sales ORDER BY date DESC",
-            "title": "Q1 Sales Report",
-            "showRowNumbers": true,
-            "maxRows": 10
-          }
-        }
-      ]
-    },
-    {
-      "name": "section",
-      "props": {
-        "meta": {
-          "title": "Quick Links"
-        }
-      },
-      "children": [
-        {
-          "name": "heading",
-          "props": {
-            "text": "Quick Links",
-            "level": 1,
-            "spacing": {
-              "before": 0,
-              "after": 0
-            }
-          }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "content": "Scan these QR codes to access our resources:"
-          }
-        }
-      ]
-    },
-    {
-      "name": "section",
-      "props": {
-        "meta": {
-          "title": "More Data Examples"
-        }
-      },
-      "children": [
-        {
-          "name": "heading",
-          "props": {
-            "text": "More Data Examples",
-            "level": 1,
-            "spacing": {
-              "before": 0,
-              "after": 0
-            }
-          }
-        },
-        {
-          "name": "dataTable",
-          "props": {
-            "query": "SELECT * FROM users WHERE role = \"Admin\"",
-            "title": "System Administrators"
-          }
-        },
-        {
-          "name": "dataTable",
-          "props": {
-            "query": "SELECT * FROM inventory WHERE stock < 50",
-            "title": "Low Stock Items",
-            "showRowNumbers": false
+            "city": "Tokyo",
+            "units": "metric",
+            "days": 5
           }
         }
       ]

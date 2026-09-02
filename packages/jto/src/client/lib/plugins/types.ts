@@ -52,6 +52,11 @@ export interface BrowserPluginRecord {
   enabled: boolean;
   /** Leave `fetch` and friends available inside the sandbox. */
   allowNetwork: boolean;
+  /**
+   * The origins the switch grants, as CSP source expressions. On with an
+   * empty list reaches nothing: the switch alone is not a grant.
+   */
+  networkOrigins?: string[];
   status: BrowserPluginStatus;
   /** Hash of the source `js`/`metadata` were produced from. */
   sourceHash: string;
@@ -83,7 +88,10 @@ export interface SandboxLoadRequest {
   type: 'load';
   js: string;
   format: PluginFormat;
+  /** Whether anything is reachable at all; the frame's CSP names what. */
   allowNetwork: boolean;
+  /** Shown in the error when a call is refused, so it names the allowlist. */
+  networkOrigins: string[];
   examples: PluginExample[];
 }
 

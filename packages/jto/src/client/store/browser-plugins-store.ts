@@ -34,6 +34,8 @@ export interface BrowserPluginsActions {
   ) => void;
   setEnabled: (docName: string, enabled: boolean) => void;
   setAllowNetwork: (docName: string, allowNetwork: boolean) => void;
+  /** The hosts the Network switch grants; anything else stays refused. */
+  setNetworkOrigins: (docName: string, networkOrigins: string[]) => void;
   rename: (oldName: string, newName: string) => void;
   remove: (docName: string) => void;
 }
@@ -49,6 +51,7 @@ export function createBrowserPluginRecord(
     docName,
     enabled: true,
     allowNetwork: false,
+    networkOrigins: [],
     status: 'idle',
     sourceHash: '',
     diagnostics: [],
@@ -106,6 +109,30 @@ export const useBrowserPluginsStore = create<BrowserPluginsStore>()(
           };
         }),
 
+      setNetworkOrigins: (docName, networkOrigins) =>
+        set((state) => {
+          const existing =
+            state.records[docName] ?? createBrowserPluginRecord(docName);
+          const previous = existing.networkOrigins ?? [];
+          if (
+            state.records[docName] &&
+            previous.length === networkOrigins.length &&
+            previous.every((origin, i) => origin === networkOrigins[i])
+          ) {
+            return state;
+          }
+          return {
+            records: {
+              ...state.records,
+              [docName]: {
+                ...existing,
+                networkOrigins: [...networkOrigins],
+                updatedAt: Date.now(),
+              },
+            },
+          };
+        }),
+
       rename: (oldName, newName) =>
         set((state) => {
           const existing = state.records[oldName];
@@ -126,11 +153,13 @@ export const useBrowserPluginsStore = create<BrowserPluginsStore>()(
     }),
     {
       name: 'jto-browser-plugins',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({ records: state.records }),
-      // v1 lived in localStorage and had no createdAt; a record from then
-      // has nothing to migrate except that field.
+      // v1 lived in localStorage and had no createdAt. v2 had no origin list,
+      // and `allowNetwork` alone meant the whole internet — a record from then
+      // comes back with the switch on but nothing listed, which reaches
+      // nothing until its author says which hosts it needs.
       migrate: (persisted) => {
         const state = persisted as {
           records?: Record<string, BrowserPluginRecord>;
@@ -140,6 +169,7 @@ export const useBrowserPluginsStore = create<BrowserPluginsStore>()(
           records[name] = {
             ...record,
             createdAt: record.createdAt ?? record.updatedAt ?? Date.now(),
+            networkOrigins: record.networkOrigins ?? [],
           };
         }
         return { records };

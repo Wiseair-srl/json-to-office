@@ -122,7 +122,7 @@ function removeGlobal(name: string, replacement?: unknown): void {
  * both `fetch(url)` and `new WebSocket(url)` reach the same explanation.
  */
 function networkOff(name: string): unknown {
-  const message = `${NETWORK_OFF_MARKER} ${name} is not available: Network is off for this plugin. Turn on Network in the plugin header to allow it.`;
+  const message = `${NETWORK_OFF_MARKER} ${name} is not available: Network is off for this plugin. Turn on Network in the plugin header and list the hosts it may call.`;
   return new Proxy(function () {}, {
     apply() {
       throw new Error(message);
@@ -137,8 +137,43 @@ function networkOff(name: string): unknown {
   });
 }
 
+/**
+ * A refused call is a bare `TypeError: Failed to fetch` — the browser will
+ * not say which directive stopped it. Wrapping only the rejection turns that
+ * into the allowlist the plugin was given, without this file trying to
+ * reimplement CSP matching: the policy is still what enforces.
+ */
+function explainRefusals(origins: readonly string[]): void {
+  const real = globalThis.fetch;
+  if (typeof real !== 'function') return;
+  const listed =
+    origins.length > 0
+      ? `This plugin may call: ${origins.join(', ')}.`
+      : 'This plugin has Network on but no hosts listed, so it may call nothing.';
+  const wrapped = async (...args: Parameters<typeof fetch>) => {
+    try {
+      return await real.apply(globalThis, args);
+    } catch (error) {
+      const url = String(
+        args[0] instanceof Request ? args[0].url : (args[0] as unknown)
+      );
+      throw new Error(
+        `${NETWORK_OFF_MARKER} fetch("${url}") was refused. ${listed} Add the host under Network in the plugin header to allow it.`,
+        { cause: error }
+      );
+    }
+  };
+  try {
+    Object.defineProperty(globalThis, 'fetch', {
+      value: wrapped,
+      configurable: false,
+      writable: false,
+    });
+  } catch {}
+}
+
 let hardened = false;
-function harden(allowNetwork: boolean): void {
+function harden(allowNetwork: boolean, networkOrigins: string[]): void {
   if (hardened) return;
   hardened = true;
   for (const name of STORAGE_AND_MESSAGING) removeGlobal(name);
@@ -159,7 +194,9 @@ function harden(allowNetwork: boolean): void {
         });
       } catch {}
     }
+    return;
   }
+  explainRefusals(networkOrigins);
 }
 
 /** A render whose JSON would not fit a message, or a document, sensibly. */
@@ -180,7 +217,7 @@ function fail(id: number, error: unknown): void {
 
 async function handle(request: SandboxRequest): Promise<void> {
   if (request.type === 'load') {
-    harden(request.allowNetwork);
+    harden(request.allowNetwork, request.networkOrigins ?? []);
     const exports = evaluateCommonJs(request.js, MODULES);
     const found = extractComponent(exports);
     if (!found) {
