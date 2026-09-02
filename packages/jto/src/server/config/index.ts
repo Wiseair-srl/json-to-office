@@ -31,6 +31,33 @@ function parseOutboundSourceMode(
 }
 
 /**
+ * May this server load the plugins it finds on its own disk?
+ *
+ * Loading a plugin means importing and running code the server found by
+ * walking the filesystem, so an unauthenticated request must never be what
+ * triggers it. That is why production refuses: the hosted playgrounds run
+ * with `API_AUTH_MODE=disabled` and so have no key to send, and a disk
+ * plugin there was listed in the rail, switchable, and then absent from every
+ * schema and build — `weather` completed locally and came back "Unknown
+ * component" on the deployment.
+ *
+ * `PLUGIN_AUTOLOAD=true` is the operator saying yes at boot, for the image's
+ * own filesystem, before any request arrives. That is a different act from an
+ * anonymous caller provoking a scan, so it is the deployment's call to make.
+ * Development keeps loading them, as it always has.
+ *
+ * Read live rather than off the frozen `config` below: the request-time gates
+ * are exercised by tests that flip `NODE_ENV` after this module is imported.
+ */
+export function pluginAutoloadEnabled(
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  const explicit = env.PLUGIN_AUTOLOAD?.trim();
+  if (explicit) return explicit === 'true' || explicit === '1';
+  return normalizeNodeEnv(env.NODE_ENV || 'development') !== 'production';
+}
+
+/**
  * Only the two explicitly local environments keep permissive defaults. Every
  * other value — `staging`, `prod`, a typo — gets production-grade hardening, so
  * a mislabelled deployment cannot silently disable auth, rate limits, or the

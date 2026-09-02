@@ -93,4 +93,74 @@ describe('/api/discovery/schemas/document', () => {
       process.env.NODE_ENV = previousEnv;
     }
   });
+
+  it('loads them in production when the deployment opted in', async () => {
+    // What the hosted playgrounds set. The refusal above is about who asked;
+    // with PLUGIN_AUTOLOAD the operator has already said yes, so a plugin the
+    // rail offers is a plugin the schema carries.
+    PluginRegistry.cleanup();
+    const previousEnv = process.env.NODE_ENV;
+    const previousAutoload = process.env.PLUGIN_AUTOLOAD;
+    process.env.NODE_ENV = 'production';
+    process.env.PLUGIN_AUTOLOAD = 'true';
+    try {
+      const res = await app.request(
+        '/discovery/schemas/document?plugins=weather'
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as any;
+      expect(componentNames(body.data)).toContain('weather');
+    } finally {
+      process.env.NODE_ENV = previousEnv;
+      if (previousAutoload === undefined) delete process.env.PLUGIN_AUTOLOAD;
+      else process.env.PLUGIN_AUTOLOAD = previousAutoload;
+    }
+  });
+
+  it('keeps the load route shut to anonymous callers unless opted in', async () => {
+    // The gate is about who may make the server read its own disk. Without
+    // the flag a keyless caller cannot; with it, the same discovery has
+    // already run at boot, so the POST grants nothing new.
+    const previousEnv = process.env.NODE_ENV;
+    const previousAutoload = process.env.PLUGIN_AUTOLOAD;
+    process.env.NODE_ENV = 'production';
+    delete process.env.PLUGIN_AUTOLOAD;
+    try {
+      const refused = await app.request('/discovery/load-plugins', {
+        method: 'POST',
+      });
+      expect(refused.status).toBe(401);
+
+      process.env.PLUGIN_AUTOLOAD = 'true';
+      const allowed = await app.request('/discovery/load-plugins', {
+        method: 'POST',
+      });
+      expect(allowed.status).toBe(200);
+    } finally {
+      process.env.NODE_ENV = previousEnv;
+      if (previousAutoload === undefined) delete process.env.PLUGIN_AUTOLOAD;
+      else process.env.PLUGIN_AUTOLOAD = previousAutoload;
+    }
+  });
+
+  it('tells the client which of the two it is', async () => {
+    // The rail reads this to decide whether a disk plugin gets a live switch
+    // or a line saying the server will not load it.
+    const previousEnv = process.env.NODE_ENV;
+    const previousAutoload = process.env.PLUGIN_AUTOLOAD;
+    process.env.NODE_ENV = 'production';
+    delete process.env.PLUGIN_AUTOLOAD;
+    try {
+      const off = (await (await app.request('/discovery/all')).json()) as any;
+      expect(off.data.pluginAutoload).toBe(false);
+
+      process.env.PLUGIN_AUTOLOAD = 'true';
+      const on = (await (await app.request('/discovery/all')).json()) as any;
+      expect(on.data.pluginAutoload).toBe(true);
+    } finally {
+      process.env.NODE_ENV = previousEnv;
+      if (previousAutoload === undefined) delete process.env.PLUGIN_AUTOLOAD;
+      else process.env.PLUGIN_AUTOLOAD = previousAutoload;
+    }
+  });
 });

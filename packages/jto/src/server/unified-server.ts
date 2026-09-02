@@ -7,6 +7,8 @@ import type { Config, FormatAdapter } from '@json-to-office/jto-cli';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { logger as serverLogger } from './utils/logger.js';
+import { PluginRegistry } from '@json-to-office/jto-cli';
+import { pluginAutoloadEnabled } from './config/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,6 +29,39 @@ export class UnifiedServer {
   async initialize() {
     await this.setupMiddleware();
     await this.setupRoutes();
+    await this.preloadPlugins();
+  }
+
+  /**
+   * Load the disk plugins once, before the first request.
+   *
+   * The registry is what generation reads, and nothing else fills it in a
+   * hosted deployment: the client's bootstrap POST is the authenticated
+   * route, and a public playground has no key to send. Loading here instead
+   * makes it the operator's decision, taken at boot from the image's own
+   * filesystem — see `pluginAutoloadEnabled`.
+   *
+   * Awaited rather than backgrounded so the first schema request cannot beat
+   * it and cache a plugin-less schema. A plugin that fails to import is a
+   * defect in that plugin, not a reason to refuse to serve.
+   */
+  private async preloadPlugins(): Promise<void> {
+    if (!pluginAutoloadEnabled()) return;
+
+    const registry = PluginRegistry.getInstance();
+    registry.setFormat(this.adapter.name as 'docx' | 'pptx');
+    try {
+      const { discovered, loaded } = await registry.discoverAndLoad();
+      if (discovered > 0) {
+        serverLogger.info(
+          `Loaded ${loaded} of ${discovered} plugin(s) found on disk`
+        );
+      }
+    } catch (error: any) {
+      serverLogger.warn(
+        `Plugin autoload failed: ${error?.message ?? 'unknown error'}`
+      );
+    }
   }
 
   private async setupMiddleware() {

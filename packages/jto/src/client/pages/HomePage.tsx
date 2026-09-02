@@ -24,25 +24,26 @@ export function HomePage() {
     [discoveryData]
   );
 
-  // Load plugins into the registry when discovery completes,
-  // then auto-apply persisted plugin selections to Monaco
+  /**
+   * Ask the server to register its disk plugins once discovery has named
+   * them, then hand Monaco the persisted selection.
+   *
+   * Skipped where the server will not load them (`pluginAutoload` off): the
+   * bootstrap POST answers 401 there, and asking for a refusal on every load
+   * only fills the console. The apply below runs either way — it carries the
+   * browser plugins too, and those are unaffected by any of this.
+   */
   useEffect(() => {
-    if (discoveryData && discoveryData.plugins.length > 0) {
-      loadPlugins().then((success) => {
-        if (success) {
-          console.log('Plugins loaded successfully');
-          // Auto-apply persisted plugin selections so Monaco schema is up-to-date
-          const selected = usePluginsStore.getState().selectedPlugins;
-          if (selected.size > 0) {
-            console.log(
-              'Auto-applying persisted plugin selections:',
-              Array.from(selected)
-            );
-            applyPluginsWithValidation();
-          }
-        }
-      });
-    }
+    if (!discoveryData) return;
+    const bootstrap =
+      discoveryData.pluginAutoload && discoveryData.plugins.length > 0
+        ? loadPlugins()
+        : Promise.resolve(false);
+
+    bootstrap.finally(() => {
+      const selected = usePluginsStore.getState().selectedPlugins;
+      if (selected.size > 0) applyPluginsWithValidation();
+    });
   }, [discoveryData, loadPlugins, applyPluginsWithValidation]);
 
   if (loading) {

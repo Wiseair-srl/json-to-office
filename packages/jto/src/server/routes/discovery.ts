@@ -13,7 +13,7 @@ import { AppEnv } from '../types/hono.js';
 import { Container } from '../container/index.js';
 import { tbValidator, getValidated } from '../lib/typebox-validator.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
-import { config } from '../config/index.js';
+import { config, pluginAutoloadEnabled } from '../config/index.js';
 import {
   BrowserPluginSchemaError,
   prepareBrowserPlugins,
@@ -123,16 +123,18 @@ function cleanupTypeBoxIds(schema: any): void {
  * refetch. Requests that need plugins now load them on demand; the registry
  * coalesces concurrent loads and its load fingerprint makes repeats a no-op.
  *
- * Dev-playground affordance only: in production, plugin loading stays behind
- * the authenticated POST /load-plugins (same policy check as that route), so
- * an unauthenticated schema request cannot trigger discovery — generation
- * falls back to whatever is already registered.
+ * Gated on `PLUGIN_AUTOLOAD` (see `pluginAutoloadEnabled`): where the server
+ * is not allowed to read plugins off its own disk, an unauthenticated schema
+ * request must not be what makes it start — generation falls back to whatever
+ * is already registered. Production defaults to refusing; a deployment that
+ * opts in has already loaded them at boot, so this only catches a plugin that
+ * appeared afterwards.
  */
 async function ensurePluginsRegistered(
   format: 'docx' | 'pptx',
   pluginNames?: string[]
 ): Promise<void> {
-  if (process.env.NODE_ENV === 'production') return;
+  if (!pluginAutoloadEnabled()) return;
 
   const registry = PluginRegistry.getInstance();
   const satisfied = pluginNames
@@ -302,7 +304,15 @@ discoveryRouter.get('/all', async (c) => {
       discovery.discoverDocuments(format),
       discovery.discoverThemes(format),
     ]);
-    const results = { plugins, documents, themes };
+    // `pluginAutoload` travels with the plugin list because it decides what
+    // the list means: with it off, a disk plugin can be read about but never
+    // switched on, and the rail says so rather than offering a dead switch.
+    const results = {
+      plugins,
+      documents,
+      themes,
+      pluginAutoload: pluginAutoloadEnabled(),
+    };
     return c.json({
       success: true,
       data: results,
@@ -338,7 +348,15 @@ discoveryRouter.get('/plugins', async (c) => {
       if (!includeExamples) delete result.examples;
       return result;
     });
-    return c.json({ success: true, data: processed, count: plugins.length });
+    return c.json({
+      success: true,
+      data: processed,
+      count: plugins.length,
+      // Whether switching one of these on will actually reach a schema or a
+      // build here. The rail shows them either way — the details are worth
+      // reading — but a switch it cannot honour is a lie.
+      autoload: pluginAutoloadEnabled(),
+    });
   } catch (error: any) {
     logger.error('Plugin discovery failed', { error: error.message });
     return c.json({ success: false, error: error.message }, 500);
@@ -460,9 +478,13 @@ discoveryRouter.get('/plugin/:name', async (c) => {
 });
 
 discoveryRouter.post('/load-plugins', async (c) => {
-  // Require API key for plugin loading regardless of global auth setting
+  // A key is required regardless of the global auth setting, unless the
+  // deployment opted into disk plugins: `PLUGIN_AUTOLOAD` already ran this
+  // exact discovery at boot, so re-running it grants no capability the
+  // operator has not granted. With autoload off, an anonymous caller still
+  // cannot make the server scan and import from disk.
   const apiKey = c.req.header('X-API-Key') || c.req.header('Authorization');
-  if (!apiKey && process.env.NODE_ENV === 'production') {
+  if (!apiKey && !pluginAutoloadEnabled()) {
     return c.json({ success: false, error: 'Authentication required' }, 401);
   }
 
