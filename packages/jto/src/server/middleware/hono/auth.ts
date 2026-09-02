@@ -38,6 +38,33 @@ function readCredential(
 }
 
 /**
+ * Does this request carry the configured API key?
+ *
+ * For the rare route that must authenticate on its own account, because the
+ * middleware above may never see it: `API_AUTH_MODE=disabled` does not mount
+ * it at all, and `auto` with no key configured waves everyone through. A
+ * route that guards something the global policy does not — making the server
+ * read and import from its own disk, say — cannot lean on either.
+ *
+ * The presence of a header is not authentication. With no key configured
+ * there is nothing to check a credential against, so the answer is no and the
+ * route refuses rather than trusting whatever was sent.
+ *
+ * Env is read live so a deployment's key is the one in effect, not the one
+ * present when this module was first imported.
+ */
+export function hasValidApiKey(
+  headers: Headers,
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  const expected = env.API_KEY?.trim();
+  if (!expected) return false;
+  const received = readCredential(headers, env.API_KEY_HEADER || 'x-api-key');
+  if (!received) return false;
+  return keysEqual(received, expected);
+}
+
+/**
  * API Key authentication middleware for Hono
  */
 export function createApiKeyAuthMiddleware(

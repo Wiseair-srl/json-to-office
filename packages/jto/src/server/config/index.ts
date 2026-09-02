@@ -31,6 +31,57 @@ function parseOutboundSourceMode(
 }
 
 /**
+ * May this server load the plugins it finds on its own disk?
+ *
+ * Loading a plugin means importing and running code the server found by
+ * walking the filesystem, so it is the operator's call, made once at boot for
+ * the image's own filesystem. Production refuses by default; the hosted
+ * playgrounds set `PLUGIN_AUTOLOAD=true`, without which a disk plugin was
+ * listed in the rail, switchable, and then absent from every schema and
+ * build — `weather` completed locally and came back "Unknown component" on
+ * the deployment. Development says yes, as it always has.
+ *
+ * This governs the startup preload, and it is what the rail reads to decide
+ * whether a disk plugin gets a live switch. Whether a *request* may provoke
+ * the same work is the narrower question `requestTriggeredPluginLoadAllowed`
+ * answers.
+ *
+ * Read live rather than off the frozen `config` below: both gates are
+ * exercised by tests that flip `NODE_ENV` after this module is imported.
+ */
+export function pluginAutoloadEnabled(
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  const explicit = env.PLUGIN_AUTOLOAD?.trim();
+  if (explicit) return explicit === 'true' || explicit === '1';
+  return normalizeNodeEnv(env.NODE_ENV || 'development') !== 'production';
+}
+
+/**
+ * May an incoming request make the server walk its disk and import what it
+ * finds there?
+ *
+ * Only where that disk is the developer's own. A hardened deployment loads
+ * its plugins once, at boot, from an image its operator built, and nothing a
+ * caller sends should be able to start that scan again — so both request-time
+ * paths, on-demand schema generation and a keyless
+ * `POST /discovery/load-plugins`, stop here. `PLUGIN_AUTOLOAD` does not open
+ * them: it authorizes the preload, not the caller, and a deployment that
+ * opted in has every plugin registered before the first request arrives.
+ *
+ * Locally the loop is the point: write a plugin, reload the page, use it,
+ * without restarting the server.
+ */
+export function requestTriggeredPluginLoadAllowed(
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  return (
+    pluginAutoloadEnabled(env) &&
+    normalizeNodeEnv(env.NODE_ENV || 'development') !== 'production'
+  );
+}
+
+/**
  * Only the two explicitly local environments keep permissive defaults. Every
  * other value — `staging`, `prod`, a typo — gets production-grade hardening, so
  * a mislabelled deployment cannot silently disable auth, rate limits, or the

@@ -212,15 +212,17 @@ One image serves both formats: set `FORMAT=docx` or `FORMAT=pptx` per container.
 
 The `render.yaml` Render.com blueprint declares the full production topology — three Docker web services, all health-checked on `/health`:
 
-| Service               | Dockerfile                              | Env                                                                                                                                                                                             |
-| --------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `jto-render-server`   | `services/jto-render-server/Dockerfile` | `RENDER_AUTH_MODE=required`, `RENDER_API_KEY` (secret, not committed)                                                                                                                           |
-| `jto-playground-docx` | root `Dockerfile`                       | `FORMAT=docx`, `VITE_AI_ENABLED=false`, `AI_ENABLED=false`, `API_AUTH_MODE=disabled`, `HIGHCHARTS_SERVER_URL` + `HIGHCHARTS_API_KEY`, `JTO_PPTX_RASTERIZER_URL` + `JTO_PPTX_RASTERIZER_API_KEY` |
-| `jto-playground-pptx` | root `Dockerfile`                       | Same, with `FORMAT=pptx`                                                                                                                                                                        |
+| Service               | Dockerfile                              | Env                                                                                                                                                                                                                     |
+| --------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jto-render-server`   | `services/jto-render-server/Dockerfile` | `RENDER_AUTH_MODE=required`, `RENDER_API_KEY` (secret, not committed)                                                                                                                                                   |
+| `jto-playground-docx` | root `Dockerfile`                       | `FORMAT=docx`, `VITE_AI_ENABLED=false`, `AI_ENABLED=false`, `API_AUTH_MODE=disabled`, `PLUGIN_AUTOLOAD=true`, `HIGHCHARTS_SERVER_URL` + `HIGHCHARTS_API_KEY`, `JTO_PPTX_RASTERIZER_URL` + `JTO_PPTX_RASTERIZER_API_KEY` |
+| `jto-playground-pptx` | root `Dockerfile`                       | Same, with `FORMAT=pptx`                                                                                                                                                                                                |
 
 Both playgrounds point their render URLs at `https://jto-render-server.onrender.com` and authenticate with the render server's `RENDER_API_KEY`; the two caller-side key variables carry that same value.
 
 The playgrounds themselves run with `API_AUTH_MODE=disabled` because they are deliberately public browser demos — a browser cannot keep an API key secret. Both also set `AI_ENABLED=false`: `VITE_AI_ENABLED` only hides the client UI, while `AI_ENABLED` is what stops the server mounting `/api/ai`. For a private deployment, drop the `disabled` override, use `API_AUTH_MODE=required`, and put the key behind an authenticated gateway.
+
+Both also set `PLUGIN_AUTOLOAD=true`. Loading a plugin means importing code the server found by walking its filesystem, so outside development no request can trigger it — not the load route, which wants a key a public demo has none of, and not a schema fetch. That left the bundled example plugins listed in the rail with a switch that changed nothing — `weather` completed and validated locally, then came back `Unknown component` on the deployment. `PLUGIN_AUTOLOAD=true` is the operator granting it once, at boot, for the image's own filesystem: the server loads what it finds before the first request, and requests keep their hands off the disk either way. Leave it off wherever the plugin directory is not entirely yours; the rail then shows those plugins as unavailable instead of offering the switch.
 
 ```text
 .docx.json / .pptx.json

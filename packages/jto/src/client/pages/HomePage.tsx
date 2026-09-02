@@ -8,12 +8,11 @@ import { SettingsStoreProvider } from '../store/settings-store-provider';
 import { ThemesStoreProvider } from '../store/themes-store-provider';
 import { ChatStoreProvider } from '../store/chat-store-provider';
 import { MonacoPluginProvider } from '../components/MonacoPluginProvider';
-import { useDiscovery, useLoadPlugins } from '../hooks/useDiscovery';
+import { useDiscovery } from '../hooks/useDiscovery';
 import { usePluginsStore } from '../store/plugins-store';
 
 export function HomePage() {
   const { data: discoveryData, loading, error } = useDiscovery();
-  const { loadPlugins } = useLoadPlugins();
   const applyPluginsWithValidation = usePluginsStore(
     (state) => state.applyPluginsWithValidation
   );
@@ -24,26 +23,21 @@ export function HomePage() {
     [discoveryData]
   );
 
-  // Load plugins into the registry when discovery completes,
-  // then auto-apply persisted plugin selections to Monaco
+  /**
+   * Hand Monaco the persisted selection once discovery has named the plugins.
+   *
+   * Nothing here asks the server to register them. A server allowed to read
+   * plugins off its disk at all has already done so at boot, and locally it
+   * will also load on demand behind the schema request this apply triggers —
+   * so the bootstrap POST that used to run here was a redundant round trip
+   * that a keyless deployment could only answer with 401. The apply carries
+   * the browser plugins too, and those are unaffected either way.
+   */
   useEffect(() => {
-    if (discoveryData && discoveryData.plugins.length > 0) {
-      loadPlugins().then((success) => {
-        if (success) {
-          console.log('Plugins loaded successfully');
-          // Auto-apply persisted plugin selections so Monaco schema is up-to-date
-          const selected = usePluginsStore.getState().selectedPlugins;
-          if (selected.size > 0) {
-            console.log(
-              'Auto-applying persisted plugin selections:',
-              Array.from(selected)
-            );
-            applyPluginsWithValidation();
-          }
-        }
-      });
-    }
-  }, [discoveryData, loadPlugins, applyPluginsWithValidation]);
+    if (!discoveryData) return;
+    const selected = usePluginsStore.getState().selectedPlugins;
+    if (selected.size > 0) applyPluginsWithValidation();
+  }, [discoveryData, applyPluginsWithValidation]);
 
   if (loading) {
     return (

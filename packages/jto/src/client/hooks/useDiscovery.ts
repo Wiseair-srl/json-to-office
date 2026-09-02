@@ -41,6 +41,15 @@ export interface DiscoveryResult {
   plugins: PluginMetadata[];
   documents: DocumentMetadata[];
   themes: ThemeMetadata[];
+  /**
+   * Whether this server will load the plugins it just listed.
+   *
+   * A deployment that does not (`PLUGIN_AUTOLOAD` off, the production
+   * default) still discovers them — the name, the description and the props
+   * are worth reading — but switching one on would change nothing, so the
+   * rail marks them unavailable instead.
+   */
+  pluginAutoload: boolean;
 }
 
 export interface UseDiscoveryResult {
@@ -75,7 +84,9 @@ export function useDiscovery(): UseDiscoveryResult {
         throw new Error(result.error || 'Discovery failed');
       }
 
-      setData(result.data);
+      // An older server that does not report the flag discovered plugins it
+      // was willing to load, which is what `true` means here.
+      setData({ pluginAutoload: true, ...result.data });
     } catch (err) {
       console.error('Discovery error:', err);
       setError(
@@ -87,6 +98,7 @@ export function useDiscovery(): UseDiscoveryResult {
         plugins: [],
         documents: [],
         themes: [],
+        pluginAutoload: true,
       });
     } finally {
       setLoading(false);
@@ -267,72 +279,5 @@ export function useDiscoveredThemes(): {
     loading,
     error,
     refetch: fetchThemes,
-  };
-}
-
-// Shared across every hook instance: overlapping load-plugins calls (strict
-// mode double effects, multiple mounts) collapse into one request. The
-// server also dedupes unchanged sets, but not even sending the burst is
-// cheaper (#156).
-let loadPluginsInFlight: Promise<number> | null = null;
-
-async function requestLoadPlugins(): Promise<number> {
-  const response = await fetch('/api/discovery/load-plugins', {
-    method: 'POST',
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to load plugins: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.error || 'Failed to load plugins');
-  }
-
-  return result.data.loaded as number;
-}
-
-/**
- * Hook to load plugins into the registry for presentation generation
- */
-export function useLoadPlugins(): {
-  loadPlugins: () => Promise<boolean>;
-  loading: boolean;
-  error: string | null;
-  loadedCount: number;
-} {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loadedCount, setLoadedCount] = useState(0);
-
-  const loadPlugins = useCallback(async (): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      if (!loadPluginsInFlight) {
-        loadPluginsInFlight = requestLoadPlugins().finally(() => {
-          loadPluginsInFlight = null;
-        });
-      }
-      const loaded = await loadPluginsInFlight;
-      setLoadedCount(loaded);
-      return true;
-    } catch (err) {
-      console.error('Plugin loading error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load plugins');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return {
-    loadPlugins,
-    loading,
-    error,
-    loadedCount,
   };
 }

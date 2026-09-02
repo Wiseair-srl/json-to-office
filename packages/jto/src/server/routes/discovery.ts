@@ -13,7 +13,12 @@ import { AppEnv } from '../types/hono.js';
 import { Container } from '../container/index.js';
 import { tbValidator, getValidated } from '../lib/typebox-validator.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
-import { config } from '../config/index.js';
+import { hasValidApiKey } from '../middleware/hono/auth.js';
+import {
+  config,
+  pluginAutoloadEnabled,
+  requestTriggeredPluginLoadAllowed,
+} from '../config/index.js';
 import {
   BrowserPluginSchemaError,
   prepareBrowserPlugins,
@@ -114,25 +119,27 @@ function cleanupTypeBoxIds(schema: any): void {
 }
 
 /**
- * Schema generation must not depend on the client having POSTed
- * `/load-plugins` first. The playground fires that bootstrap POST and the
- * first schema fetch in parallel on page load; when the schema request won
- * the race (or the POST failed), the registry was empty, the requested
+ * Schema generation must not depend on anything having POSTed
+ * `/load-plugins` first. The playground used to fire that bootstrap POST and
+ * the first schema fetch in parallel on page load; when the schema request
+ * won the race (or the POST failed), the registry was empty, the requested
  * plugins were silently dropped, and Monaco kept a plugin-less schema —
  * enabled components neither completed nor validated until a toggle forced a
  * refetch. Requests that need plugins now load them on demand; the registry
  * coalesces concurrent loads and its load fingerprint makes repeats a no-op.
  *
- * Dev-playground affordance only: in production, plugin loading stays behind
- * the authenticated POST /load-plugins (same policy check as that route), so
- * an unauthenticated schema request cannot trigger discovery — generation
- * falls back to whatever is already registered.
+ * Local affordance only (see `requestTriggeredPluginLoadAllowed`), because
+ * this is a request making the server read its own disk. A hardened
+ * deployment loads its plugins at boot instead — see
+ * `UnifiedServer.preloadPlugins` — so it needs nothing from here and falls
+ * back to what is already registered, which after that preload is everything
+ * the image ships.
  */
 async function ensurePluginsRegistered(
   format: 'docx' | 'pptx',
   pluginNames?: string[]
 ): Promise<void> {
-  if (process.env.NODE_ENV === 'production') return;
+  if (!requestTriggeredPluginLoadAllowed()) return;
 
   const registry = PluginRegistry.getInstance();
   const satisfied = pluginNames
@@ -302,7 +309,15 @@ discoveryRouter.get('/all', async (c) => {
       discovery.discoverDocuments(format),
       discovery.discoverThemes(format),
     ]);
-    const results = { plugins, documents, themes };
+    // `pluginAutoload` travels with the plugin list because it decides what
+    // the list means: with it off, a disk plugin can be read about but never
+    // switched on, and the rail says so rather than offering a dead switch.
+    const results = {
+      plugins,
+      documents,
+      themes,
+      pluginAutoload: pluginAutoloadEnabled(),
+    };
     return c.json({
       success: true,
       data: results,
@@ -338,7 +353,15 @@ discoveryRouter.get('/plugins', async (c) => {
       if (!includeExamples) delete result.examples;
       return result;
     });
-    return c.json({ success: true, data: processed, count: plugins.length });
+    return c.json({
+      success: true,
+      data: processed,
+      count: plugins.length,
+      // Whether switching one of these on will actually reach a schema or a
+      // build here. The rail shows them either way — the details are worth
+      // reading — but a switch it cannot honour is a lie.
+      autoload: pluginAutoloadEnabled(),
+    });
   } catch (error: any) {
     logger.error('Plugin discovery failed', { error: error.message });
     return c.json({ success: false, error: error.message }, 500);
@@ -460,9 +483,21 @@ discoveryRouter.get('/plugin/:name', async (c) => {
 });
 
 discoveryRouter.post('/load-plugins', async (c) => {
-  // Require API key for plugin loading regardless of global auth setting
-  const apiKey = c.req.header('X-API-Key') || c.req.header('Authorization');
-  if (!apiKey && process.env.NODE_ENV === 'production') {
+  // A valid key is required regardless of the global auth setting, except on
+  // a developer's own machine, where a keyless caller may still ask, as it
+  // always could. `PLUGIN_AUTOLOAD` does not open this route: it authorizes
+  // the boot preload, not the caller, and a deployment that opted in already
+  // has these plugins registered before the first request arrives.
+  //
+  // Checked here rather than left to the global middleware, which a
+  // deployment can switch off (`API_AUTH_MODE=disabled`, what both hosted
+  // playgrounds run) or configure into waving anonymous callers through
+  // (`auto` with no key). Under either, a header with any value at all used
+  // to be enough to reach `discoverAndLoad()`.
+  if (
+    !requestTriggeredPluginLoadAllowed() &&
+    !hasValidApiKey(c.req.raw.headers)
+  ) {
     return c.json({ success: false, error: 'Authentication required' }, 401);
   }
 

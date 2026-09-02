@@ -375,10 +375,18 @@ const BrowserPluginRowMemoized = React.memo(BrowserPluginRow);
 /**
  * Plugins are a per-run setting, not a file, so they sit last and start
  * folded: `2/7` in the eyebrow is the whole story until you need the switches.
+ * Both halves of that ratio are counted by the caller, over everything it
+ * knows about rather than over the rows a filter left standing — an eyebrow
+ * that changed while you typed would be describing the query, not the run.
  *
  * Two origins share the section. Plugins written in the playground come
  * first — they are files too, and open in a tab — then the ones discovery
  * found on disk, which only have a switch and a details view.
+ *
+ * A deployment that will not load disk plugins (`pluginAutoload` off) still
+ * lists them, with their switches disabled and a line saying why. Hiding them
+ * would answer "where did the weather plugin go"; a live switch that changes
+ * nothing answers nothing at all.
  */
 export function PluginsSection({
   plugins,
@@ -391,8 +399,9 @@ export function PluginsSection({
   isPluginSelected,
   onTogglePlugin,
   isApplyingPlugins,
-  selectedPluginCount,
-  activeBrowserPluginCount,
+  diskPluginsLoadable,
+  activeCount,
+  totalCount,
 }: {
   plugins: PluginMetadata[];
   /** Plugin files in the workspace, already filtered by the rail's query. */
@@ -405,11 +414,12 @@ export function PluginsSection({
   isPluginSelected: (name: string) => boolean;
   onTogglePlugin: (plugin: PluginMetadata) => void;
   isApplyingPlugins: boolean;
-  selectedPluginCount: number;
-  activeBrowserPluginCount: number;
+  /** Whether this server loads the disk plugins it discovered. */
+  diskPluginsLoadable: boolean;
+  /** Plugins on, and plugins there are — both unfiltered. */
+  activeCount: number;
+  totalCount: number;
 }) {
-  const total = plugins.length + browserPlugins.length;
-  const active = selectedPluginCount + activeBrowserPluginCount;
   const showOrigins = plugins.length > 0 && browserPlugins.length > 0;
 
   return (
@@ -417,7 +427,7 @@ export function PluginsSection({
       <SectionLabel
         open={open}
         onToggle={onToggleSection}
-        count={total > 0 ? `${active}/${total}` : undefined}
+        count={totalCount > 0 ? `${activeCount}/${totalCount}` : undefined}
         actions={
           <Tooltip>
             <TooltipTrigger asChild>
@@ -444,8 +454,15 @@ export function PluginsSection({
             ))}
           </ul>
           {showOrigins && <OriginDivider>On disk</OriginDivider>}
+          {plugins.length > 0 && !diskPluginsLoadable && (
+            <p className="text-sidebar-foreground/60 px-2 pt-0.5 pb-1 text-[11px] leading-snug">
+              This server does not load plugins from disk, so these cannot be
+              switched on. Set <code>PLUGIN_AUTOLOAD=true</code> on the
+              deployment, or write one in the browser.
+            </p>
+          )}
           {plugins.map((plugin) => {
-            const active = isPluginSelected(plugin.name);
+            const active = isPluginSelected(plugin.name) && diskPluginsLoadable;
             // Same identity the row key uses: two plugins discovered in
             // different locations can share a name, and a duplicate id would
             // point every `htmlFor` at the first switch.
@@ -496,15 +513,19 @@ export function PluginsSection({
                   id={switchId}
                   checked={active}
                   onCheckedChange={() => onTogglePlugin(plugin)}
-                  disabled={isApplyingPlugins}
+                  disabled={isApplyingPlugins || !diskPluginsLoadable}
                   className="shrink-0"
                   aria-label={`Toggle ${plugin.name} plugin`}
-                  title="On: the server loads this plugin from disk for every build."
+                  title={
+                    diskPluginsLoadable
+                      ? 'On: the server loads this plugin from disk for every build.'
+                      : 'This server does not load plugins from disk (PLUGIN_AUTOLOAD is off).'
+                  }
                 />
               </div>
             );
           })}
-          {total === 0 && (
+          {plugins.length + browserPlugins.length === 0 && (
             <EmptyRow
               icon={Plus}
               label="New plugin"

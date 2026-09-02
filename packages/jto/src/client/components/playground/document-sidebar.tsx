@@ -321,6 +321,32 @@ function DocumentSidebarComponent({
   );
   const documentLocations = useLocationGroups(libraryDocuments);
   const themeLocations = useLocationGroups(libraryThemes);
+  /**
+   * The eyebrow's `on/of` pair.
+   *
+   * `selectedPlugins` is persisted and never pruned, so it keeps names of
+   * plugins this project no longer has — three of them against a single
+   * discovered plugin read as `3/1`. Only a plugin discovery still reports,
+   * on a server that will load it, is actually on; and a plugin nobody can
+   * switch on is not part of the total either.
+   */
+  const diskPluginsLoadable = discoveryData?.pluginAutoload ?? true;
+  const activePluginCount = useMemo(() => {
+    const disk = diskPluginsLoadable
+      ? (discoveryData?.plugins ?? []).filter((p) =>
+          selectedPlugins.has(p.name)
+        ).length
+      : 0;
+    return disk + activeBrowserPluginCount;
+  }, [
+    discoveryData,
+    selectedPlugins,
+    diskPluginsLoadable,
+    activeBrowserPluginCount,
+  ]);
+  const totalPluginCount =
+    (discoveryData?.plugins.length ?? 0) + pluginDocuments.length;
+
   const libraryPlugins = useMemo(
     () =>
       (discoveryData?.plugins ?? []).filter(
@@ -739,8 +765,9 @@ function DocumentSidebarComponent({
                     isPluginSelected={isPluginSelected}
                     onTogglePlugin={togglePlugin}
                     isApplyingPlugins={isApplyingPlugins}
-                    selectedPluginCount={selectedPlugins.size}
-                    activeBrowserPluginCount={activeBrowserPluginCount}
+                    diskPluginsLoadable={diskPluginsLoadable}
+                    activeCount={activePluginCount}
+                    totalCount={totalPluginCount}
                   />
                 </>
               )}

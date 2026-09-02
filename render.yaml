@@ -67,6 +67,14 @@ services:
       # image, which fails the playground's own examples.
       - key: OUTBOUND_HOST_ALLOWLIST
         value: ik.imagekit.io,placehold.co
+      # The image ships the example plugins, and the rail lists them. Without
+      # this the server refuses to load them (the production default, since a
+      # public deployment has no key for the authenticated load route), so
+      # `weather` completed and validated locally and came back "Unknown
+      # component" here. Only this image's own filesystem is read, once, at
+      # boot; no request can make it read again.
+      - key: PLUGIN_AUTOLOAD
+        value: 'true'
     healthCheckPath: /health
 
   - type: web
@@ -96,4 +104,7 @@ services:
       # See the DOCX service comment above.
       - key: OUTBOUND_HOST_ALLOWLIST
         value: ik.imagekit.io,placehold.co
+      # See the DOCX service comment above.
+      - key: PLUGIN_AUTOLOAD
+        value: 'true'
     healthCheckPath: /health
