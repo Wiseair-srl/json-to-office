@@ -113,6 +113,55 @@ describe('plugin generation validation', () => {
     expect(bad.errors && bad.errors.length).toBeGreaterThan(0);
   });
 
+  // Every case above puts the custom component at the top level, which is
+  // where the walk used to stop: it returned at the first standard component
+  // instead of descending, so a `callout` inside a `section` — the shape of
+  // every real document — was never checked against its props schema. The
+  // schema route offered the name and the server validated it clean; the only
+  // thing that objected was the component's own render, much later.
+  it('checks custom props nested inside a standard container', () => {
+    const gen = makeGenerator();
+    const bad = gen.validate(
+      docWith([
+        {
+          name: 'section',
+          children: [{ name: 'callout', props: { tone: 'info' } }],
+        },
+      ]) as any
+    );
+
+    expect(bad.valid).toBe(false);
+    expect(bad.errors?.some((e) => /text/.test(e.path ?? ''))).toBe(true);
+  });
+
+  it('accepts a good nested custom component', () => {
+    const gen = makeGenerator();
+    const good = gen.validate(
+      docWith([
+        {
+          name: 'section',
+          children: [{ name: 'callout', props: { text: 'ok', tone: 'info' } }],
+        },
+      ]) as any
+    );
+
+    expect(good.valid).toBe(true);
+  });
+
+  it('throws on a nested custom component with an unknown prop', async () => {
+    const gen = makeGenerator();
+    await expect(
+      gen.generateBuffer(
+        docWith([
+          {
+            name: 'section',
+            children: [{ name: 'callout', props: { text: 'x', bogus: true } }],
+          },
+        ]) as any
+      )
+    ).rejects.toBeInstanceOf(ComponentValidationError);
+  });
+
   it('allowUnknownFields lets a doc with unknown standard keys through', async () => {
     const gen = makeGenerator();
     const { buffer } = await gen.generateBuffer(

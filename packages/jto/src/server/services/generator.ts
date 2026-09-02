@@ -720,7 +720,19 @@ export class GeneratorService {
         ? JSON.parse(jsonDefinition)
         : jsonDefinition;
 
-    const result = this.adapter.validateDocument(config);
+    // A registered plugin component is a component here too. The schema
+    // route composes it into what Monaco validates against, and the generator
+    // expands it; only this path used to know the standard components alone,
+    // so a document the playground had just completed came back `Unknown
+    // component "weather"`. Whether the registry holds anything is the
+    // deployment's call (`PLUGIN_AUTOLOAD`); when it is empty this is exactly
+    // the sync validation it always was.
+    const registry = PluginRegistry.getInstance();
+    const plugins = registry.hasPlugins() ? registry.getPlugins() : [];
+    const result =
+      plugins.length > 0 && this.adapter.validateDocumentWithPlugins
+        ? await this.adapter.validateDocumentWithPlugins(config, plugins)
+        : this.adapter.validateDocument(config);
     if (!result.valid) return result;
     if (this.adapter.analyzeQuality) {
       try {

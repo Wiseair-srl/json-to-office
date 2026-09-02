@@ -68,38 +68,53 @@ export function validateDocument(
 
   function validateComponents(components: any[], pathPrefix = 'children') {
     components.forEach((componentData, index) => {
-      const customComponent = customComponents.find(
-        (cc) => cc.name === componentData.name
-      );
-      if (!customComponent) {
+      if (
+        !componentData ||
+        typeof componentData !== 'object' ||
+        Array.isArray(componentData)
+      ) {
         return;
       }
 
-      const versionEntry = resolveComponentVersion(
-        customComponent.name,
-        customComponent.versions,
-        componentData.version
+      const customComponent = customComponents.find(
+        (cc) => cc.name === componentData.name
       );
 
-      const validation = validateComponentProps(
-        versionEntry,
-        componentData.props,
-        customComponent.name,
-        // Reject unknown custom props unless the caller allows them.
-        { clean: options?.allowUnknownFields === true }
-      );
-
-      if (!validation.valid && validation.errors) {
-        const indexedErrors = validation.errors.map(
-          (error: ValidationError) => ({
-            ...error,
-            path: `${pathPrefix}[${index}].${error.path}`,
-          })
+      if (customComponent) {
+        const versionEntry = resolveComponentVersion(
+          customComponent.name,
+          customComponent.versions,
+          componentData.version
         );
-        errors.push(...indexedErrors);
+
+        const validation = validateComponentProps(
+          versionEntry,
+          componentData.props,
+          customComponent.name,
+          // Reject unknown custom props unless the caller allows them.
+          { clean: options?.allowUnknownFields === true }
+        );
+
+        if (!validation.valid && validation.errors) {
+          const indexedErrors = validation.errors.map(
+            (error: ValidationError) => ({
+              ...error,
+              path: `${pathPrefix}[${index}].${error.path}`,
+            })
+          );
+          errors.push(...indexedErrors);
+        }
       }
 
-      if (componentData.children && Array.isArray(componentData.children)) {
+      // Descend whatever this node is. The walk used to stop at the first
+      // standard component, which is every real document: a custom component
+      // lives inside a `section`, so its props were checked at the top level
+      // and nowhere else. `weather` with `city: 123` nested one level down
+      // passed this pass and only failed later, inside the component's own
+      // render. (Custom components carried in props — a header, a table
+      // cell — are still not reached here; the standard walk owns those
+      // positions.)
+      if (Array.isArray(componentData.children)) {
         validateComponents(
           componentData.children,
           `${pathPrefix}[${index}].children`
