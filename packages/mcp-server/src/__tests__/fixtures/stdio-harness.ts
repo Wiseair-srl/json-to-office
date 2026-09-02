@@ -29,6 +29,23 @@ import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 
 const run = promisify(execFile);
 
+/**
+ * How long the raw client waits on the child before it gives up.
+ *
+ * These defaults must stay *under* the smallest budget any callsite declares
+ * (120s, in every `stdio-*.test.ts`) so that a stall is reported with the
+ * stderr transcript below rather than as vitest's bare "test timed out" — but
+ * not so far under that the harness overrides the allowance a callsite chose.
+ * A flat 60s did exactly that: on a loaded Windows runner the first
+ * `tools/call` on a cold child took longer than a minute, and the harness
+ * failed the wait at half the 120s the test had asked for (run 33621956828,
+ * one of four Windows jobs). The runner split is the same one `vitest.base.ts`
+ * makes, and for the same reason: local stays strict, slow runners get room.
+ */
+const SLOW_RUNNER = Boolean(process.env.CI) || process.platform === 'win32';
+const RESPONSE_TIMEOUT_MS = SLOW_RUNNER ? 110_000 : 60_000;
+const STDERR_TIMEOUT_MS = SLOW_RUNNER ? 30_000 : 10_000;
+
 export const packageRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../..'
@@ -234,7 +251,12 @@ export async function callTool(
   name: string,
   args: Record<string, unknown>
 ): Promise<ToolEnvelope> {
-  const result = await session.client.callTool({ name, arguments: args });
+  // Same budget as the raw client, for the same reason: the SDK's own default
+  // is 60s, which would expire before any callsite's.
+  const result = await session.client.callTool(
+    { name, arguments: args },
+    { timeout: RESPONSE_TIMEOUT_MS }
+  );
   if (result.isError === true) {
     throw new Error(
       `${name} returned isError: ${JSON.stringify(result.content)}`
@@ -337,7 +359,10 @@ export class RawStdioServer {
    * depends on how loaded the machine is, and a fixed sleep long enough for a
    * busy CI box is a fixed cost on every other run.
    */
-  async waitForStderr(needle: string, timeoutMs = 10_000): Promise<void> {
+  async waitForStderr(
+    needle: string,
+    timeoutMs = STDERR_TIMEOUT_MS
+  ): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     while (!this.stderrText.includes(needle)) {
       if (Date.now() > deadline) {
@@ -374,7 +399,10 @@ export class RawStdioServer {
   }
 
   /** Wait for the response to `id`. */
-  async waitFor(id: number, timeoutMs = 60_000): Promise<JsonRpcMessage> {
+  async waitFor(
+    id: number,
+    timeoutMs = RESPONSE_TIMEOUT_MS
+  ): Promise<JsonRpcMessage> {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
       const message = this.received.get(id);
