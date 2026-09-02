@@ -21,6 +21,10 @@ export default defineConfig({
     '**/.git/**',
   ],
   external: [
+    // The example plugin imports the package by name, the way a plugin in
+    // someone else's project would — one source that compiles both on disk
+    // and in the playground's sandbox. Node resolves it as a self-reference.
+    '@json-to-office/core-docx',
     '@json-to-office/shared',
     '@json-to-office/shared-docx',
     'docx',

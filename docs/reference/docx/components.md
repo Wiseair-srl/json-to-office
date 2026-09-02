@@ -21,7 +21,7 @@ The complete catalog of DOCX components: what each one does, every prop it accep
 | [`highcharts`](#highcharts)                   | content                 | —                                                                                                             |
 | [`chart`](#chart)                             | content (`office-open`) | —                                                                                                             |
 | [`visual`](#visual)                           | content                 | —                                                                                                             |
-| [`text-space-after`](#text-space-after)       | plugin example (opt-in) | —                                                                                                             |
+| [`text-space-after`](#text-space-after)       | legacy custom (opt-in)  | —                                                                                                             |
 
 Every node is `{ name, props, children? }` plus optional `id` and `enabled` fields; `enabled: false` removes the node from the render. Custom plugin components (see [API reference](/reference/api)) are allowed as children of any container.
 
@@ -769,7 +769,7 @@ An unstated `w` covers three quarters of the canvas for `text` and `shape`; an u
 
 ## `text-space-after`
 
-An **example plugin component**, not part of the standard registry: a document using it fails default validation (`unknown_component`) and the stock renderer rejects it. It ships as a reference implementation of the plugin component API (`packages/core-docx/src/plugin/example/text-space-after.component.ts`) and must be registered on a custom generator before use:
+A **legacy custom component**, not part of the standard registry: a document using it fails default validation (`unknown_component`) and the stock renderer rejects it. It ships from `packages/core-docx/src/components/text-space-after.ts` and must be registered on a custom generator before use:
 
 ```ts
 const generator = createDocumentGenerator({}).addComponent(
@@ -778,6 +778,8 @@ const generator = createDocumentGenerator({}).addComponent(
 ```
 
 Once registered, it takes `{ text: string, spaceAfter?: number }` — the text to display and the trailing space in points — and renders as a paragraph with that `spacing.after`. See the plugin API in the [API reference](/reference/api).
+
+For a component written against the current plugin API, see the `weather` example in `packages/core-docx/src/plugin/example/`, which fetches live data from Open-Meteo.
 
 ## Revisions (tracked changes)
 

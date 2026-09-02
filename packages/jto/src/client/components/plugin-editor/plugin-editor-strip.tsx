@@ -4,6 +4,7 @@ import {
   Check,
   Copy,
   Download as DownloadIcon,
+  Globe,
   Info,
   Puzzle,
 } from 'lucide-react';
@@ -17,13 +18,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Spinner } from '../ui/spinner';
 import { Switch } from '../ui/switch';
+import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { useToast } from '../ui/use-toast';
 import { useBrowserPluginsStore } from '../../store/browser-plugins-store';
 import { pluginHost } from '../../lib/plugins/host';
 import { compileQueue } from '../../lib/plugins/compile-queue';
+import { parseNetworkOrigins } from '../../lib/plugins/network-policy';
 import {
   onPluginTypeScriptReady,
   pluginTypeScriptReady,
@@ -55,6 +59,7 @@ export function PluginEditorStrip({
   const record = useBrowserPluginsStore((s) => s.records[docName]);
   const setEnabled = useBrowserPluginsStore((s) => s.setEnabled);
   const setAllowNetwork = useBrowserPluginsStore((s) => s.setAllowNetwork);
+  const setNetworkOrigins = useBrowserPluginsStore((s) => s.setNetworkOrigins);
   const { toast } = useToast();
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const typesReady = usePluginTypesReady();
@@ -83,18 +88,30 @@ export function PluginEditorStrip({
     [announce, docName, setEnabled]
   );
 
+  // The sandbox is hardened once, when it loads, and its CSP is fixed when
+  // the frame is written: a new setting needs a new frame. Compile again as
+  // well — a plugin that failed to load because it reached for the network is
+  // only known to work, or not, once it has loaded under the new setting.
+  const recompileUnderNewPolicy = useCallback(() => {
+    pluginHost.dispose(docName);
+    useBrowserPluginsStore.getState().upsert(docName, { status: 'idle' });
+    void compileQueue.run(docName);
+  }, [docName]);
+
   const toggleNetwork = useCallback(
     (allowNetwork: boolean) => {
       setAllowNetwork(docName, allowNetwork);
-      // The sandbox is hardened once, when it loads: a new setting needs a
-      // new frame. Compile again as well — a plugin that failed to load
-      // because it reached for the network is only known to work, or not,
-      // once it has loaded under the new setting.
-      pluginHost.dispose(docName);
-      useBrowserPluginsStore.getState().upsert(docName, { status: 'idle' });
-      void compileQueue.run(docName);
+      recompileUnderNewPolicy();
     },
-    [docName, setAllowNetwork]
+    [docName, recompileUnderNewPolicy, setAllowNetwork]
+  );
+
+  const commitOrigins = useCallback(
+    (origins: string[]) => {
+      setNetworkOrigins(docName, origins);
+      recompileUnderNewPolicy();
+    },
+    [docName, recompileUnderNewPolicy, setNetworkOrigins]
   );
 
   const copyExample = useCallback(
@@ -188,9 +205,14 @@ export function PluginEditorStrip({
         <TooltipContent className="max-w-sm">
           <p className="text-sm">
             Compiled in your browser and run in a worker inside a sandboxed
-            frame with its own origin: no page, no cookies, no storage, and no
-            network unless Network is on. The server only ever receives the
-            standard components it produces.
+            frame with its own origin: no page, no cookies, no storage, and
+            nothing on the network it has not been given. The server only ever
+            receives the standard components it produces.
+          </p>
+          <p className="mt-2 text-sm">
+            Network is per host. A plugin allowed to call a host can also load
+            code from it and send it anything it renders, so list only hosts you
+            would trust with the document.
           </p>
         </TooltipContent>
       </Tooltip>
@@ -262,22 +284,13 @@ export function PluginEditorStrip({
           aria-label="Enable plugin"
         />
       </label>
-      <label
-        htmlFor={`plugin-network-${docName}`}
-        className={cn(
-          'flex h-7 cursor-pointer items-center gap-1.5 rounded-sm px-1.5 text-xs',
-          record?.allowNetwork ? 'text-foreground' : 'text-muted-foreground'
-        )}
-        title="Off: fetch, XMLHttpRequest, WebSocket and EventSource throw inside the sandbox. On: the plugin may call any URL from your browser — only for code you trust."
-      >
-        Network
-        <Switch
-          id={`plugin-network-${docName}`}
-          checked={record?.allowNetwork ?? false}
-          onCheckedChange={toggleNetwork}
-          aria-label="Allow network access"
-        />
-      </label>
+      <NetworkControl
+        docName={docName}
+        allowNetwork={record?.allowNetwork ?? false}
+        origins={record?.networkOrigins ?? []}
+        onToggle={toggleNetwork}
+        onCommitOrigins={commitOrigins}
+      />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -303,3 +316,127 @@ export function PluginEditorStrip({
 }
 
 export const PluginEditorStripMemoized = React.memo(PluginEditorStrip);
+
+/**
+ * The Network control: a switch, and the hosts the switch grants.
+ *
+ * The switch alone reaches nothing. That is the point — "on" used to mean the
+ * whole internet, which made it a grant nobody could reason about: a plugin
+ * that may call anywhere may also fetch code and run it, so reading its source
+ * stops telling you what it does. Naming the hosts keeps the decision one an
+ * author can actually make.
+ */
+function NetworkControl({
+  docName,
+  allowNetwork,
+  origins,
+  onToggle,
+  onCommitOrigins,
+}: {
+  docName: string;
+  allowNetwork: boolean;
+  origins: string[];
+  onToggle: (allowNetwork: boolean) => void;
+  onCommitOrigins: (origins: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(() => origins.join('\n'));
+
+  // The field trails the record while it is closed; opening re-seeds it so a
+  // rename or an edit from elsewhere is not overwritten by a stale draft.
+  useEffect(() => {
+    if (!open) setDraft(origins.join('\n'));
+  }, [open, origins]);
+
+  const parsed = parseNetworkOrigins(draft);
+  const granted = allowNetwork && origins.length > 0;
+  const label = !allowNetwork
+    ? 'Network off'
+    : origins.length === 0
+      ? 'Network on, no hosts listed'
+      : `Network: ${origins.join(', ')}`;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          title={label}
+          className={cn(
+            'flex h-7 cursor-pointer items-center gap-1.5 rounded-sm px-1.5 text-xs',
+            'transition-colors hover:bg-muted/60',
+            'focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
+            granted ? 'text-foreground' : 'text-muted-foreground'
+          )}
+        >
+          <Globe className="size-3.5" aria-hidden="true" />
+          <span className="hidden sm:inline">Network</span>
+          {granted && (
+            <Badge
+              variant="outline"
+              className="h-4 px-1 font-mono text-[10px] tabular-nums"
+            >
+              {origins.length}
+            </Badge>
+          )}
+          {allowNetwork && origins.length === 0 && (
+            <span className="text-[10px] text-amber-600 dark:text-amber-500">
+              no hosts
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 space-y-3">
+        <label
+          htmlFor={`plugin-network-${docName}`}
+          className="flex cursor-pointer items-center justify-between gap-2"
+        >
+          <span className="text-sm font-medium">Allow network</span>
+          <Switch
+            id={`plugin-network-${docName}`}
+            checked={allowNetwork}
+            onCheckedChange={onToggle}
+            aria-label="Allow network access"
+          />
+        </label>
+        <p className="text-xs text-muted-foreground">
+          Off: <code>fetch</code>, <code>XMLHttpRequest</code>,{' '}
+          <code>WebSocket</code> and <code>EventSource</code> throw inside the
+          sandbox. On: only the hosts below are reachable — everything else is
+          refused by the browser, not by the plugin.
+        </p>
+        {allowNetwork && (
+          <>
+            <Textarea
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onBlur={() => onCommitOrigins(parsed.origins)}
+              spellCheck={false}
+              rows={3}
+              aria-label="Hosts this plugin may call"
+              placeholder={'api.open-meteo.com\ngeocoding-api.open-meteo.com'}
+              className="font-mono text-xs"
+            />
+            <p className="text-xs text-muted-foreground">
+              One host per line. <code>https</code> is assumed;{' '}
+              <code>*.example.com</code> matches subdomains.
+            </p>
+            {parsed.errors.length > 0 && (
+              <ul className="space-y-0.5 text-xs text-destructive">
+                {parsed.errors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            )}
+            {parsed.errors.length === 0 && parsed.origins.length === 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-500">
+                Nothing listed, so nothing is reachable.
+              </p>
+            )}
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}

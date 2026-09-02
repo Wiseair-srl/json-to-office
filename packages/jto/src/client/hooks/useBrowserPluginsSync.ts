@@ -209,13 +209,12 @@ export function useBrowserPluginsSync(
           announceChange(docName);
           return;
         }
-        const allowNetwork =
-          useBrowserPluginsStore.getState().records[docName]?.allowNetwork ??
-          false;
+        const record = useBrowserPluginsStore.getState().records[docName];
         const metadata = await pluginHost.load(docName, {
           js: compiled.js,
           format: FORMAT,
-          allowNetwork,
+          allowNetwork: record?.allowNetwork ?? false,
+          networkOrigins: record?.networkOrigins,
           examples: extractPluginExamples(compiled.source),
         });
         if (disposed) return;

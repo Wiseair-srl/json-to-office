@@ -13,7 +13,7 @@
           "name": "weather",
           "version": "1.0.0",
           "props": {
-            "city": "London",
+            "city": "Milan",
             "units": "metric",
             "showDetails": true
           }
