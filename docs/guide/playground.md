@@ -23,6 +23,8 @@ Both are deployments of the exact same dev server you get with `jto docx dev` / 
 - **Theme switching.** Swap the document's theme and watch colors, fonts, and component defaults change instantly. See [Themes & styling](/guide/themes).
 - **Compare (DOCX only).** The Compare button diffs two document JSONs into a redline `.docx` with native Word tracked changes — the same engine as `jto docx diff` and `POST /api/docx/diff`. See [the CLI guide](/guide/cli) for the command-line equivalent.
 - **Download with font-mode prompt.** When you export a document that references fonts outside the safe list, a dialog asks how to handle them: **keep custom fonts** (references ship as-is; recipients without the font get a fallback) or **convert to safe fonts** (non-safe families are rewritten to Calibri / Georgia / Consolas so every recipient sees the same glyphs). This mirrors the library's `fonts.mode` option — see [Fonts](/guide/fonts).
+- **Visual theme editor.** A theme file opens as a form — colour pickers with contrast checks, a font combobox, page geometry, every named style — beside a live sample that floats over the preview and a **Run sample** button that renders a real document in the theme. See [Visual theme editor](#visual-theme-editor).
+- **Custom plugins, in the browser.** Write a custom component in TypeScript next to your documents. It is type-checked against the real plugin API, compiled and run in a Web Worker inside a sandboxed, opaque-origin frame, and expanded into standard components before anything reaches the server. See [Custom plugins in the browser](#custom-plugins-in-the-browser).
 
 ![Playground screenshot](../playground-screenshot.png)
 
@@ -109,6 +111,52 @@ Two rules of the road:
 
 Every suppression requires a `reason`. That is deliberate: a muted finding
 nobody has to justify is how a rule quietly stops being enforced.
+
+## Visual theme editor
+
+A theme tab opens in **Visual** mode; the **Visual · JSON** switch in the app header — present only while a theme is open — moves to the Monaco source view (with schema completion, as before), and the choice is remembered. The switch lives in the header rather than on a strip of its own so the whole tab is form. Both views edit the same file: an edit in the form rewrites the JSON, an edit in the JSON is what the form shows next time you switch. Keys the form has no field for — `componentDefaults`, `fontRegistry`, `noProofWords` — are never touched; they are listed under **Advanced** with a shortcut to edit them as JSON.
+
+The form is generated from the [theme schema](/reference/theme-schema) of the running format, so it changes when the schema does:
+
+- **Colours** — one row per token, grouped (core, text, background, border, chart), each with a picker, a hex field and a clear button for optional tokens. The swatch opens a saturation square, a hue rail, a hex field, the screen eyedropper where the browser has one, and the theme's own colours as chips: click one and the value becomes a reference to that token, which then follows it. Text-on-background and primary-on-background show their contrast ratio, so a palette that will not read on the page says so before you render it.
+- **Typography** — a searchable combobox of safe and Google families per role, with **Browse all fonts…** into the full picker, and — for DOCX — the base size per role; for PPTX the `defaults` size and colour. Number fields carry steppers that hold to repeat and start from the field's floor when the key is unset.
+- **Page** (DOCX) — page size and margins, edited in inches, centimetres or points and stored in twips.
+- **Styles** — every named style slot (`normal`, `title`, `heading1`–`heading6`, TOC levels for DOCX; `title` to `caption` for PPTX) plus any custom style a DOCX theme defines. Each expands to its fields: font role or face, size, weight, colour (a token or a hex, from the same picker), alignment, spacing, line spacing, and a **More** disclosure for the rest. A boolean is three-state — **Unset · Off · On** — because a style that says nothing about `bold` inherits, while one that says `false` overrides.
+
+**Theme sample**, in the status row above the preview, opens a drawer over the page with an in-browser approximation of the theme: title, headings, body text, a table and the chart palette, in the theme's own fonts and colours. It repaints on every edit, and it floats for the same reason the quality drawers do — a card in the form would shove the field you are typing in down the screen each time. It is drawn by the browser, not by the renderer, so it is a guide to the palette and the type, not to the page.
+
+**Run sample**, in that drawer, renders a document that exercises the theme — every style slot, the defined colour tokens as swatches, a table, and on PPTX a native chart drawn from the palette — through the same generate + preview pipeline as Run, under the name `Sample · <theme>`. What you see is what the theme produces, not an approximation. Editing the theme afterwards marks the preview stale, as editing a document does, and while the sample is what is on screen, **Run** on the theme tab refreshes the sample rather than the last document.
+
+The **Identity** section says which open documents use the theme (renaming it breaks their reference until they are updated) and warns when another open theme file declares the same name. A theme whose JSON does not parse, or that has an AI change waiting to be reviewed, opens in the JSON view until that is resolved.
+
+## Custom plugins in the browser
+
+[Custom components](/guide/architecture#custom-components) normally live in `*.component.ts` files that the CLI and the dev server discover on disk. The playground can also host them in the browser: **Plugins ▸ +** creates a `*.component.ts` file next to your documents, seeded with a starter component for the running format (or with the source of a plugin discovered on disk).
+
+The file opens in a TypeScript editor wired to the real declarations of `@sinclair/typebox` and the json-to-office plugin API, so `props` inside `render()` is typed by your schema and a wrong import is a red squiggle. Every pause in typing recompiles the file; the strip above the editor shows the component's name and version, whether it compiled, and the errors if it did not. Once it is **Ready** the component is part of the document schema — completions offer it by name, its props validate — and any document that names it renders through it.
+
+### Where it runs
+
+Plugin code never reaches the server. It is compiled in the page and executed in a Web Worker per plugin, and that worker lives inside a sandboxed `<iframe>` with an opaque origin rather than in the page itself:
+
+- The frame is `sandbox="allow-scripts"` only, so it is a different origin from the playground: it cannot read the page, its cookies, its IndexedDB (where your documents live) or its `localStorage`, and a plugin that escapes the worker is still inside that frame. Its Content Security Policy allows the worker's own script and nothing else — no stylesheets, images, frames or navigation.
+- Inside the worker, storage and cross-context messaging (`indexedDB`, `caches`, `importScripts`, nested workers, `BroadcastChannel`, the file-system pickers) are removed before the code runs.
+- **Network** is off by default: the frame's policy blocks every connection, and `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource` and `navigator.sendBeacon` throw with a message pointing at the switch. Turning **Network** on in the editor strip lifts both for that plugin, which then runs with a fresh sandbox and may call any URL from your browser — reserve it for code you trust. The setting is per plugin and is remembered.
+- Loading is limited to 8 seconds and a render to 20 seconds; a plugin that overruns has its whole frame torn down and is reported, and the next build starts it afresh. An idle sandbox is discarded after 30 seconds.
+- `require` resolves only `@sinclair/typebox`, `@json-to-office/shared`, `@json-to-office/shared-docx`, `@json-to-office/shared-pptx` and the plugin API paths (`@json-to-office/core-docx`, `@json-to-office/core-pptx`, `@json-to-office/json-to-docx`, `@json-to-office/json-to-pptx`, and their `/plugin` subpaths). Anything else fails with a message naming the list.
+- A render may return at most 5 MB of components, and an expansion at most 10,000 nodes; the document budget is what stops a plugin that expands without end.
+
+The sandbox keeps a plugin away from your data; it does not make the code trustworthy. A plugin can still return components that point at remote images or fonts, which the server then fetches when it renders — the warnings bar lists every remote URL an expansion introduced.
+
+Before a document is sent anywhere — Run, the quality analysis, Compare, **Copy standard components**, a download — the page expands every browser-plugin component into the standard components its `render()` returned, the same walk the cores perform for disk plugins: children first, the render output expanded again in case it names another custom component, twenty levels deep at most. The server receives standard JSON, plus whatever disk plugins it already knows. Warnings raised with `addWarning` appear in the warnings bar, labelled `name@version`.
+
+### What it does not do
+
+- A plugin whose name collides with a built-in component, a disk plugin, or another browser plugin is reported and left out until renamed. Between two browser plugins the older file keeps the name; the newer one becomes ready the moment the other is renamed or deleted. A plugin copied from disk is renamed `<name>-custom` so the two can coexist.
+- The **Enabled** switch (in the strip and in the sidebar) takes a plugin out of the schema and the expansion without deleting it. A document that still names a disabled plugin — or one that failed to compile — does not build; the error says which file to open.
+- Quality findings that land inside a plugin's output are pointed back at the plugin node in your document and carry no automatic fix; the fix belongs in the plugin.
+- The compiled code and metadata persist in the browser, so a reload can build documents that use the plugin before its tab is opened again. The source lives with your documents.
+- To use the same component from the CLI or your own code, **Download** the file: it is written against the public import paths, so it compiles unchanged once the packages are installed. See the [Plugin API](/reference/api#plugin-api).
 
 ## High-fidelity PDF preview (LibreOffice)
 

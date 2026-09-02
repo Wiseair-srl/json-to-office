@@ -1,5 +1,5 @@
 import React from 'react';
-import { XIcon, FileTextIcon, PaletteIcon } from 'lucide-react';
+import { XIcon, FileTextIcon, PaletteIcon, Puzzle } from 'lucide-react';
 import { buttonVariants } from '../ui/button';
 import { TabsList, TabsTrigger } from '../ui/tabs';
 import { useDocumentsStore } from '../../store/documents-store-provider';
@@ -9,6 +9,7 @@ function EditorTabItem({ name }: { name: string }) {
   const { closeDocument, documentTypes } = useDocumentsStore((state) => state);
   const documentType = documentTypes[name] || 'application/json+report';
   const isTheme = documentType === 'application/json+theme';
+  const isPlugin = documentType === 'application/typescript+plugin';
 
   return (
     <TabsTrigger
@@ -26,6 +27,8 @@ function EditorTabItem({ name }: { name: string }) {
     >
       {isTheme ? (
         <PaletteIcon className="size-4 text-accent2" />
+      ) : isPlugin ? (
+        <Puzzle className="size-4 text-muted-foreground" />
       ) : (
         <FileTextIcon className="size-4 text-muted-foreground" />
       )}

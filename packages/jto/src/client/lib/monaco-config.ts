@@ -14,12 +14,16 @@ import { registerFontCodeLens } from './monaco-fonts-codelens';
 import { registerMonacoThemes } from './monaco-theme';
 import { unionBranches } from '@json-to-office/shared';
 import { createQualityPolicySchemaConfig } from './quality-policy-schema';
+import type { BrowserComponentSchemaInfo } from '../store/browser-plugins-store';
 
 let isConfigured = false;
 let completionDisposable: { dispose(): void } | null = null;
 // Remember last custom theme names so callers that don't pass them
 // (e.g. applyPluginsWithValidation) still get them injected.
 let lastCustomThemeNames: string[] = [];
+// Same for the browser plugins: a caller refreshing for a disk-plugin toggle
+// must not drop the components compiled in the page.
+let lastBrowserComponents: BrowserComponentSchemaInfo[] = [];
 
 export interface MonacoSchemaConfig {
   uri: string;
@@ -352,21 +356,32 @@ function registerJsonCompletionProvider(monaco: Monaco): void {
  * Update Monaco schemas with plugin-aware document schema
  * @param monaco Monaco instance
  * @param pluginNames Array of plugin names to include in the schema
+ * @param customThemeNames Custom theme names to offer for `props.theme`
+ * @param browserComponents Components compiled in the browser; omitted means
+ *   "keep the last set", so a refresh for another reason does not drop them
  * @returns Promise that resolves to true if successful, false otherwise
  */
 export async function updateMonacoWithPlugins(
   monaco: Monaco,
   pluginNames?: string[],
-  customThemeNames?: string[]
+  customThemeNames?: string[],
+  browserComponents?: BrowserComponentSchemaInfo[]
 ): Promise<boolean> {
   try {
     // Clear stale plugin schema cache to ensure fresh data after rebuilds
     schemaService.clearPluginSchemaCache();
 
+    if (browserComponents) {
+      lastBrowserComponents = browserComponents;
+    }
+
     // Fetch the enhanced schema with plugins from the backend.
     // Deep clone so client-side mutations (theme injection, discriminator
     // stripping) don't pollute the cached copy.
-    const cachedSchema = await schemaService.fetchDocumentSchema(pluginNames);
+    const cachedSchema = await schemaService.fetchDocumentSchema(
+      pluginNames,
+      lastBrowserComponents
+    );
     const documentSchema = JSON.parse(JSON.stringify(cachedSchema));
 
     // Validate that we received a valid schema
@@ -444,6 +459,7 @@ export async function updateMonacoWithPlugins(
 
     console.log('Monaco updated with plugin-aware schemas:', {
       plugins: pluginNames || [],
+      browserPlugins: lastBrowserComponents.map((c) => c.name),
       reportSchema: {
         uri: reportSchema.uri,
         fileMatch: reportSchema.fileMatch,

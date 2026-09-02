@@ -45,6 +45,15 @@ import {
 import type { GenerationWarning, QualityState } from '../../store/output-store';
 import { retry, RetryStrategies } from '../../utils/retry';
 import { themeChangeEmitter } from '../../utils/theme-change-emitter';
+import { expandForServer } from '../../lib/plugins/expand-for-server';
+import { compileQueue } from '../../lib/plugins/compile-queue';
+import { BROWSER_PLUGINS_CHANGED_EVENT } from '../../hooks/useBrowserPluginsSync';
+import {
+  buildThemeSpecimen,
+  isSampleOutputName,
+  sampleOutputName,
+} from '../../lib/theme-editor/specimen';
+import { getThemeName } from '../../lib/theme-validation';
 import { useShallow } from 'zustand/react/shallow';
 
 interface BuildRequest {
@@ -314,13 +323,32 @@ function EditorComponent() {
           requestId: id,
         });
 
+        // Browser plugins are expanded here, before the document leaves the
+        // page: the server only ever sees standard components. Outside the
+        // retry below, because a plugin that throws will throw again.
+        onProgress('parsing', 'Expanding plugins...');
+        const expansion = await expandForServer(doc.text, {
+          customThemes: freshThemeData,
+          signal,
+        });
+        // A document build supersedes a theme sample as the thing Run refreshes.
+        if (!isSampleOutputName(doc.name)) lastSampleRef.current = null;
+        if (signal.aborted || lastBuildRequestIdRef.current !== id) {
+          setOutput({
+            isGenerating: false,
+            generationProgress: undefined,
+            generationStartedAt: undefined,
+          });
+          return;
+        }
+
         // Retry logic for temporary failures
         const result = await retry(
           async () => {
             if (signal.aborted) throw new Error('Build cancelled');
             return await generatePresentation(
               doc.name,
-              doc.text,
+              expansion.text,
               freshThemeData,
               onProgress,
               {
@@ -419,7 +447,9 @@ function EditorComponent() {
               | 'UNKNOWN'
               | undefined,
             cacheHitRate: (result as any).cacheHitRate as string | undefined,
-            warnings: others as GenerationWarning[],
+            // Plugin warnings first: they were raised by the author's own code
+            // and read above whatever the renderer then had to say.
+            warnings: [...expansion.warnings, ...others] as GenerationWarning[],
             ...qualityIfCurrent({
               findings,
               counts: countBySeverity(findings),
@@ -500,6 +530,8 @@ function EditorComponent() {
 
   // Track the last viewed document for theme updates
   const lastViewedDocumentRef = useRef<string | null>(null);
+  // The theme whose sample is on screen, if a sample is what was last built.
+  const lastSampleRef = useRef<{ themeDocName: string } | null>(null);
 
   // re-build on active tab change or any document change
   useEffect(() => {
@@ -529,8 +561,8 @@ function EditorComponent() {
       if (!outputStore.getState().isGenerating) {
         setOutput({ isPreviewStale: true });
       }
-    } else if (activeFile && docType === 'application/json+theme') {
-      // Theme tab active — no document preview to build.
+    } else if (activeFile && docType !== 'application/json+report') {
+      // Theme or plugin tab active — no document preview to build.
       // Don't clear blob: preserve the last document preview in the background.
       cancelGeneration();
     }
@@ -723,8 +755,22 @@ function EditorComponent() {
               themeDirty = true;
             }
           }
+        } else if (allDtypes[doc.name] === 'application/typescript+plugin') {
+          // A plugin edited a moment ago is still behind its save debounce
+          // and its compile debounce; the build must see what is on screen.
+          const ref = useEditorRefsStore.getState().getEditor(doc.name);
+          if (ref) {
+            ref.flushPendingSave?.();
+            const liveText = ref.toStorageValue(ref.editor.getValue());
+            if (liveText !== doc.text) {
+              documentsStore.getState().saveDocument(doc.name, liveText);
+            }
+          }
         }
       }
+      // Whatever compile the edits above queued starts now rather than after
+      // its debounce; the build below waits for the queue to drain.
+      compileQueue.flush();
 
       // 2. Cancel any pending build timeout for active doc
       const currentTab = documentsStore.getState().activeTab;
@@ -738,18 +784,32 @@ function EditorComponent() {
       if (flushBuildTimerRef.current) {
         clearTimeout(flushBuildTimerRef.current);
       }
-      flushBuildTimerRef.current = setTimeout(() => {
+      flushBuildTimerRef.current = setTimeout(async () => {
         flushBuildTimerRef.current = null;
+        // Plugins that were just edited are compiling; a build that ran now
+        // would expand with the previous compiled code.
+        await compileQueue.whenIdle();
         const {
           documents: docs,
           activeTab: tab,
           documentTypes: dtypes,
         } = documentsStore.getState();
 
-        // Determine target: if active tab is a theme, build the last-viewed document instead
+        // Determine target: if active tab is a theme or a plugin, build the
+        // last-viewed document instead — unless what is on screen is this
+        // theme's sample, in which case Run refreshes the sample.
         let targetName = tab;
         const tabType = dtypes[tab] || 'application/json+report';
-        if (tabType === 'application/json+theme') {
+        if (tabType !== 'application/json+report') {
+          const sample = lastSampleRef.current;
+          if (
+            sample &&
+            tabType === 'application/json+theme' &&
+            sample.themeDocName === tab
+          ) {
+            buildSampleRef.current(tab);
+            return;
+          }
           if (lastViewedDocumentRef.current) {
             targetName = lastViewedDocumentRef.current;
           } else {
@@ -790,6 +850,75 @@ function EditorComponent() {
       }
     };
   }, [setOutput, documentsStore, themesStore]);
+
+  // A theme's sample: a document the theme editor builds on demand rather
+  // than a file in the workspace. Same build path as Run, cache bypassed since
+  // the theme it names was just edited. The sample is remembered per theme
+  // file so a later Run on that tab refreshes it instead of swapping the
+  // preview back to the last document.
+  const buildSample = useCallback(
+    (themeDocName: string) => {
+      const { documents: docs } = documentsStore.getState();
+      const themeDoc = docs.find((d) => d.name === themeDocName);
+      if (!themeDoc) {
+        setOutput({ isGenerating: false });
+        return;
+      }
+      let parsed: Record<string, unknown> | undefined;
+      let themeName: string | null = null;
+      try {
+        parsed = JSON.parse(themeDoc.text);
+        themeName = getThemeName(parsed);
+      } catch {}
+      if (!themeName) {
+        setOutput({
+          isGenerating: false,
+          globalError: 'The theme has no name',
+        });
+        return;
+      }
+      const name = sampleOutputName(themeName);
+      const text = JSON.stringify(
+        buildThemeSpecimen(FORMAT, themeName, parsed),
+        null,
+        2
+      );
+      lastSampleRef.current = { themeDocName };
+      setOutput({ isGenerating: true });
+      getDocumentVersionRef.current(name);
+      buildDocumentRef.current({ name, text }, undefined, {
+        bypassCache: true,
+      });
+    },
+    [documentsStore, setOutput]
+  );
+  const buildSampleRef = useRef(buildSample);
+  useEffect(() => {
+    buildSampleRef.current = buildSample;
+  });
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ themeDocName?: string }>).detail;
+      if (!detail?.themeDocName) return;
+      buildSampleRef.current(detail.themeDocName);
+    };
+    window.addEventListener('preview:buildSpecimen', handler);
+    return () => window.removeEventListener('preview:buildSpecimen', handler);
+  }, []);
+
+  // A plugin that recompiled may change what the previewed document renders
+  // to; like a theme edit, that is the author's cue to Run again.
+  useEffect(() => {
+    const handler = () => {
+      if (!outputStore.getState().isGenerating) {
+        setOutput({ isPreviewStale: true });
+      }
+    };
+    window.addEventListener(BROWSER_PLUGINS_CHANGED_EVENT, handler);
+    return () =>
+      window.removeEventListener(BROWSER_PLUGINS_CHANGED_EVENT, handler);
+  }, [outputStore, setOutput]);
 
   // Cleanup on unmount
   useEffect(() => {

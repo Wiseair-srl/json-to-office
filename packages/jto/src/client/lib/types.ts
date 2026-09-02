@@ -55,6 +55,11 @@ export type Settings = {
   /** Lowest severity the panel shows. A display filter, never a gate. */
   qualityMinSeverity?: 'error' | 'warning' | 'info';
   /**
+   * How a theme tab opens: the visual form or the JSON source. One setting
+   * for both formats — it is a preference about the tool, not the theme.
+   */
+  themeEditorView?: 'visual' | 'json';
+  /**
    * Hand-written run policy per format, as raw JSON text.
    *
    * Text rather than a parsed object so a half-typed policy survives a reload;

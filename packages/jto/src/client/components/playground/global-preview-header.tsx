@@ -40,14 +40,18 @@ export function GlobalPreviewHeader({
   // excluded — they have no standard-components expansion. The selector
   // returns a string, so Zustand's equality check keeps renders cheap.
   const editorDocumentText = useDocumentsStore((s) =>
-    s.activeTab && s.documentTypes[s.activeTab] !== 'application/json+theme'
+    s.activeTab &&
+    (s.documentTypes[s.activeTab] ?? 'application/json+report') ===
+      'application/json+report'
       ? s.documents.find((d) => d.name === s.activeTab)?.text
       : undefined
   );
   // The name owning that text. `name` above is the last output's, so without
   // this the copy request pairs one document's JSON with another's provenance.
   const editorDocumentName = useDocumentsStore((s) =>
-    s.activeTab && s.documentTypes[s.activeTab] !== 'application/json+theme'
+    s.activeTab &&
+    (s.documentTypes[s.activeTab] ?? 'application/json+report') ===
+      'application/json+report'
       ? s.activeTab
       : undefined
   );

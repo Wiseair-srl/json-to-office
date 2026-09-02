@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { useTheme } from '../theme-provider';
 import { cn } from '../../lib/utils';
@@ -48,7 +49,18 @@ export function QualityPolicyEditor({
     [policies, setSettings]
   );
 
-  const reset = useCallback(() => commit(EMPTY_POLICY_TEXT), [commit]);
+  // The editor is uncontrolled, so `text` is not what is on screen: Reset has
+  // to write the model. Without it the stored policy emptied, the caption
+  // under the box said so, and the old JSON stayed visible — the button
+  // looked like it did nothing.
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const reset = useCallback(() => {
+    const instance = editorRef.current;
+    // `setValue` raises a content change, so the ordinary `onChange` commits
+    // it. The direct call is for a Reset pressed before the editor mounted.
+    if (instance) instance.setValue(EMPTY_POLICY_TEXT);
+    else commit(EMPTY_POLICY_TEXT);
+  }, [commit]);
 
   return (
     <div className={cn('flex min-w-0 flex-col gap-2', className)}>
@@ -60,11 +72,19 @@ export function QualityPolicyEditor({
         <button
           type="button"
           onClick={reset}
+          // A no-op Reset reads as a broken Reset; say so instead.
+          disabled={text === EMPTY_POLICY_TEXT}
+          title={
+            text === EMPTY_POLICY_TEXT
+              ? 'The policy is already empty'
+              : 'Clear the policy back to an empty one'
+          }
           className={cn(
             'flex flex-shrink-0 items-center gap-1 rounded-sm px-1.5 py-0.5',
             'text-[11px] font-medium text-muted-foreground transition-colors',
             'hover:bg-accent hover:text-foreground',
-            'focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
+            'focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
+            'disabled:pointer-events-none disabled:opacity-40'
           )}
         >
           <RotateCcw className="h-3 w-3" aria-hidden="true" />
@@ -79,6 +99,9 @@ export function QualityPolicyEditor({
           path={QUALITY_POLICY_MODEL_PATH}
           theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs'}
           defaultValue={text}
+          onMount={(instance) => {
+            editorRef.current = instance;
+          }}
           onChange={(value) => commit(value ?? '')}
           options={{
             minimap: { enabled: false },

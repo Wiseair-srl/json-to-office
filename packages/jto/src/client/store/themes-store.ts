@@ -17,6 +17,21 @@ export type ThemesState = {
   customThemes: { [name: string]: CustomTheme };
 };
 
+/**
+ * Valid custom themes keyed by theme name — the `customThemes` shape every
+ * server request carries. File names are the store's keys; the server and
+ * the plugin sandbox look themes up by the name inside the JSON.
+ */
+export function validThemesByName(customThemes: {
+  [name: string]: CustomTheme;
+}): Record<string, ThemeConfigJson> {
+  const out: Record<string, ThemeConfigJson> = {};
+  for (const theme of Object.values(customThemes)) {
+    if (theme.valid && theme.parsed) out[theme.name] = theme.parsed;
+  }
+  return out;
+}
+
 export type ThemesActions = {
   updateTheme: (documentName: string, content: string) => void;
   removeTheme: (documentName: string) => void;

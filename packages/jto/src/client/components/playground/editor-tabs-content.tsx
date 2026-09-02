@@ -1,6 +1,7 @@
 import React from 'react';
 import { EditorMonacoJsonMemoized } from '../json-editor/editor-monaco-json';
-import { EditorMonacoThemeMemoized } from '../json-editor/editor-monaco-theme';
+import { ThemeEditorHostMemoized } from '../theme-editor/theme-editor-host';
+import { EditorMonacoPluginMemoized } from '../plugin-editor/editor-monaco-plugin';
 import { TabsContent } from '../ui/tabs';
 import { useDocumentsStore } from '../../store/documents-store-provider';
 import { useThemesStore } from '../../store/themes-store-provider';
@@ -83,9 +84,12 @@ function TabContent({
       tabIndex={-1} // to prevent focus on Tab trigger (fix for accessibility size issue)
     >
       {documentType === 'application/json+theme' ? (
-        <EditorMonacoThemeMemoized
-          document={document}
-          onChange={handleChange}
+        <ThemeEditorHostMemoized document={document} onChange={handleChange} />
+      ) : documentType === 'application/typescript+plugin' ? (
+        <EditorMonacoPluginMemoized
+          name={name}
+          value={text}
+          saveDocumentDebounceWait={saveDocumentDebounceWait}
         />
       ) : (
         <EditorMonacoJsonMemoized

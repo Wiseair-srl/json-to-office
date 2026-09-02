@@ -9,6 +9,11 @@ import { schemaService, SchemaType } from '../../lib/schema-service';
 import { copySchemaToClipboard } from '../../lib/clipboard';
 import { useToast } from '../ui/use-toast';
 import { usePluginsStore } from '../../store/plugins-store';
+import {
+  activePluginsSignature,
+  browserComponentsForSchema,
+  useBrowserPluginsStore,
+} from '../../store/browser-plugins-store';
 
 interface SchemaDialogProps {
   open: boolean;
@@ -35,6 +40,9 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
   const { toast } = useToast();
   const selectedPlugins = usePluginsStore((state) => state.selectedPlugins);
   const selectedPluginNames = Array.from(selectedPlugins);
+  // Browser plugins are part of the document schema too; the signature
+  // changes when they do, which is what re-fetches the schema below.
+  const browserSignature = useBrowserPluginsStore(activePluginsSignature);
 
   // Update active tab when defaultTab changes
   useEffect(() => {
@@ -49,8 +57,10 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
     setErrorDocument(null);
 
     try {
-      const schema =
-        await schemaService.fetchDocumentSchema(selectedPluginNames);
+      const schema = await schemaService.fetchDocumentSchema(
+        selectedPluginNames,
+        browserComponentsForSchema(useBrowserPluginsStore.getState())
+      );
       setDocumentSchema(schema);
     } catch (error) {
       const message =
@@ -66,7 +76,7 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
     } finally {
       setLoadingDocument(false);
     }
-  }, [selectedPluginNames, toast]);
+  }, [selectedPluginNames, browserSignature, toast]);
 
   // Load theme schema
   const loadThemeSchema = useCallback(async () => {

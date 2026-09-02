@@ -3,6 +3,7 @@
  */
 
 import { API_BASE_URL } from '../config/api';
+import type { BrowserComponentSchemaInfo } from '../store/browser-plugins-store';
 
 interface SchemaResponse {
   success: boolean;
@@ -21,17 +22,27 @@ class SchemaService {
   /**
    * Fetch the JSON schema for document validation
    * @param pluginNames Optional array of plugin names to include in the schema
+   * @param browserComponents Components compiled in the browser, by metadata;
+   *   when present the request is a POST carrying their props schemas.
    */
-  async fetchDocumentSchema(pluginNames?: string[]): Promise<any> {
+  async fetchDocumentSchema(
+    pluginNames?: string[],
+    browserComponents?: BrowserComponentSchemaInfo[]
+  ): Promise<any> {
     // Create cache key based on plugins. An explicit selection (even [])
     // is cached apart from the "unspecified" default, which the server
-    // resolves to every registered plugin.
+    // resolves to every registered plugin. Browser components are part of
+    // the key too: their schemas change on every edit of the plugin file.
+    const browserKey =
+      browserComponents && browserComponents.length > 0
+        ? `+browser:${JSON.stringify(browserComponents)}`
+        : '';
     const cacheKey = pluginNames
-      ? `document-${[...pluginNames].sort().join(',')}`
-      : 'document';
+      ? `document-${[...pluginNames].sort().join(',')}${browserKey}`
+      : `document${browserKey}`;
 
     // Check cache first
-    if (pluginNames) {
+    if (pluginNames || browserKey) {
       const cached = this.pluginSchemaCache.get(cacheKey);
       if (cached && this.isCacheValid(cacheKey)) {
         return cached;
@@ -41,18 +52,31 @@ class SchemaService {
     }
 
     try {
-      // Build URL with plugin query params. An explicit selection is always
-      // sent — `plugins=` (empty) tells the server "no plugins", instead of
-      // silently falling back to the all-plugins default.
-      let url = `${API_BASE_URL}/discovery/schemas/document`;
-      if (pluginNames) {
-        // eslint-disable-next-line no-undef
-        const params = new URLSearchParams();
-        params.append('plugins', pluginNames.join(','));
-        url = `${url}?${params.toString()}`;
+      let response: Response;
+      if (browserKey) {
+        // Browser plugins ride in the body; the server composes their schemas
+        // next to the disk plugins and never sees their code.
+        response = await fetch(`${API_BASE_URL}/discovery/schemas/document`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...(pluginNames ? { plugins: pluginNames } : {}),
+            customComponents: browserComponents,
+          }),
+        });
+      } else {
+        // Build URL with plugin query params. An explicit selection is always
+        // sent — `plugins=` (empty) tells the server "no plugins", instead of
+        // silently falling back to the all-plugins default.
+        let url = `${API_BASE_URL}/discovery/schemas/document`;
+        if (pluginNames) {
+          // eslint-disable-next-line no-undef
+          const params = new URLSearchParams();
+          params.append('plugins', pluginNames.join(','));
+          url = `${url}?${params.toString()}`;
+        }
+        response = await fetch(url);
       }
-
-      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(
@@ -67,7 +91,7 @@ class SchemaService {
       }
 
       // Cache the schema
-      if (pluginNames) {
+      if (pluginNames || browserKey) {
         if (this.pluginSchemaCache.size >= this.MAX_PLUGIN_CACHE) {
           const firstKey = this.pluginSchemaCache.keys().next().value;
           if (firstKey) this.pluginSchemaCache.delete(firstKey);

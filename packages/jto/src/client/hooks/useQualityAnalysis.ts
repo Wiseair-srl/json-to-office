@@ -13,7 +13,45 @@ import {
   useOutputStore,
 } from '../store/output-store-provider';
 import { useSettingsStore } from '../store/settings-store-provider';
+import { ThemesStoreContext } from '../store/themes-store-provider';
+import { validThemesByName } from '../store/themes-store';
+import {
+  expandForServer,
+  type ExpandForServerResult,
+} from '../lib/plugins/expand-for-server';
+import type { QualityFinding } from '../lib/quality-findings';
 import { isJsonMediaType } from './usePresentationGenerator';
+
+/**
+ * Point findings computed against the expanded document back at the text the
+ * author sees. A finding inside a plugin's output has no node to fix in the
+ * editor — its patch would land on the wrong thing — so it keeps only its
+ * path to the plugin node and says which component it came from.
+ */
+function remapFindings(
+  findings: QualityFinding[],
+  remap: ExpandForServerResult['remap']
+): QualityFinding[] {
+  return findings.map((finding) => {
+    const target = remap(finding.path);
+    const relatedPaths = finding.relatedPaths?.map((p) => remap(p).path);
+    if (!target.insidePlugin) {
+      if (target.path === finding.path && !relatedPaths) return finding;
+      return {
+        ...finding,
+        path: target.path,
+        ...(relatedPaths ? { relatedPaths } : {}),
+      };
+    }
+    return {
+      ...finding,
+      path: target.path,
+      message: `${finding.message} (inside the output of a browser plugin — fix it in the plugin)`,
+      ...(relatedPaths ? { relatedPaths } : {}),
+      fixes: undefined,
+    };
+  });
+}
 
 /**
  * Long enough that a burst of typing costs one request rather than one per
@@ -103,6 +141,9 @@ export function useQualityAnalysis(): {
 } {
   const setOutput = useOutputStore((state) => state.setOutput);
   const outputStore = useContext(OutputStoreContext)!;
+  // Optional: the JSON editor page has no themes store, and a plugin then
+  // renders against the built-in theme its document names.
+  const themesStore = useContext(ThemesStoreContext);
   // Read here rather than inside the request so a settings change re-creates
   // `analyze`, and a caller holding the old one cannot keep analysing under a
   // profile the author has already switched away from.
@@ -165,6 +206,48 @@ export function useQualityAnalysis(): {
 
       const quality = buildQualityOptions(profileId, gate, policyText);
 
+      // Browser plugins are expanded first, as before a build: the validator
+      // knows only standard components. A plugin that fails to expand is an
+      // analysis error, reported the way a dead backend is — nothing about
+      // the document itself is known yet. Findings come back against the
+      // expanded tree and are pointed back at the authored one below.
+      let remap: ExpandForServerResult['remap'] = (pointer) => ({
+        path: pointer,
+        insidePlugin: false,
+      });
+      try {
+        const expansion = await expandForServer(documentText, {
+          customThemes: themesStore
+            ? validThemesByName(themesStore.getState().customThemes)
+            : {},
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+        if (expansion.expanded) {
+          jsonDefinition = JSON.parse(expansion.text);
+          remap = expansion.remap;
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        const stored = outputStore.getState().quality;
+        const previous =
+          stored && stored.documentName === documentName ? stored : undefined;
+        commit(ticket, {
+          ...(previous ?? {
+            findings: [],
+            counts: { error: 0, warning: 0, info: 0 },
+            source: 'validate' as const,
+          }),
+          documentName,
+          seq: ticket,
+          analyzedAt: Date.now(),
+          blocked: previous?.blocked ?? false,
+          gateError: undefined,
+          analysisError: error instanceof Error ? error.message : String(error),
+        });
+        return;
+      }
+
       try {
         const response = await fetch(API_ENDPOINTS.validate, {
           method: 'POST',
@@ -185,7 +268,10 @@ export function useQualityAnalysis(): {
           const message = describeFailure(response, body);
           if (body?.code === 'QUALITY_GATE_FAILED') {
             // A real rejection, and it carries the diagnostics that caused it.
-            const findings = findingsFromAnalysis(body.quality);
+            const findings = remapFindings(
+              findingsFromAnalysis(body.quality),
+              remap
+            );
             commit(ticket, {
               findings,
               counts: countBySeverity(findings),
@@ -232,7 +318,7 @@ export function useQualityAnalysis(): {
         // one, neither of which is a failed request — the analysis, when there
         // is one, is still in `data`.
         const analysis = body?.data?.qualityAnalysis;
-        const findings = findingsFromAnalysis(analysis);
+        const findings = remapFindings(findingsFromAnalysis(analysis), remap);
         commit(ticket, {
           findings,
           counts: countBySeverity(findings),
@@ -249,7 +335,7 @@ export function useQualityAnalysis(): {
         if (abortRef.current === controller) abortRef.current = null;
       }
     },
-    [commit, gate, outputStore, policyText, profileId]
+    [commit, gate, outputStore, policyText, profileId, themesStore]
   );
 
   const analyze = useCallback(
