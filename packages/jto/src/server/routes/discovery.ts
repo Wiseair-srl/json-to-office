@@ -13,7 +13,11 @@ import { AppEnv } from '../types/hono.js';
 import { Container } from '../container/index.js';
 import { tbValidator, getValidated } from '../lib/typebox-validator.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
-import { config, pluginAutoloadEnabled } from '../config/index.js';
+import {
+  config,
+  pluginAutoloadEnabled,
+  requestTriggeredPluginLoadAllowed,
+} from '../config/index.js';
 import {
   BrowserPluginSchemaError,
   prepareBrowserPlugins,
@@ -114,27 +118,27 @@ function cleanupTypeBoxIds(schema: any): void {
 }
 
 /**
- * Schema generation must not depend on the client having POSTed
- * `/load-plugins` first. The playground fires that bootstrap POST and the
- * first schema fetch in parallel on page load; when the schema request won
- * the race (or the POST failed), the registry was empty, the requested
+ * Schema generation must not depend on anything having POSTed
+ * `/load-plugins` first. The playground used to fire that bootstrap POST and
+ * the first schema fetch in parallel on page load; when the schema request
+ * won the race (or the POST failed), the registry was empty, the requested
  * plugins were silently dropped, and Monaco kept a plugin-less schema —
  * enabled components neither completed nor validated until a toggle forced a
  * refetch. Requests that need plugins now load them on demand; the registry
  * coalesces concurrent loads and its load fingerprint makes repeats a no-op.
  *
- * Gated on `PLUGIN_AUTOLOAD` (see `pluginAutoloadEnabled`): where the server
- * is not allowed to read plugins off its own disk, an unauthenticated schema
- * request must not be what makes it start — generation falls back to whatever
- * is already registered. Production defaults to refusing; a deployment that
- * opts in has already loaded them at boot, so this only catches a plugin that
- * appeared afterwards.
+ * Local affordance only (see `requestTriggeredPluginLoadAllowed`), because
+ * this is a request making the server read its own disk. A hardened
+ * deployment loads its plugins at boot instead — see
+ * `UnifiedServer.preloadPlugins` — so it needs nothing from here and falls
+ * back to what is already registered, which after that preload is everything
+ * the image ships.
  */
 async function ensurePluginsRegistered(
   format: 'docx' | 'pptx',
   pluginNames?: string[]
 ): Promise<void> {
-  if (!pluginAutoloadEnabled()) return;
+  if (!requestTriggeredPluginLoadAllowed()) return;
 
   const registry = PluginRegistry.getInstance();
   const satisfied = pluginNames
@@ -478,13 +482,13 @@ discoveryRouter.get('/plugin/:name', async (c) => {
 });
 
 discoveryRouter.post('/load-plugins', async (c) => {
-  // A key is required regardless of the global auth setting, unless the
-  // deployment opted into disk plugins: `PLUGIN_AUTOLOAD` already ran this
-  // exact discovery at boot, so re-running it grants no capability the
-  // operator has not granted. With autoload off, an anonymous caller still
-  // cannot make the server scan and import from disk.
+  // A key is required regardless of the global auth setting, except on a
+  // developer's own machine, where a keyless caller may still ask, as it
+  // always could. `PLUGIN_AUTOLOAD` does not open this route: it authorizes
+  // the boot preload, not the caller, and a deployment that opted in already
+  // has these plugins registered before the first request arrives.
   const apiKey = c.req.header('X-API-Key') || c.req.header('Authorization');
-  if (!apiKey && !pluginAutoloadEnabled()) {
+  if (!apiKey && !requestTriggeredPluginLoadAllowed()) {
     return c.json({ success: false, error: 'Authentication required' }, 401);
   }
 

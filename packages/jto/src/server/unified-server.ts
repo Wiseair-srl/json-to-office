@@ -36,10 +36,11 @@ export class UnifiedServer {
    * Load the disk plugins once, before the first request.
    *
    * The registry is what generation reads, and nothing else fills it in a
-   * hosted deployment: the client's bootstrap POST is the authenticated
-   * route, and a public playground has no key to send. Loading here instead
-   * makes it the operator's decision, taken at boot from the image's own
-   * filesystem — see `pluginAutoloadEnabled`.
+   * hosted deployment: the load route wants a key a public playground has
+   * none of, and no request may make the server walk its disk there anyway
+   * (see `requestTriggeredPluginLoadAllowed`). Loading here instead makes it
+   * the operator's decision, taken at boot from the image's own filesystem —
+   * see `pluginAutoloadEnabled`.
    *
    * Awaited rather than backgrounded so the first schema request cannot beat
    * it and cache a plugin-less schema. A plugin that fails to import is a

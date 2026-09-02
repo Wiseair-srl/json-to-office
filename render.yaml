@@ -72,7 +72,7 @@ services:
       # public deployment has no key for the authenticated load route), so
       # `weather` completed and validated locally and came back "Unknown
       # component" here. Only this image's own filesystem is read, once, at
-      # boot.
+      # boot; no request can make it read again.
       - key: PLUGIN_AUTOLOAD
         value: 'true'
     healthCheckPath: /health
