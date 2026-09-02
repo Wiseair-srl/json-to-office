@@ -387,6 +387,25 @@ export interface FormatAdapter {
   parseJson(input: string | object): unknown;
   validateDocument(doc: unknown): { valid: boolean; errors?: any[] };
 
+  /**
+   * Validate a document that names plugin components.
+   *
+   * `validateDocument` above knows the standard components and nothing else,
+   * so a registered plugin reads to it as `Unknown component "weather"` —
+   * the same name the schema route offers for completion and the generator
+   * expands. The core validators take the registered components, defer those
+   * nodes from the standard walk, and check each one's props against the
+   * version it resolves to; this is the seam that reaches them.
+   *
+   * Async because the core that owns them is imported on demand, as
+   * `analyzeQuality` does. Callers with no plugins registered should keep
+   * using the sync entry point.
+   */
+  validateDocumentWithPlugins?(
+    doc: unknown,
+    plugins: any[]
+  ): Promise<{ valid: boolean; errors?: any[] }>;
+
   /** Analyze format-specific design quality with profiles, policy, and gate. */
   analyzeQuality?(
     doc: unknown,
@@ -663,6 +682,20 @@ export class DocxFormatAdapter implements FormatAdapter {
     return {
       valid: result.valid,
       ...(result.errors.length > 0 && { errors: result.errors }),
+    };
+  }
+
+  async validateDocumentWithPlugins(
+    doc: unknown,
+    plugins: any[]
+  ): Promise<{ valid: boolean; errors?: any[] }> {
+    const core = await import('@json-to-office/core-docx');
+    const parsed = typeof doc === 'string' ? JSON.parse(doc) : doc;
+    const result = core.validateDocument(parsed as any, plugins);
+    const errors = result.errors ?? [];
+    return {
+      valid: result.valid,
+      ...(errors.length > 0 && { errors }),
     };
   }
 
@@ -1090,6 +1123,19 @@ export class PptxFormatAdapter implements FormatAdapter {
 
   validateDocument(doc: unknown): { valid: boolean; errors?: any[] } {
     const result = validatePresentationDocument(doc);
+    return {
+      valid: result.valid,
+      ...(result.errors.length > 0 && { errors: result.errors }),
+    };
+  }
+
+  async validateDocumentWithPlugins(
+    doc: unknown,
+    plugins: any[]
+  ): Promise<{ valid: boolean; errors?: any[] }> {
+    const core = await import('@json-to-office/core-pptx');
+    const parsed = typeof doc === 'string' ? JSON.parse(doc) : doc;
+    const result = core.validatePresentation(parsed as any, plugins);
     return {
       valid: result.valid,
       ...(result.errors.length > 0 && { errors: result.errors }),
