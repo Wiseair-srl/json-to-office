@@ -104,6 +104,10 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
 
   // Track previous plugin state to detect changes
   const [previousPlugins, setPreviousPlugins] = useState<string[]>([]);
+  // Browser plugins are tracked the same way: editing one changes the
+  // signature, and a dialog already holding a schema has to refetch it.
+  const [previousBrowserSignature, setPreviousBrowserSignature] =
+    useState<string>(browserSignature);
 
   // Reset schema when dialog closes to force refresh on next open
   useEffect(() => {
@@ -120,12 +124,14 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
     const pluginsChanged =
       selectedPluginNames.length !== previousPlugins.length ||
       selectedPluginNames.some((name, i) => name !== previousPlugins[i]);
+    const browserChanged = browserSignature !== previousBrowserSignature;
 
     if (activeTab === 'document') {
-      if (!documentSchema || pluginsChanged) {
-        if (pluginsChanged) {
+      if (!documentSchema || pluginsChanged || browserChanged) {
+        if (pluginsChanged || browserChanged) {
           schemaService.clearPluginSchemaCache();
           setPreviousPlugins([...selectedPluginNames]);
+          setPreviousBrowserSignature(browserSignature);
         }
         if (!loadingDocument) {
           loadDocumentSchema();
@@ -145,6 +151,8 @@ export const SchemaDialog: React.FC<SchemaDialogProps> = ({
     loadingTheme,
     selectedPluginNames,
     previousPlugins,
+    browserSignature,
+    previousBrowserSignature,
     loadDocumentSchema,
     loadThemeSchema,
   ]);

@@ -479,6 +479,8 @@ export function Preview() {
                     setShowQualityFindings(false);
                   }}
                   aria-expanded={showThemeSample}
+                  // The label is hidden below `sm`; the icon is decorative.
+                  aria-label="Theme sample"
                   className={cn(
                     'flex flex-shrink-0 items-center gap-1.5 rounded-sm px-1.5 py-0.5',
                     'text-[11px] font-medium transition-colors',
@@ -499,6 +501,7 @@ export function Preview() {
                   setShowThemeSample(false);
                 }}
                 aria-expanded={showQualityControls}
+                aria-label="Quality settings"
                 className={cn(
                   'flex flex-shrink-0 items-center gap-1.5 rounded-sm px-1.5 py-0.5',
                   'text-[11px] font-medium text-muted-foreground',

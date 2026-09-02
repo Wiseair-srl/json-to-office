@@ -39,7 +39,7 @@ import type {
   ThemeMetadata,
 } from '../../hooks/useDiscovery';
 import { useBrowserPluginsStore } from '../../store/browser-plugins-store';
-import { PLUGIN_FILE_SUFFIX } from '../../store/documents-store';
+import { pluginDocumentName } from '../../store/documents-store';
 import {
   componentNameFromFileName,
   declaredComponentName,
@@ -201,14 +201,22 @@ function DocumentFormDialogContent({
     }));
   }, [discoveredItems]);
 
+  // A plugin is one on rename too: `documentTypes` decides, not the new name.
+  const willBePlugin =
+    kind === 'plugin' ||
+    (mode === 'update' &&
+      !!selectedName &&
+      documentTypes[selectedName] === 'application/typescript+plugin');
+
   const schemaResult = useMemo(
     () =>
       getDocumentFormSchema(
         mode,
         (v) => isNewDocumentName(v, documents, selectedName),
-        templates
+        templates,
+        willBePlugin ? pluginDocumentName : undefined
       ),
-    [mode, documents, selectedName, templates]
+    [mode, documents, selectedName, templates, willBePlugin]
   );
 
   const schema = schemaResult.schema;
@@ -335,11 +343,7 @@ function DocumentFormDialogContent({
         if (kind === 'plugin') {
           // The file name decides the suffix and seeds the component name;
           // the source is either the disk plugin's or the format's starter.
-          if (!finalName.toLowerCase().endsWith(PLUGIN_FILE_SUFFIX)) {
-            finalName =
-              finalName.replace(/\.(component)?\.?ts$/i, '') +
-              PLUGIN_FILE_SUFFIX;
-          }
+          finalName = pluginDocumentName(finalName);
           content =
             selectedItemContent ||
             pluginStarterSource(FORMAT, componentNameFromFileName(finalName));
@@ -481,9 +485,16 @@ function DocumentFormDialogContent({
           documentTypes[oldName] === 'application/typescript+plugin';
         // A plugin keeps its suffix: the type is decided by the name, and a
         // rename that dropped it would turn the file into a document.
-        if (wasPlugin && !newName.toLowerCase().endsWith(PLUGIN_FILE_SUFFIX)) {
-          newName =
-            newName.replace(/\.(component)?\.?ts$/i, '') + PLUGIN_FILE_SUFFIX;
+        if (wasPlugin) newName = pluginDocumentName(newName);
+        // The form validated the entered name against the stored one, so a
+        // collision here means the documents changed under the dialog.
+        if (newName !== oldName && documents.some((d) => d.name === newName)) {
+          toast({
+            title: `"${newName}" already exists`,
+            description: 'Pick another name.',
+            variant: 'destructive',
+          });
+          return;
         }
         const isOpen = openTabs.includes(oldName);
         if (isOpen) closeDocument(oldName);

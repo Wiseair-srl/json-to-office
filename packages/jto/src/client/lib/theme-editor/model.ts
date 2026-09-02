@@ -53,7 +53,10 @@ export function deleteAt(theme: ThemeJson, path: Path): ThemeJson {
   const parent = getAt(theme, parentPath);
   if (!parent || typeof parent !== 'object') return theme;
   if (Array.isArray(parent)) {
-    if (typeof key !== 'number' || key >= parent.length) return theme;
+    // `splice` coerces its index: -1 would drop the last entry, NaN the
+    // first, 1.5 the second. Only a real index deletes anything.
+    if (typeof key !== 'number' || !Number.isInteger(key)) return theme;
+    if (key < 0 || key >= parent.length) return theme;
     const next = parent.slice();
     next.splice(key, 1);
     return parentPath.length === 0

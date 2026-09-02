@@ -866,14 +866,21 @@ function EditorComponent() {
       }
       let parsed: Record<string, unknown> | undefined;
       let themeName: string | null = null;
+      let parseError: string | null = null;
       try {
         parsed = JSON.parse(themeDoc.text);
         themeName = getThemeName(parsed);
-      } catch {}
+      } catch (error) {
+        // A syntax error and a missing name are different repairs; saying
+        // "no name" against broken JSON sends the author to the wrong line.
+        parseError = error instanceof Error ? error.message : 'Invalid JSON';
+      }
       if (!themeName) {
         setOutput({
           isGenerating: false,
-          globalError: 'The theme has no name',
+          globalError: parseError
+            ? `The theme is not valid JSON: ${parseError}`
+            : 'The theme has no name',
         });
         return;
       }

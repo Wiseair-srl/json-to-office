@@ -122,8 +122,11 @@ export async function expandForServer(
 
   let builtinThemes: Record<string, unknown> = {};
   try {
-    builtinThemes = await getBuiltinThemes();
-  } catch {
+    builtinThemes = await getBuiltinThemes(options.signal);
+  } catch (error) {
+    // A cancelled build stops here rather than expanding against an empty
+    // theme and rendering a document nobody is waiting for.
+    if (options.signal?.aborted) throw error;
     // Custom themes still resolve; a built-in name falls back to `{}` and the
     // plugin sees an empty theme rather than the expansion failing outright.
   }

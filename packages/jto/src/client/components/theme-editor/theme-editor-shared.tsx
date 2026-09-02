@@ -332,7 +332,20 @@ export function useDraft(value: string, commit: (draft: string) => void) {
     },
     [write]
   );
-  return { value: draft ?? value, onFocus, onChange, onBlur, onKeyDown };
+  // For a control that commits without going through the input — a stepper
+  // that keeps focus in the field. Without this the draft stays on the value
+  // from before the step, hides it on screen, and commits it back on blur.
+  // A no-op while nothing is focused, so it never opens a draft of its own.
+  const syncDraft = useCallback(
+    (next: string) => {
+      if (draftRef.current !== null) write(next);
+    },
+    [write]
+  );
+  return {
+    syncDraft,
+    props: { value: draft ?? value, onFocus, onChange, onBlur, onKeyDown },
+  };
 }
 
 type DraftInputProps = Omit<
@@ -354,7 +367,7 @@ export function DraftTextInput({
     (draft: string) => onCommit(draft.trim() === '' ? null : draft),
     [onCommit]
   );
-  const draft = useDraft(value ?? '', commit);
+  const { props: draft } = useDraft(value ?? '', commit);
   return (
     <Input
       type="text"
@@ -428,7 +441,10 @@ export function DraftNumberInput({
     },
     [onCommit]
   );
-  const draft = useDraft(value === undefined ? '' : String(value), commit);
+  const { props: draft, syncDraft } = useDraft(
+    value === undefined ? '' : String(value),
+    commit
+  );
 
   const numericStep = typeof step === 'number' ? step : Number(step) || 1;
   const lower = typeof min === 'number' ? min : Number(min);
@@ -442,9 +458,12 @@ export function DraftNumberInput({
       if (Number.isFinite(lower)) next = Math.max(lower, next);
       if (Number.isFinite(upper)) next = Math.min(upper, next);
       // Float arithmetic on a 0.5 step leaves 12.299999999999999 behind.
-      onCommit(Number(next.toFixed(4)));
+      const stepped = Number(next.toFixed(4));
+      // The steppers keep focus in the field, so a draft may be open on it.
+      onCommit(stepped);
+      syncDraft(String(stepped));
     },
-    [lower, numericStep, onCommit, upper, value]
+    [lower, numericStep, onCommit, syncDraft, upper, value]
   );
   const repeat = useRepeat(bump);
 

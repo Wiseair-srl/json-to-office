@@ -16,7 +16,13 @@ export function isNewDocumentName(
 export function getDocumentFormSchema(
   mode: Mode,
   isNewDocumentNameFunc: (value: string) => boolean,
-  templates?: TextFile[]
+  templates?: TextFile[],
+  /**
+   * What the entered name becomes on disk. A plugin keeps its `.component.ts`
+   * suffix however it is typed, so the duplicate check has to run on the
+   * stored name or `foo` slips past a `foo.component.ts` that already exists.
+   */
+  normalizeName?: (value: string) => string
 ) {
   const properties: Record<string, any> = {};
   const required: string[] = [];
@@ -80,7 +86,7 @@ export function getDocumentFormSchema(
           typedData.name = trimmed;
 
           // Custom validation for duplicate names
-          if (!isNewDocumentNameFunc(trimmed)) {
+          if (!isNewDocumentNameFunc(normalizeName?.(trimmed) ?? trimmed)) {
             errors.push({
               path: 'name',
               message: 'Document with this name already exists',
