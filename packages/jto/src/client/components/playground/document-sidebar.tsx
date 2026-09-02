@@ -56,6 +56,10 @@ import { useTheme } from '../theme-provider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { useToast } from '../ui/use-toast';
 import { usePluginsStore } from '../../store/plugins-store';
+import {
+  selectActivePlugins,
+  useBrowserPluginsStore,
+} from '../../store/browser-plugins-store';
 
 interface DocumentSidebarProps {
   discoveryData: DiscoveryResult | null;
@@ -108,7 +112,11 @@ function DocumentSidebarComponent({
   const themesStoreApi = useContext(ThemesStoreContext);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [themeDialogOpen, setThemeDialogOpen] = useState<boolean>(false);
+  const [pluginDialogOpen, setPluginDialogOpen] = useState<boolean>(false);
   const [pluginSelectorOpen, setPluginSelectorOpen] = useState<boolean>(false);
+  const activeBrowserPluginCount = useBrowserPluginsStore(
+    (state) => selectActivePlugins(state).length
+  );
   const [pluginSelectorFocusedPlugin, setPluginSelectorFocusedPlugin] =
     useState<string | null>(null);
   const togglePlugin = usePluginsStore((state) => state.togglePlugin);
@@ -124,12 +132,17 @@ function DocumentSidebarComponent({
   const filterRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Separate documents and themes
+  // Separate documents, themes and plugins
   const reportDocuments = documents.filter(
-    (doc) => documentTypes[doc.name] !== 'application/json+theme'
+    (doc) =>
+      (documentTypes[doc.name] ?? 'application/json+report') ===
+      'application/json+report'
   );
   const themeDocuments = documents.filter(
     (doc) => documentTypes[doc.name] === 'application/json+theme'
+  );
+  const pluginDocuments = documents.filter(
+    (doc) => documentTypes[doc.name] === 'application/typescript+plugin'
   );
 
   const closeDialog = useCallback(() => {
@@ -140,10 +153,18 @@ function DocumentSidebarComponent({
     setThemeDialogOpen(false);
   }, []);
 
+  const closePluginDialog = useCallback(() => {
+    setPluginDialogOpen(false);
+    // The new file lands in a section that starts folded; open it so the row
+    // — and its switch — are where the author expects them.
+    setExpandedGroups((prev) => new Set(prev).add('plugins'));
+  }, []);
+
   // Track previous theme documents to detect changes
   const prevThemeDocsRef = useRef<Map<string, string>>(new Map());
 
-  // Sync theme documents to the themes store (add, update, and remove)
+  // Sync theme documents to the themes store (add, update, and remove).
+  // Plugins have their own sync (useBrowserPluginsSync), mounted above.
   useEffect(() => {
     const prevThemeDocs = prevThemeDocsRef.current;
     const currentThemeDocs = new Map<string, string>();
@@ -273,6 +294,10 @@ function DocumentSidebarComponent({
     () => themeDocuments.filter((d) => matchesQuery(d.name, q)),
     [themeDocuments, q]
   );
+  const visiblePluginDocuments = useMemo(
+    () => pluginDocuments.filter((d) => matchesQuery(d.name, q)),
+    [pluginDocuments, q]
+  );
   // Discovered files that are not already open above them: an open file is
   // one row in one place, and "jump to the copy you already have" was never
   // worth a second row to say.
@@ -316,6 +341,7 @@ function DocumentSidebarComponent({
     q.length > 0 &&
     visibleDocuments.length === 0 &&
     visibleThemes.length === 0 &&
+    visiblePluginDocuments.length === 0 &&
     libraryDocuments.length === 0 &&
     libraryThemes.length === 0 &&
     libraryPlugins.length === 0;
@@ -403,6 +429,30 @@ function DocumentSidebarComponent({
                     </RailIconButton>
                   </TooltipTrigger>
                   <TooltipContent side="right">New theme</TooltipContent>
+                </Tooltip>
+              </SidebarMenu>
+
+              <div className="bg-sidebar-border/70 mx-auto h-px w-6" />
+
+              <SidebarMenu className="items-center gap-0.5">
+                {pluginDocuments.map((doc) => (
+                  <DocumentMenuItemMemoized
+                    key={doc.name}
+                    document={doc}
+                    compact
+                  />
+                ))}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <RailIconButton
+                      className="size-7"
+                      aria-label="New plugin"
+                      onClick={() => setPluginDialogOpen(true)}
+                    >
+                      <Plus />
+                    </RailIconButton>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">New plugin</TooltipContent>
                 </Tooltip>
               </SidebarMenu>
             </SidebarContent>
@@ -677,6 +727,7 @@ function DocumentSidebarComponent({
                   {/* Not a file list, so it sits below the hairline. */}
                   <PluginsSection
                     plugins={libraryPlugins}
+                    browserPlugins={visiblePluginDocuments}
                     query={q}
                     open={isSectionOpen('plugins')}
                     onToggleSection={() => toggleGroup('plugins')}
@@ -684,10 +735,12 @@ function DocumentSidebarComponent({
                       setPluginSelectorFocusedPlugin(name);
                       setPluginSelectorOpen(true);
                     }}
+                    onNewPlugin={() => setPluginDialogOpen(true)}
                     isPluginSelected={isPluginSelected}
                     onTogglePlugin={togglePlugin}
                     isApplyingPlugins={isApplyingPlugins}
                     selectedPluginCount={selectedPlugins.size}
+                    activeBrowserPluginCount={activeBrowserPluginCount}
                   />
                 </>
               )}
@@ -734,6 +787,18 @@ function DocumentSidebarComponent({
             postSubmit={closeThemeDialog}
             discoveredThemes={discoveryData?.themes || []}
             isTheme={true}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={pluginDialogOpen} onOpenChange={setPluginDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DocumentFormDialogContentMemoized
+            mode="create"
+            shouldReset={!pluginDialogOpen}
+            postSubmit={closePluginDialog}
+            discoveredPlugins={discoveryData?.plugins || []}
+            isPlugin={true}
           />
         </DialogContent>
       </Dialog>

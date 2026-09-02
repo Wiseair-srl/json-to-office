@@ -6,7 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { Palette, SlidersHorizontal } from 'lucide-react';
 import { PreviewFrameMemoized } from './preview-frame';
 import { PreviewHeaderMemoized } from './preview-header';
 import { WarningsPanel } from './warnings-panel';
@@ -17,6 +17,7 @@ import {
   QualitySummary,
 } from './quality-panel';
 import { UnavailableThemeWarning } from './unavailable-theme-warning';
+import { ThemeSamplePanelMemoized } from './theme-sample-panel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Separator } from '../ui/separator';
 import { useToast } from '../ui/use-toast';
@@ -65,7 +66,9 @@ export function Preview() {
   // Editor text for "Copy standard components" — exists before the first Run,
   // unlike the output store's `text` (#155). Themes have no expansion.
   const editorDocumentText = useDocumentsStore((s) =>
-    s.activeTab && s.documentTypes[s.activeTab] !== 'application/json+theme'
+    s.activeTab &&
+    (s.documentTypes[s.activeTab] ?? 'application/json+report') ===
+      'application/json+report'
       ? s.documents.find((d) => d.name === s.activeTab)?.text
       : undefined
   );
@@ -73,7 +76,9 @@ export function Preview() {
   // always describe one document — the output store's `name` trails a tab
   // switch and is a placeholder before the first Run.
   const editorDocumentName = useDocumentsStore((s) =>
-    s.activeTab && s.documentTypes[s.activeTab] !== 'application/json+theme'
+    s.activeTab &&
+    (s.documentTypes[s.activeTab] ?? 'application/json+report') ===
+      'application/json+report'
       ? s.activeTab
       : undefined
   );
@@ -86,8 +91,16 @@ export function Preview() {
   );
   const [showQualityControls, setShowQualityControls] = useState(false);
   const [showQualityFindings, setShowQualityFindings] = useState(false);
+  const [showThemeSample, setShowThemeSample] = useState(false);
   const qualityDrawerId = React.useId();
   const activeTab = useDocumentsStore((s) => s.activeTab);
+  // The theme tab on screen, or '' — the sample is that file's, so it has to
+  // close when the author moves to a document that has no sample to draw.
+  const activeThemeName = useDocumentsStore((s) =>
+    s.activeTab && s.documentTypes[s.activeTab] === 'application/json+theme'
+      ? s.activeTab
+      : ''
+  );
 
   // Findings address one document by JSON Pointer. A tab switch outruns the
   // analysis that follows it, so anything computed against another file is
@@ -98,11 +111,17 @@ export function Preview() {
     [quality, activeTab]
   );
 
-  const anyDrawerOpen = showQualityControls || showQualityFindings;
+  const anyDrawerOpen =
+    showQualityControls || showQualityFindings || showThemeSample;
   const closeDrawers = useCallback(() => {
     setShowQualityControls(false);
     setShowQualityFindings(false);
+    setShowThemeSample(false);
   }, []);
+
+  useEffect(() => {
+    if (!activeThemeName) setShowThemeSample(false);
+  }, [activeThemeName]);
 
   // Escape is what a reader reaches for when something is covering the page.
   useEffect(() => {
@@ -341,12 +360,20 @@ export function Preview() {
   useEffect(() => {
     const onManual = () => handleManualRender();
     const onShowCache = () => setShowCacheMetrics(true);
+    // A theme's specimen is a Run the author asked for from the theme editor:
+    // the editor builds it, and the blob must render when it lands rather
+    // than sit behind "Outdated" like an unrequested rebuild would.
+    const onSpecimen = () => {
+      pendingManualRenderRef.current = true;
+    };
 
     window.addEventListener('preview:manualRender', onManual);
     window.addEventListener('preview:showCacheMetrics', onShowCache);
+    window.addEventListener('preview:buildSpecimen', onSpecimen);
     return () => {
       window.removeEventListener('preview:manualRender', onManual);
       window.removeEventListener('preview:showCacheMetrics', onShowCache);
+      window.removeEventListener('preview:buildSpecimen', onSpecimen);
     };
   }, [handleManualRender]);
 
@@ -428,7 +455,10 @@ export function Preview() {
               <QualitySummary
                 quality={activeQuality}
                 open={showQualityFindings}
-                onToggle={() => setShowQualityFindings((open) => !open)}
+                onToggle={() => {
+                  setShowQualityFindings((open) => !open);
+                  setShowThemeSample(false);
+                }}
                 controlsId={qualityDrawerId}
                 className="min-w-0 flex-1"
               />
@@ -440,9 +470,34 @@ export function Preview() {
                   {cacheHitRate} hit rate
                 </span>
               )}
+              {activeThemeName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowThemeSample((open) => !open);
+                    setShowQualityControls(false);
+                    setShowQualityFindings(false);
+                  }}
+                  aria-expanded={showThemeSample}
+                  className={cn(
+                    'flex flex-shrink-0 items-center gap-1.5 rounded-sm px-1.5 py-0.5',
+                    'text-[11px] font-medium transition-colors',
+                    'focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
+                    showThemeSample
+                      ? 'bg-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  )}
+                >
+                  <Palette className="h-3 w-3" aria-hidden="true" />
+                  <span className="hidden sm:inline">Theme sample</span>
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setShowQualityControls(!showQualityControls)}
+                onClick={() => {
+                  setShowQualityControls(!showQualityControls);
+                  setShowThemeSample(false);
+                }}
                 aria-expanded={showQualityControls}
                 className={cn(
                   'flex flex-shrink-0 items-center gap-1.5 rounded-sm px-1.5 py-0.5',
@@ -500,13 +555,27 @@ export function Preview() {
               />
               <div
                 className={cn(
-                  // Pinned top and bottom rather than capped: a long findings
-                  // list gets the whole pane to scroll inside, and the drawer
-                  // stops looking like a tooltip that ran out of room.
-                  'absolute inset-x-3 top-2 bottom-2 z-40 overflow-y-auto',
-                  'rounded-sm border bg-card p-4 shadow-lg'
+                  'absolute inset-x-3 top-2 z-40 overflow-y-auto',
+                  'rounded-sm border bg-card p-4 shadow-lg',
+                  // A findings list is as long as the document is bad, so it
+                  // is pinned top and bottom and scrolls inside the whole
+                  // pane rather than looking like a tooltip that ran out of
+                  // room. The sample is one fixed card: pinning it would
+                  // leave most of the drawer empty, so it takes its own
+                  // height and only caps at the pane.
+                  showThemeSample &&
+                    !showQualityControls &&
+                    !showQualityFindings
+                    ? 'max-h-[calc(100%-1rem)]'
+                    : 'bottom-2'
                 )}
               >
+                {showThemeSample && activeThemeName && (
+                  <ThemeSamplePanelMemoized
+                    themeDocName={activeThemeName}
+                    onRan={closeDrawers}
+                  />
+                )}
                 {showQualityControls && <QualityControls />}
                 {showQualityControls && showQualityFindings && (
                   <div className="my-4 border-t" />

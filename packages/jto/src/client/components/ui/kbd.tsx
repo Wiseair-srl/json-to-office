@@ -16,9 +16,10 @@ export function Kbd({
     <kbd
       data-slot="kbd"
       className={cn(
+        // No tooltip-specific case any more: a tooltip is a popover surface
+        // like every other overlay, and the muted chip reads on it as it does
+        // everywhere else.
         'pointer-events-none inline-flex h-5 w-fit min-w-5 select-none items-center justify-center gap-1 rounded-sm bg-muted px-1 font-sans text-xs font-medium text-muted-foreground',
-        // Inside a tooltip the surface is the primary colour — flip the chip to read against it.
-        '[[data-slot=tooltip-content]_&]:bg-primary-foreground/20 [[data-slot=tooltip-content]_&]:text-primary-foreground',
         className
       )}
     >

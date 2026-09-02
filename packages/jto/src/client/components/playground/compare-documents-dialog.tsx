@@ -1,5 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { GitCompareArrows, FileDiff } from 'lucide-react';
+import { ThemesStoreContext } from '../../store/themes-store-provider';
+import { validThemesByName } from '../../store/themes-store';
+import { expandForServer } from '../../lib/plugins/expand-for-server';
 import {
   Dialog,
   DialogContent,
@@ -67,6 +70,7 @@ export const CompareDocumentsDialog: React.FC<CompareDocumentsDialogProps> = ({
         openDocument: state.openDocument,
       }))
     );
+  const themesStore = useContext(ThemesStoreContext);
   const { toast } = useToast();
 
   const reportDocuments = useMemo(
@@ -117,12 +121,21 @@ export const CompareDocumentsDialog: React.FC<CompareDocumentsDialogProps> = ({
     setSummary(null);
     setRedlineDocument(null);
     try {
+      // Both sides are expanded first so a browser plugin's output is what
+      // gets compared, as it is what gets rendered.
+      const customThemes = themesStore
+        ? validThemesByName(themesStore.getState().customThemes)
+        : {};
+      const [oldSide, newSide] = await Promise.all([
+        expandForServer(base.text, { customThemes }),
+        expandForServer(revised.text, { customThemes }),
+      ]);
       const response = await fetch(API_ENDPOINTS.diff, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          oldDefinition: base.text,
-          newDefinition: revised.text,
+          oldDefinition: oldSide.text,
+          newDefinition: newSide.text,
           options: { author: author || 'playground' },
         }),
       });

@@ -16,6 +16,53 @@ const loaded = new Set<string>();
 const keyFor = (family: string, weight: number, italic: boolean) =>
   `${family.toLowerCase()}|${weight}|${italic ? 'i' : 'r'}`;
 
+/**
+ * Inject a stylesheet link for a Google Font into document.head if missing.
+ * Requests every weight the catalog advertises so a preview can render each
+ * one in its own face — otherwise the browser would fall back to 400/700 and
+ * the preview would lie about what's available.
+ *
+ * Shared by the font picker and the theme editor's specimen card. A family
+ * that is not on Google Fonts costs one failed stylesheet request and
+ * renders in the fallback face; nothing else depends on it.
+ */
+export function ensureGoogleFontLoaded(
+  family: string,
+  weights?: number[]
+): void {
+  if (typeof document === 'undefined' || !family.trim()) return;
+  const id = `gf-${family.replace(/\s+/g, '-')}`;
+  const existing = document.getElementById(id) as HTMLLinkElement | null;
+  const requested = new Set(
+    weights && weights.length > 0 ? weights : [400, 700]
+  );
+  // Union previously-requested weights with the new ones so a narrower
+  // follow-up request never evicts weights already fetched — the browser
+  // re-fetches the whole CSS whenever `.href` is reassigned, so only
+  // rewrite when the union actually grows.
+  const prior = new Set<number>(
+    existing?.dataset.weights
+      ?.split(',')
+      .map(Number)
+      .filter((n) => !Number.isNaN(n)) ?? []
+  );
+  const union = new Set<number>([...prior, ...requested]);
+  if (existing && union.size === prior.size) return;
+
+  const axis = [...union].sort((a, b) => a - b).join(';');
+  const href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(
+    family
+  )}:wght@${axis}&display=swap`;
+  const link = existing ?? document.createElement('link');
+  if (!existing) {
+    link.id = id;
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }
+  link.href = href;
+  link.dataset.weights = [...union].sort((a, b) => a - b).join(',');
+}
+
 function decodeBase64(b64: string): Uint8Array {
   const raw = b64.startsWith('data:') ? b64.slice(b64.indexOf(',') + 1) : b64;
   const binary = atob(raw);

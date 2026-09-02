@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { DevEnv } from '../components/playground/dev-env';
+import { BrowserPluginsProvider } from '../components/BrowserPluginsProvider';
 import { SidebarProvider } from '../components/ui/sidebar';
 import { DocumentsStoreProvider } from '../store/documents-store-provider';
 import { OutputStoreProvider } from '../store/output-store-provider';
@@ -15,6 +16,12 @@ export function HomePage() {
   const { loadPlugins } = useLoadPlugins();
   const applyPluginsWithValidation = usePluginsStore(
     (state) => state.applyPluginsWithValidation
+  );
+  // Names a browser plugin may not take: the sync checks new compiles against
+  // what discovery found on disk.
+  const diskPluginNames = useMemo(
+    () => discoveryData?.plugins.map((plugin) => plugin.name) ?? [],
+    [discoveryData]
   );
 
   // Load plugins into the registry when discovery completes,
@@ -75,15 +82,17 @@ export function HomePage() {
         <ThemesStoreProvider>
           <MonacoPluginProvider>
             <DocumentsStoreProvider>
-              <ChatStoreProvider>
-                <SidebarProvider>
-                  <section className="flex h-screen w-full flex-col">
-                    <div className="grow overflow-hidden">
-                      <DevEnv discoveryData={discoveryData} />
-                    </div>
-                  </section>
-                </SidebarProvider>
-              </ChatStoreProvider>
+              <BrowserPluginsProvider diskPluginNames={diskPluginNames}>
+                <ChatStoreProvider>
+                  <SidebarProvider>
+                    <section className="flex h-screen w-full flex-col">
+                      <div className="grow overflow-hidden">
+                        <DevEnv discoveryData={discoveryData} />
+                      </div>
+                    </section>
+                  </SidebarProvider>
+                </ChatStoreProvider>
+              </BrowserPluginsProvider>
             </DocumentsStoreProvider>
           </MonacoPluginProvider>
         </ThemesStoreProvider>

@@ -5,6 +5,9 @@ import { OutputStoreProvider } from '../store/output-store-provider';
 import { SettingsStoreProvider } from '../store/settings-store-provider';
 import { ThemesStoreProvider } from '../store/themes-store-provider';
 import { MonacoPluginProvider } from '../components/MonacoPluginProvider';
+import { BrowserPluginsProvider } from '../components/BrowserPluginsProvider';
+
+const NO_DISK_PLUGINS: readonly string[] = [];
 
 export function JsonEditorPage() {
   const [loading, setLoading] = useState(true);
@@ -28,20 +31,22 @@ export function JsonEditorPage() {
         <ThemesStoreProvider>
           <MonacoPluginProvider>
             <DocumentsStoreProvider>
-              <section className="flex h-screen w-full flex-col">
-                <div className="grow overflow-hidden">
-                  <div className="p-4 h-full">
-                    <h1 className="text-2xl font-bold mb-4">JSON Editor</h1>
-                    <div className="h-full">
-                      <EditorMonacoJsonMemoized
-                        name="untitled"
-                        defaultValue=""
-                        saveDocumentDebounceWait={1000}
-                      />
+              <BrowserPluginsProvider diskPluginNames={NO_DISK_PLUGINS}>
+                <section className="flex h-screen w-full flex-col">
+                  <div className="grow overflow-hidden">
+                    <div className="p-4 h-full">
+                      <h1 className="text-2xl font-bold mb-4">JSON Editor</h1>
+                      <div className="h-full">
+                        <EditorMonacoJsonMemoized
+                          name="untitled"
+                          defaultValue=""
+                          saveDocumentDebounceWait={1000}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </section>
+                </section>
+              </BrowserPluginsProvider>
             </DocumentsStoreProvider>
           </MonacoPluginProvider>
         </ThemesStoreProvider>

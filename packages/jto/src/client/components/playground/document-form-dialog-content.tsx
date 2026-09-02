@@ -33,7 +33,19 @@ import { useThemesStore } from '../../store/themes-store-provider';
 import { useChatStore } from '../../store/chat-store-provider';
 import { useToast } from '../ui/use-toast';
 import type { Mode } from '../../lib/types';
-import type { DocumentMetadata, ThemeMetadata } from '../../hooks/useDiscovery';
+import type {
+  DocumentMetadata,
+  PluginMetadata,
+  ThemeMetadata,
+} from '../../hooks/useDiscovery';
+import { useBrowserPluginsStore } from '../../store/browser-plugins-store';
+import { PLUGIN_FILE_SUFFIX } from '../../store/documents-store';
+import {
+  componentNameFromFileName,
+  declaredComponentName,
+  pluginStarterSource,
+  renameDeclaredComponent,
+} from '../../lib/plugins/templates';
 import {
   getDocumentFormDefaultValues,
   getDocumentFormSchema,
@@ -43,12 +55,22 @@ import {
 import { FORMAT } from '../../lib/env';
 import { createMinimalTheme } from '@json-to-office/shared-docx';
 
-const getLabels = (isTheme?: boolean) => ({
+type FileKind = 'document' | 'theme' | 'plugin';
+
+const getLabels = (kind: FileKind) => ({
   create: {
-    title: isTheme ? 'New Theme' : 'New Document',
-    description: isTheme
-      ? 'Create a new theme from scratch or based on discovered themes.'
-      : 'Create a new document from scratch or based on discovered documents.',
+    title:
+      kind === 'theme'
+        ? 'New Theme'
+        : kind === 'plugin'
+          ? 'New Plugin'
+          : 'New Document',
+    description:
+      kind === 'theme'
+        ? 'Create a new theme from scratch or based on discovered themes.'
+        : kind === 'plugin'
+          ? 'Write a custom component in TypeScript. It compiles and runs in your browser; documents use it by name like any built-in component.'
+          : 'Create a new document from scratch or based on discovered documents.',
     button: 'Create',
     buttonVariant: 'default',
   },
@@ -85,7 +107,9 @@ function DocumentFormDialogContent({
   selectedName,
   discoveredDocuments,
   discoveredThemes,
+  discoveredPlugins,
   isTheme,
+  isPlugin,
 }: {
   mode: Mode;
   shouldReset: boolean;
@@ -93,7 +117,10 @@ function DocumentFormDialogContent({
   selectedName?: string;
   discoveredDocuments?: DocumentMetadata[];
   discoveredThemes?: ThemeMetadata[];
+  /** Plugins found on disk, offered as starting points for a browser plugin. */
+  discoveredPlugins?: PluginMetadata[];
   isTheme?: boolean;
+  isPlugin?: boolean;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedItemContent, setSelectedItemContent] = useState<string | null>(
@@ -106,7 +133,8 @@ function DocumentFormDialogContent({
     'idle' | 'loading' | 'error'
   >('idle');
   const { toast } = useToast();
-  const labels = getLabels(isTheme);
+  const kind: FileKind = isPlugin ? 'plugin' : isTheme ? 'theme' : 'document';
+  const labels = getLabels(kind);
   const {
     documents,
     openTabs,
@@ -115,8 +143,11 @@ function DocumentFormDialogContent({
     deleteDocument,
     openDocument,
     closeDocument,
+    documentTypes,
   } = useDocumentsStore((state) => state);
   const { updateTheme, removeTheme } = useThemesStore((state) => state);
+  const renameBrowserPlugin = useBrowserPluginsStore((s) => s.rename);
+  const removeBrowserPlugin = useBrowserPluginsStore((s) => s.remove);
   const renameThreadsForDocument = useChatStore(
     (s) => s.renameThreadsForDocument
   );
@@ -126,12 +157,21 @@ function DocumentFormDialogContent({
 
   // Prepare discovered items for the form
   const discoveredItems: DiscoveredItem[] = useMemo(() => {
-    if (isTheme) {
-      return discoveredThemes || [];
-    } else {
-      return discoveredDocuments || [];
+    if (kind === 'plugin') {
+      // A disk plugin's identity is its file: the name is the component name
+      // and the path is where discovery found it.
+      return (discoveredPlugins || []).map((plugin) => ({
+        name: plugin.name,
+        path: plugin.filePath,
+        location: plugin.location === 'current' ? 'current' : 'downstream',
+        description: plugin.description,
+      }));
     }
-  }, [isTheme, discoveredDocuments, discoveredThemes]);
+    if (kind === 'theme') {
+      return discoveredThemes || [];
+    }
+    return discoveredDocuments || [];
+  }, [kind, discoveredDocuments, discoveredThemes, discoveredPlugins]);
 
   // Group items by location for better UX
   const groupedItems = useMemo(() => {
@@ -206,9 +246,11 @@ function DocumentFormDialogContent({
         setSelectedItemContent(null);
         setTemplateStatus('loading');
         let cancelled = false;
-        fetch(
-          `/api/discovery/${isTheme ? 'themes' : 'documents'}/${encodeURIComponent(item.name)}/content`
-        )
+        const url =
+          kind === 'plugin'
+            ? `/api/discovery/plugins/${encodeURIComponent(item.name)}/source`
+            : `/api/discovery/${kind === 'theme' ? 'themes' : 'documents'}/${encodeURIComponent(item.name)}/content`;
+        fetch(url)
           .then((res) => {
             if (!res.ok) {
               throw new Error(`Failed to fetch content: ${res.statusText}`);
@@ -217,9 +259,20 @@ function DocumentFormDialogContent({
           })
           .then((content) => {
             if (cancelled) return;
-            // Throws on malformed JSON, handled below like any fetch failure.
-            const parsed = JSON.parse(content);
-            setSelectedItemContent(JSON.stringify(parsed, null, 2));
+            if (kind === 'plugin') {
+              // A copy that kept the disk plugin's component name would lose
+              // to it the moment it compiled; the fork starts as its own.
+              const declared = declaredComponentName(content);
+              setSelectedItemContent(
+                declared
+                  ? renameDeclaredComponent(content, `${declared}-custom`)
+                  : content
+              );
+            } else {
+              // Throws on malformed JSON, handled below like any fetch failure.
+              const parsed = JSON.parse(content);
+              setSelectedItemContent(JSON.stringify(parsed, null, 2));
+            }
             setTemplateStatus('idle');
           })
           .catch((error) => {
@@ -234,7 +287,7 @@ function DocumentFormDialogContent({
       }
     }
     setTemplateStatus('idle');
-  }, [selectedPath, mode, itemsByPath, isTheme]);
+  }, [selectedPath, mode, itemsByPath, kind]);
 
   // reset form
   useEffect(() => {
@@ -279,7 +332,18 @@ function DocumentFormDialogContent({
           return;
         }
 
-        if (isTheme) {
+        if (kind === 'plugin') {
+          // The file name decides the suffix and seeds the component name;
+          // the source is either the disk plugin's or the format's starter.
+          if (!finalName.toLowerCase().endsWith(PLUGIN_FILE_SUFFIX)) {
+            finalName =
+              finalName.replace(/\.(component)?\.?ts$/i, '') +
+              PLUGIN_FILE_SUFFIX;
+          }
+          content =
+            selectedItemContent ||
+            pluginStarterSource(FORMAT, componentNameFromFileName(finalName));
+        } else if (isTheme) {
           // Use discovered theme content or create format-specific default
           const themeName = finalName
             .replace(/\.(json|theme)$/i, '')
@@ -391,7 +455,7 @@ function DocumentFormDialogContent({
 
         // Auto-suffix if a document with this name already exists
         const extMatch = finalName.match(
-          /(\.(pptx|docx)(\.theme)?\.json|\.json)$/i
+          /(\.(pptx|docx)(\.theme)?\.json|\.json|\.component\.ts)$/i
         );
         const ext = extMatch ? extMatch[0] : '';
         const baseName = finalName.slice(0, finalName.length - ext.length);
@@ -412,20 +476,34 @@ function DocumentFormDialogContent({
         }
       } else if (mode === 'update') {
         const oldName = selectedName as string;
-        const newName = name as string;
+        let newName = name as string;
+        const wasPlugin =
+          documentTypes[oldName] === 'application/typescript+plugin';
+        // A plugin keeps its suffix: the type is decided by the name, and a
+        // rename that dropped it would turn the file into a document.
+        if (wasPlugin && !newName.toLowerCase().endsWith(PLUGIN_FILE_SUFFIX)) {
+          newName =
+            newName.replace(/\.(component)?\.?ts$/i, '') + PLUGIN_FILE_SUFFIX;
+        }
         const isOpen = openTabs.includes(oldName);
         if (isOpen) closeDocument(oldName);
+        // The compiled record moves with the file before the sync sees the
+        // new name, so the enable switches survive the rename.
+        if (wasPlugin) renameBrowserPlugin(oldName, newName);
         renameDocument(oldName, newName);
         renameThreadsForDocument(oldName, newName);
         if (isOpen) openDocument(newName);
       } else if (mode === 'delete') {
         const oldName = selectedName as string;
+        const wasPlugin =
+          documentTypes[oldName] === 'application/typescript+plugin';
         closeDocument(oldName);
         deleteDocument(oldName);
         deleteThreadsForDocument(oldName);
         if (isTheme) {
           removeTheme(oldName);
         }
+        if (wasPlugin) removeBrowserPlugin(oldName);
       }
       postSubmit();
     } finally {
@@ -467,7 +545,11 @@ function DocumentFormDialogContent({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {isTheme ? 'Base Theme' : 'Base Document'}
+                    {kind === 'theme'
+                      ? 'Base Theme'
+                      : kind === 'plugin'
+                        ? 'Start from'
+                        : 'Base Document'}
                   </FormLabel>
                   <Select
                     onValueChange={(path) => {
@@ -490,13 +572,15 @@ function DocumentFormDialogContent({
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue
-                          placeholder={`Select a discovered ${isTheme ? 'theme' : 'document'}`}
+                          placeholder={`Select a discovered ${kind}`}
                         />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="max-h-[300px]">
                       <SelectItem value={EMPTY_TEMPLATE_VALUE}>
-                        Empty {isTheme ? 'theme' : 'document'}
+                        {kind === 'plugin'
+                          ? `Starter ${FORMAT} component`
+                          : `Empty ${kind}`}
                       </SelectItem>
                       {Object.entries(groupedItems).map(([location, items]) => {
                         if (items.length === 0) return null;
@@ -544,8 +628,9 @@ function DocumentFormDialogContent({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Start empty or select a discovered{' '}
-                    {isTheme ? 'theme' : 'document'} as a starting point
+                    {kind === 'plugin'
+                      ? 'Start from the starter component, or copy a plugin discovered on disk — the copy is renamed "<name>-custom" so both can exist'
+                      : `Start empty or select a discovered ${kind} as a starting point`}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

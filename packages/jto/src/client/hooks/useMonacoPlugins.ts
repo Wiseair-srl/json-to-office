@@ -2,6 +2,11 @@ import { useEffect, useRef, useContext, useSyncExternalStore } from 'react';
 import { loader } from '@monaco-editor/react';
 import type { Monaco } from '@monaco-editor/react';
 import { usePluginsStore } from '../store/plugins-store';
+import {
+  activePluginsSignature,
+  browserComponentsForSchema,
+  useBrowserPluginsStore,
+} from '../store/browser-plugins-store';
 import { ThemesStoreContext } from '../store/themes-store-provider';
 import { updateMonacoWithPlugins } from '../lib/monaco-config';
 
@@ -46,11 +51,15 @@ export function useMonacoPlugins() {
   const selectedPlugins = usePluginsStore((state) => state.selectedPlugins);
   const selectedPluginNames = Array.from(selectedPlugins);
   const customThemeNames = useCustomThemeNames();
+  // A string that changes exactly when the active browser plugins or their
+  // schemas change — cheaper to compare than the records themselves.
+  const browserSignature = useBrowserPluginsStore(activePluginsSignature);
   const themesStore = useContext(ThemesStoreContext);
   const themesStoreRef = useRef(themesStore);
   themesStoreRef.current = themesStore;
   const previousPluginsRef = useRef<string[]>([]);
   const previousThemesRef = useRef<string[]>([]);
+  const previousBrowserRef = useRef<string>('');
 
   useEffect(() => {
     loader
@@ -64,7 +73,13 @@ export function useMonacoPlugins() {
         );
         const currentThemes =
           themesStoreRef.current?.getState().getAllThemeNames() ?? [];
-        updateMonacoWithPlugins(monaco, currentPlugins, currentThemes)
+        const browserState = useBrowserPluginsStore.getState();
+        updateMonacoWithPlugins(
+          monaco,
+          currentPlugins,
+          currentThemes,
+          browserComponentsForSchema(browserState)
+        )
           .then((success) => {
             if (success) {
               console.log(
@@ -85,6 +100,7 @@ export function useMonacoPlugins() {
           });
         previousPluginsRef.current = [...currentPlugins];
         previousThemesRef.current = [...currentThemes];
+        previousBrowserRef.current = activePluginsSignature(browserState);
       })
       .catch((error) => {
         console.error('Failed to initialize Monaco:', error);
@@ -104,7 +120,9 @@ export function useMonacoPlugins() {
         (name, index) => name !== previousThemesRef.current[index]
       );
 
-    if (!pluginsChanged && !themesChanged) {
+    const browserChanged = browserSignature !== previousBrowserRef.current;
+
+    if (!pluginsChanged && !themesChanged && !browserChanged) {
       return;
     }
 
@@ -112,7 +130,8 @@ export function useMonacoPlugins() {
       updateMonacoWithPlugins(
         monacoRef.current,
         selectedPluginNames,
-        customThemeNames
+        customThemeNames,
+        browserComponentsForSchema(useBrowserPluginsStore.getState())
       ).catch((error) => {
         console.error(
           '[useMonacoPlugins] Failed to update Monaco schemas:',
@@ -121,8 +140,9 @@ export function useMonacoPlugins() {
       });
       previousPluginsRef.current = [...selectedPluginNames];
       previousThemesRef.current = [...customThemeNames];
+      previousBrowserRef.current = browserSignature;
     }
-  }, [selectedPluginNames, customThemeNames]);
+  }, [selectedPluginNames, customThemeNames, browserSignature]);
 
   return {
     monaco: monacoRef.current,

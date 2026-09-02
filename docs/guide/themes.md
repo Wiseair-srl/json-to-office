@@ -302,6 +302,7 @@ Because DOCX styles become native Word styles, documents stay editable after gen
 
 ## Where to go next
 
+- [Visual theme editor](/guide/playground#visual-theme-editor) — build and preview a theme file in the playground without writing the JSON by hand
 - [Theme schema reference](/reference/theme-schema) — every field of both theme file formats
 - [Fonts](/guide/fonts) — safe fonts, substitution, registering custom typefaces
 - [Writing DOCX](/guide/writing-docx) and [Writing PPTX](/guide/writing-pptx) — theming in the context of full documents

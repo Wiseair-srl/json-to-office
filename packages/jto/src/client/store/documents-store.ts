@@ -5,7 +5,21 @@ import { idbStorage } from '../lib/idb-storage';
 
 const MAX_OPEN_TABS = 3;
 
-export type DocumentType = 'application/json+report' | 'application/json+theme';
+/**
+ * What a file in the workspace is: a document, a theme, or a plugin — the
+ * TypeScript source of a custom component compiled and run in the browser.
+ */
+export type DocumentType =
+  | 'application/json+report'
+  | 'application/json+theme'
+  | 'application/typescript+plugin';
+
+/** File-name suffix that marks a plugin source, the same one disk discovery uses. */
+export const PLUGIN_FILE_SUFFIX = '.component.ts';
+
+export function isPluginDocumentName(name: string): boolean {
+  return name.toLowerCase().endsWith(PLUGIN_FILE_SUFFIX);
+}
 
 export type DocumentsState = {
   documents: TextFile[];
@@ -93,7 +107,9 @@ export const createDocumentsStore = (
                 // if the document does not exist
                 // Determine document type based on file name and content
                 let docType: DocumentType = 'application/json+report';
-                if (
+                if (isPluginDocumentName(name)) {
+                  docType = 'application/typescript+plugin';
+                } else if (
                   name.toLowerCase().includes('theme') ||
                   name.toLowerCase().includes('.theme.')
                 ) {
@@ -112,7 +128,10 @@ export const createDocumentsStore = (
 
                 const newDoc = {
                   name,
-                  type: 'application/json',
+                  type:
+                    docType === 'application/typescript+plugin'
+                      ? 'text/typescript'
+                      : 'application/json',
                   text,
                   mtime: new Date(),
                   ctime: new Date(),

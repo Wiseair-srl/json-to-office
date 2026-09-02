@@ -53,10 +53,11 @@ export function useApplyQualityFix(): (
           error: `This finding belongs to ${expectedDocumentName}, which is no longer the active file.`,
         };
       }
-      if (documentTypes[activeTab] === 'application/json+theme') {
+      if (documentTypes[activeTab] !== 'application/json+report') {
         return {
           ok: false,
-          error: 'Quality fixes apply to a document, not to a theme.',
+          error:
+            'Quality fixes apply to a document, not to a theme or a plugin.',
         };
       }
 

@@ -63,6 +63,8 @@ import {
   isSafeFont,
 } from '@json-to-office/shared';
 import { ExportModeDialog, type ExportFontMode } from './export-mode-dialog';
+import { ThemeViewSwitchMemoized } from './theme-view-switch';
+import { expandForServer } from '../../lib/plugins/expand-for-server';
 
 /** Status tag on a renderer id — a label, not part of the name. */
 function ExperimentalTag() {
@@ -376,14 +378,20 @@ function PreviewHeader({
     setIsCopyingStandardComponents(true);
 
     const jsonPromise = (async () => {
+      // Browser plugins are expanded here; the server's expansion covers only
+      // the plugins it discovered on disk.
+      const themes = getFreshThemeData();
+      const expansion = await expandForServer(copySourceText, {
+        customThemes: themes,
+      });
       const response = await fetch(`/api/${FORMAT}/standard-components`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          jsonDefinition: copySourceText,
-          customThemes: getFreshThemeData(),
+          jsonDefinition: expansion.text,
+          customThemes: themes,
           // sourceName lets the server inline a discovered document's bundled
           // media before safe-mode source validation — without it, templates
           // referencing relative media paths 400 here while rendering fine.
@@ -522,6 +530,9 @@ function PreviewHeader({
           </Tooltip>
         </div>
         <div className="flex flex-row items-center gap-x-1 shrink-0">
+          {/* ── Theme view group — present only while a theme tab is open ── */}
+          <ThemeViewSwitchMemoized />
+
           {/* ── Render group ── */}
           <Tooltip>
             <TooltipTrigger asChild>

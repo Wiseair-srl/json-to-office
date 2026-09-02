@@ -113,10 +113,16 @@ export const usePluginsStore = create<PluginsState>()(
           // Get Monaco instance
           const monaco = await loader.init();
 
-          // Apply the plugins and wait for validation
+          // Apply the plugins and wait for validation. Browser plugins ride
+          // along from their own store, so toggling a disk plugin never
+          // drops them from the schema.
+          const { browserComponentsForSchema, useBrowserPluginsStore } =
+            await import('./browser-plugins-store');
           const success = await updateMonacoWithPlugins(
             monaco,
-            selectedPluginNames
+            selectedPluginNames,
+            undefined,
+            browserComponentsForSchema(useBrowserPluginsStore.getState())
           );
 
           if (!success) {

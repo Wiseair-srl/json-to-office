@@ -5,7 +5,12 @@ import React, {
   useMemo,
   useEffect,
 } from 'react';
-import { FileTextIcon, PaletteIcon, MoreHorizontal } from 'lucide-react';
+import {
+  FileTextIcon,
+  PaletteIcon,
+  MoreHorizontal,
+  Puzzle,
+} from 'lucide-react';
 import { DocumentFormDialogContentMemoized } from './document-form-dialog-content';
 import { HighlightedText, StatusDot } from './sidebar-shared';
 import {
@@ -88,6 +93,7 @@ function DocumentMenuItem({
   const documentType =
     documentTypes[document.name] || 'application/json+report';
   const isTheme = documentType === 'application/json+theme';
+  const isPlugin = documentType === 'application/typescript+plugin';
   const isEditing = activeTab === document.name;
 
   // Persistent preview state that survives temporary null values during rebuilds
@@ -229,7 +235,7 @@ function DocumentMenuItem({
     [document.name, document.text, document.type, openDocument]
   );
 
-  const Icon = isTheme ? PaletteIcon : FileTextIcon;
+  const Icon = isTheme ? PaletteIcon : isPlugin ? Puzzle : FileTextIcon;
   const menuOpen = isContextMenuOpen || isActionMenuOpen;
 
   const button = (
@@ -319,7 +325,8 @@ function DocumentMenuItem({
                 <div className="text-xs">
                   <div>{document.name}</div>
                   <div className="opacity-70">
-                    {stateLabel ?? (isTheme ? 'Theme' : 'Document')}
+                    {stateLabel ??
+                      (isTheme ? 'Theme' : isPlugin ? 'Plugin' : 'Document')}
                   </div>
                 </div>
               </TooltipContent>
