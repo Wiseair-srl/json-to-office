@@ -8,12 +8,11 @@ import { SettingsStoreProvider } from '../store/settings-store-provider';
 import { ThemesStoreProvider } from '../store/themes-store-provider';
 import { ChatStoreProvider } from '../store/chat-store-provider';
 import { MonacoPluginProvider } from '../components/MonacoPluginProvider';
-import { useDiscovery, useLoadPlugins } from '../hooks/useDiscovery';
+import { useDiscovery } from '../hooks/useDiscovery';
 import { usePluginsStore } from '../store/plugins-store';
 
 export function HomePage() {
   const { data: discoveryData, loading, error } = useDiscovery();
-  const { loadPlugins } = useLoadPlugins();
   const applyPluginsWithValidation = usePluginsStore(
     (state) => state.applyPluginsWithValidation
   );
@@ -25,26 +24,20 @@ export function HomePage() {
   );
 
   /**
-   * Ask the server to register its disk plugins once discovery has named
-   * them, then hand Monaco the persisted selection.
+   * Hand Monaco the persisted selection once discovery has named the plugins.
    *
-   * Skipped where the server will not load them (`pluginAutoload` off): the
-   * bootstrap POST answers 401 there, and asking for a refusal on every load
-   * only fills the console. The apply below runs either way — it carries the
-   * browser plugins too, and those are unaffected by any of this.
+   * Nothing here asks the server to register them. A server allowed to read
+   * plugins off its disk at all has already done so at boot, and locally it
+   * will also load on demand behind the schema request this apply triggers —
+   * so the bootstrap POST that used to run here was a redundant round trip
+   * that a keyless deployment could only answer with 401. The apply carries
+   * the browser plugins too, and those are unaffected either way.
    */
   useEffect(() => {
     if (!discoveryData) return;
-    const bootstrap =
-      discoveryData.pluginAutoload && discoveryData.plugins.length > 0
-        ? loadPlugins()
-        : Promise.resolve(false);
-
-    bootstrap.finally(() => {
-      const selected = usePluginsStore.getState().selectedPlugins;
-      if (selected.size > 0) applyPluginsWithValidation();
-    });
-  }, [discoveryData, loadPlugins, applyPluginsWithValidation]);
+    const selected = usePluginsStore.getState().selectedPlugins;
+    if (selected.size > 0) applyPluginsWithValidation();
+  }, [discoveryData, applyPluginsWithValidation]);
 
   if (loading) {
     return (

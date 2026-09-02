@@ -1,13 +1,15 @@
 /**
- * `/discovery/schemas/document` must be self-sufficient: the playground fires
- * the bootstrap `POST /load-plugins` and the first schema fetch in parallel,
- * and when the schema request won the race (or the POST failed) the registry
- * was empty — requested plugins were silently dropped and Monaco kept a
- * plugin-less schema until a toggle forced a refetch. Enabled components
+ * `/discovery/schemas/document` must be self-sufficient: the playground used
+ * to fire a bootstrap `POST /load-plugins` and the first schema fetch in
+ * parallel, and when the schema request won the race (or the POST failed) the
+ * registry was empty — requested plugins were silently dropped and Monaco kept
+ * a plugin-less schema until a toggle forced a refetch. Enabled components
  * neither completed nor validated.
  *
  * These tests hit the route with a cleared registry and no prior
- * load-plugins call, exactly the lost-race state.
+ * load-plugins call, exactly the lost-race state. The production cases below
+ * pin the other half: there the route may not go to disk at all, whatever the
+ * caller asks for, because a deployment loads its plugins at boot instead.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Hono } from 'hono';
@@ -76,8 +78,8 @@ describe('/api/discovery/schemas/document', () => {
   });
 
   it('does not trigger plugin loading in production', async () => {
-    // Plugin loading stays behind the authenticated POST /load-plugins in
-    // production; an unauthenticated schema request must not reach discovery.
+    // Reading plugins off disk in production is the boot preload's job; an
+    // unauthenticated schema request must not reach discovery.
     PluginRegistry.cleanup();
     const previousEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
@@ -94,11 +96,40 @@ describe('/api/discovery/schemas/document', () => {
     }
   });
 
-  it('loads them in production when the deployment opted in', async () => {
-    // What the hosted playgrounds set. The refusal above is about who asked;
-    // with PLUGIN_AUTOLOAD the operator has already said yes, so a plugin the
-    // rail offers is a plugin the schema carries.
+  it('opting in does not let a request reach the disk either', async () => {
+    // What the hosted playgrounds set. `PLUGIN_AUTOLOAD` is the operator
+    // authorizing the boot preload, not the caller: it must not turn an
+    // anonymous schema fetch into a filesystem scan.
     PluginRegistry.cleanup();
+    const previousEnv = process.env.NODE_ENV;
+    const previousAutoload = process.env.PLUGIN_AUTOLOAD;
+    process.env.NODE_ENV = 'production';
+    process.env.PLUGIN_AUTOLOAD = 'true';
+    try {
+      const res = await app.request(
+        '/discovery/schemas/document?plugins=weather'
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as any;
+      expect(componentNames(body.data)).not.toContain('weather');
+      expect(PluginRegistry.getInstance().hasPlugins()).toBe(false);
+    } finally {
+      process.env.NODE_ENV = previousEnv;
+      if (previousAutoload === undefined) delete process.env.PLUGIN_AUTOLOAD;
+      else process.env.PLUGIN_AUTOLOAD = previousAutoload;
+    }
+  });
+
+  it('serves what the boot preload registered', async () => {
+    // The bug this fixes: `weather` completed and validated locally and came
+    // back "Unknown component" on the deployment. The preload runs the load
+    // below before the first request, and from there the schema carries it
+    // without the route ever going to disk itself.
+    PluginRegistry.cleanup();
+    const registry = PluginRegistry.getInstance();
+    registry.setFormat('docx');
+    await registry.discoverAndLoad();
+
     const previousEnv = process.env.NODE_ENV;
     const previousAutoload = process.env.PLUGIN_AUTOLOAD;
     process.env.NODE_ENV = 'production';
@@ -117,21 +148,28 @@ describe('/api/discovery/schemas/document', () => {
     }
   });
 
-  it('keeps the load route shut to anonymous callers unless opted in', async () => {
-    // The gate is about who may make the server read its own disk. Without
-    // the flag a keyless caller cannot; with it, the same discovery has
-    // already run at boot, so the POST grants nothing new.
+  it('keeps the load route shut to anonymous callers in production', async () => {
+    // The gate is about who may make the server read its own disk. Opting a
+    // deployment into disk plugins does not open it: that discovery has
+    // already run at boot, so the POST would only let a caller start it
+    // again. Locally the keyless bootstrap still works.
     const previousEnv = process.env.NODE_ENV;
     const previousAutoload = process.env.PLUGIN_AUTOLOAD;
     process.env.NODE_ENV = 'production';
-    delete process.env.PLUGIN_AUTOLOAD;
     try {
+      delete process.env.PLUGIN_AUTOLOAD;
       const refused = await app.request('/discovery/load-plugins', {
         method: 'POST',
       });
       expect(refused.status).toBe(401);
 
       process.env.PLUGIN_AUTOLOAD = 'true';
+      const stillRefused = await app.request('/discovery/load-plugins', {
+        method: 'POST',
+      });
+      expect(stillRefused.status).toBe(401);
+
+      process.env.NODE_ENV = 'development';
       const allowed = await app.request('/discovery/load-plugins', {
         method: 'POST',
       });
