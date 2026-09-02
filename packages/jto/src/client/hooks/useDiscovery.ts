@@ -41,6 +41,15 @@ export interface DiscoveryResult {
   plugins: PluginMetadata[];
   documents: DocumentMetadata[];
   themes: ThemeMetadata[];
+  /**
+   * Whether this server will load the plugins it just listed.
+   *
+   * A deployment that does not (`PLUGIN_AUTOLOAD` off, the production
+   * default) still discovers them — the name, the description and the props
+   * are worth reading — but switching one on would change nothing, so the
+   * rail marks them unavailable instead.
+   */
+  pluginAutoload: boolean;
 }
 
 export interface UseDiscoveryResult {
@@ -75,7 +84,9 @@ export function useDiscovery(): UseDiscoveryResult {
         throw new Error(result.error || 'Discovery failed');
       }
 
-      setData(result.data);
+      // An older server that does not report the flag discovered plugins it
+      // was willing to load, which is what `true` means here.
+      setData({ pluginAutoload: true, ...result.data });
     } catch (err) {
       console.error('Discovery error:', err);
       setError(
@@ -87,6 +98,7 @@ export function useDiscovery(): UseDiscoveryResult {
         plugins: [],
         documents: [],
         themes: [],
+        pluginAutoload: true,
       });
     } finally {
       setLoading(false);
