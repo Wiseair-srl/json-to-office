@@ -153,13 +153,33 @@ class PluginHost {
     if (entry.idleTimer) clearTimeout(entry.idleTimer);
     const id = this.nextId++;
     const result = new Promise<SandboxResponse>((resolve, reject) => {
+      // The caller's signal outlives this request — a build aborts its signal
+      // during cleanup, long after the renders it guarded have settled. Left
+      // attached, that abort would dispose the frame and reject whatever is
+      // in flight at the time, so the listener goes when the request does.
+      let onAbort: (() => void) | null = null;
+      const detach = () => {
+        if (onAbort) signal?.removeEventListener('abort', onAbort);
+        onAbort = null;
+      };
       const timer = setTimeout(() => {
         entry.pending.delete(id);
+        detach();
         this.dispose(docName, new PluginTimeoutError(docName, what, timeoutMs));
         reject(new PluginTimeoutError(docName, what, timeoutMs));
       }, timeoutMs);
-      entry.pending.set(id, { resolve, reject, timer });
-      const onAbort = () => {
+      entry.pending.set(id, {
+        resolve: (response) => {
+          detach();
+          resolve(response);
+        },
+        reject: (error) => {
+          detach();
+          reject(error);
+        },
+        timer,
+      });
+      onAbort = () => {
         // A cancelled build must not leave a render burning in the worker.
         this.dispose(docName, new PluginAbortedError(docName));
       };
@@ -167,6 +187,7 @@ class PluginHost {
       entry.frame.post({ id, ...payload } as SandboxRequest).catch((error) => {
         entry.pending.delete(id);
         clearTimeout(timer);
+        detach();
         reject(error instanceof Error ? error : new Error(String(error)));
       });
     });

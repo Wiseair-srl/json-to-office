@@ -346,7 +346,7 @@ export function ColorControl({
     },
     [allowReference, onCommit]
   );
-  const draft = useDraft(value ?? '', commitText);
+  const { props: draft } = useDraft(value ?? '', commitText);
   const swatch = resolved ?? PLACEHOLDER_HEX;
   const reference = value && !value.startsWith('#') ? value : null;
 
@@ -554,7 +554,7 @@ function PickerHexInput({
     },
     [onCommit]
   );
-  const draft = useDraft(hex, commit);
+  const { props: draft } = useDraft(hex, commit);
   return (
     <Input
       type="text"

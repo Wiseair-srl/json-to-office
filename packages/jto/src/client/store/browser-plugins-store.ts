@@ -75,10 +75,15 @@ export const useBrowserPluginsStore = create<BrowserPluginsStore>()(
           };
         }),
 
+      // A plugin file is on screen before the sync hook has compiled it, so
+      // these two create the record they are missing rather than dropping the
+      // switch: the setting the author just made has to survive the compile.
       setEnabled: (docName, enabled) =>
         set((state) => {
-          const existing = state.records[docName];
-          if (!existing || existing.enabled === enabled) return state;
+          const existing =
+            state.records[docName] ?? createBrowserPluginRecord(docName);
+          if (state.records[docName] && existing.enabled === enabled)
+            return state;
           return {
             records: {
               ...state.records,
@@ -89,8 +94,10 @@ export const useBrowserPluginsStore = create<BrowserPluginsStore>()(
 
       setAllowNetwork: (docName, allowNetwork) =>
         set((state) => {
-          const existing = state.records[docName];
-          if (!existing || existing.allowNetwork === allowNetwork) return state;
+          const existing =
+            state.records[docName] ?? createBrowserPluginRecord(docName);
+          if (state.records[docName] && existing.allowNetwork === allowNetwork)
+            return state;
           return {
             records: {
               ...state.records,
@@ -180,16 +187,13 @@ export function selectActivePlugins(
  * their schemas, changes — what schema refreshes key on.
  */
 export function activePluginsSignature(state: BrowserPluginsState): string {
-  return selectActivePlugins(state)
-    .map(
-      (plugin) =>
-        `${plugin.metadata.name}@${plugin.metadata.versions
-          .map(
-            (v) => `${v.version}:${hashSource(JSON.stringify(v.propsSchema))}`
-          )
-          .join('|')}`
-    )
-    .join(',');
+  const components = browserComponentsForSchema(state);
+  // Empty stays empty, so a page with no active plugin keys on '' rather than
+  // on the hash of an empty array.
+  if (components.length === 0) return '';
+  // The whole payload the schema route receives, not the props alone:
+  // `hasChildren` and `description` reach the composed schema too.
+  return hashSource(JSON.stringify(components));
 }
 
 /**

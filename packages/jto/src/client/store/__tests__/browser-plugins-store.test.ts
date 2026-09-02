@@ -121,6 +121,70 @@ describe('browser plugins store', () => {
     expect(activePluginsSignature(useBrowserPluginsStore.getState())).toBe('');
   });
 
+  it('the signature follows every field the schema route receives', () => {
+    const store = useBrowserPluginsStore.getState();
+    store.upsert('a.component.ts', {
+      status: 'ready',
+      metadata: metadata('a'),
+    });
+    const base = activePluginsSignature(useBrowserPluginsStore.getState());
+
+    // `hasChildren` and `description` reach the composed schema too, so a
+    // change to either has to refresh Monaco and the schema dialog.
+    store.upsert('a.component.ts', {
+      metadata: {
+        ...metadata('a'),
+        versions: [
+          {
+            version: '1.0.0',
+            propsSchema: { type: 'object' },
+            hasChildren: true,
+          },
+        ],
+      },
+    });
+    const withChildren = activePluginsSignature(
+      useBrowserPluginsStore.getState()
+    );
+    expect(withChildren).not.toBe(base);
+
+    store.upsert('a.component.ts', {
+      metadata: {
+        ...metadata('a'),
+        versions: [
+          {
+            version: '1.0.0',
+            propsSchema: { type: 'object' },
+            hasChildren: true,
+            description: 'A tile.',
+          },
+        ],
+      },
+    });
+    expect(activePluginsSignature(useBrowserPluginsStore.getState())).not.toBe(
+      withChildren
+    );
+  });
+
+  it('a switch flipped before the first compile creates the record', () => {
+    const store = useBrowserPluginsStore.getState();
+    // The file is on screen the moment it is created; the sync hook writes
+    // its record one compile later. A switch touched in between has to stick.
+    store.setEnabled('fresh.component.ts', false);
+    expect(
+      useBrowserPluginsStore.getState().records['fresh.component.ts']
+    ).toMatchObject({ docName: 'fresh.component.ts', enabled: false });
+
+    store.setAllowNetwork('other.component.ts', true);
+    expect(
+      useBrowserPluginsStore.getState().records['other.component.ts']
+    ).toMatchObject({
+      docName: 'other.component.ts',
+      enabled: true,
+      allowNetwork: true,
+    });
+  });
+
   it('rename keeps the switches and remove drops the record', () => {
     const store = useBrowserPluginsStore.getState();
     store.upsert('a.component.ts', {

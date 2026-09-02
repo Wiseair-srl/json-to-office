@@ -21,6 +21,18 @@ export function isPluginDocumentName(name: string): boolean {
   return name.toLowerCase().endsWith(PLUGIN_FILE_SUFFIX);
 }
 
+/**
+ * The file name a plugin will actually be stored under. The type is decided
+ * by the name, so a plugin keeps its suffix however it is typed — which is
+ * why duplicate checks have to run on this, not on what the author entered:
+ * `foo` and `foo.component.ts` are the same file.
+ */
+export function pluginDocumentName(name: string): string {
+  const trimmed = name.trim();
+  if (isPluginDocumentName(trimmed)) return trimmed;
+  return trimmed.replace(/\.(component)?\.?ts$/i, '') + PLUGIN_FILE_SUFFIX;
+}
+
 export type DocumentsState = {
   documents: TextFile[];
   openTabs: string[];

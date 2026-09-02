@@ -73,6 +73,18 @@ describe('theme edits', () => {
     expect(deleteAt(removed, ['nowhere', 'missing'])).toBe(removed);
   });
 
+  it('deletes an array entry only for a real index', () => {
+    const theme = { fonts: { registry: ['a', 'b', 'c'] } };
+    expect(deleteAt(theme, ['fonts', 'registry', 1])).toEqual({
+      fonts: { registry: ['a', 'c'] },
+    });
+    // `splice` would coerce each of these and delete something: -1 the last
+    // entry, NaN and 1.5 an entry near the front.
+    for (const key of [-1, Number.NaN, 1.5, 3, '1']) {
+      expect(deleteAt(theme, ['fonts', 'registry', key as number])).toBe(theme);
+    }
+  });
+
   it('rejects text that is not an object', () => {
     expect(parseTheme('[1]').ok).toBe(false);
     expect(parseTheme('{').ok).toBe(false);

@@ -88,6 +88,9 @@ function ViewButton({
       type="button"
       role="tab"
       aria-selected={active}
+      // The label is `display: none` below `md`, which takes it out of the
+      // accessibility tree along with the button's only name.
+      aria-label={label}
       disabled={disabled}
       onClick={onClick}
       className={cn(
