@@ -73,7 +73,21 @@ jobs:
 
       - run: pnpm build
 
+      # Turbo runs ten packages at once by default and vitest forks per core
+      # inside each, which on a four-core Windows runner oversubscribes the
+      # box badly enough to read as product failures. Two shapes of it, on
+      # consecutive commits: run 33621956828 gave up on an mcp-server stdio
+      # response after 60s, and 33623795402 lost three `onTaskUpdate` RPCs in
+      # core-docx — birpc's own 60s ceiling — after all 1,995 of its tests had
+      # passed. Neither suite was at fault, and per-case timeouts only move
+      # the next failure somewhere else. Serial costs this job wall-clock and
+      # buys back a machine that can answer. Ubuntu keeps the default; it has
+      # never gone red this way.
       - run: pnpm test
+        if: matrix.os != 'windows-latest'
+
+      - run: pnpm test -- --concurrency=1
+        if: matrix.os == 'windows-latest'
 
   # The suites that need a real LibreOffice and poppler skip themselves when
   # the binaries are absent, so a cold checkout stays green — which also meant
