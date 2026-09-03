@@ -22,6 +22,11 @@ import type { FormatName } from '../lib/adapters.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { FORMAT_NAMES } from '../lib/schema.js';
 import { buildCatalog, formatSchemas } from '../tools/discover.js';
+import {
+  galleryDocument,
+  galleryManifests,
+  galleryThumbnail,
+} from '../templates/gallery.js';
 
 export const RESOURCE_URIS = {
   catalog: 'jto://catalog',
@@ -29,6 +34,8 @@ export const RESOURCE_URIS = {
   themes: 'jto://themes',
   themeValues: 'jto://themes/values',
   templates: 'jto://templates',
+  template: (name: string) => `jto://templates/${name}`,
+  templateThumbnail: (name: string) => `jto://templates/${name}/thumbnail`,
   documentSchema: (format: FormatName) => `jto://schema/${format}/document`,
   themeSchema: (format: FormatName) => `jto://schema/${format}/theme`,
 } as const;
@@ -145,18 +152,73 @@ export function register(server: McpServer, deps: ToolDeps): void {
     'templates',
     RESOURCE_URIS.templates,
     {
-      title: 'Starter documents',
+      title: 'Starter documents and the template gallery',
       description:
-        'Small, valid documents to copy and edit — one minimal and one fuller example per format.',
+        'Two kinds of starting point: tiny valid documents to copy and edit, and the manifests of the nine designed templates bundled with this package. Read jto://templates/<name> for a template document and jto://templates/<name>/thumbnail to see it first.',
       mimeType: JSON_MIME,
     },
     async (uri) => {
       const catalog = await buildCatalog(deps);
       return jsonContents(uri, {
         starters: catalog.formats.flatMap((format) => format.starters),
+        gallery: galleryManifests(),
       });
     }
   );
+
+  // One pair of resources per bundled template. Registered individually rather
+  // than as a URI template so `resources/list` shows a client every document it
+  // can open, with its own title and description — a template shape would list
+  // one entry and leave the names to be guessed.
+  for (const manifest of galleryManifests()) {
+    server.registerResource(
+      `template-${manifest.name}`,
+      RESOURCE_URIS.template(manifest.name),
+      {
+        title: manifest.name,
+        description: `${manifest.archetype}, ${manifest.pages} ${
+          manifest.format === 'pptx' ? 'slides' : 'pages'
+        }, theme "${manifest.theme}". ${manifest.whenToUse}`,
+        mimeType: JSON_MIME,
+      },
+      async (uri) => {
+        const document = galleryDocument(manifest.name);
+        if (document === undefined) {
+          throw new Error(
+            `The bundled document for "${manifest.name}" could not be read.`
+          );
+        }
+        return jsonContents(uri, document);
+      }
+    );
+
+    server.registerResource(
+      `template-thumbnail-${manifest.name}`,
+      RESOURCE_URIS.templateThumbnail(manifest.name),
+      {
+        title: `${manifest.name} (thumbnail)`,
+        description: `Every page of ${manifest.name} tiled into one low-DPI image — look before copying ${Math.round(manifest.bytes.document / 1024)} KB of JSON.`,
+        mimeType: 'image/png',
+      },
+      async (uri) => {
+        const png = galleryThumbnail(manifest.name);
+        if (png === undefined) {
+          throw new Error(
+            `The thumbnail for "${manifest.name}" could not be read.`
+          );
+        }
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              mimeType: 'image/png',
+              blob: png.toString('base64'),
+            },
+          ],
+        };
+      }
+    );
+  }
 
   for (const format of FORMAT_NAMES) {
     server.registerResource(

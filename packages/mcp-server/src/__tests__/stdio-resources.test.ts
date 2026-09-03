@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 import { openSession, type StdioSession } from './fixtures/stdio-harness.js';
+import { galleryManifests } from '../templates/gallery.js';
 
 const CONNECT_TIMEOUT_MS = 120_000;
 const READ_TIMEOUT_MS = 180_000;
@@ -39,7 +40,11 @@ describe('discovery resources over stdio', () => {
     async () => {
       const { resources } = await session.client.listResources();
 
-      expect(resources.map((resource) => resource.uri).sort()).toEqual([
+      const discovery = resources
+        .map((resource) => resource.uri)
+        .filter((uri) => !uri.startsWith('jto://templates/'))
+        .sort();
+      expect(discovery).toEqual([
         'jto://catalog',
         'jto://renderers',
         'jto://schema/docx/document',
@@ -51,8 +56,19 @@ describe('discovery resources over stdio', () => {
         'jto://themes/values',
       ]);
 
+      // The bundled gallery adds a document and a thumbnail per template
+      // (#322); `gallery.test.ts` pins which ones, this pins that they are on
+      // the wire and that nothing else appeared.
+      expect(
+        resources.filter((resource) =>
+          resource.uri.startsWith('jto://templates/')
+        ).length
+      ).toBe(galleryManifests().length * 2);
+
       for (const resource of resources) {
-        expect(resource.mimeType).toBe('application/json');
+        expect(resource.mimeType).toBe(
+          resource.uri.endsWith('/thumbnail') ? 'image/png' : 'application/json'
+        );
         expect(resource.name).toBeTypeOf('string');
       }
     },
@@ -68,21 +84,36 @@ describe('discovery resources over stdio', () => {
       for (const resource of resources) {
         const read = await session.client.readResource({ uri: resource.uri });
         const [entry] = read.contents as [
-          { uri: string; mimeType: string; text: string },
+          { uri: string; mimeType: string; text?: string; blob?: string },
         ];
 
         expect(entry.uri).toBe(resource.uri);
+
+        // A thumbnail is a PNG blob, and the only non-JSON body here. It still
+        // has to clear the frame limit, which is the point of this suite.
+        if (resource.uri.endsWith('/thumbnail')) {
+          expect(entry.mimeType).toBe('image/png');
+          const blob = entry.blob ?? '';
+          expect(blob.length).toBeGreaterThan(0);
+          sizes[resource.uri] = blob.length;
+          expect(
+            blob.length,
+            `${resource.uri} is ${blob.length} base64 bytes, over the ${STDIO_MAX_FRAME_BYTES}-byte stdio frame limit`
+          ).toBeLessThan(STDIO_MAX_FRAME_BYTES);
+          continue;
+        }
+
         expect(entry.mimeType).toBe('application/json');
 
-        const body = JSON.parse(entry.text) as Record<string, unknown>;
+        const body = JSON.parse(entry.text ?? '') as Record<string, unknown>;
         expect(Object.keys(body).length).toBeGreaterThan(0);
-        sizes[resource.uri] = entry.text.length;
+        sizes[resource.uri] = (entry.text ?? '').length;
 
         // The ceiling that made this suite necessary. Serving a resource a stock
         // client cannot receive is the same as not serving it.
         expect(
-          entry.text.length,
-          `${resource.uri} is ${entry.text.length} bytes, over the ${STDIO_MAX_FRAME_BYTES}-byte stdio frame limit`
+          (entry.text ?? '').length,
+          `${resource.uri} is ${(entry.text ?? '').length} bytes, over the ${STDIO_MAX_FRAME_BYTES}-byte stdio frame limit`
         ).toBeLessThan(STDIO_MAX_FRAME_BYTES);
       }
 

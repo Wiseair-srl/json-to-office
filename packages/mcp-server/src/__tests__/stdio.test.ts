@@ -83,7 +83,14 @@ describe.skipIf(!built)('jto-mcp over stdio', () => {
 
   it('serves the jto:// resources over the real transport', async () => {
     const { resources } = await client.listResources();
-    expect(resources.map((resource) => resource.uri).sort()).toEqual([
+    // Discovery resources; the bundled gallery adds two per template on top,
+    // which `gallery.test.ts` pins.
+    expect(
+      resources
+        .map((resource) => resource.uri)
+        .filter((uri) => !uri.startsWith('jto://templates/'))
+        .sort()
+    ).toEqual([
       'jto://catalog',
       'jto://renderers',
       'jto://schema/docx/document',

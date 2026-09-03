@@ -1,0 +1,41 @@
+{
+  "$comment": "Authored half of the template manifest: what a document is for, which no script can derive. The rest — theme, pages, components, slots, external assets — is generated from the document itself by scripts/generate-gallery.ts and checked by `pnpm validate:assets`.",
+  "templates": {
+    "modern-annual-report-1.docx.json": {
+      "archetype": "annual-report",
+      "whenToUse": "A long editorial report with a full-bleed cover, running heads and generous whitespace. The most magazine-like of the three modern reports; reach for it when the writing carries the document and the numbers support it."
+    },
+    "modern-annual-report-2.docx.json": {
+      "archetype": "annual-report",
+      "whenToUse": "The same editorial language with photography woven through it. Use when there are real images to show — sites, products, people — rather than charts alone."
+    },
+    "modern-annual-report-3.docx.json": {
+      "archetype": "annual-report",
+      "whenToUse": "The densest of the three: multi-column spreads and stacked figures. Use when the report is mostly data and the reader is going to study it rather than read it through."
+    },
+    "standard-annual-report.docx.json": {
+      "archetype": "annual-report",
+      "whenToUse": "A conventional corporate annual report — cover, contents, numbered sections, financial tables. Use when the document has to look like every other annual report on the shelf, which is sometimes exactly the brief."
+    },
+    "tech-report.docx.json": {
+      "archetype": "technical-report",
+      "whenToUse": "A numbered technical document with a table of contents, code, figures and references. Use for a standard, a post-incident report, an audit or anything an engineer has to implement from."
+    },
+    "vermilion-annual-report.docx.json": {
+      "archetype": "annual-report",
+      "whenToUse": "The house editorial language of the examples: poster-red display headings, ink text, warm creams, hairline rules. Use when the document should look designed rather than produced."
+    },
+    "data-report-presentation.pptx.json": {
+      "archetype": "data-deck",
+      "whenToUse": "A chart-led deck: big numbers, donut and column figures, section dividers. Use when the story is in the data and each slide carries one figure."
+    },
+    "management-plan.pptx.json": {
+      "archetype": "consulting-deck",
+      "whenToUse": "A structured plan deck — agenda, workstreams, timeline, owners. The closest of the three to a consulting readout; use for a kickoff, a steering committee or a plan on a page."
+    },
+    "minimalist-pitch-deck.pptx.json": {
+      "archetype": "pitch-deck",
+      "whenToUse": "A spare, high-contrast pitch deck built on circles and type. Use when the deck is presented rather than read, and when the argument is short enough to hold one idea per slide."
+    }
+  }
+}
