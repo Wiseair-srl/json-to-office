@@ -67,6 +67,10 @@ export default defineConfig({
             { text: 'The visual playground', link: '/guide/playground' },
             { text: 'CLI workflows', link: '/guide/cli' },
             { text: 'The MCP server', link: '/guide/mcp-server' },
+            {
+              text: 'The design loop on Claude Desktop',
+              link: '/guide/claude-desktop',
+            },
             { text: 'Validation', link: '/guide/validation' },
             { text: 'Design quality', link: '/guide/design-quality' },
           ],

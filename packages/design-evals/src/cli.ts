@@ -110,7 +110,7 @@ function serverCommand(root: string): {
     'PDFTOPPM_PATH',
     'JTO_OUTPUT_DIR',
     'JTO_WORKSPACE_DIR',
-    'HIGHCHARTS_EXPORT_SERVER_URL',
+    'HIGHCHARTS_SERVER_URL',
   ]) {
     const value = process.env[name];
     if (value !== undefined) env[name] = value;
@@ -215,8 +215,8 @@ export async function main(argv: readonly string[]): Promise<number> {
       ...(process.env.PDFTOPPM_PATH && {
         pdftoppmPath: process.env.PDFTOPPM_PATH,
       }),
-      ...(process.env.HIGHCHARTS_EXPORT_SERVER_URL && {
-        exportServerUrl: process.env.HIGHCHARTS_EXPORT_SERVER_URL,
+      ...(process.env.HIGHCHARTS_SERVER_URL && {
+        exportServerUrl: process.env.HIGHCHARTS_SERVER_URL,
       }),
       maxRetries: options.maxRetries,
       agentSdkVersion: await agentSdkVersion(root),
