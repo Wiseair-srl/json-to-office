@@ -1,5 +1,8 @@
 import {
+  collectColorLiterals,
+  collectFontFamilies,
   collectPlaceholders,
+  normalizeHex,
   type PlaceholderKind,
   type PreparedDocument,
   type ProvenanceMap,
@@ -68,6 +71,43 @@ export interface PptxSlideFact extends QualityFact {
   bodyWords: number;
 }
 
+/** A box drawn on a slide, in draw order — the input to the overlap rule. */
+export interface PptxBoxFact extends QualityFact {
+  kind: 'pptx/box';
+  slidePath: string;
+  componentName: string;
+  /** Draw order within the slide; a higher value is painted later, on top. */
+  order: number;
+  /** Paints its whole rectangle: an image, a chart, a table, a filled shape. */
+  opaque: boolean;
+  xPt: number;
+  yPt: number;
+  widthPt: number;
+  heightPt: number;
+}
+
+/** The resolved theme, as the brand rules see it. */
+export interface PptxThemeFact extends QualityFact {
+  kind: 'pptx/theme';
+  themeName: string;
+  /** Token name to `#RRGGBB`, for every palette entry that resolves. */
+  paletteHexes: Readonly<Record<string, string>>;
+  fontFamilies: readonly string[];
+}
+
+/** A colour written as a literal rather than as a theme token. */
+export interface PptxColorFact extends QualityFact {
+  kind: 'pptx/color';
+  raw: string;
+  hex: string;
+}
+
+/** A font family the document asks for by name. */
+export interface PptxFontFact extends QualityFact {
+  kind: 'pptx/font-family';
+  family: string;
+}
+
 /** One authored string that reads as a placeholder rather than as content. */
 export interface PptxPlaceholderFact extends QualityFact {
   kind: 'pptx/placeholder';
@@ -81,7 +121,11 @@ export type PptxQualityFact =
   | PptxCanvasFact
   | PptxTextFact
   | PptxSlideFact
-  | PptxPlaceholderFact;
+  | PptxPlaceholderFact
+  | PptxBoxFact
+  | PptxThemeFact
+  | PptxColorFact
+  | PptxFontFact;
 
 export interface PptxQualityModel {
   authored: PresentationComponentDefinition;
@@ -419,17 +463,84 @@ interface Surface {
   isImage: boolean;
 }
 
+/** Components that paint their whole rectangle, whatever is underneath. */
+const OPAQUE_COMPONENTS = new Set([
+  'table',
+  'chart',
+  'highcharts',
+  'image',
+  'visual',
+]);
+
+/** Shape types whose ink is the whole bounding box. */
+const RECTANGULAR_SHAPES = new Set(['rect', 'roundRect']);
+
 /**
- * One ordered pass over a slide's components: the text to analyse, and the
- * surfaces drawn behind it. Both need the same z-order, and z-order is just
- * the sequence the renderer walks, so they are collected together rather than
- * in two passes that could disagree.
+ * Whether a fill actually covers what is under it.
+ *
+ * Any transparency at all disqualifies it: the reference decks stack a
+ * primary-coloured disc under the same disc at 90% transparency, and a tinted
+ * overlay is a technique rather than a collision. A gradient counts as opaque
+ * only when none of its stops is see-through.
+ */
+function isOpaqueFill(fill: unknown): boolean {
+  const rec = asRecord(fill);
+  if (!rec) return false;
+  if ((asNumber(rec.transparency) ?? 0) > 0) return false;
+  const gradient = asRecord(rec.gradient);
+  if (gradient) {
+    const stops = Array.isArray(gradient.stops) ? gradient.stops : [];
+    return stops.every(
+      (stop) => (asNumber(asRecord(stop)?.transparency) ?? 0) === 0
+    );
+  }
+  return true;
+}
+
+/**
+ * Whether this component hides whatever it is drawn over.
+ *
+ * A shape qualifies only when it is a rectangle with an opaque fill. An
+ * ellipse, a pie wedge or a chevron leaves most of its bounding box empty —
+ * the reference decks draw concentric circles and radial segments whose boxes
+ * cross by design and whose ink never touches.
+ */
+function isOpaqueComponent(componentName: string, props: Rec): boolean {
+  if (OPAQUE_COMPONENTS.has(componentName)) return true;
+  if (props.fill === undefined) return false;
+  const type = typeof props.type === 'string' ? props.type : 'rect';
+  return RECTANGULAR_SHAPES.has(type) && isOpaqueFill(props.fill);
+}
+
+/**
+ * A component with a position, and whether it paints its whole box.
+ *
+ * Opacity, not "is this content", is the property the overlap rule can act
+ * on. A text box is routinely declared far larger than the words inside it —
+ * an 80pt title in a 5in box, a caption parked in the corner of a wide frame —
+ * so two intersecting text rectangles say nothing about whether any ink
+ * collides. Two intersecting *opaque* rectangles always hide each other.
+ */
+interface BoxNode {
+  props: Rec;
+  path: string;
+  componentName: string;
+  order: number;
+  opaque: boolean;
+}
+
+/**
+ * One ordered pass over a slide's components: the text to analyse, the
+ * surfaces drawn behind it, and every positioned box. All three need the same
+ * z-order, and z-order is just the sequence the renderer walks, so they are
+ * collected together rather than in passes that could disagree.
  */
 function collectSlideNodes(
   component: unknown,
   path: string,
   text: TextNode[],
   surfaces: Surface[],
+  boxes: BoxNode[],
   counter: { next: number }
 ): void {
   const rec = asRecord(component);
@@ -453,6 +564,18 @@ function collectSlideNodes(
       text.push({ props, path, text: content, order });
     }
   }
+
+  const componentName = typeof rec.name === 'string' ? rec.name : '';
+  if (componentName !== '') {
+    boxes.push({
+      props,
+      path,
+      componentName,
+      order,
+      opaque: isOpaqueComponent(componentName, props),
+    });
+  }
+
   const children = Array.isArray(rec.children) ? rec.children : [];
   children.forEach((child, index) =>
     collectSlideNodes(
@@ -460,6 +583,7 @@ function collectSlideNodes(
       `${path}/children/${index}`,
       text,
       surfaces,
+      boxes,
       counter
     )
   );
@@ -484,10 +608,35 @@ function addSlideFacts(
 ): void {
   const nodes: TextNode[] = [];
   const surfaces: Surface[] = [];
+  const boxes: BoxNode[] = [];
   const counter = { next: 0 };
   for (const root of roots) {
-    collectSlideNodes(root.component, root.path, nodes, surfaces, counter);
+    collectSlideNodes(
+      root.component,
+      root.path,
+      nodes,
+      surfaces,
+      boxes,
+      counter
+    );
   }
+  boxes.forEach((node, boxIndex) => {
+    const box = resolveBox(node.props, grid, slideWidthIn, slideHeightIn);
+    if (!isCompleteBox(box)) return;
+    addFact({
+      id: `pptx:box:${renderedIndex}:${boxIndex}:${node.path}`,
+      kind: 'pptx/box',
+      path: node.path,
+      slidePath,
+      componentName: node.componentName,
+      order: node.order,
+      opaque: node.opaque,
+      xPt: box.xPt,
+      yPt: box.yPt,
+      widthPt: box.widthPt,
+      heightPt: box.heightPt,
+    });
+  });
   const surfaceBoxes = surfaces.flatMap((surface) => {
     const box = resolveBox(surface.props, grid, slideWidthIn, slideHeightIn);
     return isCompleteBox(box) ? [{ ...surface, box }] : [];
@@ -703,6 +852,25 @@ export function preparePptxQualityDocument(
     });
   });
 
+  collectColorLiterals(document).forEach((literal, index) => {
+    addFact({
+      id: `pptx:color:${index}:${literal.path}`,
+      kind: 'pptx/color',
+      path: literal.path,
+      raw: literal.raw,
+      hex: literal.hex,
+    });
+  });
+
+  collectFontFamilies(document).forEach((use, index) => {
+    addFact({
+      id: `pptx:font:${index}:${use.path}`,
+      kind: 'pptx/font-family',
+      path: use.path,
+      family: use.family,
+    });
+  });
+
   const warnings = options.warnings ?? [];
   const context = resolveThemeContext(document, {
     customThemes: options.customThemes,
@@ -715,6 +883,30 @@ export function preparePptxQualityDocument(
     services: options.services,
   });
   const ctx = themeContext(processed.theme);
+
+  const paletteHexes: Record<string, string> = {};
+  for (const [token, value] of Object.entries(processed.theme.colors ?? {})) {
+    if (typeof value !== 'string') continue;
+    // Through `resolveColor` so a slot naming another slot lands on the colour
+    // it actually paints, not on the token name it stores.
+    const hex = normalizeHex(resolveColor(value, processed.theme));
+    if (hex) paletteHexes[token] = hex;
+  }
+  addFact({
+    id: 'pptx:theme',
+    kind: 'pptx/theme',
+    path: '/props',
+    themeName: processed.theme.name,
+    paletteHexes,
+    fontFamilies: [
+      ...new Set(
+        [processed.theme.fonts?.heading, processed.theme.fonts?.body].filter(
+          (family): family is string =>
+            typeof family === 'string' && family.trim() !== ''
+        )
+      ),
+    ],
+  });
   const authoredChildren = Array.isArray(document.children)
     ? document.children
     : [];

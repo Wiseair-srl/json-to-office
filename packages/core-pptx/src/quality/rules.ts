@@ -1,5 +1,8 @@
 import {
+  fontCountFinding,
   mergeQualityProfiles,
+  nearestPaletteToken,
+  offPaletteFinding,
   placeholderFinding,
   QUALITY_CODES,
   QualityEngine,
@@ -10,12 +13,16 @@ import {
   type QualityRulePack,
 } from '@json-to-office/quality';
 import type {
+  PptxBoxFact,
   PptxCanvasFact,
+  PptxColorFact,
+  PptxFontFact,
   PptxPlaceholderFact,
   PptxQualityFact,
   PptxQualityModel,
   PptxSlideFact,
   PptxTextFact,
+  PptxThemeFact,
 } from './facts';
 
 const RENDERER_DEFAULT_WIDTH_IN = 10;
@@ -529,6 +536,253 @@ export const pptxPlaceholderRule: QualityRule<
       ),
 };
 
+/**
+ * Two opaque boxes on one slide that land on each other.
+ *
+ * Opacity is the whole of the geometric claim. An image, a chart, a table or a
+ * filled rectangle paints its entire box, so two of them intersecting really
+ * do hide each other. A *text* box says nothing of the kind — authors declare
+ * one far larger than the words inside it, and the reference decks are full of
+ * designs where two text rectangles cross and no ink does: an 80pt title
+ * beside a 12pt label, a value centred in the hole of a donut. Word-level
+ * overlap belongs to the rendered pass (#344), which can see where ink landed.
+ *
+ * Intersecting is not the same as wrong, which is why the verdict is split.
+ * Reference-quality decks stack opaque rectangles constantly — an accent strip
+ * along the top of a card, a badge in the corner of a photograph — so a plain
+ * intersection is `info`: visible, not accused. Two cases are warnings because
+ * neither is ever a design. A box whose geometry matches another to within a
+ * couple of points is a leftover duplicate. And anything covering a chart or a
+ * table covers data, which is the one thing a slide cannot afford to lose.
+ *
+ * A box fully inside a larger one is layering rather than collision. Equal
+ * rectangles are not containment — that is the duplicate case, and it is
+ * reported.
+ */
+const DEFAULT_OVERLAP_MIN_PT = 4;
+const DEFAULT_OVERLAP_MIN_AREA_RATIO = 0.15;
+/** Below this share of the outer box, an inner box reads as a deliberate layer. */
+const CONTAINED_AREA_RATIO = 0.95;
+/** Slack on the containment test: a nested box may sit a rounding step proud. */
+const CONTAINMENT_SLACK_PT = 0.5;
+/** Two boxes agreeing to within this on every edge are the same box, twice. */
+const DUPLICATE_TOLERANCE_PT = 2;
+
+/** Components whose whole point is data a reader has to be able to see. */
+const DATA_COMPONENTS = new Set(['chart', 'highcharts', 'table']);
+
+interface Rect {
+  xPt: number;
+  yPt: number;
+  widthPt: number;
+  heightPt: number;
+}
+
+function contains(outer: Rect, inner: Rect): boolean {
+  const outerArea = outer.widthPt * outer.heightPt;
+  const innerArea = inner.widthPt * inner.heightPt;
+  if (outerArea === 0 || innerArea >= outerArea * CONTAINED_AREA_RATIO) {
+    return false;
+  }
+  const slack = CONTAINMENT_SLACK_PT;
+  return (
+    inner.xPt >= outer.xPt - slack &&
+    inner.yPt >= outer.yPt - slack &&
+    inner.xPt + inner.widthPt <= outer.xPt + outer.widthPt + slack &&
+    inner.yPt + inner.heightPt <= outer.yPt + outer.heightPt + slack
+  );
+}
+
+function isDuplicate(a: Rect, b: Rect): boolean {
+  const near = (x: number, y: number): boolean =>
+    Math.abs(x - y) <= DUPLICATE_TOLERANCE_PT;
+  return (
+    near(a.xPt, b.xPt) &&
+    near(a.yPt, b.yPt) &&
+    near(a.widthPt, b.widthPt) &&
+    near(a.heightPt, b.heightPt)
+  );
+}
+
+export const pptxBoxOverlapRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/box-overlap',
+  code: QUALITY_CODES.BOX_OVERLAP,
+  category: 'integrity',
+  defaultSeverity: 'info',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultParameters: {
+    minimumOverlapPt: DEFAULT_OVERLAP_MIN_PT,
+    minimumAreaRatio: DEFAULT_OVERLAP_MIN_AREA_RATIO,
+  },
+  evaluate: ({ facts, configuration }) => {
+    const minimumOverlapPt = numberParameter(
+      configuration.parameters,
+      'minimumOverlapPt',
+      DEFAULT_OVERLAP_MIN_PT
+    );
+    const minimumAreaRatio = numberParameter(
+      configuration.parameters,
+      'minimumAreaRatio',
+      DEFAULT_OVERLAP_MIN_AREA_RATIO
+    );
+    const bySlide = new Map<string, PptxBoxFact[]>();
+    for (const fact of facts) {
+      if (fact.kind !== 'pptx/box' || !fact.opaque) continue;
+      const slide = bySlide.get(fact.slidePath);
+      if (slide) slide.push(fact);
+      else bySlide.set(fact.slidePath, [fact]);
+    }
+
+    const findings: QualityRuleFinding[] = [];
+    for (const slide of bySlide.values()) {
+      const ordered = [...slide].sort((a, b) => a.order - b.order);
+      for (let i = 0; i < ordered.length; i += 1) {
+        for (let j = i + 1; j < ordered.length; j += 1) {
+          const under = ordered[i];
+          const over = ordered[j];
+          // A box nested in another is a group, not a collision.
+          if (over.path.startsWith(`${under.path}/`)) continue;
+          if (under.path.startsWith(`${over.path}/`)) continue;
+
+          const duplicate = isDuplicate(under, over);
+          if (!duplicate && (contains(under, over) || contains(over, under))) {
+            continue;
+          }
+
+          const overlapWidth =
+            Math.min(under.xPt + under.widthPt, over.xPt + over.widthPt) -
+            Math.max(under.xPt, over.xPt);
+          const overlapHeight =
+            Math.min(under.yPt + under.heightPt, over.yPt + over.heightPt) -
+            Math.max(under.yPt, over.yPt);
+          if (
+            overlapWidth < minimumOverlapPt ||
+            overlapHeight < minimumOverlapPt
+          ) {
+            continue;
+          }
+          const overlapArea = overlapWidth * overlapHeight;
+          const smaller = Math.min(
+            under.widthPt * under.heightPt,
+            over.widthPt * over.heightPt
+          );
+          const ratio = smaller === 0 ? 0 : overlapArea / smaller;
+          if (ratio < minimumAreaRatio) continue;
+
+          const hidesData =
+            DATA_COMPONENTS.has(under.componentName) ||
+            DATA_COMPONENTS.has(over.componentName);
+          const percent = Math.round(ratio * 100);
+          findings.push({
+            severity: duplicate || hidesData ? 'warning' : 'info',
+            message: duplicate
+              ? `Two ${over.componentName === under.componentName ? `${over.componentName}s` : 'boxes'} occupy the same rectangle — the later one hides the earlier entirely.`
+              : hidesData
+                ? `A ${over.componentName} covers ${percent}% of the ${under.componentName} drawn before it, hiding data.`
+                : `A ${over.componentName} covers ${percent}% of the ${under.componentName} drawn before it; both paint their whole box.`,
+            path: over.path,
+            relatedPaths: [under.path],
+            suggestion: duplicate
+              ? 'Delete whichever of the two is left over.'
+              : 'Move or resize one of the two if the overlap is not deliberate.',
+            context: {
+              covering: over.path,
+              covered: under.path,
+              overlapPercent: percent,
+              duplicate,
+              overlapPt: {
+                width: Math.round(overlapWidth * 10) / 10,
+                height: Math.round(overlapHeight * 10) / 10,
+              },
+            },
+            evidence: {
+              actual: percent,
+              expected: 0,
+              unit: '% of the smaller box',
+            },
+          });
+        }
+      }
+    }
+    return findings;
+  },
+};
+
+const DEFAULT_MAX_FONT_FAMILIES = 3;
+
+/** Every family the document can paint: the theme's roles plus authored ones. */
+export const pptxFontCountRule: QualityRule<PptxQualityModel, PptxQualityFact> =
+  {
+    id: 'pptx/font-count',
+    code: QUALITY_CODES.FONT_COUNT,
+    category: 'brand',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'deterministic',
+    formats: ['pptx'],
+    defaultParameters: { maximumFamilies: DEFAULT_MAX_FONT_FAMILIES },
+    evaluate: ({ facts, configuration }) => {
+      const maximum = numberParameter(
+        configuration.parameters,
+        'maximumFamilies',
+        DEFAULT_MAX_FONT_FAMILIES
+      );
+      const theme = facts.find(
+        (fact): fact is PptxThemeFact => fact.kind === 'pptx/theme'
+      );
+      const authored = facts.filter(
+        (fact): fact is PptxFontFact => fact.kind === 'pptx/font-family'
+      );
+      const families = new Set<string>(theme?.fontFamilies ?? []);
+      const extraPaths: string[] = [];
+      for (const fact of authored) {
+        if (!families.has(fact.family)) extraPaths.push(fact.path);
+        families.add(fact.family);
+      }
+      if (families.size <= maximum) return [];
+      return [
+        fontCountFinding({
+          path: theme?.path ?? '/props',
+          families: [...families].sort(),
+          maximum,
+          relatedPaths: [...new Set(extraPaths)],
+        }),
+      ];
+    },
+  };
+
+/** A literal colour the resolved theme does not define. */
+export const pptxPaletteRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
+  id: 'pptx/palette-adherence',
+  code: QUALITY_CODES.OFF_PALETTE,
+  category: 'brand',
+  defaultSeverity: 'info',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  evaluate: ({ facts }) => {
+    const theme = facts.find(
+      (fact): fact is PptxThemeFact => fact.kind === 'pptx/theme'
+    );
+    const palette = theme?.paletteHexes ?? {};
+    const known = new Set(Object.values(palette));
+    return facts
+      .filter((fact): fact is PptxColorFact => fact.kind === 'pptx/color')
+      .filter((fact) => !known.has(fact.hex))
+      .map((fact) => {
+        const nearest = nearestPaletteToken(fact.hex, palette);
+        return offPaletteFinding({
+          path: fact.path,
+          raw: fact.raw,
+          hex: fact.hex,
+          ...(nearest && { nearest }),
+        });
+      });
+  },
+};
+
 export const PPTX_QUALITY_RULES: QualityRulePack<
   PptxQualityModel,
   PptxQualityFact
@@ -541,6 +795,9 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxSlideDensityRule,
     pptxTextContrastRule,
     pptxPlaceholderRule,
+    pptxBoxOverlapRule,
+    pptxFontCountRule,
+    pptxPaletteRule,
   ],
 };
 

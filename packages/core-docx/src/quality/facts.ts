@@ -1,5 +1,8 @@
 import {
+  collectColorLiterals,
+  collectFontFamilies,
   collectPlaceholders,
+  normalizeHex,
   type PlaceholderKind,
   type PreparedDocument,
   type ProvenanceMap,
@@ -138,6 +141,28 @@ export interface DocxLineBoxFact extends QualityFact {
   patchable: boolean;
 }
 
+/** The resolved theme, as the brand rules see it. */
+export interface DocxThemeFact extends QualityFact {
+  kind: 'docx/theme';
+  themeName: string;
+  /** Token name to `#RRGGBB`, for every palette entry that resolves. */
+  paletteHexes: Readonly<Record<string, string>>;
+  fontFamilies: readonly string[];
+}
+
+/** A colour written as a literal rather than as a theme token. */
+export interface DocxColorFact extends QualityFact {
+  kind: 'docx/color';
+  raw: string;
+  hex: string;
+}
+
+/** A font family the document asks for by name. */
+export interface DocxFontFact extends QualityFact {
+  kind: 'docx/font-family';
+  family: string;
+}
+
 /** One authored string that reads as a placeholder rather than as content. */
 export interface DocxPlaceholderFact extends QualityFact {
   kind: 'docx/placeholder';
@@ -153,7 +178,10 @@ export type DocxQualityFact =
   | DocxFrameTextFact
   | DocxSvgTextFact
   | DocxLineBoxFact
-  | DocxPlaceholderFact;
+  | DocxPlaceholderFact
+  | DocxThemeFact
+  | DocxColorFact
+  | DocxFontFact;
 
 export interface DocxQualityModel {
   authored: ReportComponentDefinition;
@@ -605,6 +633,57 @@ export function prepareDocxQualityDocument(
       ...(fact.relatedPaths && { relatedPaths: fact.relatedPaths }),
     };
   };
+
+  const paletteHexes: Record<string, string> = {};
+  for (const [token, value] of Object.entries(
+    (resolved.theme.colors ?? {}) as Record<string, unknown>
+  )) {
+    if (typeof value !== 'string') continue;
+    const hex = normalizeHex(value);
+    if (hex) paletteHexes[token] = hex;
+  }
+  addFact({
+    id: 'docx:theme',
+    kind: 'docx/theme',
+    path: '/props',
+    themeName: context.themeName,
+    paletteHexes,
+    // `heading` and `body` only. A theme also names `mono` and `light`, but
+    // those paint nothing until a component asks for them — counting an
+    // unused `Courier New` against a document's family budget would flag a
+    // report that only ever uses one typeface.
+    fontFamilies: [
+      ...new Set(
+        (['heading', 'body'] as const).flatMap((role) => {
+          const family = asRecord(
+            (resolved.theme.fonts as Rec | undefined)?.[role]
+          )?.family;
+          return typeof family === 'string' && family.trim() !== ''
+            ? [family]
+            : [];
+        })
+      ),
+    ],
+  });
+
+  collectColorLiterals(document).forEach((literal, index) => {
+    addFact({
+      id: `docx:color:${index}:${literal.path}`,
+      kind: 'docx/color',
+      path: literal.path,
+      raw: literal.raw,
+      hex: literal.hex,
+    });
+  });
+
+  collectFontFamilies(document).forEach((use, index) => {
+    addFact({
+      id: `docx:font:${index}:${use.path}`,
+      kind: 'docx/font-family',
+      path: use.path,
+      family: use.family,
+    });
+  });
 
   // Over the authored tree, before normalization: a marker has to be reported
   // where the author can patch it out.
