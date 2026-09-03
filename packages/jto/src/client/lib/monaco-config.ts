@@ -377,9 +377,6 @@ export async function updateMonacoWithPlugins(
 ): Promise<boolean> {
   const generation = ++schemaGeneration;
   try {
-    // Clear stale plugin schema cache to ensure fresh data after rebuilds
-    schemaService.clearPluginSchemaCache();
-
     if (browserComponents) {
       lastBrowserComponents = browserComponents;
     }
@@ -387,9 +384,14 @@ export async function updateMonacoWithPlugins(
     // Fetch the enhanced schema with plugins from the backend.
     // Deep clone so client-side mutations (theme injection, discriminator
     // stripping) don't pollute the cached copy.
+    // Never a stored answer: the cache key cannot see a plugin rebuilt on disk
+    // under an unchanged name. `bypassCache` skips the store without declaring
+    // anything stale, so the several refreshes that land in the same tick on
+    // load still share one request instead of sending the same megabytes twice.
     const cachedSchema = await schemaService.fetchDocumentSchema(
       pluginNames,
-      lastBrowserComponents
+      lastBrowserComponents,
+      { bypassCache: true }
     );
     // A newer refresh started while this one was in flight. Its request was
     // built from a later view of the plugins, so installing this older schema
