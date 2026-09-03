@@ -65,6 +65,7 @@ import {
 import {
   MAX_INLINE_IMAGE_BYTES,
   MAX_INLINE_IMAGE_PAGES,
+  MAX_INLINE_SHEET_PIXELS,
   MAX_PREVIEW_PAGES,
   MAX_TOTAL_INLINE_BYTES,
   PREVIEW_DEFAULT_DPI,
@@ -80,8 +81,15 @@ import {
   renderPreview,
   type PreviewProgress,
   type PreviewRenderSuccess,
-  type RenderedPage,
 } from '../preview/render.js';
+import {
+  ContactSheetError,
+  buildContactSheet,
+  type ContactSheet,
+} from '../preview/contact-sheet.js';
+
+/** Pages a contact sheet renders at: small on the page, many on the sheet. */
+export const CONTACT_SHEET_DPI = 72;
 
 /**
  * The standing caveat, repeated in every result.
@@ -100,6 +108,7 @@ export interface PreviewToolInput
   pages?: string;
   dpi?: number;
   outputMode?: PreviewOutputMode;
+  contactSheet?: boolean;
   filenamePrefix?: string;
   maxDiagnostics?: number;
 }
@@ -160,6 +169,18 @@ interface DeliveredPage {
   height: number;
   bytes: number;
   cached: boolean;
+  delivery: 'image' | 'path' | 'sheet';
+  artifact?: Artifact;
+}
+
+/** The composed sheet, as the payload reports it. */
+interface DeliveredContactSheet {
+  columns: number;
+  rows: number;
+  pageCount: number;
+  width: number;
+  height: number;
+  bytes: number;
   delivery: 'image' | 'path';
   artifact?: Artifact;
 }
@@ -167,6 +188,39 @@ interface DeliveredPage {
 function pageFilename(prefix: string, page: number): string {
   return `${prefix}-p${String(page).padStart(3, '0')}.png`;
 }
+
+function sheetFilename(prefix: string): string {
+  return `${prefix}-sheet.png`;
+}
+
+const contactSheetSchema = {
+  type: 'object' as const,
+  description:
+    'The composed sheet, when one was requested. Present whether it was inlined or written.',
+  properties: {
+    columns: { type: 'integer' as const },
+    rows: { type: 'integer' as const },
+    pageCount: {
+      type: 'integer' as const,
+      description: 'Pages tiled into the sheet.',
+    },
+    width: { type: 'integer' as const },
+    height: { type: 'integer' as const },
+    bytes: { type: 'integer' as const },
+    delivery: { type: 'string' as const, enum: ['image', 'path'] },
+    artifact: artifactSchema,
+  },
+  required: [
+    'columns',
+    'rows',
+    'pageCount',
+    'width',
+    'height',
+    'bytes',
+    'delivery',
+  ],
+  additionalProperties: false,
+};
 
 const pageSchema = {
   type: 'object' as const,
@@ -179,7 +233,7 @@ const pageSchema = {
       type: 'boolean' as const,
       description: 'True when no converter ran for this page.',
     },
-    delivery: { type: 'string' as const, enum: ['image', 'path'] },
+    delivery: { type: 'string' as const, enum: ['image', 'path', 'sheet'] },
     artifact: artifactSchema,
   },
   required: ['page', 'width', 'height', 'bytes', 'cached', 'delivery'],
@@ -194,6 +248,8 @@ export function register(server: McpServer, deps: ToolDeps): void {
       description: `Render a document to PNG pages and look at them. Use this whenever the question is visual — did the table overflow, did the title wrap, is the slide crowded — rather than reasoning about the JSON.
 
 Pages are selected with printer syntax, 1-based and inclusive: "all" (default), "3", "2-5", "4-" (to the end), "-3" (from the start), or a comma-separated mix like "1-3,7". At most ${MAX_PREVIEW_PAGES} pages per call.
+
+Set contactSheet: true to get one labelled image tiling every selected page instead of the pages themselves — the way to judge cross-page consistency (rhythm, alignment, chrome) in a single look. It renders at ${CONTACT_SHEET_DPI} DPI unless \`dpi\` says otherwise, inlines when the sheet fits one image block, and is written to the output root when it does not.
 
 Delivery: outputMode "auto" (default) inlines the pages as images when they fit the client-safe budget (at most ${MAX_INLINE_IMAGE_PAGES} pages, ${Math.round(MAX_INLINE_IMAGE_BYTES / 1024 / 1024)} MB per page, ${Math.round(MAX_TOTAL_INLINE_BYTES / 1024 / 1024)} MB total) and otherwise writes PNG files under the server output root and returns their paths. "images" refuses rather than falling back; "path" always writes files. Image blocks follow the text block in page order and correspond to the entries of \`pages\` whose delivery is "image".
 
@@ -232,10 +288,15 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
               '`auto` (default) inlines images when they fit the budget and writes files otherwise. `images` refuses instead of falling back. `path` always writes files under the output root.',
             default: 'auto',
           },
+          contactSheet: {
+            type: 'boolean',
+            description: `Return one labelled image tiling every selected page instead of the pages themselves. Cross-page consistency — rhythm, alignment, chrome — becomes a single look. Renders at ${CONTACT_SHEET_DPI} DPI unless \`dpi\` says otherwise, and falls back to a written file when the sheet outgrows the inline budget.`,
+            default: false,
+          },
           filenamePrefix: {
             type: 'string',
             description:
-              'Base name for written PNGs, relative to the output root; each page becomes `<prefix>-pNNN.png`. Must not escape the root.',
+              'Base name for written PNGs, relative to the output root; each page becomes `<prefix>-pNNN.png`, and a contact sheet becomes `<prefix>-sheet.png`. Must not escape the root.',
           },
           maxDiagnostics: maxDiagnosticsProperty,
         },
@@ -259,10 +320,12 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
             dpi: { type: 'integer' },
             delivery: {
               type: 'string',
-              enum: ['images', 'paths'],
-              description: 'How the pages below came back.',
+              enum: ['images', 'paths', 'sheet'],
+              description:
+                'How the pages below came back. `sheet` means one contact sheet answered for all of them; whether it was inlined or written is on `contactSheet.delivery`.',
             },
             pages: { type: 'array', items: pageSchema },
+            contactSheet: contactSheetSchema,
             renderer: {
               type: 'object',
               description:
@@ -329,9 +392,9 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
         if (!themePath.ok) return themePath;
 
         if (args.filenamePrefix !== undefined) {
-          const outputNameError = checkOutputName(
-            pageFilename(args.filenamePrefix, 1)
-          );
+          const outputNameError =
+            checkOutputName(pageFilename(args.filenamePrefix, 1)) ??
+            checkOutputName(sheetFilename(args.filenamePrefix));
           if (outputNameError) return outputNameError;
         }
 
@@ -339,13 +402,19 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
         if (!source.ok) return source;
 
         const onProgress = progressReporter(ctx);
+        // A sheet renders small and never inlines the pages themselves, so
+        // the per-page inline budget must not refuse a twenty-slide deck
+        // before anything has been composed.
+        const sheetRequested = args.contactSheet === true;
+        const dpi =
+          args.dpi ?? (sheetRequested ? CONTACT_SHEET_DPI : undefined);
         const rendered = await renderPreview({
           format: args.format,
           document: source.document,
           ...(args.pages !== undefined && { pages: args.pages }),
-          ...(args.dpi !== undefined && { dpi: args.dpi }),
+          ...(dpi !== undefined && { dpi }),
           render: pickRenderOptions(args, themePath.path),
-          outputMode: args.outputMode ?? 'auto',
+          outputMode: sheetRequested ? 'path' : args.outputMode ?? 'auto',
           getAdapter: deps.getAdapter,
           signal: ctx.mcpReq.signal,
           ...(onProgress && { onProgress }),
@@ -386,9 +455,9 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
       return {
         content: [
           { type: 'text' as const, text: JSON.stringify(payload) },
-          ...outcome.images.map((page) => ({
+          ...outcome.images.map((png) => ({
             type: 'image' as const,
-            data: page.png.toString('base64'),
+            data: png.toString('base64'),
             mimeType: MIME_TYPES['.png'] as string,
           })),
         ],
@@ -436,8 +505,9 @@ export interface PreviewPayload extends ToolEnvelope {
   totalPages: number;
   selection: string;
   dpi: number;
-  delivery: 'images' | 'paths';
+  delivery: 'images' | 'paths' | 'sheet';
   pages: DeliveredPage[];
+  contactSheet?: DeliveredContactSheet;
   renderer: {
     engine: string;
     libreoffice?: string;
@@ -457,8 +527,11 @@ export interface PreviewPayload extends ToolEnvelope {
 /** The two channels a successful preview answers on. */
 interface Delivery {
   payload: PreviewPayload;
-  /** Empty when the pages were written to disk. */
-  images: RenderedPage[];
+  /**
+   * PNGs to inline, in the order the content blocks carry them. Empty when
+   * everything was written to disk; exactly one entry for an inlined sheet.
+   */
+  images: Buffer[];
 }
 
 async function deliver(
@@ -468,6 +541,20 @@ async function deliver(
   source: SourceSummary
 ): Promise<Delivery | Failure> {
   const diagnostics: Diagnostic[] = [...rendered.diagnostics];
+  const prefix =
+    args.filenamePrefix ?? `preview-${rendered.keys.runKey.slice(0, 12)}`;
+
+  if (args.contactSheet === true) {
+    return deliverContactSheet(
+      rendered,
+      args,
+      deps,
+      source,
+      diagnostics,
+      prefix
+    );
+  }
+
   const budget = measuredInlineBudget(rendered.pages.map((p) => p.png.length));
   const { inline, refuse, fellBack } = chooseDelivery(
     args.outputMode ?? 'auto',
@@ -498,8 +585,6 @@ async function deliver(
     );
   }
 
-  const prefix =
-    args.filenamePrefix ?? `preview-${rendered.keys.runKey.slice(0, 12)}`;
   const pages: DeliveredPage[] = [];
 
   for (const page of rendered.pages) {
@@ -555,5 +640,168 @@ async function deliver(
     diagnostics
   );
 
-  return { payload, images: inline ? rendered.pages : [] };
+  return { payload, images: inline ? rendered.pages.map((p) => p.png) : [] };
+}
+
+/** The fields every preview payload carries, sheet or pages. */
+function previewEnvelope(
+  rendered: PreviewRenderSuccess,
+  source: SourceSummary
+) {
+  return {
+    format: rendered.format,
+    source,
+    totalPages: rendered.totalPages,
+    selection: formatPageSelection(rendered.pages.map((p) => p.page)),
+    dpi: rendered.dpi,
+    renderer: {
+      engine: 'libreoffice',
+      ...(rendered.converters.libreoffice !== undefined && {
+        libreoffice: rendered.converters.libreoffice,
+      }),
+      ...(rendered.converters.pdftoppm !== undefined && {
+        pdftoppm: rendered.converters.pdftoppm,
+      }),
+      fidelity: PREVIEW_FIDELITY_NOTE,
+    },
+    cache: {
+      key: rendered.keys.runKey,
+      documentKey: rendered.keys.documentKey,
+      hits: rendered.cache.hits,
+      misses: rendered.cache.misses,
+      enabled: rendered.cache.enabled,
+    },
+    timings: rendered.timings,
+  };
+}
+
+/**
+ * Compose the pages into one image, then deliver that image.
+ *
+ * The budget question is different from the per-page one: there is a single
+ * image, so only the single-image ceiling applies, and a sheet that breaks it
+ * is written to the output root exactly as an over-budget page set is. The
+ * pages themselves are never delivered — they are in the sheet — but they stay
+ * listed so a caller can still see what was rendered and ask for one of them
+ * at full size afterwards.
+ */
+async function deliverContactSheet(
+  rendered: PreviewRenderSuccess,
+  args: PreviewToolInput,
+  deps: ToolDeps,
+  source: SourceSummary,
+  diagnostics: Diagnostic[],
+  prefix: string
+): Promise<Delivery | Failure> {
+  let sheet: ContactSheet;
+  try {
+    sheet = buildContactSheet(rendered.pages);
+  } catch (error) {
+    if (!(error instanceof ContactSheetError)) throw error;
+    return failureFrom([
+      ...diagnostics,
+      diagnostic(
+        PREVIEW_ERROR_CODES.RENDER_FAILED,
+        `The pages could not be composed into a contact sheet: ${error.message}`,
+        {
+          suggestion: 'Ask for the pages themselves with contactSheet omitted.',
+          context: { pageCount: rendered.pages.length },
+        }
+      ),
+    ]);
+  }
+
+  const pages: DeliveredPage[] = rendered.pages.map((page) => ({
+    page: page.page,
+    width: page.width,
+    height: page.height,
+    bytes: page.png.length,
+    cached: page.cached,
+    delivery: 'sheet' as const,
+  }));
+
+  const pixels = sheet.width * sheet.height;
+  const oversized =
+    sheet.png.length > MAX_INLINE_IMAGE_BYTES ||
+    pixels > MAX_INLINE_SHEET_PIXELS;
+  const fits = args.outputMode !== 'path' && !oversized;
+  const overrun = `The contact sheet is ${Math.round(sheet.png.length / 1024)} KB and ${(pixels / 1_000_000).toFixed(1)} megapixels, past the ${Math.round(MAX_INLINE_IMAGE_BYTES / 1024 / 1024)} MB / ${MAX_INLINE_SHEET_PIXELS / 1_000_000} MP ceiling for one inlined image.`;
+  const base = {
+    columns: sheet.columns,
+    rows: sheet.rows,
+    pageCount: sheet.pageCount,
+    width: sheet.width,
+    height: sheet.height,
+    bytes: sheet.png.length,
+  };
+
+  if (args.outputMode === 'images' && !fits) {
+    return failureFrom([
+      ...diagnostics,
+      diagnostic(PREVIEW_ERROR_CODES.TOO_LARGE, overrun, {
+        suggestion:
+          'Narrow `pages` or drop `outputMode: "images"` to have the sheet written to the output root.',
+        context: {
+          bytes: sheet.png.length,
+          pixels,
+          pageCount: sheet.pageCount,
+        },
+      }),
+    ]);
+  }
+
+  if (fits) {
+    const payload: PreviewPayload = success(
+      {
+        ...previewEnvelope(rendered, source),
+        delivery: 'sheet' as const,
+        pages,
+        contactSheet: { ...base, delivery: 'image' as const },
+      },
+      diagnostics
+    );
+    return { payload, images: [sheet.png] };
+  }
+
+  if (args.outputMode !== 'path') {
+    diagnostics.push(
+      diagnostic(
+        PREVIEW_ERROR_CODES.TOO_LARGE,
+        `${overrun} Written to the output root instead.`,
+        {
+          severity: 'info',
+          suggestion:
+            'Narrow `pages` for a sheet that inlines, or open the written file.',
+          context: {
+            bytes: sheet.png.length,
+            pixels,
+            pageCount: sheet.pageCount,
+          },
+        }
+      )
+    );
+  }
+
+  const delivered = await deliverArtifact(sheet.png, {
+    filename: sheetFilename(prefix),
+    mimeType: MIME_TYPES['.png'] as string,
+    outputRoot: deps.outputRoot,
+  });
+  if (!delivered.ok)
+    return failureFrom([...diagnostics, ...delivered.diagnostics]);
+
+  const payload: PreviewPayload = success(
+    {
+      ...previewEnvelope(rendered, source),
+      delivery: 'sheet' as const,
+      pages,
+      contactSheet: {
+        ...base,
+        delivery: 'path' as const,
+        artifact: delivered.artifact,
+      },
+    },
+    diagnostics
+  );
+  return { payload, images: [] };
 }

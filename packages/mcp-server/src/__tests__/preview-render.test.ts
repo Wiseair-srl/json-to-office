@@ -30,7 +30,11 @@ import {
   sweepPreviewCache,
 } from '../preview/render.js';
 import { probePreviewDependencies } from '../preview/dependencies.js';
-import { progressReporter, PREVIEW_FIDELITY_NOTE } from '../tools/preview.js';
+import {
+  progressReporter,
+  CONTACT_SHEET_DPI,
+  PREVIEW_FIDELITY_NOTE,
+} from '../tools/preview.js';
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -611,6 +615,93 @@ describe.skipIf(!canRender)(
         expect(schema.properties?.pages?.pattern).toBeTruthy();
         expect(schema.properties?.dpi?.maximum).toBe(600);
       });
+
+      it('tiles the pages into one labelled contact sheet', async () => {
+        const result = await client.callTool({
+          name: 'jto_preview',
+          arguments: { format: 'docx', document: docx, contactSheet: true },
+        });
+        const payload = result.structuredContent as Record<string, any>;
+
+        expect(payload.ok, JSON.stringify(payload)).toBe(true);
+        expect(payload.delivery).toBe('sheet');
+        // Rendered small: the sheet is a look at the set, not at a page.
+        expect(payload.dpi).toBe(CONTACT_SHEET_DPI);
+        expect(payload.contactSheet.pageCount).toBe(payload.pages.length);
+        expect(payload.contactSheet.delivery).toBe('image');
+        expect(payload.contactSheet.columns).toBeGreaterThanOrEqual(1);
+        // The pages are in the sheet, so none of them is delivered alone.
+        for (const page of payload.pages) expect(page.delivery).toBe('sheet');
+
+        const blocks = result.content as Array<Record<string, any>>;
+        const images = blocks.filter((block) => block.type === 'image');
+        expect(images).toHaveLength(1);
+        const png = Buffer.from(images[0].data as string, 'base64');
+        expect(png.subarray(0, 8)).toEqual(PNG_MAGIC);
+        expect(parsePngSize(png)).toEqual({
+          width: payload.contactSheet.width,
+          height: payload.contactSheet.height,
+        });
+      }, 180_000);
+
+      it('writes the sheet to the output root when asked for a path', async () => {
+        const result = await client.callTool({
+          name: 'jto_preview',
+          arguments: {
+            format: 'pptx',
+            document: pptx,
+            contactSheet: true,
+            outputMode: 'path',
+          },
+        });
+        const payload = result.structuredContent as Record<string, any>;
+
+        expect(payload.ok, JSON.stringify(payload)).toBe(true);
+        expect(payload.delivery).toBe('sheet');
+        expect(payload.contactSheet.delivery).toBe('path');
+        expect(payload.contactSheet.artifact.path).toMatch(/-sheet\.png$/);
+        expect(
+          (result.content as Array<Record<string, any>>).filter(
+            (block) => block.type === 'image'
+          )
+        ).toHaveLength(0);
+        const written = await fs.readFile(payload.contactSheet.artifact.path);
+        expect(written.subarray(0, 8)).toEqual(PNG_MAGIC);
+      }, 180_000);
+
+      it('falls back to a path when the sheet outgrows the inline budget', async () => {
+        // Forty pages of thumbnails is past the single-image ceiling, and an
+        // agent that asked to see forty pages still wants them — just not in
+        // its context window.
+        const long = {
+          name: 'docx',
+          props: { theme: 'minimal' },
+          children: Array.from({ length: 40 }, (_, index) => ({
+            name: 'paragraph',
+            props: {
+              text: `Page ${index + 1} of the long report.`,
+              ...(index > 0 && { pageBreak: true }),
+            },
+          })),
+        };
+        const result = await client.callTool({
+          name: 'jto_preview',
+          arguments: { format: 'docx', document: long, contactSheet: true },
+        });
+        const payload = result.structuredContent as Record<string, any>;
+
+        expect(payload.ok, JSON.stringify(payload)).toBe(true);
+        expect(payload.contactSheet.pageCount).toBe(40);
+        expect(payload.contactSheet.delivery).toBe('path');
+        // Same diagnostics contract as an over-budget page set: an info that
+        // names the ceiling, not a failure.
+        expect(payload.diagnostics).toContainEqual(
+          expect.objectContaining({
+            code: PREVIEW_ERROR_CODES.TOO_LARGE,
+            severity: 'info',
+          })
+        );
+      }, 300_000);
 
       it('returns image content blocks for a small inline preview', async () => {
         const result = await client.callTool({

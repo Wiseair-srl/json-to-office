@@ -98,6 +98,8 @@ Thirteen tools and nine `jto://` resources. The [package README](https://github.
 
 **Look.** `jto_preview` renders selected pages to PNG and hands them back as image blocks. This is the part that has no CLI equivalent worth the name: a model reasoning about whether a table overflowed is guessing, and a model looking at the page is not.
 
+Pass `contactSheet: true` and it answers with one labelled image tiling every selected page instead. Cross-page questions — does every section opener look like the others, does the rhythm hold, is the footer on all of them — are questions about the set, and asking them one page at a time costs twenty images and answers none of them. The sheet renders at 72 DPI, inlines when it fits one image block, and is written to the output root when it does not: forty pages tile into a sheet too large to survive a client's downscale with its thumbnails still readable, so it is delivered at full size as a file instead.
+
 **Ship.** `jto_generate` writes the real file. `jto_docx_diff` produces a Word redline with native tracked changes between two versions of a document.
 
 Document defects always come back as structured diagnostics with `ok: false` — never as protocol errors, so an agent can read and repair them instead of retrying blind.
