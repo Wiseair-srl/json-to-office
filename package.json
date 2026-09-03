@@ -47,7 +47,9 @@
     "\n\n=== GIT HOOKS ===": "",
     "prepare": "husky",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "check:test-timeouts": "tsx scripts/check-test-timeouts.ts"
+    "check:test-timeouts": "tsx scripts/check-test-timeouts.ts",
+    "\n\n=== DESIGN EVALS ===": "",
+    "evals": "pnpm --filter @json-to-office/design-evals evals"
   },
   "keywords": [
     "docx",

@@ -1,0 +1,36 @@
+{
+  "name": "@json-to-office/design-evals",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Measures the design quality of documents an agent authors through the MCP server",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "evals": "tsx src/cli.ts",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
+  },
+  "dependencies": {
+    "@json-to-office/jto-ops": "workspace:^",
+    "@json-to-office/mcp-server": "workspace:^",
+    "@json-to-office/quality": "workspace:^"
+  },
+  "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.259",
+    "@anthropic-ai/sdk": "^0.93.0",
+    "@types/node": "20.11.0",
+    "tsx": "4.19.2",
+    "typescript": "5.3.3",
+    "vitest": "1.6.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "Paolo Barbato",
+  "license": "MIT"
+}
