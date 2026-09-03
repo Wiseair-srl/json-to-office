@@ -18,6 +18,8 @@ import { fileURLToPath } from 'node:url';
 
 import { sdkAgentDriver } from './agent.js';
 import { analyzeDocument } from './analyze.js';
+import { anthropicVision, judgeDocument } from './judge.js';
+import { renderForJudging } from './render.js';
 import {
   developmentCorpusDir,
   loadCorpus,
@@ -30,6 +32,7 @@ import { runBrief } from './runner.js';
 import { buildScorecard } from './scorecard.js';
 
 const DEFAULT_MODEL = 'claude-sonnet-5';
+const DEFAULT_JUDGE_MODEL = 'claude-opus-5';
 const DEFAULT_MAX_TURNS = 40;
 const DEFAULT_MAX_RETRIES = 1;
 
@@ -43,6 +46,10 @@ export interface CliOptions {
   outDir: string;
   mode: 'cold' | 'assisted';
   skillPath?: string;
+  /** Vision model that scores the rubric; omitted means hard metrics only. */
+  judgeModel?: string;
+  /** Runs per brief. Three at final acceptance, so run variance is visible. */
+  repeat: number;
 }
 
 export function parseArgs(argv: readonly string[]): CliOptions {
@@ -78,6 +85,10 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     ...(values.get('skill') !== undefined && {
       skillPath: values.get('skill') as string,
     }),
+    ...((flags.has('judge') || values.get('judge') !== undefined) && {
+      judgeModel: values.get('judge') ?? DEFAULT_JUDGE_MODEL,
+    }),
+    repeat: Math.max(1, Number(values.get('repeat') ?? 1)),
   };
 }
 
@@ -149,13 +160,25 @@ export async function main(argv: readonly string[]): Promise<number> {
     `${briefs.length} brief(s), ${options.mode}, model ${options.model} -> ${options.outDir}`
   );
 
+  // One judge for the whole set, so every document is scored by the same
+  // model with the same rubric.
+  const judge =
+    options.judgeModel === undefined
+      ? undefined
+      : makeJudge(options.judgeModel, options.outDir);
+
   const runs: RunMetrics[] = [];
   const started = Date.now();
-  for (const [index, brief] of briefs.entries()) {
-    line(`[${index + 1}/${briefs.length}] ${brief.id}`);
+  const attempts = briefs.flatMap((brief) =>
+    Array.from({ length: options.repeat }, (_, pass) => ({ brief, pass }))
+  );
+  for (const [index, { brief, pass }] of attempts.entries()) {
+    const label = options.repeat > 1 ? `${brief.id}#${pass + 1}` : brief.id;
+    line(`[${index + 1}/${attempts.length}] ${label}`);
     const run = await runBrief({
       brief,
-      runDir: path.join(options.outDir, 'runs', brief.id),
+      ...(judge !== undefined && { judge }),
+      runDir: path.join(options.outDir, 'runs', label),
       model: options.model,
       maxTurns: options.maxTurns,
       maxRetries: options.maxRetries,
@@ -170,7 +193,10 @@ export async function main(argv: readonly string[]): Promise<number> {
     line(
       `    ${run.outcome}${run.failure ? `: ${run.failure}` : ''} — ` +
         `${run.pages} page(s), ${run.blockingFindings} blocking, ` +
-        `${run.toolCalls} tool calls, ${duration(run.wallMs)}`
+        `${run.toolCalls} tool calls, ${duration(run.wallMs)}` +
+        (run.judge
+          ? `, judged level ${run.judge.level}${run.judge.wouldShip ? ', would ship' : ''}`
+          : '')
     );
   }
 
@@ -215,6 +241,14 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   const { totals } = scorecard;
   line('');
+  if (scorecard.judge) {
+    line(
+      `judge: median level ${scorecard.judge.medianLevel}, ` +
+        `${scorecard.judge.wouldShip}/${totals.runs} would ship ` +
+        `(${(scorecard.judge.wouldShipRate * 100).toFixed(0)}%), ` +
+        `median genericness ${scorecard.judge.medianGenericness}`
+    );
+  }
   line(
     `${totals.shippable}/${totals.runs} shippable ` +
       `(${(totals.shippableRate * 100).toFixed(0)}%), ` +
@@ -263,4 +297,38 @@ if (invokedDirectly) {
       );
       process.exitCode = 1;
     });
+}
+
+/**
+ * The judge, as the runner calls it.
+ *
+ * Renders the produced document the way an author would have looked at it —
+ * one contact sheet, every page — and keeps the sheet next to the run, because
+ * a verdict nobody can go back and check is not evidence of anything.
+ */
+function makeJudge(model: string, outDir: string) {
+  const vision = anthropicVision({ model });
+  return async (
+    brief: {
+      id: string;
+      format: 'docx' | 'pptx';
+      title: string;
+      text: string;
+      hash: string;
+      archetype: string;
+      language: string;
+      density: string;
+    },
+    document: unknown
+  ) => {
+    const rendered = await renderForJudging(brief.format, document);
+    const sheetPath = path.join(outDir, 'runs', brief.id, 'contact-sheet.png');
+    await fs.writeFile(sheetPath, rendered.sheet.png);
+    const judged = await judgeDocument({
+      brief: brief as never,
+      sheet: { png: rendered.sheet.png, label: brief.id },
+      call: vision,
+    });
+    return judged.verdict;
+  };
 }

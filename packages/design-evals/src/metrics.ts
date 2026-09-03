@@ -35,6 +35,14 @@ export interface DocumentMetrics {
   fontSubstitutions: number;
 }
 
+/** The judge's answer for this run, when one was asked for. */
+export interface RunJudgement {
+  level: 1 | 2 | 3 | 4 | 5;
+  wouldShip: boolean;
+  genericness: 0 | 1 | 2 | 3 | 4;
+  rationale: string;
+}
+
 export interface RunMetrics extends DocumentMetrics {
   briefId: string;
   format: string;
@@ -48,6 +56,12 @@ export interface RunMetrics extends DocumentMetrics {
   wallMs: number;
   /** Retries the runner itself performed, e.g. after a transport error. */
   retries: number;
+  /**
+   * `evaluative`, and never mixed into a hard metric. A scorecard reports the
+   * judge beside the countable numbers so a taste change and a defect change
+   * stay distinguishable.
+   */
+  judge?: RunJudgement;
 }
 
 /** A run that produced nothing, counted rather than dropped. */

@@ -127,3 +127,19 @@ export {
 } from './lib/adapters.js';
 
 export { SERVER_NAME, SERVER_VERSION, PACKAGE_NAME } from './lib/version.js';
+
+// The preview pipeline as a library. `tools/preview.ts` is the MCP surface
+// over it; the design-evals harness renders the same way an agent would look
+// at a document, which is only true if it goes through the same code.
+export {
+  renderPreview,
+  type PreviewRenderResult,
+  type PreviewRenderSuccess,
+  type RenderedPage,
+} from './preview/render.js';
+export {
+  buildContactSheet,
+  ContactSheetError,
+  type ContactSheet,
+  type ContactSheetPage,
+} from './preview/contact-sheet.js';

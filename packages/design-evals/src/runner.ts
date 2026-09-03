@@ -18,6 +18,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 import type { AgentDriver, AgentEvent } from './agent.js';
+import type { RunJudgement } from './metrics.js';
 import { SERVER_ALIAS } from './agent.js';
 import type { Brief } from './corpus.js';
 import { documentMetrics, failedRun, type RunMetrics } from './metrics.js';
@@ -54,6 +55,15 @@ export interface RunBriefOptions {
   workspaceRoot?: string;
   /** True when the brief text must not reach any artifact. */
   sealed: boolean;
+  /**
+   * Looks at the rendered document and answers the rubric. Optional: hard
+   * metrics are the part that does not need an opinion, and a run without a
+   * judge is a complete run with half a scorecard rather than a broken one.
+   */
+  judge?: (
+    brief: Brief,
+    document: unknown
+  ) => Promise<RunJudgement | undefined>;
   signal?: AbortSignal;
   now?: () => number;
 }
@@ -237,6 +247,17 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
     );
   }
 
+  // After the measurement, never before: a judge that failed must not lose the
+  // hard numbers, which are the half that does not depend on anyone's taste.
+  let judgement: RunJudgement | undefined;
+  if (options.judge) {
+    try {
+      judgement = await options.judge(options.brief, document);
+    } catch {
+      judgement = undefined;
+    }
+  }
+
   return {
     briefId: options.brief.id,
     format: options.brief.format,
@@ -258,6 +279,7 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
     },
     wallMs,
     retries,
+    ...(judgement !== undefined && { judge: judgement }),
   };
 }
 

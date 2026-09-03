@@ -21,12 +21,15 @@ export {
   type DocumentMetrics,
   type RunCost,
   type RunMetrics,
+  type RunJudgement,
   type RunOutcome,
 } from './metrics.js';
 export {
   buildScorecard,
+  judgeTotals,
   median,
   totals,
+  type JudgeTotals,
   type Scorecard,
   type ScorecardTotals,
 } from './scorecard.js';
@@ -53,6 +56,43 @@ export {
   type RunBriefOptions,
 } from './runner.js';
 export { analyzeDocument, structuralPages } from './analyze.js';
+export {
+  GENERICNESS_PENALTY,
+  RUBRIC,
+  rubricPrompt,
+  SHIPPING_QUESTION,
+  type JudgeVerdict,
+  type PairwiseVerdict,
+  type RubricLevel,
+} from './rubric.js';
+export {
+  anthropicVision,
+  judgeDocument,
+  JudgeError,
+  judgePair,
+  parseJson,
+  type JudgeImage,
+  type VisionCall,
+} from './judge.js';
+export { renderForJudging, RenderError } from './render.js';
+export {
+  bootstrapKappa,
+  cohensKappa,
+  rawAgreement,
+  type KappaReport,
+} from './statistics.js';
+export {
+  buildCalibrationSheet,
+  CALIBRATION_QUESTION,
+  CALIBRATION_THRESHOLD,
+  calibrationReport,
+  judgeIsCalibrated,
+  ordersFirst,
+  writeCalibrationSheet,
+  type CalibrationPair,
+  type CalibrationReport,
+  type CalibrationSheet,
+} from './calibration.js';
 export {
   sdkAgentDriver,
   SERVER_ALIAS,
