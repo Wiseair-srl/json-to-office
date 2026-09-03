@@ -25,6 +25,7 @@ import { unionBranches } from '@json-to-office/shared';
 
 import type { FormatName } from '../lib/adapters.js';
 import type { ToolDeps } from '../lib/deps.js';
+import { designNote } from '../lib/design-notes.js';
 import { failure, guarded, success, toolResult } from '../lib/errors.js';
 import { S, formatSchema, outputSchema } from '../lib/schema.js';
 import {
@@ -243,6 +244,11 @@ export function register(server: McpServer, deps: ToolDeps): void {
                 name: { type: 'string' },
                 category: { type: 'string' },
                 description: { type: 'string' },
+                designNote: {
+                  type: 'string',
+                  description:
+                    'What good use of this component looks like, in one sentence.',
+                },
                 hasChildren: { type: 'boolean' },
                 root: { type: 'boolean' },
                 stability: { type: 'string' },
@@ -441,6 +447,9 @@ export function register(server: McpServer, deps: ToolDeps): void {
               ...(entry !== undefined && {
                 category: entry.category,
                 description: entry.description,
+              }),
+              ...(designNote(args.format, args.name) !== undefined && {
+                designNote: designNote(args.format, args.name),
               }),
               hasChildren: children !== undefined,
               root: args.name === schemas.rootComponent,
