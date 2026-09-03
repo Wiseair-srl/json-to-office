@@ -48,6 +48,11 @@ const TEMPLATES_DIR = path.resolve(
  * other path — or on these templates under any other rule — still fails.
  */
 const KNOWN_TRUE_FINDINGS: Readonly<Record<string, readonly string[]>> = {
+  // Arial, Calibri, Times New Roman and Trebuchet MS in one report (#326).
+  // A true finding on a template that predates the rule: four families is a
+  // real defect, and the fix is a redesign of the template rather than a
+  // threshold. Listed so it cannot grow quietly.
+  'standard-annual-report.docx.json': ['W_QUALITY_FONT_COUNT at /props'],
   'minimalist-pitch-deck.pptx.json': [
     'W_QUALITY_TEXT_CONTRAST at /children/0/children/1',
     'W_QUALITY_TEXT_CONTRAST at /children/2/children/2',

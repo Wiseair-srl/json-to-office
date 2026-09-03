@@ -915,3 +915,125 @@ describe('placeholder text', () => {
     expect(findings).toEqual([]);
   });
 });
+
+describe('brand consistency', () => {
+  it('counts font families across theme and document', () => {
+    const findings = docxDiagnostics({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'section',
+          children: [
+            {
+              name: 'paragraph',
+              props: { text: 'One', font: { family: 'Georgia' } },
+            },
+            {
+              name: 'paragraph',
+              props: { text: 'Two', font: { family: 'Futura' } },
+            },
+            {
+              name: 'paragraph',
+              props: { text: 'Three', font: { family: 'Verdana' } },
+            },
+          ],
+        },
+      ],
+    }).filter((finding) => finding.code === QUALITY_CODES.FONT_COUNT);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      category: 'brand',
+      path: '/props',
+    });
+    // The theme contributes `heading` and `body`; `minimal` uses Calibri for
+    // both, so three authored families make four.
+    expect(findings[0].context?.families).toEqual([
+      'Calibri',
+      'Futura',
+      'Georgia',
+      'Verdana',
+    ]);
+    expect(findings[0].relatedPaths).toContain(
+      '/children/0/children/0/props/font/family'
+    );
+  });
+
+  it('does not count a theme role nothing uses', () => {
+    // `minimal` declares Courier New for `mono`; a document with no code in it
+    // never paints that family.
+    expect(
+      docxDiagnostics({
+        name: 'docx',
+        props: { theme: 'minimal' },
+        children: [
+          {
+            name: 'section',
+            children: [
+              {
+                name: 'paragraph',
+                props: { text: 'One', font: { family: 'Georgia' } },
+              },
+              {
+                name: 'paragraph',
+                props: { text: 'Two', font: { family: 'Futura' } },
+              },
+            ],
+          },
+        ],
+      }).filter((finding) => finding.code === QUALITY_CODES.FONT_COUNT)
+    ).toEqual([]);
+  });
+
+  it('offers the nearest token for a colour off the palette', () => {
+    const findings = docxDiagnostics({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'section',
+          children: [
+            {
+              name: 'paragraph',
+              props: { text: 'Off brand', color: '#FF00FF' },
+            },
+          ],
+        },
+      ],
+    }).filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      severity: 'info',
+      category: 'brand',
+      path: '/children/0/children/0/props/color',
+    });
+    expect(findings[0].fixes?.[0]).toMatchObject({
+      op: 'add',
+      path: '/children/0/children/0/props/color',
+    });
+  });
+
+  it('reads the palette through the document own overrides', () => {
+    expect(
+      docxDiagnostics({
+        name: 'docx',
+        props: {
+          theme: 'minimal',
+          themeOverrides: { colors: { primary: '#123456' } },
+        },
+        children: [
+          {
+            name: 'section',
+            children: [
+              {
+                name: 'paragraph',
+                props: { text: 'On brand', color: '#123456' },
+              },
+            ],
+          },
+        ],
+      }).filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE)
+    ).toEqual([]);
+  });
+});

@@ -1168,3 +1168,231 @@ describe('placeholder text', () => {
     ).toEqual([]);
   });
 });
+
+describe('box overlap', () => {
+  function boxes(children: unknown[]) {
+    return pptxDiagnostics(deck(CANVAS, [{ name: 'slide', children }])).filter(
+      (finding) => finding.code === QUALITY_CODES.BOX_OVERLAP
+    );
+  }
+
+  const PANEL = (props: Record<string, unknown>) => ({
+    name: 'shape',
+    props: { type: 'rect', fill: { color: '#EEEEEE' }, ...props },
+  });
+  const IMAGE = (props: Record<string, unknown>) => ({
+    name: 'image',
+    props: { path: 'logo.png', ...props },
+  });
+  const TEXT = (props: Record<string, unknown>) => ({
+    name: 'text',
+    props: { text: 'Real copy on the slide.', fontSize: 12, ...props },
+  });
+  const CHART = (props: Record<string, unknown>) => ({
+    name: 'chart',
+    props: {
+      chartType: 'bar',
+      data: [{ name: 'A', labels: ['x'], values: [1] }],
+      ...props,
+    },
+  });
+
+  it('reports two intersecting opaque boxes as advisory', () => {
+    const findings = boxes([
+      IMAGE({ x: 1, y: 1, w: 4, h: 2 }),
+      PANEL({ x: 2, y: 1.5, w: 4, h: 2 }),
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      // A badge over a photograph is a technique, not a defect: visible,
+      // not accused.
+      severity: 'info',
+      category: 'integrity',
+      certainty: 'deterministic',
+      // Reported on the box drawn later — the one doing the covering.
+      path: '/children/0/children/1',
+      relatedPaths: ['/children/0/children/0'],
+    });
+    expect(findings[0].context?.overlapPercent).toBeGreaterThan(15);
+  });
+
+  it('warns when the same rectangle is drawn twice', () => {
+    const findings = boxes([
+      IMAGE({ x: 1, y: 1, w: 4, h: 2 }),
+      IMAGE({ x: 1.01, y: 1, w: 4, h: 2 }),
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      context: { duplicate: true },
+    });
+  });
+
+  it('warns when anything covers a chart or a table', () => {
+    const findings = boxes([
+      CHART({ x: 1, y: 1, w: 6, h: 4 }),
+      PANEL({ x: 4, y: 3, w: 4, h: 3 }),
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({ severity: 'warning' });
+    expect(findings[0].message).toContain('hiding data');
+  });
+
+  it('says nothing about boxes that merely touch', () => {
+    expect(
+      boxes([
+        IMAGE({ x: 1, y: 1, w: 4, h: 2 }),
+        PANEL({ x: 5, y: 1, w: 4, h: 2 }),
+      ])
+    ).toEqual([]);
+  });
+
+  it('ignores a hairline overlap the eye cannot see', () => {
+    expect(
+      boxes([
+        IMAGE({ x: 1, y: 1, w: 4, h: 2 }),
+        PANEL({ x: 4.98, y: 1, w: 4, h: 2 }),
+      ])
+    ).toEqual([]);
+  });
+
+  it('leaves text out of it — a declared box is not ink', () => {
+    // The reference decks are full of these: a small label inside the generous
+    // box of a large title, a value centred in the hole of a donut chart.
+    expect(
+      boxes([
+        TEXT({ x: 0.5, y: 1, w: 5.4, h: 2.5, fontSize: 80 }),
+        TEXT({ x: 4.2, y: 1.5, w: 1.4, h: 0.3 }),
+      ])
+    ).toEqual([]);
+    expect(
+      boxes([
+        CHART({ chartType: 'doughnut', x: 1, y: 1, w: 3.4, h: 3.4 }),
+        TEXT({ x: 2.2, y: 2.2, w: 0.9, h: 0.6, fontSize: 28 }),
+      ])
+    ).toEqual([]);
+  });
+
+  it('leaves transparent and non-rectangular shapes out of it', () => {
+    // A tinted disc laid over the same disc, and a pie wedge whose bounding
+    // box crosses its neighbour's: both are motifs, neither is a collision.
+    expect(
+      boxes([
+        PANEL({
+          type: 'ellipse',
+          x: 1,
+          y: 1,
+          w: 2,
+          h: 2,
+          fill: { color: 'primary', transparency: 90 },
+        }),
+        PANEL({ type: 'pie', x: 1, y: 1, w: 2, h: 2 }),
+      ])
+    ).toEqual([]);
+  });
+
+  it('reads a box fully inside a larger one as layering', () => {
+    expect(
+      boxes([
+        IMAGE({ x: 1, y: 1, w: 8, h: 4 }),
+        PANEL({ x: 2, y: 1.5, w: 4, h: 2 }),
+      ])
+    ).toEqual([]);
+  });
+});
+
+describe('brand consistency', () => {
+  it('counts font families across theme and document', () => {
+    const findings = pptxDiagnostics(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: { text: 'One', fontFace: 'Georgia', x: 1, y: 1, w: 3 },
+            },
+            {
+              name: 'text',
+              props: { text: 'Two', fontFace: 'Courier New', x: 1, y: 3, w: 3 },
+            },
+            {
+              name: 'text',
+              props: { text: 'Three', fontFace: 'Futura', x: 1, y: 5, w: 3 },
+            },
+          ],
+        },
+      ])
+    ).filter((finding) => finding.code === QUALITY_CODES.FONT_COUNT);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      category: 'brand',
+      path: '/props',
+    });
+    expect(findings[0].context?.families).toContain('Futura');
+  });
+
+  it('stays quiet at three families', () => {
+    expect(
+      pptxDiagnostics(
+        deck(CANVAS, [
+          {
+            name: 'slide',
+            children: [
+              {
+                name: 'text',
+                props: { text: 'One', fontFace: 'Georgia', x: 1, y: 1, w: 3 },
+              },
+            ],
+          },
+        ])
+      ).filter((finding) => finding.code === QUALITY_CODES.FONT_COUNT)
+    ).toEqual([]);
+  });
+
+  it('offers the nearest token for a colour the palette does not hold', () => {
+    const findings = pptxDiagnostics(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: { text: 'Off brand', color: '#FF00FF', x: 1, y: 1, w: 3 },
+            },
+          ],
+        },
+      ])
+    ).filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      severity: 'info',
+      category: 'brand',
+      path: '/children/0/children/0/props/color',
+    });
+    const [fix] = findings[0].fixes ?? [];
+    expect(fix).toMatchObject({
+      op: 'add',
+      path: '/children/0/children/0/props/color',
+    });
+    expect(typeof fix.value).toBe('string');
+  });
+
+  it('accepts a colour the theme defines, written as hex', () => {
+    const findings = pptxDiagnostics(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: { text: 'On brand', color: '#FFFFFF', x: 1, y: 1, w: 3 },
+            },
+          ],
+        },
+      ])
+    ).filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE);
+    expect(findings).toEqual([]);
+  });
+});

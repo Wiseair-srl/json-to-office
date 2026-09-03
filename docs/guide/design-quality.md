@@ -115,14 +115,17 @@ true.
 
 ## Built-in PPTX rules
 
-| Rule                     | Codes                                                                                     | Default                              | Certainty     | What it checks                                             |
-| ------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------ | ------------- | ---------------------------------------------------------- |
-| `pptx/canvas`            | `W_QUALITY_CANVAS_UNSPECIFIED`, `W_QUALITY_CANVAS_NONSTANDARD`, `W_QUALITY_CANVAS_LEGACY` | warning when missing; otherwise info | deterministic | Missing, legacy 4:3 or nonstandard canvas dimensions       |
-| `pptx/minimum-font-size` | `W_QUALITY_FONT_SIZE_MIN`                                                                 | warning                              | measured      | Effective text size below `minimumFontPt` (7pt by default) |
-| `pptx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`, `W_QUALITY_TEXT_TIGHT`                                         | warning for overflow; otherwise info | estimated     | Estimated text height exceeds, or nearly fills, its box    |
-| `pptx/slide-density`     | `W_QUALITY_SLIDE_DENSITY`                                                                 | warning                              | estimated     | Body text exceeds `maximumBodyWords` (130 by default)      |
-| `pptx/text-contrast`     | `W_QUALITY_TEXT_CONTRAST`                                                                 | warning                              | deterministic | Text falls below WCAG AA against the surface behind it     |
-| `pptx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT`                                 | warning                              | deterministic | An unfilled scaffold slot, or leftover filler text         |
+| Rule                     | Codes                                                                                     | Default                                                 | Certainty     | What it checks                                                |
+| ------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------- | ------------------------------------------------------------- |
+| `pptx/canvas`            | `W_QUALITY_CANVAS_UNSPECIFIED`, `W_QUALITY_CANVAS_NONSTANDARD`, `W_QUALITY_CANVAS_LEGACY` | warning when missing; otherwise info                    | deterministic | Missing, legacy 4:3 or nonstandard canvas dimensions          |
+| `pptx/minimum-font-size` | `W_QUALITY_FONT_SIZE_MIN`                                                                 | warning                                                 | measured      | Effective text size below `minimumFontPt` (7pt by default)    |
+| `pptx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`, `W_QUALITY_TEXT_TIGHT`                                         | warning for overflow; otherwise info                    | estimated     | Estimated text height exceeds, or nearly fills, its box       |
+| `pptx/slide-density`     | `W_QUALITY_SLIDE_DENSITY`                                                                 | warning                                                 | estimated     | Body text exceeds `maximumBodyWords` (130 by default)         |
+| `pptx/text-contrast`     | `W_QUALITY_TEXT_CONTRAST`                                                                 | warning                                                 | deterministic | Text falls below WCAG AA against the surface behind it        |
+| `pptx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT`                                 | warning                                                 | deterministic | An unfilled scaffold slot, or leftover filler text            |
+| `pptx/box-overlap`       | `W_QUALITY_BOX_OVERLAP`                                                                   | warning for a duplicate or covered data; otherwise info | deterministic | Two opaque boxes on one slide that land on each other         |
+| `pptx/font-count`        | `W_QUALITY_FONT_COUNT`                                                                    | warning                                                 | deterministic | More than `maximumFamilies` (3) font families in one document |
+| `pptx/palette-adherence` | `W_QUALITY_OFF_PALETTE`                                                                   | info                                                    | deterministic | A literal colour the resolved theme does not define           |
 
 The canvas rule recognizes these deliberate presets: 16:9 standard
 (`13.333 × 7.5`), 16:9 small (`10 × 5.625`), square (`7.5 × 7.5`), 4:5
@@ -160,6 +163,50 @@ the safety buffer is `W_QUALITY_TEXT_TIGHT`.
 
 These omissions are deliberate. Missing evidence produces no finding rather
 than a confident-sounding guess.
+
+## Box overlap
+
+Only _opaque_ boxes take part: an image, a chart, a table, or a rectangle with
+an opaque fill. Those paint their whole rectangle, so two of them intersecting
+really do hide each other, which is a claim that needs no renderer. A text box
+supports no such claim — authors routinely declare one far larger than the
+words inside it, and reference-quality decks are full of designs where two text
+rectangles cross and no ink does: an 80pt title beside a 12pt label, a value
+centred in the hole of a donut chart. Word-level overlap is the rendered pass's
+job.
+
+Transparency disqualifies a fill, and only `rect` and `roundRect` count: an
+ellipse, a pie wedge or a chevron leaves most of its bounding box empty, and
+decks stack tinted discs and radial segments whose boxes cross by design.
+
+Intersecting is not the same as wrong, so the verdict is split. Two opaque
+boxes crossing is `info` — an accent strip along the top of a card, a badge in
+the corner of a photograph. Two cases are warnings, because neither is ever a
+design: a box whose geometry matches another to within two points is a leftover
+duplicate, and anything covering a chart or a table covers data. A box fully
+inside a larger one is layering, and is not reported; two equal rectangles are
+the duplicate case, and are.
+
+## Font families and palette
+
+`font-count` counts the distinct families a document can paint: the theme's
+`heading` and `body` roles plus every family named in the document. A theme's
+`mono` and `light` roles are not counted — they paint nothing until a component
+asks for them, and counting an unused `Courier New` would flag a report that
+uses one typeface. Past three families a document reads as assembled rather
+than designed, which is a warning; the limit is the `maximumFamilies`
+parameter.
+
+`palette-adherence` reports a colour written as a literal that the resolved
+theme — named theme plus any in-document overrides — does not define, and
+offers the nearest token as an RFC 6902 fix. Nearest is by the "redmean"
+approximation, which ranks near-neighbours much the way an eye does; ties break
+on token name so the same document always emits the same fix. It is `info`
+because an off-palette colour is often deliberate, a client's own brand red in
+an otherwise on-theme report; the finding makes the choice visible rather than
+overruling it. A colour is recognised by where it sits — a property whose name
+mentions colour, fill, stroke, background or border — so a hex inside a
+sentence stays prose.
 
 ## Placeholder text and scaffold markers
 

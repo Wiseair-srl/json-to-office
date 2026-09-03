@@ -39,6 +39,17 @@ export {
   resolveRuleConfiguration,
   severityRank,
 } from './policy';
+export {
+  collectColorLiterals,
+  collectFontFamilies,
+  fontCountFinding,
+  offPaletteFinding,
+  nearestPaletteToken,
+  normalizeHex,
+  type ColorLiteral,
+  type FontFamilyUse,
+  type NearestToken,
+} from './brand';
 export { DuplicateQualityRuleError, QualityRuleRegistry } from './registry';
 export {
   collectPlaceholders,

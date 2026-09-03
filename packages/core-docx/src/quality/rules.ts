@@ -1,5 +1,8 @@
 import {
+  fontCountFinding,
   mergeQualityProfiles,
+  nearestPaletteToken,
+  offPaletteFinding,
   placeholderFinding,
   QUALITY_CODES,
   QualityEngine,
@@ -8,6 +11,8 @@ import {
   type QualityRulePack,
 } from '@json-to-office/quality';
 import type {
+  DocxColorFact,
+  DocxFontFact,
   DocxFrameTextFact,
   DocxHeadingFact,
   DocxLineBoxFact,
@@ -16,6 +21,7 @@ import type {
   DocxQualityModel,
   DocxSvgTextFact,
   DocxTableWidthFact,
+  DocxThemeFact,
 } from './facts';
 import { estimateTextWidthPt, estimateWrappedLines } from './text-metrics';
 
@@ -564,6 +570,76 @@ export const docxPlaceholderRule: QualityRule<
       ),
 };
 
+const DEFAULT_MAX_FONT_FAMILIES = 3;
+
+/** Every family the document can paint: the theme's roles plus authored ones. */
+export const docxFontCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
+  {
+    id: 'docx/font-count',
+    code: QUALITY_CODES.FONT_COUNT,
+    category: 'brand',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'deterministic',
+    formats: ['docx'],
+    defaultParameters: { maximumFamilies: DEFAULT_MAX_FONT_FAMILIES },
+    evaluate: ({ facts, configuration }) => {
+      const maximum = numberParameter(
+        configuration.parameters,
+        'maximumFamilies',
+        DEFAULT_MAX_FONT_FAMILIES
+      );
+      const theme = facts.find(
+        (fact): fact is DocxThemeFact => fact.kind === 'docx/theme'
+      );
+      const families = new Set<string>(theme?.fontFamilies ?? []);
+      const extraPaths: string[] = [];
+      for (const fact of facts) {
+        if (fact.kind !== 'docx/font-family') continue;
+        const use = fact as DocxFontFact;
+        if (!families.has(use.family)) extraPaths.push(use.path);
+        families.add(use.family);
+      }
+      if (families.size <= maximum) return [];
+      return [
+        fontCountFinding({
+          path: theme?.path ?? '/props',
+          families: [...families].sort(),
+          maximum,
+          relatedPaths: [...new Set(extraPaths)],
+        }),
+      ];
+    },
+  };
+
+/** A literal colour the resolved theme does not define. */
+export const docxPaletteRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
+  id: 'docx/palette-adherence',
+  code: QUALITY_CODES.OFF_PALETTE,
+  category: 'brand',
+  defaultSeverity: 'info',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  evaluate: ({ facts }) => {
+    const theme = facts.find(
+      (fact): fact is DocxThemeFact => fact.kind === 'docx/theme'
+    );
+    const palette = theme?.paletteHexes ?? {};
+    const known = new Set(Object.values(palette));
+    return facts
+      .filter((fact): fact is DocxColorFact => fact.kind === 'docx/color')
+      .filter((fact) => !known.has(fact.hex))
+      .map((fact) => {
+        const nearest = nearestPaletteToken(fact.hex, palette);
+        return offPaletteFinding({
+          path: fact.path,
+          raw: fact.raw,
+          hex: fact.hex,
+          ...(nearest && { nearest }),
+        });
+      });
+  },
+};
+
 export const DOCX_QUALITY_RULES: QualityRulePack<
   DocxQualityModel,
   DocxQualityFact
@@ -577,6 +653,8 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxSvgTextBoundsRule,
     docxLineBoxRule,
     docxPlaceholderRule,
+    docxFontCountRule,
+    docxPaletteRule,
   ],
 };
 
