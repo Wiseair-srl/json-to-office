@@ -18,6 +18,7 @@
   },
   "files": [
     "dist",
+    "assets",
     "LICENSE"
   ],
   "scripts": {

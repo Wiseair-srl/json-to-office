@@ -36,6 +36,10 @@ import type { FormatName } from '../lib/adapters.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { designNote } from '../lib/design-notes.js';
 import {
+  galleryManifests,
+  type TemplateManifest,
+} from '../templates/gallery.js';
+import {
   ERROR_CODES,
   diagnostic,
   guarded,
@@ -592,6 +596,12 @@ export interface CatalogFormat {
   components: CatalogComponent[];
   themes: string[];
   starters: Starter[];
+  /**
+   * The designed templates bundled with this package, as manifests. Read the
+   * document itself from `jto://templates/<name>`, and look at
+   * `jto://templates/<name>/thumbnail` before copying hundreds of kilobytes.
+   */
+  gallery: TemplateManifest[];
 }
 
 export interface Catalog {
@@ -751,6 +761,7 @@ async function catalogFormat(
     };
   });
 
+  const gallery = galleryManifests(format);
   const themes = await builtinThemeNames(format, deps);
   if (themes.length === 0) {
     diagnostics.push(
@@ -792,6 +803,7 @@ async function catalogFormat(
     components,
     themes,
     starters: STARTERS.filter((starter) => starter.format === format),
+    gallery,
   };
 }
 
@@ -947,6 +959,59 @@ export function register(server: McpServer, deps: ToolDeps): void {
                       'Built-in theme names, usable as the document’s props.theme or the tools’ theme option.',
                   },
                   starters: { type: 'array', items: starterSchema },
+                  gallery: {
+                    type: 'array',
+                    description:
+                      'Designed templates bundled with the package, discoverable with no network. Read the document from jto://templates/<name>; look at jto://templates/<name>/thumbnail first.',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string' },
+                        format: formatSchema,
+                        archetype: { type: 'string' },
+                        whenToUse: { type: 'string' },
+                        theme: { type: 'string' },
+                        pages: {
+                          type: 'integer',
+                          description:
+                            'Measured: pages for a document, slides for a deck.',
+                        },
+                        components: {
+                          type: 'object',
+                          additionalProperties: true,
+                        },
+                        slots: {
+                          type: 'object',
+                          description:
+                            'Text-bearing properties an author replaces, by kind — the size of the filling job.',
+                          additionalProperties: true,
+                        },
+                        externalAssets: {
+                          type: 'array',
+                          items: { type: 'string' },
+                          description:
+                            'Image paths the document expects, relative to baseDir. Not bundled: supply your own.',
+                        },
+                        externalFonts: {
+                          type: 'array',
+                          items: { type: 'string' },
+                          description:
+                            'Font files the document names. Absent ones change how the whole document looks.',
+                        },
+                        hash: { type: 'string' },
+                        bytes: { type: 'object', additionalProperties: true },
+                      },
+                      required: [
+                        'name',
+                        'format',
+                        'archetype',
+                        'whenToUse',
+                        'theme',
+                        'pages',
+                      ],
+                      additionalProperties: true,
+                    },
+                  },
                 },
                 required: [
                   'name',

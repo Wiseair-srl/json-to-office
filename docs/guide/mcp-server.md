@@ -90,9 +90,11 @@ The directory holds document JSON in the clear, so point it somewhere private an
 
 ## What the agent gets
 
-Thirteen tools and nine `jto://` resources. The [package README](https://github.com/Wiseair-srl/json-to-office/tree/main/packages/mcp-server#tools) documents every input and output field; the shape of the loop is:
+Thirteen tools and `jto://` resources: nine for discovery, plus a document and a thumbnail for each bundled template. The [package README](https://github.com/Wiseair-srl/json-to-office/tree/main/packages/mcp-server#tools) documents every input and output field; the shape of the loop is:
 
 **Discover.** `jto_info` reports versions, formats, renderer ids, the output root and whether preview can run here. `jto_discover` lists components, renderer profiles, themes and starter documents; `jto_describe_component` returns one component's exact schema, with nested components collapsed to names so nothing pulls a megabyte of schema through the model.
+
+It also lists the **template gallery**: nine designed documents bundled with the package, each with an archetype, a measured page count, a component and slot inventory, and a sentence on when to use it. `jto://templates/<name>` returns the document and `jto://templates/<name>/thumbnail` returns every page tiled into one low-DPI image — worth a look before copying several hundred kilobytes of JSON. Bundled rather than fetched, so the cold path sees a designed document with no network at all. The photographs are deliberately not shipped; each manifest lists the image paths its template expects, so an agent knows to supply its own rather than send someone else's.
 
 **Author and repair.** `jto_validate` returns path-addressed diagnostics — RFC 6901 pointers into the document you sent, usable directly as patch targets. Beside structural errors it reports [design-quality findings](/guide/design-quality) (`W_QUALITY_*`) with category, certainty, and evidence. They advise by default; pass `quality.policy.gate` to make the selected severity block `ok`. Optional workspaces (`jto_workspace_create`, `_inspect`, `_patch`, `_snapshot`, `_list`, `_close`) hold a document server-side so an agent can send an RFC 6902 patch instead of resending the whole tree; with a [workspace directory](#workspaces-that-survive-a-lost-session) configured they outlive the connection.
 

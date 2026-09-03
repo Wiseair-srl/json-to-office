@@ -1,0 +1,306 @@
+{
+  "templates": [
+    {
+      "name": "data-report-presentation.pptx.json",
+      "format": "pptx",
+      "archetype": "data-deck",
+      "whenToUse": "A chart-led deck: big numbers, donut and column figures, section dividers. Use when the story is in the data and each slide carries one figure.",
+      "theme": "inline",
+      "pages": 15,
+      "components": {
+        "chart": 8,
+        "image": 21,
+        "pptx": 1,
+        "shape": 40,
+        "slide": 15,
+        "text": 140
+      },
+      "slots": {
+        "speaker-notes": 15,
+        "text": 141,
+        "title": 16
+      },
+      "externalAssets": [],
+      "externalFonts": [],
+      "hash": "cc26178b0e467c1ba1f23a2af6c769721fc949b629672c45b44d8b3fb38f57cd",
+      "bytes": {
+        "document": 86204,
+        "gzipped": 7218,
+        "thumbnail": 119374
+      }
+    },
+    {
+      "name": "management-plan.pptx.json",
+      "format": "pptx",
+      "archetype": "consulting-deck",
+      "whenToUse": "A structured plan deck — agenda, workstreams, timeline, owners. The closest of the three to a consulting readout; use for a kickoff, a steering committee or a plan on a page.",
+      "theme": "inline",
+      "pages": 20,
+      "components": {
+        "image": 51,
+        "pptx": 1,
+        "shape": 193,
+        "slide": 20,
+        "text": 184
+      },
+      "slots": {
+        "speaker-notes": 20,
+        "text": 188,
+        "title": 4
+      },
+      "externalAssets": [
+        "media/management-plan/crop_s1.jpg",
+        "media/management-plan/crop_s10.jpg",
+        "media/management-plan/crop_s11.jpg",
+        "media/management-plan/crop_s12.jpg",
+        "media/management-plan/crop_s13.jpg",
+        "media/management-plan/crop_s14.jpg",
+        "media/management-plan/crop_s15.jpg",
+        "media/management-plan/crop_s16.jpg",
+        "media/management-plan/crop_s18a.jpg",
+        "media/management-plan/crop_s18b.jpg",
+        "media/management-plan/crop_s19.jpg",
+        "media/management-plan/crop_s3.jpg",
+        "media/management-plan/crop_s5.jpg",
+        "media/management-plan/crop_s9.jpg"
+      ],
+      "externalFonts": [],
+      "hash": "3bb5064a45197953af3061af110830b642858dc7c84169b1cc4b87ad4a0d34a4",
+      "bytes": {
+        "document": 144847,
+        "gzipped": 10036,
+        "thumbnail": 148298
+      }
+    },
+    {
+      "name": "minimalist-pitch-deck.pptx.json",
+      "format": "pptx",
+      "archetype": "pitch-deck",
+      "whenToUse": "A spare, high-contrast pitch deck built on circles and type. Use when the deck is presented rather than read, and when the argument is short enough to hold one idea per slide.",
+      "theme": "inline",
+      "pages": 20,
+      "components": {
+        "image": 37,
+        "pptx": 1,
+        "shape": 47,
+        "slide": 20,
+        "text": 196
+      },
+      "slots": {
+        "speaker-notes": 20,
+        "text": 214,
+        "title": 12
+      },
+      "externalAssets": [
+        "media/minimalist-pitch-deck/image1.jpg",
+        "media/minimalist-pitch-deck/image3.png"
+      ],
+      "externalFonts": [],
+      "hash": "d7f031fa72605405ed952516adfea2ced9e0eb701aee1370bb09d15746fdda32",
+      "bytes": {
+        "document": 104678,
+        "gzipped": 7655,
+        "thumbnail": 172474
+      }
+    },
+    {
+      "name": "modern-annual-report-1.docx.json",
+      "format": "docx",
+      "archetype": "annual-report",
+      "whenToUse": "A long editorial report with a full-bleed cover, running heads and generous whitespace. The most magazine-like of the three modern reports; reach for it when the writing carries the document and the numbers support it.",
+      "theme": "minimal",
+      "pages": 24,
+      "components": {
+        "docx": 1,
+        "image": 169,
+        "paragraph": 395,
+        "section": 24,
+        "text-box": 320
+      },
+      "slots": {
+        "text": 395,
+        "title": 25
+      },
+      "externalAssets": [],
+      "externalFonts": [],
+      "hash": "82ebee65690414425be6fa61109d2c2dbf71ba3889bb203f43bfbcf9f022a18a",
+      "bytes": {
+        "document": 587041,
+        "gzipped": 33942,
+        "thumbnail": 382257
+      }
+    },
+    {
+      "name": "modern-annual-report-2.docx.json",
+      "format": "docx",
+      "archetype": "annual-report",
+      "whenToUse": "The same editorial language with photography woven through it. Use when there are real images to show — sites, products, people — rather than charts alone.",
+      "theme": "minimal",
+      "pages": 24,
+      "components": {
+        "docx": 1,
+        "image": 207,
+        "paragraph": 364,
+        "section": 24,
+        "shape": 14,
+        "text": 2,
+        "visual": 2
+      },
+      "slots": {
+        "text": 366,
+        "title": 25
+      },
+      "externalAssets": [
+        "media/modern-annual-report-2/hatch-1.86x2.03.png",
+        "media/modern-annual-report-2/hatch-1.88x2.13.png",
+        "media/modern-annual-report-2/hatch-2.19x2.61.png",
+        "media/modern-annual-report-2/hatch-2.22x2.88.png",
+        "media/modern-annual-report-2/hatch-2.57x2.91.png",
+        "media/modern-annual-report-2/hatch-2.78x3.03.png",
+        "media/modern-annual-report-2/hatch-3.53x4.22.png",
+        "media/modern-annual-report-2/hatch-3.8x5.41.png",
+        "media/modern-annual-report-2/hatch-4.46x6.42.png",
+        "media/modern-annual-report-2/image2.png",
+        "media/modern-annual-report-2/image4.png",
+        "media/modern-annual-report-2/image6.png"
+      ],
+      "externalFonts": [],
+      "hash": "26e364477c0d4b5dfd97c3b7f3aecc31748470a9ad6a43f86c519905ab85b765",
+      "bytes": {
+        "document": 483119,
+        "gzipped": 24413,
+        "thumbnail": 512908
+      }
+    },
+    {
+      "name": "modern-annual-report-3.docx.json",
+      "format": "docx",
+      "archetype": "annual-report",
+      "whenToUse": "The densest of the three: multi-column spreads and stacked figures. Use when the report is mostly data and the reader is going to study it rather than read it through.",
+      "theme": "default",
+      "pages": 24,
+      "components": {
+        "docx": 1,
+        "image": 14,
+        "paragraph": 342,
+        "section": 24,
+        "shape": 202,
+        "visual": 106
+      },
+      "slots": {
+        "text": 341,
+        "title": 25
+      },
+      "externalAssets": [
+        "media/modern-annual-report-3/pct30-1308x1454-v2.png",
+        "media/modern-annual-report-3/pct30-1312x1574-v2.png",
+        "media/modern-annual-report-3/pct30-1618x1597-v2.png",
+        "media/modern-annual-report-3/pct30-1660x1818-v2.png",
+        "media/modern-annual-report-3/pct30-1817x2117-v2.png",
+        "media/modern-annual-report-3/pct30-1822x2099-v2.png",
+        "media/modern-annual-report-3/pct30-1874x2077-v2.png",
+        "media/modern-annual-report-3/pct30-2084x2506-v2.png",
+        "media/modern-annual-report-3/pct30-2544x3221-v2.png",
+        "media/modern-annual-report-3/pct30-2622x3017-v2.png",
+        "media/modern-annual-report-3/pct30-7054x10363-v2.png",
+        "media/modern-annual-report-3/pct30-7253x2778-v2.png",
+        "media/modern-annual-report-3/pct30-7256x6807-v2.png"
+      ],
+      "externalFonts": [],
+      "hash": "000cf193458e39be7f21cce24f82676d80e8deff30e93a1b4f1d6ff826003394",
+      "bytes": {
+        "document": 406107,
+        "gzipped": 18002,
+        "thumbnail": 572254
+      }
+    },
+    {
+      "name": "standard-annual-report.docx.json",
+      "format": "docx",
+      "archetype": "annual-report",
+      "whenToUse": "A conventional corporate annual report — cover, contents, numbered sections, financial tables. Use when the document has to look like every other annual report on the shelf, which is sometimes exactly the brief.",
+      "theme": "minimal",
+      "pages": 20,
+      "components": {
+        "docx": 1,
+        "image": 271,
+        "paragraph": 305,
+        "section": 20
+      },
+      "slots": {
+        "text": 305,
+        "title": 21
+      },
+      "externalAssets": [
+        "media/standard-annual-report/image23.png",
+        "media/standard-annual-report/image25.png"
+      ],
+      "externalFonts": [],
+      "hash": "4f135a5ec4db0203a1875ab48678f6a0f5e5a6b08f7d31b9a0aaa5306635b1a3",
+      "bytes": {
+        "document": 627988,
+        "gzipped": 78612,
+        "thumbnail": 505642
+      }
+    },
+    {
+      "name": "tech-report.docx.json",
+      "format": "docx",
+      "archetype": "technical-report",
+      "whenToUse": "A numbered technical document with a table of contents, code, figures and references. Use for a standard, a post-incident report, an audit or anything an engineer has to implement from.",
+      "theme": "minimal",
+      "pages": 24,
+      "components": {
+        "docx": 1,
+        "image": 262,
+        "paragraph": 261,
+        "section": 24
+      },
+      "slots": {
+        "text": 261,
+        "title": 25
+      },
+      "externalAssets": [],
+      "externalFonts": [],
+      "hash": "ca40437172fc6510d0cc2acf16db63211b3b5f31e89e052e4209e7c86d26c253",
+      "bytes": {
+        "document": 673445,
+        "gzipped": 33309,
+        "thumbnail": 449580
+      }
+    },
+    {
+      "name": "vermilion-annual-report.docx.json",
+      "format": "docx",
+      "archetype": "annual-report",
+      "whenToUse": "The house editorial language of the examples: poster-red display headings, ink text, warm creams, hairline rules. Use when the document should look designed rather than produced.",
+      "theme": "minimal",
+      "pages": 16,
+      "components": {
+        "docx": 1,
+        "image": 30,
+        "paragraph": 179,
+        "section": 16,
+        "table": 3
+      },
+      "slots": {
+        "text": 347,
+        "title": 17
+      },
+      "externalAssets": [],
+      "externalFonts": [
+        "media/vermilion-annual-report/fonts/ClashDisplay-Bold.otf",
+        "media/vermilion-annual-report/fonts/ClashDisplay-Light.otf",
+        "media/vermilion-annual-report/fonts/ClashDisplay-Medium.otf",
+        "media/vermilion-annual-report/fonts/ClashDisplay-Regular.otf",
+        "media/vermilion-annual-report/fonts/ClashDisplay-Semibold.otf"
+      ],
+      "hash": "af31055b46314204eee3dd41786e685f8f8cd6595bcc4325132cc8f75f4c0043",
+      "bytes": {
+        "document": 411260,
+        "gzipped": 38707,
+        "thumbnail": 217765
+      }
+    }
+  ]
+}
