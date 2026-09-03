@@ -24,6 +24,7 @@ import {
   developmentCorpusDir,
   loadCorpus,
   selectBriefs,
+  type Brief,
   type Corpus,
 } from './corpus.js';
 import { buildManifest } from './manifest.js';
@@ -165,7 +166,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   const judge =
     options.judgeModel === undefined
       ? undefined
-      : makeJudge(options.judgeModel, options.outDir);
+      : makeJudge(options.judgeModel);
 
   const runs: RunMetrics[] = [];
   const started = Date.now();
@@ -306,27 +307,20 @@ if (invokedDirectly) {
  * one contact sheet, every page — and keeps the sheet next to the run, because
  * a verdict nobody can go back and check is not evidence of anything.
  */
-function makeJudge(model: string, outDir: string) {
+function makeJudge(model: string) {
   const vision = anthropicVision({ model });
-  return async (
-    brief: {
-      id: string;
-      format: 'docx' | 'pptx';
-      title: string;
-      text: string;
-      hash: string;
-      archetype: string;
-      language: string;
-      density: string;
-    },
-    document: unknown
-  ) => {
-    const rendered = await renderForJudging(brief.format, document);
-    const sheetPath = path.join(outDir, 'runs', brief.id, 'contact-sheet.png');
-    await fs.writeFile(sheetPath, rendered.sheet.png);
+  return async (input: { brief: Brief; document: unknown; runDir: string }) => {
+    const rendered = await renderForJudging(input.brief.format, input.document);
+    // Into the run's own directory, which under `--repeat` is not the same as
+    // the brief's: `runs/<id>#2` exists, `runs/<id>` does not, and writing to
+    // the second lost every verdict after the first pass.
+    await fs.writeFile(
+      path.join(input.runDir, 'contact-sheet.png'),
+      rendered.sheet.png
+    );
     const judged = await judgeDocument({
-      brief: brief as never,
-      sheet: { png: rendered.sheet.png, label: brief.id },
+      brief: input.brief,
+      sheet: { png: rendered.sheet.png, label: input.brief.id },
       call: vision,
     });
     return judged.verdict;

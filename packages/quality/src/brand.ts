@@ -199,8 +199,16 @@ export function offPaletteFinding(input: {
       actual: input.hex,
       ...(nearest && { expected: nearest.hex }),
     },
+    // `replace`, not `add`. The two are the same on an object member, and
+    // very different on an array element: RFC 6902 `add` at `/colors/0`
+    // SPLICES, so a fix for one entry of a chart's palette would insert the
+    // token and leave the off-palette hex behind at index 1 — a fix that does
+    // not make its own finding disappear. The value always exists here, since
+    // it was read from this exact pointer, so `replace` is always legal.
     ...(nearest && {
-      fixes: [{ op: 'add' as const, path: input.path, value: nearest.token }],
+      fixes: [
+        { op: 'replace' as const, path: input.path, value: nearest.token },
+      ],
     }),
   };
 }
