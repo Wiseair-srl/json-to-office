@@ -20,3 +20,4 @@ skills/*/.skill-out/
 
 .claude/settings.local.json
 .claude/worktrees/
+tmp/
