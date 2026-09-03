@@ -18,6 +18,12 @@ class SchemaService {
   private cacheTimestamp: { [key: string]: number } = {};
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   private readonly MAX_PLUGIN_CACHE = 10;
+  // Requests that have been sent but have not answered yet, by cache key.
+  // Several parts of the page ask for the same schema within the same tick on
+  // load, and the document schema is megabytes of JSON, so asking once and
+  // handing the same promise to every caller is worth more than the cache
+  // behind it — which cannot help until the first answer lands.
+  private inFlight: Map<string, Promise<any>> = new Map();
 
   /**
    * Fetch the JSON schema for document validation
@@ -51,6 +57,27 @@ class SchemaService {
       return this.documentSchemaCache;
     }
 
+    const pending = this.inFlight.get(cacheKey);
+    if (pending) return pending;
+
+    const request = this.requestDocumentSchema(
+      cacheKey,
+      pluginNames,
+      browserComponents,
+      browserKey
+    ).finally(() => {
+      this.inFlight.delete(cacheKey);
+    });
+    this.inFlight.set(cacheKey, request);
+    return request;
+  }
+
+  private async requestDocumentSchema(
+    cacheKey: string,
+    pluginNames: string[] | undefined,
+    browserComponents: BrowserComponentSchemaInfo[] | undefined,
+    browserKey: string
+  ): Promise<any> {
     try {
       let response: Response;
       if (browserKey) {
