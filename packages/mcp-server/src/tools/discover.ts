@@ -34,6 +34,7 @@ import {
 
 import type { FormatName } from '../lib/adapters.js';
 import type { ToolDeps } from '../lib/deps.js';
+import { designNote } from '../lib/design-notes.js';
 import {
   ERROR_CODES,
   diagnostic,
@@ -546,6 +547,8 @@ export interface CatalogComponent {
   name: string;
   category: string;
   description: string;
+  /** What good use of this component looks like — one sentence, from the notes table. */
+  designNote?: string;
   hasChildren: boolean;
   /** True for the one component a document's tree is rooted at. */
   root: boolean;
@@ -723,10 +726,21 @@ async function catalogFormat(
         )
       );
     }
+    const note = designNote(format, name);
+    if (note === undefined) {
+      diagnostics.push(
+        diagnostic(
+          ERROR_CODES.INTERNAL,
+          `Component "${name}" has no design note, so jto_discover can say what it accepts but not what good use of it looks like.`,
+          { severity: 'warning', context: { format, component: name } }
+        )
+      );
+    }
     return {
       name,
       category: entry?.category ?? 'content',
       description: entry?.description ?? '',
+      ...(note !== undefined && { designNote: note }),
       hasChildren: children !== undefined,
       root: name === schemas.rootComponent,
       renderers,
@@ -893,6 +907,11 @@ export function register(server: McpServer, deps: ToolDeps): void {
                         name: { type: 'string' },
                         category: { type: 'string' },
                         description: { type: 'string' },
+                        designNote: {
+                          type: 'string',
+                          description:
+                            'What good use of this component looks like, in one sentence.',
+                        },
                         hasChildren: { type: 'boolean' },
                         root: { type: 'boolean' },
                         renderers: {

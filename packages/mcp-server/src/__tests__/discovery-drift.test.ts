@@ -43,6 +43,7 @@ import {
   registryEntries,
 } from '../tools/discover.js';
 import { RESOURCE_URIS } from '../resources/index.js';
+import { designNote, designNoteNames } from '../lib/design-notes.js';
 import { PUBLISHED_SURFACE } from './fixtures/published-surface.js';
 
 let client: Client;
@@ -50,6 +51,7 @@ let deps: ToolDeps;
 
 interface Component {
   name: string;
+  designNote?: string;
   hasChildren: boolean;
   root: boolean;
   renderers: string[];
@@ -303,6 +305,60 @@ describe('tools and resources describe the same surface', () => {
           'generated schema',
           [...(profile?.components.keys() ?? [])]
         );
+      }
+    }
+  });
+
+  it('every component carries a design note, and no note names a ghost', async () => {
+    // The notes table is the one place taste lives inside the product, and a
+    // component that gains or loses a name without the table following it is
+    // exactly the drift this epic exists to stop. Checked both ways: a
+    // component with no note ships advice-free, and a note for a component
+    // that no longer exists is stale prose nobody will notice.
+    const formats = await discover();
+    for (const format of formats) {
+      expectSameNames(
+        `${format.name} design notes`,
+        'jto_discover',
+        format.components.map((component) => component.name),
+        'design-notes table',
+        [...designNoteNames(format.name)]
+      );
+      for (const component of format.components) {
+        expect(component.designNote, `${format.name}/${component.name}`).toBe(
+          designNote(format.name, component.name)
+        );
+      }
+    }
+  });
+
+  it('jto_describe_component serves the same note as jto_discover', async () => {
+    const formats = await discover();
+    for (const format of formats) {
+      for (const component of format.components) {
+        const result = await client.callTool({
+          name: 'jto_describe_component',
+          arguments: {
+            format: format.name,
+            name: component.name,
+            // Some components live in only one renderer profile — docx
+            // `chart` is office-open only — so ask the renderer that has it.
+            ...(component.renderers[0] !== undefined && {
+              renderer: component.renderers[0],
+            }),
+          },
+        });
+        const payload = result.structuredContent as unknown as {
+          ok: boolean;
+          component?: { designNote?: string };
+        };
+        expect(payload, `${format.name}/${component.name}`).toMatchObject({
+          ok: true,
+        });
+        expect(
+          payload.component?.designNote,
+          `${format.name}/${component.name}`
+        ).toBe(component.designNote);
       }
     }
   });

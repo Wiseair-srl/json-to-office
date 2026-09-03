@@ -27,20 +27,37 @@ import { register as registerResources } from './resources/index.js';
 /**
  * The server's own prompt, surfaced to the client at initialize.
  *
- * These are the invariants an agent gets wrong without being told: that the
- * JSON is the artifact and the file is a build product, that large rewrites
- * lose more than they fix, and that looking at a rendered page is cheaper than
- * reasoning about whether a layout worked (#271).
+ * Two jobs, and the second is the newer one. It states the invariants an agent
+ * gets wrong without being told — that the JSON is the artifact and the file a
+ * build product, that large rewrites lose more than they fix, that looking at
+ * a rendered page beats reasoning about whether a layout worked (#271). And it
+ * names the design workflow, because the failure this server was losing to was
+ * not a wrong call: it was an agent left to decide look, structure and layout
+ * alone at every node, and picking the safe generic option each time (#324).
+ *
+ * The workflow deliberately names steps that do not exist yet, marked as such.
+ * An agent that knows the shape of the path takes the parts that are built
+ * rather than inventing a different route; and when a step lands, the sentence
+ * describing it is already the one it was designed against.
+ *
+ * One screen. Every line an agent skips is a line that may as well not exist.
  */
 export const SERVER_INSTRUCTIONS = `Author Microsoft Word (.docx) and PowerPoint (.pptx) documents as JSON.
 
 The JSON is authoritative. A generated file is a build product of the document JSON plus a renderer, a theme, fonts, assets and options — edit the JSON and regenerate; never treat the binary as the source.
 
+Design workflow — theme, structure, fill, check, ship:
+1. THEME. Pick one with jto_discover and set it on the document root. A document that names no theme inherits defaults nobody chose, and that is what generic output looks like.
+2. STRUCTURE. Choose the archetype before the content: which sections, which slides, in what order. Blueprints and jto_scaffold will do this from data — not built yet, so decide it explicitly rather than growing the document node by node.
+3. FILL. Write content into that structure. Prefer named styles and theme colour tokens over raw sizes and hex, so a theme swap restyles the whole document instead of half of it. Every component's design note in jto_discover says what good use of it looks like.
+4. CHECK. jto_validate after each edit, then jto_preview when the question is visual. jto_preview with contactSheet: true tiles every page into one image — the way to see whether the deck holds together.
+5. SHIP. jto_generate. It refuses a document that still carries an unfilled {{…}} scaffold slot.
+
 Working rules:
-- Discover before authoring. Call jto_info first, then jto_discover and jto_describe_component (or read the jto:// resources) for the components and renderer ids a format actually supports.
+- Discover before authoring. Call jto_info first, then jto_discover and jto_describe_component (or read the jto:// resources) for the components, renderer ids and design notes a format actually supports.
 - Make small edits. With a workspace handle, patch precisely (RFC 6902 over RFC 6901 paths) instead of resending the whole document; without one, change one region at a time.
 - Validate often. Run jto_validate after each edit rather than once at the end; diagnostics are path-addressed, so they map straight back onto the JSON you just changed.
-- Treat design findings as defects. Schema-valid is not well-designed: jto_validate also lints layout and legibility (W_QUALITY_* — undeclared slide canvas, text overflowing its box, overcrowded slides, table widths exceeding their section). These never block generation, but they almost always show in the rendered result — repair them like errors.
+- Treat design findings as defects. Schema-valid is not well-designed. jto_validate lints layout, legibility and brand as W_QUALITY_* findings: undeclared slide canvas, text overflowing its box, overcrowded slides, table widths past their section, leftover placeholder text, unfilled scaffold slots, opaque boxes covering each other, more than three font families, colours off the theme palette. They rarely block generation, but they almost always show in the rendered result — repair them like errors, and apply the RFC 6902 fix when a finding carries one.
 - Preview when the answer is visual. jto_preview renders pages to PNG; use it whenever layout, overflow or fit is in question, not only before finishing.
 - Snapshot before risky changes. jto_workspace_snapshot pins the current revision so a restructuring you cannot cleanly undo is still recoverable.
 

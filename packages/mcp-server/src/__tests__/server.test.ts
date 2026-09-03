@@ -228,6 +228,37 @@ describe('instructions', () => {
     expect(SERVER_INSTRUCTIONS).toMatch(/Snapshot before risky changes/);
   });
 
+  it('names the design workflow, and which of its steps exist today', () => {
+    // The failure this replaces was not a wrong tool call: it was an agent
+    // deciding look, structure and layout alone at every node. The workflow
+    // is the shape of the path; the "not built yet" marker is what keeps an
+    // agent from inventing a different route around the missing step.
+    for (const step of ['THEME', 'STRUCTURE', 'FILL', 'CHECK', 'SHIP']) {
+      expect(SERVER_INSTRUCTIONS).toContain(step);
+    }
+    expect(SERVER_INSTRUCTIONS).toMatch(/jto_scaffold[^.]*not built yet/);
+    expect(SERVER_INSTRUCTIONS).toMatch(/contactSheet/);
+  });
+
+  it('names the design findings an agent has to repair', () => {
+    for (const finding of [
+      'placeholder text',
+      'scaffold slots',
+      'font families',
+      'palette',
+      'overflowing',
+    ]) {
+      expect(SERVER_INSTRUCTIONS).toContain(finding);
+    }
+    expect(SERVER_INSTRUCTIONS).toMatch(/W_QUALITY_\*/);
+  });
+
+  it('stays inside one screen', () => {
+    // Every line an agent skips may as well not exist, and this one is read
+    // at every initialize.
+    expect(SERVER_INSTRUCTIONS.split('\n').length).toBeLessThanOrEqual(30);
+  });
+
   it('reaches the client at initialize', async () => {
     expect(client.getInstructions()).toBe(SERVER_INSTRUCTIONS);
   });
