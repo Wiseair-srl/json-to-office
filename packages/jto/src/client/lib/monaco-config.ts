@@ -24,6 +24,14 @@ let lastCustomThemeNames: string[] = [];
 // Same for the browser plugins: a caller refreshing for a disk-plugin toggle
 // must not drop the components compiled in the page.
 let lastBrowserComponents: BrowserComponentSchemaInfo[] = [];
+// Refreshes overlap constantly — every plugin that finishes compiling asks for
+// its own schema, and a page with four of them loads with four requests in
+// flight at once. The responses are megabytes each and come back in whatever
+// order the server and the network settle on, so without this counter the last
+// response to *arrive* wins rather than the newest one, and Monaco is regularly
+// left validating against a schema built before the newest plugin existed: its
+// component reads as an unknown `name` until something else forces a refresh.
+let schemaGeneration = 0;
 
 export interface MonacoSchemaConfig {
   uri: string;
@@ -367,6 +375,7 @@ export async function updateMonacoWithPlugins(
   customThemeNames?: string[],
   browserComponents?: BrowserComponentSchemaInfo[]
 ): Promise<boolean> {
+  const generation = ++schemaGeneration;
   try {
     // Clear stale plugin schema cache to ensure fresh data after rebuilds
     schemaService.clearPluginSchemaCache();
@@ -382,6 +391,14 @@ export async function updateMonacoWithPlugins(
       pluginNames,
       lastBrowserComponents
     );
+    // A newer refresh started while this one was in flight. Its request was
+    // built from a later view of the plugins, so installing this older schema
+    // would undo it. Report success: the call that superseded this one owns
+    // the outcome, and a `false` here would surface as a failed apply.
+    if (generation !== schemaGeneration) {
+      return true;
+    }
+
     const documentSchema = JSON.parse(JSON.stringify(cachedSchema));
 
     // Validate that we received a valid schema
@@ -502,8 +519,12 @@ export async function updateMonacoWithPlugins(
     return validationSuccess;
   } catch (error) {
     console.error('Failed to update Monaco with plugin schemas:', error);
-    // Fallback to default schemas
-    configureMonacoInstance(monaco);
+    // Same rule as the success path: a failed refresh must not roll a newer
+    // one back to the plugin-free defaults.
+    if (generation === schemaGeneration) {
+      // Fallback to default schemas
+      configureMonacoInstance(monaco);
+    }
     throw error; // Re-throw to let caller handle the error
   }
 }
