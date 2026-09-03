@@ -31,6 +31,19 @@ export const MAX_INLINE_IMAGE_BYTES = 2 * 1024 * 1024;
 /** Ceiling for every inlined page in one result, summed. */
 export const MAX_TOTAL_INLINE_BYTES = 8 * 1024 * 1024;
 
+/**
+ * Ceiling on a contact sheet's pixels, which bytes alone do not catch.
+ *
+ * Forty near-empty pages tile into a nine-megapixel sheet that still deflates
+ * under two megabytes — it would inline, and be useless. Clients scale a large
+ * image down to roughly 1500px on its long edge before a model ever sees it,
+ * and past about four megapixels that scaling takes each thumbnail below the
+ * size at which its text reads as text. A sheet nobody can read answers
+ * nothing, so past this it is written to disk at full size instead, where it
+ * can be opened and zoomed.
+ */
+export const MAX_INLINE_SHEET_PIXELS = 4_000_000;
+
 /** A4 (8.27in x 11.69in). A 16:9 slide is 100in², close enough for an estimate. */
 export const PREVIEW_PAGE_AREA_IN2 = 96.7;
 /**

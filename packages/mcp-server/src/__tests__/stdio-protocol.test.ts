@@ -350,6 +350,42 @@ describe('protocol eras', () => {
   );
 
   it(
+    'advertises the contact-sheet option and answers with one sheet',
+    async () => {
+      const opened = await session();
+      const { tools } = await opened.client.listTools();
+      const preview = tools.find((tool) => tool.name === 'jto_preview');
+      const properties = (
+        preview?.inputSchema as {
+          properties?: Record<string, { type?: string; default?: unknown }>;
+        }
+      ).properties;
+      expect(properties?.contactSheet).toMatchObject({
+        type: 'boolean',
+        default: false,
+      });
+      expect(preview?.description).toContain('contactSheet');
+
+      const result = await opened.client.callTool({
+        name: 'jto_preview',
+        arguments: { format: 'docx', document: VALID_DOCX, contactSheet: true },
+      });
+      const payload = result.structuredContent as any;
+      // On a host without LibreOffice the call still answers on the same
+      // contract — a structured refusal naming what to install, never a
+      // protocol error — so both outcomes are legitimate here.
+      expect(result.isError).toBeFalsy();
+      if (payload.ok) {
+        expect(payload.delivery).toBe('sheet');
+        expect(payload.contactSheet.pageCount).toBeGreaterThan(0);
+      } else {
+        expect(payload.diagnostics[0].code).toBe('E_DEPENDENCY_MISSING');
+      }
+    },
+    SLOW_TIMEOUT_MS
+  );
+
+  it(
     'probes its way to the modern era when asked to negotiate',
     async () => {
       const auto = await session({ versionNegotiation: { mode: 'auto' } });
