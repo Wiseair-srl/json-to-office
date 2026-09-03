@@ -1,7 +1,9 @@
-import type {
-  PreparedDocument,
-  ProvenanceMap,
-  QualityFact,
+import {
+  collectPlaceholders,
+  type PlaceholderKind,
+  type PreparedDocument,
+  type ProvenanceMap,
+  type QualityFact,
 } from '@json-to-office/quality';
 import type { FontRuntimeOpts, ServicesConfig } from '@json-to-office/shared';
 import { DEFAULT_PPTX_RENDERER_ID } from '@json-to-office/shared-pptx';
@@ -66,7 +68,20 @@ export interface PptxSlideFact extends QualityFact {
   bodyWords: number;
 }
 
-export type PptxQualityFact = PptxCanvasFact | PptxTextFact | PptxSlideFact;
+/** One authored string that reads as a placeholder rather than as content. */
+export interface PptxPlaceholderFact extends QualityFact {
+  kind: 'pptx/placeholder';
+  text: string;
+  placeholderKind: PlaceholderKind;
+  pattern: string;
+  excerpt: string;
+}
+
+export type PptxQualityFact =
+  | PptxCanvasFact
+  | PptxTextFact
+  | PptxSlideFact
+  | PptxPlaceholderFact;
 
 export interface PptxQualityModel {
   authored: PresentationComponentDefinition;
@@ -672,6 +687,20 @@ export function preparePptxQualityDocument(
     ...(asNumber(props.slideHeight) !== undefined && {
       heightIn: asNumber(props.slideHeight),
     }),
+  });
+
+  // Over the authored tree, before any theme or template resolution: a marker
+  // has to be reported where the author can patch it out.
+  collectPlaceholders(document).forEach((occurrence, index) => {
+    addFact({
+      id: `pptx:placeholder:${index}:${occurrence.path}`,
+      kind: 'pptx/placeholder',
+      path: occurrence.path,
+      text: occurrence.text,
+      placeholderKind: occurrence.match.kind,
+      pattern: occurrence.match.pattern,
+      excerpt: occurrence.match.excerpt,
+    });
   });
 
   const warnings = options.warnings ?? [];

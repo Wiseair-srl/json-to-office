@@ -518,3 +518,81 @@ describe('jto_generate', () => {
     GENERATION_TIMEOUT_MS
   );
 });
+
+describe('scaffold markers', () => {
+  const SCAFFOLDED = {
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [
+      { name: 'heading', props: { text: '{{report title}}', level: 1 } },
+      { name: 'paragraph', props: { text: 'Revenue grew 12% year on year.' } },
+      { name: 'paragraph', props: { text: 'Outlook: {{outlook}}' } },
+    ],
+  };
+
+  it(
+    'refuses a document that still carries one, path-addressed',
+    async () => {
+      const result = await generate({ format: 'docx', document: SCAFFOLDED });
+      expect(result.ok).toBe(false);
+      expect(result.artifact).toBeUndefined();
+      const markers = result.diagnostics.filter(
+        (entry: { code: string }) => entry.code === 'E_SCAFFOLD_MARKER'
+      );
+      expect(markers.map((entry: { path: string }) => entry.path)).toEqual([
+        '/children/0/props/text',
+        '/children/2/props/text',
+      ]);
+      expect(markers[0]).toMatchObject({ severity: 'error' });
+      expect(markers[0].message).toContain('{{report title}}');
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
+  it(
+    'renders once the markers are gone',
+    async () => {
+      const filled = {
+        ...SCAFFOLDED,
+        children: [
+          { name: 'heading', props: { text: 'Quarterly Review', level: 1 } },
+          SCAFFOLDED.children[1],
+          { name: 'paragraph', props: { text: 'Outlook: steady.' } },
+        ],
+      };
+      const result = await generate({ format: 'docx', document: filled });
+      expect(result.ok).toBe(true);
+      expect(result.artifact).toBeDefined();
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
+  it(
+    'lets filler through — only a marker is a refusal',
+    async () => {
+      const result = await generate({
+        format: 'pptx',
+        document: {
+          name: 'pptx',
+          props: { slideWidth: 13.333, slideHeight: 7.5 },
+          children: [
+            {
+              name: 'slide',
+              props: {},
+              children: [
+                { name: 'text', props: { text: 'Lorem ipsum dolor sit.' } },
+              ],
+            },
+          ],
+        },
+      });
+      expect(result.ok).toBe(true);
+      expect(
+        result.diagnostics.filter(
+          (entry: { code: string }) => entry.code === 'E_SCAFFOLD_MARKER'
+        )
+      ).toEqual([]);
+    },
+    GENERATION_TIMEOUT_MS
+  );
+});

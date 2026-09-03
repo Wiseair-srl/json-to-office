@@ -129,6 +129,8 @@ export const ERROR_CODES = {
   DEPENDENCY_MISSING: 'E_DEPENDENCY_MISSING',
   /** The client cancelled the request. */
   CANCELLED: 'E_CANCELLED',
+  /** A scaffold slot was never filled; generation refuses to render one. */
+  SCAFFOLD_MARKER: 'E_SCAFFOLD_MARKER',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

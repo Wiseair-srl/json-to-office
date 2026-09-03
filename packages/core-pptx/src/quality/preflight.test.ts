@@ -1070,3 +1070,101 @@ describe('text contrast', () => {
     expect(findings[0].context).toMatchObject({ backgroundHex: 'F0CDC4' });
   });
 });
+
+describe('placeholder text', () => {
+  it('reports a scaffold marker at the authored pointer', () => {
+    const findings = pptxDiagnostics(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            { name: 'text', props: { text: '{{headline}}', x: 1, y: 1, w: 4 } },
+          ],
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.SCAFFOLD_MARKER,
+      severity: 'warning',
+      category: 'integrity',
+      certainty: 'deterministic',
+      path: '/children/0/children/0/props/text',
+      context: { kind: 'scaffold-marker', pattern: 'scaffold-marker' },
+    });
+    expect(findings[0].message).toContain('{{headline}}');
+  });
+
+  it('reports filler under its own code', () => {
+    const findings = pptxDiagnostics(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: { text: 'Lorem ipsum dolor sit.', x: 1, y: 1, w: 6 },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.PLACEHOLDER_TEXT,
+      severity: 'warning',
+      path: '/children/0/children/0/props/text',
+      context: { kind: 'filler', pattern: 'lorem-ipsum' },
+    });
+  });
+
+  it('finds markers outside component text — titles, notes, table cells', () => {
+    const findings = pptxDiagnostics(
+      deck({ ...CANVAS, title: '{{deck title}}' }, [
+        {
+          name: 'slide',
+          props: { notes: 'Speaker note: {{say this}}' },
+          children: [
+            {
+              name: 'table',
+              props: {
+                rows: [[{ text: '{{metric}}' }, { text: '14%' }]],
+                x: 1,
+                y: 1,
+                w: 6,
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings.map((finding) => finding.path)).toEqual([
+      '/props/title',
+      '/children/0/props/notes',
+      '/children/0/children/0/props/rows/0/0/text',
+    ]);
+  });
+
+  it('says nothing about real copy', () => {
+    expect(
+      codes(
+        deck(CANVAS, [
+          {
+            name: 'slide',
+            children: [
+              {
+                name: 'text',
+                props: {
+                  text: 'Adoption grew 14% year on year.',
+                  x: 1,
+                  y: 1,
+                  w: 6,
+                },
+              },
+            ],
+          },
+        ])
+      )
+    ).toEqual([]);
+  });
+});

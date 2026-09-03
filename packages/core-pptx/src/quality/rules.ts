@@ -1,5 +1,6 @@
 import {
   mergeQualityProfiles,
+  placeholderFinding,
   QUALITY_CODES,
   QualityEngine,
   resolveRuleConfiguration,
@@ -10,6 +11,7 @@ import {
 } from '@json-to-office/quality';
 import type {
   PptxCanvasFact,
+  PptxPlaceholderFact,
   PptxQualityFact,
   PptxQualityModel,
   PptxSlideFact,
@@ -495,6 +497,38 @@ export const pptxTextContrastRule: QualityRule<
   },
 };
 
+/**
+ * Unfilled slots and leftover filler, in one rule over two codes.
+ *
+ * One rule because it is one question — "is this text real yet?" — and two
+ * codes because the answers differ in consequence: a scaffold marker blocks
+ * generation, filler only advises.
+ */
+export const pptxPlaceholderRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/placeholder-text',
+  code: QUALITY_CODES.PLACEHOLDER_TEXT,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  evaluate: ({ facts }) =>
+    facts
+      .filter(
+        (fact): fact is PptxPlaceholderFact => fact.kind === 'pptx/placeholder'
+      )
+      .map((fact) =>
+        placeholderFinding({
+          path: fact.path,
+          kind: fact.placeholderKind,
+          pattern: fact.pattern,
+          excerpt: fact.excerpt,
+        })
+      ),
+};
+
 export const PPTX_QUALITY_RULES: QualityRulePack<
   PptxQualityModel,
   PptxQualityFact
@@ -506,6 +540,7 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxTextFitRule,
     pptxSlideDensityRule,
     pptxTextContrastRule,
+    pptxPlaceholderRule,
   ],
 };
 

@@ -1,5 +1,6 @@
 import {
   mergeQualityProfiles,
+  placeholderFinding,
   QUALITY_CODES,
   QualityEngine,
   type QualityProfile,
@@ -10,6 +11,7 @@ import type {
   DocxFrameTextFact,
   DocxHeadingFact,
   DocxLineBoxFact,
+  DocxPlaceholderFact,
   DocxQualityFact,
   DocxQualityModel,
   DocxSvgTextFact,
@@ -530,6 +532,38 @@ export const docxLineBoxRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
   },
 };
 
+/**
+ * Unfilled slots and leftover filler, in one rule over two codes.
+ *
+ * One rule because it is one question — "is this text real yet?" — and two
+ * codes because the answers differ in consequence: a scaffold marker blocks
+ * generation, filler only advises.
+ */
+export const docxPlaceholderRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/placeholder-text',
+  code: QUALITY_CODES.PLACEHOLDER_TEXT,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  evaluate: ({ facts }) =>
+    facts
+      .filter(
+        (fact): fact is DocxPlaceholderFact => fact.kind === 'docx/placeholder'
+      )
+      .map((fact) =>
+        placeholderFinding({
+          path: fact.path,
+          kind: fact.placeholderKind,
+          pattern: fact.pattern,
+          excerpt: fact.excerpt,
+        })
+      ),
+};
+
 export const DOCX_QUALITY_RULES: QualityRulePack<
   DocxQualityModel,
   DocxQualityFact
@@ -542,6 +576,7 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxFrameCollisionRule,
     docxSvgTextBoundsRule,
     docxLineBoxRule,
+    docxPlaceholderRule,
   ],
 };
 

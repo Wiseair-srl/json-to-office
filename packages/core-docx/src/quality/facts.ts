@@ -1,7 +1,9 @@
-import type {
-  PreparedDocument,
-  ProvenanceMap,
-  QualityFact,
+import {
+  collectPlaceholders,
+  type PlaceholderKind,
+  type PreparedDocument,
+  type ProvenanceMap,
+  type QualityFact,
 } from '@json-to-office/quality';
 import type {
   FontRuntimeOpts,
@@ -136,12 +138,22 @@ export interface DocxLineBoxFact extends QualityFact {
   patchable: boolean;
 }
 
+/** One authored string that reads as a placeholder rather than as content. */
+export interface DocxPlaceholderFact extends QualityFact {
+  kind: 'docx/placeholder';
+  text: string;
+  placeholderKind: PlaceholderKind;
+  pattern: string;
+  excerpt: string;
+}
+
 export type DocxQualityFact =
   | DocxTableWidthFact
   | DocxHeadingFact
   | DocxFrameTextFact
   | DocxSvgTextFact
-  | DocxLineBoxFact;
+  | DocxLineBoxFact
+  | DocxPlaceholderFact;
 
 export interface DocxQualityModel {
   authored: ReportComponentDefinition;
@@ -593,6 +605,20 @@ export function prepareDocxQualityDocument(
       ...(fact.relatedPaths && { relatedPaths: fact.relatedPaths }),
     };
   };
+
+  // Over the authored tree, before normalization: a marker has to be reported
+  // where the author can patch it out.
+  collectPlaceholders(document).forEach((occurrence, index) => {
+    addFact({
+      id: `docx:placeholder:${index}:${occurrence.path}`,
+      kind: 'docx/placeholder',
+      path: occurrence.path,
+      text: occurrence.text,
+      placeholderKind: occurrence.match.kind,
+      pattern: occurrence.match.pattern,
+      excerpt: occurrence.match.excerpt,
+    });
+  });
 
   // Frame-chain state. A chain extends only while nothing rendered between
   // its members, so every visited node advances `previousVisitPath` — and a
