@@ -116,12 +116,13 @@ winget install TheDocumentFoundation.LibreOffice; winget install oschwartz10612.
 
 Everything else — discovery, validation, generation, diff, workspaces — works on a host with neither, because generation writes OOXML directly and never launches an office suite. Without them `jto_preview` returns a structured error naming what is missing and how to install it, and `jto_info.previewDependencies` answers the question before the agent spends a call on it.
 
-Claude Desktop does not inherit your shell's `PATH`. If the binaries live somewhere unusual, name them with `LIBREOFFICE_PATH` and `PDFTOPPM_PATH` in the client's `env` block.
+Claude Desktop does not inherit your shell's `PATH`. If the binaries live somewhere unusual — or even if they don't — name them with `LIBREOFFICE_PATH` and `PDFTOPPM_PATH` in the client's `env` block; [the Claude Desktop guide](/guide/claude-desktop) has the whole entry, including the output and workspace directories and the chart export server.
 
 Preview pixels come from LibreOffice, not Microsoft Office: line breaks, pagination, font substitution and chart rasterization can differ from Word or PowerPoint on the recipient's machine. Treat a preview as a strong indication of layout, not as the final document.
 
 ## Related
 
+- [The design loop on Claude Desktop](/guide/claude-desktop) — the configuration that makes preview, charts and durable workspaces work on one machine, and what leaves it.
 - [Generating documents with LLMs](/guide/llms) — the schema-and-validate loop this server automates, and how to build it yourself.
 - [Using the CLI](/guide/cli) — the same operations for humans and CI.
 - [Validation](/guide/validation) — where the diagnostics come from.

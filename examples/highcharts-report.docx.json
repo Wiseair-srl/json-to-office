@@ -1,0 +1,173 @@
+{
+  "name": "docx",
+  "props": {
+    "theme": "vermilion",
+    "themeOverrides": {
+      "colors": {
+        "accent4": "#7A8B7E",
+        "accent5": "#C8B8A6",
+        "accent6": "#4A5B4E"
+      }
+    },
+    "metadata": {
+      "title": "Quarterly performance review",
+      "author": "json-to-office",
+      "description": "Themed DOCX highcharts example: palette injected from the theme, rendered through a local export server."
+    }
+  },
+  "children": [
+    {
+      "name": "section",
+      "children": [
+        {
+          "name": "heading",
+          "props": {
+            "text": "Quarterly performance review",
+            "level": 1
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Revenue grew in every region for a third consecutive quarter, and the gap between the strongest and weakest region narrowed from 31 to 19 points."
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Revenue by region",
+            "level": 2
+          }
+        },
+        {
+          "name": "highcharts",
+          "props": {
+            "options": {
+              "chart": {
+                "type": "column",
+                "width": 900,
+                "height": 480
+              },
+              "title": {
+                "text": "Every region grew; the spread narrowed to 19 points"
+              },
+              "subtitle": {
+                "text": "EUR m, by quarter"
+              },
+              "xAxis": {
+                "categories": ["Q1", "Q2", "Q3", "Q4"]
+              },
+              "yAxis": {
+                "min": 0,
+                "title": {
+                  "text": "Revenue (EUR m)"
+                }
+              },
+              "credits": {
+                "enabled": false
+              },
+              "series": [
+                {
+                  "name": "North",
+                  "data": [18.2, 19.4, 21.0, 22.6]
+                },
+                {
+                  "name": "Central",
+                  "data": [14.9, 15.8, 17.2, 18.9]
+                },
+                {
+                  "name": "South",
+                  "data": [11.4, 12.9, 14.8, 16.7]
+                },
+                {
+                  "name": "Islands",
+                  "data": [6.1, 6.8, 7.9, 9.2]
+                }
+              ]
+            },
+            "width": "100%"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Source: management accounts, unaudited.",
+            "font": {
+              "size": 8,
+              "italic": true,
+              "color": "textMuted"
+            }
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Mix",
+            "level": 2
+          }
+        },
+        {
+          "name": "highcharts",
+          "props": {
+            "options": {
+              "chart": {
+                "type": "pie",
+                "width": 720,
+                "height": 420
+              },
+              "title": {
+                "text": "North and Central are two thirds of revenue"
+              },
+              "credits": {
+                "enabled": false
+              },
+              "plotOptions": {
+                "pie": {
+                  "dataLabels": {
+                    "enabled": true,
+                    "format": "{point.name}: {point.percentage:.0f}%"
+                  }
+                }
+              },
+              "series": [
+                {
+                  "name": "Share",
+                  "data": [
+                    {
+                      "name": "North",
+                      "y": 33.2
+                    },
+                    {
+                      "name": "Central",
+                      "y": 27.8
+                    },
+                    {
+                      "name": "South",
+                      "y": 24.5
+                    },
+                    {
+                      "name": "Islands",
+                      "y": 14.5
+                    }
+                  ]
+                }
+              ]
+            },
+            "width": "80%"
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Source: management accounts, unaudited.",
+            "font": {
+              "size": 8,
+              "italic": true,
+              "color": "textMuted"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
