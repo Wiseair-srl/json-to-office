@@ -216,6 +216,57 @@ static character-count estimates top out near half of the >1-line-height spills
 under the zero-false-warning constraint, and the remainder is reachable only as
 `rendered`-certainty findings built on the same PDF geometry.
 
+## Design evals: measuring the whole loop
+
+The ground-truth harness measures one estimator against one renderer. It cannot
+say whether an agent, handed a brief and this server, produces something worth
+sending. `packages/design-evals` measures that, and it is the instrument every
+phase of the design-quality programme is accepted on.
+
+```bash
+pnpm evals -- --briefs cr-market-entry-nordics,cd-quarterly-business-review
+pnpm evals -- --model claude-opus-5 --out ./evals-out/baseline
+pnpm evals -- --sealed-corpus /path/to/acceptance/briefs   # final acceptance only
+```
+
+One command takes briefs from the committed 40-brief development corpus
+(`packages/design-evals/briefs`, 24 docx and 16 pptx across the three v1
+archetypes, with format, archetype, language and data-density metadata), drives
+a headless Claude agent against the real MCP server over stdio, keeps every run
+artifact, and writes one `scorecard.json`. `--briefs` runs a subset;
+`--sealed-corpus` points at an acceptance set supplied from outside the repo.
+
+**Cold by default.** The agent gets the server's own instructions and the
+json-to-office tools, and nothing else — no skill, no project settings, no file
+or shell access. That is the measurement the targets are stated against: what
+the product alone gets you. `--skill <path>` makes the run assisted, and the
+manifest records which it was and hashes what the skill said.
+
+**The harness measures; the agent does not report.** Every number in a scorecard
+is recomputed from the document the agent last handed to `jto_generate` — read
+passively out of the tool call, never out of a summary. An author that declares
+itself finished with a broken document is precisely what the scorecard exists to
+catch, so its own account of its work is evidence of nothing.
+
+**Failures stay in the denominator.** A run that errored, ran out of turns or
+ended without generating anything counts as a run and as not shippable. A
+denominator that shrinks when the agent gives up is a denominator that improves
+by giving up. Every failure is named in the scorecard's `failures` array.
+
+Each scorecard carries a complete reproducibility manifest — git SHA and whether
+the tree was dirty, package and SDK versions, the exact model id and parameters,
+hashes of the server instructions and of any skill, OS, Node, LibreOffice and
+poppler versions, the host's font inventory by family, the export-server
+endpoint class (`local`, `private`, `hosted`, `none`) and the retry budget. A
+field that could not be read is recorded as `unavailable` rather than dropped: a
+manifest with a hole is still a manifest, while one that quietly shrank is a
+comparison waiting to mislead.
+
+The headless runner is a proxy for the real surface, which is Claude Desktop.
+`agreement()` compares paired ship/no-ship verdicts and reports raw agreement
+alongside Cohen's kappa, because on a corpus where most runs fail both ways raw
+agreement is what chance would have produced anyway.
+
 ## Non-goals
 
 - A single opaque quality score.
