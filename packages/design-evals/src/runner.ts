@@ -60,10 +60,12 @@ export interface RunBriefOptions {
    * metrics are the part that does not need an opinion, and a run without a
    * judge is a complete run with half a scorecard rather than a broken one.
    */
-  judge?: (
-    brief: Brief,
-    document: unknown
-  ) => Promise<RunJudgement | undefined>;
+  judge?: (input: {
+    brief: Brief;
+    document: unknown;
+    /** This run's directory, so evidence lands beside the run it judged. */
+    runDir: string;
+  }) => Promise<RunJudgement | undefined>;
   signal?: AbortSignal;
   now?: () => number;
 }
@@ -252,7 +254,11 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
   let judgement: RunJudgement | undefined;
   if (options.judge) {
     try {
-      judgement = await options.judge(options.brief, document);
+      judgement = await options.judge({
+        brief: options.brief,
+        document,
+        runDir: options.runDir,
+      });
     } catch {
       judgement = undefined;
     }

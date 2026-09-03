@@ -226,6 +226,44 @@ describe('runBrief', () => {
     expect(transcript.events).toHaveLength(2);
   });
 
+  it("hands the judge this run's own directory", async () => {
+    // Under `--repeat` the run directory is `runs/<id>#2`, not `runs/<id>`.
+    // A judge that derived the path from the brief id wrote its evidence to a
+    // directory that does not exist, and every verdict after the first pass
+    // was silently lost to the catch.
+    const seen: string[] = [];
+    const run = await runBrief(
+      options({
+        runDir: path.join(scratch, 'runs', 'sample-brief#2'),
+        judge: async ({ runDir, brief }) => {
+          seen.push(runDir);
+          await fs.writeFile(path.join(runDir, 'contact-sheet.png'), 'x');
+          return {
+            level: 4 as const,
+            wouldShip: true,
+            genericness: 1,
+            rationale: brief.id,
+          };
+        },
+      })
+    );
+    expect(seen).toEqual([path.join(scratch, 'runs', 'sample-brief#2')]);
+    expect(run.judge).toMatchObject({ level: 4, wouldShip: true });
+  });
+
+  it('keeps the hard numbers when the judge fails', async () => {
+    const run = await runBrief(
+      options({
+        judge: async () => {
+          throw new Error('vision model unavailable');
+        },
+      })
+    );
+    expect(run.outcome).toBe('completed');
+    expect(run.pages).toBe(4);
+    expect(run.judge).toBeUndefined();
+  });
+
   it('keeps a sealed brief out of the artifacts it writes', async () => {
     await runBrief(options({ sealed: true }));
     const written = await fs.readFile(

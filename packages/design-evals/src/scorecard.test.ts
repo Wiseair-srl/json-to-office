@@ -156,6 +156,22 @@ describe('buildScorecard', () => {
     });
   });
 
+  it('does not score a judge outage as a level-1 document', () => {
+    // The run produced a document; the judge could not look at it. Counting
+    // that as the worst possible score reports an outage as a regression.
+    const scorecard = buildScorecard({
+      ...base,
+      runs: [
+        run({
+          briefId: 'a',
+          judge: { level: 4, wouldShip: true, genericness: 1, rationale: 'x' },
+        }),
+        run({ briefId: 'b' }),
+      ],
+    });
+    expect(scorecard.judge).toMatchObject({ judged: 1, medianLevel: 4 });
+  });
+
   it('lists every failure by name, never elided', () => {
     const scorecard = buildScorecard({
       ...base,

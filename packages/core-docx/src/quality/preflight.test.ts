@@ -1009,7 +1009,7 @@ describe('brand consistency', () => {
       path: '/children/0/children/0/props/color',
     });
     expect(findings[0].fixes?.[0]).toMatchObject({
-      op: 'add',
+      op: 'replace',
       path: '/children/0/children/0/props/color',
     });
   });

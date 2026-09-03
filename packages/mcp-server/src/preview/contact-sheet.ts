@@ -103,7 +103,11 @@ export function decodePng(png: Buffer): RgbImage {
 
   for (let y = 0; y < height; y += 1) {
     const rowStart = y * (stride + 1);
-    if (rowStart + stride >= raw.length + 1 && rowStart >= raw.length) {
+    // The filter byte plus a full scanline must both be there. A truncated
+    // final row would otherwise copy fewer bytes than `stride` and leave the
+    // previous row's pixels in the buffer — silent corruption where a refusal
+    // belongs.
+    if (rowStart + 1 + stride > raw.length) {
       throw new ContactSheetError('PNG data ended early.');
     }
     const filter = raw[rowStart];

@@ -1373,10 +1373,42 @@ describe('brand consistency', () => {
     });
     const [fix] = findings[0].fixes ?? [];
     expect(fix).toMatchObject({
-      op: 'add',
+      op: 'replace',
       path: '/children/0/children/0/props/color',
     });
     expect(typeof fix.value).toBe('string');
+  });
+
+  it('emits a fix that replaces an array entry rather than splicing one in', () => {
+    // RFC 6902 `add` at `/colors/0` inserts. A fix spelt that way would leave
+    // the off-palette hex in the document at index 1, so the finding it
+    // repaired would still be there.
+    const findings = pptxDiagnostics(
+      deck(CANVAS, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'chart',
+              props: {
+                chartType: 'bar',
+                data: [{ name: 'A', labels: ['x'], values: [1] }],
+                chartColors: ['#FF00FF'],
+                x: 1,
+                y: 1,
+                w: 6,
+                h: 4,
+              },
+            },
+          ],
+        },
+      ])
+    ).filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].fixes?.[0]).toMatchObject({
+      op: 'replace',
+      path: '/children/0/children/0/props/chartColors/0',
+    });
   });
 
   it('accepts a colour the theme defines, written as hex', () => {

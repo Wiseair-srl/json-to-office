@@ -8,6 +8,7 @@
  * preview render tests cover with real pages.
  */
 
+import zlib from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import {
   ContactSheetError,
@@ -46,6 +47,50 @@ function page(width: number, height: number, mark: number): Buffer {
   return encodePng({ width, height, data });
 }
 
+/** The concatenated IDAT payload of a PNG this file produced. */
+function idatOf(png: Buffer): Buffer {
+  const parts: Buffer[] = [];
+  let offset = 8;
+  while (offset + 8 <= png.length) {
+    const length = png.readUInt32BE(offset);
+    const type = png.toString('ascii', offset + 4, offset + 8);
+    if (type === 'IDAT')
+      parts.push(png.subarray(offset + 8, offset + 8 + length));
+    offset += 8 + length + 4;
+  }
+  return Buffer.concat(parts);
+}
+
+/** A PNG with the given deflate stream, CRCs and all — an unreadable one. */
+function rebuildPng(width: number, height: number, idat: Buffer): Buffer {
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  header[9] = 2;
+  const chunk = (type: string, body: Buffer): Buffer => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(body.length, 0);
+    head.write(type, 4, 'ascii');
+    let crc = 0xffffffff;
+    for (const byte of Buffer.concat([head.subarray(4), body])) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit += 1) {
+        crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
+      }
+    }
+    const tail = Buffer.alloc(4);
+    tail.writeUInt32BE((crc ^ 0xffffffff) >>> 0, 0);
+    return Buffer.concat([head, body, tail]);
+  };
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', header),
+    chunk('IDAT', idat),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
 function pixel(
   image: { width: number; data: Buffer },
   x: number,
@@ -69,6 +114,20 @@ describe('png round trip', () => {
     expect(() => decodePng(Buffer.from('not a png'))).toThrow(
       ContactSheetError
     );
+  });
+
+  it('refuses a truncated image rather than inventing the missing rows', () => {
+    // A short IDAT used to copy fewer bytes than a scanline and leave the
+    // previous row behind, which decodes to a plausible-looking image with
+    // the bottom of the page repeated.
+    const whole = page(24, 16, 30);
+    const inflated = zlib.inflateSync(idatOf(whole));
+    const truncated = rebuildPng(
+      24,
+      16,
+      zlib.deflateSync(inflated.subarray(0, inflated.length - 20))
+    );
+    expect(() => decodePng(truncated)).toThrow(ContactSheetError);
   });
 });
 

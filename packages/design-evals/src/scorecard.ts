@@ -53,8 +53,15 @@ export interface JudgeTotals {
 
 export function judgeTotals(runs: readonly RunMetrics[]): JudgeTotals {
   // A failed run is not unjudged, it is unshippable: leaving it out would let
-  // a phase improve its rate by producing fewer documents.
-  const levels = runs.map((run) => run.judge?.level ?? 1);
+  // a phase improve its rate by producing fewer documents. A run that
+  // *completed* and has no verdict is a different thing — the judge itself
+  // failed — and scoring that as a level 1 would report an outage as a
+  // quality regression, so it is left out of the level median and visible in
+  // `judged` being smaller than the run count.
+  const levels = runs.flatMap((run) => {
+    if (run.judge) return [run.judge.level as number];
+    return run.outcome === 'failed' ? [1] : [];
+  });
   const shipped = runs.filter((run) => run.judge?.wouldShip === true).length;
   const excellent = runs.filter((run) => (run.judge?.level ?? 1) >= 4).length;
   return {
