@@ -97,6 +97,18 @@ class SchemaService {
     return promise;
   }
 
+  /**
+   * Send one document-schema request and store what comes back.
+   *
+   * Split out of `fetchDocumentSchema` so the decisions that must happen
+   * synchronously — cache lookup, sharing, registering this request as the one
+   * in flight — are all made before the first `await`. Two callers in the same
+   * tick would otherwise both find nothing in flight and both send.
+   *
+   * @param epoch the invalidation count when the request was sent; the result
+   *   is returned to the caller either way, but only reaches the cache if no
+   *   invalidation has happened since.
+   */
   private async requestDocumentSchema(
     cacheKey: string,
     pluginNames: string[] | undefined,
