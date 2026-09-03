@@ -40,6 +40,23 @@ describe('parseArgs', () => {
     });
   });
 
+  it('scores hard metrics only until a judge is asked for', () => {
+    // The countable half needs no model and no money; the opinion is opt-in.
+    expect(parseArgs([]).judgeModel).toBeUndefined();
+    expect(parseArgs(['--judge']).judgeModel).toBe('claude-opus-5');
+    expect(parseArgs(['--judge', 'claude-sonnet-5']).judgeModel).toBe(
+      'claude-sonnet-5'
+    );
+  });
+
+  it('runs each brief once unless asked to repeat', () => {
+    // Three runs per brief at final acceptance is how run variance becomes
+    // visible rather than being averaged into the result.
+    expect(parseArgs([]).repeat).toBe(1);
+    expect(parseArgs(['--repeat', '3']).repeat).toBe(3);
+    expect(parseArgs(['--repeat', '0']).repeat).toBe(1);
+  });
+
   it('becomes an assisted run only when a skill is supplied', () => {
     expect(parseArgs([]).mode).toBe('cold');
     expect(parseArgs(['--skill', '/tmp/SKILL.md'])).toMatchObject({

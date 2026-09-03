@@ -32,6 +32,44 @@ export interface ScorecardTotals {
   totalWallMs: number;
 }
 
+/**
+ * The judge's side of the scorecard.
+ *
+ * Kept in its own object rather than folded into `totals` so that a reader can
+ * see at a glance which numbers are countable and which are an opinion —
+ * and so that a scorecard produced without a judge is obviously missing that
+ * half rather than silently reporting zeros for it.
+ */
+export interface JudgeTotals {
+  /** Runs the judge actually saw. Failed runs are judged as unshippable. */
+  judged: number;
+  medianLevel: number;
+  excellent: number;
+  excellentRate: number;
+  wouldShip: number;
+  wouldShipRate: number;
+  medianGenericness: number;
+}
+
+export function judgeTotals(runs: readonly RunMetrics[]): JudgeTotals {
+  // A failed run is not unjudged, it is unshippable: leaving it out would let
+  // a phase improve its rate by producing fewer documents.
+  const levels = runs.map((run) => run.judge?.level ?? 1);
+  const shipped = runs.filter((run) => run.judge?.wouldShip === true).length;
+  const excellent = runs.filter((run) => (run.judge?.level ?? 1) >= 4).length;
+  return {
+    judged: runs.filter((run) => run.judge !== undefined).length,
+    medianLevel: median(levels),
+    excellent,
+    excellentRate: runs.length === 0 ? 0 : excellent / runs.length,
+    wouldShip: shipped,
+    wouldShipRate: runs.length === 0 ? 0 : shipped / runs.length,
+    medianGenericness: median(
+      runs.flatMap((run) => (run.judge ? [run.judge.genericness] : []))
+    ),
+  };
+}
+
 export interface Scorecard {
   /** ISO 8601, when the run set finished. */
   generatedAt: string;
@@ -44,6 +82,8 @@ export interface Scorecard {
   };
   manifest: RunManifest;
   totals: ScorecardTotals;
+  /** Present only when the runs were judged. */
+  judge?: JudgeTotals;
   /** Every `W_QUALITY_*` code seen, summed over runs. */
   qualityByCode: Record<string, number>;
   byFormat: Record<string, ScorecardTotals>;
@@ -161,6 +201,9 @@ export function buildScorecard(input: {
     corpus: input.corpus,
     manifest: input.manifest,
     totals: totals(input.runs),
+    ...(input.runs.some((run) => run.judge !== undefined) && {
+      judge: judgeTotals(input.runs),
+    }),
     qualityByCode: Object.fromEntries(Object.entries(qualityByCode).sort()),
     byFormat: group(input.runs, (run) => run.format),
     byArchetype: group(

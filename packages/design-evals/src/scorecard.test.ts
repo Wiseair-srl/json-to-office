@@ -126,6 +126,36 @@ describe('buildScorecard', () => {
     expect(scorecard.generatedAt).toBe('2026-09-03T12:00:00.000Z');
   });
 
+  it('reports the judge separately, and only when there was one', () => {
+    const unjudged = buildScorecard({ ...base, runs: [run({ briefId: 'a' })] });
+    expect(unjudged.judge).toBeUndefined();
+
+    const judged = buildScorecard({
+      ...base,
+      runs: [
+        run({
+          briefId: 'a',
+          judge: {
+            level: 4,
+            wouldShip: true,
+            genericness: 1,
+            rationale: 'x',
+          },
+        }),
+        // A failed run is not unjudged, it is unshippable — otherwise a phase
+        // improves its rate by producing fewer documents.
+        failedRun('b', 'pptx', 'overloaded'),
+      ],
+    });
+    expect(judged.judge).toMatchObject({
+      judged: 1,
+      excellent: 1,
+      wouldShip: 1,
+      wouldShipRate: 0.5,
+      medianLevel: 2.5,
+    });
+  });
+
   it('lists every failure by name, never elided', () => {
     const scorecard = buildScorecard({
       ...base,

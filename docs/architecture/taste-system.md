@@ -229,6 +229,12 @@ pnpm evals -- --model claude-opus-5 --out ./evals-out/baseline
 pnpm evals -- --sealed-corpus /path/to/acceptance/briefs   # final acceptance only
 ```
 
+It lives in its own private package rather than inside `jto-ops`, where the
+programme spec first placed it: the harness has to drive the MCP server, and
+`mcp-server` already depends on `jto-ops`, so the two could only be one package
+by way of a cycle. Keeping it separate also keeps the Claude Agent SDK out of a
+library other people install.
+
 One command takes briefs from the committed 40-brief development corpus
 (`packages/design-evals/briefs`, 24 docx and 16 pptx across the three v1
 archetypes, with format, archetype, language and data-density metadata), drives
@@ -261,6 +267,33 @@ endpoint class (`local`, `private`, `hosted`, `none`) and the retry budget. A
 field that could not be read is recorded as `unavailable` rather than dropped: a
 manifest with a hole is still a manifest, while one that quietly shrank is a
 comparison waiting to mislead.
+
+### The judge
+
+`--judge <model>` adds a vision pass: the produced document is rendered through
+the same preview pipeline `jto_preview` uses, composed into one contact sheet,
+and scored against the five-level rubric — rendered, never from the JSON,
+because every question above level 3 is about what a reader sees. It answers
+the shipping question ("would you send this to a client, unchanged, with your
+name on it?") and rates genericness separately, because moving design decisions
+into a house theme risks making every document look the same, and a scorecard
+should be able to see that happening rather than celebrating it as consistency.
+
+The rubric prompt is generated from the same table this document defines, so
+the judge and the rules cannot drift into measuring different things. The
+verdict is `evaluative` and never a gate; it sits in its own object on the
+scorecard so that a taste change and a defect change stay distinguishable. A
+failed run is judged as unshippable rather than left out — otherwise a phase
+improves its rate by producing fewer documents.
+
+A judge is worth its agreement with the person the documents are for.
+`buildCalibrationSheet` assembles development-corpus pairs into a rating sheet
+with the human column blank and the judge's own answer recorded beside it;
+`calibrationReport` returns raw agreement, Cohen's kappa and a percentile
+bootstrap interval from a seeded PRNG, so "run it again" is not an argument
+against the number. Unrated pairs are dropped and counted, never averaged
+towards whichever answer is convenient. Below 0.8 agreement the human answer is
+authoritative and the judge's contribution is reported but not relied on.
 
 The headless runner is a proxy for the real surface, which is Claude Desktop.
 `agreement()` compares paired ship/no-ship verdicts and reports raw agreement
