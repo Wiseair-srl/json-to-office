@@ -41,6 +41,16 @@ export {
 } from './policy';
 export { DuplicateQualityRuleError, QualityRuleRegistry } from './registry';
 export {
+  collectPlaceholders,
+  detectPlaceholder,
+  placeholderFinding,
+  PLACEHOLDER_PATTERN_IDS,
+  SCAFFOLD_MARKER_SYNTAX,
+  type PlaceholderKind,
+  type PlaceholderMatch,
+  type PlaceholderOccurrence,
+} from './placeholder';
+export {
   QualityEngine,
   QualityGateError,
   QualityProfileError,

@@ -14,6 +14,7 @@
 
 import type { McpServer, ServerContext } from '@modelcontextprotocol/server';
 import type { GenerationWarning } from '@json-to-office/shared';
+import { collectPlaceholders } from '@json-to-office/quality';
 
 import {
   checkRenderer,
@@ -82,6 +83,33 @@ async function reportProgress(
   } catch {
     /* progress is advisory; losing it must not lose the generation */
   }
+}
+
+/**
+ * Every scaffold slot still holding its marker, as errors.
+ *
+ * A scaffold is a deliberate draft state: `jto_validate` reports the markers
+ * and still answers `ok: true`, because a draft is a legitimate thing to hold.
+ * Generation is the other side of that bargain — a file is what someone sends
+ * on, and `{{client name}}` on page one is the defect this whole path exists
+ * to prevent. Filler text (lorem, "Your title here") stays advisory: nobody
+ * put it there on purpose, so nobody can be sure it is not the real copy.
+ */
+function scaffoldMarkerDiagnostics(document: unknown): Diagnostic[] {
+  return collectPlaceholders(document)
+    .filter((occurrence) => occurrence.match.kind === 'scaffold-marker')
+    .map((occurrence) =>
+      diagnostic(
+        ERROR_CODES.SCAFFOLD_MARKER,
+        `Unfilled scaffold slot "${occurrence.match.excerpt}" — fill it or remove the component before generating.`,
+        {
+          path: occurrence.path,
+          suggestion:
+            'Patch the slot with real content; jto_validate lists every remaining marker.',
+          context: { pattern: occurrence.match.pattern },
+        }
+      )
+    );
 }
 
 function cancelled(format: FormatName): Diagnostic[] {
@@ -197,7 +225,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Generate a document',
       description:
-        'Render a document to a real .docx or .pptx. The file is written under the server output root and returned as a path; pass `outputMode: "base64"` only for small artifacts. A document that fails the generation gate comes back with `ok: false` and the same path-addressed diagnostics jto_validate reports, never as an error. Warnings the render emitted (unresolved fonts, a `theme` or `props.theme` naming nothing) arrive as warning-severity diagnostics alongside a successful artifact. The DOCX `highcharts` component draws through a Highcharts export server that must be running on the host (see jto_info.previewDependencies.highchartsExportServer); the `visual` component needs no such service.',
+        'Render a document to a real .docx or .pptx. The file is written under the server output root and returned as a path; pass `outputMode: "base64"` only for small artifacts. A document that fails the generation gate comes back with `ok: false` and the same path-addressed diagnostics jto_validate reports, never as an error. An unfilled scaffold slot (`{{…}}`) is always refused here even though jto_validate lets a draft pass, so fill every slot before generating. Warnings the render emitted (unresolved fonts, a `theme` or `props.theme` naming nothing) arrive as warning-severity diagnostics alongside a successful artifact. The DOCX `highcharts` component draws through a Highcharts export server that must be running on the host (see jto_info.previewDependencies.highchartsExportServer); the `visual` component needs no such service.',
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -280,6 +308,11 @@ export function register(server: McpServer, deps: ToolDeps): void {
             );
             if (!resolved.ok) return { ...resolved, ...base };
             const source = sourceSummary(resolved);
+
+            const markers = scaffoldMarkerDiagnostics(resolved.document);
+            if (markers.length > 0) {
+              return { ok: false, diagnostics: markers, ...base, source };
+            }
 
             // One array per request: the adapters PUSH into this sink and never
             // replace it, so a shared array would report a previous document's

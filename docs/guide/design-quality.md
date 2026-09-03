@@ -122,6 +122,7 @@ true.
 | `pptx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`, `W_QUALITY_TEXT_TIGHT`                                         | warning for overflow; otherwise info | estimated     | Estimated text height exceeds, or nearly fills, its box    |
 | `pptx/slide-density`     | `W_QUALITY_SLIDE_DENSITY`                                                                 | warning                              | estimated     | Body text exceeds `maximumBodyWords` (130 by default)      |
 | `pptx/text-contrast`     | `W_QUALITY_TEXT_CONTRAST`                                                                 | warning                              | deterministic | Text falls below WCAG AA against the surface behind it     |
+| `pptx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT`                                 | warning                              | deterministic | An unfilled scaffold slot, or leftover filler text         |
 
 The canvas rule recognizes these deliberate presets: 16:9 standard
 (`13.333 × 7.5`), 16:9 small (`10 × 5.625`), square (`7.5 × 7.5`), 4:5
@@ -160,16 +161,45 @@ the safety buffer is `W_QUALITY_TEXT_TIGHT`.
 These omissions are deliberate. Missing evidence produces no finding rather
 than a confident-sounding guess.
 
+## Placeholder text and scaffold markers
+
+Both formats run the same check over every authored string, and answer with
+two different codes because the two states have different consequences.
+
+`W_QUALITY_SCAFFOLD_MARKER` is a deliberate draft state: a slot still holding
+the `{{…}}` marker a scaffold wrote into it. `jto_validate` reports the markers
+and still answers `ok: true` — a draft is a legitimate thing to hold — but
+`jto_generate` refuses the document with an `E_SCAFFOLD_MARKER` error per
+remaining slot, because a generated file is what someone sends on.
+
+`W_QUALITY_PLACEHOLDER_TEXT` is leftover filler: lorem ipsum, "Your title
+here", "Click to add title", a whole-string `[bracketed placeholder]`, or bare
+authoring debris (`TODO`, `XXX`). Nobody put it there on purpose and nobody but
+the author can be certain it is not the real copy, so it only ever advises and
+never blocks. Deliberate values authors do write — `TBD`, `N/A`, a citation
+like `[1]` — are not placeholders and are never flagged.
+
+The scan visits every string in the document, not a list of text-bearing
+properties: an allowlist drifts as components gain properties, and a marker it
+misses is a marker generation lets through. Components with `enabled: false`
+are skipped — they never reach the page. Neither code carries a fix; only the
+author knows what the sentence was meant to say.
+
+The gallery templates are demonstration documents whose copy is lorem ipsum,
+so they carry this finding by design; the calibration suite records the count
+per template rather than suppressing the rule.
+
 ## Built-in DOCX rules
 
-| Rule                     | Code                             | Default | Certainty     | What it checks                                                                                     |
-| ------------------------ | -------------------------------- | ------- | ------------- | -------------------------------------------------------------------------------------------------- |
-| `docx/table-width`       | `W_QUALITY_TABLE_WIDTH_OVERFLOW` | warning | deterministic | Explicit column widths exceed the usable width of their section, with a 10-twip rounding tolerance |
-| `docx/heading-hierarchy` | `W_QUALITY_HEADING_SKIP`         | info    | deterministic | A heading jumps down by more than one level                                                        |
-| `docx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`        | warning | estimated     | A word too wide for its floating frame, or a frame whose wrapped block runs off the sheet          |
-| `docx/frame-collision`   | `W_QUALITY_FRAME_COLLISION`      | warning | estimated     | Two page-anchored floating frames whose estimated text blocks land on the same region of a page    |
-| `docx/svg-text-bounds`   | `W_QUALITY_SVG_TEXT_CLIPPED`     | warning | deterministic | A `<text>` baseline in an inline SVG falls outside the viewBox, so the words are never painted     |
-| `docx/line-box`          | `W_QUALITY_LINE_BOX_COLLAPSE`    | warning | measured      | An `exactly` line box on text is shorter than the capitals it holds                                |
+| Rule                     | Code                                                      | Default | Certainty     | What it checks                                                                                     |
+| ------------------------ | --------------------------------------------------------- | ------- | ------------- | -------------------------------------------------------------------------------------------------- |
+| `docx/table-width`       | `W_QUALITY_TABLE_WIDTH_OVERFLOW`                          | warning | deterministic | Explicit column widths exceed the usable width of their section, with a 10-twip rounding tolerance |
+| `docx/heading-hierarchy` | `W_QUALITY_HEADING_SKIP`                                  | info    | deterministic | A heading jumps down by more than one level                                                        |
+| `docx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`                                 | warning | estimated     | A word too wide for its floating frame, or a frame whose wrapped block runs off the sheet          |
+| `docx/frame-collision`   | `W_QUALITY_FRAME_COLLISION`                               | warning | estimated     | Two page-anchored floating frames whose estimated text blocks land on the same region of a page    |
+| `docx/svg-text-bounds`   | `W_QUALITY_SVG_TEXT_CLIPPED`                              | warning | deterministic | A `<text>` baseline in an inline SVG falls outside the viewBox, so the words are never painted     |
+| `docx/line-box`          | `W_QUALITY_LINE_BOX_COLLAPSE`                             | warning | measured      | An `exactly` line box on text is shorter than the capitals it holds                                |
+| `docx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT` | warning | deterministic | An unfilled scaffold slot, or leftover filler text                                                 |
 
 Frame text fit only inspects paragraphs pinned into a floating frame, where
 the author rather than the layout engine decides the available room; flowed

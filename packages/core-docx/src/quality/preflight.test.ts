@@ -836,3 +836,82 @@ describe('exact line box floor above one em', () => {
     ]);
   });
 });
+
+describe('placeholder text', () => {
+  it('reports a scaffold marker at the authored pointer', () => {
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'section',
+          children: [
+            { name: 'heading', props: { text: '{{section title}}', level: 1 } },
+          ],
+        },
+      ])
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: QUALITY_CODES.SCAFFOLD_MARKER,
+      severity: 'warning',
+      category: 'integrity',
+      certainty: 'deterministic',
+      path: '/children/0/children/0/props/text',
+      context: { kind: 'scaffold-marker', pattern: 'scaffold-marker' },
+    });
+  });
+
+  it('reports filler under its own code, anywhere in the document', () => {
+    const findings = docxDiagnostics({
+      name: 'docx',
+      props: {},
+      metadata: { title: '[Client name]' },
+      children: [
+        {
+          name: 'section',
+          children: [
+            { name: 'heading', props: { text: 'Findings', level: 1 } },
+            { name: 'paragraph', props: { text: 'Lorem ipsum dolor sit.' } },
+            {
+              name: 'table',
+              props: {
+                columns: [
+                  {
+                    header: { content: 'Measure' },
+                    cells: [{ content: 'Your value here' }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(
+      findings
+        .filter((finding) => finding.code === QUALITY_CODES.PLACEHOLDER_TEXT)
+        .map((finding) => finding.path)
+    ).toEqual([
+      '/metadata/title',
+      '/children/0/children/1/props/text',
+      '/children/0/children/2/props/columns/0/cells/0/content',
+    ]);
+  });
+
+  it('says nothing about real copy', () => {
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'section',
+          children: [
+            { name: 'heading', props: { text: 'Findings', level: 1 } },
+            {
+              name: 'paragraph',
+              props: { text: 'Adoption grew 14% year on year.' },
+            },
+          ],
+        },
+      ])
+    );
+    expect(findings).toEqual([]);
+  });
+});

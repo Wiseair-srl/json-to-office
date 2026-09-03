@@ -71,6 +71,29 @@ const KNOWN_TRUE_FINDINGS: Readonly<Record<string, readonly string[]>> = {
   ],
 };
 
+/**
+ * Illustrative placeholders inside the gallery templates (#325).
+ *
+ * These are true findings, and the rule is right to raise them: the templates
+ * are demonstration documents whose body copy is lorem ipsum and whose slots
+ * read "Your Subtitle Text Here". Copying one and shipping it unedited is
+ * exactly the failure the rule exists to catch, so they are recorded per
+ * document rather than suppressed globally — a count, because the paths run to
+ * dozens per deck and pinning each one would obscure what is being allowed.
+ *
+ * The count is exact on purpose: a template that grows a new placeholder, or
+ * one that is finally written out in real prose, moves the number and asks for
+ * a decision. `W_QUALITY_SCAFFOLD_MARKER` is never allowed here — a shipped
+ * template must never carry an unfilled slot.
+ */
+const ILLUSTRATIVE_PLACEHOLDERS: Readonly<Record<string, number>> = {
+  'standard-annual-report.docx.json': 3,
+  'tech-report.docx.json': 26,
+  'data-report-presentation.pptx.json': 47,
+  'management-plan.pptx.json': 53,
+  'minimalist-pitch-deck.pptx.json': 42,
+};
+
 const files = STOCK_REFERENCE_TEMPLATES;
 
 describe('reference stock templates pass the quality rules clean', () => {
@@ -91,8 +114,24 @@ describe('reference stock templates pass the quality rules clean', () => {
       const findings = analysis.diagnostics;
 
       const allowed = new Set(KNOWN_TRUE_FINDINGS[file] ?? []);
+      const placeholders = findings.filter(
+        (finding) =>
+          finding.severity === 'warning' &&
+          finding.code === 'W_QUALITY_PLACEHOLDER_TEXT'
+      );
+      expect(placeholders).toHaveLength(ILLUSTRATIVE_PLACEHOLDERS[file] ?? 0);
+      expect(
+        findings.filter(
+          (finding) => finding.code === 'W_QUALITY_SCAFFOLD_MARKER'
+        )
+      ).toEqual([]);
+
       const warnings = findings
-        .filter((finding) => finding.severity === 'warning')
+        .filter(
+          (finding) =>
+            finding.severity === 'warning' &&
+            finding.code !== 'W_QUALITY_PLACEHOLDER_TEXT'
+        )
         .map((finding) => `${finding.code} at ${finding.path}`);
       expect(warnings.filter((warning) => !allowed.has(warning))).toEqual([]);
       // An allowance that stops firing is stale; drop it rather than let it

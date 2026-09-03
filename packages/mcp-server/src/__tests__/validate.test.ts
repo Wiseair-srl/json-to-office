@@ -794,6 +794,32 @@ describe('jto_validate', () => {
     );
   });
 
+  it('reports scaffold markers as expected draft findings, still ok', async () => {
+    const { result } = await validate({
+      format: 'docx',
+      document: {
+        name: 'docx',
+        props: { theme: 'minimal' },
+        children: [
+          { name: 'heading', props: { text: '{{report title}}', level: 1 } },
+          { name: 'paragraph', props: { text: 'Revenue grew 12%.' } },
+        ],
+      },
+    });
+    // A scaffold is a legitimate state to hold: structural validation runs,
+    // the markers are listed, and nothing blocks until generation.
+    expect(result.ok).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'W_QUALITY_SCAFFOLD_MARKER',
+        severity: 'warning',
+        blocking: false,
+        path: '/children/0/props/text',
+      })
+    );
+  });
+
   it('answers a handle with a structured failure when no store is installed', async () => {
     const { result, isError } = await validate({
       format: 'docx',
