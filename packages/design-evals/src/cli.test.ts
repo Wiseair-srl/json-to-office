@@ -123,18 +123,24 @@ describe('structuralPages', () => {
 
 describe('analyzeDocument', () => {
   it('measures the document itself rather than trusting a report about it', async () => {
-    const measured = await analyzeDocument('pptx', {
-      name: 'pptx',
-      props: {},
-      children: [
-        {
-          name: 'slide',
-          children: [
-            { name: 'text', props: { text: 'Lorem ipsum dolor sit amet.' } },
-          ],
-        },
-      ],
-    });
+    // `measurePages: false` keeps this a unit test: the rendered page count
+    // needs LibreOffice, and is covered by the real runs instead.
+    const measured = await analyzeDocument(
+      'pptx',
+      {
+        name: 'pptx',
+        props: {},
+        children: [
+          {
+            name: 'slide',
+            children: [
+              { name: 'text', props: { text: 'Lorem ipsum dolor sit amet.' } },
+            ],
+          },
+        ],
+      },
+      { measurePages: false }
+    );
     const codes = measured.diagnostics.map(
       (entry) => (entry as { code?: string }).code
     );
@@ -146,7 +152,11 @@ describe('analyzeDocument', () => {
   });
 
   it('reports a document that does not validate as blocking', async () => {
-    const measured = await analyzeDocument('docx', { name: 'docx' });
+    const measured = await analyzeDocument(
+      'docx',
+      { name: 'docx' },
+      { measurePages: false }
+    );
     expect(
       measured.diagnostics.some(
         (entry) => (entry as { severity?: string }).severity === 'error'

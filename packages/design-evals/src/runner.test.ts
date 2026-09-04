@@ -160,6 +160,26 @@ describe('runBrief', () => {
     expect(run.cost).toMatchObject({ inputTokens: 1200, outputTokens: 800 });
   });
 
+  it('flags a foreign MCP server, not just a built-in tool', async () => {
+    // The first full baseline had a pricing brief reach the operator's company
+    // finance MCP server and pull real contract and revenue data. The guard is
+    // what made it visible; `strictMcpConfig` is what stops it.
+    const run = await runBrief(
+      options({
+        driver: driverOf(
+          {
+            type: 'tool_use',
+            name: 'mcp__company_finance__list-clients',
+            input: {},
+          },
+          { type: 'tool_use', name: GENERATE, input: { document: DOCUMENT } },
+          OK_RESULT
+        ),
+      })
+    );
+    expect(run.foreignTools).toEqual(['mcp__company_finance__list-clients']);
+  });
+
   it('records tools that did not come from the server', async () => {
     const run = await runBrief(
       options({

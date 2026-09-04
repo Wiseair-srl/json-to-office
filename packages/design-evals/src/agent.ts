@@ -100,6 +100,14 @@ export const sdkAgentDriver: AgentDriver = async function* (options) {
       // No project settings, no user settings, no CLAUDE.md: a cold run must
       // measure the product, not the machine it happens to run on.
       settingSources: [],
+      // And no MCP server but ours. `settingSources: []` does not cover these:
+      // a project `.mcp.json`, the user's own settings and any installed
+      // plugin still contribute servers. In the first full baseline that let a
+      // pricing brief reach the operator's company finance server and pull
+      // real contract, client and revenue data into an eval session — which
+      // is both a contaminated measurement and a place company data has no
+      // reason to be.
+      strictMcpConfig: true,
       mcpServers: {
         [SERVER_ALIAS]: {
           type: 'stdio',
