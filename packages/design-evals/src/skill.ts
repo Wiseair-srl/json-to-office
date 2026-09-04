@@ -38,6 +38,14 @@ export interface LoadedSkill {
   hash: string;
   /** `bundle` when a directory was inlined; `file` for a single document. */
   mode: 'bundle' | 'file';
+  /**
+   * What the bundle contains but the prompt does not: templates, scripts,
+   * media. A skill that ships a template library and a preflight script does
+   * part of its work through them, and an assisted run with no file tools
+   * cannot. Recorded so the ceiling is read as the ceiling of the skill's
+   * *guidance*, which is what this programme is actually trying to replace.
+   */
+  excluded: { files: number; bytes: number };
 }
 
 export class SkillError extends Error {
@@ -100,6 +108,7 @@ export async function loadSkill(target: string): Promise<LoadedSkill> {
       files: [path.basename(target)],
       hash: createHash('sha256').update(text).digest('hex'),
       mode: 'file',
+      excluded: { files: 0, bytes: 0 },
     };
   }
 
@@ -136,6 +145,21 @@ export async function loadSkill(target: string): Promise<LoadedSkill> {
     // A bundle without a manifest is still a skill; it just cannot say which.
   }
 
+  const included = new Set(ordered);
+  let excludedFiles = 0;
+  let excludedBytes = 0;
+  const measure = async (dir: string): Promise<void> => {
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) await measure(full);
+      else if (!included.has(full)) {
+        excludedFiles += 1;
+        excludedBytes += (await fs.stat(full)).size;
+      }
+    }
+  };
+  await measure(target);
+
   return {
     text,
     name,
@@ -143,5 +167,6 @@ export async function loadSkill(target: string): Promise<LoadedSkill> {
     files: ordered.map((file) => path.relative(target, file)),
     hash: createHash('sha256').update(text).digest('hex'),
     mode: 'bundle',
+    excluded: { files: excludedFiles, bytes: excludedBytes },
   };
 }
