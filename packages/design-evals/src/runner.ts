@@ -90,6 +90,29 @@ const CREATE_TOOL = `mcp__${SERVER_ALIAS}__jto_workspace_create`;
  * every re-draft or re-generate after the initial one. A run that got it right
  * first time scores 0, which is the number that deserves to be there.
  */
+/**
+ * Tool calls that did not go through the json-to-office server.
+ *
+ * A cold run is supposed to have none: the whole claim is "this is what the
+ * product alone gets you". The first working smoke run had Bash, Write, Read,
+ * Agent and ScheduleWakeup in it, and nothing in the scorecard said so — the
+ * numbers looked clean and measured something else entirely. Counted now, so a
+ * contaminated run cannot be quietly averaged into a baseline.
+ */
+export function countForeignTools(events: readonly AgentEvent[]): string[] {
+  const prefix = `mcp__${SERVER_ALIAS}__`;
+  return [
+    ...new Set(
+      events
+        .filter(
+          (event): event is Extract<AgentEvent, { type: 'tool_use' }> =>
+            event.type === 'tool_use' && !event.name.startsWith(prefix)
+        )
+        .map((event) => event.name)
+    ),
+  ].sort();
+}
+
 export function countIterations(events: readonly AgentEvent[]): number {
   const tools = events.filter(
     (event): event is Extract<AgentEvent, { type: 'tool_use' }> =>
@@ -335,6 +358,7 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
     iterations: countIterations(events),
     turns: result.turns,
     toolCalls,
+    foreignTools: countForeignTools(events),
     cost: {
       inputTokens: result.inputTokens,
       outputTokens: result.outputTokens,

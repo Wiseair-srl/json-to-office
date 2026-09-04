@@ -244,7 +244,11 @@ artifact, and writes one `scorecard.json`. `--briefs` runs a subset;
 
 **Cold by default.** The agent gets the server's own instructions and the
 json-to-office tools, and nothing else — no skill, no project settings, no file
-or shell access. That is the measurement the targets are stated against: what
+or shell access. Enforced with the SDK's `tools: []`, which is the option that
+restricts; `allowedTools` only waives the permission prompt, and using it alone
+produced "cold" runs that reached for Bash, Write and a subagent. Every run
+records the tools it used from outside the server, and a set with any of them
+is reported as contaminated rather than averaged into a baseline. That is the measurement the targets are stated against: what
 the product alone gets you. `--skill <path>` makes the run assisted, and the
 manifest records which it was and hashes what the skill said.
 
