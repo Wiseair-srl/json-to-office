@@ -73,9 +73,20 @@ async function renderedPages(
   }
 }
 
+export interface AnalyzeOptions {
+  /**
+   * Render the document to count its pages. On by default, because a page
+   * count is one of the measured metrics — but it launches LibreOffice, and a
+   * caller that only wants the diagnostics should not have to wait for a
+   * converter or have one at all.
+   */
+  measurePages?: boolean;
+}
+
 export async function analyzeDocument(
   format: string,
-  document: unknown
+  document: unknown,
+  options: AnalyzeOptions = {}
 ): Promise<Measurement> {
   const adapter =
     format === 'pptx' ? new PptxFormatAdapter() : new DocxFormatAdapter();
@@ -85,7 +96,10 @@ export async function analyzeDocument(
     ? await adapter.analyzeQuality(document)
     : { diagnostics: [] };
 
-  const measured = await renderedPages(format, document);
+  const measured =
+    options.measurePages === false
+      ? undefined
+      : await renderedPages(format, document);
 
   return {
     diagnostics: [
