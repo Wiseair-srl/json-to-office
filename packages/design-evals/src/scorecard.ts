@@ -36,7 +36,14 @@ export interface ScorecardTotals {
   totalToolCalls: number;
   totalInputTokens: number;
   totalOutputTokens: number;
+  /**
+   * Notional USD at API rates, summed. NOT a bill: on a subscription session
+   * (`credential: 'none'`) nothing is charged and this only says how much
+   * model work the set represents.
+   */
   totalUsd?: number;
+  /** Credential sources seen across the set — `none` is a subscription login. */
+  credentials: string[];
   totalWallMs: number;
 }
 
@@ -171,6 +178,13 @@ export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
       totalUsd:
         Math.round(usd.reduce((sum, value) => sum + value, 0) * 1e6) / 1e6,
     }),
+    credentials: [
+      ...new Set(
+        runs.flatMap((run) =>
+          run.cost.credential ? [run.cost.credential] : []
+        )
+      ),
+    ].sort(),
     totalWallMs: runs.reduce((sum, run) => sum + run.wallMs, 0),
   };
 }

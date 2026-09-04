@@ -363,6 +363,9 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
       inputTokens: result.inputTokens,
       outputTokens: result.outputTokens,
       ...(result.usd !== undefined && { usd: result.usd }),
+      ...(result.credential !== undefined && {
+        credential: result.credential,
+      }),
     },
     wallMs,
     retries,

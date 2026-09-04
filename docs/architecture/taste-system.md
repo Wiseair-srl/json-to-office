@@ -270,6 +270,15 @@ document where LibreOffice and poppler are present, and every run records
 whether its count was `rendered` or `structural`, so a corpus measured across
 two hosts can never average the two and say nothing.
 
+**Cost is reported, not charged.** The scorecard carries a dollar figure and it
+is the SDK's estimate of what the tokens would cost _at API rates_ — in the
+SDK's own words, "not a billing statement". Every run records where its
+credential came from, and `none` means a claude.ai subscription login, where
+nothing is billed and the figure only says how much model work the set
+represents. The costs that bite are wall-clock time, since runs are serial, and
+whatever allowance the credential has. The judge goes through the same
+credential as the author, so a subscription needs no API key.
+
 **Failures stay in the denominator.** A run that errored, ran out of turns or
 ended without generating anything counts as a run and as not shippable. A
 denominator that shrinks when the agent gives up is a denominator that improves

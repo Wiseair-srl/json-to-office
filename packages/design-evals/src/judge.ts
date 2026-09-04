@@ -158,7 +158,96 @@ export async function judgePair(input: {
 }
 
 /**
- * The real vision call, over the Anthropic SDK.
+ * The vision call over the *agent* SDK, so it runs on whatever credential the
+ * session already has.
+ *
+ * The judge used to go through the Anthropic SDK directly, which needs an
+ * `ANTHROPIC_API_KEY`. On a claude.ai subscription there is no such key — the
+ * agent driver authenticates over OAuth — so the headline metric of the whole
+ * programme was unreachable on exactly the setup it is meant to measure, and
+ * looked like a budget decision rather than a wiring one.
+ *
+ * One turn, no tools, no MCP servers: it is a question about an image, not a
+ * session.
+ */
+export function agentVision(options: {
+  model: string;
+  maxTurns?: number;
+}): VisionCall {
+  return async (input) => {
+    const { query } = await import('@anthropic-ai/claude-agent-sdk');
+    const session = query({
+      prompt: (async function* () {
+        yield {
+          type: 'user' as const,
+          message: {
+            role: 'user' as const,
+            content: [
+              ...input.images.map((image) => ({
+                type: 'image' as const,
+                source: {
+                  type: 'base64' as const,
+                  media_type: 'image/png' as const,
+                  data: image.png.toString('base64'),
+                },
+              })),
+              {
+                type: 'text' as const,
+                text: `${input.system}\n\n${input.text}\n\nAnswer with JSON matching this schema and nothing else:\n${JSON.stringify(input.schema)}`,
+              },
+            ],
+          },
+          parent_tool_use_id: null,
+          session_id: '',
+        };
+      })(),
+      options: {
+        model: options.model,
+        maxTurns: options.maxTurns ?? 1,
+        // A judge with tools is an agent; this one only looks and answers.
+        tools: [],
+        settingSources: [],
+      },
+    });
+
+    let text = '';
+    let inputTokens = 0;
+    let outputTokens = 0;
+    for await (const message of session) {
+      if (message.type === 'assistant') {
+        for (const block of message.message.content) {
+          if (block.type === 'text') text += block.text;
+        }
+      }
+      if (message.type === 'result') {
+        const usage = message.usage as SdkUsage | undefined;
+        inputTokens = totalInput(usage);
+        outputTokens = usage?.output_tokens ?? 0;
+      }
+    }
+    return { value: parseJson(text), inputTokens, outputTokens };
+  };
+}
+
+interface SdkUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
+function totalInput(usage: SdkUsage | undefined): number {
+  if (!usage) return 0;
+  return (
+    (usage.input_tokens ?? 0) +
+    (usage.cache_creation_input_tokens ?? 0) +
+    (usage.cache_read_input_tokens ?? 0)
+  );
+}
+
+/**
+ * The same call over the Anthropic SDK directly, for a host that has an API
+ * key and would rather spend it than its subscription allowance.
  *
  * Lazily imported for the same reason the agent driver is: the harness's pure
  * modules load, test and typecheck on a machine with no credentials.
