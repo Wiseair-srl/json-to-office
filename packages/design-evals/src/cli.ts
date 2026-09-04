@@ -16,6 +16,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { OUTPUT_DIR_ENV, WORKSPACE_DIR_ENV } from '@json-to-office/mcp-server';
+
 import { sdkAgentDriver } from './agent.js';
 import { analyzeDocument } from './analyze.js';
 import { anthropicVision, judgeDocument } from './judge.js';
@@ -112,7 +114,7 @@ export function serverCommand(
     'HOME',
     'LIBREOFFICE_PATH',
     'PDFTOPPM_PATH',
-    'JTO_OUTPUT_DIR',
+    OUTPUT_DIR_ENV,
     'HIGHCHARTS_SERVER_URL',
   ]) {
     const value = process.env[name];
@@ -124,7 +126,11 @@ export function serverCommand(
   // the harness looked for them on disk, and every agent that authored through
   // a handle — the thing the server's own instructions tell it to do — was
   // scored as having generated nothing.
-  env.JTO_WORKSPACE_DIR = workspaceRoot;
+  //
+  // Imported rather than spelled out: guessing this name is what broke it the
+  // first time. `JTO_WORKSPACE_DIR` looks right and the server reads
+  // `JTO_MCP_WORKSPACE_DIR`, so the variable was set, ignored, and silent.
+  env[WORKSPACE_DIR_ENV] = workspaceRoot;
   return {
     command: process.execPath,
     args: [path.join(root, 'packages/mcp-server/dist/cli.js')],
@@ -157,7 +163,7 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   const briefs = selectBriefs(corpus, options.briefs);
   const workspaceRoot =
-    process.env.JTO_WORKSPACE_DIR ??
+    process.env[WORKSPACE_DIR_ENV] ??
     (await fs.mkdtemp(path.join(os.tmpdir(), 'jto-evals-ws-')));
   const skill = options.skillPath
     ? await fs.readFile(options.skillPath, 'utf8')

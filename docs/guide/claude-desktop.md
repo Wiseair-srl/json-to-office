@@ -24,8 +24,8 @@ client document.
       "env": {
         "LIBREOFFICE_PATH": "/Applications/LibreOffice.app/Contents/MacOS/soffice",
         "PDFTOPPM_PATH": "/opt/homebrew/bin/pdftoppm",
-        "JTO_OUTPUT_DIR": "/Users/you/Documents/jto-output",
-        "JTO_WORKSPACE_DIR": "/Users/you/Library/Application Support/jto-workspaces",
+        "JTO_MCP_OUTPUT_DIR": "/Users/you/Documents/jto-output",
+        "JTO_MCP_WORKSPACE_DIR": "/Users/you/Library/Application Support/jto-workspaces",
         "HIGHCHARTS_SERVER_URL": "http://localhost:7801"
       }
     }
@@ -46,15 +46,21 @@ sudo apt-get install libreoffice poppler-utils              # Debian/Ubuntu
 which soffice pdftoppm                                      # the paths to paste
 ```
 
-**`JTO_OUTPUT_DIR`** is where generated files and previews land. Point it
+**`JTO_MCP_OUTPUT_DIR`** is where generated files and previews land. Point it
 somewhere you will actually look — the default is a temporary directory, and a
 report you meant to send is not a thing to go hunting for. Everything the server
 writes stays inside it; a name that is absolute, contains `..` or escapes
 through a symlink is refused before anything touches the disk.
 
-**`JTO_WORKSPACE_DIR`** makes workspaces outlive the connection. Without it, a
+**`JTO_MCP_WORKSPACE_DIR`** makes workspaces outlive the connection. Without it, a
 document held server-side is lost when Claude Desktop restarts mid-edit — which
 it does, on update. With it, the handle still resolves afterwards.
+
+Both names carry the `JTO_MCP_` prefix, and the server ignores anything else in
+silence — a misspelt one is not an error, it is a setting that never applies.
+Either can also be given as a flag (`--output-dir`, `--workspace-dir`) in
+`args`, which fails loudly if you get it wrong, and `jto_info` reports the
+output root the server actually settled on.
 
 ## Verify it, don't assume it
 
