@@ -18,20 +18,49 @@ with the server running locally (LibreOffice reachable through
 and PowerPoint remain the final compatibility target. No other MCP host is a
 design target. English briefs first; Italian follows.
 
-"10x" operationalised (the "today" column is a hypothesis until Phase 0
-measures it):
+"10x" operationalised. The **cold baseline was measured on 2026-09-04** over
+the 40-brief development corpus, server 2.0.0, `claude-sonnet-5`, judged on
+renders — `packages/design-evals/baselines/2026-09-04-cold-server-2.0.0.json`
+carries every run and the full manifest. The original estimates are kept
+alongside, because where they were wrong is itself a finding.
 
-| Metric (eval harness, §5A, on the brief corpus)                                        | Today (est.) | Target                                     |
-| -------------------------------------------------------------------------------------- | ------------ | ------------------------------------------ |
-| Outputs rated _excellent_ (rubric ≥ 8/10, level 5 judged on renders)                   | ~5%          | ≥ 50%                                      |
-| Outputs with any rendered integrity defect (overflow, clip, overlap, placeholder text) | ~60%         | ≤ 5%                                       |
-| Median rubric score                                                                    | ~4           | ≥ 8, i.e. today's best skill-assisted work |
-| Median author iterations to "done"                                                     | 4–6          | ≤ 2                                        |
-| Outputs the judge would ship to a client without human touch-up                        | ~5%          | ≥ 50%                                      |
+| Metric (eval harness, §5A, on the brief corpus)                                        | Est. | **Measured (cold, 2.0.0)**         | Target                                     |
+| -------------------------------------------------------------------------------------- | ---- | ---------------------------------- | ------------------------------------------ |
+| Outputs rated _excellent_ (rubric level ≥ 4, judged on renders)                        | ~5%  | **25%** (10/40)                    | ≥ 50%                                      |
+| Outputs with any rendered integrity defect (overflow, clip, overlap, placeholder text) | ~60% | **not yet measurable** — see below | ≤ 5%                                       |
+| Median rubric score                                                                    | ~4   | **3** (of 5)                       | ≥ 8, i.e. today's best skill-assisted work |
+| Median author iterations to "done"                                                     | 4–6  | **1**                              | ≤ 2                                        |
+| Outputs the judge would ship to a client without human touch-up                        | ~5%  | **20%** (8/40)                     | ≥ 50%                                      |
+
+Two of the estimates were pessimistic by roughly 4x: a quarter of cold outputs
+already reach level 4, and a fifth would be sent as they are. The rubric median
+of 3 says where the wall is — visual coherence is met, communicative
+effectiveness is not.
+
+**The integrity row cannot be filled yet, and must not be read as 0%.** The
+static rules found no integrity defect in any of the 40 documents, but that row
+asks about _rendered_ defects and the rendered pass (§5E, #344) does not exist;
+§2 finding 7 measures the static estimator's ceiling at roughly half of real
+spills. A 0% here would mean "nothing was looked for with the instrument that
+finds these", not "there are none". It is filled when #344 lands.
+
+Two numbers that are not in the table carry more signal than the ones that are.
+Median **genericness is 3 of 4** — the documents build, do not break, and read
+as interchangeable, which is this programme's whole thesis, now measured rather
+than asserted. And **611 `W_QUALITY_OFF_PALETTE` findings across 40 documents**,
+roughly fifteen apiece: the cold agent writes hex by hand and ignores the theme
+palette, which is the direct case for Phase 1.
+
+The `median 1 iteration` is a target met for the wrong reason. Broken out by
+archetype, `client-report` iterates a median of **0** times: the docx runs open
+no workspace and one never previews at all. They do not iterate because they do
+not look, which is what blueprints and `jto_scaffold` (Phase 2) exist to change.
 
 The last row is the practical definition: the median cold-start output must be
 something Paolo would send to a client as is. Failed runs remain in every
-metric's denominator and count as not shippable.
+metric's denominator and count as not shippable — this baseline had none, and
+one run that reached a company MCP server was re-run under `strictMcpConfig`
+before the set was recorded.
 
 ## 2. Diagnosis
 

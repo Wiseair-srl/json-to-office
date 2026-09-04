@@ -91,8 +91,36 @@ describe('buildManifest', () => {
   it('records a field it could not read rather than dropping it', () => {
     // A manifest with a hole is still a manifest; one that quietly shrank is
     // a comparison waiting to mislead.
-    expect(manifest.libreoffice).toBe(UNAVAILABLE);
     expect(manifest.exportServer.endpointClass).toBe('none');
+    expect(
+      buildManifest({
+        repoRoot,
+        model: 'm',
+        modelParameters: {},
+        serverInstructions: 'i',
+        mode: 'cold',
+        maxRetries: 0,
+        agentSdkVersion: '0',
+        libreofficePath: '/nowhere/soffice',
+        pdftoppmPath: '/nowhere/pdftoppm',
+      }).libreoffice
+    ).toBe(UNAVAILABLE);
+  });
+
+  it('finds the converters on PATH, not only from an env var', () => {
+    // The first baseline recorded both as `unavailable` while every page count
+    // in it came from a real render. A manifest that claims the run had no
+    // renderer is worse than one with a hole, because it looks complete.
+    // Skipped where the host genuinely has neither, which is a real CI case.
+    for (const field of ['libreoffice', 'poppler'] as const) {
+      const value = manifest[field];
+      expect(typeof value, field).toBe('string');
+      if (value !== UNAVAILABLE) {
+        expect(value.length, field).toBeGreaterThan(3);
+        // One line, not a whole banner.
+        expect(value, field).not.toContain('\n');
+      }
+    }
   });
 });
 

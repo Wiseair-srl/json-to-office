@@ -12,7 +12,7 @@
  * that quietly shrank is a comparison waiting to mislead.
  */
 
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import os from 'node:os';
@@ -49,16 +49,39 @@ export interface RunManifest {
   maxRetries: number;
 }
 
+/**
+ * A command's stdout, or `unavailable` when it failed.
+ *
+ * Strict: a non-zero exit means the answer is not usable. Used for commands
+ * whose output is DATA — `git rev-parse`, `git status` — where a stderr
+ * message is an error to report as absence, not a value to record.
+ */
 function run(command: string, args: readonly string[]): string {
-  try {
-    return execFileSync(command, args, {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 20_000,
-    }).trim();
-  } catch {
-    return UNAVAILABLE;
-  }
+  const result = spawnSync(command, [...args], {
+    encoding: 'utf8',
+    timeout: 20_000,
+  });
+  if (result.error || result.status !== 0) return UNAVAILABLE;
+  return (result.stdout ?? '').trim() || UNAVAILABLE;
+}
+
+/**
+ * A tool's version banner, from whichever stream it prints on.
+ *
+ * Deliberately more tolerant than `run`: `pdftoppm -v` writes its version to
+ * stderr, and `execFileSync` discards that — so poppler was recorded as
+ * `unavailable` on a host that had just rendered forty documents with it.
+ * Several tools also print a version and exit non-zero, which is not the same
+ * as being absent.
+ */
+function probeVersion(command: string, args: readonly string[]): string {
+  const result = spawnSync(command, [...args], {
+    encoding: 'utf8',
+    timeout: 20_000,
+  });
+  if (result.error) return UNAVAILABLE;
+  const text = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim();
+  return text === '' ? UNAVAILABLE : (text.split('\n')[0] as string).trim();
 }
 
 export function sha256(value: string): string {
@@ -200,10 +223,15 @@ export function buildManifest(input: ManifestInput): RunManifest {
       arch: process.arch,
     },
     node: process.version,
-    libreoffice: input.libreofficePath
-      ? run(input.libreofficePath, ['--version'])
-      : UNAVAILABLE,
-    poppler: input.pdftoppmPath ? run(input.pdftoppmPath, ['-v']) : UNAVAILABLE,
+    // Resolved from PATH when no explicit path is given, the same way the
+    // preview pipeline resolves them. The first baseline recorded
+    // `unavailable` for both while every page count in it came from a real
+    // render — a manifest claiming the run had no renderer is worse than one
+    // with a hole in it, because it looks complete.
+    libreoffice: probeVersion(input.libreofficePath ?? 'soffice', [
+      '--version',
+    ]),
+    poppler: probeVersion(input.pdftoppmPath ?? 'pdftoppm', ['-v']),
     fonts: fontInventory(),
     exportServer: {
       endpointClass: endpointClass(input.exportServerUrl),
