@@ -130,12 +130,25 @@ export const DEFAULT_PAGE = {
 };
 
 /**
- * Ensures theme has all required properties with defaults
+ * Ensures theme has all required properties with defaults.
+ *
+ * Backfill, never rebuild. This used to return a hand-written literal of the
+ * ten root keys it knew about, which deleted everything else the schema
+ * allows — `fontRegistry` and `noProofWords` were being dropped from every
+ * bundled theme and every `--theme-path` render. That failure is invisible by
+ * construction: the file validates, generation succeeds, and the styling is
+ * simply absent, with nothing to search for.
+ *
+ * So every level spreads what it was given first and fills in defaults after,
+ * including `fonts`, whose four roles are backfilled individually but no
+ * longer bound the set. `theme-round-trip.test.ts` walks `ThemeConfigSchema`
+ * and fails the day a new property is added here and forgotten.
  */
 export function ensureThemeDefaults(
   theme: Partial<ThemeConfigJson>
 ): ThemeConfigJson {
   return {
+    ...theme,
     $schema: theme.$schema,
     name: theme.name || 'default',
     displayName: theme.displayName || 'Default Theme',
@@ -146,6 +159,7 @@ export function ensureThemeDefaults(
       ...(theme.colors || {}),
     },
     fonts: {
+      ...(theme.fonts || {}),
       heading: { ...DEFAULT_FONTS.heading, ...(theme.fonts?.heading || {}) },
       body: { ...DEFAULT_FONTS.body, ...(theme.fonts?.body || {}) },
       mono: { ...DEFAULT_FONTS.mono, ...(theme.fonts?.mono || {}) },

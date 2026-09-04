@@ -1276,7 +1276,30 @@ export class PptxFormatAdapter implements FormatAdapter {
             path.resolve(process.cwd(), options.themePath),
             'utf-8'
           );
-          fileTheme = JSON.parse(content);
+          // Validated, not merely parsed. The DOCX branch has always gone
+          // through `loadThemeFromFile`; this one used to hand whatever JSON
+          // it found straight to the compiler, which reads
+          // `theme.defaults.fontSize` unguarded — so a theme with the wrong
+          // shape surfaced as a TypeError in the IR rather than as a
+          // diagnostic naming the bad field.
+          const shared = await import('@json-to-office/shared-pptx');
+          const checked = shared.validatePptxTheme(JSON.parse(content));
+          if (!checked.valid) {
+            const detail = checked.errors
+              .slice(0, 3)
+              .map((error: { path?: string; message: string }) =>
+                error.path ? `${error.path}: ${error.message}` : error.message
+              )
+              .join('; ');
+            throw new Error(
+              `not a valid pptx theme — ${detail}${
+                checked.errors.length > 3
+                  ? ` (and ${checked.errors.length - 3} more)`
+                  : ''
+              }`
+            );
+          }
+          fileTheme = checked.data;
         } else {
           const themePath = path.resolve(process.cwd(), options.themePath);
           const themeModule = await import(themePath);
