@@ -30,6 +30,7 @@ import {
   type Corpus,
 } from './corpus.js';
 import { buildManifest } from './manifest.js';
+import { loadSkill, type LoadedSkill } from './skill.js';
 import type { RunMetrics } from './metrics.js';
 import { runBrief } from './runner.js';
 import { buildScorecard } from './scorecard.js';
@@ -165,9 +166,19 @@ export async function main(argv: readonly string[]): Promise<number> {
   const workspaceRoot =
     process.env[WORKSPACE_DIR_ENV] ??
     (await fs.mkdtemp(path.join(os.tmpdir(), 'jto-evals-ws-')));
-  const skill = options.skillPath
-    ? await fs.readFile(options.skillPath, 'utf8')
-    : undefined;
+  let skill: LoadedSkill | undefined;
+  if (options.skillPath) {
+    skill = await loadSkill(options.skillPath);
+    line(
+      `skill ${skill.name} ${skill.version} — ${skill.files.length} file(s), ` +
+        `${Math.round(skill.text.length / 1024)} KB, mode ${skill.mode}`
+    );
+    if (skill.mode === 'file') {
+      line(
+        'WARNING: a single file carries the workflow and not the taste; point --skill at the skill DIRECTORY to measure the real ceiling'
+      );
+    }
+  }
 
   const { SERVER_INSTRUCTIONS } = await import('@json-to-office/mcp-server');
 
@@ -201,7 +212,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       driver: sdkAgentDriver,
       analyze: analyzeDocument,
       server: serverCommand(root, workspaceRoot),
-      ...(skill !== undefined && { skill }),
+      ...(skill !== undefined && { skill: skill.text }),
       workspaceRoot,
       sealed: options.sealed,
     });

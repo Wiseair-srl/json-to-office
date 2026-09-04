@@ -108,6 +108,11 @@ export const sdkAgentDriver: AgentDriver = async function* (options) {
       // is both a contaminated measurement and a place company data has no
       // reason to be.
       strictMcpConfig: true,
+      // Explicit, not incidental. `tools: []` already removes the Skill tool,
+      // so nothing could load one — but the SDK is clear that OMITTING this
+      // option is "not skills off", and a cold baseline should not depend on
+      // one setting happening to imply another.
+      skills: [],
       mcpServers: {
         [SERVER_ALIAS]: {
           type: 'stdio',

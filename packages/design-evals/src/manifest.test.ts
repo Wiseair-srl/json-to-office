@@ -80,6 +80,38 @@ describe('buildManifest', () => {
   it('hashes the instructions, and records a cold run as skill-free', () => {
     expect(manifest.serverInstructionsHash).toBe(sha256('instructions'));
     expect(manifest.skillHash).toBe('none');
+    expect(manifest.skillMode).toBeUndefined();
+  });
+
+  it('records which skill an assisted run carried, and how it was loaded', () => {
+    // A ceiling measured from one file instead of the whole bundle carries the
+    // workflow and none of the taste — and understating the ceiling makes
+    // every later phase look better than it is.
+    const assisted = buildManifest({
+      repoRoot,
+      model: 'm',
+      modelParameters: {},
+      serverInstructions: 'i',
+      mode: 'assisted',
+      maxRetries: 0,
+      agentSdkVersion: '0',
+      skill: {
+        text: 'x',
+        name: 'json-to-office',
+        version: '3.1.0',
+        files: ['SKILL.md', 'assets/taste/typography.md'],
+        hash: 'abc',
+        mode: 'bundle',
+      },
+    });
+    expect(assisted).toMatchObject({
+      skillHash: 'abc',
+      skillName: 'json-to-office',
+      skillVersion: '3.1.0',
+      skillMode: 'bundle',
+      mode: 'assisted',
+    });
+    expect(assisted.skillFiles).toHaveLength(2);
   });
 
   it('reports the package versions this run was made with', () => {
