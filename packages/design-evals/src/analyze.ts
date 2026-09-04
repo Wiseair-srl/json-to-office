@@ -7,11 +7,14 @@
  * revision, or may have called it and continued anyway; only a measurement the
  * harness makes itself is a measurement of the document that was shipped.
  *
- * Page count is deliberately cheap: slides for pptx are countable from the
- * JSON, and a docx page count would need a LibreOffice render per run. The
- * rendered pass (#344) is where real pagination arrives; until then this
- * reports the structural size, which is what the estimator's other metrics are
- * already scaled to.
+ * Page count is MEASURED where the host can measure it. Slides are countable
+ * from the JSON, but a document's pages are not: the first smoke run reported
+ * a six-section market-entry report as "6 pages", against a spec metric that
+ * compares pages to a blueprint budget. So when LibreOffice and poppler are
+ * present the document is rendered and its real page count read back, and the
+ * structural count is the fallback for a host that cannot render — labelled as
+ * such on the run, so a mixed corpus is never silently half one and half the
+ * other.
  */
 
 import { DocxFormatAdapter, PptxFormatAdapter } from '@json-to-office/jto-ops';
@@ -19,6 +22,8 @@ import { DocxFormatAdapter, PptxFormatAdapter } from '@json-to-office/jto-ops';
 export interface Measurement {
   diagnostics: readonly unknown[];
   pages: number;
+  /** `rendered` when a converter counted them; `structural` when it could not. */
+  pageCountSource: 'rendered' | 'structural';
 }
 
 /** Slides for a deck; top-level sections for a document, at least one. */
@@ -44,6 +49,30 @@ export function structuralPages(format: string, document: unknown): number {
   return Math.max(sections, children.length > 0 ? 1 : 0);
 }
 
+/** The real page count, or undefined when this host cannot render. */
+async function renderedPages(
+  format: string,
+  document: unknown
+): Promise<number | undefined> {
+  try {
+    const { renderPreview, getAdapter } = await import(
+      '@json-to-office/mcp-server'
+    );
+    const rendered = await renderPreview({
+      format: format as 'docx' | 'pptx',
+      document,
+      dpi: 36,
+      // Nothing looks at these pixels; only the count is wanted, and the
+      // cheapest render that produces a page count is the right one.
+      outputMode: 'path',
+      getAdapter,
+    });
+    return rendered.ok ? rendered.totalPages : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function analyzeDocument(
   format: string,
   document: unknown
@@ -56,6 +85,8 @@ export async function analyzeDocument(
     ? await adapter.analyzeQuality(document)
     : { diagnostics: [] };
 
+  const measured = await renderedPages(format, document);
+
   return {
     diagnostics: [
       ...(validation.errors ?? []).map((error) => ({
@@ -67,6 +98,7 @@ export async function analyzeDocument(
       })),
       ...quality.diagnostics,
     ],
-    pages: structuralPages(format, document),
+    pages: measured ?? structuralPages(format, document),
+    pageCountSource: measured === undefined ? 'structural' : 'rendered',
   };
 }

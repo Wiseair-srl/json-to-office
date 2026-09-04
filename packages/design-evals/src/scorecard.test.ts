@@ -9,11 +9,13 @@ function run(overrides: Partial<RunMetrics> = {}): RunMetrics {
     format: 'docx',
     outcome: 'completed',
     pages: 6,
+    pageCountSource: 'rendered',
     blockingFindings: 0,
     qualityByCode: {},
     placeholderLeaks: 0,
     fontSubstitutions: 0,
     iterations: 2,
+    turns: 14,
     toolCalls: 9,
     cost: { inputTokens: 100, outputTokens: 50, usd: 0.01 },
     wallMs: 1000,
@@ -42,8 +44,8 @@ describe('totals', () => {
     ]);
     expect(summary.runs).toBe(2);
     expect(summary.failed).toBe(1);
-    expect(summary.shippable).toBe(1);
-    expect(summary.shippableRate).toBe(0.5);
+    expect(summary.buildsClean).toBe(1);
+    expect(summary.buildsCleanRate).toBe(0.5);
   });
 
   it('counts a failed run as carrying an integrity defect', () => {
@@ -53,10 +55,19 @@ describe('totals', () => {
     expect(summary.integrityDefectRate).toBe(1);
   });
 
-  it('refuses to call a document with a blocking finding shippable', () => {
-    expect(totals([run({ blockingFindings: 1 })]).shippable).toBe(0);
-    expect(totals([run({ placeholderLeaks: 2 })]).shippable).toBe(0);
-    expect(totals([run({ pages: 0 })]).shippable).toBe(0);
+  it('refuses to call a document with a blocking finding clean', () => {
+    expect(totals([run({ blockingFindings: 1 })]).buildsClean).toBe(0);
+    expect(totals([run({ placeholderLeaks: 2 })]).buildsClean).toBe(0);
+    expect(totals([run({ pages: 0 })]).buildsClean).toBe(0);
+  });
+
+  it('never calls the mechanical floor "shippable"', () => {
+    // The first smoke run reported "3/3 shippable (100%)" for three documents
+    // nothing had looked at, against a programme target of 50%. Whether a
+    // document is worth sending is the judge's question and lives on
+    // `judge.wouldShipRate`; this floor only says the file builds.
+    const summary = totals([run()]) as unknown as Record<string, unknown>;
+    expect(Object.keys(summary).filter((key) => /ship/i.test(key))).toEqual([]);
   });
 
   it('takes the median iteration count over completed runs only', () => {

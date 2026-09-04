@@ -9,7 +9,7 @@
  */
 
 import type { RunMetrics } from './metrics.js';
-import { isShippable } from './metrics.js';
+import { buildsClean } from './metrics.js';
 import type { RunManifest } from './manifest.js';
 import type { Stratification } from './corpus.js';
 
@@ -18,12 +18,18 @@ export interface ScorecardTotals {
   runs: number;
   completed: number;
   failed: number;
-  shippable: number;
-  shippableRate: number;
+  /**
+   * Built, nothing blocking, no placeholder text left. A floor with a
+   * mechanical answer — NOT the programme's shipping metric, which is the
+   * judge's and lives on `judge.wouldShipRate`.
+   */
+  buildsClean: number;
+  buildsCleanRate: number;
   withAnyIntegrityDefect: number;
   integrityDefectRate: number;
   withPlaceholderLeak: number;
   medianIterations: number;
+  medianTurns: number;
   medianPages: number;
   totalToolCalls: number;
   totalInputTokens: number;
@@ -132,7 +138,7 @@ function hasIntegrityDefect(run: RunMetrics): boolean {
 
 export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
   const completed = runs.filter((run) => run.outcome === 'completed');
-  const shippable = runs.filter(isShippable);
+  const clean = runs.filter(buildsClean);
   const defective = runs.filter(hasIntegrityDefect);
   const usd = runs
     .map((run) => run.cost.usd)
@@ -142,14 +148,15 @@ export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
     runs: runs.length,
     completed: completed.length,
     failed: runs.length - completed.length,
-    shippable: shippable.length,
-    shippableRate: runs.length === 0 ? 0 : shippable.length / runs.length,
+    buildsClean: clean.length,
+    buildsCleanRate: runs.length === 0 ? 0 : clean.length / runs.length,
     withAnyIntegrityDefect: defective.length,
     integrityDefectRate: runs.length === 0 ? 0 : defective.length / runs.length,
     withPlaceholderLeak: runs.filter((run) => run.placeholderLeaks > 0).length,
     // Over completed runs: the median number of edits a run that produced
     // nothing took is not a number about iteration.
     medianIterations: median(completed.map((run) => run.iterations)),
+    medianTurns: median(completed.map((run) => run.turns)),
     medianPages: median(completed.map((run) => run.pages)),
     totalToolCalls: runs.reduce((sum, run) => sum + run.toolCalls, 0),
     totalInputTokens: runs.reduce((sum, run) => sum + run.cost.inputTokens, 0),

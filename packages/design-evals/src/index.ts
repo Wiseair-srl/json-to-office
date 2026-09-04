@@ -17,7 +17,7 @@ export {
 export {
   documentMetrics,
   failedRun,
-  isShippable,
+  buildsClean,
   type DocumentMetrics,
   type RunCost,
   type RunMetrics,
