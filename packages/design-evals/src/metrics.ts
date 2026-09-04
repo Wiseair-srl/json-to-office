@@ -44,13 +44,28 @@ export interface RunJudgement {
 }
 
 export interface RunMetrics extends DocumentMetrics {
+  /**
+   * Whether `pages` was counted by a renderer or inferred from the JSON.
+   * On the run rather than the scorecard, so a corpus measured on two hosts
+   * cannot average a real page count with a structural one and say nothing.
+   */
+  pageCountSource: 'rendered' | 'structural';
   briefId: string;
   format: string;
   outcome: RunOutcome;
   /** Why a failed run failed, in one line. */
   failure?: string;
-  /** Author turns: how many times the agent edited and re-checked. */
+  /**
+   * Edit-and-recheck rounds after the first complete draft — the spec's
+   * "author iterations to done", whose target is 2.
+   *
+   * Not the agent's turn count, which is roughly the tool-call count and an
+   * order of magnitude larger. Reporting one under the other's name made a
+   * run look 9x worse than the target scale and compared nothing to anything.
+   */
   iterations: number;
+  /** Conversational turns the session took. Kept because it prices the run. */
+  turns: number;
   toolCalls: number;
   cost: RunCost;
   wallMs: number;
@@ -77,11 +92,13 @@ export function failedRun(
     outcome: 'failed',
     failure,
     pages: 0,
+    pageCountSource: 'structural',
     blockingFindings: 0,
     qualityByCode: {},
     placeholderLeaks: 0,
     fontSubstitutions: 0,
     iterations: 0,
+    turns: 0,
     toolCalls: 0,
     cost: { inputTokens: 0, outputTokens: 0 },
     wallMs: 0,
@@ -147,14 +164,19 @@ export function documentMetrics(input: {
 }
 
 /**
- * Whether a run produced something that could be sent to a client.
+ * Whether a run produced a structurally sound document.
  *
- * Deliberately strict and deliberately mechanical: a document that fails to
- * build, still blocks generation, or carries text nobody wrote is not
- * shippable whatever a judge thinks of its design. The judge's own verdict is
- * a separate axis, and a scorecard reports both.
+ * A floor, not a verdict, and named accordingly. It asks only whether the
+ * document built, stopped blocking generation, and carries no text nobody
+ * wrote — questions with mechanical answers. Whether anyone would SEND it is
+ * the judge's question and reaches the scorecard as `judge.wouldShipRate`.
+ *
+ * The two were briefly both called "shippable", and the first smoke run duly
+ * reported "3/3 shippable (100%)" for three documents nothing had looked at —
+ * against a programme target of 50%. A floor wearing the headline metric's
+ * name is worse than no floor.
  */
-export function isShippable(run: RunMetrics): boolean {
+export function buildsClean(run: RunMetrics): boolean {
   return (
     run.outcome === 'completed' &&
     run.blockingFindings === 0 &&

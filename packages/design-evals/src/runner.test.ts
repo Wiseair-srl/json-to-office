@@ -146,7 +146,10 @@ describe('runBrief', () => {
       pages: 7,
       blockingFindings: 1,
       placeholderLeaks: 1,
-      iterations: 3,
+      // One generate and no patches is a first-time-right run: zero repairs,
+      // whatever number of turns it took to get there.
+      iterations: 0,
+      turns: 3,
       toolCalls: 1,
       retries: 0,
     });
@@ -155,6 +158,27 @@ describe('runBrief', () => {
       W_QUALITY_TEXT_OVERFLOW: 1,
     });
     expect(run.cost).toMatchObject({ inputTokens: 1200, outputTokens: 800 });
+  });
+
+  it('counts repair rounds, not turns', async () => {
+    // The spec's "author iterations to done" targets 2. Reporting the SDK's
+    // turn count under that name put an 18 next to a target of 2 and compared
+    // nothing to anything.
+    const PATCH = 'mcp__json-to-office__jto_workspace_patch';
+    const CREATE = 'mcp__json-to-office__jto_workspace_create';
+    const run = await runBrief(
+      options({
+        driver: driverOf(
+          { type: 'tool_use', name: CREATE, input: {} },
+          { type: 'tool_use', name: PATCH, input: {} },
+          { type: 'tool_use', name: PATCH, input: {} },
+          { type: 'tool_use', name: GENERATE, input: { document: DOCUMENT } },
+          { ...OK_RESULT, turns: 21 }
+        ),
+      })
+    );
+    expect(run.iterations).toBe(2);
+    expect(run.turns).toBe(21);
   });
 
   it('counts a session that generated nothing as a failure', async () => {

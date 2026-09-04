@@ -37,7 +37,11 @@ export interface AnalyzeDocument {
   (
     format: string,
     document: unknown
-  ): Promise<{ diagnostics: readonly unknown[]; pages: number }>;
+  ): Promise<{
+    diagnostics: readonly unknown[];
+    pages: number;
+    pageCountSource?: 'rendered' | 'structural';
+  }>;
 }
 
 export interface RunBriefOptions {
@@ -71,6 +75,33 @@ export interface RunBriefOptions {
 }
 
 const GENERATE_TOOL = `mcp__${SERVER_ALIAS}__jto_generate`;
+const PATCH_TOOL = `mcp__${SERVER_ALIAS}__jto_workspace_patch`;
+const CREATE_TOOL = `mcp__${SERVER_ALIAS}__jto_workspace_create`;
+
+/**
+ * Edit-and-recheck rounds after the first complete draft.
+ *
+ * The spec's "median author iterations to done", whose target is 2 and whose
+ * estimated value today is 4-6. That is a count of repairs, not of turns: an
+ * agent that drafts once, looks at a preview, fixes two slides and ships has
+ * iterated twice, whatever number of messages it took to do it.
+ *
+ * So it counts document MUTATIONS past the first — every workspace patch, and
+ * every re-draft or re-generate after the initial one. A run that got it right
+ * first time scores 0, which is the number that deserves to be there.
+ */
+export function countIterations(events: readonly AgentEvent[]): number {
+  const tools = events.filter(
+    (event): event is Extract<AgentEvent, { type: 'tool_use' }> =>
+      event.type === 'tool_use'
+  );
+  const patches = tools.filter((event) => event.name === PATCH_TOOL).length;
+  const drafts = tools.filter(
+    (event) => event.name === CREATE_TOOL || event.name === GENERATE_TOOL
+  ).length;
+  // The first create and the first generate are the draft, not a repair.
+  return patches + Math.max(0, drafts - 2);
+}
 
 /**
  * The document a run ended on.
@@ -204,7 +235,13 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
       options.brief.id,
       options.brief.format,
       result?.error ?? 'the agent session produced no result',
-      { toolCalls, retries, wallMs, iterations: result?.turns ?? 0 }
+      {
+        toolCalls,
+        retries,
+        wallMs,
+        iterations: countIterations(events),
+        turns: result?.turns ?? 0,
+      }
     );
   }
 
@@ -231,7 +268,8 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
         toolCalls,
         retries,
         wallMs,
-        iterations: result.turns,
+        iterations: countIterations(events),
+        turns: result.turns,
         cost: {
           inputTokens: result.inputTokens,
           outputTokens: result.outputTokens,
@@ -256,7 +294,13 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
       `the produced document could not be analyzed: ${
         error instanceof Error ? error.message : String(error)
       }`,
-      { toolCalls, retries, wallMs, iterations: result.turns }
+      {
+        toolCalls,
+        retries,
+        wallMs,
+        iterations: countIterations(events),
+        turns: result.turns,
+      }
     );
   }
 
@@ -287,7 +331,9 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
       }[],
       pages: measured.pages,
     }),
-    iterations: result.turns,
+    pageCountSource: measured.pageCountSource ?? 'structural',
+    iterations: countIterations(events),
+    turns: result.turns,
     toolCalls,
     cost: {
       inputTokens: result.inputTokens,

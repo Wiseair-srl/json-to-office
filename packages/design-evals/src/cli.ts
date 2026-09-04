@@ -257,6 +257,11 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   const { totals } = scorecard;
   line('');
+  if (!scorecard.judge) {
+    // "Builds clean" is a floor, and without this line a reader takes it for
+    // the programme's shipping metric — which is the judge's, and unasked.
+    line('no judge: nothing here says whether a document is worth sending');
+  }
   if (scorecard.judge) {
     line(
       `judge: median level ${scorecard.judge.medianLevel}, ` +
@@ -266,11 +271,12 @@ export async function main(argv: readonly string[]): Promise<number> {
     );
   }
   line(
-    `${totals.shippable}/${totals.runs} shippable ` +
-      `(${(totals.shippableRate * 100).toFixed(0)}%), ` +
+    `${totals.buildsClean}/${totals.runs} build clean ` +
+      `(${(totals.buildsCleanRate * 100).toFixed(0)}%), ` +
       `${totals.failed} failed, ` +
       `${totals.withAnyIntegrityDefect} with an integrity defect, ` +
-      `median ${totals.medianIterations} iterations`
+      `median ${totals.medianIterations} iterations ` +
+      `(${totals.medianTurns} turns)`
   );
   line(
     `${totals.totalInputTokens + totals.totalOutputTokens} tokens` +
