@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseArgs } from './cli.js';
+import { parseArgs, serverCommand } from './cli.js';
 import { analyzeDocument, structuralPages } from './analyze.js';
 
 describe('parseArgs', () => {
@@ -63,6 +63,34 @@ describe('parseArgs', () => {
       mode: 'assisted',
       skillPath: '/tmp/SKILL.md',
     });
+  });
+});
+
+describe('serverCommand', () => {
+  it('tells the server the workspace directory the harness will read', () => {
+    // The bug this pins cost two good runs. The harness makes a workspace
+    // directory, reads the agent's final document out of it, and used to copy
+    // JTO_WORKSPACE_DIR from its own environment — where it is normally unset.
+    // The server then kept workspaces in memory, the harness found nothing on
+    // disk, and every agent that authored through a handle (which is what the
+    // server's own instructions tell it to do) was scored as having generated
+    // nothing at all.
+    const command = serverCommand('/repo', '/tmp/ws-root');
+    expect(command.env?.JTO_WORKSPACE_DIR).toBe('/tmp/ws-root');
+    expect(command.args[0]).toContain('mcp-server');
+  });
+
+  it("does not let an ambient JTO_WORKSPACE_DIR win over the run's own", () => {
+    const previous = process.env.JTO_WORKSPACE_DIR;
+    process.env.JTO_WORKSPACE_DIR = '/somewhere/else';
+    try {
+      expect(
+        serverCommand('/repo', '/tmp/ws-root').env?.JTO_WORKSPACE_DIR
+      ).toBe('/tmp/ws-root');
+    } finally {
+      if (previous === undefined) delete process.env.JTO_WORKSPACE_DIR;
+      else process.env.JTO_WORKSPACE_DIR = previous;
+    }
   });
 });
 
