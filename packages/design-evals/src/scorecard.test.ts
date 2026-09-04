@@ -16,6 +16,7 @@ function run(overrides: Partial<RunMetrics> = {}): RunMetrics {
     fontSubstitutions: 0,
     iterations: 2,
     turns: 14,
+    foreignTools: [],
     toolCalls: 9,
     cost: { inputTokens: 100, outputTokens: 50, usd: 0.01 },
     wallMs: 1000,
@@ -181,6 +182,16 @@ describe('buildScorecard', () => {
       ],
     });
     expect(scorecard.judge).toMatchObject({ judged: 1, medianLevel: 4 });
+  });
+
+  it('counts a run that reached outside the server as contaminated', () => {
+    // A cold run claims to measure the product alone. A run that used Bash
+    // measured something else, and averaging it into a baseline hides that.
+    const summary = totals([
+      run({ briefId: 'a' }),
+      run({ briefId: 'b', foreignTools: ['Bash', 'Write'] }),
+    ]);
+    expect(summary.contaminated).toBe(1);
   });
 
   it('lists every failure by name, never elided', () => {

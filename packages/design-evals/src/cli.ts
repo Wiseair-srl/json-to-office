@@ -257,6 +257,13 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   const { totals } = scorecard;
   line('');
+  if (totals.contaminated > 0) {
+    // Loud, and above the judge line: a contaminated set is not a baseline.
+    line(
+      `WARNING: ${totals.contaminated}/${totals.runs} run(s) used tools outside the server — ` +
+        'this set does not measure the product alone'
+    );
+  }
   if (!scorecard.judge) {
     // "Builds clean" is a floor, and without this line a reader takes it for
     // the programme's shipping metric — which is the judge's, and unasked.

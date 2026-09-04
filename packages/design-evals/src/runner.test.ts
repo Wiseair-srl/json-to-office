@@ -160,6 +160,24 @@ describe('runBrief', () => {
     expect(run.cost).toMatchObject({ inputTokens: 1200, outputTokens: 800 });
   });
 
+  it('records tools that did not come from the server', async () => {
+    const run = await runBrief(
+      options({
+        driver: driverOf(
+          { type: 'tool_use', name: 'Bash', input: {} },
+          { type: 'tool_use', name: 'Write', input: {} },
+          { type: 'tool_use', name: GENERATE, input: { document: DOCUMENT } },
+          OK_RESULT
+        ),
+      })
+    );
+    expect(run.foreignTools).toEqual(['Bash', 'Write']);
+  });
+
+  it('has no foreign tools on a clean run', async () => {
+    expect((await runBrief(options())).foreignTools).toEqual([]);
+  });
+
   it('counts repair rounds, not turns', async () => {
     // The spec's "author iterations to done" targets 2. Reporting the SDK's
     // turn count under that name put an 18 next to a target of 2 and compared

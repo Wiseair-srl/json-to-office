@@ -97,9 +97,16 @@ export const sdkAgentDriver: AgentDriver = async function* (options) {
           ...(options.server.env && { env: options.server.env }),
         },
       },
-      // The author gets the document tools and nothing else — no file access,
-      // no shell, no web. Whatever it produces, it produced through the
-      // surface this epic is trying to improve.
+      // `tools: []` disables every built-in. This is the option that RESTRICTS;
+      // `allowedTools` only waives the permission prompt, which is what the
+      // first working smoke run proved the hard way — the "cold" agents used
+      // Bash eight times, wrote the document to disk with Write, spawned a
+      // subagent with Agent, and called ScheduleWakeup. A baseline taken that
+      // way measures a full Claude Code session that happens to have the MCP
+      // server attached, which is not the thing the targets are about.
+      tools: [],
+      // Still listed, so the MCP tools run without a permission prompt in a
+      // session that has no human to answer one.
       allowedTools: [`mcp__${SERVER_ALIAS}`],
       ...(options.skill !== undefined && {
         systemPrompt: {

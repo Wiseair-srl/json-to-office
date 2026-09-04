@@ -66,6 +66,12 @@ export interface RunMetrics extends DocumentMetrics {
   iterations: number;
   /** Conversational turns the session took. Kept because it prices the run. */
   turns: number;
+  /**
+   * Tools used that are not the json-to-office server's. Empty is the whole
+   * point of a cold run; anything here means the measurement is contaminated
+   * and the run is not comparable to one that is not.
+   */
+  foreignTools: string[];
   toolCalls: number;
   cost: RunCost;
   wallMs: number;
@@ -99,6 +105,7 @@ export function failedRun(
     fontSubstitutions: 0,
     iterations: 0,
     turns: 0,
+    foreignTools: [],
     toolCalls: 0,
     cost: { inputTokens: 0, outputTokens: 0 },
     wallMs: 0,
