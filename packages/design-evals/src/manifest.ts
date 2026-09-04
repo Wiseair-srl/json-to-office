@@ -31,8 +31,19 @@ export interface RunManifest {
   modelParameters: Record<string, unknown>;
   /** SHA-256 of the server instructions the agent was given. */
   serverInstructionsHash: string;
-  /** SHA-256 of the skill, or `none` for a cold run. */
+  /** SHA-256 of the skill bundle, or `none` for a cold run. */
   skillHash: string;
+  /** Name and version of the skill an assisted run carried. */
+  skillName?: string;
+  skillVersion?: string;
+  /**
+   * `bundle` when the whole skill directory was inlined, `file` when only one
+   * document was. A `file` run carried the workflow and none of the taste, and
+   * understates the ceiling it is supposed to measure.
+   */
+  skillMode?: 'bundle' | 'file';
+  /** Files the bundle contributed, so a ceiling can be audited. */
+  skillFiles?: string[];
   mode: 'cold' | 'assisted';
   os: { platform: string; release: string; arch: string };
   node: string;
@@ -153,8 +164,15 @@ export interface ManifestInput {
   model: string;
   modelParameters: Record<string, unknown>;
   serverInstructions: string;
-  /** The skill text an assisted run was given; omit for a cold run. */
-  skill?: string;
+  /** The skill an assisted run was given; omit for a cold run. */
+  skill?: {
+    text: string;
+    name: string;
+    version: string;
+    files: string[];
+    hash: string;
+    mode: 'bundle' | 'file';
+  };
   mode: 'cold' | 'assisted';
   libreofficePath?: string;
   pdftoppmPath?: string;
@@ -215,7 +233,13 @@ export function buildManifest(input: ManifestInput): RunManifest {
     model: input.model,
     modelParameters: input.modelParameters,
     serverInstructionsHash: sha256(input.serverInstructions),
-    skillHash: input.skill === undefined ? 'none' : sha256(input.skill),
+    skillHash: input.skill === undefined ? 'none' : input.skill.hash,
+    ...(input.skill && {
+      skillName: input.skill.name,
+      skillVersion: input.skill.version,
+      skillMode: input.skill.mode,
+      skillFiles: input.skill.files,
+    }),
     mode: input.mode,
     os: {
       platform: process.platform,

@@ -43,3 +43,19 @@ and a filename saying otherwise makes the selector lie about what ran.
 
 A brief says what the document is for and gives it real numbers to display. It
 never says how the document should look — that is the thing under measurement.
+
+## Assisted runs
+
+`--skill` takes the skill's **directory**. A skill is not a file:
+`json-to-office` 3.1.0 is an 18 KB `SKILL.md` plus 62 KB of taste and reference
+documents it refers to, and loading only the first measures a fifth of it. The
+assisted run is the programme's ceiling, and understating a ceiling makes every
+later phase look better than it is.
+
+The bundle is inlined into the system prompt — `SKILL.md` first, then every
+other Markdown document, each tagged with its path. That is an approximation of
+how a skill really behaves: real loading is progressive, and the agent decides
+what to open. Inlining everything is generous rather than stingy, which is the
+right direction for a ceiling, and the manifest records `skillMode` so nobody
+reads the result as a measurement of skill loading itself. Passing a single
+file still works, is recorded as `skillMode: 'file'`, and prints a warning.
