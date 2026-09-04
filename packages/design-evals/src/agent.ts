@@ -26,7 +26,18 @@ export interface AgentResult {
   turns: number;
   inputTokens: number;
   outputTokens: number;
+  /**
+   * The SDK's own words: an estimate, not a billing statement. It is what
+   * these tokens WOULD cost at API rates, and it is reported the same way
+   * whether or not anything was billed — so it must always be read next to
+   * `credential`.
+   */
   usd?: number;
+  /**
+   * Where the session's credential came from. `none` is a claude.ai
+   * subscription login, where `usd` is notional and nothing is charged.
+   */
+  credential?: string;
   durationMs: number;
   /** Present when the session ended in an error rather than an answer. */
   error?: string;
@@ -119,7 +130,12 @@ export const sdkAgentDriver: AgentDriver = async function* (options) {
     },
   });
 
+  let credential: string | undefined;
   for await (const message of session) {
+    if (message.type === 'system' && message.subtype === 'init') {
+      credential = message.apiKeySource;
+      continue;
+    }
     if (message.type === 'assistant') {
       for (const block of message.message.content) {
         if (block.type === 'tool_use') {
@@ -144,6 +160,7 @@ export const sdkAgentDriver: AgentDriver = async function* (options) {
         ...(typeof message.total_cost_usd === 'number' && {
           usd: message.total_cost_usd,
         }),
+        ...(credential !== undefined && { credential }),
         durationMs: message.duration_ms ?? Date.now() - started,
         ...(failed && {
           error:

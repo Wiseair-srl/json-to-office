@@ -129,6 +129,20 @@ describe('judgePair', () => {
   });
 });
 
+describe('the judge runs on the session credential', () => {
+  it('offers an agent-SDK vision call, so no API key is required', async () => {
+    // The programme's headline metric is the judge's answer. Routing it
+    // through the Anthropic SDK made it need an ANTHROPIC_API_KEY, which a
+    // claude.ai subscription does not have — so the metric was unreachable on
+    // exactly the setup it exists to measure.
+    const { agentVision, anthropicVision } = await import('./judge.js');
+    expect(typeof agentVision).toBe('function');
+    expect(typeof anthropicVision).toBe('function');
+    // Both are VisionCall factories, so `judgeDocument` takes either.
+    expect(typeof agentVision({ model: 'x' })).toBe('function');
+  });
+});
+
 describe('parseJson', () => {
   it('reads a fenced answer, a bare one, and one with commentary around it', () => {
     expect(parseJson('```json\n{"level":3}\n```')).toEqual({ level: 3 });

@@ -9,10 +9,16 @@ pnpm evals -- --out ./evals-out/baseline             # the whole corpus
 pnpm evals -- --sealed-corpus /path/to/briefs        # final acceptance only
 ```
 
-Needs `ANTHROPIC_API_KEY` (or a logged-in Claude Code install) and a built
+Needs a logged-in Claude Code install (or `ANTHROPIC_API_KEY`) and a built
 `packages/mcp-server` — the agent is served the real server over stdio, the
-same way Claude Desktop is. It spends money and takes real time; nothing runs
-it for you, and no PR is gated on it.
+same way Claude Desktop is. The judge goes through the same credential, so a
+claude.ai subscription needs no API key.
+
+It takes real time — a few minutes per brief, run serially — and consumes
+whatever allowance the credential has. The scorecard reports a dollar figure,
+which is the SDK's estimate of what the tokens would cost **at API rates**: on
+a subscription session it is notional and nothing is billed, and the scorecard
+says so. Nothing runs this for you and no PR is gated on it.
 
 | Flag              | Meaning                                                               |
 | ----------------- | --------------------------------------------------------------------- |

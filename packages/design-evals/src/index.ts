@@ -66,6 +66,7 @@ export {
   type RubricLevel,
 } from './rubric.js';
 export {
+  agentVision,
   anthropicVision,
   judgeDocument,
   JudgeError,

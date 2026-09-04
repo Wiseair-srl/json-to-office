@@ -18,8 +18,17 @@ export interface RunCost {
   /** Input and output tokens across the whole session. */
   inputTokens: number;
   outputTokens: number;
-  /** USD, as the SDK reports it. Absent when the SDK does not say. */
+  /**
+   * What these tokens WOULD cost at API rates — the SDK's own estimate, and in
+   * its words "not a billing statement". On a subscription session nothing is
+   * charged and this is notional, so it is meaningless without `credential`.
+   */
   usd?: number;
+  /**
+   * Where the credential came from. `none` means a claude.ai subscription
+   * login: the run consumed subscription usage, not metered API spend.
+   */
+  credential?: string;
 }
 
 export interface DocumentMetrics {

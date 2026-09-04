@@ -20,7 +20,7 @@ import { OUTPUT_DIR_ENV, WORKSPACE_DIR_ENV } from '@json-to-office/mcp-server';
 
 import { sdkAgentDriver } from './agent.js';
 import { analyzeDocument } from './analyze.js';
-import { anthropicVision, judgeDocument } from './judge.js';
+import { agentVision, anthropicVision, judgeDocument } from './judge.js';
 import { renderForJudging } from './render.js';
 import {
   developmentCorpusDir,
@@ -285,11 +285,20 @@ export async function main(argv: readonly string[]): Promise<number> {
       `median ${totals.medianIterations} iterations ` +
       `(${totals.medianTurns} turns)`
   );
+  // Subscription sessions are billed by usage limits, not by the dollar, so a
+  // bare "$9.89" reads as spend that never happened. The estimate is still
+  // reported — it is the only comparable measure of how much model work a set
+  // took — but never without saying what it is.
+  const subscription = totals.credentials.includes('none');
+  const money =
+    totals.totalUsd === undefined
+      ? ''
+      : subscription
+        ? `, ~$${totals.totalUsd.toFixed(2)} of model work at API rates (subscription session — not billed)`
+        : `, $${totals.totalUsd.toFixed(2)}`;
   line(
     `${totals.totalInputTokens + totals.totalOutputTokens} tokens` +
-      (totals.totalUsd !== undefined
-        ? `, $${totals.totalUsd.toFixed(2)}`
-        : '') +
+      money +
       `, ${duration(Date.now() - started)} wall`
   );
   line(scorecardPath);
@@ -336,7 +345,12 @@ if (invokedDirectly) {
  * a verdict nobody can go back and check is not evidence of anything.
  */
 function makeJudge(model: string) {
-  const vision = anthropicVision({ model });
+  // The agent SDK by default, so the judge runs on the same credential the
+  // author did — including a claude.ai subscription, where there is no API key
+  // to find. `--judge-api` opts into the direct SDK for a host that has one.
+  const vision = process.argv.includes('--judge-api')
+    ? anthropicVision({ model })
+    : agentVision({ model });
   return async (input: { brief: Brief; document: unknown; runDir: string }) => {
     const rendered = await renderForJudging(input.brief.format, input.document);
     // Into the run's own directory, which under `--repeat` is not the same as
