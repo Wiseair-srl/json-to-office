@@ -44,6 +44,12 @@ export interface RunManifest {
   skillMode?: 'bundle' | 'file';
   /** Files the bundle contributed, so a ceiling can be audited. */
   skillFiles?: string[];
+  /**
+   * What the skill ships and the run did not get — templates, scripts, media.
+   * An assisted run with no file tools measures the skill's guidance, not its
+   * machinery, and this says how much machinery was left out.
+   */
+  skillExcluded?: { files: number; bytes: number };
   mode: 'cold' | 'assisted';
   os: { platform: string; release: string; arch: string };
   node: string;
@@ -172,6 +178,7 @@ export interface ManifestInput {
     files: string[];
     hash: string;
     mode: 'bundle' | 'file';
+    excluded?: { files: number; bytes: number };
   };
   mode: 'cold' | 'assisted';
   libreofficePath?: string;
@@ -239,6 +246,7 @@ export function buildManifest(input: ManifestInput): RunManifest {
       skillVersion: input.skill.version,
       skillMode: input.skill.mode,
       skillFiles: input.skill.files,
+      ...(input.skill.excluded && { skillExcluded: input.skill.excluded }),
     }),
     mode: input.mode,
     os: {

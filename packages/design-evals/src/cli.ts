@@ -173,6 +173,15 @@ export async function main(argv: readonly string[]): Promise<number> {
       `skill ${skill.name} ${skill.version} — ${skill.files.length} file(s), ` +
         `${Math.round(skill.text.length / 1024)} KB, mode ${skill.mode}`
     );
+    if (skill.excluded.files > 0) {
+      // The skill ships machinery this run cannot use; say so rather than let
+      // the ceiling read as the skill's full capability.
+      line(
+        `  ${skill.excluded.files} file(s) not given to the agent ` +
+          `(${Math.round(skill.excluded.bytes / 1024 / 1024)} MB of templates, scripts, media) — ` +
+          "this measures the skill's guidance, not its machinery"
+      );
+    }
     if (skill.mode === 'file') {
       line(
         'WARNING: a single file carries the workflow and not the taste; point --skill at the skill DIRECTORY to measure the real ceiling'

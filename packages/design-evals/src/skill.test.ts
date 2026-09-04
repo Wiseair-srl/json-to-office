@@ -84,6 +84,15 @@ describe('loadSkill', () => {
     expect(skill.files).not.toContain('CHANGELOG.md');
   });
 
+  it('counts what it did not give the agent', async () => {
+    // json-to-office 3.2.0 ships a 4 MB template library its own workflow
+    // starts from. An assisted run with no file tools cannot open it, and a
+    // ceiling that silently omits it would be read as the skill's full reach.
+    const skill = await loadSkill(dir);
+    expect(skill.excluded.files).toBeGreaterThan(0);
+    expect(skill.excluded.bytes).toBeGreaterThan(0);
+  });
+
   it('hashes the same bundle the same way twice', async () => {
     const [a, b] = [await loadSkill(dir), await loadSkill(dir)];
     expect(a.hash).toBe(b.hash);
