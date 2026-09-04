@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { Type } from '@sinclair/typebox';
 import { createComponent, createVersion } from '@json-to-office/core-docx';
 import {
@@ -442,6 +445,66 @@ describe('requested theme wins over props.theme', () => {
 
     expect(untouched.equals(devportal)).toBe(true);
     expect(untouched.equals(vermilion)).toBe(false);
+  });
+
+  it('refuses a malformed pptx theme file instead of handing it to the renderer', async () => {
+    // The pptx branch used to do bare readFileSync + JSON.parse where the docx
+    // branch calls loadThemeFromFile, so a theme with the wrong shape reached
+    // the IR compiler and failed there as a TypeError on an unguarded read —
+    // a stack trace instead of a diagnostic naming the field.
+    const dir = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), 'jto-theme-path-')
+    );
+    const file = path.join(dir, 'broken.pptx.theme.json');
+    await fs.promises.writeFile(
+      file,
+      JSON.stringify({ name: 'broken', colors: { primary: 'not-a-colour' } })
+    );
+
+    const warnings: string[] = [];
+    const resolved = await runWithDiagnosticSink(
+      (text) => warnings.push(text),
+      async () =>
+        new PptxFormatAdapter().createGenerator([], { themePath: file })
+    );
+
+    expect(
+      warnings.some((text) => text.includes('broken.pptx.theme.json')),
+      warnings.join(' | ')
+    ).toBe(true);
+    // The document keeps its own theme rather than rendering under a broken one.
+    expect(resolved.themeLabel).not.toBe(file);
+
+    await fs.promises.rm(dir, { recursive: true, force: true });
+  });
+
+  it('accepts a well-formed pptx theme file', async () => {
+    const dir = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), 'jto-theme-path-ok-')
+    );
+    const file = path.join(dir, 'good.pptx.theme.json');
+    await fs.promises.writeFile(
+      file,
+      JSON.stringify({
+        name: 'good',
+        colors: {
+          primary: '#123456',
+          secondary: '#234567',
+          accent: '#345678',
+          background: '#FFFFFF',
+          text: '#000000',
+        },
+        fonts: { heading: 'Arial', body: 'Arial' },
+        defaults: { fontSize: 18, fontColor: '#000000' },
+      })
+    );
+
+    const resolved = await new PptxFormatAdapter().createGenerator([], {
+      themePath: file,
+    });
+    expect(resolved.themeLabel).toBe(file);
+
+    await fs.promises.rm(dir, { recursive: true, force: true });
   });
 
   it('reads a themePath once, so a bad path warns once per generator', async () => {

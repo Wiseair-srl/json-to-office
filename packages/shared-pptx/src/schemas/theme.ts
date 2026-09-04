@@ -3,6 +3,7 @@
  * Simplified theme configuration for presentations
  */
 import { Type, Static } from '@sinclair/typebox';
+import { Value } from '@sinclair/typebox/value';
 import {
   FontFamilyNameSchema,
   FontRegistrySchema,
@@ -161,6 +162,15 @@ export const ThemeConfigSchema = Type.Object(
 
 export type ThemeConfigJson = Static<typeof ThemeConfigSchema>;
 
+/**
+ * Whether `data` is a theme this format can render.
+ *
+ * This was `typeof data === 'object' && data !== null`, which asserted the
+ * type without checking it: `{}` came back `true` and the caller carried on
+ * with a `ThemeConfigJson` the compiler trusted and the compiler could not
+ * read. A malformed theme then failed deep in the IR as a TypeError instead of
+ * as a diagnostic naming the field. Same contract as the DOCX twin now.
+ */
 export function isValidThemeConfig(data: unknown): data is ThemeConfigJson {
-  return typeof data === 'object' && data !== null;
+  return Value.Check(ThemeConfigSchema, data);
 }
