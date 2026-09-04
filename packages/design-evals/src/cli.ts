@@ -98,7 +98,10 @@ function repoRoot(): string {
 }
 
 /** The stdio command that serves json-to-office to the agent under test. */
-function serverCommand(root: string): {
+export function serverCommand(
+  root: string,
+  workspaceRoot: string
+): {
   command: string;
   args: string[];
   env?: Record<string, string>;
@@ -110,12 +113,18 @@ function serverCommand(root: string): {
     'LIBREOFFICE_PATH',
     'PDFTOPPM_PATH',
     'JTO_OUTPUT_DIR',
-    'JTO_WORKSPACE_DIR',
     'HIGHCHARTS_SERVER_URL',
   ]) {
     const value = process.env[name];
     if (value !== undefined) env[name] = value;
   }
+  // Not copied from the environment: the harness READS this directory to
+  // recover what the agent generated, so the server has to be writing to the
+  // same one. Leaving it unset let the server keep workspaces in memory while
+  // the harness looked for them on disk, and every agent that authored through
+  // a handle — the thing the server's own instructions tell it to do — was
+  // scored as having generated nothing.
+  env.JTO_WORKSPACE_DIR = workspaceRoot;
   return {
     command: process.execPath,
     args: [path.join(root, 'packages/mcp-server/dist/cli.js')],
@@ -185,7 +194,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       maxRetries: options.maxRetries,
       driver: sdkAgentDriver,
       analyze: analyzeDocument,
-      server: serverCommand(root),
+      server: serverCommand(root, workspaceRoot),
       ...(skill !== undefined && { skill }),
       workspaceRoot,
       sealed: options.sealed,

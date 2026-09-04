@@ -210,12 +210,23 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
 
   const document = await finalDocument(events, options.workspaceRoot);
   if (document === undefined) {
-    // A session that ended cleanly having generated nothing is a failure of
-    // the run, not an absence of data: there is no document to be shipped.
+    // Two very different failures, and telling them apart matters more than it
+    // looks. A session that generated nothing is an authoring failure and a
+    // real product result. A session that DID call `jto_generate` and whose
+    // document the harness then could not recover is a measurement failure —
+    // and one that lands hardest on agents authoring through a workspace
+    // handle, which is exactly what the server's instructions tell them to do.
+    // Reporting the second as the first would quietly penalise the recommended
+    // path and read as a product regression.
+    const generated = events.some(
+      (event) => event.type === 'tool_use' && event.name === GENERATE_TOOL
+    );
     return failedRun(
       options.brief.id,
       options.brief.format,
-      'the session ended without generating a document',
+      generated
+        ? 'HARNESS: jto_generate was called but the document could not be recovered — check that the server and the harness share a workspace directory'
+        : 'the session ended without generating a document',
       {
         toolCalls,
         retries,

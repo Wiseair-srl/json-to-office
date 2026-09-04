@@ -161,6 +161,26 @@ describe('runBrief', () => {
     const run = await runBrief(options({ driver: driverOf(OK_RESULT) }));
     expect(run.outcome).toBe('failed');
     expect(run.failure).toMatch(/without generating/);
+    expect(run.failure).not.toMatch(/HARNESS/);
+  });
+
+  it('separates a document it could not recover from one never generated', async () => {
+    // The agent authored through a workspace handle and generated — the
+    // recommended path. If the harness cannot read that workspace back, the
+    // failure is its own, and calling it "generated nothing" would penalise
+    // exactly the behaviour the server's instructions ask for.
+    const run = await runBrief(
+      options({
+        driver: driverOf(
+          { type: 'tool_use', name: GENERATE, input: { handle: 'ws_gone' } },
+          OK_RESULT
+        ),
+        workspaceRoot: path.join(scratch, 'nowhere'),
+      })
+    );
+    expect(run.outcome).toBe('failed');
+    expect(run.failure).toMatch(/^HARNESS:/);
+    expect(run.failure).toMatch(/workspace directory/);
   });
 
   it('keeps a thrown driver in the record rather than losing the brief', async () => {
