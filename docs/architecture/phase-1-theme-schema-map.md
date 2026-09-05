@@ -9,6 +9,10 @@ Read it with `docs/architecture/design-quality-10x.md` §5B open — that is the
 
 ## Verdict
 
+> **Status, 2026-09-05.** Tasks 1 and 2 are done, shipped in #355 (`ef65176` plus the pptx
+> bundled-theme guard). The decisions section at the bottom is settled. Phase 1 starts at task 3,
+> and task 8 has been split out as #328b — see decision 5.
+
 Phase 1 as specced is buildable, and #328 is mostly additive — but only if the first commit fixes
 `ensureThemeDefaults`, which is a whitelist rebuild (packages/core-
 docx/src/themes/defaults.ts:138-164), not a merge: it already silently deletes the schema-legal
@@ -114,7 +118,7 @@ id/version/description/formats/rendererTargets/parameters/rules and nothing else
 
 ## Tasks, in order
 
-### 1. Make ensureThemeDefaults a merge, not a whitelist rebuild — plus a round-trip guard test
+### 1. Make ensureThemeDefaults a merge, not a whitelist rebuild — plus a round-trip guard test — DONE (#355, `ef65176`)
 
 Risk: **low**
 
@@ -132,7 +136,7 @@ Files:
 - `packages/core-docx/src/themes/defaults.ts`
 - `packages/core-docx/src/themes/__tests__/bundled-themes.test.ts`
 
-### 2. Close the pptx theme validation holes before any extended theme file exists
+### 2. Close the pptx theme validation holes before any extended theme file exists — DONE (#355)
 
 Risk: **medium**
 
@@ -271,7 +275,7 @@ Files:
 - `packages/core-pptx/src/core/generationContext.ts`
 - `packages/core-docx/src/styles/utils/layoutUtils.ts`
 
-### 8. Chrome recipes and motif: wire the dead Header/Footer styles — MOVES GOLDENS
+### 8. Chrome recipes and motif: wire the dead Header/Footer styles — MOVES GOLDENS — SPLIT TO #328b
 
 Risk: **high**
 
@@ -331,35 +335,103 @@ Files:
 - `docs/reference/theme-schema.md`
 - `docs/guide/themes.md`
 
-## Decisions this needs before it starts
+## Decisions this needs before it starts — SETTLED 2026-09-05
 
-None of these has a default the map is willing to pick on its own.
+Answered by Paolo on 2026-09-05, after Phase 0 merged (#355). Each answer is recorded under its
+question with the evidence it rests on; the questions are kept verbatim so the reasoning stays
+readable next to what was asked.
+
+Two of the ten did not survive contact with the code. **#9's binary is false** — the map asks
+whether `light` is repurposed or retired and the answer is neither. **#10's arithmetic is wrong in
+the direction that matters**, and is corrected in place below rather than left for a reader to
+trust.
 
 1. New palette roles as a `palette` sibling block (my proposal), or widen both closed `colors`
    objects?
 
+**Settled: the `palette` sibling.** Widening is not a design choice, it is a breaking change to
+both formats. The two `colors` schemas use hex patterns where neither is a superset of the other —
+docx `HexColorSchema` is `^(#[0-9A-Fa-f]{6}|[a-zA-Z][a-zA-Z0-9]*)$` (shared-docx/schemas/font.ts:14),
+pptx is a local `^#?[0-9A-Fa-f]{6}$` (shared-pptx/schemas/theme.ts:78). A token name like
+`"positive": "accent"` is legal in docx and rejected by pptx; a bare `1B3A5C` is the other way
+round. `palette` values are a plain `Type.String()`, so both formats accept either, and the cost is
+one fallback line per resolver. It is also reversible: `palette` can fold into `colors` in a future
+major once the patterns are unified.
+
 2. Do new roles become authorable component colours? Adding to SEMANTIC_COLOR_NAMES regenerates every
    pptx component schema.
+
+**Settled: no, not in #328.** Adding to `SEMANTIC_COLOR_NAMES` regenerates every pptx component
+schema — a large change to the published surface in exchange for a convenience. The roles resolve
+in the theme, which is where they are consumed. Revisit if a component ever needs to name one
+directly.
 
 3. Type roles as one neutral shared vocabulary (my proposal), or format-native styles that cannot
    share tokens?
 
+**Settled: one neutral shared vocabulary.** The point of Phase 1 is that a paired deck and report
+match; format-native styles that cannot share tokens defeat that by construction. `TypeRoleSchema`
+already projects onto each format's own preset shape, which is where the formats are allowed to
+differ.
+
 4. `sage` would name two unrelated designs — docx Calibri sage-green, pptx Helvetica greyscale. One
    name or two?
 
+**Settled: two names.** One name meaning Calibri sage-green in docx and Helvetica greyscale in pptx
+is precisely the "a theme swap changes colours, not design" failure this programme exists to end.
+Cheap to fix now, expensive once #331's aliases ship it.
+
 5. Chrome recipes + motif inside #328, or split to #328b so the gate opens sooner?
+
+**Settled: split to #328b.** Task 8 is the only high-risk task, the only one that moves goldens en
+masse, and the only one that needs machinery that does not exist — chrome paragraphs carry
+text/alignment/font/spacing and no tab stops, so a `n / N` right-aligned confidential footer needs
+the chrome path widened first. Nothing behind the gate wants it: #329–#333 need palette, typography
+and spacing, and chrome recipes' only consumer is Phase 2's blocks (#334–#337). Splitting opens the
+gate for five issues and isolates the one task with zero prior art.
 
 6. PptxThemeConfig rewritten as Static<typeof ThemeConfigSchema>, or keep the hand interface plus an
    agreement test?
 
+**Settled: rewrite as `Static<typeof ThemeConfigSchema>`.** The hand interface has already drifted
+from the schema — `core-pptx/src/themes/__tests__/bundled-themes.test.ts` exists because nothing ran
+the built-in themes past `ThemeConfigSchema` while `tsc` checked them against the interface.
+Deriving the type removes the class of bug; an agreement test keeps two things in sync forever.
+
 7. Does docx `props.theme` gain an inline-object branch, for pptx parity?
 
+**Settled: yes, but a separate ticket.** Parity worth having, not a gate dependency, and nothing in
+#328–#333 waits on it.
+
 8. fontWeight fix and `case` inside #328 (moves one golden), or a separate ticket?
+
+**Settled: inside #328.** The type-role ladder cannot be built without per-role weight, and the fix
+moves exactly one golden. Splitting a one-golden change costs more ceremony than it saves.
 
 9. Is the docx `light` font role repurposed as `display`, or retired? It duplicates `heading` in all
    three themes and no style references it.
 
+**Settled: neither — leave `light` alone.** The question offers a false binary. The claim it rests
+on ("no style references it") is true of the three bundled themes and false of the corpus:
+`core-docx/src/__tests__/fixtures/corpus-theme.ts` uses `font: 'light'` in three cases, so it is a
+live component prop with golden coverage. Retiring it breaks that prop; repurposing it as `display`
+silently changes what existing documents render. The two are different axes anyway — `light` is a
+font _family_ slot, `typography.roles.display` is a type role — so they do not compete. Give
+`display` its own role and leave `light` where it is.
+
 10. Does the corpus get pinned to a frozen theme, so #331 moves ~26 goldens instead of ~337?
+
+**Settled: pin the corpus — and the question's arithmetic is backwards.** Verified 2026-09-05:
+there are 273 docx goldens and 64 pptx (337 together, which is where the "~337" came from — it was
+the total, not the docx move). Only 31 docx fixtures name a theme (26 `minimal`, 3 `devportal`,
+2 `vermilion`) and **not one of the 113 pptx cases names one at all**. Theme-less docx resolves to
+`minimal` at `core-docx/src/core/generationContext.ts:97`, which is exactly what #331 repoints.
+
+So the 26 that pin `minimal` are the ones that would NOT move, and unpinned #331 moves roughly
+242 docx + all 64 pptx ≈ **306 goldens**, not 26. Pinning is a mechanical commit — ~306 fixtures
+gain an explicit theme and no golden moves, because the resolved theme is identical — after which
+#331 moves ~0. The diff under review becomes "fixtures made explicit" instead of "306 goldens
+moved".
 
 ## Tripwires
 
