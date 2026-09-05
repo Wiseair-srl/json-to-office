@@ -207,7 +207,18 @@ export const MotifSchema = Type.Object(
     ]),
     color: Type.Optional(ColorTokenSchema),
     weightPt: Type.Optional(Type.Number({ minimum: 0 })),
-    placement: Type.Optional(Type.String()),
+    placement: Type.Optional(
+      Type.Union([
+        Type.Literal('top'),
+        Type.Literal('bottom'),
+        Type.Literal('left'),
+        Type.Literal('right'),
+        Type.Literal('topLeft'),
+        Type.Literal('topRight'),
+        Type.Literal('bottomLeft'),
+        Type.Literal('bottomRight'),
+      ])
+    ),
   },
   {
     additionalProperties: false,
@@ -251,6 +262,44 @@ export const ROLE_SCALE_STEPS: Record<TypeRoleName, number> = {
   footer: -2,
   source: -2,
 };
+type Scale = Static<typeof ScaleSchema>;
+
+/**
+ * `base × ratio^step`, snapped to the nearest baseline multiple and clamped to
+ * the schema's 5-200pt window. A step-0 role keeps `base` exactly: snapping a
+ * role that asked for no scaling would silently retune the authored base size.
+ */
+function scaledSize(scale: Scale, step: number): number {
+  if (step === 0) return scale.base;
+  const baseline = scale.baselinePt ?? 4;
+  const exact = scale.base * (scale.ratio ?? 1.25) ** step;
+  return Math.max(5, Math.min(200, Math.round(exact / baseline) * baseline));
+}
+
+/** The palette minus its ordered chart array, which no scalar resolver reads. */
+function paletteScalars(
+  palette?: DesignSystem['palette']
+): Record<string, string | undefined> {
+  const scalars: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(palette ?? {})) {
+    if (typeof value === 'string') scalars[key] = value;
+  }
+  return scalars;
+}
+
+/**
+ * Case as DOCX run flags. Word inherits case from the style, so a run that
+ * asks for `none` must state the flag it turns off rather than omit it.
+ */
+export function capsFormatting(textCase: 'none' | 'upper' | 'smallCaps'): {
+  allCaps?: boolean;
+  smallCaps?: boolean;
+} {
+  return textCase === 'upper'
+    ? { allCaps: true }
+    : { smallCaps: textCase === 'smallCaps' };
+}
+
 export function resolveTypeRoles(
   system: DesignSystem,
   canvas: DesignCanvas,
@@ -261,20 +310,11 @@ export function resolveTypeRoles(
   for (const name of TYPE_ROLES) {
     const role = system.typography?.roles?.[name];
     if (!role) continue;
-    const step = scale?.baselinePt ?? 4;
-    const derived = scale
-      ? Math.max(
-          5,
-          Math.min(
-            200,
-            Math.round(
-              (scale.base * (scale.ratio ?? 1.25) ** ROLE_SCALE_STEPS[name]) /
-                step
-            ) * step
-          )
-        )
-      : base;
-    roles[name] = { ...role, size: role.size ?? derived };
+    roles[name] = {
+      ...role,
+      size:
+        role.size ?? (scale ? scaledSize(scale, ROLE_SCALE_STEPS[name]) : base),
+    };
   }
   return roles;
 }
@@ -284,9 +324,7 @@ export function designColors(
   colors: Record<string, string | undefined>,
   palette?: DesignSystem['palette']
 ): Record<string, string | undefined> {
-  const { chart: _chart, ...scalars } = palette ?? {};
-  void _chart;
-  return { ...colors, ...scalars };
+  return { ...colors, ...paletteScalars(palette) };
 }
 export function resolveDesignColor(
   value: string,

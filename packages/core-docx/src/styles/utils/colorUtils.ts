@@ -1,6 +1,9 @@
 import { ThemeConfig } from '../index';
 import { getThemeColors } from '../../themes/defaults';
-import { resolveDesignColor } from '@json-to-office/shared';
+import {
+  DEFAULT_CHART_THEME_COLORS,
+  resolveDesignColor,
+} from '@json-to-office/shared';
 
 export type ColorName = keyof ReturnType<typeof getThemeColors>;
 
@@ -108,4 +111,24 @@ export function isValidColorName(
 export function getAvailableColorNames(theme: ThemeConfig): string[] {
   const colors = getThemeColors(theme);
   return Object.keys(colors).filter((name) => isValidColorName(name, theme));
+}
+
+/**
+ * The values an implicit DOCX chart palette is built from, in palette order.
+ *
+ * `palette.chart` wins outright when the theme declares it; otherwise the
+ * legacy series tokens contribute the value they store, skipping slots the
+ * theme leaves unset (see DEFAULT_CHART_THEME_COLORS). Each caller resolves
+ * these with its own policy — the native chart compiler throws on an
+ * unresolvable value, the Highcharts component drops it — so only the choice
+ * of source lives here, and it lives here once.
+ */
+export function chartPaletteValues(theme: ThemeConfig): string[] {
+  const explicit = theme.palette?.chart;
+  if (explicit) return [...explicit];
+  const colors = getThemeColors(theme) as Record<string, string | undefined>;
+  return DEFAULT_CHART_THEME_COLORS.flatMap((token) => {
+    const value = colors[token];
+    return typeof value === 'string' && value.length > 0 ? [value] : [];
+  });
 }

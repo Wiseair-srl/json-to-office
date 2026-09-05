@@ -8,7 +8,7 @@
  */
 
 import { getTheme } from '../templates/themes';
-import { synthesizeFamilyName } from '@json-to-office/shared';
+import { capsFormatting, synthesizeFamilyName } from '@json-to-office/shared';
 
 /**
  * A right tab at the text-measure edge, which is where a TOC page number sits.
@@ -222,6 +222,24 @@ function resolveSpacing(spacing?: { before?: number; after?: number }): {
 }
 
 /**
+ * A numeric weight reaches Word as a synthetic family plus bold/italic flags;
+ * both the merged-style and the fallback run path need the same translation.
+ */
+function weightedFamily(props: {
+  fontWeight?: number;
+  family?: string;
+  italic?: boolean;
+}) {
+  return props.fontWeight === undefined
+    ? undefined
+    : synthesizeFamilyName(
+        props.family || 'Arial',
+        props.fontWeight,
+        props.italic === true
+      );
+}
+
+/**
  * Convert merged style properties to docx run properties
  */
 function convertRunProperties(
@@ -230,14 +248,7 @@ function convertRunProperties(
   defaultColor?: string,
   defaultSize?: number
 ): DocxIrRunFormatting {
-  const weighted =
-    merged.fontWeight !== undefined
-      ? synthesizeFamilyName(
-          merged.family || 'Arial',
-          merged.fontWeight,
-          merged.italic === true
-        )
-      : undefined;
+  const weighted = weightedFamily(merged);
   return {
     fontFamily: weighted?.family ?? merged.family ?? 'Arial',
     sizeHalfPoints: (merged.size || defaultSize || 11) * 2,
@@ -250,10 +261,7 @@ function convertRunProperties(
     ...(merged.bold !== undefined && { bold: merged.bold }),
     ...(merged.italic !== undefined && { italic: merged.italic }),
     ...(weighted && { bold: weighted.bold, italic: weighted.italic }),
-    ...(merged.case !== undefined &&
-      (merged.case === 'upper'
-        ? { allCaps: true }
-        : { smallCaps: merged.case === 'smallCaps' })),
+    ...(merged.case !== undefined && capsFormatting(merged.case)),
     ...(merged.underline !== undefined &&
       merged.underline && { underline: { type: 'single' } }),
     ...(merged.characterSpacing && {
@@ -380,14 +388,7 @@ function fallbackRun(
   defaultColor: string,
   defaultSize: number
 ): DocxIrRunFormatting {
-  const weighted =
-    fontProps.fontWeight !== undefined
-      ? synthesizeFamilyName(
-          fontProps.family || 'Arial',
-          fontProps.fontWeight,
-          fontProps.italic === true
-        )
-      : undefined;
+  const weighted = weightedFamily(fontProps);
   return {
     fontFamily: weighted?.family ?? fontProps.family ?? 'Arial',
     sizeHalfPoints: (fontProps.size || defaultSize) * 2,
@@ -395,10 +396,7 @@ function fallbackRun(
     ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
     ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
     ...(weighted && { bold: weighted.bold, italic: weighted.italic }),
-    ...(fontProps.case !== undefined &&
-      (fontProps.case === 'upper'
-        ? { allCaps: true }
-        : { smallCaps: fontProps.case === 'smallCaps' })),
+    ...(fontProps.case !== undefined && capsFormatting(fontProps.case)),
     ...(fontProps.underline !== undefined &&
       fontProps.underline && { underline: { type: 'single' } }),
   };

@@ -1,4 +1,5 @@
 import AdmZip from 'adm-zip';
+import { normalizeTextCase } from './normalizeTextCase';
 
 export interface DocumentPackageOptions {
   /** Normalize volatile OOXML metadata and ZIP timestamps. Defaults to true. */
@@ -176,34 +177,4 @@ export function canonicalizeDocxBuffer(
 export function normalizeDocxCaseBuffer(buffer: Buffer): Buffer {
   const zip = new AdmZip(buffer);
   return normalizeTextCase(zip) ? zip.toBuffer() : buffer;
-}
-
-function normalizeTextCase(zip: AdmZip): boolean {
-  let changed = false;
-  for (const entry of zip.getEntries()) {
-    // Both writers emit only one caps flag. State the opposite flag as false
-    // so case changes (including `none`) can override an inherited style.
-    if (/^word\/.*\.xml$/.test(entry.entryName)) {
-      const xml = entry.getData().toString('utf8');
-      if (/<w:(?:caps|smallCaps)\b/.test(xml)) {
-        const normalized = xml.replace(
-          /<w:rPr\b[^>]*>[\s\S]*?<\/w:rPr>/g,
-          (run) => {
-            const caps = /<w:caps\b/.test(run);
-            const small = /<w:smallCaps\b/.test(run);
-            if (caps === small) return run;
-            return run.replace(
-              '</w:rPr>',
-              `<w:${caps ? 'smallCaps' : 'caps'} w:val="false"/></w:rPr>`
-            );
-          }
-        );
-        if (normalized !== xml) {
-          zip.updateFile(entry, Buffer.from(normalized, 'utf8'));
-          changed = true;
-        }
-      }
-    }
-  }
-  return changed;
 }

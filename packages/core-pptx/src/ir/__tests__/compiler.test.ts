@@ -8,6 +8,7 @@ import type {
   PptxIrTextBoxElement,
 } from '../types';
 import { assertValidPptxIr } from '../validation';
+import { DEFAULT_PPTX_THEME } from '../../themes';
 
 const PNG_1PX =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
@@ -527,6 +528,31 @@ describe('PptxIR feature requirements', () => {
         ])
       )
     ).toContain('rich-text');
+  });
+
+  it('reads the authored runs, not the case lowering', async () => {
+    // Small caps splits one authored run into several so the lowercase spans can
+    // shrink; that device must not report the deck as rich text.
+    const { ir, required } = await compile(
+      deck(
+        [
+          slide([
+            { name: 'text', props: { text: 'Mixed Case', style: 'source' } },
+          ]),
+        ],
+        {
+          theme: {
+            ...DEFAULT_PPTX_THEME,
+            typography: { roles: { source: { case: 'smallCaps' } } },
+          },
+        }
+      )
+    );
+    const text = ir.slides[0].elements[0] as PptxIrTextBoxElement;
+    expect(text.runs.length).toBeGreaterThan(1);
+    const features = new Set(required.map((r) => r.feature));
+    expect(features).toContain('text');
+    expect(features).not.toContain('rich-text');
   });
 
   it('records the fill kind actually used', async () => {

@@ -27,15 +27,12 @@ import type {
   TypeRoleName,
   TypeRole,
 } from '@json-to-office/shared';
-import {
-  synthesizeFamilyName,
-  DEFAULT_CHART_THEME_COLORS,
-} from '@json-to-office/shared';
+import { capsFormatting, synthesizeFamilyName } from '@json-to-office/shared';
 import type { LayoutPlan, SectionLayout } from '../core/layout';
 import type { ProcessedDocument } from '../core/structure';
 import type { ComponentDefinition } from '../types';
 import type { ThemeConfig } from '../styles';
-import { resolveColor } from '../styles/utils/colorUtils';
+import { chartPaletteValues, resolveColor } from '../styles/utils/colorUtils';
 import {
   isNativeVisualProps,
   type VisualNativeProps,
@@ -3149,10 +3146,8 @@ function runFormatting(
     formatting.underline = font.underline ? { type: 'single' } : undefined;
   }
   if (font.scale) formatting.scalePercent = font.scale;
-  if (font.case !== undefined) {
-    if (font.case === 'upper') formatting.allCaps = true;
-    else formatting.smallCaps = font.case === 'smallCaps';
-  }
+  if (font.case !== undefined)
+    Object.assign(formatting, capsFormatting(font.case));
   if (font.characterSpacing) {
     const { type, value } = font.characterSpacing as {
       type?: string;
@@ -3731,21 +3726,15 @@ function compileChart(
     ? props.chartColors.map((color: unknown) =>
         resolveColor(String(color), ctx.theme)
       )
-    : ctx.theme.palette?.chart
-      ? ctx.theme.palette.chart.map((value) => resolveColor(value, ctx.theme))
-      : DEFAULT_CHART_THEME_COLORS.map((token) => {
-          const value = (
-            ctx.theme?.colors as Record<string, string | undefined>
-          )?.[token];
-          if (typeof value !== 'string' || value.length === 0) return undefined;
-          try {
-            return resolveColor(token, ctx.theme);
-          } catch {
-            // A slot reaching no colour is dropped, never handed on: Word
-            // answers an unparseable colour by drawing the series black.
-            return undefined;
-          }
-        }).filter((color): color is string => color !== undefined);
+    : chartPaletteValues(ctx.theme).flatMap((value) => {
+        try {
+          return [resolveColor(value, ctx.theme)];
+        } catch {
+          // A slot reaching no colour is dropped, never handed on: Word
+          // answers an unparseable colour by drawing the series black.
+          return [];
+        }
+      });
 
   const page = getPageSetup(ctx.theme);
   const contentWidthInches =

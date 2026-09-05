@@ -894,7 +894,8 @@ both formats cover palette tokens, named roles, canvas scale/spacing and case.
 The DOCX case uses vermilion with additive overrides; no bundled theme is restyled.
 
 Both DOCX writers emit only one of caps/smallCaps. Package finalization now adds
-the opposite false flag, allowing `case: none` to reset an inherited case style.
+the opposite false flag next to the flag already present — `CT_RPr` is an ordered
+sequence — allowing `case: none` to reset an inherited case style.
 This repair also runs with deterministic output disabled. PPTX case is lowered
 to text runs in the compiler; synthetic small caps use 80% size for lowercase
 spans. Chrome/motif contracts do not render until #361.

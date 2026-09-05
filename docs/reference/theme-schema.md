@@ -35,7 +35,7 @@ Use `themeStyle: "display"` on a DOCX paragraph or `style: "display"` on PPTX te
 
 DOCX writes native caps/small-caps formatting and preserves text. PPTX writes uppercase output text; small caps are emulated by uppercasing lowercase spans at 80% of the run size. Authored JSON remains unchanged. This is not OpenType small-cap glyph selection.
 
-`scale.<canvas>` takes required `base` (5–200 pt), optional `ratio` (1–2, default 1.25) and `baselinePt` (>0–24, default 4). Derived size is `base × ratio^step`, snapped to the nearest baseline step and clamped to 5–200 pt. Steps: display 4, stat 3, quote 1, tableHeader/tableCell 0, eyebrow/label/chartLabel/tracker −1, footer/source −2. Without a canvas scale, roles use the existing body/default size.
+`scale.<canvas>` takes required `base` (5–200 pt), optional `ratio` (1–2, default 1.25) and `baselinePt` (>0–24, default 4). Derived size is `base × ratio^step`, snapped to the nearest multiple of `baselinePt` and clamped to 5–200 pt. A step-0 role keeps `base` exactly, unsnapped. Steps: display 4, stat 3, quote 1, tableHeader/tableCell 0, eyebrow/label/chartLabel/tracker −1, footer/source −2. Without a canvas scale, roles use the existing body/default size.
 
 Canvas keys are `a4`, `letter`, `wide169`, `standard43`. DOCX uses `theme.page.size`: LETTER selects letter; A4, A3, LEGAL and custom dimensions use a4. PPTX selects the closest of 16:9 and 4:3 from document dimensions (default 10 × 7.5 inches); ties use standard43. There is no authored canvas identifier.
 
@@ -51,7 +51,7 @@ Schema contracts only in this foundation; rendering consumers are tracked in #36
 
 `chrome` optionally contains `runningHead`, `tracker`, `actionTitle`, `keyTakeaways`, `sourceLine`, `confidentialFooter`, `logoSlot`, `cover`. Each recipe accepts `type` (a role name), `color`, `fill`, `rule: { weightPt, color }`, `padPt` and `alignment` (left/center/right). Weights/padding are nonnegative points.
 
-`motif` is a single object with required `kind` (none/rule/corner/band), optional `color`, `weightPt` and `placement`. Recipe colors are stored for later consumers. Neither schema accepts content requirements.
+`motif` is a single object with required `kind` (none/rule/corner/band), optional `color`, `weightPt` and `placement` (`top`, `bottom`, `left`, `right`, `topLeft`, `topRight`, `bottomLeft`, `bottomRight`). Recipe colors are stored for later consumers. Neither schema accepts content requirements.
 
 ## DOCX theme
 

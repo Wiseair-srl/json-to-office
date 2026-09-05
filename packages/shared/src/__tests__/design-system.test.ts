@@ -36,13 +36,15 @@ describe('shared visual theme contract', () => {
     expect(designCanvas('pptx', { width: 10, height: 10 })).toBe('standard43');
     const theme = {
       typography: {
-        roles: { display: {}, source: { size: 9 } },
-        scale: { a4: { base: 12, ratio: 1.25, baselinePt: 4 } },
+        roles: { display: {}, source: { size: 9 }, tableCell: {} },
+        scale: { a4: { base: 11, ratio: 1.25, baselinePt: 4 } },
       },
     };
+    // A step-0 role keeps the authored base rather than snapping to 12.
     expect(resolveTypeRoles(theme, 'a4', 11)).toEqual({
       display: { size: 28 },
       source: { size: 9 },
+      tableCell: { size: 11 },
     });
     expect(resolveTypeRoles(theme, 'letter', 11).display?.size).toBe(11);
   });
