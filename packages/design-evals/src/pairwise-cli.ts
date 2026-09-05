@@ -33,6 +33,7 @@ export async function main(
     ...(value(argv, 'seed') !== undefined && {
       seed: Number(value(argv, 'seed')),
     }),
+    ...(argv.includes('--single-order') && { singleOrder: true }),
     ...(value(argv, 'briefs') !== undefined && {
       briefs: value(argv, 'briefs') as string,
     }),
@@ -42,10 +43,20 @@ export async function main(
   const out = path.resolve(value(argv, 'out') ?? 'pairwise.json');
   await fs.writeFile(out, JSON.stringify(report, null, 2));
 
-  const { a, b, tie, decided, pValue } = report.tally;
+  const { a, b, tie, inconsistent, decided, pValue, secondShownWinRate } =
+    report.tally;
   line('');
   line(`A ${path.basename(report.a)}   B ${path.basename(report.b)}`);
-  line(`A wins ${a}, B wins ${b}, tie ${tie}`);
+  line(
+    `A wins ${a}, B wins ${b}, tie ${tie}, orders disagreed ${inconsistent}`
+  );
+  // The instrument's thumb, before any claim about the documents.
+  line(
+    `the document shown second won ${(secondShownWinRate * 100).toFixed(0)}% of showings` +
+      (Math.abs(secondShownWinRate - 0.5) > 0.1
+        ? ' — a position bias, which is why only pairs that survive both orders are counted'
+        : '')
+  );
   if (report.skipped.length > 0) {
     // Never silently: a comparison over 31 pairs is not one over 39.
     line(`${report.skipped.length} brief(s) not compared`);
