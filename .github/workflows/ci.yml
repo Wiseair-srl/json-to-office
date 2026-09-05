@@ -80,10 +80,25 @@ jobs:
                     # what stops a dependency bump — which is a code change in
                     # every sense that matters — from riding in as a version
                     # bump and taking the reduced pipeline with it.
-                    if git diff -U0 "$base" "$HEAD_SHA" -- "$file" \
-                      | grep -E '^[+-]' \
-                      | grep -vE '^(\+\+\+|---)' \
-                      | grep -qvE '^[+-][[:space:]]*"version": "[^"]+",?$'; then
+                    #
+                    # Collected rather than tested with `grep -q`: that exits
+                    # on its first match and SIGPIPEs the greps upstream, and
+                    # under `pipefail` the 141 becomes the pipeline's status.
+                    # A failed pipeline reads as "nothing offending", so the
+                    # check inverted itself on exactly the diffs too large to
+                    # sit in the pipe buffer — a manifest rewrite passing as a
+                    # version bump. Reading to EOF cannot do that, and the
+                    # lines that disqualified a push land in the log.
+                    offending="$(
+                      git diff -U0 "$base" "$HEAD_SHA" -- "$file" \
+                        | grep -E '^[+-]' \
+                        | grep -vE '^(\+\+\+|---)' \
+                        | grep -vE '^[+-][[:space:]]*"version": "[^"]+",?$' \
+                        || true
+                    )"
+                    if [ -n "$offending" ]; then
+                      echo "$file changes more than its version:"
+                      echo "$offending"
                       version_only=false
                       break
                     fi
