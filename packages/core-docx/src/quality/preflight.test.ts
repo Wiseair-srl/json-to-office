@@ -1037,3 +1037,328 @@ describe('brand consistency', () => {
     ).toEqual([]);
   });
 });
+
+function chartDoc(name: string, props: Record<string, unknown>) {
+  return doc([{ name, props }]);
+}
+
+function chartCodes(name: string, props: Record<string, unknown>) {
+  return docxDiagnostics(chartDoc(name, props))
+    .filter((finding) => finding.ruleId === 'docx/chart-design')
+    .map((finding) => finding.code);
+}
+
+/** A chart with nothing to say about it: palette, unit and caption all stated. */
+const CLEAN_CHART = {
+  type: 'column',
+  chartColors: ['primary', 'accent'],
+  valAxisTitle: 'Revenue (€m)',
+  caption: 'Revenue grew in both segments. Source: management accounts.',
+  data: [
+    { name: 'FY24', labels: ['Q1', 'Q2'], values: [4, 6] },
+    { name: 'FY25', labels: ['Q1', 'Q2'], values: [5, 8] },
+  ],
+};
+
+describe('chart information design', () => {
+  it('says nothing about a chart that states its palette, unit and takeaway', () => {
+    expect(chartCodes('chart', CLEAN_CHART)).toEqual([]);
+  });
+
+  it('flags a pie past six slices and leaves six alone', () => {
+    const pie = (slices: number) => ({
+      type: 'pie',
+      chartColors: ['primary'],
+      title: 'Share of revenue (%)',
+      caption: 'Retail dominates the mix.',
+      data: [
+        {
+          name: 'Mix',
+          labels: Array.from({ length: slices }, (_, i) => `s${i}`),
+          values: Array.from({ length: slices }, (_, i) => i + 1),
+        },
+      ],
+    });
+    expect(chartCodes('chart', pie(7))).toEqual([
+      QUALITY_CODES.CHART_OVERLOADED,
+    ]);
+    expect(chartCodes('chart', pie(6))).toEqual([]);
+  });
+
+  it('flags more than four series', () => {
+    const series = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        name: `S${index}`,
+        labels: ['Q1', 'Q2'],
+        values: [1, 2],
+      }));
+    expect(
+      chartCodes('chart', { ...CLEAN_CHART, type: 'line', data: series(5) })
+    ).toEqual([QUALITY_CODES.CHART_OVERLOADED]);
+    expect(
+      chartCodes('chart', { ...CLEAN_CHART, type: 'line', data: series(4) })
+    ).toEqual([]);
+  });
+
+  it('names one theme token per series when the palette is unstated', () => {
+    const findings = docxDiagnostics(
+      chartDoc('chart', { ...CLEAN_CHART, chartColors: undefined })
+    ).filter((finding) => finding.code === QUALITY_CODES.CHART_SERIES_COLORS);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      path: '/children/0/props/chartColors',
+      fixes: [
+        {
+          op: 'add',
+          path: '/children/0/props/chartColors',
+          value: ['primary', 'accent'],
+        },
+      ],
+    });
+  });
+
+  it('advises when nothing names the unit, and accepts a unit in the caption', () => {
+    expect(
+      chartCodes('chart', { ...CLEAN_CHART, valAxisTitle: 'Revenue' })
+    ).toEqual([QUALITY_CODES.CHART_UNITS]);
+    expect(
+      chartCodes('chart', {
+        ...CLEAN_CHART,
+        valAxisTitle: undefined,
+        caption: 'Revenue in € millions. Source: management accounts.',
+      })
+    ).toEqual([]);
+  });
+
+  it('advises when the caption slot is empty, and names the slot', () => {
+    const findings = docxDiagnostics(
+      chartDoc('chart', { ...CLEAN_CHART, caption: undefined })
+    ).filter((finding) => finding.code === QUALITY_CODES.CHART_ANNOTATION);
+    expect(findings[0]).toMatchObject({
+      severity: 'info',
+      path: '/children/0',
+      message: expect.stringContaining('props.caption'),
+      context: { slot: 'props.caption' },
+    });
+  });
+
+  it('reads a Highcharts config the same way, caption slot included', () => {
+    const options = {
+      chart: { type: 'column', width: 600, height: 400 },
+      colors: ['#123456'],
+      yAxis: { min: 0, title: { text: 'Revenue (€m)' } },
+      series: [{ name: 'FY25', data: [1, 2, 3] }],
+    };
+    expect(chartCodes('highcharts', { options })).toEqual([
+      QUALITY_CODES.CHART_ANNOTATION,
+    ]);
+    expect(
+      chartCodes('highcharts', {
+        options: { ...options, caption: { text: 'Source: internal.' } },
+      })
+    ).toEqual([]);
+  });
+
+  it('flags a Highcharts bar axis that does not start at zero', () => {
+    expect(
+      chartCodes('highcharts', {
+        options: {
+          chart: { type: 'bar', width: 600, height: 400 },
+          colors: ['#123456'],
+          yAxis: { min: 80, title: { text: 'Revenue (€m)' } },
+          caption: { text: 'Source: internal.' },
+          series: [{ name: 'FY25', data: [90, 95] }],
+        },
+      })
+    ).toEqual([QUALITY_CODES.CHART_AXIS_BASELINE]);
+  });
+
+  it('flags a 3D Highcharts plot', () => {
+    expect(
+      chartCodes('highcharts', {
+        options: {
+          chart: {
+            type: 'column',
+            width: 600,
+            height: 400,
+            options3d: { enabled: true },
+          },
+          colors: ['#123456'],
+          yAxis: { title: { text: 'Revenue (€m)' } },
+          caption: { text: 'Source: internal.' },
+          series: [{ name: 'FY25', data: [1, 2] }],
+        },
+      })
+    ).toEqual([QUALITY_CODES.CHART_3D]);
+  });
+});
+
+/** Two columns, the second numeric, with the alignment left to the caller. */
+function numericTable(
+  overrides: Record<string, unknown> = {},
+  columnOverrides: Record<string, unknown> = {}
+) {
+  return doc([
+    {
+      name: 'table',
+      props: {
+        columns: [
+          {
+            header: { content: 'Segment' },
+            cells: [{ content: 'Retail' }, { content: 'Wholesale' }],
+          },
+          {
+            header: { content: 'Revenue' },
+            cells: [{ content: '12.0' }, { content: '15.5' }],
+            ...columnOverrides,
+          },
+        ],
+        ...overrides,
+      },
+    },
+  ]);
+}
+
+function tableCodes(
+  overrides: Record<string, unknown> = {},
+  columnOverrides: Record<string, unknown> = {}
+) {
+  return docxDiagnostics(numericTable(overrides, columnOverrides))
+    .filter((finding) => finding.ruleId === 'docx/table-design')
+    .map((finding) => finding.code);
+}
+
+describe('table information design', () => {
+  it('says nothing about a table whose numbers are right-aligned and evenly rounded', () => {
+    expect(
+      tableCodes({}, { cellDefaults: { horizontalAlignment: 'right' } })
+    ).toEqual([]);
+  });
+
+  it('flags a left-aligned numeric column and patches the column, not each cell', () => {
+    const findings = docxDiagnostics(numericTable()).filter(
+      (finding) => finding.code === QUALITY_CODES.TABLE_NUMERIC_ALIGN
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      path: '/children/0/props/columns/1',
+      context: { column: 1, header: 'Revenue' },
+    });
+    expect(findings[0].fixes).toEqual([
+      {
+        op: 'add',
+        path: '/children/0/props/columns/1/cellDefaults',
+        value: { horizontalAlignment: 'right' },
+      },
+      {
+        op: 'add',
+        path: '/children/0/props/columns/1/header/horizontalAlignment',
+        value: 'right',
+      },
+    ]);
+  });
+
+  it('reads alignment through the cascade, not off the cell', () => {
+    // The table sets it once for every cell; no column states anything.
+    expect(
+      tableCodes({ cellDefaults: { horizontalAlignment: 'right' } })
+    ).toEqual([]);
+  });
+
+  it('names the cells that state their own alignment, which a column default cannot reach', () => {
+    const findings = docxDiagnostics(
+      numericTable(
+        {},
+        {
+          cells: [
+            { content: '12.0', horizontalAlignment: 'center' },
+            { content: '15.5' },
+          ],
+        }
+      )
+    ).filter((finding) => finding.code === QUALITY_CODES.TABLE_NUMERIC_ALIGN);
+    expect(findings[0].fixes).toContainEqual({
+      op: 'add',
+      path: '/children/0/props/columns/1/cells/0/horizontalAlignment',
+      value: 'right',
+    });
+  });
+
+  it('leaves a text column and a single number alone', () => {
+    expect(
+      docxDiagnostics(
+        doc([
+          {
+            name: 'table',
+            props: {
+              columns: [
+                {
+                  header: { content: 'Measure' },
+                  cells: [{ content: 'Adoption' }],
+                },
+                { header: { content: 'Value' }, cells: [{ content: '72%' }] },
+              ],
+            },
+          },
+        ])
+      ).filter((finding) => finding.ruleId === 'docx/table-design')
+    ).toEqual([]);
+  });
+
+  it('flags a numeric column rounded different ways', () => {
+    const findings = docxDiagnostics(
+      numericTable(
+        {},
+        {
+          cellDefaults: { horizontalAlignment: 'right' },
+          cells: [{ content: '12' }, { content: '15.5' }],
+        }
+      )
+    ).filter((finding) => finding.code === QUALITY_CODES.TABLE_MIXED_DECIMALS);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      path: '/children/0/props/columns/1',
+      evidence: { actual: [0, 1] },
+    });
+  });
+
+  it('reports a self-declared full grid, and stays quiet about an inherited one', () => {
+    // The bundled themes hide the vertical rules, so the table has to ask.
+    expect(
+      tableCodes(
+        { hideBorders: false, borderSize: 1, borderColor: '999999' },
+        { cellDefaults: { horizontalAlignment: 'right' } }
+      )
+    ).toEqual([QUALITY_CODES.TABLE_GRID]);
+    // A table that says nothing about its borders inherits the theme's answer.
+    expect(
+      tableCodes({}, { cellDefaults: { horizontalAlignment: 'right' } })
+    ).toEqual([]);
+  });
+
+  it('advises when a table runs longer than a reader takes in', () => {
+    const rows = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({ content: `${index}.0` }));
+    const findings = docxDiagnostics(
+      doc([
+        {
+          name: 'table',
+          props: {
+            columns: [
+              {
+                header: { content: 'Revenue' },
+                cellDefaults: { horizontalAlignment: 'right' },
+                cells: rows(30),
+              },
+            ],
+          },
+        },
+      ])
+    ).filter((finding) => finding.code === QUALITY_CODES.TABLE_ROW_COUNT);
+    expect(findings[0]).toMatchObject({
+      severity: 'info',
+      evidence: { actual: 31, expected: 25, unit: 'rows' },
+    });
+  });
+});

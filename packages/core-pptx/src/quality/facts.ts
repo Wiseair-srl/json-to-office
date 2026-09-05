@@ -1,12 +1,20 @@
 import {
+  chartEncodingFor,
   collectColorLiterals,
   collectFontFamilies,
   collectPlaceholders,
+  hasUnitMarker,
   normalizeHex,
+  normalizeHighchartsChart,
+  parseNumericCell,
+  type ChartInfoDesign,
   type PlaceholderKind,
   type PreparedDocument,
   type ProvenanceMap,
   type QualityFact,
+  type TableAlignment,
+  type TableColumnInfoDesign,
+  type TableInfoDesign,
 } from '@json-to-office/quality';
 import type { FontRuntimeOpts, ServicesConfig } from '@json-to-office/shared';
 import { DEFAULT_PPTX_RENDERER_ID } from '@json-to-office/shared-pptx';
@@ -108,6 +116,34 @@ export interface PptxFontFact extends QualityFact {
   family: string;
 }
 
+/**
+ * A chart on a slide — native or Highcharts — read into the vocabulary the
+ * information-design rules speak.
+ */
+export interface PptxChartFact extends QualityFact, ChartInfoDesign {
+  kind: 'pptx/chart';
+  /** `chart` or `highcharts`; the two answer the same questions differently. */
+  componentName: string;
+  /** Theme tokens a palette fix can name, in series order. */
+  paletteTokens: readonly string[];
+}
+
+/** One authored cell of a slide table, and where a patch would rewrite it. */
+export interface PptxTableCellRef {
+  path: string;
+  cell: string | Record<string, unknown>;
+}
+
+export interface PptxTableColumnFact extends TableColumnInfoDesign {
+  /** Every authored cell in this column, header first, in row order. */
+  cells: readonly PptxTableCellRef[];
+}
+
+export interface PptxTableFact extends QualityFact, TableInfoDesign {
+  kind: 'pptx/table';
+  columns: readonly PptxTableColumnFact[];
+}
+
 /** One authored string that reads as a placeholder rather than as content. */
 export interface PptxPlaceholderFact extends QualityFact {
   kind: 'pptx/placeholder';
@@ -125,7 +161,9 @@ export type PptxQualityFact =
   | PptxBoxFact
   | PptxThemeFact
   | PptxColorFact
-  | PptxFontFact;
+  | PptxFontFact
+  | PptxChartFact
+  | PptxTableFact;
 
 export interface PptxQualityModel {
   authored: PresentationComponentDefinition;
@@ -529,6 +567,13 @@ interface BoxNode {
   opaque: boolean;
 }
 
+/** A chart or a table: the two components the information-design rules read. */
+interface ContentNode {
+  props: Rec;
+  path: string;
+  componentName: string;
+}
+
 /**
  * One ordered pass over a slide's components: the text to analyse, the
  * surfaces drawn behind it, and every positioned box. All three need the same
@@ -541,6 +586,7 @@ function collectSlideNodes(
   text: TextNode[],
   surfaces: Surface[],
   boxes: BoxNode[],
+  contentNodes: ContentNode[],
   counter: { next: number }
 ): void {
   const rec = asRecord(component);
@@ -566,6 +612,13 @@ function collectSlideNodes(
   }
 
   const componentName = typeof rec.name === 'string' ? rec.name : '';
+  if (
+    componentName === 'chart' ||
+    componentName === 'highcharts' ||
+    componentName === 'table'
+  ) {
+    contentNodes.push({ props, path, componentName });
+  }
   if (componentName !== '') {
     boxes.push({
       props,
@@ -584,13 +637,260 @@ function collectSlideNodes(
       text,
       surfaces,
       boxes,
+      contentNodes,
       counter
     )
   );
 }
 
+/**
+ * Theme slots that can carry a data series, in the order a palette hands them
+ * out. `background`, `text` and their variants are excluded: they are the
+ * ground and the ink, and a series painted in either disappears into the slide.
+ */
+const SERIES_COLOR_TOKENS: readonly string[] = [
+  'primary',
+  'accent',
+  'secondary',
+  'accent4',
+  'accent5',
+  'accent6',
+];
+
+/** A chart component, native or Highcharts, as the shared rules read it. */
+function chartFact(
+  node: ContentNode,
+  paletteTokens: readonly string[]
+): PptxChartFact | undefined {
+  const { props, path } = node;
+  const base = {
+    id: `pptx:chart:${path}`,
+    kind: 'pptx/chart' as const,
+    path,
+    componentName: node.componentName,
+    paletteTokens,
+  };
+
+  if (node.componentName === 'highcharts') {
+    const shape = normalizeHighchartsChart(props.options);
+    return {
+      ...base,
+      chartType: shape.chartType,
+      encoding: shape.encoding,
+      threeD: shape.threeD,
+      seriesCount: shape.seriesCount,
+      categoryCount: shape.categoryCount,
+      seriesColorsStated: shape.seriesColorsStated,
+      seriesColorsPath: `${path}/props/options`,
+      ...(shape.valueAxisMin !== undefined && {
+        valueAxisMin: shape.valueAxisMin,
+      }),
+      unitStated: shape.unitStated,
+      annotation: {
+        stated: shape.annotationStated,
+        path,
+        slot: 'props.options.caption.text',
+      },
+    };
+  }
+
+  const chartType = typeof props.type === 'string' ? props.type : '';
+  if (chartType === '') return undefined;
+  const series = Array.isArray(props.data) ? props.data : [];
+  const categoryCount = Math.max(
+    0,
+    ...series.map((entry) => {
+      const record = asRecord(entry);
+      const labels = Array.isArray(record?.labels) ? record.labels.length : 0;
+      const values = Array.isArray(record?.values) ? record.values.length : 0;
+      return Math.max(labels, values);
+    })
+  );
+
+  return {
+    ...base,
+    chartType,
+    encoding: chartEncodingFor(chartType),
+    threeD: chartType.endsWith('3D'),
+    seriesCount: series.length,
+    categoryCount,
+    seriesColorsStated:
+      Array.isArray(props.chartColors) && props.chartColors.length > 0,
+    seriesColorsPath: `${path}/props/chartColors`,
+    ...(asNumber(props.valAxisMinVal) !== undefined && {
+      valueAxisMin: asNumber(props.valAxisMinVal),
+    }),
+    // A percent-stacked bar and percent data labels both state the unit as
+    // surely as an axis title does — the numbers are shares, and the chart
+    // says so on its face.
+    unitStated:
+      (typeof props.valAxisLabelFormatCode === 'string' &&
+        props.valAxisLabelFormatCode.trim() !== '') ||
+      props.showPercent === true ||
+      props.barGrouping === 'percentStacked' ||
+      hasUnitMarker(
+        typeof props.valAxisTitle === 'string' ? props.valAxisTitle : ''
+      ) ||
+      hasUnitMarker(typeof props.title === 'string' ? props.title : ''),
+    // No `annotation`: a native slide chart has no caption or source property,
+    // and a rule that judges a slot the component does not have is a rule
+    // nobody can satisfy.
+  };
+}
+
+/** The text a slide-table cell shows, whichever of its two shapes it takes. */
+function cellText(cell: unknown): string {
+  if (typeof cell === 'string') return cell;
+  const record = asRecord(cell);
+  return typeof record?.text === 'string' ? record.text : '';
+}
+
+const PPTX_ALIGNMENTS = new Set(['left', 'center', 'right', 'justify']);
+
+function cellAlignment(cell: unknown, tableDefault: TableAlignment) {
+  const record = asRecord(cell);
+  const align = typeof record?.align === 'string' ? record.align : undefined;
+  return align !== undefined && PPTX_ALIGNMENTS.has(align)
+    ? (align as TableAlignment)
+    : tableDefault;
+}
+
+/**
+ * A slide table, column by column, out of a row-major model.
+ *
+ * Row 0 counts as a header when the table says so, and also when it is plainly
+ * one: no cell in it parses as a number while the table has body rows to
+ * compare. `headerRow` is optional in the schema and routinely left off, and
+ * reading a label row as data would hide exactly the columns most likely to
+ * have been laid out without thought.
+ *
+ * A table with merged cells is described without columns: a `colspan` breaks
+ * the correspondence between an index and a visual column, and every column
+ * finding below is about what sits under what.
+ */
+function tableFact(
+  node: ContentNode,
+  slidePath: string,
+  authoredProps: Rec | undefined
+): PptxTableFact | undefined {
+  const { props, path } = node;
+  const rows = Array.isArray(props.rows) ? props.rows : undefined;
+  if (!rows || rows.length === 0) return undefined;
+
+  // The *authored* border, not the resolved one. Every theme gives tables a
+  // rule between cells, so a resolved-border test would report one finding per
+  // table for a decision taken once, in the theme, for the whole document.
+  // What this rule can say something about is a table that asks for a box of
+  // its own.
+  const border = asRecord(authoredProps?.border);
+  const fullGrid =
+    border !== undefined &&
+    border.type !== 'none' &&
+    (asNumber(border.pt) ?? 1) > 0;
+
+  const merged = rows.some(
+    (row) =>
+      Array.isArray(row) &&
+      row.some((cell) => {
+        const record = asRecord(cell);
+        return record?.colspan !== undefined || record?.rowspan !== undefined;
+      })
+  );
+
+  const base = {
+    id: `pptx:table:${path}`,
+    kind: 'pptx/table' as const,
+    path,
+    relatedPaths: [slidePath],
+    rowCount: rows.length,
+    fullGrid,
+    ...(fullGrid && { gridPath: `${path}/props/border` }),
+  };
+  if (merged) return { ...base, columns: [] };
+
+  const cellsOf = (row: unknown): unknown[] => (Array.isArray(row) ? row : []);
+  const headerRow =
+    props.headerRow === true ||
+    (rows.length >= 3 &&
+      cellsOf(rows[0]).every(
+        (cell) => parseNumericCell(cellText(cell)) === undefined
+      ));
+  const bodyStart = headerRow ? 1 : 0;
+  const tableDefault: TableAlignment =
+    typeof props.align === 'string' && PPTX_ALIGNMENTS.has(props.align)
+      ? (props.align as TableAlignment)
+      : 'left';
+
+  const columnCount = Math.max(0, ...rows.map((row) => cellsOf(row).length));
+  const columns: PptxTableColumnFact[] = [];
+  for (let index = 0; index < columnCount; index += 1) {
+    const cells: PptxTableCellRef[] = [];
+    const values: string[] = [];
+    const alignments = new Set<TableAlignment>();
+    rows.forEach((row, rowIndex) => {
+      const cell = cellsOf(row)[index];
+      if (cell === undefined) return;
+      cells.push({
+        path: `${path}/props/rows/${rowIndex}/${index}`,
+        cell: typeof cell === 'string' ? cell : asRecord(cell) ?? {},
+      });
+      if (rowIndex < bodyStart) return;
+      values.push(cellText(cell));
+      alignments.add(cellAlignment(cell, tableDefault));
+    });
+    const header = headerRow ? cellText(cellsOf(rows[0])[index]) : undefined;
+    columns.push({
+      index,
+      // The top cell of the column. A row-major table has no node standing
+      // for a column, and pointing every column of one table at `props/rows`
+      // would give two findings the same address — indistinguishable to a
+      // reader, and impossible to suppress one at a time.
+      path: `${path}/props/rows/0/${index}`,
+      ...(header !== undefined && { header }),
+      values,
+      alignment:
+        alignments.size === 1
+          ? [...alignments][0]
+          : alignments.size === 0
+            ? tableDefault
+            : 'mixed',
+      cells,
+    });
+  }
+  return { ...base, columns };
+}
+
 function pointerSegment(value: string): string {
   return value.replace(/~/g, '~0').replace(/\//g, '~1');
+}
+
+/**
+ * The `props` of the authored node at an RFC 6901 pointer.
+ *
+ * Facts are otherwise read off the processed tree, which is what the renderer
+ * draws. A handful of questions are about what the *document* asked for rather
+ * than what it inherited, and those need the authored node at the same pointer
+ * the fact reports.
+ */
+function authoredPropsAtPointer(
+  root: unknown,
+  pointer: string
+): Rec | undefined {
+  let node: unknown = root;
+  for (const token of pointer.split('/').slice(1)) {
+    const key = token.replace(/~1/g, '/').replace(/~0/g, '~');
+    if (Array.isArray(node)) {
+      const index = Number(key);
+      if (!Number.isInteger(index)) return undefined;
+      node = node[index];
+    } else {
+      const record = asRecord(node);
+      if (!record) return undefined;
+      node = record[key];
+    }
+    if (node === undefined) return undefined;
+  }
+  return asRecord(asRecord(node)?.props);
 }
 
 function addSlideFacts(
@@ -604,11 +904,15 @@ function addSlideFacts(
   theme: PptxThemeConfig,
   slideBackground: (fx: number, fy: number) => readonly string[],
   analyzedTextPaths: Set<string>,
+  analyzedContentPaths: Set<string>,
+  paletteTokens: readonly string[],
+  authoredPropsAt: (path: string) => Rec | undefined,
   addFact: (fact: PptxQualityFact) => void
 ): void {
   const nodes: TextNode[] = [];
   const surfaces: Surface[] = [];
   const boxes: BoxNode[] = [];
+  const contentNodes: ContentNode[] = [];
   const counter = { next: 0 };
   for (const root of roots) {
     collectSlideNodes(
@@ -617,8 +921,21 @@ function addSlideFacts(
       nodes,
       surfaces,
       boxes,
+      contentNodes,
       counter
     );
+  }
+
+  // Shared template objects reach every slide that uses the template; their
+  // authored path is analysed once, exactly as text is.
+  for (const node of contentNodes) {
+    if (analyzedContentPaths.has(node.path)) continue;
+    analyzedContentPaths.add(node.path);
+    const fact =
+      node.componentName === 'table'
+        ? tableFact(node, slidePath, authoredPropsAt(node.path))
+        : chartFact(node, paletteTokens);
+    if (fact) addFact(fact);
   }
   boxes.forEach((node, boxIndex) => {
     const box = resolveBox(node.props, grid, slideWidthIn, slideHeightIn);
@@ -922,6 +1239,12 @@ export function preparePptxQualityDocument(
     })
   );
   const analyzedTextPaths = new Set<string>();
+  const analyzedContentPaths = new Set<string>();
+  const paletteTokens = SERIES_COLOR_TOKENS.filter(
+    (token) => paletteHexes[token] !== undefined
+  );
+  const authoredPropsAt = (pointer: string): Rec | undefined =>
+    authoredPropsAtPointer(document, pointer);
 
   processed.slides.forEach((slide, renderedIndex) => {
     const authoredIndex = slideIndexes[renderedIndex];
@@ -992,6 +1315,9 @@ export function preparePptxQualityDocument(
           processed.slideHeight
         ),
       analyzedTextPaths,
+      analyzedContentPaths,
+      paletteTokens,
+      authoredPropsAt,
       addFact
     );
   });

@@ -1,4 +1,7 @@
 import {
+  chartInfoDesignFindings,
+  DEFAULT_MAXIMUM_CHART_SERIES,
+  DEFAULT_MAXIMUM_PIE_SLICES,
   fontCountFinding,
   mergeQualityProfiles,
   nearestPaletteToken,
@@ -6,11 +9,14 @@ import {
   placeholderFinding,
   QUALITY_CODES,
   QualityEngine,
+  tableInfoDesignFindings,
+  type JsonPatchOperation,
   type QualityProfile,
   type QualityRule,
   type QualityRulePack,
 } from '@json-to-office/quality';
 import type {
+  DocxChartFact,
   DocxColorFact,
   DocxFontFact,
   DocxFrameTextFact,
@@ -20,6 +26,8 @@ import type {
   DocxQualityFact,
   DocxQualityModel,
   DocxSvgTextFact,
+  DocxTableColumnFact,
+  DocxTableFact,
   DocxTableWidthFact,
   DocxThemeFact,
 } from './facts';
@@ -640,6 +648,141 @@ export const docxPaletteRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
   },
 };
 
+/**
+ * Rows past which a table stops being something a reader takes in and starts
+ * being a data set stored in a document. A page holds far more than this; the
+ * limit is about attention rather than about paper, which is why it advises
+ * rather than warns.
+ */
+const DEFAULT_MAX_TABLE_ROWS_PER_PAGE = 25;
+
+/** Information design for charts: the comparison, the palette and the caption. */
+export const docxChartRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
+  id: 'docx/chart-design',
+  code: QUALITY_CODES.CHART_OVERLOADED,
+  category: 'information-design',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultParameters: {
+    maximumSeries: DEFAULT_MAXIMUM_CHART_SERIES,
+    maximumSlices: DEFAULT_MAXIMUM_PIE_SLICES,
+  },
+  evaluate: ({ facts, configuration }) => {
+    const maximumSeries = numberParameter(
+      configuration.parameters,
+      'maximumSeries',
+      DEFAULT_MAXIMUM_CHART_SERIES
+    );
+    const maximumSlices = numberParameter(
+      configuration.parameters,
+      'maximumSlices',
+      DEFAULT_MAXIMUM_PIE_SLICES
+    );
+    return facts
+      .filter((fact): fact is DocxChartFact => fact.kind === 'docx/chart')
+      .flatMap((fact) => {
+        const fix = seriesColorFix(fact);
+        return chartInfoDesignFindings(fact, {
+          maximumSeries,
+          maximumSlices,
+          ...(fix && { seriesColorFix: fix }),
+        });
+      });
+  },
+};
+
+/**
+ * The palette patch, when the theme has enough slots to draw every series.
+ *
+ * Only for a native chart: a Highcharts palette lives inside an options blob
+ * the schema keeps opaque and the export server reads verbatim, so writing
+ * into it means guessing at a structure this pass never validated.
+ */
+function seriesColorFix(
+  fact: DocxChartFact
+): readonly JsonPatchOperation[] | undefined {
+  if (fact.componentName !== 'chart') return undefined;
+  if (fact.seriesCount < 1 || fact.paletteTokens.length === 0) return undefined;
+  const tokens = Array.from(
+    { length: fact.seriesCount },
+    (_, index) => fact.paletteTokens[index % fact.paletteTokens.length]
+  );
+  return [{ op: 'add', path: fact.seriesColorsPath, value: tokens }];
+}
+
+/** Information design for tables: alignment, rounding, rules and length. */
+export const docxTableDesignRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/table-design',
+  code: QUALITY_CODES.TABLE_NUMERIC_ALIGN,
+  category: 'information-design',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultParameters: { maximumRows: DEFAULT_MAX_TABLE_ROWS_PER_PAGE },
+  evaluate: ({ facts, configuration }) => {
+    const maximumRows = numberParameter(
+      configuration.parameters,
+      'maximumRows',
+      DEFAULT_MAX_TABLE_ROWS_PER_PAGE
+    );
+    return facts
+      .filter((fact): fact is DocxTableFact => fact.kind === 'docx/table')
+      .flatMap((fact) =>
+        tableInfoDesignFindings(fact, {
+          maximumRows,
+          rowSurface: 'page',
+          rowSeverity: 'info',
+          alignFix: alignColumnRight,
+        })
+      );
+  },
+};
+
+/**
+ * Right-align one column, header included.
+ *
+ * A column-major table has a column to patch, so the body is one operation.
+ * The header takes its own, since `headerCellDefaults` outranks the column
+ * for header cells, and any cell that stated an alignment of its own outranks
+ * everything — a fix that left those behind would not clear its own finding.
+ */
+function alignColumnRight(
+  column: DocxTableColumnFact
+): readonly JsonPatchOperation[] {
+  const operations: JsonPatchOperation[] = [
+    column.hasCellDefaults
+      ? {
+          op: 'add',
+          path: `${column.path}/cellDefaults/horizontalAlignment`,
+          value: 'right',
+        }
+      : {
+          op: 'add',
+          path: `${column.path}/cellDefaults`,
+          value: { horizontalAlignment: 'right' },
+        },
+  ];
+  if (column.hasHeader) {
+    operations.push({
+      op: 'add',
+      path: `${column.path}/header/horizontalAlignment`,
+      value: 'right',
+    });
+  }
+  for (const index of column.cellsWithOwnAlignment) {
+    operations.push({
+      op: 'add',
+      path: `${column.path}/cells/${index}/horizontalAlignment`,
+      value: 'right',
+    });
+  }
+  return operations;
+}
+
 export const DOCX_QUALITY_RULES: QualityRulePack<
   DocxQualityModel,
   DocxQualityFact
@@ -653,6 +796,8 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxSvgTextBoundsRule,
     docxLineBoxRule,
     docxPlaceholderRule,
+    docxChartRule,
+    docxTableDesignRule,
     docxFontCountRule,
     docxPaletteRule,
   ],

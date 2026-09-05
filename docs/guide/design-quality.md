@@ -115,17 +115,19 @@ true.
 
 ## Built-in PPTX rules
 
-| Rule                     | Codes                                                                                     | Default                                                 | Certainty     | What it checks                                                |
-| ------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------- | ------------------------------------------------------------- |
-| `pptx/canvas`            | `W_QUALITY_CANVAS_UNSPECIFIED`, `W_QUALITY_CANVAS_NONSTANDARD`, `W_QUALITY_CANVAS_LEGACY` | warning when missing; otherwise info                    | deterministic | Missing, legacy 4:3 or nonstandard canvas dimensions          |
-| `pptx/minimum-font-size` | `W_QUALITY_FONT_SIZE_MIN`                                                                 | warning                                                 | measured      | Effective text size below `minimumFontPt` (7pt by default)    |
-| `pptx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`, `W_QUALITY_TEXT_TIGHT`                                         | warning for overflow; otherwise info                    | estimated     | Estimated text height exceeds, or nearly fills, its box       |
-| `pptx/slide-density`     | `W_QUALITY_SLIDE_DENSITY`                                                                 | warning                                                 | estimated     | Body text exceeds `maximumBodyWords` (130 by default)         |
-| `pptx/text-contrast`     | `W_QUALITY_TEXT_CONTRAST`                                                                 | warning                                                 | deterministic | Text falls below WCAG AA against the surface behind it        |
-| `pptx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT`                                 | warning                                                 | deterministic | An unfilled scaffold slot, or leftover filler text            |
-| `pptx/box-overlap`       | `W_QUALITY_BOX_OVERLAP`                                                                   | warning for a duplicate or covered data; otherwise info | deterministic | Two opaque boxes on one slide that land on each other         |
-| `pptx/font-count`        | `W_QUALITY_FONT_COUNT`                                                                    | warning                                                 | deterministic | More than `maximumFamilies` (3) font families in one document |
-| `pptx/palette-adherence` | `W_QUALITY_OFF_PALETTE`                                                                   | info                                                    | deterministic | A literal colour the resolved theme does not define           |
+| Rule                     | Codes                                                                                                                                                                       | Default                                                 | Certainty     | What it checks                                                |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------- | ------------------------------------------------------------- |
+| `pptx/canvas`            | `W_QUALITY_CANVAS_UNSPECIFIED`, `W_QUALITY_CANVAS_NONSTANDARD`, `W_QUALITY_CANVAS_LEGACY`                                                                                   | warning when missing; otherwise info                    | deterministic | Missing, legacy 4:3 or nonstandard canvas dimensions          |
+| `pptx/minimum-font-size` | `W_QUALITY_FONT_SIZE_MIN`                                                                                                                                                   | warning                                                 | measured      | Effective text size below `minimumFontPt` (7pt by default)    |
+| `pptx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`, `W_QUALITY_TEXT_TIGHT`                                                                                                                           | warning for overflow; otherwise info                    | estimated     | Estimated text height exceeds, or nearly fills, its box       |
+| `pptx/slide-density`     | `W_QUALITY_SLIDE_DENSITY`                                                                                                                                                   | warning                                                 | estimated     | Body text exceeds `maximumBodyWords` (130 by default)         |
+| `pptx/text-contrast`     | `W_QUALITY_TEXT_CONTRAST`                                                                                                                                                   | warning                                                 | deterministic | Text falls below WCAG AA against the surface behind it        |
+| `pptx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT`                                                                                                                   | warning                                                 | deterministic | An unfilled scaffold slot, or leftover filler text            |
+| `pptx/box-overlap`       | `W_QUALITY_BOX_OVERLAP`                                                                                                                                                     | warning for a duplicate or covered data; otherwise info | deterministic | Two opaque boxes on one slide that land on each other         |
+| `pptx/chart-design`      | `W_QUALITY_CHART_3D`, `W_QUALITY_CHART_OVERLOADED`, `W_QUALITY_CHART_AXIS_BASELINE`, `W_QUALITY_CHART_SERIES_COLORS`, `W_QUALITY_CHART_UNITS`, `W_QUALITY_CHART_ANNOTATION` | warning, except units and caption, which are info       | deterministic | What a chart claims about its numbers                         |
+| `pptx/table-design`      | `W_QUALITY_TABLE_NUMERIC_ALIGN`, `W_QUALITY_TABLE_MIXED_DECIMALS`, `W_QUALITY_TABLE_GRID`, `W_QUALITY_TABLE_ROW_COUNT`                                                      | warning, except the grid, which is info                 | deterministic | How a table lays its numbers out, and how long it runs        |
+| `pptx/font-count`        | `W_QUALITY_FONT_COUNT`                                                                                                                                                      | warning                                                 | deterministic | More than `maximumFamilies` (3) font families in one document |
+| `pptx/palette-adherence` | `W_QUALITY_OFF_PALETTE`                                                                                                                                                     | info                                                    | deterministic | A literal colour the resolved theme does not define           |
 
 The canvas rule recognizes these deliberate presets: 16:9 standard
 (`13.333 × 7.5`), 16:9 small (`10 × 5.625`), square (`7.5 × 7.5`), 4:5
@@ -238,15 +240,17 @@ per template rather than suppressing the rule.
 
 ## Built-in DOCX rules
 
-| Rule                     | Code                                                      | Default | Certainty     | What it checks                                                                                     |
-| ------------------------ | --------------------------------------------------------- | ------- | ------------- | -------------------------------------------------------------------------------------------------- |
-| `docx/table-width`       | `W_QUALITY_TABLE_WIDTH_OVERFLOW`                          | warning | deterministic | Explicit column widths exceed the usable width of their section, with a 10-twip rounding tolerance |
-| `docx/heading-hierarchy` | `W_QUALITY_HEADING_SKIP`                                  | info    | deterministic | A heading jumps down by more than one level                                                        |
-| `docx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`                                 | warning | estimated     | A word too wide for its floating frame, or a frame whose wrapped block runs off the sheet          |
-| `docx/frame-collision`   | `W_QUALITY_FRAME_COLLISION`                               | warning | estimated     | Two page-anchored floating frames whose estimated text blocks land on the same region of a page    |
-| `docx/svg-text-bounds`   | `W_QUALITY_SVG_TEXT_CLIPPED`                              | warning | deterministic | A `<text>` baseline in an inline SVG falls outside the viewBox, so the words are never painted     |
-| `docx/line-box`          | `W_QUALITY_LINE_BOX_COLLAPSE`                             | warning | measured      | An `exactly` line box on text is shorter than the capitals it holds                                |
-| `docx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT` | warning | deterministic | An unfilled scaffold slot, or leftover filler text                                                 |
+| Rule                     | Code                                                                                                                                                                        | Default                                                    | Certainty     | What it checks                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
+| `docx/table-width`       | `W_QUALITY_TABLE_WIDTH_OVERFLOW`                                                                                                                                            | warning                                                    | deterministic | Explicit column widths exceed the usable width of their section, with a 10-twip rounding tolerance |
+| `docx/heading-hierarchy` | `W_QUALITY_HEADING_SKIP`                                                                                                                                                    | info                                                       | deterministic | A heading jumps down by more than one level                                                        |
+| `docx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`                                                                                                                                                   | warning                                                    | estimated     | A word too wide for its floating frame, or a frame whose wrapped block runs off the sheet          |
+| `docx/frame-collision`   | `W_QUALITY_FRAME_COLLISION`                                                                                                                                                 | warning                                                    | estimated     | Two page-anchored floating frames whose estimated text blocks land on the same region of a page    |
+| `docx/svg-text-bounds`   | `W_QUALITY_SVG_TEXT_CLIPPED`                                                                                                                                                | warning                                                    | deterministic | A `<text>` baseline in an inline SVG falls outside the viewBox, so the words are never painted     |
+| `docx/line-box`          | `W_QUALITY_LINE_BOX_COLLAPSE`                                                                                                                                               | warning                                                    | measured      | An `exactly` line box on text is shorter than the capitals it holds                                |
+| `docx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT`                                                                                                                   | warning                                                    | deterministic | An unfilled scaffold slot, or leftover filler text                                                 |
+| `docx/chart-design`      | `W_QUALITY_CHART_3D`, `W_QUALITY_CHART_OVERLOADED`, `W_QUALITY_CHART_AXIS_BASELINE`, `W_QUALITY_CHART_SERIES_COLORS`, `W_QUALITY_CHART_UNITS`, `W_QUALITY_CHART_ANNOTATION` | warning, except units and caption, which are info          | deterministic | What a chart claims about its numbers                                                              |
+| `docx/table-design`      | `W_QUALITY_TABLE_NUMERIC_ALIGN`, `W_QUALITY_TABLE_MIXED_DECIMALS`, `W_QUALITY_TABLE_GRID`, `W_QUALITY_TABLE_ROW_COUNT`                                                      | warning, except the grid and the row count, which are info | deterministic | How a table lays its numbers out, and how long it runs                                             |
 
 Frame text fit only inspects paragraphs pinned into a floating frame, where
 the author rather than the layout engine decides the available room; flowed
@@ -310,8 +314,117 @@ scaling is then deterministic. Heading analysis reports the source path of the
 level and can patch it to the next valid level.
 
 DOCX quality coverage is intentionally narrow today. It does not evaluate prose,
-typography, whitespace, widow/orphan behavior, table readability, color or the
-visual result produced by Word.
+typography, whitespace, widow/orphan behavior, color or the visual result
+produced by Word.
+
+## Charts and tables
+
+Both formats ask the same questions of a chart and of a table, because both are
+questions about the numbers rather than about the file. The rules are written
+once and each format translates its own props into them, so a slide chart, a
+document chart and a Highcharts config are judged by one standard.
+
+### Charts
+
+`W_QUALITY_CHART_3D` is the only one of these that is never a matter of taste.
+A perspective projection makes the front of the plot read larger than the back,
+so the comparison the chart exists for is the thing the depth distorts. PPTX
+spells it `bar3D`; a Highcharts config spells it `chart.options3d.enabled`. The
+DOCX chart component has no 3D type at all.
+
+`W_QUALITY_CHART_OVERLOADED` is one code for two counts, because they are the
+same failure measured differently: more than six slices in a pie or a doughnut,
+or more than four series anywhere else. Which count applies is decided by how
+the chart encodes value — a pie encodes with angle, and wedges within a few
+degrees of each other cannot be ranked by eye; a line encodes with position,
+where twelve months is a time series and not an overloaded chart. The limits
+are the `maximumSlices` and `maximumSeries` parameters.
+
+`W_QUALITY_CHART_AXIS_BASELINE` fires only where the chart encodes with
+_length_: a bar twice as long has to mean twice as much, so a value axis that
+starts at 80 draws a 2% difference as a doubling. A line chart with the same
+floor is left alone — zooming the axis is how a small movement is made visible,
+and position carries no claim about ratios. Only an authored floor counts; a
+chart that states none gets the renderer's, which starts at zero. The DOCX
+chart component has no axis-floor property, so this reaches DOCX only through
+Highcharts.
+
+`W_QUALITY_CHART_SERIES_COLORS` reports a chart with no series colours, which
+paints in the renderer's default palette — the one that belongs to no document.
+The fix names one theme token per series, drawn from `primary`, `accent`,
+`secondary` and the optional `accent4`–`accent6` slots, cycling if the chart has
+more series than the theme has slots. `background` and `text` are excluded: a
+series painted in either disappears into the slide. No fix is offered for a
+Highcharts chart — its palette lives inside an options object the schema keeps
+opaque and the export server reads verbatim, so writing into it would mean
+guessing at a structure nothing here validated.
+
+`W_QUALITY_CHART_UNITS` is `info`, and generous about what counts as naming a
+unit: a value-axis label format, percent data labels, a percent-stacked bar, or
+a unit marker in the value-axis title, the chart title or the caption — a
+currency or percent sign, a parenthesised suffix like `(€m)`, or one of a short
+list of unit words. A quantity named without its unit is not a unit: `Revenue`
+does not count and `Revenue (€m)` does. It advises rather than warns because
+the unit may well be in the sentence beside the chart, which the analyzer
+cannot see.
+
+`W_QUALITY_CHART_ANNOTATION` is asked only of a chart that _has_ somewhere to
+put the answer. A DOCX chart has `props.caption`; a Highcharts config has
+`caption.text` and `subtitle.text`. A native PPTX chart has neither, so it is
+never asked — a rule that judges a slot the component does not have is a rule
+nobody can satisfy. When blocks arrive, the takeaway and source slots they
+carry will be judged the same way.
+
+### Tables
+
+A column is numeric when at least two of its body cells parse as numbers and no
+other cell is text. Blanks, dashes, `n/a` and `TBD` are gaps rather than text —
+real tables are full of them, and reading one as prose would hide exactly the
+column most likely to have been laid out without thought. Two numbers is the
+floor: a single figure beside a label is a fact, not a column.
+
+Number parsing is positional rather than locale-aware, because there is no
+universal answer — `1.234` is one thousand two hundred and thirty-four in Milan
+and one-point-two-three-four in Chicago. Exactly three digits after the last
+separator is read as a thousands group and anything else as a decimal fraction,
+which reads `50,00` as fifty and `1,234` as one thousand two hundred and
+thirty-four. Currency symbols, percent signs, accounting parentheses and
+magnitude suffixes (`k`, `m`, `bn`, `pp`, `bps`) are notation and are stripped
+before parsing.
+
+`W_QUALITY_TABLE_NUMERIC_ALIGN` reports a numeric column that is not flush
+right, where digits do not line up by place value. Alignment is read through
+each format's own cascade rather than off the cell, so a table that sets the
+alignment once for every cell in it is not reported as if every cell were
+silent. The repair is the one place the two formats genuinely differ: a DOCX
+table is column-major, so the fix is one operation on the column's
+`cellDefaults` plus one for the header and one for any cell that stated an
+alignment of its own; a PPTX table is row-major and has no column to patch, so
+the fix is one operation per row, and a plain-string cell becomes an object to
+carry the alignment at all.
+
+`W_QUALITY_TABLE_MIXED_DECIMALS` reports a numeric column rounded more than one
+way. It carries no fix: padding `3` to `3.00` is a claim about precision the
+source may not support, and only the author knows which way the column should
+go.
+
+`W_QUALITY_TABLE_GRID` is `info`, and is asked of the table's own declaration
+rather than of the resolved borders. Word's baseline is a box around every cell
+and every PPTX theme draws a rule between them, so a resolved-border test would
+report every table that never mentioned its borders — one finding per table for
+a decision the theme took once, for the whole document. A grid a table asks for
+is a choice the author can unmake at the pointer the finding names; a grid it
+inherited belongs to a theme review.
+
+`W_QUALITY_TABLE_ROW_COUNT` counts the rows a table draws, header included. It
+warns past twelve on a slide, where the canvas is fixed and a thirteenth row is
+either unreadable or off the edge, and advises past twenty-five on a page,
+where nothing breaks and the limit is about attention rather than about paper.
+Both are the `maximumRows` parameter.
+
+A table with merged cells is described without columns and none of the column
+findings apply: a `colspan` breaks the correspondence between an index and a
+visual column, and every column finding is about what sits under what.
 
 ## Profiles
 
@@ -498,7 +611,10 @@ Some deterministic or bounded findings include RFC 6902 operations in `fixes`:
 - raise a font to the configured minimum;
 - reduce a text font when a readable whole-number size fits the box;
 - proportionally scale fully explicit DOCX column widths;
-- replace a skipped heading level with the next valid level.
+- replace a skipped heading level with the next valid level;
+- map an off-palette literal to the nearest theme token;
+- name one theme colour per series on a chart that states none;
+- right-align a numeric table column, header included.
 
 Fixes are proposals, not automatic mutations. Review them before applying them,
 especially when reducing type size would preserve fit but harm the design intent.
