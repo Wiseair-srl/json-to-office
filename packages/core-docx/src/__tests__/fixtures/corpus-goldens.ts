@@ -18,6 +18,10 @@
  */
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
+  'blocks/report-chrome-fallback':
+    '0d4b172d6a36095bbf72d0fb36c1afe0806b0b8d6eb85a793c1446ba8e767283',
+  'blocks/report-chrome-consulting':
+    'bf6c70010320ddedf5aba318647e81b787baeb0e7a6021be0cb5c314fd603bf2',
   'blocks/key-takeaways-fallback':
     'ef42a5e079223e4df653b200883bf70801ef987bd1b2fad56bbc4bba64861e73',
   'blocks/key-takeaways-consulting':
@@ -569,7 +573,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/no-proof-words':
     '1ef977f9fd0b7553f7ddbd9f1f96aec95ef8f407d93691b6225bdf336de1f4a8',
   'theme/example-practice-note':
-    '4105ed3830042d8465dea55cbe207d6296a2ad0466dc8dc6c4c45edbc274c483',
+    '0c28b169b7c8c6823da508a7a41bf75c5b0bc3bdd5dc5e955da73c5182246c18',
   'theme/example-field-review':
     '7fcef1539f4998dc9e9bee771e3c8a05bc60e83302456e31e8da9a166cd0e053',
 };

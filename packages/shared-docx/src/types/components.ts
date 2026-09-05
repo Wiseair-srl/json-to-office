@@ -19,6 +19,9 @@ import type {
   VisualPropsSchema,
   StatisticPropsSchema,
   KeyTakeawaysPropsSchema,
+  CoverPropsSchema,
+  SectionOpenerPropsSchema,
+  RunningHeadPropsSchema,
   TablePropsSchema,
   ListPropsSchema,
   TocPropsSchema,
@@ -135,6 +138,45 @@ export interface KeyTakeawaysComponent {
   /** When false, this component is filtered out and not rendered. Defaults to true */
   enabled?: boolean;
   props: Static<typeof KeyTakeawaysPropsSchema>;
+  children?: ComponentDefinition[];
+}
+
+/**
+ * Cover block: the report's first page, lowered in place like every block.
+ */
+export interface CoverComponent {
+  name: 'cover';
+  id?: string;
+  /** When false, this component is filtered out and not rendered. Defaults to true */
+  enabled?: boolean;
+  props: Static<typeof CoverPropsSchema>;
+  children?: ComponentDefinition[];
+}
+
+/**
+ * Section-opener block: number, level-1 heading and the running-head tracker
+ * for the enclosing section.
+ */
+export interface SectionOpenerComponent {
+  name: 'section-opener';
+  id?: string;
+  /** When false, this component is filtered out and not rendered. Defaults to true */
+  enabled?: boolean;
+  props: Static<typeof SectionOpenerPropsSchema>;
+  children?: ComponentDefinition[];
+}
+
+/**
+ * Running-head block: page chrome for its section and every later one. It
+ * lowers to nothing in the flow — its output is the sections' header and
+ * footer — so `props` may be omitted altogether.
+ */
+export interface RunningHeadComponent {
+  name: 'running-head';
+  id?: string;
+  /** When false, this component is filtered out and not rendered. Defaults to true */
+  enabled?: boolean;
+  props?: Static<typeof RunningHeadPropsSchema>;
   children?: ComponentDefinition[];
 }
 
@@ -267,6 +309,9 @@ export type StandardComponentDefinition =
   | VisualComponent
   | StatisticComponent
   | KeyTakeawaysComponent
+  | CoverComponent
+  | SectionOpenerComponent
+  | RunningHeadComponent
   | TableComponent
   | ListComponent
   | TocComponent
@@ -293,6 +338,9 @@ export const STANDARD_COMPONENTS = [
   'toc',
   'visual',
   'key-takeaways',
+  'cover',
+  'section-opener',
+  'running-head',
 ] as const satisfies readonly StandardComponentDefinition['name'][];
 
 /**
@@ -397,6 +445,24 @@ export function isKeyTakeawaysComponent(
   component: ComponentDefinition
 ): component is KeyTakeawaysComponent {
   return component.name === 'key-takeaways';
+}
+
+export function isCoverComponent(
+  component: ComponentDefinition
+): component is CoverComponent {
+  return component.name === 'cover';
+}
+
+export function isSectionOpenerComponent(
+  component: ComponentDefinition
+): component is SectionOpenerComponent {
+  return component.name === 'section-opener';
+}
+
+export function isRunningHeadComponent(
+  component: ComponentDefinition
+): component is RunningHeadComponent {
+  return component.name === 'running-head';
 }
 
 export function isTableComponent(

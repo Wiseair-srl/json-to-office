@@ -50,7 +50,11 @@ import {
   STATISTIC_SIZE_POINTS,
 } from '../styles/themeToStyles';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
-import { getNormalStyle, getThemeFonts } from '../themes/defaults';
+import {
+  getNormalStyle,
+  getThemeFonts,
+  getThemeStyles,
+} from '../themes/defaults';
 import { computeSectionOrdinals } from '../core/sectionOrdinals';
 import {
   dedupeBookmarkId,
@@ -801,11 +805,15 @@ function compilePart(
 /**
  * A paragraph inside a header or footer.
  *
- * Page chrome has no style of its own, so every run states its family, size,
- * colour and weight, resolved against the theme's Normal style rather than
- * inherited. That also makes it a narrower component than a body paragraph:
- * only text, alignment, font and spacing apply here. Indentation, tab stops,
- * bookmarks, notes, comments, revisions and the keep flags have never been
+ * Page chrome states every run's family, size, colour and weight explicitly
+ * rather than inheriting them: LibreOffice paints a page-number field with
+ * the document default when the run around it says nothing, so the values a
+ * reader sees must be on the run. They resolve against the theme's Normal
+ * style, or — when the paragraph names a `themeStyle`, as the running-head
+ * block's chrome does — against that style, which the paragraph also names
+ * so Word shows it in the style pane. Tab stops and indentation carry over,
+ * which is what puts a tracker flush right and a page number centred.
+ * Bookmarks, notes, comments, revisions and the keep flags have never been
  * carried into page chrome and still are not.
  */
 function compileChromeParagraph(
@@ -819,24 +827,45 @@ function compileChromeParagraph(
   if (reportUnlowered(component, props, text, scope)) return [];
 
   const font = (props.font ?? {}) as Record<string, any>;
-  const normal = getNormalStyle(ctx.theme);
+  const named = chromeStyle(ctx.theme, props.themeStyle);
+  const base: Record<string, any> = { ...getNormalStyle(ctx.theme), ...named };
+  const styleId = named
+    ? paragraphStyleId(props.themeStyle) ?? 'Normal'
+    : 'Normal';
+  if (styleId !== 'Normal' && !ctx.styleIds.has(styleId)) {
+    ctx.styleIds.add(styleId);
+  }
   const chromeProps: Record<string, any> = {
     text,
-    ...(props.alignment ? { alignment: props.alignment } : {}),
+    ...(named ? { themeStyle: props.themeStyle } : {}),
+    ...(props.alignment
+      ? { alignment: props.alignment }
+      : named?.alignment
+        ? { alignment: named.alignment }
+        : {}),
     ...(props.spacing ? { spacing: props.spacing } : {}),
+    ...(props.indent ? { indent: props.indent } : {}),
+    ...(props.tabStops ? { tabStops: props.tabStops } : {}),
     ...(props.boldColor ? { boldColor: props.boldColor } : {}),
     font: {
       family:
         font.family ||
-        resolveFontFamily(ctx.theme, normal.font) ||
+        resolveFontFamily(ctx.theme, base.font) ||
         getThemeFonts(ctx.theme).body.family,
-      size: font.size ?? normal.size ?? 11,
-      color: font.color || normal.color || 'textPrimary',
-      bold: font.bold ?? false,
-      italic: font.italic ?? false,
+      size: font.size ?? base.size ?? 11,
+      color: font.color || base.color || 'textPrimary',
+      bold: font.bold ?? base.bold ?? false,
+      italic: font.italic ?? base.italic ?? false,
       ...(font.underline !== undefined ? { underline: font.underline } : {}),
-      ...(font.fontWeight !== undefined ? { fontWeight: font.fontWeight } : {}),
-      ...(font.case !== undefined ? { case: font.case } : {}),
+      ...((font.fontWeight ?? base.fontWeight) !== undefined
+        ? { fontWeight: font.fontWeight ?? base.fontWeight }
+        : {}),
+      ...((font.case ?? base.case) !== undefined
+        ? { case: font.case ?? base.case }
+        : {}),
+      ...((font.characterSpacing ?? base.characterSpacing) !== undefined
+        ? { characterSpacing: font.characterSpacing ?? base.characterSpacing }
+        : {}),
       ...(font.lineSpacing !== undefined
         ? { lineSpacing: font.lineSpacing }
         : {}),
@@ -845,12 +874,26 @@ function compileChromeParagraph(
 
   return [
     paragraphNode(scope, compileRuns(chromeProps, text, ctx, scope.path), {
-      styleId: 'Normal',
+      styleId,
       formatting: paragraphFormatting(chromeProps, ctx, {
         alwaysSpacing: true,
       }),
     }),
   ];
+}
+
+/**
+ * The theme style a chrome paragraph's `themeStyle` names, if any. Built-in
+ * names are keyed in lower case (`title`, `heading1`); a type role or a
+ * custom style is keyed as written.
+ */
+function chromeStyle(
+  theme: ThemeConfig,
+  themeStyle: unknown
+): Record<string, any> | undefined {
+  if (typeof themeStyle !== 'string' || !themeStyle) return undefined;
+  const styles = getThemeStyles(theme) as Record<string, any>;
+  return styles[themeStyle] ?? styles[themeStyle.toLowerCase()];
 }
 
 /**
@@ -1014,19 +1057,21 @@ function compileComponent(
 /**
  * An expanded block is a transparent container: its compiled children are
  * lowered in flow order under the block's own path. A block that reaches the
- * compiler unexpanded — a caller that skipped preparation — is reported as
- * unsupported rather than silently dropped.
+ * compiler unexpanded — a caller that skipped preparation, or a chrome block
+ * somewhere expansion does not reach — is reported as unsupported rather
+ * than silently dropped.
  */
 function compileBlock(
   component: ComponentDefinition,
   scope: ComponentScope
 ): DocxIrBlock[] {
-  const children =
-    (component as { children?: ComponentDefinition[] }).children ?? [];
-  if (children.length === 0) {
+  const children = (component as { children?: ComponentDefinition[] }).children;
+  if (!Array.isArray(children)) {
     scope.ctx.unsupported.push({ name: component.name, path: scope.path });
     return [];
   }
+  // A chrome block expands to an empty list where it stands: its output is
+  // the section's header and footer, lowered through `compilePart`.
   return children.flatMap((child, index) =>
     compileComponent(child, {
       ...scope,

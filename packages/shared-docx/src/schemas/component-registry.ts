@@ -28,6 +28,9 @@ import { TextBoxPropsSchema } from './components/text-box';
 import { ImagePropsSchema } from './components/image';
 import { StatisticPropsSchema } from './components/statistic';
 import { KeyTakeawaysPropsSchema } from './components/key-takeaways';
+import { CoverPropsSchema } from './components/cover';
+import { SectionOpenerPropsSchema } from './components/section-opener';
+import { RunningHeadPropsSchema } from './components/running-head';
 import { TablePropsSchema, createTablePropsSchema } from './components/table';
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
@@ -177,6 +180,9 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'columns',
         'text-box',
         'key-takeaways',
+        'cover',
+        'section-opener',
+        'running-head',
       ],
       category: 'container',
       description:
@@ -257,6 +263,30 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       category: 'content',
       description:
         "Key-takeaways block - 3–5 one-sentence takeaways under a label, drawn as the theme's takeaways recipe (rule, label role, list). Opens a report or a major section with its conclusions; the theme styles it, so never hand-build one from paragraphs.",
+    },
+    {
+      name: 'cover',
+      propsSchema: CoverPropsSchema,
+      hasChildren: false,
+      category: 'content',
+      description:
+        "Cover block - title, subtitle, client, date, confidentiality and an optional logo, drawn as the theme's cover recipe. Put it in a section of its own so the report starts on a fresh page; never hand-build a cover from paragraphs and spacing.",
+    },
+    {
+      name: 'section-opener',
+      propsSchema: SectionOpenerPropsSchema,
+      hasChildren: false,
+      category: 'content',
+      description:
+        'Section-opener block - number, title and running-head tracker for a major section. The title is a level-1 heading (TOC, cross-references and numbering see it); the number is an eyebrow above it; the tracker is what the running head shows for the enclosing section.',
+    },
+    {
+      name: 'running-head',
+      propsSchema: RunningHeadPropsSchema,
+      hasChildren: false,
+      category: 'content',
+      description:
+        "Running-head block - the header (document title, section tracker) and footer (confidentiality, page n / N, date) from the theme's chrome recipes, for its section and every later one that authors no chrome of its own. Declare it once, as a child of the first section that should carry chrome.",
     },
     {
       name: 'table',

@@ -47,11 +47,11 @@ Canvas keys are `a4`, `letter`, `wide169`, `standard43`. DOCX uses `theme.page.s
 
 ### `chrome` and `motif`
 
-Schema contracts only in this foundation; rendering consumers are tracked in #361. No content is inserted.
+Visual recipes the DOCX blocks paint from. No content is inserted by a theme: a recipe says how a block looks once an author places it.
 
-`chrome` optionally contains `runningHead`, `tracker`, `actionTitle`, `keyTakeaways`, `sourceLine`, `confidentialFooter`, `logoSlot`, `cover`. Each recipe accepts `type` (a role name), `color`, `fill`, `rule: { weightPt, color }`, `padPt` and `alignment` (left/center/right). Weights/padding are nonnegative points.
+`chrome` optionally contains `runningHead`, `tracker`, `actionTitle`, `keyTakeaways`, `sourceLine`, `confidentialFooter`, `logoSlot`, `cover`. Each recipe accepts `type` (a role name), `color`, `fill`, `rule: { weightPt, color }`, `padPt` and `alignment` (left/center/right). Weights/padding are nonnegative points. Consumers today: [`key-takeaways`](/reference/docx/components#key-takeaways) reads `keyTakeaways` (`rule`, `type`, `padPt`, `color`); [`cover`](/reference/docx/components#cover) reads `cover` (`rule`, `type`, `color`, `padPt`) and `logoSlot` (`alignment`); [`running-head`](/reference/docx/components#running-head) reads `runningHead` and `confidentialFooter` (`type`, `color`, `rule`, `alignment`). A `rule.weightPt` of `0` draws no rule. `tracker`, `actionTitle` and `sourceLine` are read by no block yet (#361, #337).
 
-`motif` is a single object with required `kind` (none/rule/corner/band), optional `color`, `weightPt` and `placement` (`top`, `bottom`, `left`, `right`, `topLeft`, `topRight`, `bottomLeft`, `bottomRight`). Recipe colors are stored for later consumers. Neither schema accepts content requirements.
+`motif` is a single object with required `kind` (none/rule/corner/band), optional `color`, `weightPt` and `placement` (`top`, `bottom`, `left`, `right`, `topLeft`, `topRight`, `bottomLeft`, `bottomRight`). Motif colors are stored for later consumers. Neither schema accepts content requirements.
 
 ## DOCX theme
 
