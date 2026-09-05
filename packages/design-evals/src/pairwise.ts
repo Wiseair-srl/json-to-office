@@ -63,7 +63,12 @@ export interface PairOutcome {
 export function agreedVerdict(
   judgements: readonly PairJudgement[]
 ): PairOutcome['verdict'] {
-  if (judgements.length === 0) return 'inconsistent';
+  if (
+    judgements.length !== 2 ||
+    judgements[0].bShownFirst === judgements[1].bShownFirst
+  ) {
+    return 'inconsistent';
+  }
   const [first, ...rest] = judgements;
   return rest.every((judgement) => judgement.winner === first.winner)
     ? first.winner
