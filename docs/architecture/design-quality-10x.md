@@ -528,11 +528,13 @@ language elsewhere in this document; the architecture and the final scope
 stand. It is recorded in full on the epic (#319) and summarised here so the
 spec and the tracker say the same thing.
 
-**Done.** #320–#327 (Phase 0), #346 (chart and table information-design
-rules), #328 (the shared palette/type/spacing foundation; chrome and motif
-_consumers_ split to #361), #354 (Highcharts inherits the document
-typography) and the DOCX portion of #329 (`consulting`, opt-in). The Phase 1
-schema decisions are settled in `phase-1-theme-schema-map.md`.
+**Shipped.** #320–#327 (Phase 0), #346 (chart and table information-design
+rules) and #328 (the shared palette/type/spacing foundation; chrome and motif
+_consumers_ split to #361). The Phase 1 schema decisions are settled in
+`phase-1-theme-schema-map.md`. The branch carrying this revision delivers
+#354 (Highcharts inherits the document typography), the DOCX portion of #329
+(`consulting`, opt-in) and the compiler-and-slot portion of #334
+(`key-takeaways`); each closes on its own acceptance, not on this note.
 
 **Next milestone: a complete client-report workflow (#362).** Given a real
 brief and data, Claude Desktop scaffolds, fills, validates, previews, repairs

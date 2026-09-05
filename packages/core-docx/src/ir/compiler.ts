@@ -114,6 +114,7 @@ import {
   type PlaceholderResolution,
 } from './inline';
 import type { DocxFeature } from './features';
+import { isBlockName } from '../blocks';
 import {
   DOCX_IR_SCHEMA_VERSION,
   type DocxIR,
@@ -995,9 +996,8 @@ function compileComponent(
       return compileChart(component, scope);
     case 'table':
       return compileTable(component, scope);
-    case 'key-takeaways':
-      return compileBlock(component, scope);
     default:
+      if (isBlockName(component.name)) return compileBlock(component, scope);
       scope.ctx.unsupported.push({
         name: component.name,
         path: scope.path,

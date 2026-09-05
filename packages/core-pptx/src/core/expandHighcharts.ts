@@ -11,10 +11,9 @@
  */
 
 import {
-  chartFontFaceCss,
+  chartFamilyResolver,
   chartPointsPerPixel,
-  cssFontFamily,
-  themeFontRegistry,
+  withChartFontFaceCss,
   withChartTypography,
   type ChartTypography,
   type HighchartsServiceConfig,
@@ -147,7 +146,8 @@ async function expandOne(
       withThemeTypography(
         withThemeColors(props, scope.theme, scope.warnings),
         scope.theme,
-        scope.slideWidth
+        scope.slideWidth,
+        scope.warnings
       ),
       scope.theme,
       scope.chartFonts
@@ -285,14 +285,7 @@ function themeChartTypography(
   warnings: PipelineWarning[]
 ): ChartTypography {
   const styles = theme.styles ?? {};
-  const categories = new Map(
-    themeFontRegistry(theme).map((entry) => [
-      entry.family.toLowerCase(),
-      entry.category,
-    ])
-  );
-  const family = (name: string) =>
-    cssFontFamily(name, categories.get(name.toLowerCase()));
+  const family = chartFamilyResolver(theme);
   const bodyPt = styles.body?.fontSize ?? theme.defaults.fontSize;
   const label = styles.chartLabel;
   const heading = styles.heading3;
@@ -326,7 +319,8 @@ function themeChartTypography(
 function withThemeTypography(
   props: PptxHighchartsProps,
   theme: PptxThemeConfig,
-  slideWidth: number
+  slideWidth: number,
+  warnings: PipelineWarning[]
 ): PptxHighchartsProps {
   if (!props.options || !theme?.fonts?.body || !theme.fonts.heading) {
     return props;
@@ -335,7 +329,7 @@ function withThemeTypography(
     ...props,
     options: withChartTypography(
       props.options,
-      themeChartTypography(theme, []),
+      themeChartTypography(theme, warnings),
       chartPointsPerPixel(
         props.options.chart?.width ?? 0,
         placedWidthPt(props, slideWidth)
@@ -355,14 +349,8 @@ function withChartFontFaces(
   faces: readonly RasterizeFontFace[] | undefined
 ): PptxHighchartsProps {
   if (!faces?.length || !theme?.fonts) return props;
-  const css = chartFontFaceCss(faces, [theme.fonts.body, theme.fonts.heading]);
-  if (!css) return props;
-  const authored = props.resources?.css;
-  return {
-    ...props,
-    resources: {
-      ...props.resources,
-      css: authored ? `${css}\n${authored}` : css,
-    },
-  };
+  return withChartFontFaceCss(props, faces, [
+    theme.fonts.body,
+    theme.fonts.heading,
+  ]);
 }

@@ -16,10 +16,10 @@ import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 // Import only the types we actually use from shared package
 import type { HighchartsProps } from '@json-to-office/shared-docx';
 import {
-  chartFontFaceCss,
+  chartFamilyResolver,
   chartPointsPerPixel,
-  cssFontFamily,
-  themeFontRegistry,
+  POINTS_PER_PIXEL_96DPI,
+  withChartFontFaceCss,
   withChartTypography,
   type ChartTypography,
   type HighchartsServiceConfig,
@@ -146,7 +146,7 @@ function withThemeColors(
 /** Twips to points. */
 const POINTS_PER_TWIP = 1 / 20;
 /** Points per image pixel: `image` places a pixel count at 96 dpi. */
-const POINTS_PER_PIXEL = 0.75;
+const POINTS_PER_PIXEL = POINTS_PER_PIXEL_96DPI;
 
 /**
  * The width, in points, the chart's image takes on the page — the same rule
@@ -196,14 +196,7 @@ function themeChartTypography(theme: ThemeConfig): ChartTypography {
       }
     | undefined
   >;
-  const categories = new Map(
-    themeFontRegistry(theme).map((entry) => [
-      entry.family.toLowerCase(),
-      entry.category,
-    ])
-  );
-  const family = (name: string) =>
-    cssFontFamily(name, categories.get(name.toLowerCase()));
+  const family = chartFamilyResolver(theme);
   const bodyPt = styles.normal?.size ?? theme.fonts.body.size ?? 11;
   const label = styles.chartLabel;
   const heading = styles.heading3;
@@ -259,19 +252,10 @@ function withChartFontFaces(
   faces: readonly RasterizeFontFace[] | undefined
 ): HighchartsProps {
   if (!faces?.length || !theme?.fonts) return config;
-  const css = chartFontFaceCss(faces, [
+  return withChartFontFaceCss(config, faces, [
     theme.fonts.body.family,
     theme.fonts.heading.family,
   ]);
-  if (!css) return config;
-  const authored = config.resources?.css;
-  return {
-    ...config,
-    resources: {
-      ...config.resources,
-      css: authored ? `${css}\n${authored}` : css,
-    },
-  };
 }
 
 /**
