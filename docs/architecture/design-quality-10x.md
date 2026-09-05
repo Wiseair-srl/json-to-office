@@ -18,43 +18,66 @@ with the server running locally (LibreOffice reachable through
 and PowerPoint remain the final compatibility target. No other MCP host is a
 design target. English briefs first; Italian follows.
 
-"10x" operationalised. The **cold baseline was measured on 2026-09-04** over
-the 40-brief development corpus, server 2.0.0, `claude-sonnet-5`, judged on
-renders — `packages/design-evals/baselines/2026-09-04-cold-server-2.0.0.json`
-carries every run and the full manifest. The original estimates are kept
-alongside, because where they were wrong is itself a finding.
+"10x" operationalised. Both baselines are measured and recorded in
+`packages/design-evals/baselines/`: **cold** on 2026-09-04 and **assisted**
+with skill 3.2.0 on 2026-09-05, each 40 briefs on the development corpus,
+server 2.0.0, `claude-sonnet-5`, judged on renders, no failures and nothing
+contaminated. The original estimates are kept because where they were wrong is
+itself a finding.
 
-| Metric (eval harness, §5A, on the brief corpus)                                        | Est. | **Measured (cold, 2.0.0)**         | Target                                     |
-| -------------------------------------------------------------------------------------- | ---- | ---------------------------------- | ------------------------------------------ |
-| Outputs rated _excellent_ (rubric level ≥ 4, judged on renders)                        | ~5%  | **25%** (10/40)                    | ≥ 50%                                      |
-| Outputs with any rendered integrity defect (overflow, clip, overlap, placeholder text) | ~60% | **not yet measurable** — see below | ≤ 5%                                       |
-| Median rubric score                                                                    | ~4   | **3** (of 5)                       | ≥ 8, i.e. today's best skill-assisted work |
-| Median author iterations to "done"                                                     | 4–6  | **1**                              | ≤ 2                                        |
-| Outputs the judge would ship to a client without human touch-up                        | ~5%  | **20%** (8/40)                     | ≥ 50%                                      |
+| Metric (eval harness, §5A, on the brief corpus)                                        | Est. | **Cold (2.0.0)**                   | **Assisted (skill 3.2.0)** | Target |
+| -------------------------------------------------------------------------------------- | ---- | ---------------------------------- | -------------------------- | ------ |
+| Outputs rated _excellent_ (rubric level ≥ 4, judged on renders)                        | ~5%  | **25%** (10/40)                    | **40%** (16/40)            | ≥ 50%  |
+| Outputs with any rendered integrity defect (overflow, clip, overlap, placeholder text) | ~60% | **not yet measurable** — see below | **not yet measurable**     | ≤ 5%   |
+| Median rubric score                                                                    | ~4   | **3** (of 5)                       | **3** (of 5)               | ≥ 8    |
+| Median author iterations to "done"                                                     | 4–6  | **1**                              | **1.5**                    | ≤ 2    |
+| Outputs the judge would ship to a client without human touch-up                        | ~5%  | **20%** (8/40)                     | **22.5%** (9/40)           | ≥ 50%  |
 
-Two of the estimates were pessimistic by roughly 4x: a quarter of cold outputs
-already reach level 4, and a fifth would be sent as they are. The rubric median
-of 3 says where the wall is — visual coherence is met, communicative
-effectiveness is not.
+**The assisted baseline is the important one, and it does not say what the plan
+assumed.** The skill was to be "today's ceiling", the level the product should
+reach. On the headline metric it reaches 22.5% against the product's own 20% —
+and the paired comparison shows even that is not an improvement: of 40 briefs,
+6 shipped cold and stopped shipping with the skill, 7 did the reverse, and only
+**2 shipped in both**. Eighty-two kilobytes of curated taste prose moves
+shippability by an amount indistinguishable from noise.
+
+What the skill does move is craft. Rubric level improved on 19 briefs and
+worsened on 6; genericness improved on 18 and worsened on 7; off-palette
+findings roughly halved, 611 to 328. So the guidance works on the things a
+reader notices and not on the decision to send the document. That is the
+strongest evidence this programme has for its own first principle — taste as
+data rather than prose — and it also resets the target: **≥ 50% is not
+"catch up with the skill", it is territory neither the product nor its best
+prose guidance has reached.**
+
+The skill also introduces one regression the Phase 0 rules caught:
+`W_QUALITY_TEXT_TIGHT` goes from 17 findings across 5 documents to **110 across
+7**, about sixteen per affected document. Its density guidance packs text into
+boxes that barely hold it.
 
 **The integrity row cannot be filled yet, and must not be read as 0%.** The
-static rules found no integrity defect in any of the 40 documents, but that row
-asks about _rendered_ defects and the rendered pass (§5E, #344) does not exist;
-§2 finding 7 measures the static estimator's ceiling at roughly half of real
-spills. A 0% here would mean "nothing was looked for with the instrument that
-finds these", not "there are none". It is filled when #344 lands.
+static rules found no integrity defect in either set, but that row asks about
+_rendered_ defects and the rendered pass (§5E, #344) does not exist; §2 finding
+7 measures the static estimator's ceiling at roughly half of real spills. A 0%
+here would mean "nothing was looked for with the instrument that finds these",
+not "there are none". It is filled when #344 lands.
 
-Two numbers that are not in the table carry more signal than the ones that are.
-Median **genericness is 3 of 4** — the documents build, do not break, and read
-as interchangeable, which is this programme's whole thesis, now measured rather
-than asserted. And **611 `W_QUALITY_OFF_PALETTE` findings across 40 documents**,
-roughly fifteen apiece: the cold agent writes hex by hand and ignores the theme
-palette, which is the direct case for Phase 1.
+**Before the shipping metric gates a phase, its variance needs measuring.** Two
+of forty documents ship in both conditions while thirteen flip. That is
+consistent with most documents sitting near the boundary, but also with
+run-to-run variance large enough to swamp a phase delta. §5A already prescribes
+three runs per brief on the sealed corpus for this reason; a `--repeat 3` pass
+over a handful of development briefs would quantify it for a couple of hours of
+wall time.
 
-The `median 1 iteration` is a target met for the wrong reason. Broken out by
-archetype, `client-report` iterates a median of **0** times: the docx runs open
-no workspace and one never previews at all. They do not iterate because they do
-not look, which is what blueprints and `jto_scaffold` (Phase 2) exist to change.
+The judges' verdicts agree on what holds documents back, and it is not
+integrity. Across the 25 briefs that ship in neither condition, the recurring
+findings are **generic containers** ("a competent stock consulting frame that
+would look identical for any other decision deck", "neutral to the point of
+anonymous") and **charts and tables without units, sources or takeaways** —
+`table` appears 117 times in those verdicts, `chart` 53, `unit` 27, `source` 22. Content is not the problem: the same verdicts praise titles that state
+conclusions. This maps onto Phase 1 and Phase 2 for the containers, and onto
+#346 and #340 for the chart and table failures.
 
 The last row is the practical definition: the median cold-start output must be
 something Paolo would send to a client as is. Failed runs remain in every
