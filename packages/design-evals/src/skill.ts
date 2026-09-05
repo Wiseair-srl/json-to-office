@@ -25,6 +25,20 @@ import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
+/**
+ * A file's path within the bundle, always with forward slashes.
+ *
+ * This is not a path to open: it is the identifier the agent reads in
+ * `<skill-file path=…>` and the one the manifest records, so it has to name
+ * the same document whichever host loaded the bundle. `path.relative` answers
+ * in the host's separator, which on Windows made every nested document
+ * `assets\taste\tables.md` — a different string, hashing to a different
+ * bundle, for the same skill.
+ */
+function bundlePath(root: string, file: string): string {
+  return path.relative(root, file).split(path.sep).join('/');
+}
+
 export interface LoadedSkill {
   /** Everything the agent is given, as one string. */
   text: string;
@@ -126,7 +140,7 @@ export async function loadSkill(target: string): Promise<LoadedSkill> {
 
   const parts: string[] = [];
   for (const file of ordered) {
-    const relative = path.relative(target, file);
+    const relative = bundlePath(target, file);
     parts.push(
       `<skill-file path="${relative}">\n${await fs.readFile(file, 'utf8').then((t) => t.trim())}\n</skill-file>`
     );
@@ -164,7 +178,7 @@ export async function loadSkill(target: string): Promise<LoadedSkill> {
     text,
     name,
     version,
-    files: ordered.map((file) => path.relative(target, file)),
+    files: ordered.map((file) => bundlePath(target, file)),
     hash: createHash('sha256').update(text).digest('hex'),
     mode: 'bundle',
     excluded: { files: excludedFiles, bytes: excludedBytes },
