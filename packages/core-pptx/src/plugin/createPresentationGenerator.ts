@@ -25,7 +25,11 @@ import { validatePresentation, cleanComponentProps } from './validation';
 import { generatePluginPresentationSchema, exportPluginSchema } from './schema';
 import { processPresentation } from '../core/structure';
 import type { PresentationPackagingOptions } from '../core/finalizePackage';
-import { renderProcessedViaIr } from '../core/generateFromIr';
+import {
+  containsHighcharts,
+  renderProcessedViaIr,
+} from '../core/generateFromIr';
+import { toChartFontFaces } from '@json-to-office/shared/fonts/node';
 import type { PptxRendererId } from '../renderers/types';
 import { getPptxTheme, hasPptxTheme } from '../themes';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
@@ -436,13 +440,21 @@ function createBuilderImpl<
 
       // resolveDocumentFonts fires `fonts.onResolved` internally when a
       // listener is registered (LibreOffice preview stager). The PPTX
-      // itself never embeds bytes.
-      await resolveDocumentFonts(
+      // itself never embeds bytes; a chart-bearing deck materialises them
+      // for the export server's browser, exactly as the core pipeline does.
+      const processed = processPresentation(processedDocument, {
+        theme: resolvedTheme,
+        services: state.services,
+      });
+      const hasHighcharts = containsHighcharts(processed);
+      const resolvedFonts = await resolveDocumentFonts(
         processedDocument,
         resolvedTheme,
         warnings,
-        state.fonts
+        state.fonts,
+        hasHighcharts
       );
+      const chartFonts = hasHighcharts ? toChartFontFaces(resolvedFonts) : [];
 
       // Unconditional conflict gate on the expanded tree — the tree that
       // reaches the renderer, so it also covers payloads emitted by custom
@@ -461,20 +473,14 @@ function createBuilderImpl<
       const buffer = await runWithBaseDir(
         options?.baseDir ?? state.baseDir,
         () =>
-          renderProcessedViaIr(
-            processPresentation(processedDocument, {
-              theme: resolvedTheme,
-              services: state.services,
-            }),
-            warnings,
-            {
-              renderer,
-              services: state.services,
-              deterministic:
-                options?.deterministic ?? state.packaging.deterministic,
-              generatedAt: options?.generatedAt ?? state.packaging.generatedAt,
-            }
-          )
+          renderProcessedViaIr(processed, warnings, {
+            renderer,
+            services: state.services,
+            deterministic:
+              options?.deterministic ?? state.packaging.deterministic,
+            generatedAt: options?.generatedAt ?? state.packaging.generatedAt,
+            ...(chartFonts.length > 0 ? { chartFonts } : {}),
+          })
       );
 
       return { buffer, warnings };

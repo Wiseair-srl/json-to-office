@@ -10,7 +10,16 @@
  * This mirrors how the DOCX pipeline pre-rasterizes `visual` components.
  */
 
-import type { HighchartsServiceConfig } from '@json-to-office/shared';
+import {
+  chartFontFaceCss,
+  chartPointsPerPixel,
+  cssFontFamily,
+  themeFontRegistry,
+  withChartTypography,
+  type ChartTypography,
+  type HighchartsServiceConfig,
+  type RasterizeFontFace,
+} from '@json-to-office/shared';
 import type { PptxHighchartsProps } from '@json-to-office/shared-pptx';
 import type {
   PipelineWarning,
@@ -46,9 +55,17 @@ export interface HighchartsExpansionResult {
 export async function expandHighchartsComponents(
   presentation: ProcessedPresentation,
   services: HighchartsServiceConfig | undefined,
-  warnings: PipelineWarning[]
+  warnings: PipelineWarning[],
+  chartFonts?: readonly RasterizeFontFace[]
 ): Promise<HighchartsExpansionResult> {
   const unexpanded: HighchartsExpansionResult['unexpanded'] = [];
+  const scope: ExpansionScope = {
+    theme: presentation.theme,
+    slideWidth: presentation.slideWidth,
+    services,
+    warnings,
+    chartFonts,
+  };
 
   const templates = presentation.templates
     ? await Promise.all(
@@ -58,9 +75,7 @@ export async function expandHighchartsComponents(
             ? await expandList(
                 template.objects,
                 `masters[${index}].elements`,
-                presentation.theme,
-                services,
-                warnings
+                scope
               )
             : template.objects,
         }))
@@ -84,9 +99,7 @@ export async function expandHighchartsComponents(
         components: await expandList(
           slide.components,
           `slides[${index}].elements`,
-          presentation.theme,
-          services,
-          warnings
+          scope
         ),
       };
     })
@@ -98,24 +111,25 @@ export async function expandHighchartsComponents(
   };
 }
 
+/** What one expansion needs from the presentation and the caller. */
+interface ExpansionScope {
+  theme: PptxThemeConfig;
+  slideWidth: number;
+  services: HighchartsServiceConfig | undefined;
+  warnings: PipelineWarning[];
+  chartFonts: readonly RasterizeFontFace[] | undefined;
+}
+
 async function expandList(
   components: PptxComponentInput[],
   path: string,
-  theme: PptxThemeConfig,
-  services: HighchartsServiceConfig | undefined,
-  warnings: PipelineWarning[]
+  scope: ExpansionScope
 ): Promise<PptxComponentInput[]> {
   const out: PptxComponentInput[] = [];
   for (const [index, component] of components.entries()) {
     out.push(
       component.name === 'highcharts'
-        ? await expandOne(
-            component,
-            `${path}[${index}]`,
-            theme,
-            services,
-            warnings
-          )
+        ? await expandOne(component, `${path}[${index}]`, scope)
         : component
     );
   }
@@ -125,14 +139,20 @@ async function expandList(
 async function expandOne(
   component: PptxComponentInput,
   path: string,
-  theme: PptxThemeConfig,
-  services: HighchartsServiceConfig | undefined,
-  warnings: PipelineWarning[]
+  scope: ExpansionScope
 ): Promise<PptxComponentInput> {
   const props = component.props as unknown as PptxHighchartsProps;
   const chart = await renderChart(
-    withThemeColors(props, theme, warnings),
-    services
+    withChartFontFaces(
+      withThemeTypography(
+        withThemeColors(props, scope.theme, scope.warnings),
+        scope.theme,
+        scope.slideWidth
+      ),
+      scope.theme,
+      scope.chartFonts
+    ),
+    scope.services
   );
 
   void path;
@@ -231,4 +251,118 @@ function withThemeColors(
   );
   if (palette.length === 0) return props;
   return { ...props, options: { ...props.options, colors: palette } };
+}
+
+/**
+ * The width, in points, the chart's image takes on the slide — the rule the
+ * `image` it becomes applies: `w` in inches, or a percentage of the slide,
+ * else the chart's own pixels at 96 dpi. A grid-placed chart has no width yet
+ * and reads as 96 dpi.
+ */
+function placedWidthPt(
+  props: PptxHighchartsProps,
+  slideWidth: number
+): number | undefined {
+  const { w } = props;
+  if (typeof w === 'number') return w * 72;
+  if (typeof w === 'string' && w.endsWith('%')) {
+    return (parseFloat(w) / 100) * slideWidth * 72;
+  }
+  if (w === undefined && props.grid === undefined) {
+    return ((props.options.chart?.width ?? 960) / PX_PER_INCH) * 72;
+  }
+  return undefined;
+}
+
+/**
+ * The deck's type, read off the resolved theme. `chartLabel` and `source` are
+ * the roles a theme declares for exactly this; without them the labels sit two
+ * points under the body style and the source at the caption size. The title
+ * takes the heading face at the `heading3` size.
+ */
+function themeChartTypography(
+  theme: PptxThemeConfig,
+  warnings: PipelineWarning[]
+): ChartTypography {
+  const styles = theme.styles ?? {};
+  const categories = new Map(
+    themeFontRegistry(theme).map((entry) => [
+      entry.family.toLowerCase(),
+      entry.category,
+    ])
+  );
+  const family = (name: string) =>
+    cssFontFamily(name, categories.get(name.toLowerCase()));
+  const bodyPt = styles.body?.fontSize ?? theme.defaults.fontSize;
+  const label = styles.chartLabel;
+  const heading = styles.heading3;
+  const labelPt = label?.fontSize ?? Math.max(bodyPt - 2, 6);
+  const text = `#${resolveColor('text', theme, warnings)}`;
+  return {
+    bodyFamily: family(theme.fonts.body),
+    headingFamily: family(theme.fonts.heading),
+    textColor: text,
+    mutedColor: theme.colors.text2
+      ? `#${resolveColor('text2', theme, warnings)}`
+      : text,
+    labelPt,
+    labelWeight: label?.fontWeight ?? (label?.bold ? 700 : undefined),
+    titlePt: heading?.fontSize ?? bodyPt + 4,
+    titleWeight:
+      heading?.fontWeight ?? (heading?.bold === false ? undefined : 700),
+    sourcePt:
+      styles.source?.fontSize ??
+      styles.caption?.fontSize ??
+      Math.max(labelPt - 2, 6),
+  };
+}
+
+/**
+ * Set the chart in the deck's type: family, sizes and ink written beneath
+ * whatever the author styled, scaled to the width the image is placed at.
+ * A theme with no fonts — the empty theme direct callers pass — adds nothing,
+ * so their request stays byte-identical.
+ */
+function withThemeTypography(
+  props: PptxHighchartsProps,
+  theme: PptxThemeConfig,
+  slideWidth: number
+): PptxHighchartsProps {
+  if (!props.options || !theme?.fonts?.body || !theme.fonts.heading) {
+    return props;
+  }
+  return {
+    ...props,
+    options: withChartTypography(
+      props.options,
+      themeChartTypography(theme, []),
+      chartPointsPerPixel(
+        props.options.chart?.width ?? 0,
+        placedWidthPt(props, slideWidth)
+      )
+    ) as PptxHighchartsProps['options'],
+  };
+}
+
+/**
+ * Hand the export server the bytes of every staged face of the families the
+ * chart is set in, as `@font-face` rules ahead of the author's own CSS.
+ * Nothing is added when no face matches.
+ */
+function withChartFontFaces(
+  props: PptxHighchartsProps,
+  theme: PptxThemeConfig,
+  faces: readonly RasterizeFontFace[] | undefined
+): PptxHighchartsProps {
+  if (!faces?.length || !theme?.fonts) return props;
+  const css = chartFontFaceCss(faces, [theme.fonts.body, theme.fonts.heading]);
+  if (!css) return props;
+  const authored = props.resources?.css;
+  return {
+    ...props,
+    resources: {
+      ...props.resources,
+      css: authored ? `${css}\n${authored}` : css,
+    },
+  };
 }

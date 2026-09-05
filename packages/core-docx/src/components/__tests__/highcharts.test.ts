@@ -10,7 +10,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isValidThemeConfig } from '@json-to-office/shared-docx';
 import { createMockTheme } from './helpers';
-import { devportalTheme } from '../../templates/themes';
+import { devportalTheme, vermilionTheme } from '../../templates/themes';
+import { resolveDocxDesignSystem } from '../../themes/design-system';
 import type { ThemeConfig } from '../../styles';
 
 // Force a Node environment: chart export refuses to run in a browser.
@@ -513,7 +514,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       expect(headersFn).toHaveBeenCalledWith(
         expect.objectContaining({
           infile: expect.objectContaining({
-            chart: { width: 600, height: 400 },
+            chart: expect.objectContaining({ width: 600, height: 400 }),
           }),
           type: 'png',
           b64: true,
@@ -862,5 +863,161 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.infile.colors).toEqual(['#ABCDEF']);
     });
+  });
+});
+
+describe('theme typography injection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: vi.fn().mockResolvedValue('AA=='),
+    });
+  });
+  const request = () => JSON.parse(mockFetch.mock.calls[0][1].body);
+  const chart = {
+    options: {
+      chart: { width: 900, height: 480 },
+      series: [{ type: 'column', data: [1, 2, 3] }],
+    },
+  };
+
+  it('sets the chart in the theme faces, sizes and ink at 96 dpi when unplaced', async () => {
+    await renderChartToImageProps(chart as never, vermilionTheme);
+    const { infile } = request();
+    expect(infile.chart.style).toEqual({ fontFamily: '"Calibri", sans-serif' });
+    // Title: heading face, heading3 size (11pt) and weight, primary ink.
+    expect(infile.title.style).toEqual({
+      fontFamily: '"Arial", sans-serif',
+      fontSize: '14.7px',
+      fontWeight: '700',
+      color: '#282829',
+    });
+    // Labels one point under the 10.5pt body; secondary ink for axis text.
+    expect(infile.xAxis.labels.style).toEqual({
+      fontSize: '12.7px',
+      color: '#58595B',
+    });
+    expect(infile.yAxis.title.style).toEqual({
+      fontSize: '12.7px',
+      color: '#58595B',
+    });
+    expect(infile.legend.itemStyle).toEqual({
+      fontSize: '12.7px',
+      color: '#282829',
+    });
+    expect(infile.credits.style).toEqual({
+      fontSize: '11.3px',
+      color: '#58595B',
+    });
+    expect(infile.series).toEqual(chart.options.series);
+  });
+
+  it('scales the sizes by the width the chart is placed at', async () => {
+    // "100%" of the vermilion A4 measure: 11906 − 2 × 1180 twips = 477.3pt
+    // for 900 chart pixels, so a 9.5pt label is drawn at 17.9px.
+    await renderChartToImageProps(
+      { ...chart, width: '100%' } as never,
+      vermilionTheme
+    );
+    expect(request().infile.legend.itemStyle.fontSize).toBe('17.9px');
+    // 600 image pixels = 450pt for the same 900 chart pixels: half a point each.
+    await renderChartToImageProps(
+      { ...chart, width: 600 } as never,
+      vermilionTheme
+    );
+    expect(
+      JSON.parse(mockFetch.mock.calls[1][1].body).infile.legend.itemStyle
+        .fontSize
+    ).toBe('19px');
+  });
+
+  it('reads the chartLabel and source roles once the theme declares them', async () => {
+    const theme = resolveDocxDesignSystem({
+      ...vermilionTheme,
+      typography: {
+        roles: {
+          chartLabel: { size: 9, weight: 400, color: 'textMuted' },
+          source: { size: 8 },
+        },
+      },
+    });
+    await renderChartToImageProps(chart as never, theme);
+    const { infile } = request();
+    expect(infile.legend.itemStyle).toEqual({
+      fontSize: '12px',
+      color: '#282829',
+      fontWeight: '400',
+    });
+    expect(infile.plotOptions.series.dataLabels.style.fontWeight).toBe('400');
+    expect(infile.credits.style.fontSize).toBe('10.7px');
+  });
+
+  it('never overrides an explicit author setting', async () => {
+    await renderChartToImageProps(
+      {
+        options: {
+          ...chart.options,
+          chart: { ...chart.options.chart, style: { fontFamily: 'Inter' } },
+          title: {
+            text: 'Mine',
+            style: { fontSize: '30px', color: '#FF0000' },
+          },
+          legend: { itemStyle: { fontWeight: 'bold' } },
+        },
+      } as never,
+      vermilionTheme
+    );
+    const { infile } = request();
+    expect(infile.chart.style).toEqual({ fontFamily: 'Inter' });
+    expect(infile.title.style).toMatchObject({
+      fontSize: '30px',
+      color: '#FF0000',
+      fontFamily: '"Arial", sans-serif',
+    });
+    expect(infile.legend.itemStyle.fontWeight).toBe('bold');
+  });
+
+  it('inlines the staged faces of the theme families as @font-face, before author CSS', async () => {
+    const theme: ThemeConfig = {
+      ...vermilionTheme,
+      fonts: { ...vermilionTheme.fonts, body: { family: 'Inter', size: 10 } },
+    };
+    const faces = [
+      {
+        family: 'Inter',
+        weight: 400,
+        italic: false,
+        data: 'AAAA',
+        format: 'ttf' as const,
+      },
+      {
+        family: 'Unused',
+        weight: 400,
+        italic: false,
+        data: 'BBBB',
+        format: 'ttf' as const,
+      },
+    ];
+    await renderChartToImageProps(
+      { ...chart, resources: { css: '.mine{}' } } as never,
+      theme,
+      undefined,
+      faces
+    );
+    const body = request();
+    expect(body.infile.chart.style.fontFamily).toBe('"Inter", sans-serif');
+    expect(body.resources.css).toBe(
+      '@font-face{font-family:"Inter";font-weight:400;font-style:normal;' +
+        'src:url(data:font/ttf;base64,AAAA) format("truetype")}\n.mine{}'
+    );
+    expect(body.resources.css).not.toContain('Unused');
+  });
+
+  it('sends no resources when no staged face matches', async () => {
+    await renderChartToImageProps(chart as never, vermilionTheme, undefined, [
+      { family: 'Unused', weight: 400, italic: false, data: 'BBBB' },
+    ]);
+    expect('resources' in request()).toBe(false);
   });
 });

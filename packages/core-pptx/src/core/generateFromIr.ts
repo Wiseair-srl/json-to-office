@@ -26,6 +26,8 @@ import type {
 } from '../types';
 import { isPresentationComponent } from '../types';
 import { resolveDocumentFonts } from './fontResolution';
+import { toChartFontFaces } from '@json-to-office/shared/fonts/node';
+import type { RasterizeFontFace } from '@json-to-office/shared';
 import {
   assertNoContentConflicts,
   assertValidPresentationForGeneration,
@@ -156,18 +158,27 @@ export async function generateBufferViaIr(
     });
 
   // Fires `fonts.onResolved` for the preview stager, exactly as the legacy
-  // path does. The PPTX itself never embeds font bytes.
-  await resolveDocumentFonts(
+  // path does. The PPTX itself never embeds font bytes; a `highcharts` is
+  // drawn by an export server's browser, though, which needs the bytes of any
+  // registered face to set the chart in the deck's type, so a chart-bearing
+  // deck materialises them for that.
+  const hasHighcharts = containsHighcharts(prepared.model.processed);
+  const resolvedFonts = await resolveDocumentFonts(
     prepared.model.document,
     prepared.model.theme,
     warnings,
-    options?.fonts
+    options?.fonts,
+    hasHighcharts
   );
+  const chartFonts = hasHighcharts ? toChartFontFaces(resolvedFonts) : [];
 
   // Relative asset paths are resolved during compilation, so the base-directory
   // scope has to span it (#142).
   const buffer = await runWithBaseDir(options?.baseDir, () =>
-    renderProcessedViaIr(prepared.model.processed, warnings, effectiveOptions)
+    renderProcessedViaIr(prepared.model.processed, warnings, {
+      ...effectiveOptions,
+      ...(chartFonts.length > 0 ? { chartFonts } : {}),
+    })
   );
 
   return { buffer, warnings };
@@ -193,7 +204,8 @@ export async function renderProcessedViaIr(
   const expansion = await expandHighchartsComponents(
     processed,
     options?.services?.highcharts,
-    warnings
+    warnings,
+    options?.chartFonts
   );
   // Fitting an image needs its intrinsic size, which needs I/O; resolving it
   // here keeps the compiler synchronous and free of file access.
@@ -227,7 +239,27 @@ export async function renderProcessedViaIr(
 export type IrRenderOptions = Pick<
   GenerationOptions,
   'renderer' | 'services' | 'deterministic' | 'generatedAt'
->;
+> & {
+  /** Staged faces a chart's export server is handed as inline `@font-face`. */
+  chartFonts?: readonly RasterizeFontFace[];
+};
+
+/** Whether any slide, template or placeholder carries a `highcharts`. */
+export function containsHighcharts(
+  presentation: ProcessedPresentation
+): boolean {
+  const named = (components: readonly { name: string }[] | undefined) =>
+    components?.some((component) => component.name === 'highcharts') ?? false;
+  return (
+    presentation.slides.some(
+      (slide) =>
+        named(slide.components) ||
+        named(Object.values(slide.placeholders ?? {}))
+    ) ||
+    (presentation.templates?.some((template) => named(template.objects)) ??
+      false)
+  );
+}
 
 function parseDocument(
   jsonConfig: string | PresentationComponentDefinition

@@ -225,9 +225,27 @@ export HIGHCHARTS_SERVER_URL=https://charts.example.com
 export HIGHCHARTS_API_KEY=sk-...
 ```
 
+## Theme typography in Highcharts output
+
+The chart is a PNG drawn by a browser that has never seen the document, so on its own it would come out in the export server's default face at Highcharts' own sizes — visibly foreign to the prose around it. json-to-office therefore writes the document's typography into the request, beneath whatever the author set:
+
+| Highcharts option                                   | Value                                                                                                         |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `chart.style.fontFamily`                            | the theme's body family, quoted, with the generic it belongs to (`"Calibri", sans-serif`; `"Georgia", serif`) |
+| `title.style`                                       | the heading family at the `heading3` size and weight, in the primary text colour                              |
+| `subtitle`, axis `labels` and `title`, `caption`    | the label size in the secondary text colour                                                                   |
+| `legend.itemStyle`, `plotOptions.series.dataLabels` | the label size in the primary text colour, with the `chartLabel` role's weight when the theme states one      |
+| `credits.style`                                     | the source size in the secondary text colour                                                                  |
+
+The label size is the theme's `chartLabel` type role and the source size its `source` role when the theme declares them ([shared visual layers](/reference/theme-schema#shared-visual-layers)); otherwise labels sit one point under the body size in docx and two under the body style in pptx, and the source one point under that (the caption size in pptx).
+
+Sizes are written in chart pixels scaled by the width the image is placed at, so a label that must read as 9pt on the page is drawn larger in a 900px chart that is shrunk into a 450pt measure. In docx the placement follows the component's `width` (pixels, or a percentage of the content width); in pptx it follows `w` (inches, or a percentage of the slide). A chart placed by neither reads as 96 px per inch.
+
+Every explicit author value wins, property by property: setting `title.style.fontSize` keeps the theme's family and colour on the title, and setting `chart.style.fontFamily` keeps the theme's sizes. The family itself has to exist where the export server runs — a local server draws with the fonts installed on your machine; for a registered non-safe family, the document's own font bytes are inlined as `@font-face` rules ahead of any `resources.css` you supply (data URIs; they travel only to the export server, which already receives every data point). Safe fonts are never inlined.
+
 ## Custom fonts in Highcharts output
 
-The `resources` prop is forwarded verbatim to the export server, which lets you inject `@font-face` CSS (plus JS or extra files) so exported charts render in your brand font:
+The `resources` prop is forwarded to the export server, which lets you inject `@font-face` CSS (plus JS or extra files) yourself — for a family that is neither installed on the server nor registered in the document, or to override what the theme injects:
 
 ```json
 {

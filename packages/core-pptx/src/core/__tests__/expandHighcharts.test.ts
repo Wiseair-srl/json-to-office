@@ -513,3 +513,172 @@ describe('expandHighchartsComponents', () => {
     });
   });
 });
+
+describe('theme typography injection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: vi.fn().mockResolvedValue(FAKE_B64),
+    });
+  });
+  const theme: PptxThemeConfig = {
+    name: 'brand',
+    colors: {
+      primary: '#111111',
+      secondary: '#222222',
+      accent: '#333333',
+      background: '#FFFFFF',
+      text: '#1A1F26',
+      text2: '#4B5563',
+    },
+    fonts: { heading: 'Arial', body: 'Georgia' },
+    defaults: { fontSize: 18, fontColor: '#1A1F26' },
+    styles: {
+      heading3: { fontSize: 18, bold: true },
+      body: { fontSize: 14 },
+      caption: { fontSize: 10 },
+    },
+  };
+
+  it('sets the chart in the theme faces, sizes and ink, scaled to its slide width', async () => {
+    // 960px placed at 8in = 576pt: 0.6pt per chart pixel.
+    await expand(
+      { options: { chart: { width: 960, height: 540 } }, w: 8 },
+      theme
+    );
+    const { infile } = requestBody();
+    expect(infile.chart).toEqual({
+      width: 960,
+      height: 540,
+      style: { fontFamily: '"Georgia", serif' },
+    });
+    expect(infile.title).toEqual({
+      style: {
+        fontFamily: '"Arial", sans-serif',
+        fontSize: '30px',
+        fontWeight: '700',
+        color: '#1A1F26',
+      },
+    });
+    // Labels two points under the 14pt body style.
+    expect(infile.legend).toEqual({
+      itemStyle: { fontSize: '20px', color: '#1A1F26' },
+    });
+    expect(infile.xAxis).toEqual({
+      labels: { style: { fontSize: '20px', color: '#4B5563' } },
+      title: { style: { fontSize: '20px', color: '#4B5563' } },
+    });
+    // Credits at the caption size.
+    expect(infile.credits).toEqual({
+      style: { fontSize: '16.7px', color: '#4B5563' },
+    });
+  });
+
+  it('resolves a percentage width against the slide and defaults to 96 dpi', async () => {
+    // 50% of a 10in slide = 5in = 360pt for 960px: 0.375pt per pixel.
+    await expand(
+      { options: { chart: { width: 960, height: 540 } }, w: '50%' },
+      theme
+    );
+    expect(requestBody().infile.legend.itemStyle.fontSize).toBe('32px');
+    // No w: the chart is placed at 960/96 = 10in, 0.75pt per pixel.
+    await expand({ options: { chart: { width: 960, height: 540 } } }, theme);
+    const second = JSON.parse(
+      (mockFetch.mock.calls[1] as [string, RequestInit])[1].body as string
+    );
+    expect(second.infile.legend.itemStyle.fontSize).toBe('16px');
+  });
+
+  it('reads the chartLabel and source styles once the theme declares them', async () => {
+    await expand(
+      { options: { chart: { width: 960, height: 540 } }, w: 10 },
+      {
+        ...theme,
+        styles: {
+          ...theme.styles,
+          chartLabel: { fontSize: 12, fontWeight: 400, fontColor: 'text2' },
+          source: { fontSize: 9 },
+        },
+      }
+    );
+    const { infile } = requestBody();
+    expect(infile.legend.itemStyle).toEqual({
+      fontSize: '16px',
+      color: '#1A1F26',
+      fontWeight: '400',
+    });
+    expect(infile.credits.style.fontSize).toBe('12px');
+  });
+
+  it('never overrides an explicit author setting', async () => {
+    await expand(
+      {
+        options: {
+          chart: { width: 960, height: 540, style: { fontFamily: 'Inter' } },
+          title: { text: 'Mine', style: { fontSize: '40px' } },
+          yAxis: [{ labels: { style: { color: '#FF0000' } } }],
+        },
+        w: 10,
+      },
+      theme
+    );
+    const { infile } = requestBody();
+    expect(infile.chart.style).toEqual({ fontFamily: 'Inter' });
+    expect(infile.title.style).toMatchObject({
+      fontSize: '40px',
+      fontFamily: '"Arial", sans-serif',
+    });
+    expect(infile.yAxis[0].labels.style).toEqual({
+      color: '#FF0000',
+      fontSize: '16px',
+    });
+  });
+
+  it('inlines staged faces of the theme families as @font-face, before author CSS', async () => {
+    const result = await expandHighchartsComponents(
+      presentation(
+        [
+          {
+            name: 'highcharts',
+            props: {
+              options: { chart: { width: 960, height: 540 } },
+              resources: { css: '.mine{}' },
+            },
+          },
+        ],
+        { ...theme, fonts: { heading: 'Arial', body: 'Inter' } }
+      ),
+      undefined,
+      [],
+      [
+        {
+          family: 'Inter',
+          weight: 400,
+          italic: false,
+          data: 'AAAA',
+          format: 'ttf',
+        },
+        {
+          family: 'Unused',
+          weight: 400,
+          italic: false,
+          data: 'BBBB',
+          format: 'ttf',
+        },
+      ]
+    );
+    expect(result.presentation.slides[0].components[0].name).toBe('image');
+    const body = requestBody();
+    expect(body.infile.chart.style.fontFamily).toBe('"Inter", sans-serif');
+    expect(body.resources?.css).toBe(
+      '@font-face{font-family:"Inter";font-weight:400;font-style:normal;' +
+        'src:url(data:font/ttf;base64,AAAA) format("truetype")}\n.mine{}'
+    );
+  });
+
+  it('leaves a theme-less expansion byte-identical to before', async () => {
+    await expand({ options: CHART_600x400 });
+    expect(requestBody().infile).toEqual(CHART_600x400);
+  });
+});

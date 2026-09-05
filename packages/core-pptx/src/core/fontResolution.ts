@@ -33,7 +33,14 @@ export async function resolveDocumentFonts(
   document: PresentationComponentDefinition,
   theme: PptxThemeConfig,
   warnings: PipelineWarning[],
-  fonts?: FontRuntimeOpts
+  fonts?: FontRuntimeOpts,
+  /**
+   * Materialize font bytes even when no `onResolved` listener is registered.
+   * Set when the deck carries a `highcharts`, whose PNG is drawn by an
+   * export server's browser that needs the actual font files to set the chart
+   * in a registered face. Matches the DOCX helper.
+   */
+  forceMaterialize = false
 ): Promise<ResolvedFont[]> {
   const names = new Set<string>();
   for (const n of collectFontNamesFromPptx(document)) names.add(n);
@@ -73,11 +80,12 @@ export async function resolveDocumentFonts(
     }
   }
 
-  // Registry resolution (Google/URL/file fetches) only runs when a consumer
-  // is listening via onResolved — typically the LibreOffice preview stager.
-  // Office output never embeds bytes, so skipping fetches when nobody cares
-  // keeps library callers from paying network cost.
-  if (!fonts?.onResolved) return [];
+  // Registry resolution (Google/URL/file fetches) runs when a consumer is
+  // listening via onResolved — typically the LibreOffice preview stager — or
+  // when the caller forces materialization for a chart. Office output never
+  // embeds bytes, so skipping fetches when neither applies keeps library
+  // callers from paying network cost.
+  if (!fonts?.onResolved && !forceMaterialize) return [];
 
   const registry = new FontRegistry({
     // Spread keeps baseDir/googleFonts/mode/substitution intact for
@@ -97,9 +105,9 @@ export async function resolveDocumentFonts(
       });
     }
   }
-  // Fire the side-channel here so callers never have to remember. The
-  // short-circuit above guarantees we only reach this point when a
-  // listener is registered.
-  fonts.onResolved(resolved);
+  // Fire the side-channel here so callers never have to remember. On the
+  // force-materialize path there may be no listener at all — the resolved
+  // fonts still flow back through the return value.
+  fonts?.onResolved?.(resolved);
   return resolved;
 }

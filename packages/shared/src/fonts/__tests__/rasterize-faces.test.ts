@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ResolvedFont } from '../types';
 import type { GenerationWarning } from '../../types/warnings';
 import {
+  toChartFontFaces,
   toRasterizeFontFaces,
   fromRasterizeFontFaces,
 } from '../rasterize-faces';
@@ -223,5 +224,32 @@ describe('fromRasterizeFontFaces', () => {
       { family: 'inter', weight: 400, italic: false, data: 'AA==' },
     ]);
     expect(fonts).toHaveLength(2);
+  });
+});
+
+describe('toChartFontFaces', () => {
+  it('keeps every browser-renderable format and skips the rest', () => {
+    const faces = toChartFontFaces([
+      { family: 'Arial', sources: [], warnings: [] },
+      {
+        family: 'Inter',
+        sources: [
+          { data: bytes(1), weight: 400, italic: false, format: 'ttf' },
+          { data: bytes(2), weight: 700, italic: false, format: 'woff2' },
+          { data: bytes(3), weight: 300, italic: true, format: 'woff' },
+          { data: bytes(4), weight: 900, italic: false, format: 'otf' },
+          { data: bytes(5), weight: 500, italic: false, format: 'eot' },
+          { data: bytes(6), weight: 500, italic: false, format: 'unknown' },
+        ],
+        warnings: [],
+      },
+    ]);
+    expect(faces.map((f) => [f.family, f.weight, f.italic, f.format])).toEqual([
+      ['Inter', 400, false, 'ttf'],
+      ['Inter', 700, false, 'woff2'],
+      ['Inter', 300, true, 'woff'],
+      ['Inter', 900, false, 'otf'],
+    ]);
+    expect(Buffer.from(faces[1].data, 'base64').equals(bytes(2))).toBe(true);
   });
 });

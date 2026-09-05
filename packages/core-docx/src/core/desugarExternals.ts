@@ -44,6 +44,8 @@ export interface DesugarExternalsOptions {
   baseDir?: string;
   /** Font faces staged for each visual's LibreOffice render. */
   visualFonts?: readonly RasterizeFontFace[];
+  /** Font faces a chart's export server is handed as inline `@font-face`. */
+  chartFonts?: readonly RasterizeFontFace[];
 }
 
 /**
@@ -95,7 +97,8 @@ export async function desugarExternals<T>(
         props: await renderChartToImageProps(
           node.props as HighchartsProps,
           options.theme,
-          options.services?.highcharts
+          options.services?.highcharts,
+          options.chartFonts
         ),
       });
     }

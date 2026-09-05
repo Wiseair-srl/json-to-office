@@ -17,6 +17,7 @@ export type { VariableFetchOptions } from './sources/variable-fetcher';
 // Buffer ⇄ base64 for the pptx rasterizer's font payload. Node-only for the
 // same reason as the rest of this subpath: it speaks `Buffer`.
 export {
+  toChartFontFaces,
   toRasterizeFontFaces,
   fromRasterizeFontFaces,
 } from './rasterize-faces';
