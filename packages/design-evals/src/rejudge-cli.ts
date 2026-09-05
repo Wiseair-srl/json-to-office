@@ -7,8 +7,18 @@ import { rejudge, type RejudgedRun } from './rejudge.js';
 
 /** Options that take a value, so their value is never read as the runs dir. */
 const VALUED_OPTIONS = ['scorecard', 'judge', 'briefs'] as const;
+type ValuedOption = (typeof VALUED_OPTIONS)[number];
 
-function value(argv: readonly string[], name: string): string | undefined {
+/**
+ * `name` is narrowed to the declared list on purpose. A valued option added
+ * here and forgotten in `VALUED_OPTIONS` is exactly how the runs directory
+ * came to be read from an option's value; typing it makes that a compile
+ * error instead of a silent one.
+ */
+function value(
+  argv: readonly string[],
+  name: ValuedOption
+): string | undefined {
   const index = argv.indexOf(`--${name}`);
   if (index === -1) return undefined;
   const next = argv[index + 1];
