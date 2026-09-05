@@ -55,3 +55,20 @@ standard error near 9 points, so a gap smaller than that is not a result.
 The assisted set carries `skillExcluded`: the skill ships a 4 MB template
 library and scripts the agent had no tools to use, so that run measures the
 ceiling of the skill's _guidance_, not of everything it ships.
+
+## Re-judging a recorded set
+
+`pnpm rejudge <run-dir>` judges the contact sheets a set already produced, without
+re-authoring anything, and reports how much the judge agrees with itself.
+
+It exists because a spot check found that it often does not. Four stored
+documents from the cold baseline, re-judged a day later with the same rubric and
+the same model, changed three of the four `wouldShip` answers — including one
+the judge scored level 4 and genericness 1, its two best marks, while answering
+"no". Graded fields moved far less: no level moved by more than one step.
+
+That ordering matters for how these baselines may be read. The rubric's graded
+scores look usable; the binary shipping verdict, which is the metric §1 leads
+with, may be mostly the instrument. Until a full re-judge puts a kappa on it,
+treat every `wouldShip` comparison in this directory — including the paired cold
+versus assisted analysis — as unproven rather than as a result.
