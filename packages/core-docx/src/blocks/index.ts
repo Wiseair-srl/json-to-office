@@ -19,14 +19,54 @@ import type { ThemeConfig } from '../styles';
 import { compileKeyTakeaways } from './keyTakeaways';
 import type { BlockCompilation } from './types';
 
+type Rec = Record<string, unknown>;
+
+export const BLOCK_NAMES = ['key-takeaways'] as const;
+export type BlockName = (typeof BLOCK_NAMES)[number];
+
+/** A text slot's word budget, for the quality rules to check against. */
+export interface BlockSlotBudget {
+  block: BlockName;
+  slot: string;
+  /** Authored pointer of the slot value. */
+  path: string;
+  words: number;
+  maxWords: number;
+}
+
+/** What one block kind knows how to do. Adding a block is one entry here. */
+interface BlockDefinition {
+  compile(props: Rec, theme: ThemeConfig): BlockCompilation;
+  /** Word budgets of the block's text slots, read off the authored props. */
+  budgets(props: Rec, pointer: string): BlockSlotBudget[];
+}
+
+const BLOCKS: Record<BlockName, BlockDefinition> = {
+  'key-takeaways': {
+    compile: (props, theme) =>
+      compileKeyTakeaways(props as KeyTakeawaysProps, theme),
+    budgets: (props, pointer) =>
+      (Array.isArray(props.items) ? props.items : []).flatMap((item, index) =>
+        typeof item === 'string'
+          ? [
+              {
+                block: 'key-takeaways' as const,
+                slot: 'items',
+                path: `${pointer}/props/items/${index}`,
+                words: wordCount(item),
+                maxWords: KEY_TAKEAWAYS_BUDGET.items.maxWords,
+              },
+            ]
+          : []
+      ),
+  },
+};
+
 export type { BlockCompilation } from './types';
 export {
   compileKeyTakeaways,
   KEY_TAKEAWAYS_DEFAULT_LABEL,
 } from './keyTakeaways';
-
-export const BLOCK_NAMES = ['key-takeaways'] as const;
-export type BlockName = (typeof BLOCK_NAMES)[number];
 
 export function isBlockName(name: unknown): name is BlockName {
   return (BLOCK_NAMES as readonly unknown[]).includes(name);
@@ -42,32 +82,8 @@ export interface ExpandedBlocks<T> {
   blocks: readonly string[];
 }
 
-/** A text slot's word budget, for the quality rules to check against. */
-export interface BlockSlotBudget {
-  block: BlockName;
-  slot: string;
-  /** Authored pointer of the slot value. */
-  path: string;
-  words: number;
-  maxWords: number;
-}
-
-type Rec = Record<string, unknown>;
-
 function isRecord(value: unknown): value is Rec {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function compileBlock(
-  node: Rec,
-  theme: ThemeConfig
-): BlockCompilation | undefined {
-  switch (node.name) {
-    case 'key-takeaways':
-      return compileKeyTakeaways(node.props as KeyTakeawaysProps, theme);
-    default:
-      return undefined;
-  }
 }
 
 /**
@@ -89,16 +105,12 @@ export function expandBlocks<T>(
 
     if (typeof node.name === 'string' && isRecord(node.props)) {
       if (node.enabled !== false && isBlockName(node.name)) {
-        const compiled = compileBlock(node, theme);
-        if (compiled) {
-          blocks.push(pointer);
-          for (const [emitted, authored] of Object.entries(
-            compiled.sourceMap
-          )) {
-            sourceMap[`${pointer}${emitted}`] = `${pointer}${authored}`;
-          }
-          return { ...node, children: compiled.children };
+        const compiled = BLOCKS[node.name].compile(node.props, theme);
+        blocks.push(pointer);
+        for (const [emitted, authored] of Object.entries(compiled.sourceMap)) {
+          sourceMap[`${pointer}${emitted}`] = `${pointer}${authored}`;
         }
+        return { ...node, children: compiled.children };
       }
     }
 
@@ -191,25 +203,13 @@ export function blockSlotBudgets(
   document: unknown,
   blocks: readonly string[]
 ): BlockSlotBudget[] {
-  const budgets: BlockSlotBudget[] = [];
-  for (const pointer of blocks) {
+  return blocks.flatMap((pointer) => {
     const node = nodeAt(document, pointer);
-    if (!isRecord(node) || !isRecord(node.props)) continue;
-    if (node.name === 'key-takeaways') {
-      const items = Array.isArray(node.props.items) ? node.props.items : [];
-      items.forEach((item, index) => {
-        if (typeof item !== 'string') return;
-        budgets.push({
-          block: 'key-takeaways',
-          slot: 'items',
-          path: `${pointer}/props/items/${index}`,
-          words: wordCount(item),
-          maxWords: KEY_TAKEAWAYS_BUDGET.items.maxWords,
-        });
-      });
+    if (!isRecord(node) || !isRecord(node.props) || !isBlockName(node.name)) {
+      return [];
     }
-  }
-  return budgets;
+    return BLOCKS[node.name].budgets(node.props, pointer);
+  });
 }
 
 export function wordCount(text: string): number {

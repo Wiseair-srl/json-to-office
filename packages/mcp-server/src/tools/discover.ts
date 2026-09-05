@@ -438,7 +438,7 @@ export const STARTERS: readonly Starter[] = [
       name: 'docx',
       props: {
         metadata: { title: 'Quarterly report', author: 'Your name' },
-        theme: 'minimal',
+        theme: 'consulting',
       },
       children: [
         {

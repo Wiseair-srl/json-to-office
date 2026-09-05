@@ -19,6 +19,8 @@
  */
 
 import type { RasterizeFontFace } from '../types/services';
+import type { FontRegistryEntry } from '../schemas/font-catalog';
+import { themeFontRegistry } from '../fonts/document-registry';
 
 export interface ChartTypography {
   /** CSS `font-family` for everything not styled otherwise (see `cssFontFamily`). */
@@ -42,7 +44,7 @@ export interface ChartTypography {
 }
 
 /** Points per CSS pixel at the 96 dpi both formats assume for an unplaced chart. */
-const POINTS_PER_PIXEL_96DPI = 0.75;
+export const POINTS_PER_PIXEL_96DPI = 0.75;
 
 /**
  * How many document points one chart pixel occupies once the image is placed.
@@ -68,7 +70,7 @@ export function chartPointsPerPixel(
 const SERIF_FAMILIES = new Set(['georgia', 'times new roman', 'cambria']);
 const MONO_FAMILIES = new Set(['consolas', 'courier new', 'menlo', 'monaco']);
 
-type FontCategory = 'sans' | 'serif' | 'mono' | 'display' | 'handwriting';
+type FontCategory = NonNullable<FontRegistryEntry['category']>;
 
 /**
  * A CSS `font-family` list: the family, quoted, then the generic it belongs
@@ -90,6 +92,23 @@ export function cssFontFamily(family: string, category?: FontCategory): string {
               ? 'monospace'
               : 'sans-serif';
   return `"${family.replace(/["\\]/g, '\\$&')}", ${generic}`;
+}
+
+/**
+ * `cssFontFamily` bound to a theme: a registered family answers with its
+ * registry category, an unregistered one with what SAFE_FONTS says of it.
+ */
+export function chartFamilyResolver(
+  theme: unknown
+): (family: string) => string {
+  const categories = new Map(
+    themeFontRegistry(theme).map((entry) => [
+      entry.family.toLowerCase(),
+      entry.category,
+    ])
+  );
+  return (family) =>
+    cssFontFamily(family, categories.get(family.toLowerCase()));
 }
 
 type Options = Record<string, unknown>;
@@ -206,4 +225,28 @@ export function chartFontFaceCss(
       );
     })
     .join('\n');
+}
+
+/**
+ * The `@font-face` rules for `families` written into a chart's `resources.css`
+ * ahead of whatever the author supplied there. Nothing changes when no face
+ * matches, so a chart set in safe fonts posts the same request it always did.
+ */
+export function withChartFontFaceCss<
+  T extends { resources?: { css?: string } },
+>(
+  props: T,
+  faces: readonly RasterizeFontFace[],
+  families: readonly string[]
+): T {
+  const css = chartFontFaceCss(faces, families);
+  if (!css) return props;
+  const authored = props.resources?.css;
+  return {
+    ...props,
+    resources: {
+      ...props.resources,
+      css: authored ? `${css}\n${authored}` : css,
+    },
+  };
 }

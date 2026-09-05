@@ -135,7 +135,6 @@
     "keyTakeaways": {
       "type": "label",
       "color": "primary",
-      "fill": "backgroundSecondary",
       "rule": { "weightPt": 2, "color": "accent" },
       "padPt": 8
     },
