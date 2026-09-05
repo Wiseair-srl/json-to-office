@@ -127,10 +127,11 @@ export function withNodeIdentity(
 }
 
 /**
- * Whether any component in `root` is named `name`. Walks the same places the
- * transform does — children, section header/footer, table cell content — by
- * looking at every object rather than enumerating them, which is cheaper than
- * a transform and cannot fall out of step with it.
+ * Whether any enabled component in `root` is named `name`. Walks the same
+ * places the transform does — children, section header/footer, table cell
+ * content — by looking at every object rather than enumerating them, which is
+ * cheaper than a transform and cannot fall out of step with it. A disabled
+ * subtree never renders, so nothing inside it counts.
  */
 export function containsComponent(root: unknown, name: string): boolean {
   const seen = new WeakSet<object>();
@@ -139,6 +140,7 @@ export function containsComponent(root: unknown, name: string): boolean {
     seen.add(node);
     if (Array.isArray(node)) return node.some(visit);
     const obj = node as Record<string, unknown>;
+    if (typeof obj.name === 'string' && obj.enabled === false) return false;
     if (obj.name === name && obj.props !== undefined) return true;
     return Object.values(obj).some(visit);
   };

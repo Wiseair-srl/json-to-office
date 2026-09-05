@@ -233,9 +233,9 @@ The chart is a PNG drawn by a browser that has never seen the document, so on it
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `chart.style.fontFamily`                            | the theme's body family, quoted, with the generic it belongs to (`"Calibri", sans-serif`; `"Georgia", serif`) |
 | `title.style`                                       | the heading family at the `heading3` size and weight, in the primary text colour                              |
-| `subtitle`, axis `labels` and `title`, `caption`    | the label size in the secondary text colour                                                                   |
+| `subtitle`, axis `labels` and `title`               | the label size in the secondary text colour                                                                   |
 | `legend.itemStyle`, `plotOptions.series.dataLabels` | the label size in the primary text colour, with the `chartLabel` role's weight when the theme states one      |
-| `credits.style`                                     | the source size in the secondary text colour                                                                  |
+| `caption`, `credits.style`                          | the source size in the secondary text colour                                                                  |
 
 The label size is the theme's `chartLabel` type role and the source size its `source` role when the theme declares them ([shared visual layers](/reference/theme-schema#shared-visual-layers)); otherwise labels sit one point under the body size in docx and two under the body style in pptx, and the source one point under that (the caption size in pptx).
 

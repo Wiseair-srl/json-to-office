@@ -117,8 +117,13 @@ function isPlainObject(value: unknown): value is Options {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** `defaults` beneath `authored`: an authored key is never replaced. */
-function fill(authored: unknown, defaults: Options): Options {
+/**
+ * `defaults` beneath `authored`: an authored key is never replaced, and an
+ * authored value that is not an object — `null`, `false` — is kept as it is
+ * rather than turned into a defaulted object.
+ */
+function fill(authored: unknown, defaults: Options): unknown {
+  if (authored !== undefined && !isPlainObject(authored)) return authored;
   const base: Options = isPlainObject(authored) ? { ...authored } : {};
   for (const [key, value] of Object.entries(defaults)) {
     if (value === undefined) continue;
