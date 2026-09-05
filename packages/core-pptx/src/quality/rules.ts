@@ -1,4 +1,7 @@
 import {
+  chartInfoDesignFindings,
+  DEFAULT_MAXIMUM_CHART_SERIES,
+  DEFAULT_MAXIMUM_PIE_SLICES,
   fontCountFinding,
   mergeQualityProfiles,
   nearestPaletteToken,
@@ -7,6 +10,8 @@ import {
   QUALITY_CODES,
   QualityEngine,
   resolveRuleConfiguration,
+  tableInfoDesignFindings,
+  type JsonPatchOperation,
   type QualityProfile,
   type QualityRule,
   type QualityRuleFinding,
@@ -15,12 +20,15 @@ import {
 import type {
   PptxBoxFact,
   PptxCanvasFact,
+  PptxChartFact,
   PptxColorFact,
   PptxFontFact,
   PptxPlaceholderFact,
   PptxQualityFact,
   PptxQualityModel,
   PptxSlideFact,
+  PptxTableColumnFact,
+  PptxTableFact,
   PptxTextFact,
   PptxThemeFact,
 } from './facts';
@@ -712,6 +720,122 @@ export const pptxBoxOverlapRule: QualityRule<
   },
 };
 
+/**
+ * A slide table is a summary, not a report. Twelve rows is what a 16:9 canvas
+ * holds at a size an audience can read from the back of a room; past that the
+ * table is being stored on the slide rather than shown.
+ */
+const DEFAULT_MAX_TABLE_ROWS_PER_SLIDE = 12;
+
+/** Information design for charts: the comparison, the scale and the palette. */
+export const pptxChartRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
+  id: 'pptx/chart-design',
+  code: QUALITY_CODES.CHART_3D,
+  category: 'information-design',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultParameters: {
+    maximumSeries: DEFAULT_MAXIMUM_CHART_SERIES,
+    maximumSlices: DEFAULT_MAXIMUM_PIE_SLICES,
+  },
+  evaluate: ({ facts, configuration }) => {
+    const maximumSeries = numberParameter(
+      configuration.parameters,
+      'maximumSeries',
+      DEFAULT_MAXIMUM_CHART_SERIES
+    );
+    const maximumSlices = numberParameter(
+      configuration.parameters,
+      'maximumSlices',
+      DEFAULT_MAXIMUM_PIE_SLICES
+    );
+    return facts
+      .filter((fact): fact is PptxChartFact => fact.kind === 'pptx/chart')
+      .flatMap((fact) => {
+        const fix = seriesColorFix(fact);
+        return chartInfoDesignFindings(fact, {
+          maximumSeries,
+          maximumSlices,
+          ...(fix && { seriesColorFix: fix }),
+        });
+      });
+  },
+};
+
+/**
+ * The palette patch, when the theme has enough slots to draw every series.
+ *
+ * Only for a native chart: a Highcharts palette lives inside an options blob
+ * the schema keeps opaque and the export server reads verbatim, so writing
+ * into it means guessing at a structure this pass never validated.
+ */
+function seriesColorFix(
+  fact: PptxChartFact
+): readonly JsonPatchOperation[] | undefined {
+  if (fact.componentName !== 'chart') return undefined;
+  if (fact.seriesCount < 1 || fact.paletteTokens.length === 0) return undefined;
+  const tokens = Array.from(
+    { length: fact.seriesCount },
+    (_, index) => fact.paletteTokens[index % fact.paletteTokens.length]
+  );
+  return [{ op: 'add', path: fact.seriesColorsPath, value: tokens }];
+}
+
+/** Information design for tables: alignment, rounding, rules and length. */
+export const pptxTableRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
+  id: 'pptx/table-design',
+  code: QUALITY_CODES.TABLE_NUMERIC_ALIGN,
+  category: 'information-design',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultParameters: { maximumRows: DEFAULT_MAX_TABLE_ROWS_PER_SLIDE },
+  evaluate: ({ facts, configuration }) => {
+    const maximumRows = numberParameter(
+      configuration.parameters,
+      'maximumRows',
+      DEFAULT_MAX_TABLE_ROWS_PER_SLIDE
+    );
+    return facts
+      .filter((fact): fact is PptxTableFact => fact.kind === 'pptx/table')
+      .flatMap((fact) =>
+        tableInfoDesignFindings(fact, {
+          maximumRows,
+          rowSurface: 'slide',
+          rowSeverity: 'warning',
+          alignFix: alignColumnRight,
+        })
+      );
+  },
+};
+
+/**
+ * Right-align every cell of one column, header included.
+ *
+ * A row-major table has no column to patch, so this is one operation per row,
+ * and a plain-string cell has to become an object to carry an alignment at
+ * all — `replace`, never `add`, because `add` at an array index splices and
+ * would push the rest of the row sideways.
+ */
+function alignColumnRight(
+  column: PptxTableColumnFact
+): readonly JsonPatchOperation[] {
+  return column.cells
+    .filter((entry) => {
+      const cell = entry.cell;
+      return typeof cell === 'string' || cell.align !== 'right';
+    })
+    .map((entry) => ({
+      op: 'replace' as const,
+      path: entry.path,
+      value:
+        typeof entry.cell === 'string'
+          ? { text: entry.cell, align: 'right' }
+          : { ...entry.cell, align: 'right' },
+    }));
+}
+
 const DEFAULT_MAX_FONT_FAMILIES = 3;
 
 /** Every family the document can paint: the theme's roles plus authored ones. */
@@ -796,6 +920,8 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxTextContrastRule,
     pptxPlaceholderRule,
     pptxBoxOverlapRule,
+    pptxChartRule,
+    pptxTableRule,
     pptxFontCountRule,
     pptxPaletteRule,
   ],

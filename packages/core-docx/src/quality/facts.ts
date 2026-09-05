@@ -1,12 +1,19 @@
 import {
+  chartEncodingFor,
   collectColorLiterals,
   collectFontFamilies,
   collectPlaceholders,
+  hasUnitMarker,
   normalizeHex,
+  normalizeHighchartsChart,
+  type ChartInfoDesign,
   type PlaceholderKind,
   type PreparedDocument,
   type ProvenanceMap,
   type QualityFact,
+  type TableAlignment,
+  type TableColumnInfoDesign,
+  type TableInfoDesign,
 } from '@json-to-office/quality';
 import type {
   FontRuntimeOpts,
@@ -20,6 +27,7 @@ import {
   type GenerationThemeContext,
 } from '../core/generationContext';
 import { createSectionProperties, getColumnSettings } from '../core/layout';
+import { resolveTableModel, type TableSource } from '../core/tableModel';
 import {
   resolveDocumentTree,
   type ResolvedDocumentTree,
@@ -45,6 +53,36 @@ export interface DocxTableWidthFact extends QualityFact {
    * explicit width are absent.
    */
   explicitWidths: ReadonlyArray<{ index: number; width: number | string }>;
+}
+
+/**
+ * A chart in a document — native or Highcharts — read into the vocabulary the
+ * information-design rules speak.
+ */
+export interface DocxChartFact extends QualityFact, ChartInfoDesign {
+  kind: 'docx/chart';
+  /** `chart` or `highcharts`; the two answer the same questions differently. */
+  componentName: string;
+  /** Theme tokens a palette fix can name, in series order. */
+  paletteTokens: readonly string[];
+}
+
+export interface DocxTableColumnFact extends TableColumnInfoDesign {
+  /** The authored column already carries a `cellDefaults` object. */
+  hasCellDefaults: boolean;
+  /** The authored column declares a header cell an alignment can be set on. */
+  hasHeader: boolean;
+  /**
+   * Body cells that state an alignment of their own. A column default never
+   * reaches those, so a repair has to name them one by one.
+   */
+  cellsWithOwnAlignment: readonly number[];
+}
+
+/** A table, resolved through the same cascade the renderer draws it with. */
+export interface DocxTableFact extends QualityFact, TableInfoDesign {
+  kind: 'docx/table';
+  columns: readonly DocxTableColumnFact[];
 }
 
 export interface DocxHeadingFact extends QualityFact {
@@ -181,7 +219,9 @@ export type DocxQualityFact =
   | DocxPlaceholderFact
   | DocxThemeFact
   | DocxColorFact
-  | DocxFontFact;
+  | DocxFontFact
+  | DocxChartFact
+  | DocxTableFact;
 
 export interface DocxQualityModel {
   authored: ReportComponentDefinition;
@@ -289,6 +329,233 @@ function tableFact(
   };
 }
 
+/**
+ * Theme slots that can carry a data series, in the order a palette hands them
+ * out. Named to match the PPTX theme, so both formats say the same thing.
+ */
+const SERIES_COLOR_TOKENS: readonly string[] = [
+  'primary',
+  'accent',
+  'secondary',
+  'accent4',
+  'accent5',
+  'accent6',
+];
+
+function chartFact(
+  node: Rec,
+  props: Rec,
+  path: string,
+  paletteTokens: readonly string[]
+): DocxChartFact | undefined {
+  const base = {
+    id: `docx:chart:${path}`,
+    kind: 'docx/chart' as const,
+    path,
+    componentName: typeof node.name === 'string' ? node.name : '',
+    paletteTokens,
+  };
+
+  if (node.name === 'highcharts') {
+    const shape = normalizeHighchartsChart(props.options);
+    return {
+      ...base,
+      chartType: shape.chartType,
+      encoding: shape.encoding,
+      threeD: shape.threeD,
+      seriesCount: shape.seriesCount,
+      categoryCount: shape.categoryCount,
+      seriesColorsStated: shape.seriesColorsStated,
+      seriesColorsPath: `${path}/props/options`,
+      ...(shape.valueAxisMin !== undefined && {
+        valueAxisMin: shape.valueAxisMin,
+      }),
+      unitStated: shape.unitStated,
+      annotation: {
+        stated: shape.annotationStated,
+        path,
+        slot: 'props.options.caption.text',
+      },
+    };
+  }
+
+  const chartType = typeof props.type === 'string' ? props.type : '';
+  if (chartType === '') return undefined;
+  const series = Array.isArray(props.data) ? props.data : [];
+  const categoryCount = Math.max(
+    0,
+    ...series.map((entry) => {
+      const record = asRecord(entry);
+      const labels = Array.isArray(record?.labels) ? record.labels.length : 0;
+      const values = Array.isArray(record?.values) ? record.values.length : 0;
+      return Math.max(labels, values);
+    })
+  );
+  const caption = typeof props.caption === 'string' ? props.caption : '';
+  const title = typeof props.title === 'string' ? props.title : '';
+
+  return {
+    ...base,
+    chartType,
+    encoding: chartEncodingFor(chartType),
+    // No 3D type exists in the DOCX chart schema — `office-open` draws none —
+    // so this is always false here, and stays a field rather than an omission
+    // so both formats answer the same questions.
+    threeD: false,
+    seriesCount: series.length,
+    categoryCount,
+    seriesColorsStated:
+      Array.isArray(props.chartColors) && props.chartColors.length > 0,
+    seriesColorsPath: `${path}/props/chartColors`,
+    // No `valueAxisMin`: a DOCX chart has no axis-floor property, so the
+    // baseline is always the renderer's, which starts a bar at zero.
+    unitStated:
+      hasUnitMarker(
+        typeof props.valAxisTitle === 'string' ? props.valAxisTitle : ''
+      ) ||
+      hasUnitMarker(title) ||
+      hasUnitMarker(caption),
+    annotation: {
+      stated: caption.trim() !== '',
+      path,
+      slot: 'props.caption',
+    },
+  };
+}
+
+const DOCX_ALIGNMENTS = new Set(['left', 'center', 'right', 'justify']);
+
+/** The text a resolved cell shows; a component cell is content, not a number. */
+function resolvedCellText(content: unknown): string {
+  return typeof content === 'string' ? content : '[component]';
+}
+
+/** Whether the authored table said anything at all about its own borders. */
+function statesOwnBorders(authored: Rec | undefined): boolean {
+  if (!authored) return false;
+  if (
+    authored.borderSize !== undefined ||
+    authored.borderColor !== undefined ||
+    authored.hideBorders !== undefined
+  ) {
+    return true;
+  }
+  const layers = [
+    asRecord(authored.cellDefaults),
+    asRecord(authored.headerCellDefaults),
+  ];
+  if (
+    layers.some(
+      (layer) =>
+        layer?.borderSize !== undefined || layer?.borderColor !== undefined
+    )
+  ) {
+    return true;
+  }
+  const columns = Array.isArray(authored.columns) ? authored.columns : [];
+  return columns.some((column) => {
+    const record = asRecord(column);
+    const defaults = asRecord(record?.cellDefaults);
+    return (
+      defaults?.borderSize !== undefined || defaults?.borderColor !== undefined
+    );
+  });
+}
+
+/**
+ * A table, read through the same cascade `office-open` draws it with.
+ *
+ * Alignment and borders both come from `resolveTableModel` rather than from
+ * the authored props: a cell's alignment is decided across four layers, and
+ * reading only the top one would call a right-aligned column left-aligned
+ * whenever the table set the alignment once for every cell in it.
+ *
+ * The grid question is the exception, and is asked of the *authored* table.
+ * Word's own baseline is a box around every cell, so a resolved-border test
+ * reports every table that never mentioned its borders — one finding per
+ * table for a decision the theme took once, for the document.
+ */
+function tableDesignFact(
+  props: Rec,
+  path: string,
+  theme: ThemeConfig,
+  themeName: string,
+  authored: Rec | undefined
+): DocxTableFact | undefined {
+  const authoredColumns = Array.isArray(props.columns) ? props.columns : [];
+  if (authoredColumns.length === 0) return undefined;
+
+  const model = resolveTableModel(
+    props as unknown as TableSource<unknown, unknown, unknown>,
+    theme,
+    themeName
+  );
+  const bodyRows = model.rows;
+  const drawnRows = bodyRows.length + (model.header ? 1 : 0);
+  if (drawnRows === 0) return undefined;
+
+  const fullGrid =
+    statesOwnBorders(authored) &&
+    [...(model.header ? [model.header] : []), ...bodyRows].every((row) =>
+      row.cells.every((cell) =>
+        (['top', 'right', 'bottom', 'left'] as const).every(
+          (side) => !cell.borders[side].hidden && cell.borders[side].size > 0
+        )
+      )
+    );
+
+  const columns: DocxTableColumnFact[] = authoredColumns.map(
+    (column, index) => {
+      const authoredColumn = asRecord(column) ?? {};
+      const cells = Array.isArray(authoredColumn.cells)
+        ? authoredColumn.cells
+        : [];
+      const alignments = new Set<TableAlignment>();
+      const values: string[] = [];
+      bodyRows.forEach((row) => {
+        const cell = row.cells[index];
+        if (!cell || cell.missing) return;
+        values.push(resolvedCellText(cell.content));
+        alignments.add(cell.horizontalAlignment);
+      });
+      const header = model.header?.cells[index];
+      return {
+        index,
+        path: `${path}/props/columns/${index}`,
+        ...(header?.content !== undefined && {
+          header: resolvedCellText(header.content),
+        }),
+        values,
+        alignment:
+          alignments.size === 1
+            ? [...alignments][0]
+            : alignments.size === 0
+              ? 'left'
+              : 'mixed',
+        hasCellDefaults: asRecord(authoredColumn.cellDefaults) !== undefined,
+        hasHeader: asRecord(authoredColumn.header) !== undefined,
+        cellsWithOwnAlignment: cells.flatMap((cell, cellIndex) => {
+          const alignment = asRecord(cell)?.horizontalAlignment;
+          return typeof alignment === 'string' &&
+            DOCX_ALIGNMENTS.has(alignment) &&
+            alignment !== 'right'
+            ? [cellIndex]
+            : [];
+        }),
+      };
+    }
+  );
+
+  return {
+    id: `docx:table-design:${path}`,
+    kind: 'docx/table',
+    path,
+    columns,
+    rowCount: drawnRows,
+    fullGrid,
+  };
+}
+
 const TWIPS_PER_POINT = 20;
 /** Word's single-spaced line box for a typical Latin face. */
 const SINGLE_LINE_RATIO = 1.2;
@@ -329,23 +596,29 @@ function characterSpacingPt(spacing: unknown): number {
 }
 
 /**
- * Whether `pointer` addresses a member of `root`. Tokens here are the fixed
- * names and array indices this walk builds, so RFC 6901 escaping never arises.
+ * The member `pointer` addresses in `root`, or undefined. Tokens here are the
+ * fixed names and array indices this walk builds, so RFC 6901 escaping never
+ * arises.
  */
-function pointerExists(root: unknown, pointer: string): boolean {
+function nodeAtPointer(root: unknown, pointer: string): unknown {
   let current: unknown = root;
   for (const token of pointer.split('/').slice(1)) {
     if (Array.isArray(current)) {
       const index = Number(token);
-      if (!Number.isInteger(index)) return false;
+      if (!Number.isInteger(index)) return undefined;
       current = current[index];
       continue;
     }
     const record = asRecord(current);
-    if (!record) return false;
+    if (!record) return undefined;
     current = record[token];
   }
-  return current !== undefined;
+  return current;
+}
+
+/** Whether `pointer` addresses a member of `root`. */
+function pointerExists(root: unknown, pointer: string): boolean {
+  return nodeAtPointer(root, pointer) !== undefined;
 }
 
 /**
@@ -642,6 +915,11 @@ export function prepareDocxQualityDocument(
     const hex = normalizeHex(value);
     if (hex) paletteHexes[token] = hex;
   }
+  const paletteTokens = SERIES_COLOR_TOKENS.filter(
+    (token) => paletteHexes[token] !== undefined
+  );
+  const authoredPropsAt = (pointer: string): Rec | undefined =>
+    asRecord(asRecord(nodeAtPointer(context.document, pointer))?.props);
   addFact({
     id: 'docx:theme',
     kind: 'docx/theme',
@@ -716,6 +994,19 @@ export function prepareDocxQualityDocument(
     const props = asRecord(node.props) ?? {};
     if (node.name === 'table') {
       const fact = tableFact(props, path, page.availableWidthTwips);
+      if (fact) addFact(fact);
+      const design = tableDesignFact(
+        props,
+        path,
+        resolved.theme,
+        context.themeName,
+        authoredPropsAt(path)
+      );
+      if (design) addFact(design);
+    }
+
+    if (node.name === 'chart' || node.name === 'highcharts') {
+      const fact = chartFact(node, props, path, paletteTokens);
       if (fact) addFact(fact);
     }
 

@@ -1428,3 +1428,371 @@ describe('brand consistency', () => {
     expect(findings).toEqual([]);
   });
 });
+
+/** One slide holding one component, at a size that never overflows. */
+function slideWith(component: Record<string, unknown>) {
+  return deck(CANVAS, [{ name: 'slide', children: [component] }]);
+}
+
+function chartSlide(props: Record<string, unknown>, name = 'chart') {
+  return slideWith({
+    name,
+    props: { x: 1, y: 1, w: 8, h: 4.5, ...props },
+  });
+}
+
+/** A chart with nothing to say about it: palette, unit and scale all stated. */
+const CLEAN_CHART = {
+  type: 'bar',
+  chartColors: ['primary', 'accent'],
+  valAxisTitle: 'Revenue (€m)',
+  valAxisMinVal: 0,
+  data: [
+    { name: 'FY24', labels: ['Q1', 'Q2'], values: [4, 6] },
+    { name: 'FY25', labels: ['Q1', 'Q2'], values: [5, 8] },
+  ],
+};
+
+function chartCodes(props: Record<string, unknown>, name = 'chart') {
+  return pptxDiagnostics(chartSlide(props, name))
+    .filter((finding) => finding.ruleId === 'pptx/chart-design')
+    .map((finding) => finding.code);
+}
+
+describe('chart information design', () => {
+  it('says nothing about a chart that states its palette, unit and baseline', () => {
+    expect(chartCodes(CLEAN_CHART)).toEqual([]);
+  });
+
+  it('flags a 3D type', () => {
+    const findings = pptxDiagnostics(
+      chartSlide({ ...CLEAN_CHART, type: 'bar3D' })
+    ).filter((finding) => finding.code === QUALITY_CODES.CHART_3D);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      category: 'information-design',
+      path: '/children/0/children/0',
+    });
+  });
+
+  it('flags a pie past six slices and leaves six alone', () => {
+    const nine = {
+      type: 'pie',
+      chartColors: ['primary'],
+      title: 'Share of revenue (%)',
+      data: [
+        {
+          name: 'Mix',
+          labels: 'abcdefghi'.split(''),
+          values: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        },
+      ],
+    };
+    expect(chartCodes(nine)).toEqual([QUALITY_CODES.CHART_OVERLOADED]);
+    expect(
+      chartCodes({
+        ...nine,
+        data: [
+          {
+            name: 'Mix',
+            labels: 'abcdef'.split(''),
+            values: [1, 2, 3, 4, 5, 6],
+          },
+        ],
+      })
+    ).toEqual([]);
+  });
+
+  it('flags more than four series, counting a line chart by series not points', () => {
+    const series = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        name: `S${index}`,
+        labels: ['Q1', 'Q2'],
+        values: [1, 2],
+      }));
+    expect(
+      chartCodes({
+        type: 'line',
+        chartColors: ['primary'],
+        valAxisTitle: 'Index (2020 = 100)',
+        data: series(5),
+      })
+    ).toEqual([QUALITY_CODES.CHART_OVERLOADED]);
+    expect(
+      chartCodes({
+        type: 'line',
+        chartColors: ['primary'],
+        valAxisTitle: 'Index (2020 = 100)',
+        data: series(4),
+      })
+    ).toEqual([]);
+  });
+
+  it('flags a bar baseline off zero and accepts the same floor on a line', () => {
+    const findings = pptxDiagnostics(
+      chartSlide({ ...CLEAN_CHART, valAxisMinVal: 80 })
+    ).filter((finding) => finding.code === QUALITY_CODES.CHART_AXIS_BASELINE);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      evidence: { actual: 80, expected: 0 },
+    });
+    expect(
+      chartCodes({ ...CLEAN_CHART, type: 'line', valAxisMinVal: 80 })
+    ).toEqual([]);
+  });
+
+  it('names one theme token per series when the palette is unstated', () => {
+    const findings = pptxDiagnostics(
+      chartSlide({
+        type: 'bar',
+        valAxisTitle: 'Revenue (€m)',
+        data: [
+          { name: 'A', labels: ['Q1'], values: [1] },
+          { name: 'B', labels: ['Q1'], values: [2] },
+          { name: 'C', labels: ['Q1'], values: [3] },
+        ],
+      })
+    ).filter((finding) => finding.code === QUALITY_CODES.CHART_SERIES_COLORS);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      path: '/children/0/children/0/props/chartColors',
+      fixes: [
+        {
+          op: 'add',
+          path: '/children/0/children/0/props/chartColors',
+          value: ['primary', 'accent', 'secondary'],
+        },
+      ],
+    });
+  });
+
+  it('advises when nothing names the unit, and accepts each way of naming it', () => {
+    const bare = { ...CLEAN_CHART, valAxisTitle: undefined };
+    expect(chartCodes(bare)).toEqual([QUALITY_CODES.CHART_UNITS]);
+    expect(chartCodes({ ...bare, valAxisLabelFormatCode: '#,##0"k"' })).toEqual(
+      []
+    );
+    expect(chartCodes({ ...bare, title: 'Revenue growth (%)' })).toEqual([]);
+    expect(chartCodes({ ...bare, barGrouping: 'percentStacked' })).toEqual([]);
+    // A quantity named without its unit is still no unit.
+    expect(chartCodes({ ...bare, valAxisTitle: 'Revenue' })).toEqual([
+      QUALITY_CODES.CHART_UNITS,
+    ]);
+  });
+
+  it('never asks a native slide chart for a caption it cannot carry', () => {
+    expect(chartCodes(CLEAN_CHART)).not.toContain(
+      QUALITY_CODES.CHART_ANNOTATION
+    );
+  });
+
+  it('reads a Highcharts config, caption slot included', () => {
+    const options = {
+      chart: { type: 'column', width: 600, height: 400 },
+      colors: ['#123456'],
+      yAxis: { min: 0, title: { text: 'Revenue (€m)' } },
+      series: [{ name: 'FY25', data: [1, 2, 3] }],
+    };
+    expect(chartCodes({ options }, 'highcharts')).toEqual([
+      QUALITY_CODES.CHART_ANNOTATION,
+    ]);
+    expect(
+      chartCodes(
+        {
+          options: {
+            ...options,
+            caption: { text: 'Source: management accounts.' },
+          },
+        },
+        'highcharts'
+      )
+    ).toEqual([]);
+  });
+
+  it('offers no palette patch for a Highcharts config it cannot safely write into', () => {
+    const findings = pptxDiagnostics(
+      chartSlide(
+        {
+          options: {
+            chart: { type: 'column', width: 600, height: 400 },
+            yAxis: { title: { text: 'Revenue (€m)' } },
+            caption: { text: 'Source: internal.' },
+            series: [{ name: 'FY25', data: [1, 2] }],
+          },
+        },
+        'highcharts'
+      )
+    ).filter((finding) => finding.code === QUALITY_CODES.CHART_SERIES_COLORS);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].fixes).toBeUndefined();
+  });
+});
+
+function tableSlide(props: Record<string, unknown>) {
+  return slideWith({
+    name: 'table',
+    props: { x: 0.5, y: 0.5, w: 9, ...props },
+  });
+}
+
+function tableCodes(props: Record<string, unknown>) {
+  return pptxDiagnostics(tableSlide(props))
+    .filter((finding) => finding.ruleId === 'pptx/table-design')
+    .map((finding) => finding.code);
+}
+
+describe('table information design', () => {
+  it('says nothing about a table whose numbers are right-aligned and evenly rounded', () => {
+    expect(
+      tableCodes({
+        headerRow: true,
+        rows: [
+          ['Segment', { text: 'Revenue', align: 'right' }],
+          ['Retail', { text: '12.0', align: 'right' }],
+          ['Wholesale', { text: '15.5', align: 'right' }],
+        ],
+      })
+    ).toEqual([]);
+  });
+
+  it('flags a left-aligned numeric column and patches every cell of it', () => {
+    const findings = pptxDiagnostics(
+      tableSlide({
+        headerRow: true,
+        rows: [
+          ['Segment', 'Revenue'],
+          ['Retail', '12.0'],
+          ['Wholesale', '15.5'],
+        ],
+      })
+    ).filter((finding) => finding.code === QUALITY_CODES.TABLE_NUMERIC_ALIGN);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      context: { column: 1, header: 'Revenue' },
+    });
+    expect(findings[0].fixes).toEqual([
+      {
+        op: 'replace',
+        path: '/children/0/children/0/props/rows/0/1',
+        value: { text: 'Revenue', align: 'right' },
+      },
+      {
+        op: 'replace',
+        path: '/children/0/children/0/props/rows/1/1',
+        value: { text: '12.0', align: 'right' },
+      },
+      {
+        op: 'replace',
+        path: '/children/0/children/0/props/rows/2/1',
+        value: { text: '15.5', align: 'right' },
+      },
+    ]);
+  });
+
+  it('reads an undeclared label row as a header rather than as data', () => {
+    // No `headerRow`, and the numeric column is still recognised.
+    expect(
+      tableCodes({
+        rows: [
+          ['Segment', 'Revenue'],
+          ['Retail', '12.0'],
+          ['Wholesale', '15.5'],
+        ],
+      })
+    ).toEqual([QUALITY_CODES.TABLE_NUMERIC_ALIGN]);
+  });
+
+  it('leaves a text column alone and a single number alone', () => {
+    expect(
+      tableCodes({
+        headerRow: true,
+        rows: [
+          ['Measure', 'Value'],
+          ['Adoption', '72%'],
+        ],
+      })
+    ).toEqual([]);
+  });
+
+  it('flags a numeric column rounded different ways', () => {
+    const findings = pptxDiagnostics(
+      tableSlide({
+        headerRow: true,
+        rows: [
+          ['Segment', { text: 'Revenue', align: 'right' }],
+          ['Retail', { text: '12', align: 'right' }],
+          ['Wholesale', { text: '15.5', align: 'right' }],
+        ],
+      })
+    ).filter((finding) => finding.code === QUALITY_CODES.TABLE_MIXED_DECIMALS);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      evidence: { actual: [0, 1] },
+    });
+  });
+
+  it('reports a full grid as information and a table-level right-align as clean', () => {
+    const rows = [
+      ['Segment', 'Revenue'],
+      ['Retail', '12.0'],
+      ['Wholesale', '15.5'],
+    ];
+    expect(tableCodes({ headerRow: true, rows, align: 'right' })).toEqual([]);
+    const grid = pptxDiagnostics(
+      tableSlide({
+        headerRow: true,
+        rows,
+        align: 'right',
+        border: { type: 'solid', pt: 1, color: '999999' },
+      })
+    ).filter((finding) => finding.code === QUALITY_CODES.TABLE_GRID);
+    expect(grid[0]).toMatchObject({
+      severity: 'info',
+      path: '/children/0/children/0/props/border',
+    });
+  });
+
+  it('flags a slide table longer than the canvas can carry', () => {
+    const rows = [['Segment', 'Revenue']].concat(
+      Array.from({ length: 14 }, (_, index) => [`Row ${index}`, `${index}.0`])
+    );
+    const findings = pptxDiagnostics(
+      tableSlide({ headerRow: true, align: 'right', rows })
+    ).filter((finding) => finding.code === QUALITY_CODES.TABLE_ROW_COUNT);
+    expect(findings[0]).toMatchObject({
+      severity: 'warning',
+      evidence: { actual: 15, expected: 12, unit: 'rows' },
+    });
+  });
+
+  it('gives each column of one table its own pointer', () => {
+    const findings = pptxDiagnostics(
+      tableSlide({
+        headerRow: true,
+        rows: [
+          ['Segment', 'FY24', 'FY25'],
+          ['Retail', '12.0', '13.0'],
+          ['Wholesale', '15.5', '16.5'],
+        ],
+      })
+    ).filter((finding) => finding.code === QUALITY_CODES.TABLE_NUMERIC_ALIGN);
+    expect(findings.map((finding) => finding.path)).toEqual([
+      '/children/0/children/0/props/rows/0/1',
+      '/children/0/children/0/props/rows/0/2',
+    ]);
+  });
+
+  it('describes a merged-cell table without columns rather than guessing', () => {
+    expect(
+      tableCodes({
+        headerRow: true,
+        rows: [
+          [{ text: 'Segment', colspan: 2 }],
+          ['Retail', '12.0'],
+          ['Wholesale', '15.5'],
+        ],
+      })
+    ).toEqual([]);
+  });
+});

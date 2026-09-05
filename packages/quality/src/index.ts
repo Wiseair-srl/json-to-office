@@ -50,6 +50,27 @@ export {
   type FontFamilyUse,
   type NearestToken,
 } from './brand';
+export {
+  chartEncodingFor,
+  chartInfoDesignFindings,
+  columnNumericProfile,
+  DEFAULT_MAXIMUM_CHART_SERIES,
+  DEFAULT_MAXIMUM_PIE_SLICES,
+  hasUnitMarker,
+  normalizeHighchartsChart,
+  parseNumericCell,
+  tableInfoDesignFindings,
+  type ChartAnnotationSlot,
+  type ChartEncoding,
+  type ChartInfoDesign,
+  type ChartInfoDesignOptions,
+  type ColumnNumericProfile,
+  type HighchartsChartShape,
+  type TableAlignment,
+  type TableColumnInfoDesign,
+  type TableInfoDesign,
+  type TableInfoDesignOptions,
+} from './information-design';
 export { DuplicateQualityRuleError, QualityRuleRegistry } from './registry';
 export {
   collectPlaceholders,
