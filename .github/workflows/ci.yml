@@ -8,7 +8,13 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseding a branch's in-flight run is what keeps PR feedback current, but
+  # main is where `release` publishes: two pushes in quick succession would
+  # cancel the first one, and there is a window inside `changesets/action`
+  # between pushing the git tag and finishing `npm publish` where a cancel
+  # leaves the two out of step. Main runs to completion; every other ref keeps
+  # the old behaviour.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -20,6 +26,105 @@ permissions:
   contents: read
 
 jobs:
+  # Every release costs three CI runs: the PR, the merge that opens
+  # `changeset-release/main`, and the merge of that PR. The third one tests a
+  # tree whose source is byte-identical to the second's — changesets only
+  # rewrites `"version"`, drops the consumed `.changeset/*.md` and appends to
+  # CHANGELOGs (deps here are `workspace:^`, so it never touches a dependency
+  # range). Skipping it on that basis would be an assumption; this job turns it
+  # into a check. It classifies the push by what actually moved and refuses to
+  # claim `version-only` for anything it cannot account for — an unreadable
+  # base, an empty diff, a `package.json` line that is not a version bump — so
+  # every uncertain case falls back to the full pipeline.
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      version-only: ${{ steps.scope.outputs.version-only }}
+      test-matrix: ${{ steps.scope.outputs.test-matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The push's `before` commit is not an ancestor of anything shallow.
+          fetch-depth: 0
+
+      - id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          base="${BASE_SHA:-}"
+          version_only=false
+
+          if [ "$EVENT_NAME" = 'push' ] \
+            && [ -n "$base" ] \
+            && [ "$base" != '0000000000000000000000000000000000000000' ] \
+            && git cat-file -e "$base^{commit}" 2>/dev/null; then
+
+            changed="$(git diff --name-only "$base" "$HEAD_SHA")"
+
+            # An empty diff is not a licence to run less; it is a shape nobody
+            # designed for, so it takes the full pipeline like anything else.
+            if [ -n "$changed" ]; then
+              version_only=true
+              while IFS= read -r file; do
+                case "$file" in
+                  .changeset/*.md | CHANGELOG.md | */CHANGELOG.md)
+                    continue
+                    ;;
+                  package.json | */package.json)
+                    # A manifest may move, but only its version line. This is
+                    # what stops a dependency bump — which is a code change in
+                    # every sense that matters — from riding in as a version
+                    # bump and taking the reduced pipeline with it.
+                    if git diff -U0 "$base" "$HEAD_SHA" -- "$file" \
+                      | grep -E '^[+-]' \
+                      | grep -vE '^(\+\+\+|---)' \
+                      | grep -qvE '^[+-][[:space:]]*"version": "[^"]+",?$'; then
+                      version_only=false
+                      break
+                    fi
+                    ;;
+                  *)
+                    version_only=false
+                    break
+                    ;;
+                esac
+              done <<< "$changed"
+            fi
+          fi
+
+          # The advertised range is `>=20` and `test` proves it end to end, but
+          # it does not have to prove it on every intermediate commit. A PR
+          # carries both ends of the range plus the one OS that has ever failed
+          # differently (see the concurrency note in `test`); a version-only
+          # push carries a single leg, because the eight-leg proof for this
+          # exact source tree is the run that just published the version PR.
+          # Anything else — every merge to main included — gets all eight, so
+          # what stands in front of `npm publish` is unchanged.
+          full="$(jq -cn '{
+            include: [
+              ["ubuntu-latest", "windows-latest"][] as $os
+              | [20, 22, 24, 26][] as $node
+              | {os: $os, "node-version": $node}
+            ]
+          }')"
+
+          if [ "$EVENT_NAME" = 'pull_request' ]; then
+            matrix='{"include":[{"os":"ubuntu-latest","node-version":20},{"os":"ubuntu-latest","node-version":26},{"os":"windows-latest","node-version":20}]}'
+          elif [ "$version_only" = true ]; then
+            matrix='{"include":[{"os":"ubuntu-latest","node-version":20}]}'
+          else
+            matrix="$full"
+          fi
+
+          echo "version-only=$version_only" >> "$GITHUB_OUTPUT"
+          echo "test-matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Classified as version-only=$version_only; test matrix: $matrix"
+
   quality:
     if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
     runs-on: ubuntu-latest
@@ -32,6 +137,22 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      # `build` is content-addressed by turbo (see `inputs` in turbo.json), and
+      # ten packages of it run in front of `test`, `preview` and `conformance`
+      # alike. Restoring the cache is sound for the same reason an incremental
+      # local build is: the key is the hash of the inputs, not the branch or
+      # the clock. The node version is in the cache key even though turbo does
+      # not hash it — reusing a tree built on another runtime is exactly the
+      # class of difference the matrix exists to catch, and it is not worth
+      # laundering it through a cache hit.
+      - name: Restore the turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-node20-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-node20-
 
       - run: pnpm install --frozen-lockfile
 
@@ -46,6 +167,7 @@ jobs:
       - run: pnpm docs:build
 
   test:
+    needs: guard
     if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
     strategy:
       # Both ends of the advertised `>=20` range, not just the old end. The
@@ -54,10 +176,9 @@ jobs:
       # deflate output, so a runtime whose zlib differs fails every case at
       # once while changing nothing about any document. The goldens cover part
       # content instead now (#264); these entries are what keeps that claim
-      # exercised rather than asserted.
-      matrix:
-        node-version: [20, 22, 24, 26]
-        os: [ubuntu-latest, windows-latest]
+      # exercised rather than asserted. Which legs run is decided by `guard`
+      # above; a merge to main always runs the full eight.
+      matrix: ${{ fromJSON(needs.guard.outputs.test-matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +189,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
+
+      - name: Restore the turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-node${{ matrix.node-version }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-node${{ matrix.node-version }}-
 
       - run: pnpm install --frozen-lockfile
 
@@ -96,8 +225,15 @@ jobs:
   # assertions among it, plus both cores' libreoffice-smoke suites. One leg,
   # one OS: `JTO_REQUIRE_LIBREOFFICE=1` turns the skip into a failure, so a
   # missing install fails loudly here instead of quietly passing everywhere.
+  #
+  # This is the one job a version-only push skips. It installs an apt tree and
+  # drives a real converter to prove things about rendering code, and on such a
+  # push there is no rendering code that the previous run did not already see.
   preview:
-    if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
+    needs: guard
+    if: >-
+      (github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main')
+      && needs.guard.outputs.version-only != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -124,6 +260,14 @@ jobs:
           command -v pdftoppm
           pdftoppm -v || true
 
+      - name: Restore the turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-node20-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-node20-
+
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
@@ -148,6 +292,14 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      - name: Restore the turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-node20-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-node20-
 
       - run: pnpm install --frozen-lockfile
 
@@ -222,7 +374,19 @@ jobs:
 
   release:
     needs: [quality, test, preview, conformance]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # `preview` skips itself on a version-only push, and a skipped need would
+    # otherwise skip this job with it — so the gates are named one by one
+    # instead of inherited. Three of them must be green; only `preview` may be
+    # absent, and only in the case `guard` proved. `!cancelled()` is what gets
+    # this expression evaluated at all once a need has skipped.
+    if: >-
+      !cancelled()
+      && github.ref == 'refs/heads/main'
+      && github.event_name == 'push'
+      && needs.quality.result == 'success'
+      && needs.test.result == 'success'
+      && needs.conformance.result == 'success'
+      && (needs.preview.result == 'success' || needs.preview.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
