@@ -15,6 +15,8 @@
 export type RunOutcome = 'completed' | 'failed';
 
 export interface RunCost {
+  /** False when an interrupted attempt never reported final usage; totals are a lower bound. */
+  usageComplete?: boolean;
   /** Input and output tokens across the whole session. */
   inputTokens: number;
   outputTokens: number;

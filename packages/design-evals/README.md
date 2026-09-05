@@ -34,6 +34,31 @@ says so. Nothing runs this for you and no PR is gated on it.
 Full description of what a scorecard contains, and why the numbers are shaped
 the way they are, is in [`docs/architecture/taste-system.md`](../../docs/architecture/taste-system.md#design-evals-measuring-the-whole-loop).
 
+## Delivery and accounting
+
+A completed run requires the final `jto_generate` call to return `ok: true`
+with a nonempty artifact. A successful agent session alone does not prove
+delivery. The harness records matching tool-call IDs and responses, and reads
+the workspace revision reported by generation, even if the agent edits later.
+
+Usage, turns, tool calls and foreign tools include every attempt, including
+failed attempts. `transcript.json` retains both the combined events and each
+attempt. When a transport interruption prevents final usage reporting,
+`cost.usageComplete` is false: the recorded usage is a lower bound.
+
+## Next measurement
+
+Keep the existing baselines as historical evidence. Before using shipping
+rates as a gate, recover their rendered artifacts (or produce fresh matched
+runs), assemble the 40 development pairs required by #321, and collect Paolo's
+ratings. Report agreement and kappa before relying on the judge.
+
+Then repeat the development corpus on a fixed revision with `--repeat 3
+--judge`, holding the author model, judge model, skill mode and render environment
+constant across comparisons. Compare the new chart/table rules against a
+matched run without them; cold versus assisted alone does not measure a PR's
+effect. Keep the sealed acceptance corpus for final acceptance.
+
 ## Briefs
 
 `briefs/<id>.md` — frontmatter (`id`, `format`, `archetype`, `language`,

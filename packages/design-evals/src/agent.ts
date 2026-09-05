@@ -16,6 +16,7 @@
 
 export interface AgentToolUse {
   type: 'tool_use';
+  id?: string;
   name: string;
   input: Record<string, unknown>;
 }
@@ -43,7 +44,14 @@ export interface AgentResult {
   error?: string;
 }
 
-export type AgentEvent = AgentToolUse | AgentResult;
+export interface AgentToolResult {
+  type: 'tool_result';
+  toolUseId: string;
+  isError: boolean;
+  content: unknown;
+}
+
+export type AgentEvent = AgentToolUse | AgentToolResult | AgentResult;
 
 export interface AgentRunOptions {
   prompt: string;
@@ -154,8 +162,22 @@ export const sdkAgentDriver: AgentDriver = async function* (options) {
         if (block.type === 'tool_use') {
           yield {
             type: 'tool_use',
+            id: block.id,
             name: block.name,
             input: (block.input ?? {}) as Record<string, unknown>,
+          };
+        }
+      }
+      continue;
+    }
+    if (message.type === 'user' && Array.isArray(message.message.content)) {
+      for (const block of message.message.content) {
+        if (block.type === 'tool_result') {
+          yield {
+            type: 'tool_result',
+            toolUseId: block.tool_use_id,
+            isError: block.is_error === true,
+            content: block.content,
           };
         }
       }

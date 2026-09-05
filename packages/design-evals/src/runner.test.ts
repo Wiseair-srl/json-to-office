@@ -31,6 +31,26 @@ const BRIEF: Brief = {
 const GENERATE = 'mcp__json-to-office__jto_generate';
 const DOCUMENT = { name: 'docx', children: [] };
 
+let nextCall = 0;
+function generated(input: Record<string, unknown>): AgentEvent[] {
+  const id = `generate-${nextCall++}`;
+  return [
+    { type: 'tool_use', id, name: GENERATE, input },
+    {
+      type: 'tool_result',
+      toolUseId: id,
+      isError: false,
+      content: JSON.stringify({
+        ok: true,
+        artifact: { mode: 'path', path: '/tmp/result.docx', bytes: 100 },
+        ...(typeof input.handle === 'string' && {
+          source: { origin: 'workspace', handle: input.handle, revision: 2 },
+        }),
+      }),
+    },
+  ];
+}
+
 function driverOf(...events: AgentEvent[]): AgentDriver {
   return async function* () {
     for (const event of events) yield event;
@@ -64,10 +84,7 @@ function options(overrides: Partial<Parameters<typeof runBrief>[0]> = {}) {
     model: 'test-model',
     maxTurns: 20,
     maxRetries: 0,
-    driver: driverOf(
-      { type: 'tool_use', name: GENERATE, input: { document: DOCUMENT } },
-      OK_RESULT
-    ),
+    driver: driverOf(...generated({ document: DOCUMENT }), OK_RESULT),
     analyze: async () => ({ diagnostics: [], pages: 4 }),
     server: { command: 'node', args: ['server.js'] },
     sealed: false,
@@ -93,8 +110,8 @@ describe('finalDocument', () => {
     expect(
       await finalDocument(
         [
-          { type: 'tool_use', name: GENERATE, input: { document: first } },
-          { type: 'tool_use', name: GENERATE, input: { document: DOCUMENT } },
+          ...generated({ document: first }),
+          ...generated({ document: DOCUMENT }),
         ],
         undefined
       )
@@ -113,10 +130,7 @@ describe('finalDocument', () => {
       JSON.stringify(DOCUMENT)
     );
     expect(
-      await finalDocument(
-        [{ type: 'tool_use', name: GENERATE, input: { handle: 'ws_1' } }],
-        root
-      )
+      await finalDocument([...generated({ handle: 'ws_1' })], root)
     ).toEqual(DOCUMENT);
   });
 
@@ -172,7 +186,7 @@ describe('runBrief', () => {
             name: 'mcp__company_finance__list-clients',
             input: {},
           },
-          { type: 'tool_use', name: GENERATE, input: { document: DOCUMENT } },
+          ...generated({ document: DOCUMENT }),
           OK_RESULT
         ),
       })
@@ -186,7 +200,7 @@ describe('runBrief', () => {
         driver: driverOf(
           { type: 'tool_use', name: 'Bash', input: {} },
           { type: 'tool_use', name: 'Write', input: {} },
-          { type: 'tool_use', name: GENERATE, input: { document: DOCUMENT } },
+          ...generated({ document: DOCUMENT }),
           OK_RESULT
         ),
       })
@@ -210,7 +224,7 @@ describe('runBrief', () => {
           { type: 'tool_use', name: CREATE, input: {} },
           { type: 'tool_use', name: PATCH, input: {} },
           { type: 'tool_use', name: PATCH, input: {} },
-          { type: 'tool_use', name: GENERATE, input: { document: DOCUMENT } },
+          ...generated({ document: DOCUMENT }),
           { ...OK_RESULT, turns: 21 }
         ),
       })
@@ -233,10 +247,7 @@ describe('runBrief', () => {
     // exactly the behaviour the server's instructions ask for.
     const run = await runBrief(
       options({
-        driver: driverOf(
-          { type: 'tool_use', name: GENERATE, input: { handle: 'ws_gone' } },
-          OK_RESULT
-        ),
+        driver: driverOf(...generated({ handle: 'ws_gone' }), OK_RESULT),
         workspaceRoot: path.join(scratch, 'nowhere'),
       })
     );
@@ -255,6 +266,7 @@ describe('runBrief', () => {
     );
     expect(run.outcome).toBe('failed');
     expect(run.failure).toContain('transport closed');
+    expect(run.cost.usageComplete).toBe(false);
   });
 
   it('retries a failed session and reports how many times', async () => {
@@ -274,7 +286,7 @@ describe('runBrief', () => {
         return;
       }
       expect(input.prompt).toContain(BRIEF.text);
-      yield { type: 'tool_use', name: GENERATE, input: { document: DOCUMENT } };
+      yield* generated({ document: DOCUMENT });
       yield OK_RESULT;
     };
     const run = await runBrief(options({ driver, maxRetries: 1 }));
@@ -305,7 +317,7 @@ describe('runBrief', () => {
       await fs.readFile(path.join(runDir, 'transcript.json'), 'utf8')
     );
     expect(transcript.prompt).toContain(BRIEF.text);
-    expect(transcript.events).toHaveLength(2);
+    expect(transcript.events).toHaveLength(3);
   });
 
   it("hands the judge this run's own directory", async () => {
@@ -344,6 +356,201 @@ describe('runBrief', () => {
     expect(run.outcome).toBe('completed');
     expect(run.pages).toBe(4);
     expect(run.judge).toBeUndefined();
+  });
+
+  it.each([
+    { isError: false, content: JSON.stringify({ ok: false, diagnostics: [] }) },
+    { isError: true, content: 'renderer crashed' },
+    { isError: false, content: JSON.stringify({ ok: true }) },
+    { isError: false, content: 'not JSON' },
+  ])(
+    'refuses unsuccessful generation despite session success: %j',
+    async (response) => {
+      let measured = false;
+      const run = await runBrief(
+        options({
+          driver: driverOf(
+            {
+              type: 'tool_use',
+              id: 'bad',
+              name: GENERATE,
+              input: { document: DOCUMENT },
+            },
+            { type: 'tool_result', toolUseId: 'bad', ...response },
+            OK_RESULT
+          ),
+          analyze: async () => {
+            measured = true;
+            return { diagnostics: [], pages: 1 };
+          },
+        })
+      );
+      expect(run.outcome).toBe('failed');
+      expect(run.failure).toContain('artifact delivery');
+      expect(measured).toBe(false);
+      expect(run.cost.usd).toBe(0.042);
+    }
+  );
+
+  it('does not substitute an earlier successful generation for a missing final reply', async () => {
+    const run = await runBrief(
+      options({
+        driver: driverOf(
+          ...generated({ document: DOCUMENT }),
+          {
+            type: 'tool_use',
+            id: 'missing',
+            name: GENERATE,
+            input: { document: DOCUMENT },
+          },
+          OK_RESULT
+        ),
+      })
+    );
+    expect(run.outcome).toBe('failed');
+  });
+
+  it('accepts a matching base64 artifact in MCP text blocks', async () => {
+    const run = await runBrief(
+      options({
+        driver: driverOf(
+          {
+            type: 'tool_use',
+            id: 'inline',
+            name: GENERATE,
+            input: { document: DOCUMENT },
+          },
+          {
+            type: 'tool_result',
+            toolUseId: 'inline',
+            isError: false,
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  ok: true,
+                  artifact: { mode: 'base64', base64: 'YQ==', bytes: 1 },
+                }),
+              },
+            ],
+          },
+          OK_RESULT
+        ),
+      })
+    );
+    expect(run.outcome).toBe('completed');
+  });
+
+  it('sums retry costs and preserves earlier calls and contamination', async () => {
+    let calls = 0;
+    const run = await runBrief(
+      options({
+        maxRetries: 1,
+        driver: async function* () {
+          calls++;
+          if (calls === 1) {
+            yield { type: 'tool_use', name: 'Bash', input: {} };
+            yield { ...OK_RESULT, ok: false, credential: 'none' };
+          } else {
+            yield* generated({ document: DOCUMENT });
+            yield { ...OK_RESULT, credential: 'none' };
+          }
+        },
+      })
+    );
+    expect(run).toMatchObject({
+      outcome: 'completed',
+      retries: 1,
+      toolCalls: 2,
+      turns: 6,
+      foreignTools: ['Bash'],
+      cost: {
+        inputTokens: 2400,
+        outputTokens: 1600,
+        usd: 0.084,
+        credential: 'none',
+      },
+    });
+    const transcript = JSON.parse(
+      await fs.readFile(path.join(scratch, 'run', 'transcript.json'), 'utf8')
+    );
+    expect(transcript.attempts).toHaveLength(2);
+    expect(transcript.events).toHaveLength(5);
+  });
+
+  it('retains usage and contamination on an exhausted failed session', async () => {
+    const run = await runBrief(
+      options({
+        driver: driverOf(
+          { type: 'tool_use', name: 'Bash', input: {} },
+          { ...OK_RESULT, ok: false, credential: 'none' }
+        ),
+      })
+    );
+    expect(run).toMatchObject({
+      outcome: 'failed',
+      foreignTools: ['Bash'],
+      cost: {
+        inputTokens: 1200,
+        outputTokens: 800,
+        usd: 0.042,
+        credential: 'none',
+      },
+    });
+  });
+
+  it('preserves partial events if the driver throws', async () => {
+    const run = await runBrief(
+      options({
+        driver: async function* () {
+          yield { type: 'tool_use', name: 'Bash', input: {} };
+          yield { ...OK_RESULT, ok: false };
+          throw new Error('transport closed');
+        },
+      })
+    );
+    expect(run).toMatchObject({
+      outcome: 'failed',
+      toolCalls: 1,
+      foreignTools: ['Bash'],
+      cost: { inputTokens: 1200, usd: 0.042 },
+    });
+  });
+
+  it('retains usage when analysis fails', async () => {
+    const run = await runBrief(
+      options({
+        analyze: async () => {
+          throw new Error('analysis failed');
+        },
+      })
+    );
+    expect(run.outcome).toBe('failed');
+    expect(run.cost).toMatchObject({
+      inputTokens: 1200,
+      outputTokens: 800,
+      usd: 0.042,
+    });
+  });
+
+  it('measures the generated workspace revision despite subsequent patches', async () => {
+    const root = path.join(scratch, 'workspaces');
+    await fs.mkdir(path.join(root, 'ws_1'), { recursive: true });
+    await fs.writeFile(
+      path.join(root, 'ws_1', 'rev-2.json'),
+      JSON.stringify(DOCUMENT)
+    );
+    await fs.writeFile(
+      path.join(root, 'ws_1', 'rev-3.json'),
+      JSON.stringify({ name: 'later' })
+    );
+    expect(await finalDocument(generated({ handle: 'ws_1' }), root)).toEqual(
+      DOCUMENT
+    );
+    await fs.rm(path.join(root, 'ws_1', 'rev-2.json'));
+    expect(
+      await finalDocument(generated({ handle: 'ws_1' }), root)
+    ).toBeUndefined();
   });
 
   it('keeps a sealed brief out of the artifacts it writes', async () => {

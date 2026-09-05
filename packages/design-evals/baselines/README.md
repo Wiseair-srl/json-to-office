@@ -4,6 +4,11 @@ Each file is one complete run set: every run, the aggregate, and the manifest
 that says what produced it. They are committed because the programme's targets
 are all deltas, and a delta needs a fixed end.
 
+These historical sets predate the delivery-response and retry-accounting
+guards. Their transcripts did not record tool responses, so successful artifact
+delivery cannot be verified from the scorecards alone. Preserve the original
+numbers; use fresh matched runs with the guards before making acceptance claims.
+
 | File                                | Mode | Server | Model           | Runs | Judge |
 | ----------------------------------- | ---- | ------ | --------------- | ---- | ----- |
 | `2026-09-04-cold-server-2.0.0.json` | cold | 2.0.0  | claude-sonnet-5 | 40   | yes   |
