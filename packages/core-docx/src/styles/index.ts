@@ -49,6 +49,7 @@ export {
   minimalTheme,
   devportalTheme,
   vermilionTheme,
+  consultingTheme,
 } from '../templates/themes';
 
 // JSON Theme System (Phase 1 - Foundation complete)

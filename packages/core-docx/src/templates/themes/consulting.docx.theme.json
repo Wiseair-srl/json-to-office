@@ -1,0 +1,308 @@
+{
+  "name": "consulting",
+  "displayName": "Consulting House",
+  "description": "The house style for client and technical reports — near-black ink, three greys and one deep-blue accent, Calibri body under Arial headings, hairline rules, no fills behind body text, safe fonts only",
+  "version": "1.0.0",
+  "colors": {
+    "primary": "#1A1F26",
+    "secondary": "#4B5563",
+    "accent": "#1B4F8A",
+    "text": "#1A1F26",
+    "background": "#FFFFFF",
+    "border": "#C9CED6",
+    "textPrimary": "#1A1F26",
+    "textSecondary": "#4B5563",
+    "textMuted": "#7B8794",
+    "borderPrimary": "#C9CED6",
+    "borderSecondary": "#E4E7EB",
+    "backgroundPrimary": "#FFFFFF",
+    "backgroundSecondary": "#F2F4F7",
+    "accent4": "#5B8DC9",
+    "accent5": "#A9C4E4",
+    "accent6": "#7B8794"
+  },
+  "palette": {
+    "rule": "#C9CED6",
+    "textMuted": "#7B8794",
+    "onPrimary": "#FFFFFF",
+    "surfaceInverse": "#1A1F26",
+    "positive": "#1E7F4F",
+    "negative": "#B42318",
+    "chart": ["accent", "secondary", "accent4", "textMuted", "accent5", "rule"]
+  },
+  "fonts": {
+    "heading": { "family": "Arial", "size": 16 },
+    "body": { "family": "Calibri", "size": 10.5 },
+    "mono": { "family": "Consolas", "size": 9.5 },
+    "light": { "family": "Arial", "size": 16 }
+  },
+  "page": {
+    "size": "A4",
+    "margins": {
+      "top": 1440,
+      "bottom": 1440,
+      "left": 1440,
+      "right": 1440,
+      "header": 680,
+      "footer": 680,
+      "gutter": 0
+    }
+  },
+  "typography": {
+    "roles": {
+      "eyebrow": {
+        "face": "heading",
+        "size": 8,
+        "weight": 700,
+        "case": "upper",
+        "tracking": 8,
+        "color": "accent",
+        "spaceAfter": 4
+      },
+      "display": {
+        "face": "heading",
+        "weight": 700,
+        "color": "primary",
+        "lineHeight": 1.05,
+        "spaceAfter": 8
+      },
+      "stat": {
+        "face": "heading",
+        "weight": 700,
+        "color": "accent",
+        "lineHeight": 1
+      },
+      "quote": {
+        "face": "body",
+        "color": "textSecondary",
+        "lineHeight": 1.3
+      },
+      "label": {
+        "face": "body",
+        "size": 9,
+        "weight": 700,
+        "color": "textSecondary"
+      },
+      "footer": { "face": "body", "size": 8, "color": "textMuted" },
+      "tableHeader": {
+        "face": "body",
+        "size": 9,
+        "weight": 700,
+        "color": "primary"
+      },
+      "tableCell": { "face": "body", "size": 9.5, "color": "textPrimary" },
+      "chartLabel": {
+        "face": "body",
+        "size": 9,
+        "weight": 400,
+        "color": "textSecondary"
+      },
+      "tracker": {
+        "face": "body",
+        "size": 8,
+        "case": "upper",
+        "tracking": 6,
+        "color": "textMuted"
+      },
+      "source": { "face": "body", "size": 8, "color": "textMuted" }
+    },
+    "scale": {
+      "a4": { "base": 10.5, "ratio": 1.2, "baselinePt": 2 },
+      "letter": { "base": 10.5, "ratio": 1.2, "baselinePt": 2 }
+    }
+  },
+  "spacing": {
+    "basePt": 8,
+    "blockGap": { "tight": 4, "normal": 8, "loose": 16 },
+    "canvas": {
+      "a4": { "safeAreaIn": 1, "gutterIn": 0, "columns": 12 },
+      "letter": { "safeAreaIn": 1, "gutterIn": 0, "columns": 12 }
+    }
+  },
+  "chrome": {
+    "runningHead": {
+      "type": "tracker",
+      "color": "textMuted",
+      "rule": { "weightPt": 0.5, "color": "rule" },
+      "alignment": "right"
+    },
+    "tracker": {
+      "type": "tracker",
+      "color": "textMuted",
+      "alignment": "right"
+    },
+    "actionTitle": { "type": "display", "color": "primary" },
+    "keyTakeaways": {
+      "type": "label",
+      "color": "primary",
+      "fill": "backgroundSecondary",
+      "rule": { "weightPt": 2, "color": "accent" },
+      "padPt": 8
+    },
+    "sourceLine": { "type": "source", "color": "textMuted" },
+    "confidentialFooter": {
+      "type": "footer",
+      "color": "textMuted",
+      "rule": { "weightPt": 0.5, "color": "rule" },
+      "alignment": "left"
+    },
+    "logoSlot": { "alignment": "right" },
+    "cover": {
+      "type": "display",
+      "color": "primary",
+      "rule": { "weightPt": 3, "color": "accent" }
+    }
+  },
+  "motif": {
+    "kind": "rule",
+    "color": "accent",
+    "weightPt": 3,
+    "placement": "top"
+  },
+  "styles": {
+    "normal": {
+      "font": "body",
+      "color": "textPrimary",
+      "lineSpacing": { "type": "multiple", "value": 1.2 },
+      "alignment": "left",
+      "spacing": { "after": 8 }
+    },
+    "title": {
+      "font": "heading",
+      "size": 26,
+      "bold": true,
+      "color": "primary",
+      "alignment": "left",
+      "lineSpacing": { "type": "multiple", "value": 1.05 },
+      "spacing": { "before": 0, "after": 6 }
+    },
+    "subtitle": {
+      "font": "body",
+      "size": 13,
+      "color": "textSecondary",
+      "alignment": "left",
+      "lineSpacing": { "type": "multiple", "value": 1.2 },
+      "spacing": { "before": 0, "after": 18 }
+    },
+    "heading1": {
+      "font": "heading",
+      "size": 16,
+      "bold": true,
+      "color": "primary",
+      "lineSpacing": { "type": "multiple", "value": 1.1 },
+      "spacing": { "before": 24, "after": 8 },
+      "keepNext": true,
+      "alignment": "left",
+      "borders": {
+        "bottom": { "style": "single", "size": 4, "color": "rule", "space": 4 }
+      }
+    },
+    "heading2": {
+      "font": "heading",
+      "size": 12.5,
+      "bold": true,
+      "color": "primary",
+      "spacing": { "before": 16, "after": 6 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading3": {
+      "font": "body",
+      "size": 11,
+      "bold": true,
+      "color": "primary",
+      "spacing": { "before": 12, "after": 4 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading4": {
+      "font": "body",
+      "size": 10.5,
+      "bold": true,
+      "color": "textSecondary",
+      "spacing": { "before": 10, "after": 4 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading5": {
+      "font": "body",
+      "size": 10.5,
+      "bold": false,
+      "italic": true,
+      "color": "textSecondary",
+      "spacing": { "before": 8, "after": 4 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "heading6": {
+      "font": "body",
+      "size": 9,
+      "bold": true,
+      "case": "upper",
+      "color": "textMuted",
+      "characterSpacing": { "type": "expanded", "value": 20 },
+      "spacing": { "before": 8, "after": 4 },
+      "keepNext": true,
+      "alignment": "left"
+    },
+    "TOC1": {
+      "font": "body",
+      "size": 10.5,
+      "bold": true,
+      "color": "textPrimary",
+      "spacing": { "before": 4, "after": 3 },
+      "tabStops": [{ "type": "right", "position": 9026, "leader": "none" }]
+    },
+    "TOC2": {
+      "font": "body",
+      "size": 10.5,
+      "color": "textSecondary",
+      "indent": { "left": 240 },
+      "spacing": { "after": 2 },
+      "tabStops": [{ "type": "right", "position": 9026, "leader": "none" }]
+    },
+    "TOC3": {
+      "font": "body",
+      "size": 10,
+      "color": "textMuted",
+      "indent": { "left": 480 },
+      "spacing": { "after": 2 },
+      "tabStops": [{ "type": "right", "position": 9026, "leader": "none" }]
+    }
+  },
+  "componentDefaults": {
+    "table": {
+      "width": 100,
+      "borderColor": "#C9CED6",
+      "borderSize": 0.5,
+      "hideBorders": { "left": true, "right": true, "insideVertical": true },
+      "cellDefaults": {
+        "font": { "size": 9.5 },
+        "padding": { "top": 4, "bottom": 4 },
+        "verticalAlignment": "middle"
+      },
+      "headerCellDefaults": {
+        "color": "#1A1F26",
+        "font": { "size": 9, "bold": true },
+        "padding": { "top": 0, "bottom": 5 },
+        "verticalAlignment": "bottom",
+        "borderColor": { "bottom": "#1A1F26" },
+        "borderSize": { "bottom": 0.75 }
+      }
+    },
+    "list": {
+      "format": "bullet",
+      "bullet": "•",
+      "spacing": { "item": 2 }
+    },
+    "image": {
+      "alignment": "center"
+    },
+    "statistic": {
+      "alignment": "left"
+    },
+    "section": {
+      "pageBreak": false
+    }
+  }
+}
