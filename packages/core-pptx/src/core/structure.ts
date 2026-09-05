@@ -74,6 +74,10 @@ export function processPresentation(
       : options?.customThemes?.[props.theme ?? 'default'] ??
         getPptxTheme(props.theme ?? 'default'));
 
+  // Idempotent, and deliberately repeated: the generation prologue already
+  // resolved the theme it hands over, while a direct caller reaches this with a
+  // raw theme. Re-resolving projects the same roles onto styles that already
+  // carry them, because a style key present in `styles` wins over the role.
   const baseTheme = resolvePptxDesignSystem(
     selectedTheme,
     props.slideWidth,

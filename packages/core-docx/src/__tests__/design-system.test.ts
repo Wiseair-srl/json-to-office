@@ -159,6 +159,18 @@ describe('DOCX theme foundation', () => {
       )?.[0];
       expect(explicit).toContain('<w:caps w:val="false"/>');
       expect(explicit).toMatch(/<w:smallCaps w:val="(?:false|0)"\/>/);
+      // CT_RPr is an ordered sequence: w:caps, then w:smallCaps, then the rest.
+      const runProperties = /<w:rPr\b[^>]*>[\s\S]*?<\/w:rPr>/.exec(
+        explicit ?? ''
+      )?.[0];
+      const caps = runProperties?.indexOf('<w:caps') ?? -1;
+      const smallCaps = runProperties?.indexOf('<w:smallCaps') ?? -1;
+      expect(caps).toBeGreaterThanOrEqual(0);
+      expect(smallCaps).toBeGreaterThan(caps);
+      for (const later of ['<w:strike', '<w:color', '<w:sz', '<w:spacing']) {
+        const at = runProperties?.indexOf(later) ?? -1;
+        if (at >= 0) expect(at).toBeGreaterThan(smallCaps);
+      }
       expect(explicit).toContain('Arial Black');
       expect(
         Object.keys(a.files).some((name) =>

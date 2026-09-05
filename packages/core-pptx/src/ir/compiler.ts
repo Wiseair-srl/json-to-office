@@ -638,9 +638,11 @@ function compileText(
         },
       ];
 
-  runs = applyTextCase(runs, named.style?.case);
   ctx.features.require('text', path);
+  // Feature gates read the authored runs: the case lowering below can split one
+  // authored run into several, which is a rendering device, not rich text.
   if (runs.length > 1) ctx.features.require('rich-text', path);
+  runs = applyTextCase(runs, named.style?.case);
   if (cascade.language) ctx.features.require('proofing-language', path);
   if (hyperlink) ctx.features.require('text-hyperlinks', path);
 
@@ -699,7 +701,14 @@ function namedStyle(
   };
 }
 
-/** PPTX backends lack a shared caps primitive. Lower case to explicit runs. */
+/**
+ * PPTX backends lack a shared caps primitive. Lower case to explicit runs.
+ *
+ * A small-caps run splits per lowercase span, so a run carrying its own
+ * hyperlink hands the same link to every piece — the fan-out the office-open
+ * backend already performs for an element-level link over rich runs. Splitting
+ * is what makes the 80% size possible; a link is at worst repeated, never lost.
+ */
 function applyTextCase(
   runs: PptxIrTextRun[],
   textCase: 'none' | 'upper' | 'smallCaps' | undefined
@@ -1130,11 +1139,12 @@ function compileShape(
           compileTextSegment(segment, cascade, ctx)
         )
       : [{ text: props.text as string, ...baseRunFormatting(cascade) }];
-    runs = applyTextCase(runs, named.style?.case);
     style = textBodyStyle(props, named, cascade);
     requireBulletFeatures(style.bullet, path, ctx);
     ctx.features.require('text', path);
+    // Gate on the authored runs, before the case lowering can split them.
     if (runs.length > 1) ctx.features.require('rich-text', path);
+    runs = applyTextCase(runs, named.style?.case);
   }
 
   const hyperlink = compileHyperlink(props.hyperlink, 'shape', ctx, path);

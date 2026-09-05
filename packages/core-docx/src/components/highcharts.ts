@@ -8,14 +8,13 @@
  */
 
 import { ThemeConfig } from '../styles';
-import { resolveColor } from '../styles/utils/colorUtils';
+import { chartPaletteValues, resolveColor } from '../styles/utils/colorUtils';
 import { isNodeEnvironment } from '../utils/environment';
 import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 // Import only the types we actually use from shared package
 import type { HighchartsProps } from '@json-to-office/shared-docx';
 import type { HighchartsServiceConfig } from '@json-to-office/shared';
-import { DEFAULT_CHART_THEME_COLORS } from '@json-to-office/shared';
 
 // Re-export HighchartsProps for backward compatibility
 export type { HighchartsProps } from '@json-to-office/shared-docx';
@@ -113,8 +112,9 @@ function toChartColor(value: string, theme: ThemeConfig): string | undefined {
  * series colors so charts follow the theme by default. accent4-6 are optional
  * in the theme schema; slots the theme leaves unset are skipped, in both
  * formats, so the palette never carries gaps or repeats and Highcharts wraps
- * the shorter list (see DEFAULT_CHART_THEME_COLORS). Explicit `colors` always
- * wins.
+ * the shorter list (see DEFAULT_CHART_THEME_COLORS). A theme declaring
+ * `palette.chart` supplies that list instead, in its own order. Explicit
+ * `colors` always wins.
  */
 function withThemeColors(
   config: HighchartsProps,
@@ -122,15 +122,10 @@ function withThemeColors(
 ): HighchartsProps {
   const options = config.options as Record<string, unknown> | undefined;
   if (!options || options.colors || !theme?.colors) return config;
-  const themeColors = theme.colors as Record<string, string | undefined>;
-  const palette = theme.palette?.chart
-    ? theme.palette.chart.map((value) => `#${resolveColor(value, theme)}`)
-    : DEFAULT_CHART_THEME_COLORS.map((token) => {
-        const value = themeColors[token];
-        return typeof value === 'string' && value.length > 0
-          ? toChartColor(value, theme)
-          : undefined;
-      }).filter((c): c is string => c !== undefined);
+  const palette = chartPaletteValues(theme).flatMap((value) => {
+    const color = toChartColor(value, theme);
+    return color ? [color] : [];
+  });
   if (palette.length === 0) return config;
   return {
     ...config,
