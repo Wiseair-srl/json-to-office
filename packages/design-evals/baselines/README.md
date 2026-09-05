@@ -38,3 +38,15 @@ the product was byte-identical across the two commits; and `converterNote`,
 because the LibreOffice and poppler versions were backfilled after the run —
 the probe read only env vars at the time, while every page count in the set
 came from a real render.
+
+## Comparing two of them
+
+Compare **paired**, by brief id. The totals hide what the pairs show: cold and
+assisted differ by 2.5 points on `judge.wouldShipRate`, and the pairs reveal
+that is 6 briefs lost and 7 gained rather than a small consistent gain — with
+only 2 of 40 shipping in both. A difference of proportions at n=40 has a
+standard error near 9 points, so a gap smaller than that is not a result.
+
+The assisted set carries `skillExcluded`: the skill ships a 4 MB template
+library and scripts the agent had no tools to use, so that run measures the
+ceiling of the skill's _guidance_, not of everything it ships.
