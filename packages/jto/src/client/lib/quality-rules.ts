@@ -148,7 +148,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'composition',
       defaultSeverity: 'warning',
       description:
-        'A block slot holding more words than the block allows it — a takeaway that is not one sentence.',
+        'A block slot holding more words than its budget allows — a takeaway past the word count the block sets.',
       parameters: [],
     },
     {

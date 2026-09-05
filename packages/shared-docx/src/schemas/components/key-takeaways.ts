@@ -24,7 +24,9 @@ export const KeyTakeawaysPropsSchema = Type.Object(
     items: Type.Array(
       Type.String({
         minLength: 1,
-        description: `One takeaway: a single claim in one sentence, at most ${KEY_TAKEAWAYS_BUDGET.items.maxWords} words.`,
+        // One line: a line break inside a list item would break the box.
+        pattern: '^[^\\r\\n]+$',
+        description: `One takeaway: a single claim in one sentence on one line, at most ${KEY_TAKEAWAYS_BUDGET.items.maxWords} words.`,
       }),
       {
         minItems: KEY_TAKEAWAYS_BUDGET.items.min,

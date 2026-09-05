@@ -997,7 +997,12 @@ function compileComponent(
     case 'table':
       return compileTable(component, scope);
     default:
-      if (isBlockName(component.name)) return compileBlock(component, scope);
+      if (isBlockName(component.name)) {
+        // Expansion leaves a disabled block unlowered; containers that forward
+        // their children unfiltered still hand it here, where it is nothing.
+        if ((component as { enabled?: boolean }).enabled === false) return [];
+        return compileBlock(component, scope);
+      }
       scope.ctx.unsupported.push({
         name: component.name,
         path: scope.path,

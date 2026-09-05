@@ -267,6 +267,43 @@ describe('the block in the pipeline', () => {
     });
   });
 
+  it('compiles a disabled block, even one a container forwards unfiltered, to nothing', async () => {
+    const document = {
+      ...report('consulting'),
+      children: [
+        {
+          name: 'section',
+          children: [
+            {
+              name: 'columns',
+              props: { columns: 2 },
+              children: [
+                { name: 'paragraph', props: { text: 'Left.' } },
+                {
+                  name: 'key-takeaways',
+                  enabled: false,
+                  props: { items: takeaways },
+                },
+              ],
+            },
+            {
+              name: 'key-takeaways',
+              enabled: false,
+              props: { items: takeaways },
+            },
+          ],
+        },
+      ],
+    };
+    const compiled = await compileDocumentToIr(document as never, {
+      validation: { enabled: false },
+    });
+    expect(compiled.unsupported).toEqual([]);
+    const xml = JSON.stringify(compiled.ir);
+    expect(xml).not.toContain('Key takeaways');
+    expect(xml).toContain('Left.');
+  });
+
   it('compiles to IR under the block path and renders through both pipelines', async () => {
     const compiled = await compileDocumentToIr(report('consulting') as never, {
       validation: { enabled: false },

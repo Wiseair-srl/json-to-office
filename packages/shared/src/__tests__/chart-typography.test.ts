@@ -107,6 +107,28 @@ describe('withChartTypography', () => {
     expect(authored.title).toEqual({ text: 'T', style: { fontSize: '30px' } });
   });
 
+  it('keeps an authored null or scalar exactly as written', () => {
+    const options = withChartTypography(
+      {
+        chart: { width: 100, height: 100 },
+        title: null,
+        legend: false,
+        xAxis: [null, { labels: false }],
+      },
+      typography,
+      1
+    );
+    expect(options.title).toBeNull();
+    expect(options.legend).toBe(false);
+    expect(options.xAxis).toEqual([
+      null,
+      {
+        labels: false,
+        title: { style: { fontSize: '9px', color: '#4B5563' } },
+      },
+    ]);
+  });
+
   it('omits weights the theme does not state', () => {
     const options = withChartTypography(
       { chart: { width: 100, height: 100 } },

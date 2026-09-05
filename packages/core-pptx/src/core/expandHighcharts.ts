@@ -31,6 +31,8 @@ import { isNodeEnvironment } from '../utils/environment';
 
 /** Screen pixels per inch, the unit the export server reports sizes in. */
 const PX_PER_INCH = 96;
+/** Highcharts' own default canvas width, for a config that states none. */
+const DEFAULT_CHART_WIDTH_PX = 960;
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 
 export interface HighchartsExpansionResult {
@@ -222,7 +224,7 @@ async function renderChart(
 
   return {
     dataUri: `data:image/png;base64,${await response.text()}`,
-    widthPx: config.options.chart?.width ?? 960,
+    widthPx: config.options.chart?.width ?? DEFAULT_CHART_WIDTH_PX,
     heightPx: config.options.chart?.height ?? 720,
   };
 }
@@ -269,7 +271,10 @@ function placedWidthPt(
     return (parseFloat(w) / 100) * slideWidth * 72;
   }
   if (w === undefined && props.grid === undefined) {
-    return ((props.options.chart?.width ?? 960) / PX_PER_INCH) * 72;
+    return (
+      ((props.options.chart?.width ?? DEFAULT_CHART_WIDTH_PX) / PX_PER_INCH) *
+      72
+    );
   }
   return undefined;
 }
@@ -331,7 +336,7 @@ function withThemeTypography(
       props.options,
       themeChartTypography(theme, warnings),
       chartPointsPerPixel(
-        props.options.chart?.width ?? 0,
+        props.options.chart?.width ?? DEFAULT_CHART_WIDTH_PX,
         placedWidthPt(props, slideWidth)
       )
     ) as PptxHighchartsProps['options'],

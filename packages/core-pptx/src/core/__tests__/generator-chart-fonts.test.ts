@@ -9,6 +9,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { generateBufferFromJson } from '../generator';
+import { containsHighcharts } from '../generateFromIr';
+import type { ProcessedPresentation } from '../../types';
 import { createPresentationGenerator } from '../../plugin/createPresentationGenerator';
 import type { PresentationComponentDefinition } from '../../types';
 
@@ -79,6 +81,19 @@ beforeEach(() => {
   mockFetch.mockResolvedValue({
     ok: true,
     text: vi.fn().mockResolvedValue(PNG_B64),
+  });
+});
+
+describe('containsHighcharts', () => {
+  const deckWith = (components: unknown[]): ProcessedPresentation =>
+    ({ slides: [{ components }] }) as unknown as ProcessedPresentation;
+
+  it('counts an enabled chart and ignores a disabled one', () => {
+    expect(containsHighcharts(deckWith([chart]))).toBe(true);
+    expect(containsHighcharts(deckWith([{ ...chart, enabled: false }]))).toBe(
+      false
+    );
+    expect(containsHighcharts(deckWith([]))).toBe(false);
   });
 });
 

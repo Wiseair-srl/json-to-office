@@ -46,10 +46,14 @@ describe('key-takeaways schema', () => {
     );
   });
 
-  it('reports an empty item at that item, and rejects unknown props', () => {
+  it('reports an empty or multi-line item at that item, and rejects unknown props', () => {
     expect(paths(doc(['a', '', 'c']))).toContain(
       '/children/0/children/0/props/items/1'
     );
+    expect(paths(doc(['a', 'one\nline\rtwo', 'c']))).toContain(
+      '/children/0/children/0/props/items/1'
+    );
+    expect(validateStrict.document(doc(['a', 'b c', 'd'])).valid).toBe(true);
     expect(
       validateStrict.document(doc(['a', 'b', 'c'], { fill: '#FFFFFF' })).valid
     ).toBe(false);
