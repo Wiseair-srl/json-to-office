@@ -95,14 +95,13 @@ instrument whose zero moves by more than the effect.
 The fix is cheap and does not need re-authoring: judge both sets in one pass,
 from the sheets already on disk, so a comparison at least shares its zero.
 Pairwise judging (`judgePair`, written but not yet wired into the scorecard) is
-the version that survives drift entirely, and it is what #321 exists to
-calibrate.
+a relative comparison that still needs human calibration in #360.
 
 ## Comparing two sets pairwise
 
 `pnpm pairwise <a-dir> <b-dir>` shows the judge both answers to one brief and
-asks which is better. It has no zero to drift, so it is the only comparison in
-this directory that survives the judge's between-session shift.
+asks which is better. Comparing within a call reduces reliance on absolute
+shipping thresholds, but does not establish immunity to judge drift or bias.
 
 Every pair is judged twice, once in each order, and only a brief whose verdict
 survives the swap is counted. That is not caution. The first attempt showed each
@@ -114,10 +113,12 @@ orientation that disfavoured it, that set won 7 of 15. The run is kept as
 
 Two-order result, cold against assisted
 (`2026-09-05-pairwise-cold-vs-assisted.json`): **assisted 6, cold 0**, thirty
-pairs where the orders disagreed, four not compared. p = 0.031, and eleven of the
+pairs where the orders disagreed, four not compared. The sign test on the six
+order-consistent pairs gives p = 0.031, and eleven of the
 twelve showings behind those six called the margin "clear".
 
-Read the thirty as resolution, not as ties: they are pairs whose difference is
-smaller than the judge's pull towards the second document, measured at 64% on
-this run. The instrument decides roughly one brief in six. A phase whose effect
-is smaller than the skill's will not be visible to it, which is what #321 is for.
+The thirty disagreements remain unresolved; they are not ties and do not
+establish the size of the underlying quality differences. The second-shown
+win rate was 64%. Only six pairs supplied a stable direction, so this result
+does not establish whole-corpus sendability or sensitivity to smaller future
+improvements. Human calibration and further measurement remain in #360.
