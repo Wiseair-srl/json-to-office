@@ -45,7 +45,9 @@ describe('JsonValidator custom schemas', () => {
     });
 
     expect(result).toMatchObject({ valid: true, type: 'custom' });
-  });
+    // Compiling a schema this size on a worker thread costs seconds, not
+    // milliseconds; the budget matches its siblings below.
+  }, 60_000);
 
   it('compiles the deepest branch a document can actually reach', async () => {
     // Ajv compiles lazily, so an empty document proves nothing about the parts
