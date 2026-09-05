@@ -17,6 +17,7 @@ import { extractStandardComponentNames } from '@json-to-office/shared';
 import {
   comprehensiveValidateDocument,
   collectImageSourceConflicts,
+  collectChromeBlockPlacement,
   collectIndentConflicts,
   collectNoteRevisionConflicts,
   collectTextBoxShapeConflicts,
@@ -52,6 +53,12 @@ const SEMANTIC_COLLECTORS: readonly {
     // optional field.
     why: 'image source mutual-exclusivity',
     collect: collectImageSourceConflicts,
+  },
+  {
+    // Header and column contents are structurally any component, so the
+    // schema cannot say where page chrome may sit.
+    why: 'a running-head outside a top-level section',
+    collect: collectChromeBlockPlacement,
   },
   {
     why: 'indent hanging/firstLine mutual-exclusivity',

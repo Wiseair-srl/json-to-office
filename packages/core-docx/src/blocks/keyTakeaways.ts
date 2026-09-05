@@ -16,11 +16,8 @@
 import type { KeyTakeawaysProps } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
 import type { ComponentDefinition } from '../types';
+import { clampRule, hasStyle } from './recipe';
 import type { BlockCompilation } from './types';
-
-/** What a block's rule may weigh: the `divider` component's whole range. */
-const MIN_RULE_PT = 0.25;
-const MAX_RULE_PT = 12;
 
 export const KEY_TAKEAWAYS_DEFAULT_LABEL = 'Key takeaways';
 
@@ -38,15 +35,9 @@ export function compileKeyTakeaways(
 ): BlockCompilation {
   const recipe = theme.chrome?.keyTakeaways;
   const labelRole = recipe?.type ?? FALLBACK_RECIPE.type;
-  const labelStyle = (theme.styles as Record<string, unknown> | undefined)?.[
-    labelRole
-  ];
-  const ruleWeightPt = Math.min(
-    MAX_RULE_PT,
-    Math.max(
-      MIN_RULE_PT,
-      recipe?.rule?.weightPt ?? FALLBACK_RECIPE.ruleWeightPt
-    )
+  const labelStyle = hasStyle(theme, labelRole);
+  const ruleWeightPt = clampRule(
+    recipe?.rule?.weightPt ?? FALLBACK_RECIPE.ruleWeightPt
   );
   const ruleColor =
     recipe?.rule?.color ?? recipe?.color ?? FALLBACK_RECIPE.ruleColor;

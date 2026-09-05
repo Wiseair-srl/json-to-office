@@ -11,15 +11,8 @@
 import type { SectionOpenerProps } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
 import type { ComponentDefinition } from '../types';
-import { roleProps } from './recipe';
+import { FALLBACK_EYEBROW_FONT, roleProps } from './recipe';
 import type { BlockCompilation } from './types';
-
-const FALLBACK_EYEBROW_FONT = {
-  size: 9,
-  bold: true,
-  color: 'accent',
-  case: 'upper',
-} as const;
 
 export function compileSectionOpener(
   props: SectionOpenerProps,
@@ -79,14 +72,13 @@ export function sectionTracker(section: {
       continue;
     }
     const props = (child as { props?: Partial<SectionOpenerProps> }).props;
-    if (!props) return undefined;
+    if (!props) continue;
     if (typeof props.tracker === 'string' && props.tracker !== '') {
       return { text: props.tracker, slot: `/children/${index}/props/tracker` };
     }
     if (typeof props.title === 'string' && props.title !== '') {
       return { text: props.title, slot: `/children/${index}/props/title` };
     }
-    return undefined;
   }
   return undefined;
 }

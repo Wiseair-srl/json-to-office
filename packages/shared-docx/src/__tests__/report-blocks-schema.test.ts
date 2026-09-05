@@ -168,4 +168,34 @@ describe('running-head schema', () => {
       ).valid
     ).toBe(false);
   });
+
+  it('is refused anywhere but directly under a top-level section', () => {
+    const inHeader = {
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'section',
+          props: { header: [{ name: 'running-head' }] },
+          children: [{ name: 'paragraph', props: { text: 'Body' } }],
+        },
+      ],
+    };
+    const errors = validateStrict.document(inHeader).errors;
+    expect(errors.map((error) => [error.path, error.code])).toEqual([
+      ['/children/0/props/header/0', 'invalid_placement'],
+    ]);
+    expect(
+      paths(
+        inSection({
+          name: 'columns',
+          props: { columns: 2 },
+          children: [{ name: 'running-head' }],
+        })
+      )
+    ).toContain('/children/0/children/0/children/0');
+    expect(
+      validateStrict.document(inSection({ name: 'running-head' })).valid
+    ).toBe(true);
+  });
 });

@@ -9,8 +9,8 @@
  * that can be inspected, validated and rendered as it is. The IR compiler
  * treats an expanded block as a transparent container.
  *
- * One block lowers to page chrome instead of flow: `running-head` fills the
- * `header` and `footer` of its section and of every later section that
+ * A chrome block lowers to page chrome instead of flow: `running-head` fills
+ * the `header` and `footer` of its section and of every later section that
  * authors none, and lowers to an empty `children` where it stands. That is
  * still additive — a section gains a `props.header` it did not have; nothing
  * moves — and the source map covers the generated chrome too.
@@ -32,10 +32,10 @@ import type {
   SectionOpenerProps,
 } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
-import type { ComponentDefinition } from '../types';
 import { compileCover } from './cover';
 import { compileKeyTakeaways } from './keyTakeaways';
 import { compileRunningHead } from './runningHead';
+import type { SectionPage } from './runningHead';
 import { compileSectionOpener, sectionTracker } from './sectionOpener';
 import type { BlockCompilation } from './types';
 
@@ -49,9 +49,6 @@ export const BLOCK_NAMES = [
 ] as const;
 export type BlockName = (typeof BLOCK_NAMES)[number];
 
-/** Blocks that lower to page chrome rather than to flow content. */
-export const CHROME_BLOCK_NAMES = ['running-head'] as const;
-
 /** A text slot's word budget, for the quality rules to check against. */
 export interface BlockSlotBudget {
   block: BlockName;
@@ -62,13 +59,18 @@ export interface BlockSlotBudget {
   maxWords: number;
 }
 
-/** What one block kind knows how to do. Adding a block is one entry here. */
-interface BlockDefinition {
-  /** Lower the block to flow primitives. Absent for a chrome block. */
-  compile?(props: Rec, theme: ThemeConfig): BlockCompilation;
+/**
+ * What one block kind knows how to do. Adding a block is one entry here: a
+ * flow block lowers to primitives in place; a chrome block lowers to a
+ * section's header and footer through {@link planChrome}.
+ */
+type BlockDefinition = {
   /** Word budgets of the block's text slots, read off the authored props. */
   budgets(props: Rec, pointer: string): BlockSlotBudget[];
-}
+} & (
+  | { kind: 'flow'; compile(props: Rec, theme: ThemeConfig): BlockCompilation }
+  | { kind: 'chrome' }
+);
 
 /** One string slot counted against its budget; nothing for an absent one. */
 function slotBudget(
@@ -92,8 +94,20 @@ function slotBudget(
     : [];
 }
 
+/** Every string slot a budget table names, counted against it. */
+function budgetsOf(
+  block: BlockName,
+  budget: Readonly<Record<string, { readonly maxWords: number }>>
+): BlockDefinition['budgets'] {
+  return (props, pointer) =>
+    Object.entries(budget).flatMap(([slot, { maxWords }]) =>
+      slotBudget(block, props, pointer, slot, maxWords)
+    );
+}
+
 const BLOCKS: Record<BlockName, BlockDefinition> = {
   'key-takeaways': {
+    kind: 'flow',
     compile: (props, theme) =>
       compileKeyTakeaways(props as KeyTakeawaysProps, theme),
     budgets: (props, pointer) =>
@@ -112,44 +126,19 @@ const BLOCKS: Record<BlockName, BlockDefinition> = {
       ),
   },
   cover: {
+    kind: 'flow',
     compile: (props, theme) => compileCover(props as CoverProps, theme),
-    budgets: (props, pointer) =>
-      (Object.keys(COVER_BUDGET) as (keyof typeof COVER_BUDGET)[]).flatMap(
-        (slot) =>
-          slotBudget('cover', props, pointer, slot, COVER_BUDGET[slot].maxWords)
-      ),
+    budgets: budgetsOf('cover', COVER_BUDGET),
   },
   'section-opener': {
+    kind: 'flow',
     compile: (props, theme) =>
       compileSectionOpener(props as SectionOpenerProps, theme),
-    budgets: (props, pointer) =>
-      (
-        Object.keys(
-          SECTION_OPENER_BUDGET
-        ) as (keyof typeof SECTION_OPENER_BUDGET)[]
-      ).flatMap((slot) =>
-        slotBudget(
-          'section-opener',
-          props,
-          pointer,
-          slot,
-          SECTION_OPENER_BUDGET[slot].maxWords
-        )
-      ),
+    budgets: budgetsOf('section-opener', SECTION_OPENER_BUDGET),
   },
   'running-head': {
-    budgets: (props, pointer) =>
-      (
-        Object.keys(RUNNING_HEAD_BUDGET) as (keyof typeof RUNNING_HEAD_BUDGET)[]
-      ).flatMap((slot) =>
-        slotBudget(
-          'running-head',
-          props,
-          pointer,
-          slot,
-          RUNNING_HEAD_BUDGET[slot].maxWords
-        )
-      ),
+    kind: 'chrome',
+    budgets: budgetsOf('running-head', RUNNING_HEAD_BUDGET),
   },
 };
 
@@ -160,15 +149,24 @@ export {
 } from './keyTakeaways';
 export { compileCover } from './cover';
 export { compileSectionOpener, sectionTracker } from './sectionOpener';
-export { compileRunningHead, PAGE_OF_TOTAL } from './runningHead';
-export type { RunningHeadCompilation, RunningHeadContext } from './runningHead';
+export {
+  compileRunningHead,
+  sectionMeasureTwips,
+  PAGE_OF_TOTAL,
+} from './runningHead';
+export type {
+  RunningHeadCompilation,
+  RunningHeadScope,
+  SectionPage,
+} from './runningHead';
 
 export function isBlockName(name: unknown): name is BlockName {
   return (BLOCK_NAMES as readonly unknown[]).includes(name);
 }
 
+/** Whether `name` is a block that lowers to page chrome rather than flow. */
 export function isChromeBlockName(name: unknown): boolean {
-  return (CHROME_BLOCK_NAMES as readonly unknown[]).includes(name);
+  return isBlockName(name) && BLOCKS[name].kind === 'chrome';
 }
 
 /** Emitted JSON Pointer (RFC 6901, absolute) → authored pointer. */
@@ -190,13 +188,11 @@ const SECTION_CHILD = /^\/children\/\d+\/children\/\d+$/;
 /** A pointer to a top-level section. */
 const SECTION = /^\/children\/(\d+)$/;
 
-/** The chrome one section receives from the running head in force. */
-interface ChromePlan {
-  header: ComponentDefinition[];
-  footer: ComponentDefinition[];
-  /** Pointer under the section's `props` → absolute authored pointer. */
-  sourceMap: Readonly<Record<string, string>>;
-}
+/**
+ * The chrome one section receives from the running head in force: each part
+ * as a compilation relative to the array it becomes.
+ */
+type ChromePlan = Record<'header' | 'footer', BlockCompilation>;
 
 /**
  * Which section gets which chrome. A `running-head` takes effect from its own
@@ -225,7 +221,7 @@ function planChrome(
       ? metadata.title
       : undefined;
 
-  let inForce: { pointer: string; props: RunningHeadProps } | undefined;
+  let inForce: { block: string; props: RunningHeadProps } | undefined;
   document.children.forEach((section, index) => {
     if (
       !isRecord(section) ||
@@ -239,54 +235,35 @@ function planChrome(
     children.forEach((child, childIndex) => {
       if (
         isRecord(child) &&
-        child.name === 'running-head' &&
+        isChromeBlockName(child.name) &&
         child.enabled !== false
       ) {
         inForce = {
-          pointer: `${sectionPointer}/children/${childIndex}`,
+          block: `${sectionPointer}/children/${childIndex}`,
           props: (isRecord(child.props) ? child.props : {}) as RunningHeadProps,
         };
       }
     });
     if (!inForce) return;
 
-    const block = inForce.pointer;
     const opener = sectionTracker(section);
-    const { title, tracker, confidentiality, date } = inForce.props;
-    const compiled = compileRunningHead(
-      inForce.props,
-      theme,
-      {
-        title: title ?? documentTitle,
-        tracker: opener?.text ?? tracker,
-      },
-      {
-        self: block,
-        ...(title !== undefined && { title: `${block}/props/title` }),
-        ...(opener
-          ? { tracker: `${sectionPointer}${opener.slot}` }
-          : tracker !== undefined && { tracker: `${block}/props/tracker` }),
-        ...(confidentiality !== undefined && {
-          confidentiality: `${block}/props/confidentiality`,
+    const sectionProps = isRecord(section.props) ? section.props : {};
+    plans.set(
+      index,
+      compileRunningHead(inForce.props, theme, {
+        block: inForce.block,
+        documentTitle,
+        ...(opener && {
+          opener: {
+            text: opener.text,
+            slot: `${sectionPointer}${opener.slot}`,
+          },
         }),
-        ...(date !== undefined && { date: `${block}/props/date` }),
-      }
+        ...(isRecord(sectionProps.page) && {
+          page: sectionProps.page as SectionPage,
+        }),
+      })
     );
-    const sourceMap: Record<string, string> = {
-      '/header': block,
-      '/footer': block,
-    };
-    for (const [emitted, authored] of Object.entries(compiled.headerMap)) {
-      sourceMap[`/header${emitted}`] = authored;
-    }
-    for (const [emitted, authored] of Object.entries(compiled.footerMap)) {
-      sourceMap[`/footer${emitted}`] = authored;
-    }
-    plans.set(index, {
-      header: compiled.header,
-      footer: compiled.footer,
-      sourceMap,
-    });
   });
   return plans;
 }
@@ -311,14 +288,19 @@ export function expandBlocks<T>(
     }
     if (!isRecord(node)) return node;
 
-    if (typeof node.name === 'string' && node.enabled !== false) {
-      if (isChromeBlockName(node.name)) {
+    if (
+      typeof node.name === 'string' &&
+      node.enabled !== false &&
+      isBlockName(node.name)
+    ) {
+      const definition = BLOCKS[node.name];
+      if (definition.kind === 'chrome') {
         if (!SECTION_CHILD.test(pointer)) return node;
         blocks.push(pointer);
         return { ...node, children: [] };
       }
-      if (isBlockName(node.name) && isRecord(node.props)) {
-        const compiled = BLOCKS[node.name].compile!(node.props, theme);
+      if (isRecord(node.props)) {
+        const compiled = definition.compile(node.props, theme);
         blocks.push(pointer);
         for (const [emitted, authored] of Object.entries(compiled.sourceMap)) {
           sourceMap[`${pointer}${emitted}`] = `${pointer}${authored}`;
@@ -384,13 +366,14 @@ export function expandBlocks<T>(
         const props: Rec = isRecord(next.props) ? { ...next.props } : {};
         let changed = false;
         for (const part of ['header', 'footer'] as const) {
-          if (props[part] !== undefined || plan[part].length === 0) continue;
-          props[part] = plan[part];
+          const { children, sourceMap: partMap } = plan[part];
+          if (props[part] !== undefined || children.length === 0) continue;
+          props[part] = children;
           changed = true;
-          for (const [emitted, authored] of Object.entries(plan.sourceMap)) {
-            if (emitted === `/${part}` || emitted.startsWith(`/${part}/`)) {
-              sourceMap[`${pointer}/props${emitted}`] = authored;
-            }
+          const base = `${pointer}/props/${part}`;
+          sourceMap[base] = partMap['/0'] ?? pointer;
+          for (const [emitted, authored] of Object.entries(partMap)) {
+            sourceMap[`${base}${emitted}`] = authored;
           }
         }
         if (props.pageBreak === undefined) {

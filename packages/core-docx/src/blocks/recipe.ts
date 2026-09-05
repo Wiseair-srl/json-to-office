@@ -18,6 +18,14 @@ export function clampRule(weightPt: number): number {
   return Math.min(MAX_RULE_PT, Math.max(MIN_RULE_PT, weightPt));
 }
 
+/** The eyebrow a theme without the role gets: small, bold, accent, caps. */
+export const FALLBACK_EYEBROW_FONT = {
+  size: 9,
+  bold: true,
+  color: 'accent',
+  case: 'upper',
+} as const;
+
 /** Whether the resolved theme carries a named style for `role`. */
 export function hasStyle(theme: ThemeConfig, role: string): boolean {
   const styles = theme.styles as Record<string, unknown> | undefined;
