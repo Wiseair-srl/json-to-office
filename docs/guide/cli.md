@@ -43,7 +43,7 @@ The input is a JSON file following the document schema — see [Writing DOCX doc
 
 ### Applying a theme
 
-A document picks its own theme with `props.theme` on the root component (`"minimal"`, `"devportal"`, `"vermilion"`). To override that from the command line, name a built-in with `--theme` or point at a theme file with `--theme-path`:
+A document picks its own theme with `props.theme` on the root component (`"minimal"`, `"devportal"`, `"vermilion"`, `"consulting"`). To override that from the command line, name a built-in with `--theme` or point at a theme file with `--theme-path`:
 
 ```bash
 jto docx generate report.json --theme modern

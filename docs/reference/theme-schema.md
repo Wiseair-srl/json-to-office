@@ -79,7 +79,7 @@ A DOCX theme is a JSON object (conventionally a `*.docx.theme.json` file). Unkno
 
 `primary`, `secondary`, `accent`, `text`, `background`, `border`, `textPrimary`, `textSecondary`, `textMuted`, `borderPrimary`, `borderSecondary`, `backgroundPrimary`, `backgroundSecondary`
 
-**3 optional keys** — `accent4`, `accent5`, `accent6` — named to match the PPTX palette so both formats share one chart-series vocabulary. They exist for the chart palette, though a theme that defines one makes it referenceable from any component color prop like any other token. None of the built-in DOCX themes define them; see [Charts](/guide/charts#theme-palette) for what a theme that omits them produces.
+**3 optional keys** — `accent4`, `accent5`, `accent6` — named to match the PPTX palette so both formats share one chart-series vocabulary. They exist for the chart palette, though a theme that defines one makes it referenceable from any component color prop like any other token. `minimal` and `consulting` define them; `devportal` and `vermilion` do not — see [Charts](/guide/charts#theme-palette) for what a theme that omits them produces.
 
 No other key is accepted (`additionalProperties: false`).
 

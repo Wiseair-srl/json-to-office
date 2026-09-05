@@ -520,6 +520,8 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     '810a56e34b9ed976efd9fea0411cfab2e52c15e36d1ade0d994b22bf3d3c88e2',
   'theme/builtin-vermilion':
     'e10d398f08a72427ec6b134b920283b9a916b10c751c516335abcb7dbba1e24e',
+  'theme/builtin-consulting':
+    '8e725935330be51a6f65c202623d65b7d2f4fd82d8b4cd8c33ebe0f77bfb2c17',
   'theme/name-omitted':
     '8889407da89c9181d07b4e7b4cb3093ccf56c28ddddd97f8056972423b9748c8',
   'theme/name-unknown-falls-back':

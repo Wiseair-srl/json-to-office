@@ -2,16 +2,16 @@
  * DOCX parity corpus — theme.
  *
  * Everything that decides how a document *looks* before a single component
- * prop is read: the three bundled themes, the in-document theme object
+ * prop is read: the four bundled themes, the in-document theme object
  * (`themeOverrides`), the colour-token vocabulary components resolve against,
  * document-level `componentDefaults`, the font surface (roles, families, the
  * registry, numeric weights) and the proofing surface (`language`, `noProof`,
  * `noProofWords`).
  *
- * The three `theme/builtin-*` cases share one body (`SAMPLER`) on purpose: the
+ * The four `theme/builtin-*` cases share one body (`SAMPLER`) on purpose: the
  * only difference between their hashes is the theme name, so a hash that moves
  * for exactly one of them names a single theme file, and one that moves for all
- * three names the theme→docx adapter.
+ * four names the theme→docx adapter.
  *
  * A deliberately absent corner:
  *
@@ -248,6 +248,13 @@ export const CASES: CorpusCase[] = [
   {
     name: 'theme/builtin-vermilion',
     document: page(SAMPLER, { theme: 'vermilion' }),
+  },
+  {
+    // The house theme carries every shared visual layer, so this hash also
+    // pins how the role ladder, palette and spacing project onto a document
+    // that names none of them.
+    name: 'theme/builtin-consulting',
+    document: page(SAMPLER, { theme: 'consulting' }),
   },
 
   // --------------------------------------------------------------------------

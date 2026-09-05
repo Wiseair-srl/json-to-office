@@ -20,6 +20,7 @@ import { ensureThemeDefaults } from '../../themes/defaults';
 import minimalThemeJson from './minimal.docx.theme.json';
 import devportalThemeJson from './devportal.docx.theme.json';
 import vermilionThemeJson from './vermilion.docx.theme.json';
+import consultingThemeJson from './consulting.docx.theme.json';
 
 /**
  * Registry of available themes loaded from JSON files
@@ -36,6 +37,7 @@ function loadThemesFromJson(): Record<string, ThemeConfigJson> {
     minimal: ensureThemeDefaults(minimalThemeJson as ThemeConfigJson),
     devportal: ensureThemeDefaults(devportalThemeJson as ThemeConfigJson),
     vermilion: ensureThemeDefaults(vermilionThemeJson as ThemeConfigJson),
+    consulting: ensureThemeDefaults(consultingThemeJson as ThemeConfigJson),
   };
 
   // Also try to load from file system for runtime additions (if available)
@@ -157,3 +159,4 @@ export const getThemeNames = (): string[] => {
 export const minimalTheme = themes['minimal'];
 export const devportalTheme = themes['devportal'];
 export const vermilionTheme = themes['vermilion'];
+export const consultingTheme = themes['consulting'];

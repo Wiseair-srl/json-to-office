@@ -111,6 +111,7 @@ export {
   minimalTheme,
   devportalTheme,
   vermilionTheme,
+  consultingTheme,
 } from './styles/index';
 export type { ThemeName } from './styles/index';
 
