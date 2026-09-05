@@ -216,7 +216,7 @@ Both formats run the same check over every authored string, and answer with
 two different codes because the two states have different consequences.
 
 `W_QUALITY_SCAFFOLD_MARKER` is a deliberate draft state: a slot still holding
-the `{{…}}` marker a scaffold wrote into it. `jto_validate` reports the markers
+the <code v-pre>{{…}}</code> marker a scaffold wrote into it. `jto_validate` reports the markers
 and still answers `ok: true` — a draft is a legitimate thing to hold — but
 `jto_generate` refuses the document with an `E_SCAFFOLD_MARKER` error per
 remaining slot, because a generated file is what someone sends on.

@@ -15,6 +15,7 @@
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export type BriefFormat = 'docx' | 'pptx';
 
@@ -162,10 +163,17 @@ export function stratify(briefs: readonly Brief[]): Stratification {
   };
 }
 
-/** The directory the committed development briefs live in. */
+/**
+ * The directory the committed development briefs live in.
+ *
+ * `fileURLToPath`, not `new URL(...).pathname`: on Windows the latter yields
+ * `/D:/a/...`, which `path.resolve` reads as a path from the current drive's
+ * root and turns into `D:\D:\a\...`. Every other resolver in this package
+ * already uses it.
+ */
 export function developmentCorpusDir(): string {
   return path.resolve(
-    path.dirname(new URL(import.meta.url).pathname),
+    path.dirname(fileURLToPath(import.meta.url)),
     '../briefs'
   );
 }
