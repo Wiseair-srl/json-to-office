@@ -14,7 +14,8 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
-    "rejudge": "tsx src/rejudge-cli.ts"
+    "rejudge": "tsx src/rejudge-cli.ts",
+    "pairwise": "tsx src/pairwise-cli.ts"
   },
   "dependencies": {
     "@json-to-office/jto-ops": "workspace:^",
