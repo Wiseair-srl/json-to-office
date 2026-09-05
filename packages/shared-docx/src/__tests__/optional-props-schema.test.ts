@@ -58,6 +58,7 @@ const PROPS_REQUIRED = [
   'columns',
   'highcharts',
   'visual',
+  'key-takeaways',
 ] as const;
 
 describe('props optionality', () => {

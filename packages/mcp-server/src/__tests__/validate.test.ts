@@ -830,3 +830,89 @@ describe('jto_validate', () => {
     expect(result.diagnostics[0].code).toBe('E_WORKSPACES_UNAVAILABLE');
   });
 });
+
+describe('includeCompiled', () => {
+  const withBlock = {
+    name: 'docx',
+    props: { theme: 'consulting' },
+    children: [
+      {
+        name: 'section',
+        children: [
+          {
+            name: 'key-takeaways',
+            props: {
+              items: [
+                'First conclusion.',
+                'Second conclusion.',
+                'Third conclusion.',
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  it('returns the block lowered in place, with its source map', async () => {
+    const { result } = await validate({
+      format: 'docx',
+      document: withBlock,
+      includeCompiled: true,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.compiled.blocks).toEqual(['/children/0/children/0']);
+    expect(result.compiled.sourceMap).toMatchObject({
+      '/children/0/children/0/children/2/props/items':
+        '/children/0/children/0/props/items',
+    });
+    const block = result.compiled.document.children[0].children[0];
+    expect(block.name).toBe('key-takeaways');
+    expect(block.children.map((child: { name: string }) => child.name)).toEqual(
+      ['divider', 'paragraph', 'list', 'divider']
+    );
+  });
+
+  it('is absent unless asked for, and identity for a document without blocks', async () => {
+    const { result } = await validate({ format: 'docx', document: withBlock });
+    expect(result).not.toHaveProperty('compiled');
+    const plain = await validate({
+      format: 'docx',
+      document: VALID_DOCX,
+      includeCompiled: true,
+    });
+    expect(plain.result.compiled).toEqual({
+      document: VALID_DOCX,
+      sourceMap: {},
+      blocks: [],
+    });
+  });
+
+  it('reports an over-budget takeaway at the authored slot', async () => {
+    const long = Array.from({ length: 30 }, (_, i) => `word${i}`).join(' ');
+    const { result } = await validate({
+      format: 'docx',
+      document: {
+        ...withBlock,
+        children: [
+          {
+            name: 'section',
+            children: [
+              {
+                name: 'key-takeaways',
+                props: { items: ['One.', long, 'Three.'] },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const budget = result.diagnostics.find(
+      (entry: { code: string }) => entry.code === 'W_QUALITY_SLOT_BUDGET'
+    );
+    expect(budget).toMatchObject({
+      path: '/children/0/children/0/props/items/1',
+      severity: 'warning',
+    });
+  });
+});

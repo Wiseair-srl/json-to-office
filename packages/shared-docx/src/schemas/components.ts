@@ -29,6 +29,7 @@ export * from './components/highcharts';
 export * from './components/chart';
 export * from './components/visual';
 export * from './components/statistic';
+export * from './components/key-takeaways';
 export * from './components/table';
 export * from './components/list';
 export * from './components/toc';

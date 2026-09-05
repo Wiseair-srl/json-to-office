@@ -104,6 +104,14 @@ interface ValidateArgs extends DocumentSourceInput {
   renderer?: string;
   maxDiagnostics?: number;
   quality?: { profile?: QualityProfile; policy?: QualityPolicy };
+  includeCompiled?: boolean;
+}
+
+/** What `PreparedDocument.metadata.blocks` carries when a format expands blocks. */
+interface CompiledBlocks {
+  document: unknown;
+  sourceMap: Record<string, string>;
+  blocks: readonly string[];
 }
 
 export function register(server: McpServer, deps: ToolDeps): void {
@@ -112,7 +120,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Validate a document',
       description:
-        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary. `ok` mirrors generation: schema and semantic errors block; design-quality `W_QUALITY_*` findings advise by default and block only when `quality.policy.gate` requests it. A broken document is a normal result with `ok: false`, never a protocol error.',
+        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary. `ok` mirrors generation: schema and semantic errors block; design-quality `W_QUALITY_*` findings advise by default and block only when `quality.policy.gate` requests it. A broken document is a normal result with `ok: false`, never a protocol error. `includeCompiled` returns the compiled form — every block (`key-takeaways`, …) lowered in place to the primitives the renderer draws — with a source map from compiled pointers back to the authored slots.',
       annotations: { readOnlyHint: true, openWorldHint: false },
       inputSchema: S<ValidateArgs>({
         type: 'object',
@@ -129,6 +137,11 @@ export function register(server: McpServer, deps: ToolDeps): void {
             minimum: 1,
             maximum: 1000,
             description: `Cap on returned diagnostics (default ${DEFAULT_MAX_DIAGNOSTICS}). Errors are kept ahead of warnings when the cap bites.`,
+          },
+          includeCompiled: {
+            type: 'boolean',
+            description:
+              'Also return `compiled`: the document with every block lowered in place, the authored pointers of those blocks, and a source map from each compiled pointer to the slot it came from. Diagnostics already point at authored slots; this is for inspecting what a block became.',
           },
           quality: {
             type: 'object',
@@ -191,6 +204,31 @@ export function register(server: McpServer, deps: ToolDeps): void {
             type: 'string',
             description:
               'The quality profile the design analysis ran under, when one applied.',
+          },
+          compiled: {
+            type: 'object',
+            description:
+              'Present with `includeCompiled`: the compiled form and its source map.',
+            properties: {
+              document: {
+                description:
+                  'The document with every block lowered in place; identical to the input when it holds no block.',
+              },
+              blocks: {
+                type: 'array',
+                items: { type: 'string' },
+                description:
+                  'Authored pointers of the blocks that were lowered.',
+              },
+              sourceMap: {
+                type: 'object',
+                additionalProperties: { type: 'string' },
+                description:
+                  'Compiled pointer → authored pointer. A compiled node maps to its block; a compiled slot region (`…/children/2/props/items`) maps to the authored slot, and anything beneath it carries across.',
+              },
+            },
+            required: ['document', 'blocks', 'sourceMap'],
+            additionalProperties: false,
           },
         })
       ),
@@ -255,6 +293,27 @@ export function register(server: McpServer, deps: ToolDeps): void {
               : []),
           ];
           const counts = countDiagnostics(all);
+          // The compiled form is read off the same preparation the analysis
+          // ran on; a document too broken to prepare simply has none.
+          let compiled: CompiledBlocks | undefined;
+          if (args.includeCompiled && adapter.prepareDocument) {
+            try {
+              const prepared = await adapter.prepareDocument(
+                withRenderer(resolved.document, args.renderer),
+                { renderer: args.renderer }
+              );
+              const blocks = prepared.metadata?.blocks as
+                | CompiledBlocks
+                | undefined;
+              compiled = blocks ?? {
+                document: resolved.document,
+                sourceMap: {},
+                blocks: [],
+              };
+            } catch {
+              compiled = undefined;
+            }
+          }
           // The gate, not the severity tally. A policy may raise a quality
           // finding to `error` without asking for it to block, and generation
           // would still succeed — so the quality half of the verdict is the
@@ -281,6 +340,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
             ...(analysis?.profileId !== undefined && {
               profileId: analysis.profileId,
             }),
+            ...(compiled && { compiled }),
           };
         })
       )

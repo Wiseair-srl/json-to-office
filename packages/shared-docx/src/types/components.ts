@@ -18,6 +18,7 @@ import type {
   ChartPropsSchema,
   VisualPropsSchema,
   StatisticPropsSchema,
+  KeyTakeawaysPropsSchema,
   TablePropsSchema,
   ListPropsSchema,
   TocPropsSchema,
@@ -119,6 +120,22 @@ export interface StatisticComponent {
   /** When false, this component is filtered out and not rendered. Defaults to true */
   enabled?: boolean;
   props: Static<typeof StatisticPropsSchema>;
+}
+
+/**
+ * Key-takeaways block with literal name discriminator.
+ *
+ * Authored as a leaf. `children` is the compiled form: the block compiler
+ * fills it with the primitives the block lowers to, keeping the node — and so
+ * every authored pointer around it — in place.
+ */
+export interface KeyTakeawaysComponent {
+  name: 'key-takeaways';
+  id?: string;
+  /** When false, this component is filtered out and not rendered. Defaults to true */
+  enabled?: boolean;
+  props: Static<typeof KeyTakeawaysPropsSchema>;
+  children?: ComponentDefinition[];
 }
 
 /**
@@ -249,6 +266,7 @@ export type StandardComponentDefinition =
   | ChartComponent
   | VisualComponent
   | StatisticComponent
+  | KeyTakeawaysComponent
   | TableComponent
   | ListComponent
   | TocComponent
@@ -274,6 +292,7 @@ export const STANDARD_COMPONENTS = [
   'text-box',
   'toc',
   'visual',
+  'key-takeaways',
 ] as const satisfies readonly StandardComponentDefinition['name'][];
 
 /**
@@ -372,6 +391,12 @@ export function isStatisticComponent(
   component: ComponentDefinition
 ): component is StatisticComponent {
   return component.name === 'statistic';
+}
+
+export function isKeyTakeawaysComponent(
+  component: ComponentDefinition
+): component is KeyTakeawaysComponent {
+  return component.name === 'key-takeaways';
 }
 
 export function isTableComponent(

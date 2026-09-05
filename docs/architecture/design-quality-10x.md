@@ -521,6 +521,52 @@ Capacity: full-time, one engineer working with coding agents.
 Phase 0 and the harness come first so that every later phase is accepted on
 its scorecard delta rather than by inspection, even though no PR is gated.
 
+### Execution plan — revised 2026-09-05
+
+This sequence supersedes the phase-by-phase ordering above and the scheduling
+language elsewhere in this document; the architecture and the final scope
+stand. It is recorded in full on the epic (#319) and summarised here so the
+spec and the tracker say the same thing.
+
+**Done.** #320–#327 (Phase 0), #346 (chart and table information-design
+rules), #328 (the shared palette/type/spacing foundation; chrome and motif
+_consumers_ split to #361), #354 (Highcharts inherits the document
+typography) and the DOCX portion of #329 (`consulting`, opt-in). The Phase 1
+schema decisions are settled in `phase-1-theme-schema-map.md`.
+
+**Next milestone: a complete client-report workflow (#362).** Given a real
+brief and data, Claude Desktop scaffolds, fills, validates, previews, repairs
+and delivers a Word report, and the user reviews the argument instead of the
+formatting. Its required portions, in order:
+
+1. #361 report chrome and #334 block compiler with `key-takeaways`, then the
+   report-required blocks of #335–#337 (structure and running head, numeric
+   table, chart with units, takeaway and source).
+2. #338 one client-report blueprint and profile; #339 scaffold, fill map,
+   marker blocking and discovery.
+3. #332 report-specific consistency rules and #333 generated guidance.
+4. #344 report-relevant rendered detection prototyped early, with #343
+   boundary fixtures, through the existing preview/contact-sheet/patch flow;
+   #345 is not a prerequisite.
+5. #360 matched development evidence alongside, without blocking the
+   implementation: 6–8 varied briefs, three runs each, actual Claude Desktop
+   delivery, outputs inspected in Word, a proceed/revise decision recorded
+   on #362.
+
+**After the checkpoint.** Technical-report variants, alternate themes (#330)
+and PPTX layouts/blueprint (#340–#342). Both-format house-theme coverage
+precedes the default switch (#331), which ships as a major with distinct
+legacy aliases and migration notes and keeps the corpus pinned. Formal
+critique (#345), the remaining rules and prompts (#347–#348) and the full
+matrix (#343) remain required for final acceptance.
+
+**Measurement.** The rubric is 1–5: excellent is ≥ 4 and the final median
+target ≥ 4/5, replacing the stale ≥ 8. The report checkpoint is not
+statistical acceptance; the sealed corpus stays untouched until the final
+run, with uncertainty grouped by brief and DOCX and PPTX reported separately.
+Broad issues stay open until every acceptance criterion passes; a partially
+delivered prerequisite neither blocks report integration nor closes early.
+
 ## 9. Risks
 
 | Risk                                                | Mitigation                                                                                                                                                     |

@@ -38,6 +38,8 @@ const DOCX_DESIGN_NOTES: DesignNotes = {
   table:
     'Right-align numeric columns, keep the same decimal places down a column, and let the theme draw the rules — borders on every cell read as a spreadsheet.',
   list: 'Parallel phrasing, one line per item; past about seven items a list is a table or a section in disguise.',
+  'key-takeaways':
+    'Open a report or a major section with it: three to five conclusions, each one claim in one sentence, written before the body they summarise. The theme draws the box — never rebuild it from paragraphs and rules.',
   toc: 'Worth it past roughly eight headings or ten pages; below that it costs a page and answers nothing.',
   divider:
     'A rule separates what whitespace cannot; two dividers on a page means the spacing is doing too little.',

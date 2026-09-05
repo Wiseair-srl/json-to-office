@@ -143,6 +143,15 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       parameters: [],
     },
     {
+      id: 'docx/slot-budget',
+      label: 'Slot budget',
+      category: 'composition',
+      defaultSeverity: 'warning',
+      description:
+        'A block slot holding more words than the block allows it — a takeaway that is not one sentence.',
+      parameters: [],
+    },
+    {
       id: 'docx/chart-design',
       label: 'Chart design',
       category: 'information-design',

@@ -113,6 +113,22 @@ export {
   vermilionTheme,
   consultingTheme,
 } from './styles/index';
+
+// Blocks: bounded-slot components lowered to primitives, styled by the theme
+export {
+  BLOCK_NAMES,
+  expandBlocks,
+  toAuthoredPointer,
+  blockSlotBudgets,
+  compileKeyTakeaways,
+} from './blocks';
+export type {
+  BlockName,
+  BlockSourceMap,
+  BlockCompilation,
+  ExpandedBlocks,
+  BlockSlotBudget,
+} from './blocks';
 export type { ThemeName } from './styles/index';
 
 // JSON Theme System

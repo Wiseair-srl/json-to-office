@@ -23,6 +23,7 @@ import type {
   DocxHeadingFact,
   DocxLineBoxFact,
   DocxPlaceholderFact,
+  DocxBlockSlotFact,
   DocxQualityFact,
   DocxQualityModel,
   DocxSvgTextFact,
@@ -578,6 +579,44 @@ export const docxPlaceholderRule: QualityRule<
       ),
 };
 
+/**
+ * A block slot holds a bounded amount of text, and the bound is the block's,
+ * not the theme's: a takeaway is one claim in one sentence whatever it is set
+ * in. Reported at the authored slot, so the repair is a rewrite of that item.
+ */
+export const docxSlotBudgetRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/slot-budget',
+  code: QUALITY_CODES.SLOT_BUDGET,
+  category: 'composition',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  evaluate: ({ facts }) =>
+    facts
+      .filter(
+        (fact): fact is DocxBlockSlotFact => fact.kind === 'docx/block-slot'
+      )
+      .filter((fact) => fact.words > fact.maxWords)
+      .map((fact) => ({
+        path: fact.path,
+        message:
+          `${fact.block} ${fact.slot} entry runs to ${fact.words} words; the slot holds ` +
+          `${fact.maxWords} — one claim, one sentence.`,
+        suggestion:
+          'Cut it to the conclusion. Move the evidence into the body it summarises.',
+        evidence: {
+          summary: 'words in the slot against its budget',
+          actual: fact.words,
+          expected: fact.maxWords,
+          unit: 'words',
+        },
+        context: { block: fact.block, slot: fact.slot },
+      })),
+};
+
 const DEFAULT_MAX_FONT_FAMILIES = 3;
 
 /** Every family the document can paint: the theme's roles plus authored ones. */
@@ -796,6 +835,7 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxSvgTextBoundsRule,
     docxLineBoxRule,
     docxPlaceholderRule,
+    docxSlotBudgetRule,
     docxChartRule,
     docxTableDesignRule,
     docxFontCountRule,
