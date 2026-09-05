@@ -97,3 +97,27 @@ from the sheets already on disk, so a comparison at least shares its zero.
 Pairwise judging (`judgePair`, written but not yet wired into the scorecard) is
 the version that survives drift entirely, and it is what #321 exists to
 calibrate.
+
+## Comparing two sets pairwise
+
+`pnpm pairwise <a-dir> <b-dir>` shows the judge both answers to one brief and
+asks which is better. It has no zero to drift, so it is the only comparison in
+this directory that survives the judge's between-session shift.
+
+Every pair is judged twice, once in each order, and only a brief whose verdict
+survives the swap is counted. That is not caution. The first attempt showed each
+pair once and returned 25–13 for the assisted set; the judge had picked whichever
+document it saw second in 68% of comparisons, and the per-brief hash meant to
+balance the orders had put the assisted set second 23 times out of 38. Within the
+orientation that disfavoured it, that set won 7 of 15. The run is kept as
+`2026-09-05-pairwise-single-order-SUPERSEDED.json`.
+
+Two-order result, cold against assisted
+(`2026-09-05-pairwise-cold-vs-assisted.json`): **assisted 6, cold 0**, thirty
+pairs where the orders disagreed, four not compared. p = 0.031, and eleven of the
+twelve showings behind those six called the margin "clear".
+
+Read the thirty as resolution, not as ties: they are pairs whose difference is
+smaller than the judge's pull towards the second document, measured at 64% on
+this run. The instrument decides roughly one brief in six. A phase whose effect
+is smaller than the skill's will not be visible to it, which is what #321 is for.

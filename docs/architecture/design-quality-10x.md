@@ -33,22 +33,54 @@ itself a finding.
 | Median author iterations to "done"                                                     | 4–6  | **1**                              | **1.5**                    | ≤ 2    |
 | Outputs the judge would ship to a client without human touch-up                        | ~5%  | **20%** (8/40)                     | **22.5%** (9/40)           | ≥ 50%  |
 
-**The assisted baseline is the important one, and it does not say what the plan
-assumed.** The skill was to be "today's ceiling", the level the product should
-reach. On the headline metric it reaches 22.5% against the product's own 20% —
-and the paired comparison shows even that is not an improvement: of 40 briefs,
-6 shipped cold and stopped shipping with the skill, 7 did the reverse, and only
-**2 shipped in both**. Eighty-two kilobytes of curated taste prose moves
-shippability by an amount indistinguishable from noise.
+**The assisted baseline is the important one, and reading it took three
+instruments, two of which were wrong.**
 
-What the skill does move is craft. Rubric level improved on 19 briefs and
-worsened on 6; genericness improved on 18 and worsened on 7; off-palette
-findings roughly halved, 611 to 328. So the guidance works on the things a
-reader notices and not on the decision to send the document. That is the
-strongest evidence this programme has for its own first principle — taste as
-data rather than prose — and it also resets the target: **≥ 50% is not
-"catch up with the skill", it is territory neither the product nor its best
-prose guidance has reached.**
+The skill was to be "today's ceiling", the level the product should reach. On
+the shipping metric it scores 22.5% against the product's 20%, and paired, only
+2 of 40 briefs ship in both conditions while 6 are lost and 7 gained. That
+looked like a null result. It is not a result at all: the judge was measured
+against itself on the same 39 documents a day later and moved 8 shippable to
+12, every change in the same direction and none coming back
+(`baselines/2026-09-05-rejudge-cold-documents.json`). The difference being
+claimed is one document. The instrument's zero moves by four.
+
+**Compared pairwise, the skill wins and never loses.** Each brief's two
+documents were shown to the judge twice, once in each order, counting only the
+briefs whose verdict survives the swap
+(`baselines/2026-09-05-pairwise-cold-vs-assisted.json`):
+
+|                                 | briefs |
+| ------------------------------- | ------ |
+| assisted better, in both orders | **6**  |
+| cold better, in both orders     | **0**  |
+| the two orders disagreed        | 30     |
+| not compared                    | 4      |
+
+Six against nil is p = 0.031 on a sign test, and eleven of those twelve showings
+called the margin "clear". The thirty disagreements are not ties: they are pairs
+whose difference is smaller than the judge's own pull towards whatever it saw
+second, which this run measured at 64% and the single-order run before it at
+68%. A first pairwise attempt that showed each pair once returned 25–13 for the
+skill and was mostly seating — kept as
+`baselines/2026-09-05-pairwise-single-order-SUPERSEDED.json`.
+
+So the honest statement is narrower than either draft of this section. **Prose
+guidance does produce better documents.** The effect is real, one-directional,
+and invisible to the metric this table leads with — detectable on about one
+brief in six, and below the resolution of a binary ship verdict on the rest.
+The craft measures agree: rubric level improved on 19 briefs and worsened on 6,
+genericness improved on 18 and worsened on 7, off-palette findings roughly
+halved, 611 to 328.
+
+That does not weaken the programme's first principle, it sharpens it. Taste as
+data is not needed because prose fails; it is needed because prose buys an
+improvement this small, on 82 KB and one document in six, while a rule or a
+blueprint applies every time. And **≥ 50% remains territory neither the product
+nor its best prose guidance has reached** — with the caveat, now measured, that
+the metric guarding that number cannot currently resolve differences of the size
+this programme will produce. Fixing that is #321, and it is a gate on reading
+any phase result, not on starting one.
 
 The skill also introduces one regression the Phase 0 rules caught:
 `W_QUALITY_TEXT_TIGHT` goes from 17 findings across 5 documents to **110 across
