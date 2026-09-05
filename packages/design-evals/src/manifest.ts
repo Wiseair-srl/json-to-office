@@ -14,7 +14,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -24,6 +24,27 @@ export interface RunManifest {
   gitSha: string;
   /** True when the tree had uncommitted changes: the SHA does not describe it. */
   gitDirty: boolean;
+  /** The revision the FIRST brief started against. */
+  gitShaAtStart: string;
+  /** Identity of the compiled workspace when the first brief started. */
+  buildFingerprintAtStart: string;
+  /** The same, after the last brief finished. */
+  buildFingerprint: string;
+  /**
+   * False when the revision or the compiled output moved while briefs were in
+   * flight — which makes the set a mixture of two products rather than a
+   * measurement of one.
+   *
+   * This is not hypothetical. A variance run of six briefs shared a working
+   * tree with another session that landed a feature and rebuilt at minute 58;
+   * the twelve pptx briefs already measured were pre-change, the six docx
+   * briefs after it died with `does not provide an export named ...` because
+   * the process still held the old `@json-to-office/quality` in its module
+   * graph, and the manifest — built at the END of the run — recorded only the
+   * final SHA and looked perfectly clean. Seventy-six minutes of runs, and the
+   * only evidence that anything was wrong was a mtime.
+   */
+  treeStableDuringRun: boolean;
   packageVersions: Record<string, string>;
   agentSdkVersion: string;
   /** The exact model identifier the runs were made with. */
@@ -101,6 +122,50 @@ function probeVersion(command: string, args: readonly string[]): string {
   return text === '' ? UNAVAILABLE : (text.split('\n')[0] as string).trim();
 }
 
+/**
+ * A cheap identity for the COMPILED workspace.
+ *
+ * Runs import the built packages, not the sources, so a git SHA does not say
+ * what the agent actually talked to: `pnpm build` between two runs of the same
+ * commit changes the product and nothing in git. Size and mtime of each
+ * package's entry point are enough — the question is only ever "did this move
+ * while I was measuring", never "what exactly changed".
+ */
+export function buildFingerprint(repoRoot: string): string {
+  const packagesDir = path.join(repoRoot, 'packages');
+  const parts: string[] = [];
+  let names: string[];
+  try {
+    names = readdirSync(packagesDir).sort();
+  } catch {
+    return UNAVAILABLE;
+  }
+  for (const name of names) {
+    const entry = path.join(packagesDir, name, 'dist', 'index.js');
+    try {
+      const stat = statSync(entry);
+      parts.push(`${name}:${stat.size}:${Math.round(stat.mtimeMs)}`);
+    } catch {
+      // A package with no dist is not built; its absence is part of the state.
+      parts.push(`${name}:absent`);
+    }
+  }
+  return sha256(parts.join('\n'));
+}
+
+/** Revision plus compiled identity — everything that makes a run reproducible. */
+export interface TreeState {
+  gitSha: string;
+  buildFingerprint: string;
+}
+
+export function treeState(repoRoot: string): TreeState {
+  return {
+    gitSha: gitState(repoRoot).sha,
+    buildFingerprint: buildFingerprint(repoRoot),
+  };
+}
+
 export function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -167,6 +232,14 @@ function packageVersion(packageJsonPath: string): string {
 
 export interface ManifestInput {
   repoRoot: string;
+  /**
+   * The tree as it was before the first brief ran. Optional only so a caller
+   * that genuinely cannot capture it still gets a manifest; when it is absent
+   * the manifest says the run was stable because it has nothing to compare,
+   * which is the weaker claim and is labelled as such by the two identical
+   * `AtStart` fields.
+   */
+  atStart?: TreeState;
   model: string;
   modelParameters: Record<string, unknown>;
   serverInstructions: string;
@@ -225,9 +298,20 @@ export function buildManifest(input: ManifestInput): RunManifest {
     'jto-ops',
   ];
 
+  const fingerprint = buildFingerprint(input.repoRoot);
+  const atStart = input.atStart ?? {
+    gitSha: git.sha,
+    buildFingerprint: fingerprint,
+  };
+
   return {
     gitSha: git.sha,
     gitDirty: git.dirty,
+    gitShaAtStart: atStart.gitSha,
+    buildFingerprintAtStart: atStart.buildFingerprint,
+    buildFingerprint: fingerprint,
+    treeStableDuringRun:
+      atStart.gitSha === git.sha && atStart.buildFingerprint === fingerprint,
     packageVersions: Object.fromEntries(
       packages.map((name) => [
         `@json-to-office/${name}`,

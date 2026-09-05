@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  buildFingerprint,
   buildManifest,
   endpointClass,
   fontInventory,
@@ -162,5 +163,63 @@ describe('fontInventory', () => {
     const fonts = fontInventory();
     expect(Array.isArray(fonts)).toBe(true);
     expect(fonts).toEqual([...fonts].sort());
+  });
+});
+
+describe('tree stability across a run', () => {
+  const base = {
+    repoRoot,
+    model: 'claude-sonnet-5',
+    modelParameters: {},
+    serverInstructions: 'instructions',
+    mode: 'cold' as const,
+    maxRetries: 1,
+    agentSdkVersion: '0.3.259',
+  };
+
+  it('is stable when the tree the run started on is the tree it ended on', () => {
+    const manifest = buildManifest({
+      ...base,
+      atStart: {
+        gitSha: gitState(repoRoot).sha,
+        buildFingerprint: buildFingerprint(repoRoot),
+      },
+    });
+    expect(manifest.treeStableDuringRun).toBe(true);
+    expect(manifest.gitShaAtStart).toBe(manifest.gitSha);
+  });
+
+  it('is unstable when the compiled workspace moved under the run', () => {
+    // The real failure: another session ran `pnpm build` at minute 58 of a
+    // 76-minute set. Nothing in git changed for the runs already finished, and
+    // the manifest — assembled at the end — looked clean.
+    const manifest = buildManifest({
+      ...base,
+      atStart: {
+        gitSha: gitState(repoRoot).sha,
+        buildFingerprint: 'a-build-that-is-no-longer-on-disk',
+      },
+    });
+    expect(manifest.treeStableDuringRun).toBe(false);
+    expect(manifest.buildFingerprintAtStart).not.toBe(
+      manifest.buildFingerprint
+    );
+  });
+
+  it('is unstable when the revision moved under the run', () => {
+    const manifest = buildManifest({
+      ...base,
+      atStart: {
+        gitSha: '0000000000000000000000000000000000000000',
+        buildFingerprint: buildFingerprint(repoRoot),
+      },
+    });
+    expect(manifest.treeStableDuringRun).toBe(false);
+  });
+
+  it('claims stability rather than inventing it when no start state was captured', () => {
+    const manifest = buildManifest(base);
+    expect(manifest.treeStableDuringRun).toBe(true);
+    expect(manifest.gitShaAtStart).toBe(manifest.gitSha);
   });
 });

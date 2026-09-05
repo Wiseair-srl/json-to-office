@@ -29,7 +29,7 @@ import {
   type Brief,
   type Corpus,
 } from './corpus.js';
-import { buildManifest } from './manifest.js';
+import { buildManifest, treeState } from './manifest.js';
 import { loadSkill, type LoadedSkill } from './skill.js';
 import type { RunMetrics } from './metrics.js';
 import { runBrief } from './runner.js';
@@ -205,6 +205,10 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   const runs: RunMetrics[] = [];
   const started = Date.now();
+  // Before the first brief, not after the last: a manifest assembled at the
+  // end describes the tree the SCORECARD was written against, which is not
+  // necessarily the tree any of the briefs ran against.
+  const atStart = treeState(root);
   const attempts = briefs.flatMap((brief) =>
     Array.from({ length: options.repeat }, (_, pass) => ({ brief, pass }))
   );
@@ -240,6 +244,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     runs,
     manifest: buildManifest({
       repoRoot: root,
+      atStart,
       model: options.model,
       modelParameters: { maxTurns: options.maxTurns },
       serverInstructions: SERVER_INSTRUCTIONS,
@@ -277,6 +282,19 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   const { totals } = scorecard;
   line('');
+  if (!scorecard.manifest.treeStableDuringRun) {
+    // Above everything, including contamination: a set measured across a
+    // rebuild is not one product's numbers, and no other line on this
+    // scorecard means what it says.
+    line(
+      'WARNING: the revision or the build changed while these briefs were running — ' +
+        'this set mixes two products and cannot be compared with any baseline'
+    );
+    line(
+      `  started ${scorecard.manifest.gitShaAtStart.slice(0, 7)} / build ${scorecard.manifest.buildFingerprintAtStart.slice(0, 7)}, ` +
+        `ended ${scorecard.manifest.gitSha.slice(0, 7)} / build ${scorecard.manifest.buildFingerprint.slice(0, 7)}`
+    );
+  }
   if (totals.contaminated > 0) {
     // Loud, and above the judge line: a contaminated set is not a baseline.
     line(
