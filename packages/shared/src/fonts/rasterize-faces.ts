@@ -109,3 +109,37 @@ export function fromRasterizeFontFaces(
   }
   return [...byFamily.values()];
 }
+
+/** Formats a browser's `@font-face` can load; a chart is drawn by one. */
+const BROWSER_FORMATS = new Set<ResolvedFontSource['format']>([
+  'ttf',
+  'otf',
+  'woff',
+  'woff2',
+]);
+
+/**
+ * Flatten resolved fonts into the faces a Highcharts export server can be
+ * handed as inline `@font-face` rules. Wider than `toRasterizeFontFaces`:
+ * the chart is drawn by Chromium, which reads WOFF and WOFF2 as readily as
+ * an sfnt, so only formats no browser loads are dropped. Safe-only fonts
+ * carry no bytes and are skipped; the server's own host faces cover them.
+ */
+export function toChartFontFaces(
+  fonts: readonly ResolvedFont[]
+): RasterizeFontFace[] {
+  const faces: RasterizeFontFace[] = [];
+  for (const font of fonts) {
+    for (const source of font.sources) {
+      if (!BROWSER_FORMATS.has(source.format)) continue;
+      faces.push({
+        family: font.family,
+        weight: source.weight,
+        italic: source.italic,
+        data: source.data.toString('base64'),
+        format: source.format as RasterizeFontFace['format'],
+      });
+    }
+  }
+  return faces;
+}

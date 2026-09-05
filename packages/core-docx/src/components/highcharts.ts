@@ -9,12 +9,22 @@
 
 import { ThemeConfig } from '../styles';
 import { chartPaletteValues, resolveColor } from '../styles/utils/colorUtils';
+import { getPageSetup } from '../styles/utils/layoutUtils';
 import { isNodeEnvironment } from '../utils/environment';
 import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 // Import only the types we actually use from shared package
 import type { HighchartsProps } from '@json-to-office/shared-docx';
-import type { HighchartsServiceConfig } from '@json-to-office/shared';
+import {
+  chartFontFaceCss,
+  chartPointsPerPixel,
+  cssFontFamily,
+  themeFontRegistry,
+  withChartTypography,
+  type ChartTypography,
+  type HighchartsServiceConfig,
+  type RasterizeFontFace,
+} from '@json-to-office/shared';
 
 // Re-export HighchartsProps for backward compatibility
 export type { HighchartsProps } from '@json-to-office/shared-docx';
@@ -133,6 +143,137 @@ function withThemeColors(
   };
 }
 
+/** Twips to points. */
+const POINTS_PER_TWIP = 1 / 20;
+/** Points per image pixel: `image` places a pixel count at 96 dpi. */
+const POINTS_PER_PIXEL = 0.75;
+
+/**
+ * The width, in points, the chart's image takes on the page — the same rule
+ * the `image` it desugars to applies: a number is pixels at 96 dpi, a
+ * percentage is of the content width, and a height alone scales the width
+ * with it. Undefined when nothing places it, which the caller reads as 96 dpi.
+ */
+function placedWidthPt(
+  config: HighchartsProps,
+  theme: ThemeConfig
+): number | undefined {
+  const { width, height } = config;
+  const chart = config.options.chart;
+  if (typeof width === 'number') return width * POINTS_PER_PIXEL;
+  if (typeof width === 'string') {
+    const page = getPageSetup(theme);
+    const contentWidthPt =
+      (page.size.width - page.margin.left - page.margin.right) *
+      POINTS_PER_TWIP;
+    return (parseFloat(width) / 100) * contentWidthPt;
+  }
+  if (typeof height === 'number' && chart.height > 0) {
+    return (height / chart.height) * chart.width * POINTS_PER_PIXEL;
+  }
+  return undefined;
+}
+
+function toHex(token: string, theme: ThemeConfig): string {
+  return `#${resolveColor(token, theme)}`;
+}
+
+/**
+ * The document's type, read off the resolved theme. `chartLabel` and `source`
+ * are the roles a theme declares for exactly this (see the shared design
+ * system); without them the labels sit one point under the body and the
+ * source one under that, which is where a report sets them anyway. The title
+ * takes the heading face at the `heading3` size, the level a figure title
+ * reads as on the page.
+ */
+function themeChartTypography(theme: ThemeConfig): ChartTypography {
+  const styles = (theme.styles ?? {}) as Record<
+    string,
+    | {
+        size?: number;
+        bold?: boolean;
+        fontWeight?: number;
+      }
+    | undefined
+  >;
+  const categories = new Map(
+    themeFontRegistry(theme).map((entry) => [
+      entry.family.toLowerCase(),
+      entry.category,
+    ])
+  );
+  const family = (name: string) =>
+    cssFontFamily(name, categories.get(name.toLowerCase()));
+  const bodyPt = styles.normal?.size ?? theme.fonts.body.size ?? 11;
+  const label = styles.chartLabel;
+  const heading = styles.heading3;
+  const labelPt = label?.size ?? Math.max(bodyPt - 1, 6);
+  return {
+    bodyFamily: family(theme.fonts.body.family),
+    headingFamily: family(theme.fonts.heading.family),
+    textColor: toHex('textPrimary', theme),
+    mutedColor: toHex('textSecondary', theme),
+    labelPt,
+    labelWeight: label?.fontWeight ?? (label?.bold ? 700 : undefined),
+    titlePt: heading?.size ?? bodyPt + 2,
+    titleWeight:
+      heading?.fontWeight ?? (heading?.bold === false ? undefined : 700),
+    sourcePt: styles.source?.size ?? Math.max(labelPt - 1, 6),
+  };
+}
+
+/**
+ * Set the chart in the document's type: family, sizes and ink written beneath
+ * whatever the author styled, scaled to the width the image is placed at.
+ */
+function withThemeTypography(
+  config: HighchartsProps,
+  theme: ThemeConfig
+): HighchartsProps {
+  if (!theme?.fonts?.body?.family || !theme.fonts.heading?.family) {
+    return config;
+  }
+  return {
+    ...config,
+    options: withChartTypography(
+      config.options,
+      themeChartTypography(theme),
+      chartPointsPerPixel(
+        config.options.chart.width,
+        placedWidthPt(config, theme)
+      )
+    ) as HighchartsProps['options'],
+  };
+}
+
+/**
+ * Hand the export server the bytes of every staged face of the families the
+ * chart is set in, as `@font-face` rules ahead of the author's own CSS, so a
+ * registered font draws from the document's bytes rather than from a
+ * lookalike. Nothing is added when no face matches: a document set in safe
+ * fonts posts the same body it always did.
+ */
+function withChartFontFaces(
+  config: HighchartsProps,
+  theme: ThemeConfig,
+  faces: readonly RasterizeFontFace[] | undefined
+): HighchartsProps {
+  if (!faces?.length || !theme?.fonts) return config;
+  const css = chartFontFaceCss(faces, [
+    theme.fonts.body.family,
+    theme.fonts.heading.family,
+  ]);
+  if (!css) return config;
+  const authored = config.resources?.css;
+  return {
+    ...config,
+    resources: {
+      ...config.resources,
+      css: authored ? `${css}\n${authored}` : css,
+    },
+  };
+}
+
 /**
  * Map a chart's props to the `image` props it desugars to.
  *
@@ -145,9 +286,14 @@ function withThemeColors(
 export async function renderChartToImageProps(
   props: HighchartsProps,
   theme: ThemeConfig,
-  servicesConfig?: HighchartsServiceConfig
+  servicesConfig?: HighchartsServiceConfig,
+  chartFonts?: readonly RasterizeFontFace[]
 ): Promise<Record<string, unknown>> {
-  const config = withThemeColors(props, theme);
+  const config = withChartFontFaces(
+    withThemeTypography(withThemeColors(props, theme), theme),
+    theme,
+    chartFonts
+  );
   const chart = await generateChart(config, servicesConfig);
 
   const hasConfigDimensions =

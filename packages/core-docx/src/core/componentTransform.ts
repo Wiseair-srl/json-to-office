@@ -125,3 +125,22 @@ export function withNodeIdentity(
   if (original.enabled !== undefined) out.enabled = original.enabled;
   return out;
 }
+
+/**
+ * Whether any component in `root` is named `name`. Walks the same places the
+ * transform does — children, section header/footer, table cell content — by
+ * looking at every object rather than enumerating them, which is cheaper than
+ * a transform and cannot fall out of step with it.
+ */
+export function containsComponent(root: unknown, name: string): boolean {
+  const seen = new WeakSet<object>();
+  const visit = (node: unknown): boolean => {
+    if (!node || typeof node !== 'object' || seen.has(node)) return false;
+    seen.add(node);
+    if (Array.isArray(node)) return node.some(visit);
+    const obj = node as Record<string, unknown>;
+    if (obj.name === name && obj.props !== undefined) return true;
+    return Object.values(obj).some(visit);
+  };
+  return visit(root);
+}

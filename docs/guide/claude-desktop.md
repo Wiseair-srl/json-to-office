@@ -166,17 +166,20 @@ only the first three; the fourth series in this example is coloured because the
 document adds `accent4` itself. An explicit `options.colors` always wins and
 nothing is injected.
 
-**The fonts do not.** The chart is a PNG rendered by a browser that knows
-nothing about the document: axis labels, the chart title and the legend come out
-in the export server's own default face, not the theme's. In a rendered page
-that reads as a chart set in a different typeface from the prose around it,
-which is a real coherence defect and not a bug in the export. Two ways out:
-inject `@font-face` CSS through the component's `resources` prop (see
-[Custom fonts in Highcharts output](/guide/charts#custom-fonts-in-highcharts-output)),
-or set the chart's typography explicitly in `options` to a family the export
-server has. The same applies to type sizes: Highcharts' defaults are not the
-document's type scale. Making this automatic is
-[issue #354](https://github.com/Wiseair-srl/json-to-office/issues/354).
+**The type carries too.** The chart is a PNG rendered by a browser that knows
+nothing about the document, so json-to-office writes the theme's typography
+into the request: the body family on the chart, the heading family on the
+title, the theme's label and source sizes scaled to the width the chart is
+placed at, and the text colours — beneath anything the chart sets itself (see
+[Theme typography in Highcharts output](/guide/charts#theme-typography-in-highcharts-output)).
+What the request cannot supply is the font itself: a local export server draws
+with the faces installed on your machine, which is why the house theme names
+SAFE_FONTS only. A registered non-safe family is inlined as `@font-face` from
+the document's own font bytes; a family that is neither installed nor
+registered falls back to the browser's default, which is the one case left
+where the chart looks foreign, and the fix is to register it or to inject it
+through the component's `resources` prop
+([Custom fonts in Highcharts output](/guide/charts#custom-fonts-in-highcharts-output)).
 
 ## Related
 

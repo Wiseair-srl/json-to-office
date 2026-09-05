@@ -17,8 +17,12 @@ import { assertRendererSupports } from '@json-to-office/shared/rendering';
 import type { GenerationWarning, ServicesConfig } from '@json-to-office/shared';
 import type { FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from './fontResolution';
-import { toRasterizeFontFaces } from '@json-to-office/shared/fonts/node';
+import {
+  toChartFontFaces,
+  toRasterizeFontFaces,
+} from '@json-to-office/shared/fonts/node';
 import { collectVisualProps } from './prerasterizeVisuals';
+import { containsComponent } from './componentTransform';
 import { desugarExternals } from './desugarExternals';
 import { loadImageResources } from './imageResources';
 import { compileDocument, type UnsupportedComponent } from '../ir/compiler';
@@ -159,13 +163,18 @@ async function compileDocumentScoped(
   // real font files, so a visual-bearing document forces materialisation even
   // with no listener. Gated on that check so a fontless-by-design build still
   // pays no network cost.
+  //
+  // A `highcharts` is drawn by an export server's browser, which likewise
+  // needs the bytes of any registered face to set the chart in the document's
+  // type, so a chart-bearing document materialises for the same reason.
   const hasVisual = collectVisualProps(context.document).length > 0;
+  const hasHighcharts = containsComponent(context.document, 'highcharts');
   const resolvedFonts = await resolveDocumentFonts(
     context.document,
     context.theme,
     options.fonts,
     warnings,
-    hasVisual
+    hasVisual || hasHighcharts
   );
   // Gated on the ENCODED faces, not on how many fonts resolved: a safe-only
   // font resolves to an entry with no sources, which encodes to nothing, and a
@@ -174,6 +183,7 @@ async function compileDocumentScoped(
   const visualFonts = hasVisual
     ? toRasterizeFontFaces(resolvedFonts, warnings)
     : [];
+  const chartFonts = hasHighcharts ? toChartFontFaces(resolvedFonts) : [];
 
   // Charts and visuals become images before anything else reads the tree: they
   // are the only components that need a service, and past this point nothing
@@ -183,6 +193,7 @@ async function compileDocumentScoped(
     ...(options.services ? { services: options.services } : {}),
     ...(options.baseDir !== undefined ? { baseDir: options.baseDir } : {}),
     ...(visualFonts.length > 0 ? { visualFonts } : {}),
+    ...(chartFonts.length > 0 ? { chartFonts } : {}),
   });
 
   // One date for the whole build: the metadata Word shows, the `{DATE}` a
