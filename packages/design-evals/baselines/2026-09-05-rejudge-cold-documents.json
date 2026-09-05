@@ -1,0 +1,535 @@
+{
+  "source": "evals-out/baseline-cold (the cold baseline documents, unchanged)",
+  "note": "Same documents and same rubric as the 2026-09-04 cold baseline, judged again on 2026-09-05. The contaminated brief the baseline excludes is excluded here too. Rationales are trimmed: what a re-judge compares is the verdict.",
+  "judgeModel": "claude-opus-5",
+  "judgedAt": "2026-09-05T13:10:02.196Z",
+  "shipsThen": 8,
+  "shipsNow": 12,
+  "agreement": {
+    "wouldShip": {
+      "n": 39,
+      "rawAgreement": 0.8974,
+      "kappa": 0.7347
+    },
+    "level": {
+      "n": 39,
+      "rawAgreement": 0.6154,
+      "kappa": 0.4492
+    },
+    "genericness": {
+      "n": 39,
+      "rawAgreement": 0.7436,
+      "kappa": 0.4895
+    },
+    "levelMovedMoreThanOne": 1
+  },
+  "runs": [
+    {
+      "briefId": "cd-capital-allocation",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-competitive-response",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-cost-programme-kickoff",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-customer-research-readout",
+      "then": {
+        "level": 2,
+        "wouldShip": false,
+        "genericness": 4
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-digital-transformation-case",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-growth-strategy-readout",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-innovation-portfolio",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-market-scan-adjacent",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-operating-model-options",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-org-design-proposal",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-post-merger-day-one",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-quarterly-business-review",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-service-quality-turnaround",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-supply-chain-diagnostic",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-sustainability-roadmap",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-brand-repositioning",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-cost-programme-review",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 2,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-customer-churn-diagnosis",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-digital-channel-shift",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 2,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-esg-reporting-readiness",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-market-entry-nordics",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-post-merger-integration",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-pricing-review-logistics",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 1
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-procurement-savings",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-service-model-redesign",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-store-network-rationalisation",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-supply-resilience",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-workforce-planning",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-accessibility-audit",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 4
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-api-gateway-migration",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-build-pipeline-audit",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-capacity-forecast",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-data-retention-policy",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-incident-postmortem-db",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-load-test-results",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 2,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-memo-vendor-selection",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-observability-standard",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "tr-schema-migration-plan",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 2
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-security-review-auth",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 3
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 3
+      }
+    }
+  ]
+}
