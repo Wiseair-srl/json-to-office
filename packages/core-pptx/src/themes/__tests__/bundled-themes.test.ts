@@ -63,9 +63,16 @@ describe('built-in pptx themes', () => {
 });
 
 describe('the theme lookup', () => {
-  it.each(names)('getPptxTheme(%s) returns a valid theme', (name) => {
-    expect(errorsFor(getPptxTheme(name))).toEqual([]);
-  });
+  it.each(names)(
+    'getPptxTheme(%s) returns the theme registered for it',
+    (name) => {
+      // Identity, not just validity: a lookup that returned the default theme
+      // for every name would satisfy the schema and break the contract.
+      const theme = getPptxTheme(name);
+      expect(theme).toBe(pptxThemes[name]);
+      expect(errorsFor(theme)).toEqual([]);
+    }
+  );
 
   it('falls back to the default theme, and says so separately', () => {
     // The fallback is deliberate and documented; `hasPptxTheme` is the only

@@ -3,7 +3,10 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
-import { rejudge } from './rejudge.js';
+import { rejudge, type RejudgedRun } from './rejudge.js';
+
+/** Options that take a value, so their value is never read as the runs dir. */
+const VALUED_OPTIONS = ['scorecard', 'judge', 'briefs'] as const;
 
 function value(argv: readonly string[], name: string): string | undefined {
   const index = argv.indexOf(`--${name}`);
@@ -12,11 +15,60 @@ function value(argv: readonly string[], name: string): string | undefined {
   return next !== undefined && !next.startsWith('--') ? next : undefined;
 }
 
+/**
+ * The first argument that is neither an option nor an option's value.
+ *
+ * `argv.find(arg => !arg.startsWith('--'))` reads
+ * `--scorecard out/sc.json runs/foo` as a runs directory of `out/sc.json`,
+ * which then has `runs` joined onto it and `rejudge.json` written inside it —
+ * a documented invocation producing either nothing or ENOTDIR.
+ */
+export function runsDirArgument(argv: readonly string[]): string | undefined {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg.startsWith('--')) {
+      const name = arg.slice(2);
+      const takesValue = (VALUED_OPTIONS as readonly string[]).includes(name);
+      const next = argv[index + 1];
+      if (takesValue && next !== undefined && !next.startsWith('--')) {
+        index += 1;
+      }
+      continue;
+    }
+    return arg;
+  }
+  return undefined;
+}
+
+/**
+ * How many documents were comparable, and how many moved.
+ *
+ * Both counts require an original verdict, exactly as `pairs()` does. A run
+ * whose stored judgement carried no `wouldShip` used to satisfy both
+ * predicates at once — `undefined !== true` is a change — and print
+ * "1 document(s) re-judged, unchanged since; 1 changed their wouldShip
+ * answer" about one document.
+ */
+export function verdictCounts(runs: readonly RejudgedRun[]): {
+  compared: number;
+  changed: number;
+} {
+  const comparable = runs.filter(
+    (run) => run.now !== undefined && typeof run.then.wouldShip === 'boolean'
+  );
+  return {
+    compared: comparable.length,
+    changed: comparable.filter(
+      (run) => run.now!.wouldShip !== run.then.wouldShip
+    ).length,
+  };
+}
+
 export async function main(
   argv: readonly string[],
   line: (text: string) => void = console.log
 ): Promise<number> {
-  const positional = argv.find((arg) => !arg.startsWith('--'));
+  const positional = runsDirArgument(argv);
   if (!positional) {
     line('usage: pnpm rejudge <runs-dir> [--scorecard <path>] [--briefs a,b]');
     return 1;
@@ -40,13 +92,10 @@ export async function main(
   await fs.writeFile(out, JSON.stringify(report, null, 2));
 
   line('');
-  const changed = report.runs.filter(
-    (run) => run.now && run.now.wouldShip !== run.then.wouldShip
-  );
-  const compared = report.runs.filter((run) => run.now).length;
+  const { compared, changed } = verdictCounts(report.runs);
   line(
     `${compared} document(s) re-judged, unchanged since; ` +
-      `${changed.length} changed their wouldShip answer`
+      `${changed} changed their wouldShip answer`
   );
   if (report.agreement) {
     const { wouldShip, level, genericness, levelMovedMoreThanOne } =
@@ -58,12 +107,18 @@ export async function main(
       `wouldShip: ${(wouldShip.rawAgreement * 100).toFixed(0)}% agreement, ` +
         `kappa ${wouldShip.kappa.toFixed(2)}${interval}`
     );
+    // A field nothing could be compared on is said to be absent rather than
+    // printed as 0% and NaN, which read as measurements.
     line(
-      `level: ${(level.rawAgreement * 100).toFixed(0)}% exact, kappa ${level.kappa.toFixed(2)}, ` +
-        `${levelMovedMoreThanOne} moved more than one step`
+      level
+        ? `level: ${(level.rawAgreement * 100).toFixed(0)}% exact, kappa ${level.kappa.toFixed(2)}, ` +
+            `${levelMovedMoreThanOne} moved more than one step`
+        : 'level: no stored verdict carried it, nothing to compare'
     );
     line(
-      `genericness: ${(genericness.rawAgreement * 100).toFixed(0)}% exact, kappa ${genericness.kappa.toFixed(2)}`
+      genericness
+        ? `genericness: ${(genericness.rawAgreement * 100).toFixed(0)}% exact, kappa ${genericness.kappa.toFixed(2)}`
+        : 'genericness: no stored verdict carried it, nothing to compare'
     );
     // The number the programme actually rests on, said plainly.
     if (wouldShip.kappa < 0.6) {

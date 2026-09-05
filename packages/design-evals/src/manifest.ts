@@ -128,8 +128,14 @@ function probeVersion(command: string, args: readonly string[]): string {
  * Runs import the built packages, not the sources, so a git SHA does not say
  * what the agent actually talked to: `pnpm build` between two runs of the same
  * commit changes the product and nothing in git. Size and mtime of each
- * package's entry point are enough — the question is only ever "did this move
+ * compiled entry point are enough — the question is only ever "did this move
  * while I was measuring", never "what exactly changed".
+ *
+ * EVERY top-level `dist/*.js`, not just `index.js`. `tsup` builds `cli` and
+ * `index` as separate entries, and the file a run actually executes is
+ * `mcp-server/dist/cli.js` (see `serverCommand`) — so fingerprinting only
+ * `index.js` left a CLI-only rebuild invisible to the one check whose whole
+ * job is noticing that the compiled product moved.
  */
 export function buildFingerprint(repoRoot: string): string {
   const packagesDir = path.join(repoRoot, 'packages');
@@ -141,13 +147,28 @@ export function buildFingerprint(repoRoot: string): string {
     return UNAVAILABLE;
   }
   for (const name of names) {
-    const entry = path.join(packagesDir, name, 'dist', 'index.js');
+    const dist = path.join(packagesDir, name, 'dist');
+    let entries: string[];
     try {
-      const stat = statSync(entry);
-      parts.push(`${name}:${stat.size}:${Math.round(stat.mtimeMs)}`);
+      entries = readdirSync(dist)
+        .filter((file) => file.endsWith('.js'))
+        .sort();
     } catch {
       // A package with no dist is not built; its absence is part of the state.
       parts.push(`${name}:absent`);
+      continue;
+    }
+    if (entries.length === 0) {
+      parts.push(`${name}:absent`);
+      continue;
+    }
+    for (const file of entries) {
+      try {
+        const stat = statSync(path.join(dist, file));
+        parts.push(`${name}/${file}:${stat.size}:${Math.round(stat.mtimeMs)}`);
+      } catch {
+        parts.push(`${name}/${file}:absent`);
+      }
     }
   }
   return sha256(parts.join('\n'));

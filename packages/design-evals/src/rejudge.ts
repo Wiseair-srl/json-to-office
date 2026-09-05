@@ -47,8 +47,9 @@ export interface RejudgeReport {
   /** Self-agreement, per rubric field. Absent when nothing could be compared. */
   agreement?: {
     wouldShip: KappaReport;
-    level: KappaReport;
-    genericness: KappaReport;
+    /** Absent when no stored verdict carried this field to compare against. */
+    level?: KappaReport;
+    genericness?: KappaReport;
     /** Documents whose level moved by more than one step. */
     levelMovedMoreThanOne: number;
   };
@@ -85,10 +86,17 @@ export function summarise(
   const ship = pairs<boolean>(runs, (v) => v.wouldShip);
   if (ship.length === 0) return undefined;
   const levels = pairs<number>(runs, (v) => v.level);
+  const genericness = pairs<number>(runs, (v) => v.genericness);
+  // A field with no pairs is omitted rather than reported: `bootstrapKappa([])`
+  // answers `n: 0, rawAgreement: 0, kappa: NaN`, and a report carrying that is
+  // worse than one carrying nothing — NaN serialises to `null` and prints as
+  // "NaN", both of which read as a measurement.
   return {
     wouldShip: bootstrapKappa(ship),
-    level: bootstrapKappa(levels),
-    genericness: bootstrapKappa(pairs<number>(runs, (v) => v.genericness)),
+    ...(levels.length > 0 && { level: bootstrapKappa(levels) }),
+    ...(genericness.length > 0 && {
+      genericness: bootstrapKappa(genericness),
+    }),
     levelMovedMoreThanOne: levels.filter(
       (rating) => Math.abs(rating.a - rating.b) > 1
     ).length,

@@ -92,3 +92,47 @@ describe('summarise', () => {
     expect(summarise(runs)?.levelMovedMoreThanOne).toBe(1);
   });
 });
+
+describe('summarise with a field nothing can be compared on', () => {
+  it('omits the metric rather than reporting NaN as a measurement', () => {
+    // A stored verdict that carried `wouldShip` and no rubric numbers: the
+    // shipping answer is comparable, the other two are not. `bootstrapKappa([])`
+    // answers `n: 0, rawAgreement: 0, kappa: NaN`, and a report carrying that
+    // reads as a measurement of perfect disagreement.
+    const agreement = summarise([
+      run(
+        'a',
+        { wouldShip: true },
+        { wouldShip: true, level: 3, genericness: 2 }
+      ),
+      run(
+        'b',
+        { wouldShip: false },
+        { wouldShip: false, level: 4, genericness: 1 }
+      ),
+    ]);
+
+    expect(agreement?.wouldShip.n).toBe(2);
+    expect(agreement?.level).toBeUndefined();
+    expect(agreement?.genericness).toBeUndefined();
+    expect(agreement?.levelMovedMoreThanOne).toBe(0);
+  });
+
+  it('still reports a field every stored verdict carried', () => {
+    const agreement = summarise([
+      run(
+        'a',
+        { wouldShip: true, level: 3, genericness: 2 },
+        { wouldShip: true, level: 3, genericness: 2 }
+      ),
+      run(
+        'b',
+        { wouldShip: false, level: 2, genericness: 4 },
+        { wouldShip: false, level: 2, genericness: 4 }
+      ),
+    ]);
+
+    expect(agreement?.level?.n).toBe(2);
+    expect(agreement?.genericness?.n).toBe(2);
+  });
+});
